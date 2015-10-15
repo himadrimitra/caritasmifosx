@@ -895,7 +895,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             }
 
             // enforceMinRequiredBalance
-            if (transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
                     final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
                     final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
@@ -907,8 +906,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                     }
                     if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
                 }
-
-            }
         }
     }
 
