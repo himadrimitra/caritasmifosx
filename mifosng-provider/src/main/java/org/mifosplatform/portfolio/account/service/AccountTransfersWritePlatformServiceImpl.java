@@ -13,6 +13,7 @@ import static org.mifosplatform.portfolio.account.api.AccountTransfersApiConstan
 import static org.mifosplatform.portfolio.account.api.AccountTransfersApiConstants.transferDateParamName;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -203,6 +204,20 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
         }
 
     }
+    
+    @Override
+    @Transactional
+    public void reverseTransfersWithFromAccountTransactions(final Collection<Long> fromTransactionIds, final PortfolioAccountType accountTypeId) {
+        List<AccountTransferTransaction> acccountTransfers = null;
+        if (accountTypeId.isLoanAccount()) {
+            acccountTransfers = this.accountTransferRepository.findByFromLoanTransactions(fromTransactionIds);
+        }
+        if (acccountTransfers != null && acccountTransfers.size() > 0) {
+            undoTransactions(acccountTransfers);
+        }
+
+    }
+
 
     @Override
     @Transactional

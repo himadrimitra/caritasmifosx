@@ -5,6 +5,7 @@
  */
 package org.mifosplatform.portfolio.account.domain;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,4 +23,7 @@ public interface AccountTransferRepository extends JpaRepository<AccountTransfer
 
     @Query("from AccountTransferTransaction att where att.toLoanTransaction.id= :loanTransactionId and att.reversed=false")
     AccountTransferTransaction findByToLoanTransactionId(@Param("loanTransactionId") Long loanTransactionId);
+    
+    @Query("from AccountTransferTransaction att where att.fromLoanTransaction.id IN :loanTransactions and att.reversed=false")
+    List<AccountTransferTransaction> findByFromLoanTransactions(@Param("loanTransactions") Collection<Long> loanTransactions);
 }
