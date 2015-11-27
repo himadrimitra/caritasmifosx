@@ -36,8 +36,10 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
         final GLClosure latestGLClosure = this.helper.getLatestClosureByBranch(loanDTO.getOfficeId());
         final Office office = this.helper.getOfficeById(loanDTO.getOfficeId());
         for (final LoanTransactionDTO loanTransactionDTO : loanDTO.getNewLoanTransactions()) {
+        	
             final Date transactionDate = loanTransactionDTO.getTransactionDate();
-            this.helper.checkForBranchClosures(latestGLClosure, transactionDate);
+          
+            	this.helper.checkForBranchClosures(latestGLClosure, transactionDate);
 
             /** Handle Disbursements **/
             if (loanTransactionDTO.getTransactionType().isDisbursement()) {

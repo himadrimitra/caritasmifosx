@@ -44,6 +44,7 @@ public class CashBasedAccountingProcessorForLoan implements AccountingProcessorF
             final Long paymentTypeId = loanTransactionDTO.getPaymentTypeId();
             final Long loanId = loanDTO.getLoanId();
 
+            if(!loanTransactionDTO.getTransactionType().isAccrual())
             this.helper.checkForBranchClosures(latestGLClosure, transactionDate);
 
             /** Handle Disbursements and reversals of disbursements **/
