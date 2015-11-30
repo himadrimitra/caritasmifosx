@@ -384,9 +384,7 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
                     	check++;
                     }
                 }
-                else{
-                	throw new InvestmentAlreadyExistsException();
-                }
+               
             }
         }
         
