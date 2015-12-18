@@ -895,6 +895,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             }
 
             // enforceMinRequiredBalance
+          
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
                     final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
                     final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
