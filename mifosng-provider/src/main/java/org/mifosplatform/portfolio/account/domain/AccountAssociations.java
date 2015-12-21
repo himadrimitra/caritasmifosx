@@ -31,7 +31,7 @@ public class AccountAssociations extends AbstractPersistable<Long> {
     @JoinColumn(name = "linked_loan_account_id", nullable = true)
     private Loan linkedLoanAccount;
 
-	@ManyToOne
+    @ManyToOne
     @JoinColumn(name = "linked_savings_account_id", nullable = true)
     private SavingsAccount linkedSavingsAccount;
 
@@ -70,13 +70,4 @@ public class AccountAssociations extends AbstractPersistable<Long> {
     public void updateLinkedSavingsAccount(final SavingsAccount savingsAccount) {
         this.linkedSavingsAccount = savingsAccount;
     }
-    
-    public boolean isActive() {
-		return this.active;
-	}
-
-	public void setActive(boolean active) {
-		this.active = active;
-	}
-
 }
