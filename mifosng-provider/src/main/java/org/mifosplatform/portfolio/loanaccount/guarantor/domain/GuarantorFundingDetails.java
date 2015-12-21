@@ -105,6 +105,7 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         this.amountRemaining = getAmountRemaining().subtract(amount);
         if (this.amountRemaining.compareTo(BigDecimal.ZERO) == 0) {
             this.updateStatus(GuarantorFundStatusType.COMPLETED);
+            accountAssociations.setActive(false);
         }
     }
 
@@ -113,6 +114,7 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         this.amountRemaining = getAmountRemaining().add(amount);
         if (getStatus().isCompleted() && this.amountRemaining.compareTo(BigDecimal.ZERO) == 1) {
             this.updateStatus(GuarantorFundStatusType.ACTIVE);
+            accountAssociations.setActive(true);
         }
     }
 
