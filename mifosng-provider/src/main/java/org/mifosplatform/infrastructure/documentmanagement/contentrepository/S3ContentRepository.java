@@ -31,6 +31,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.lowagie.text.pdf.codec.Base64;
+import org.apache.poi.util.IOUtils;
+import org.mifosplatform.portfolio.client.exception.ImageNotFoundException;
 
 public class S3ContentRepository implements ContentRepository {
 
@@ -121,8 +123,13 @@ public class S3ContentRepository implements ContentRepository {
 
     @Override
     public ImageData fetchImage(final ImageData imageData) {
-        final S3Object s3object = this.s3Client.getObject(new GetObjectRequest(this.s3BucketName, imageData.location()));
-        imageData.updateContent(s3object.getObjectContent());
+    	   try {
+    		              final S3Object s3object = this.s3Client.getObject(new GetObjectRequest(this.s3BucketName, imageData.location()));
+    		              imageData.updateContent(IOUtils.toByteArray(s3object.getObjectContent()));
+    		           } catch (Exception e) {
+    		              logger.error(e.getMessage());
+    		               throw new ImageNotFoundException(imageData.getEntityDisplayName(), imageData.getImageId());
+    		           }
         return imageData;
     }
 
