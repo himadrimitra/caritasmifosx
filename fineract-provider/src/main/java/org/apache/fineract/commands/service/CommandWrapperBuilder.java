@@ -2616,4 +2616,43 @@ public class CommandWrapperBuilder {
         this.href = "/accounts/" + accountType+"/"+accountId;
         return this;
     }
+    
+	public CommandWrapperBuilder createVillage() {
+		this.actionName = "CREATE";
+		this.entityName = "VILLAGE";
+		this.href = "/villages/template";
+		return this;
+	}
+	
+	public CommandWrapperBuilder activateVillage(final Long villageId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "VILLAGE";
+        this.entityId = villageId;
+        this.href = "/villages/" + villageId + "?command=activate";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateVillage(final Long villageId) {
+        this.actionName = "UPDATE";
+        this.entityName = "VILLAGE";
+        this.entityId = villageId;
+        this.href = "/villages/" + villageId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder deleteVillage(final Long villageId) {
+        this.actionName = "DELETE";
+        this.entityName = "VILLAGE";
+        this.entityId = villageId;
+        this.href = "/villages/" + villageId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder associateCentersToVillage(final Long centerId) {
+        this.actionName = "ASSOCIATECENTERS";
+        this.entityName = "CENTER";
+        this.entityId = centerId;
+        this.href = "/centers/" + centerId + "?command=associateCenters";
+        return this;
+    }
 }
