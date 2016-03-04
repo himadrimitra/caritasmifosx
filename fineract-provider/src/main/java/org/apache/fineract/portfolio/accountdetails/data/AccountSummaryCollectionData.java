@@ -20,6 +20,8 @@ package org.apache.fineract.portfolio.accountdetails.data;
 
 import java.util.Collection;
 
+import org.apache.fineract.portfolio.collaterals.data.PledgeData;
+
 /**
  * Immutable data object representing a summary of various accounts.
  */
@@ -33,22 +35,34 @@ public class AccountSummaryCollectionData {
     private final Collection<LoanAccountSummaryData> memberLoanAccounts;
     @SuppressWarnings("unused")
     private final Collection<SavingsAccountSummaryData> memberSavingsAccounts;
+    @SuppressWarnings("unused")
+    private final Collection<PledgeData> pledges;
 
     public AccountSummaryCollectionData(final Collection<LoanAccountSummaryData> loanAccounts,
-            final Collection<SavingsAccountSummaryData> savingsAccounts) {
+            final Collection<SavingsAccountSummaryData> savingsAccounts, final Collection<PledgeData> pledges) {
         this.loanAccounts = defaultLoanAccountsIfEmpty(loanAccounts);
         this.savingsAccounts = defaultSavingsAccountsIfEmpty(savingsAccounts);
         this.memberLoanAccounts = null;
         this.memberSavingsAccounts = null;
+        this.pledges = pledges;
     }
 
     public AccountSummaryCollectionData(final Collection<LoanAccountSummaryData> loanAccounts,
             final Collection<SavingsAccountSummaryData> savingsAccounts, final Collection<LoanAccountSummaryData> memberLoanAccounts,
-            final Collection<SavingsAccountSummaryData> memberSavingsAccounts) {
+            final Collection<SavingsAccountSummaryData> memberSavingsAccounts, final Collection<PledgeData> pledges) {
         this.loanAccounts = defaultLoanAccountsIfEmpty(loanAccounts);
         this.savingsAccounts = defaultSavingsAccountsIfEmpty(savingsAccounts);
         this.memberLoanAccounts = defaultLoanAccountsIfEmpty(memberLoanAccounts);
         this.memberSavingsAccounts = defaultSavingsAccountsIfEmpty(memberSavingsAccounts);
+        this.pledges = defaultPledgesIfEmpty(pledges);
+    }
+    
+    private Collection<PledgeData> defaultPledgesIfEmpty(Collection<PledgeData> pledges) {
+    	 Collection<PledgeData> returnPledges = null;
+    	 if(pledges != null && !pledges.isEmpty()){
+    	 returnPledges = pledges;
+    	 }
+    	 return returnPledges;
     }
 
     private Collection<LoanAccountSummaryData> defaultLoanAccountsIfEmpty(final Collection<LoanAccountSummaryData> collection) {

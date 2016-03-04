@@ -32,6 +32,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
+import org.apache.fineract.portfolio.collaterals.api.PledgeApiConstants;
 import org.apache.fineract.portfolio.group.domain.GroupingTypeEnumerations;
 import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
@@ -111,7 +112,11 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             final String groupMatchSql = " (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, g.account_no as entityAccountNo "
                     + " , g.office_id as parentId, o.name as parentName, null as entityMobileNo, g.status_enum as entityStatusEnum, null as parentType "
                     + " from m_group g join m_office o on o.id = g.office_id where o.hierarchy like :hierarchy and (g.account_no like :search or g.display_name like :search or g.external_id like :search or g.id like :search )) ";
-            
+
+            final String pledgeMatchSql = "(select 'PLEDGE' as entityType, p.id as entityId, c.display_name as entityName, p.pledge_number as entityExternalId, p.seal_number as entityAccountNo "
+                    + " , c.id as parentId, o.name as parentName, p.status as status, p.system_value as systemValue, p.user_value as userValue, null as entityMobileNo, null as entityStatusEnum, null as parentType  "
+                    + " from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search)) ";
+
             final String villageExactMatchSql = " (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
                     + ", v.office_id as parentId, o.name as parentName, v.status as entityStatusEnum "
                     + " from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))";
@@ -141,6 +146,10 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             if (searchConditions.isGroupSearch()) {
                 sql.append(groupMatchSql).append(union);
             }
+            
+            if (searchConditions.isPledgeSearch()) {
+            	 sql.append(pledgeMatchSql).append(union);
+            }
 
             if (searchConditions.isVillageSearch()) {
                 sql.append(villageExactMatchSql).append(union);
@@ -169,6 +178,9 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             final String entityMobileNo = rs.getString("entityMobileNo");
             final Integer entityStatusEnum = JdbcSupport.getInteger(rs, "entityStatusEnum");
             final String parentType = rs.getString("parentType");
+            Integer status = null;
+            BigDecimal userValue = null;
+            BigDecimal systemValue = null;
             
             EnumOptionData entityStatus = new EnumOptionData(0L, "", "");
 
@@ -189,9 +201,16 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
 
                 entityStatus = LoanEnumerations.status(loanStatusEnumData);
             }
+            
+            else if(entityType.equalsIgnoreCase("pledge")){
+            	 status = rs.getInt("status");
+            	 entityStatus = PledgeApiConstants.PLEDGE_STATUS_PARAMS.status(status);
+            	 userValue = rs.getBigDecimal("userValue");
+            	 systemValue = rs.getBigDecimal("systemValue");
+            }
 
             return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType, 
-                    entityMobileNo, entityStatus);
+                    entityMobileNo, entityStatus, systemValue, userValue);
         }
 
     }

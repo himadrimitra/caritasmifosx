@@ -51,6 +51,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.collaterals.exception.PrincipalValueExceedingUserValueException;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -1308,6 +1309,14 @@ public class LoanProduct extends AbstractPersistable<Long> {
 
     public LoanProductRelatedDetail getLoanProductRelatedDetail() {
         return loanProductRelatedDetail;
+    }
+    
+    public void validateCollateralAmountShouldNotExceedPrincipleAmount(final BigDecimal principal, final BigDecimal collateralUserValue) {
+    	 if(principal.intValue() > collateralUserValue.intValue()){
+    		 final String errorMessage = "principal value " + principal + " shouldn't be greter than user value " + collateralUserValue + " for loan " +
+    	 "account ";
+    		 throw new PrincipalValueExceedingUserValueException("principal.value.exceeding.user.value", errorMessage, collateralUserValue);
+    	}
     }
 
     public boolean isLinkedToFloatingInterestRate() {
