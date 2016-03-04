@@ -25,6 +25,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.village.data.VillageData;
 import org.joda.time.LocalDate;
 
 /**
@@ -56,20 +57,22 @@ public class CenterData {
     private final CalendarData collectionMeetingCalendar;
     private final Collection<CodeValueData> closureReasons;
     private final Collection<OfficeData> officeOptions;
+    private final Collection<VillageData> villageOptions;
+    private final VillageData villageCounter;
     private final Collection<StaffData> staffOptions;
 
     public static CenterData template(final Long officeId, final String accountNo, final LocalDate activationDate, final Collection<OfficeData> officeOptions,
-            final Collection<StaffData> staffOptions, final Collection<GroupGeneralData> groupMembersOptions) {
+            Collection<VillageData> villageOptions, VillageData villageCounter, final Collection<StaffData> staffOptions, final Collection<GroupGeneralData> groupMembersOptions) {
         final CalendarData collectionMeetingCalendar = null;
         final Collection<CodeValueData> closureReasons = null;
         final GroupTimelineData timeline = null;
-        return new CenterData(null, accountNo, null, null, null, activationDate, officeId, null, null, null, null, null, officeOptions, staffOptions,
+        return new CenterData(null, accountNo, null, null, null, activationDate, officeId, null, null, null, null, null, officeOptions, villageOptions, villageCounter, staffOptions,
                 groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline);
     }
 
     public static CenterData withTemplate(final CenterData templateCenter, final CenterData center) {
         return new CenterData(center.id, center.accountNo, center.name, center.externalId, center.status, center.activationDate, center.officeId,
-                center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers, templateCenter.officeOptions,
+                center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers, templateCenter.officeOptions, null, null,
                 templateCenter.staffOptions, templateCenter.groupMembersOptions, templateCenter.collectionMeetingCalendar,
                 templateCenter.closureReasons, center.timeline);
     }
@@ -81,18 +84,20 @@ public class CenterData {
         final Collection<GroupGeneralData> groupMembers = null;
         final Collection<OfficeData> officeOptions = null;
         final Collection<StaffData> staffOptions = null;
+        final Collection<VillageData> villageOptions = null;
+        final VillageData villageCounter = null;
         final Collection<GroupGeneralData> groupMembersOptions = null;
         final Collection<CodeValueData> closureReasons = null;
 
         return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
-                groupMembers, officeOptions, staffOptions, groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline);
+                groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline);
     }
 
     public static CenterData withAssociations(final CenterData centerData, final Collection<GroupGeneralData> groupMembers,
             final CalendarData collectionMeetingCalendar) {
         return new CenterData(centerData.id, centerData.accountNo, centerData.name, centerData.externalId, centerData.status, centerData.activationDate,
                 centerData.officeId, centerData.officeName, centerData.staffId, centerData.staffName, centerData.hierarchy, groupMembers,
-                centerData.officeOptions, centerData.staffOptions, centerData.groupMembersOptions, collectionMeetingCalendar,
+                centerData.officeOptions, null, null, centerData.staffOptions, centerData.groupMembersOptions, collectionMeetingCalendar,
                 centerData.closureReasons, centerData.timeline);
     }
 
@@ -110,18 +115,20 @@ public class CenterData {
         final String hierarchy = null;
         final Collection<GroupGeneralData> groupMembers = null;
         final Collection<OfficeData> officeOptions = null;
+        final Collection<VillageData> villageOptions = null;
+        final VillageData villageCounter = null;
         final Collection<StaffData> staffOptions = null;
         final Collection<GroupGeneralData> groupMembersOptions = null;
         final CalendarData collectionMeetingCalendar = null;
         final GroupTimelineData timeline = null;
         return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
-                groupMembers, officeOptions, staffOptions, groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline);
+                groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline);
     }
 
     private CenterData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
             final LocalDate activationDate, final Long officeId, final String officeName, final Long staffId, final String staffName,
             final String hierarchy, final Collection<GroupGeneralData> groupMembers, final Collection<OfficeData> officeOptions,
-            final Collection<StaffData> staffOptions, final Collection<GroupGeneralData> groupMembersOptions,
+            final Collection<VillageData> villageOptions, final VillageData villageCounter, final Collection<StaffData> staffOptions, final Collection<GroupGeneralData> groupMembersOptions,
             final CalendarData collectionMeetingCalendar, final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline) {
         this.id = id;
         this.accountNo = accountNo;
@@ -144,6 +151,8 @@ public class CenterData {
 
         //
         this.officeOptions = officeOptions;
+        this.villageOptions = villageOptions;
+        this.villageCounter = villageCounter;
         this.staffOptions = staffOptions;
         this.groupMembersOptions = groupMembersOptions;
         this.collectionMeetingCalendar = collectionMeetingCalendar;

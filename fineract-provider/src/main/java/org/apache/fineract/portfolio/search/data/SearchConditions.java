@@ -26,6 +26,7 @@ public class SearchConditions {
     private final String searchResource;
     private final Boolean clientSearch;
     private final Boolean groupSearch;
+    private final Boolean villageSearch;
     private final Boolean loanSeach;
 	private final Boolean savingSeach;
     private final Boolean clientIdentifierSearch;
@@ -39,6 +40,8 @@ public class SearchConditions {
                 SEARCH_SUPPORTED_RESOURCES.CLIENTS.name().toLowerCase())) ? true : false;
         this.groupSearch = (null == searchResource || searchResource.toLowerCase().contains(
                 SEARCH_SUPPORTED_RESOURCES.GROUPS.name().toLowerCase())) ? true : false;
+        this.villageSearch = (null == searchResource || searchResource.toLowerCase().contains(
+        		SEARCH_SUPPORTED_RESOURCES.VILLAGES.name().toLowerCase())) ? true : false;
         this.loanSeach = (null == searchResource || searchResource.toLowerCase().contains(
                 SEARCH_SUPPORTED_RESOURCES.LOANS.name().toLowerCase())) ? true : false;
         this.savingSeach = (null == searchResource || searchResource.toLowerCase().contains(
@@ -48,11 +51,13 @@ public class SearchConditions {
     }
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
-            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, Boolean exactMatch) {
+            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, 
+            final Boolean villageSearch, Boolean exactMatch) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.clientSearch = clientSearch;
         this.groupSearch = groupSearch;
+        this.villageSearch = villageSearch;
         this.loanSeach = loanSeach;
 		this.savingSeach = savingSeach;
         this.clientIdentifierSearch = clientIdentifierSearch;
@@ -75,6 +80,10 @@ public class SearchConditions {
 
     public Boolean isGroupSearch() {
         return this.groupSearch;
+    }
+    
+    public Boolean isVillageSearch() {
+        return this.villageSearch;
     }
 
     public Boolean isLoanSeach() {
