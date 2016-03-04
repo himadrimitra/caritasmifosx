@@ -102,6 +102,12 @@ public final class ResultsetColumnHeaderData {
                         + " - Column Name: " + this.columnName);
             }
         }
+        
+        /**TODO: Dirty Quick fix for Chaitanya**/
+        if(this.columnName.equals("Village Name")){
+        	displayType = "CODEVALUE";
+        }
+
 
         this.columnDisplayType = displayType;
     }

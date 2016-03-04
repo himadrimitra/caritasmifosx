@@ -240,6 +240,11 @@ public class GenericDataServiceImpl implements GenericDataService {
                 columnValues = retreiveColumnValues(codeId);
 
             }
+            
+            /**TODO : Dirty Quick fix for chaitanya**/
+            if(columnName.matches("Village Name")){	
+            	columnValues = retreiveAllVillages();
+            }
 
             final ResultsetColumnHeaderData rsch = ResultsetColumnHeaderData.detailed(columnName, columnType, columnLength, columnNullable,
                     columnIsPrimaryKey, columnValues, codeName);
@@ -313,4 +318,25 @@ public class GenericDataServiceImpl implements GenericDataService {
 
         return rsValues;
     }
+    
+	/** Quick Fix: Dirty code fetches villages for Chaitanya
+	 * @return
+	 */
+	private List<ResultsetColumnValueData> retreiveAllVillages() {
+
+		final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
+
+		final String sql = "select cv.id as id, cv.village_name as village  from chai_villages cv group by cv.id";
+
+		final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+		rsValues.beforeFirst();
+		while (rsValues.next()) {
+			final Integer id = rsValues.getInt("id");
+			final String villageName = rsValues.getString("village");
+
+			columnValues.add(new ResultsetColumnValueData(id, villageName));
+		}
+
+		return columnValues;
+	}
 }
