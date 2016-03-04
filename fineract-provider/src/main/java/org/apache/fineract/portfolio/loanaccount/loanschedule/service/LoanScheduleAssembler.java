@@ -84,6 +84,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariations;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationsComparator;
@@ -142,6 +143,7 @@ public class LoanScheduleAssembler {
     private final CalendarInstanceRepository calendarInstanceRepository;
     private final PlatformSecurityContext context;
     private final LoanUtilService loanUtilService;
+    private final LoanRepositoryWrapper loanRepositoryWrapper;
 
     @Autowired
     public LoanScheduleAssembler(final FromJsonHelper fromApiJsonHelper, final LoanProductRepository loanProductRepository,
@@ -154,7 +156,7 @@ public class LoanScheduleAssembler {
             final FloatingRatesReadPlatformService floatingRatesReadPlatformService,
             final VariableLoanScheduleFromApiJsonValidator variableLoanScheduleFromApiJsonValidator,
             final CalendarInstanceRepository calendarInstanceRepository, final PlatformSecurityContext context,
-            final LoanUtilService loanUtilService) {
+            final LoanUtilService loanUtilService, final LoanRepositoryWrapper loanRepositoryWrapper) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanProductRepository = loanProductRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -172,6 +174,7 @@ public class LoanScheduleAssembler {
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.context = context;
         this.loanUtilService = loanUtilService;
+        this.loanRepositoryWrapper = loanRepositoryWrapper;
     }
 
     public LoanApplicationTerms assembleLoanTerms(final JsonElement element) {
@@ -386,6 +389,24 @@ public class LoanScheduleAssembler {
                 loanTermVariations.add(loanTermVariation);
             }
         }
+        
+        /*
+         *  if their is a variations in EMI amount For Multi disbursal Loan
+         *  get the EMI amounts from LoanTermVariation table
+         */
+        final Long loanId = this.fromApiJsonHelper.extractLongNamed("id", element);
+        
+        if(loanId != null){
+            Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
+            List<LoanTermVariations> loanEmiTermVariations = loan.getLoanTermVariations();
+            for(LoanTermVariations loanEmiTermVariation : loanEmiTermVariations){
+                LoanTermVariationsData loanTermVariation = new LoanTermVariationsData(
+                        LoanEnumerations.loanvariationType(LoanTermVariationType.EMI_AMOUNT), new LocalDate(loanEmiTermVariation.getTermApplicableFrom()),
+                        loanEmiTermVariation.getTermValue(), null, false);
+                loanTermVariations.add(loanTermVariation);
+            }
+        }
+        
 
         return LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
