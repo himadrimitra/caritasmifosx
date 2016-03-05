@@ -30,6 +30,7 @@ public class SearchConditions {
     private final Boolean loanSeach;
 	private final Boolean savingSeach;
     private final Boolean clientIdentifierSearch;
+    private final Boolean pledgeSearch;
     private  Boolean exactMatch;
 
     public SearchConditions(final String searchQueryParam, final String searchResource, Boolean exactMatch) {
@@ -48,10 +49,12 @@ public class SearchConditions {
                 SEARCH_SUPPORTED_RESOURCES.SAVINGS.name().toLowerCase())) ? true : false;
   		this.clientIdentifierSearch = (null == searchResource || searchResource.toLowerCase().contains(
                 SEARCH_SUPPORTED_RESOURCES.CLIENTIDENTIFIERS.name().toLowerCase())) ? true : false;
+  		this.pledgeSearch = (null == searchResource || searchResource.toLowerCase().contains(
+  				 SEARCH_SUPPORTED_RESOURCES.PLEDGES.name().toLowerCase())) ? true : false;	
     }
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
-            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, 
+            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, final Boolean pledgeSearch, 
             final Boolean villageSearch, Boolean exactMatch) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
@@ -61,6 +64,7 @@ public class SearchConditions {
         this.loanSeach = loanSeach;
 		this.savingSeach = savingSeach;
         this.clientIdentifierSearch = clientIdentifierSearch;
+        this.pledgeSearch = pledgeSearch;
         this.exactMatch=exactMatch;
     }
 
@@ -97,5 +101,9 @@ public class SearchConditions {
 	public Boolean isClientIdentifierSearch() {
         return this.clientIdentifierSearch;
     }
+	
+	public Boolean isPledgeSearch(){
+		 return this.pledgeSearch;
+	}
 
 }

@@ -21,6 +21,7 @@ package org.apache.fineract.commands.service;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.infrastructure.accountnumberformat.service.AccountNumberFormatConstants;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.collaterals.api.CollateralsApiConstants;
 import org.apache.fineract.portfolio.paymenttype.api.PaymentTypeApiResourceConstants;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
 import org.apache.fineract.useradministration.api.PasswordPreferencesApiConstants;
@@ -2616,6 +2617,134 @@ public class CommandWrapperBuilder {
         this.href = "/accounts/" + accountType+"/"+accountId;
         return this;
     }
+
+    public CommandWrapperBuilder createCollaterals() {
+        this.actionName = "CREATE";
+        this.entityName = "COLLATERALS";
+        this.entityId = null;
+        this.href = "/collaterals";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateCollaterals(final Long collateralId) {
+        this.actionName = "UPDATE";
+        this.entityName = "COLLATERALS";
+        this.entityId = collateralId;
+        this.href = "/collaterals/" + collateralId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder createQualityStandards(final Long collateralId) {
+        this.actionName = "CREATE";
+        this.entityName = "COLLATERALQUALITYSTANDARDS";
+        this.entityId = collateralId;
+        this.subentityId = null;
+        this.href = "/collaterals/"+collateralId+"/qualityStandards";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateQualityStandards(final Long collateralId, final Long qualityStandardsId) {
+        this.actionName = "UPDATE";
+        this.entityName = "COLLATERALQUALITYSTANDARDS";
+        this.entityId = collateralId;
+        this.subentityId = qualityStandardsId;
+        this.href = "/collaterals/" + collateralId+"/qualityStandards"+qualityStandardsId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createPledge() {
+        this.actionName = "CREATE";
+        this.entityName = "COLLATERALPLEDGE";
+        this.entityId = null;
+        this.href = "/pledge/";
+        return this;
+    }
+
+    public CommandWrapperBuilder updatePledges(final Long pledgeId) {
+        this.actionName = "UPDATE";
+        this.entityName = "COLLATERALPLEDGE";
+        this.entityId = pledgeId;
+        this.href = "/pledge/" + pledgeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder closePledge(final Long pledgeId) {
+        this.actionName = "CLOSE";
+        this.entityName = "COLLATERALPLEDGE";
+        this.entityId = pledgeId;
+        this.href = "/pledge/" + pledgeId + "?command=close";
+        return this;
+    }
+
+    public CommandWrapperBuilder deletePledge(Long pledgeId) {
+        this.actionName = "DELETE";
+        this.entityName = "COLLATERALPLEDGE";
+        this.entityId = pledgeId;
+        this.href = "/pledge/" + pledgeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activePledge(final Long pledgeId) {
+        this.actionName = "ACTIVE";
+        this.entityName = "COLLATERALPLEDGE";
+        this.entityId = pledgeId;
+        this.href = "/pledge/" + pledgeId + "?command=active";
+        return this;
+    }
+    
+    public CommandWrapperBuilder deleteQualityStandards(final Long collateralId, final Long qualityStandardsId) {
+    	this.actionName = "DELETE";
+        this.entityName = "COLLATERALQUALITYSTANDARDS";
+        this.entityId = collateralId;
+        this.subentityId = qualityStandardsId;
+        this.href = "/collaterals/" + collateralId+"/qualityStandards"+qualityStandardsId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder createProductCollateralMapping(final Long loanProductId) {
+        this.actionName = "CREATE";
+        this.entityName = CollateralsApiConstants.PRODUCT_COLLATERALS_MAPPING_RESOURCE_NAME;
+        this.entityId = loanProductId;
+        this.subentityId = null;
+        this.href = "/loanProducts/"+loanProductId+"/collaterals";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateProductCollateralMapping(final Long loanProductId, final Long productCollateralMappingId) {
+        this.actionName = "UPDATE";
+        this.entityName = CollateralsApiConstants.PRODUCT_COLLATERALS_MAPPING_RESOURCE_NAME;
+        this.entityId = loanProductId;
+        this.subentityId = productCollateralMappingId;
+        this.href = "/loanProducts/"+loanProductId+"/collaterals/"+productCollateralMappingId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder deleteProductCollateralMapping(final Long loanProductId, final Long productCollateralMappingId) {
+        this.actionName = "DELETE";
+        this.entityName = CollateralsApiConstants.PRODUCT_COLLATERALS_MAPPING_RESOURCE_NAME;
+        this.entityId = loanProductId;
+        this.subentityId = productCollateralMappingId;
+        this.href = "/loanProducts/"+loanProductId+"/collaterals/"+productCollateralMappingId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateCollateralDetails(final Long pledgeId, final Long collateraldetailId) {
+        this.actionName = "UPDATE";
+        this.entityName = "COLLATERALDETAILS";
+        this.entityId = pledgeId;
+        this.subentityId = collateraldetailId;
+        this.href = "/pledges/"+pledgeId+"/collateraldetails/"+collateraldetailId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteCollateralDetails(final Long pledgeId, final Long collateraldetailId) {
+        this.actionName = "DELETE";
+        this.entityName = "COLLATERALDETAILS";
+        this.entityId = pledgeId;
+        this.subentityId = collateraldetailId;
+        this.href = "/pledges/"+pledgeId+"/collateraldetails/"+collateraldetailId;
+        return this;
+	}
     
 	public CommandWrapperBuilder createVillage() {
 		this.actionName = "CREATE";

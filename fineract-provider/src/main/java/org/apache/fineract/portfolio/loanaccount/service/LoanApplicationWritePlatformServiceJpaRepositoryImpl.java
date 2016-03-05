@@ -62,6 +62,9 @@ import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.collateral.domain.LoanCollateral;
 import org.apache.fineract.portfolio.collateral.service.CollateralAssembler;
+import org.apache.fineract.portfolio.collaterals.domain.PledgeRepositoryWrapper;
+import org.apache.fineract.portfolio.collaterals.domain.Pledges;
+import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
@@ -151,6 +154,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final BusinessEventNotifierService businessEventNotifierService;
     private final ConfigurationDomainService configurationDomainService;
     private final LoanScheduleAssembler loanScheduleAssembler;
+    private final PledgeRepositoryWrapper pledgeRepositoryWrapper;
+    private final PledgeReadPlatformService pledgeReadPlatformService;
     private final LoanUtilService loanUtilService;
 
     @Autowired
@@ -170,7 +175,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final LoanReadPlatformService loanReadPlatformService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository,
             final BusinessEventNotifierService businessEventNotifierService, final ConfigurationDomainService configurationDomainService,
-            final LoanScheduleAssembler loanScheduleAssembler, final LoanUtilService loanUtilService) {
+            final LoanScheduleAssembler loanScheduleAssembler, final PledgeRepositoryWrapper pledgeRepositoryWrapper, final PledgeReadPlatformService pledgeReadPlatformService, final LoanUtilService loanUtilService) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -199,6 +204,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.businessEventNotifierService = businessEventNotifierService;
         this.configurationDomainService = configurationDomainService;
         this.loanScheduleAssembler = loanScheduleAssembler;
+        this.pledgeRepositoryWrapper = pledgeRepositoryWrapper;
+        this.pledgeReadPlatformService = pledgeReadPlatformService;
         this.loanUtilService = loanUtilService;
     }
 
@@ -219,6 +226,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             if (loanProduct == null) { throw new LoanProductNotFoundException(productId); }
 
             this.fromApiJsonDeserializer.validateForCreate(command.json(), isMeetingMandatoryForJLGLoans, loanProduct);
+
+            validateCollateralAmountWithPrincipal(command, loanProduct);
 
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan");
@@ -299,6 +308,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         savingsAccount, AccountAssociationType.LINKED_ACCOUNT_ASSOCIATION.getValue(), isActive);
                 this.accountAssociationsRepository.save(accountAssociations);
             }
+            
+            attachLoanAccountToPledge(command, newLoanApplication);
 
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
@@ -501,6 +512,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             this.fromApiJsonDeserializer.validateForModify(command.json(), loanProductForValidations, existingLoanApplication);
 
             checkClientOrGroupActive(existingLoanApplication);
+            LoanProduct product = existingLoanApplication.loanProduct();    
+            
+            validateCollateralAmount(command, product);
 
             final Set<LoanCharge> existingCharges = existingLoanApplication.charges();
             Map<Long, LoanChargeData> chargesMap = new HashMap<>();
@@ -770,7 +784,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             // pointer exception after saveAndFlush
             // http://stackoverflow.com/questions/17151757/hibernate-cascade-update-gives-null-pointer/17334374#17334374
             this.loanRepository.save(existingLoanApplication);
-
+            
+            validatePledgeForLoan(command, existingLoanApplication);
+            
             if (productRelatedDetail.isInterestRecalculationEnabled()) {
                 this.fromApiJsonDeserializer.validateLoanForInterestRecalculation(existingLoanApplication);
                 if (changes.containsKey(LoanProductConstants.isInterestRecalculationEnabledParameterName)) {
@@ -806,7 +822,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
     }
 
-    /*
+	/*
      * Guaranteed to throw an exception no matter what the data integrity issue
      * is.
      */
@@ -1126,6 +1142,49 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
         map.put(entityEvent, entity);
         return map;
+    }
+    
+    private void validatePledgeForLoan(JsonCommand command, Loan existingLoanApplication){
+    	final Long existingPledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(existingLoanApplication.getId());
+        Pledges existingPledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(existingPledgeId);
+        existingPledge.updateLoanId(null);
+        this.pledgeRepositoryWrapper.save(existingPledge);
+        
+        final Long pledgeId = command.longValueOfParameterNamed("pledgeId");
+        if (pledgeId != null) {
+        	final Pledges pledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(pledgeId);
+        	pledge.updateLoanId(existingLoanApplication);
+        	this.pledgeRepositoryWrapper.save(pledge);
+        }
+    }
+    
+    private void validateCollateralAmount(JsonCommand command, LoanProduct product) {
+    	final String principalParameterName = "principal";
+        final String collateralUserValueParameterName = "collateralUserValue";
+        BigDecimal principal = command.bigDecimalValueOfParameterNamed(principalParameterName);
+        BigDecimal collateralUserValue = command.bigDecimalValueOfParameterNamed(collateralUserValueParameterName);
+        if (principal != null && collateralUserValue != null) {
+        	product.validateCollateralAmountShouldNotExceedPrincipleAmount(principal, collateralUserValue);
+        }
+	}
+    
+    private void validateCollateralAmountWithPrincipal(JsonCommand command, LoanProduct loanProduct) {
+        final BigDecimal principal = this.fromJsonHelper.extractBigDecimalWithLocaleNamed("principal", command.parsedJson());
+        final BigDecimal collateralUserValue = this.fromJsonHelper.extractBigDecimalWithLocaleNamed("collateralUserValue", command.parsedJson());
+        if(principal != null && collateralUserValue != null){
+        	 loanProduct.validateCollateralAmountShouldNotExceedPrincipleAmount(principal, collateralUserValue);
+        } 
+	}
+    
+    private void attachLoanAccountToPledge(JsonCommand command, Loan newLoanApplication){        
+        // Save linked loan account in pledge
+           final Long pledgeId = command.longValueOfParameterNamed("pledgeId");
+           if (pledgeId != null) {
+           	final Pledges pledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(pledgeId);
+           	pledge.updateLoanId(newLoanApplication);
+           	pledge.updatePledgeStatus();
+           	this.pledgeRepositoryWrapper.save(pledge);                            
+           }
     }
 
 }

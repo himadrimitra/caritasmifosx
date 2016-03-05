@@ -203,6 +203,12 @@ public final class SearchParameters {
 
         return new SearchParameters(sqlSearch, null, externalId, null, null, null, null, offset, maxLimitAllowed, orderBy, sortOrder,
                 staffId, accountNo, loanId, savingsId, orphansOnly, isSelfUser);
+    }  
+    
+    public static SearchParameters forPledges(Integer offset, Integer limit, String orderBy) {
+        final Boolean orphansOnly = false;
+        return new SearchParameters(null, null, null, null, null, null, null, offset, limit, orderBy, null, null, null, null, null,
+                orphansOnly,false);
     }
 
     private SearchParameters(final String sqlSearch, final Long officeId, final String externalId, final String name,

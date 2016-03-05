@@ -75,6 +75,8 @@ import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.service.CollateralReadPlatformService;
+import org.apache.fineract.portfolio.collaterals.data.PledgeData;
+import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
 import org.apache.fineract.portfolio.fund.data.FundData;
 import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
@@ -164,6 +166,7 @@ public class LoansApiResource {
     private final PortfolioAccountReadPlatformService portfolioAccountReadPlatformService;
     private final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService;
     private final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService;
+    private final PledgeReadPlatformService pledgeReadPlatformService;
 
     @Autowired
     public LoansApiResource(final PlatformSecurityContext context, final LoanReadPlatformService loanReadPlatformService,
@@ -182,7 +185,7 @@ public class LoansApiResource {
             final CalendarReadPlatformService calendarReadPlatformService, final NoteReadPlatformServiceImpl noteReadPlatformService,
             final PortfolioAccountReadPlatformService portfolioAccountReadPlatformServiceImpl,
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
-            final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService) {
+            final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService, final PledgeReadPlatformService pledgeReadPlatformService) {
         this.context = context;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
@@ -206,6 +209,7 @@ public class LoansApiResource {
         this.portfolioAccountReadPlatformService = portfolioAccountReadPlatformServiceImpl;
         this.accountAssociationsReadPlatformService = accountAssociationsReadPlatformService;
         this.loanScheduleHistoryReadPlatformService = loanScheduleHistoryReadPlatformService;
+        this.pledgeReadPlatformService = pledgeReadPlatformService;
     }
 
     /*
@@ -479,7 +483,8 @@ public class LoansApiResource {
             }
 
         }
-
+        
+        final Long pledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(loanId);        
         Collection<LoanProductData> productOptions = null;
         LoanProductData product = null;
         Collection<EnumOptionData> loanTermFrequencyTypeOptions = null;
@@ -498,6 +503,7 @@ public class LoansApiResource {
         Collection<CalendarData> calendarOptions = null;
         Collection<PortfolioAccountData> accountLinkingOptions = null;
         PaidInAdvanceData paidInAdvanceTemplate = null;
+        Collection<PledgeData> loanProductCollateralPledgesOptions = null;
 
         final boolean template = ApiParameterHelper.template(uriInfo.getQueryParameters());
         if (template) {
@@ -507,6 +513,7 @@ public class LoansApiResource {
             loanTermFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveLoanTermFrequencyTypeOptions();
             repaymentFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
             interestRateFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveInterestRateFrequencyTypeOptions();
+            loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(loanBasicDetails.clientId(), loanBasicDetails.loanProductId(), loanId);
 
             amortizationTypeOptions = this.dropdownReadPlatformService.retrieveLoanAmortizationTypeOptions();
             if (product.isLinkedToFloatingInterestRates()) {
@@ -562,7 +569,7 @@ public class LoansApiResource {
                 null, null, repaymentStrategyOptions, interestRateFrequencyTypeOptions, amortizationTypeOptions, interestTypeOptions,
                 interestCalculationPeriodTypeOptions, fundOptions, chargeOptions, chargeTemplate, allowedLoanOfficers, loanPurposeOptions,
                 loanCollateralOptions, calendarOptions, notes, accountLinkingOptions, linkedAccount, disbursementData, emiAmountVariations,
-                overdueCharges, paidInAdvanceTemplate, interestRatesPeriods);
+                overdueCharges, paidInAdvanceTemplate, loanProductCollateralPledgesOptions, pledgeId, interestRatesPeriods);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),
                 mandatoryResponseParameters);
