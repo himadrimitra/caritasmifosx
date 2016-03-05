@@ -59,6 +59,7 @@ import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupExistsInCenterException;
 import org.apache.fineract.portfolio.group.exception.GroupNotExistsInCenterException;
 import org.apache.fineract.portfolio.group.exception.InvalidGroupStateTransitionException;
+import org.apache.fineract.portfolio.village.domain.Village;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -113,6 +114,10 @@ public final class Group extends AbstractPersistable<Long> {
     @ManyToMany
     @JoinTable(name = "m_group_client", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "client_id"))
     private Set<Client> clientMembers = new HashSet<>();
+    
+    @ManyToOne
+    @JoinTable(name="chai_village_center", joinColumns = @JoinColumn(name="center_id"), inverseJoinColumns = @JoinColumn(name = "village_id"))
+    private Village village;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "closure_reason_cv_id", nullable = true)
@@ -740,4 +745,8 @@ public final class Group extends AbstractPersistable<Long> {
         this.accountNumber = accountIdentifier;
         this.accountNumberRequiresAutoGeneration = false;
     }
+
+	public void setVillage(final Village village) {
+		this.village = village;
+	}
 }

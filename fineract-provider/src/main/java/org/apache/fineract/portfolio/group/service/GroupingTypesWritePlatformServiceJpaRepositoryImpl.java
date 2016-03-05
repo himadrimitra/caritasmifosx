@@ -76,6 +76,8 @@ import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
+import org.apache.fineract.portfolio.village.domain.Village;
+import org.apache.fineract.portfolio.village.domain.VillageRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -110,6 +112,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final AccountNumberGenerator accountNumberGenerator;
+    private final VillageRepositoryWrapper villageRepository; 
 
     @Autowired
     public GroupingTypesWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -120,7 +123,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final CodeValueRepositoryWrapper codeValueRepository, final CommandProcessingService commandProcessingService,
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
             final SavingsAccountRepository savingsAccountRepository, final LoanRepositoryWrapper loanRepositoryWrapper, 
-            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator) {
+            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator,
+            final VillageRepositoryWrapper villageRepository) {
         this.context = context;
         this.groupRepository = groupRepository;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
@@ -139,6 +143,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.accountNumberFormatRepository = accountNumberFormatRepository;
         this.accountNumberGenerator = accountNumberGenerator;
+        this.villageRepository = villageRepository;
     }
 
     private CommandProcessingResult createGroupingType(final JsonCommand command, final GroupTypes groupingType, final Long centerId) {
@@ -146,6 +151,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final String accountNo = command.stringValueOfParameterNamed(GroupingTypesApiConstants.accountNoParamName);
             final String name = command.stringValueOfParameterNamed(GroupingTypesApiConstants.nameParamName);
             final String externalId = command.stringValueOfParameterNamed(GroupingTypesApiConstants.externalIdParamName);
+            
 
             final AppUser currentUser = this.context.authenticatedUser();
             Long officeId = null;
@@ -157,6 +163,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 parentGroup = this.groupRepository.findOneWithNotFoundDetection(centerId);
                 officeId = parentGroup.officeId();
             }
+            
 
             final Office groupOffice = this.officeRepository.findOne(officeId);
             if (groupOffice == null) { throw new OfficeNotFoundException(officeId); }
@@ -187,6 +194,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
             final Group newGroup = Group.newGroup(groupOffice, staff, parentGroup, groupLevel, name, externalId, active, activationDate,
                     clientMembers, groupMembers, submittedOnDate, currentUser, accountNo);
+            
 
             boolean rollbackTransaction = false;
             if (newGroup.isActive()) {
@@ -217,6 +225,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
              * groups if they exist
              */
             newGroup.generateHierarchy();
+            
+            associateVillageWithThisCenter(command, newGroup);
 
             /* Generate account number if required */
             generateAccountNumberIfRequired(newGroup);
@@ -934,6 +944,17 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                         "error.msg.center.associating.group.not.allowed.with.different.meeting", "Group with id " + group.getId()
                                 + " meeting recurrence doesnot matched with center meeting recurrence", group.getId()); }
             }
+        }
+    }
+    
+    private void associateVillageWithThisCenter(final JsonCommand command, final Group newGroup) {
+        final Long villageId = command.longValueOfParameterNamed(GroupingTypesApiConstants.villageIdParamName);
+        if (newGroup.isCenter() && villageId != null) {
+            Village village = this.villageRepository.findOneWithNotFoundDetection(villageId);
+            newGroup.setVillage(village);
+            // Increment Village Counter
+            village.incrementCount();
+            this.villageRepository.saveAndFlush(village);
         }
     }
 }
