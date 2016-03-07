@@ -279,8 +279,11 @@ public class PledgeReadPlatformServiceImpl implements PledgeReadPlatformService 
         this.context.authenticatedUser();
         PledgesMapper rm = new PledgesMapper();
         String query = "SELECT " + rm.schema() + " WHERE p.loan_id = ? ";
-        PledgeData pledgeData = this.jdbcTemplate.queryForObject(query, rm, new Object[] { loanId });
-        return pledgeData. getPledgeId();
+        List<PledgeData> pledgeData = this.jdbcTemplate.query(query, rm, new Object[] { loanId });
+        if(pledgeData.isEmpty()){
+            return null;
+        }
+        return pledgeData.get(0).getPledgeId();
 
     }
 
