@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.collaterals.data;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -43,17 +44,24 @@ public class PledgeData {
     private Collection<CollateralsData> collateralData;
     private Collection<QualityStandardsData> qualityStandardsData;
     private Collection<CollateralDetailsData> collateralDetailsData;
+    private final Long createdBy;
+    private final Date createdDate;
+    private final Long updatedBy;
+    private final Date updatedDate;
     
     public static PledgeData createNew(final Long id, final Long clientId, final Long loanId, final String loanAccountNo, final String officeName, final String clientName, 
-            final Long sealNumber, final String pledgeNumber, final EnumOptionData status, final BigDecimal systemValue, final BigDecimal userValue){      
-        return new PledgeData(id, clientId, loanId, loanAccountNo, officeName, clientName, sealNumber, pledgeNumber, status, systemValue, userValue, null, null, null);
+            final Long sealNumber, final String pledgeNumber, final EnumOptionData status, final BigDecimal systemValue, final BigDecimal userValue, final Long createdBy, final Date createdDate,
+            final Long updatedBy, final Date updatedDate){      
+        return new PledgeData(id, clientId, loanId, loanAccountNo, officeName, clientName, sealNumber, pledgeNumber, status, systemValue, userValue, null, null, null, createdBy, createdDate,
+                updatedBy, updatedDate);
         
     }
     
     
     public PledgeData(final Long id, final Long clientId, final Long loanId, final String loanAccountNo, final String officeName, final String clientName, final Long sealNumber, 
             final String pledgeNumber, final EnumOptionData status, final BigDecimal systemValue, final BigDecimal userValue, final Collection<CollateralsData> collateralData, 
-            final Collection<QualityStandardsData> qualityStandardsData, final Collection<CollateralDetailsData> collateralDetailsData) {
+            final Collection<QualityStandardsData> qualityStandardsData, final Collection<CollateralDetailsData> collateralDetailsData, final Long createdBy, final Date createdDate,
+            final Long updatedBy, final Date updatedDate) {
         this.id = id;
         this.clientId = clientId;
         this.loanId = loanId;
@@ -68,6 +76,10 @@ public class PledgeData {
         this.collateralData = collateralData;
         this.qualityStandardsData = qualityStandardsData;
         this.collateralDetailsData = collateralDetailsData;
+        this.createdBy = createdBy;
+        this.createdDate = createdDate;
+        this.updatedBy = updatedBy;
+        this.updatedDate = updatedDate;
     }
 
 
@@ -84,8 +96,12 @@ public class PledgeData {
         final EnumOptionData status = null;
         final BigDecimal userValue = null;
         final Collection<CollateralDetailsData> collateralDetailsData = null;
+        final Long createdBy = null;
+        final Date createdDate = null;
+        final Long updatedBy = null;
+        final Date updatedDate = null;
         return new PledgeData(id, clientId, loanId, loanAccountNo, officeName, clientName, sealNumber, pledgeNumber, status, systemCalculatedPrice, 
-                userValue, collateralData, qualityStandardsData, collateralDetailsData);
+                userValue, collateralData, qualityStandardsData, collateralDetailsData, createdBy, createdDate, updatedBy, updatedDate);
     }
     
     public void updateCollateralDetails(final Collection<CollateralDetailsData> collateralDetailsData){
@@ -104,8 +120,12 @@ public class PledgeData {
         final Collection<CollateralsData> collateralData = null;
         final Collection<QualityStandardsData> qualityStandardsData = null;
         final Collection<CollateralDetailsData> collateralDetailsData = null;
+        final Long createdBy = null;
+        final Date createdDate = null;
+        final Long updatedBy = null;
+        final Date updatedDate = null;
         return new PledgeData(id, clientId, loanId, loanAccountNo, officeName, clientName, sealNumber, pledgeNumber, status, systemValue, 
-                userValue, collateralData, qualityStandardsData, collateralDetailsData);
+                userValue, collateralData, qualityStandardsData, collateralDetailsData, createdBy, createdDate, updatedBy, updatedDate);
     }
     
     public Long getPledgeId(){

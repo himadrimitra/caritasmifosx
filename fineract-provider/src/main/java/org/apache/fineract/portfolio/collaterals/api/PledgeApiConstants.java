@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.collaterals.api;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 
@@ -47,6 +48,10 @@ public class PledgeApiConstants {
     public static final String userPriceParamName = "userPrice";
     public static final String dateFormatParamName = "dateFormat";
     public static final String closureDateParamName = "closureDate";
+    public static final String createdByParamName = "createdBy";
+    public static final String createdDateParamName = "createdDate";
+    public static final String updatedByParamName = "updatedBy";
+    public static final String updatedDateParamName = "updatedDate";
     
     public static final Set<String> PLEDGE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(clientIdParamName, loanIdParamName, descriptionParamName, 
             sealNumberParamName, statusParamName, systemValueParamName, userValueParamName, collateralDetailsParamName, collateralIdParamName, qualityStandardIdParamName ,
@@ -59,7 +64,7 @@ public class PledgeApiConstants {
             descriptionParamName, grossWeightParamName, netWeightParamName, systemPriceParamName, userPriceParamName, localeParamName));
     
     public static final Set<String> PLEDGE_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(clientIdParamName, loanIdParamName, sealNumberParamName, statusParamName, 
-            systemValueParamName, userValueParamName, localeParamName));
+            systemValueParamName, userValueParamName, localeParamName, createdByParamName, createdDateParamName, updatedByParamName, updatedDateParamName));
     
     public static final Set<String> PLEDGE_CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, dateFormatParamName, localeParamName,
             closureDateParamName));

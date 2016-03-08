@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.collaterals.data;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +34,9 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.collaterals.api.CollateralsApiConstants;
 import org.apache.fineract.portfolio.collaterals.api.CollateralsApiConstants.COLLATERALS_TYPE_CLASSIFIER_PARAMS;
+import org.apache.fineract.portfolio.collaterals.exception.QualityStandardAttatchedToPledge;
 import org.apache.fineract.portfolio.collaterals.exception.QualityStandardsNullPriceException;
+import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -44,10 +47,12 @@ import com.google.gson.reflect.TypeToken;
 public class CollateralsDataValidator {
     
     private final FromJsonHelper fromApiJsonHelper;
+    private final PledgeReadPlatformService pledgeReadPlatformService;
     
     @Autowired
-    public CollateralsDataValidator(final FromJsonHelper fromApiJsonHelper){
+    public CollateralsDataValidator(final FromJsonHelper fromApiJsonHelper, final PledgeReadPlatformService pledgeReadPlatformService){
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.pledgeReadPlatformService = pledgeReadPlatformService;
     }
 
     public void validateForCreate(final JsonCommand command) {
@@ -144,7 +149,7 @@ public class CollateralsDataValidator {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                .resource(CollateralsApiConstants.COLLATERALS_RESOURCE_NAME);
+                .resource(CollateralsApiConstants.COLLATERALS_QUALITY_STANDARDS_RESOURCE_NAME);
 
         final JsonElement element = command.parsedJson();
         
@@ -174,7 +179,7 @@ public class CollateralsDataValidator {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
         
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, CollateralsApiConstants.QUALITY_STANDARDS_REQUEST_DATA_PARAMETERS);
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, CollateralsApiConstants.QUALITY_STANDARDS_UPDATE_REQUEST_DATA_PARAMETERS);
         
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
@@ -183,6 +188,11 @@ public class CollateralsDataValidator {
 
         final JsonElement element = command.parsedJson();
         
+        final Long qualityStandardId = this.fromApiJsonHelper.extractLongNamed(CollateralsApiConstants.idParamName, element);
+        Integer numberOfCollateralDetailsData = this.pledgeReadPlatformService.retrieveNumberOfCollateralDetailsByQualityStandardId(qualityStandardId);
+        if(numberOfCollateralDetailsData>0){
+        	throw new QualityStandardAttatchedToPledge();
+        }
         if (this.fromApiJsonHelper.parameterExists(CollateralsApiConstants.nameParamName, element)){
             final String name = this.fromApiJsonHelper.extractStringNamed(CollateralsApiConstants.nameParamName, element);
             baseDataValidator.reset().parameter(CollateralsApiConstants.nameParamName).value(name).notNull().notExceedingLengthOf(100);
@@ -206,6 +216,18 @@ public class CollateralsDataValidator {
        throwExceptionIfValidationWarningsExist(dataValidationErrors);
 	}
     
-    
+	public void validateForDeleteQualityStandards(final Long id) {
+		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(CollateralsApiConstants.COLLATERALS_QUALITY_STANDARDS_RESOURCE_NAME);
+        Integer numberOfCollateralDetailsData = this.pledgeReadPlatformService.retrieveNumberOfCollateralDetailsByQualityStandardId(id);
+        if(numberOfCollateralDetailsData>0){
+        	throw new QualityStandardAttatchedToPledge();
+        }
+        
+       throwExceptionIfValidationWarningsExist(dataValidationErrors);
+	}
+
 
 }
