@@ -61,6 +61,9 @@ public class CollateralsApiConstants {
     public static final Set<String> QUALITY_STANDARDS_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(collateralIdParamName, nameParamName, descriptionParamName, 
     		absolutePriceParamName, percentagePriceParamName, localeParamName));
     
+    public static final Set<String> QUALITY_STANDARDS_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(collateralIdParamName, nameParamName, descriptionParamName, 
+    		absolutePriceParamName, percentagePriceParamName, localeParamName, idParamName));
+    
     public static final Set<String> PRODUCT_COLLATERAL_MAPPING_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(productIdParamName, collateralIdParamName));
     
     public static enum COLLATERALS_TYPE_CLASSIFIER_PARAMS {

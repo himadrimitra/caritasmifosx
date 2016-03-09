@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -67,9 +68,9 @@ public class PledgeReadPlatformServiceImpl implements PledgeReadPlatformService 
     }
     
     private static final class PledgesMapper implements RowMapper<PledgeData> {
-        
+    	 
         private final String sql = "p.id as id, p.client_id as clientId, c.display_name as clientName, o.name as officeName, p.loan_id as loanId, l.account_no as loanAccountNo, p.seal_number as sealNumber, " +
-        		" p.pledge_number as pledgeNumber, p.status as status, p.system_value as systemValue, p.user_value as userValue from m_pledge p " +
+        		" p.pledge_number as pledgeNumber, p.status as status, p.system_value as systemValue, p.user_value as userValue, p.created_by as createdBy, p.created_date as createdDate, p.updated_by as updatedBy, p.updated_date  as updatedDate from m_pledge p " +
         		" left join m_client c on p.client_id = c.id  left join m_office o on c.office_id = o.id" +
         		" left join m_loan l on l.id = p.loan_id " ;
  
@@ -93,8 +94,13 @@ public class PledgeReadPlatformServiceImpl implements PledgeReadPlatformService 
             final EnumOptionData status = PledgeApiConstants.PLEDGE_STATUS_PARAMS.status(statusEnum);
             final BigDecimal systemValue = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "systemValue");
             final BigDecimal userValue = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "userValue");
+            final Long createdBy = rs.getLong("createdBy");
+            final Date createdDate = rs.getDate("createdDate");
+            final Long updatedBy = JdbcSupport.getLongDefaultToNullIfZero(rs, "updatedBy");
+            final Date updatedDate = rs.getDate("updatedDate");
             
-            return PledgeData.createNew(id, clientId, loanId, loanAccountNo, officeName, clientName, sealNumber, pledgeNumber, status, systemValue, userValue);
+            return PledgeData.createNew(id, clientId, loanId, loanAccountNo, officeName, clientName, sealNumber, pledgeNumber, status, systemValue, userValue, createdBy,
+                    createdDate, updatedBy, updatedDate);
         }
         
     }
@@ -286,5 +292,13 @@ public class PledgeReadPlatformServiceImpl implements PledgeReadPlatformService 
         return pledgeData.get(0).getPledgeId();
 
     }
+
+	@Override
+	public Integer retrieveNumberOfCollateralDetailsByQualityStandardId(
+			Long qualityStandardId) {
+		final String query = "SELECT count(*) from m_collateral_details WHERE quality_standard_id = ?";
+		int count = this.jdbcTemplate.queryForObject(query, new Object[] { qualityStandardId }, Integer.class);
+		return count;
+	}
 
 }

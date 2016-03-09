@@ -42,7 +42,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 public class QualityStandards  extends AbstractPersistable<Long> {
 	
 	@OneToOne
-        @JoinColumn(name = "collateral_id", nullable = false)
+    @JoinColumn(name = "collateral_id", nullable = false)
 	private Collaterals collateral;
 	
 	@Column(name = "name", length = 50, nullable = false)

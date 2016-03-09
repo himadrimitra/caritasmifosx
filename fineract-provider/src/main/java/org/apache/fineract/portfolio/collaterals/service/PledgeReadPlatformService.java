@@ -42,5 +42,7 @@ public interface PledgeReadPlatformService {
     public Collection<PledgeData> retrievePledgesByClientIdAndProductId(final Long clientId, final Long productId, final Long loanId);
     
     public Long retrievePledgesByloanId(final Long loanId);
+    
+    public Integer retrieveNumberOfCollateralDetailsByQualityStandardId(final Long qualityStandardId);
 
 }

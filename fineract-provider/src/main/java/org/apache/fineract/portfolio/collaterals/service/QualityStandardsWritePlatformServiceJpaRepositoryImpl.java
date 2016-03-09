@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.collaterals.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
@@ -27,11 +28,14 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.collaterals.api.CollateralsApiConstants;
+import org.apache.fineract.portfolio.collaterals.data.CollateralDetailsData;
 import org.apache.fineract.portfolio.collaterals.data.CollateralsDataValidator;
 import org.apache.fineract.portfolio.collaterals.domain.Collaterals;
 import org.apache.fineract.portfolio.collaterals.domain.CollateralsRepositoryWrapper;
+import org.apache.fineract.portfolio.collaterals.domain.PledgeRepositoryWrapper;
 import org.apache.fineract.portfolio.collaterals.domain.QualityStandards;
 import org.apache.fineract.portfolio.collaterals.domain.QualityStandardsRepositoryWrapper;
+import org.apache.fineract.portfolio.collaterals.exception.QualityStandardAttatchedToPledge;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,7 +48,6 @@ public class QualityStandardsWritePlatformServiceJpaRepositoryImpl implements Qu
     private final CollateralsDataValidator fromApiJsonDeserializer;
     private final CollateralsRepositoryWrapper repositoryWrapper;
     private final QualityStandardsRepositoryWrapper qualityStandardsRepositoryWrapper;
-
     @Autowired
     public QualityStandardsWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final CollateralsDataValidator fromApiJsonDeserializer,
@@ -108,8 +111,8 @@ public class QualityStandardsWritePlatformServiceJpaRepositoryImpl implements Qu
     @Transactional
     @Override
     public CommandProcessingResult deleteQualityStandards(final Long qualityStandardId) {
-
-        final QualityStandards qualityStandard = this.qualityStandardsRepositoryWrapper.findOneWithNotFoundDetection(qualityStandardId);
+    	this.fromApiJsonDeserializer.validateForDeleteQualityStandards(qualityStandardId);
+        final QualityStandards qualityStandard = this.qualityStandardsRepositoryWrapper.findOneWithNotFoundDetection(qualityStandardId);        
         if (qualityStandard != null) {
             this.qualityStandardsRepositoryWrapper.delete(qualityStandard);
         }

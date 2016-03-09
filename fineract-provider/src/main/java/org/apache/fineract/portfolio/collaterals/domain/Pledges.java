@@ -35,6 +35,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -83,6 +85,23 @@ public class Pledges extends AbstractPersistable<Long> {
     @Column(name = "closedon_date")
     private Date closureDate;
     
+    @ManyToOne
+    @JoinColumn(name = "created_by", nullable = false)
+    private AppUser createdBy;
+
+    @Column(name = "created_date", nullable = false)
+    @Temporal(TemporalType.DATE)
+    private Date createdDate;
+
+    @ManyToOne
+    @JoinColumn(name = "updated_by", nullable = true)
+    private AppUser updatedBy;
+
+    @Column(name = "updated_date", nullable = true)
+    @Temporal(TemporalType.DATE)
+    private Date updatedDate;
+
+    
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "pledge", orphanRemoval = true)
     private Set<CollateralDetails> collateralDetails = new HashSet<>();
@@ -90,13 +109,13 @@ public class Pledges extends AbstractPersistable<Long> {
     
     
     public static Pledges instance(final Client client, final Loan loan, final String pledgeNumber, final Long sealNumber, final Integer status, final BigDecimal systemValue, 
-            final BigDecimal userValue, final AppUser closedBy, final Date closureDate, final Set<CollateralDetails> collateralDetails){
-        return new Pledges(client, loan, pledgeNumber, sealNumber, status, systemValue, userValue, closedBy, closureDate, collateralDetails);
+            final BigDecimal userValue, final AppUser closedBy, final Date closureDate, final Set<CollateralDetails> collateralDetails, final AppUser createdBy, final Date createdDate){
+        return new Pledges(client, loan, pledgeNumber, sealNumber, status, systemValue, userValue, closedBy, closureDate, collateralDetails,createdBy,createdDate);
     }
     
 
     public Pledges(final Client client, final Loan loan, final String pledgeNumber, final Long sealNumber, final Integer status, final BigDecimal systemValue, 
-            final BigDecimal userValue, final AppUser closedBy, final Date closureDate, final Set<CollateralDetails> collateralDetails) {
+            final BigDecimal userValue, final AppUser closedBy, final Date closureDate, final Set<CollateralDetails> collateralDetails, final AppUser createdBy, final Date createdDate) {
         this.client = client;
         this.loan = loan;
         this.pledgeNumber = pledgeNumber;
@@ -106,6 +125,8 @@ public class Pledges extends AbstractPersistable<Long> {
         this.userValue = userValue;
         this.closedBy = closedBy;
         this.closureDate = closureDate;
+		this.createdBy = createdBy;
+		this.createdDate = createdDate;
         if(collateralDetails != null && !collateralDetails.isEmpty()){
             this.collateralDetails = associateCollateralDetailsWithThisPledge(collateralDetails);
         }
@@ -293,5 +314,13 @@ public class Pledges extends AbstractPersistable<Long> {
         this.collateralDetails.addAll(associateCollateralDetailsWithThisPledge(collateralDetails));
         
     }
+    
+    public void setUpdatedDate(final Date updatedDate){
+		this.updatedDate = updatedDate;
+	}
+	
+	public void setUpdatedBy(final AppUser appUser){
+		this.updatedBy = appUser;
+	}
 
 }

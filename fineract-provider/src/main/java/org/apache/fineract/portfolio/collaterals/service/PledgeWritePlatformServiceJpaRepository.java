@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.collaterals.service;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -87,7 +88,8 @@ public class PledgeWritePlatformServiceJpaRepository implements PledgeWritePlatf
     @Override
     public CommandProcessingResult createPledge(final JsonCommand command) {
         
-        this.context.authenticatedUser();
+    	final AppUser appUser = this.context.authenticatedUser();
+    	Date currentDate = new Date();
         this.fromApiJsonDeserializer.validateForCreate(command);
         
         final Long clientId = command.longValueOfParameterNamed(PledgeApiConstants.clientIdParamName);
@@ -113,7 +115,7 @@ public class PledgeWritePlatformServiceJpaRepository implements PledgeWritePlatf
         
         final String pledgeNumber = generateRandomPledgeNumber();
         
-        final Pledges pledge = Pledges.instance(client, loan, pledgeNumber, sealNumber, status, systemValue, userValue, null, null, collateralDetails);
+        final Pledges pledge = Pledges.instance(client, loan, pledgeNumber, sealNumber, status, systemValue, userValue, null, null, collateralDetails, appUser, currentDate);
         
         if(pledge != null){
             this.pledgeRepository.save(pledge);
@@ -201,7 +203,7 @@ public class PledgeWritePlatformServiceJpaRepository implements PledgeWritePlatf
     @Override
     public CommandProcessingResult updatePledge(final Long pledgeId, final JsonCommand command) {
         
-        this.context.authenticatedUser();
+    	final AppUser appUser = this.context.authenticatedUser();
         this.fromApiJsonDeserializer.validateForUpdate(command);
         
         final Pledges pledgeForUpdate = this.pledgeRepository.findOneWithNotFoundDetection(pledgeId); 
@@ -234,6 +236,8 @@ public class PledgeWritePlatformServiceJpaRepository implements PledgeWritePlatf
         }
       
         if (!changes.isEmpty()) {
+        	pledgeForUpdate.setUpdatedBy(appUser);
+        	pledgeForUpdate.setUpdatedDate(new Date());
             this.pledgeRepository.saveAndFlush(pledgeForUpdate);
         }
         
