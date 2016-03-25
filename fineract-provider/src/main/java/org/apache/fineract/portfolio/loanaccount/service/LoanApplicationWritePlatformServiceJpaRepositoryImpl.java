@@ -1146,9 +1146,14 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     
     private void validatePledgeForLoan(JsonCommand command, Loan existingLoanApplication){
     	final Long existingPledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(existingLoanApplication.getId());
-        Pledges existingPledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(existingPledgeId);
-        existingPledge.updateLoanId(null);
-        this.pledgeRepositoryWrapper.save(existingPledge);
+        if(existingPledgeId != null){
+			Pledges existingPledge = this.pledgeRepositoryWrapper
+					.findOneWithNotFoundDetection(existingPledgeId);
+			if(existingPledge != null){
+				existingPledge.updateLoanId(null);
+				this.pledgeRepositoryWrapper.save(existingPledge);
+			}
+		}
         
         final Long pledgeId = command.longValueOfParameterNamed("pledgeId");
         if (pledgeId != null) {
