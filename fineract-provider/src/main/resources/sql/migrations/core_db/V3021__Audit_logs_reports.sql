@@ -3,7 +3,15 @@ INSERT INTO `stretchy_report` (`report_name`, `report_type`, `report_subtype`, `
 INSERT INTO `stretchy_parameter` (`parameter_name`, `parameter_variable`, `parameter_label`, `parameter_displayType`, `parameter_FormatType`, `parameter_default`, `special`, `selectOne`, `selectAll`, `parameter_sql`, `parent_id`) VALUES ('enitityName', 'enitityName', 'Enity Name', 'text', 'string', 'n/a', NULL, NULL, NULL, '', NULL);
 INSERT INTO `stretchy_parameter` (`parameter_name`, `parameter_variable`, `parameter_label`, `parameter_displayType`, `parameter_FormatType`, `parameter_default`, `special`, `selectOne`, `selectAll`, `parameter_sql`, `parent_id`) VALUES ('resourceId', 'resourceId', 'Resource Id', 'text', 'number', 'n/a', NULL, NULL, NULL, NULL, NULL);
 
-INSERT INTO `stretchy_report_parameter` (`report_id`, `parameter_id`, `report_parameter_name`) VALUES (193, 1011, 'enitityName');
-INSERT INTO `stretchy_report_parameter` (`report_id`, `parameter_id`, `report_parameter_name`) VALUES (193, 1012, 'resourceId');
+INSERT INTO `stretchy_report_parameter` (`report_id`, `parameter_id`, `report_parameter_name`) 
+VALUES ((SELECT sh.id FROM stretchy_report sh WHERE sh.report_name = 'enitityAuditLogs'), 
+         (SELECT sh.id FROM stretchy_parameter sh WHERE sh.parameter_name = 'enitityName'), 
+		  'enitityName');
+		  
+		  
+INSERT INTO `stretchy_report_parameter` (`report_id`, `parameter_id`, `report_parameter_name`) 
+VALUES ((SELECT sh.id FROM stretchy_report sh WHERE sh.report_name = 'enitityAuditLogs'), 
+         (SELECT sh.id FROM stretchy_parameter sh WHERE sh.parameter_name = 'resourceId'), 
+		  'resourceId');		  
 
 
