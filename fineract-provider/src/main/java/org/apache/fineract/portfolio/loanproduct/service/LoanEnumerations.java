@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.loanproduct.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
@@ -38,6 +41,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductParamType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanRescheduleStrategyMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
+import org.apache.fineract.portfolio.meeting.attendance.AttendanceType;
 
 public class LoanEnumerations {
 
@@ -53,6 +57,9 @@ public class LoanEnumerations {
     public static final String LOAN_TYPE = "loanType";
     public static final String INTEREST_RECALCULATION_COMPOUNDING_TYPE = "interestRecalculationCompoundingType";
     public static final String RESCHEDULE_STRATEGY_TYPE = "rescheduleStrategyType";
+    
+    
+   
 
     public static EnumOptionData loanEnumueration(final String typeName, final int id) {
         if (typeName.equals(LOAN_TERM_FREQUENCY_TYPE)) {
@@ -76,6 +83,7 @@ public class LoanEnumerations {
         } else if (typeName.equals(INTEREST_RECALCULATION_COMPOUNDING_TYPE)) {
             return interestRecalculationCompoundingType(id);
         } else if (typeName.equals(RESCHEDULE_STRATEGY_TYPE)) { return rescheduleStrategyType(id); }
+       
         return null;
     }
 
@@ -659,6 +667,17 @@ public class LoanEnumerations {
             break;
         }
         return optionData;
+    }
+    
+    public static List<LoanStatusEnumData> statusType(final LoanStatus[] loanStatusTypes) {
+        final List<LoanStatusEnumData> optionDatas = new ArrayList<>();
+        for (final LoanStatus loanStatus : loanStatusTypes) {
+            if (loanStatus.getValue().equals(LoanStatus.INVALID.getValue())) {
+                continue;
+            }
+            optionDatas.add(status(loanStatus));
+        }
+        return optionDatas;
     }
 
 }

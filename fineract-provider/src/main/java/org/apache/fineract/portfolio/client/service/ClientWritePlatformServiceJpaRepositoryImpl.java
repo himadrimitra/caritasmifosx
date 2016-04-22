@@ -85,6 +85,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.familydetail.FamilyDetailsApiConstants;
+import com.finflux.familydetail.service.FamilyDetailWritePlatromService;
+import com.finflux.kyc.address.api.AddressApiConstants;
+import com.finflux.kyc.address.data.AddressEntityTypeEnums;
+import com.finflux.kyc.address.service.AddressWritePlatformService;
+import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
+import com.finflux.risk.existingloans.service.ExistingLoanWritePlatformService;
 import com.google.gson.JsonElement;
 
 @Service
@@ -109,18 +116,25 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final CommandProcessingService commandProcessingService;
     private final ConfigurationDomainService configurationDomainService;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
-	private final FromJsonHelper fromApiJsonHelper;
+    private final FromJsonHelper fromApiJsonHelper;
+    private final AddressWritePlatformService addressWritePlatformService;
+    private final FamilyDetailWritePlatromService familyDetailWritePlatromService;
+    private final ExistingLoanWritePlatformService existingLoanWritePlatformService;
 
     @Autowired
     public ClientWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
-            final ClientRepositoryWrapper clientRepository, final ClientNonPersonRepositoryWrapper clientNonPersonRepository, final OfficeRepository officeRepository, final NoteRepository noteRepository,
+            final ClientRepositoryWrapper clientRepository, final ClientNonPersonRepositoryWrapper clientNonPersonRepository,
+            final OfficeRepository officeRepository, final NoteRepository noteRepository,
             final ClientDataValidator fromApiJsonDeserializer, final AccountNumberGenerator accountNumberGenerator,
             final GroupRepository groupRepository, final StaffRepositoryWrapper staffRepository,
             final CodeValueRepositoryWrapper codeValueRepository, final LoanRepository loanRepository,
             final SavingsAccountRepository savingsRepository, final SavingsProductRepository savingsProductRepository,
             final SavingsApplicationProcessWritePlatformService savingsApplicationProcessWritePlatformService,
             final CommandProcessingService commandProcessingService, final ConfigurationDomainService configurationDomainService,
-            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final FromJsonHelper fromApiJsonHelper) {
+            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final FromJsonHelper fromApiJsonHelper,
+            final AddressWritePlatformService addressWritePlatformService,
+            final FamilyDetailWritePlatromService familyDetailWritePlatromService,
+            final ExistingLoanWritePlatformService existingLoanWritePlatformService) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientNonPersonRepository = clientNonPersonRepository;
@@ -139,6 +153,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.configurationDomainService = configurationDomainService;
         this.accountNumberFormatRepository = accountNumberFormatRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.addressWritePlatformService = addressWritePlatformService;
+        this.familyDetailWritePlatromService = familyDetailWritePlatromService;
+        this.existingLoanWritePlatformService = existingLoanWritePlatformService;
     }
 
     @Transactional
@@ -192,6 +209,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 "Unknown data integrity issue with resource.");
     }
 
+    @SuppressWarnings("null")
     @Transactional
     @Override
     public CommandProcessingResult createClient(final JsonCommand command) {
@@ -281,8 +299,31 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final Locale locale = command.extractLocale();
             final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
             CommandProcessingResult result = openSavingsAccount(newClient, fmt);
+            
             if (result.getSavingsId() != null) {
                 this.clientRepository.save(newClient);
+            }
+            
+            /**
+             * Call Address Service
+             */
+            if (newClient != null && newClient.getId() != null && command.parameterExists(AddressApiConstants.addressesParamName)) {
+                final AddressEntityTypeEnums entityType = AddressEntityTypeEnums.CLIENTS;
+                this.addressWritePlatformService.createOrUpdateAddress(entityType, newClient.getId(), command);
+            }
+
+            /**
+             * Call Family Details Service
+             */
+            if (newClient != null && newClient.getId() != null && command.parameterExists(FamilyDetailsApiConstants.familyMembersParamName)) {
+                this.familyDetailWritePlatromService.createOrUpdateFamilyDeatails(newClient.getId(), command);
+            }
+
+            /**
+             * Call Existing Loan Service
+             */
+            if (newClient != null && newClient.getId() != null && command.parameterExists(ExistingLoanApiConstants.existingLoansParamName)) {
+                this.existingLoanWritePlatformService.createOrUpdateExistingLoans(newClient.getId(), command);
             }
             
             if(isEntity)            
@@ -340,6 +381,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
 		}
     }
 
+    @SuppressWarnings("null")
     @Transactional
     @Override
     public CommandProcessingResult updateClient(final Long clientId, final JsonCommand command) {
@@ -416,8 +458,38 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 clientForUpdate.updateClientClassification(newCodeVal);
             }
 
+            /**
+             * Call Address Service
+             */
+            if (clientForUpdate != null && clientForUpdate.getId() != null
+                    && command.parameterExists(AddressApiConstants.addressesParamName)) {
+                final AddressEntityTypeEnums entityType = AddressEntityTypeEnums.CLIENTS;
+                this.addressWritePlatformService.createOrUpdateAddress(entityType, clientForUpdate.getId(), command);
+            }
+
+            /**
+             * Call Family Details Service
+             */
+            if (clientForUpdate != null && clientForUpdate.getId() != null
+                    && command.parameterExists(FamilyDetailsApiConstants.familyMembersParamName)) {
+                this.familyDetailWritePlatromService.createOrUpdateFamilyDeatails(clientForUpdate.getId(), command);
+            }
+
+            /**
+             * Call Existing Loan Service
+             */
+            if (clientForUpdate != null && clientForUpdate.getId() != null
+                    && command.parameterExists(ExistingLoanApiConstants.existingLoansParamName)) {
+                this.existingLoanWritePlatformService.createOrUpdateExistingLoans(clientForUpdate.getId(), command);
+            }
+            
             if (!changes.isEmpty()) {
                 this.clientRepository.saveAndFlush(clientForUpdate);
+            }
+            
+            if (clientForUpdate != null && clientForUpdate.getId() != null && command.parameterExists(AddressApiConstants.addressesParamName)) {
+                final AddressEntityTypeEnums entityType = AddressEntityTypeEnums.CLIENTS;
+                this.addressWritePlatformService.createOrUpdateAddress(entityType, clientForUpdate.getId(), command);
             }
             
             if (changes.containsKey(ClientApiConstants.legalFormIdParamName)) {
@@ -443,8 +515,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             }
             
             final ClientNonPerson clientNonPersonForUpdate = this.clientNonPersonRepository.findOneByClientId(clientId);
-            if(clientNonPersonForUpdate != null)
-            {
+            if(clientNonPersonForUpdate != null){
             	final JsonElement clientNonPersonElement = this.fromApiJsonHelper.parse(command.jsonFragment(ClientApiConstants.clientNonPersonDetailsParamName));
             	final Map<String, Object> clientNonPersonChanges = clientNonPersonForUpdate.update(JsonCommand.fromExistingCommand(command, clientNonPersonElement));
                 

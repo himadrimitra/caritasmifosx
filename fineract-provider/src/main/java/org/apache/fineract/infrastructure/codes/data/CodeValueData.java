@@ -34,6 +34,8 @@ public class CodeValueData implements Serializable {
 
     @SuppressWarnings("unused")
     private final String description;
+    
+    @SuppressWarnings("unused")
     private final boolean isActive;
 
     public static CodeValueData instance(final Long id, final String name, final Integer position, final boolean isActive) {
@@ -57,6 +59,12 @@ public class CodeValueData implements Serializable {
         return new CodeValueData(id, name, position, description,isActive);
     }
 
+    public static CodeValueData instance(final Long id, final String name, final boolean isActive) {
+        String description = null;
+        Integer position = null;
+        return new CodeValueData(id, name, position, description, isActive);
+    }
+    
     private CodeValueData(final Long id, final String name, final Integer position, final String description, final boolean isActive) {
         this.id = id;
         this.name = name;

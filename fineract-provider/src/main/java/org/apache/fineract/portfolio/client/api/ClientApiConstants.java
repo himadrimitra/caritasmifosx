@@ -24,6 +24,10 @@ import java.util.Set;
 
 import org.apache.fineract.portfolio.client.data.ClientData;
 
+import com.finflux.familydetail.FamilyDetailsApiConstants;
+import com.finflux.kyc.address.api.AddressApiConstants;
+import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
+
 public class ClientApiConstants {
 
     public static final String CLIENT_RESOURCE_NAME = "client";
@@ -174,24 +178,25 @@ public class ClientApiConstants {
     public static final String officeOptionsParamName = "officeOptions";
     public static final String staffOptionsParamName = "staffOptions";
 
-    public static final Set<String> CLIENT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
-            Arrays.asList(localeParamName, dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName,
-                    mobileNoParamName, firstnameParamName, middlenameParamName, lastnameParamName, fullnameParamName, officeIdParamName,
-                    activeParamName, activationDateParamName, staffIdParamName, submittedOnDateParamName, savingsProductIdParamName,
-                    dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName, 
-                    clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName));
-    
+    public static final Set<String> CLIENT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
+            dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName, mobileNoParamName, firstnameParamName,
+            middlenameParamName, lastnameParamName, fullnameParamName, officeIdParamName, activeParamName, activationDateParamName,
+            staffIdParamName, submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName,
+            clientTypeIdParamName, clientClassificationIdParamName, clientNonPersonDetailsParamName, displaynameParamName,
+            legalFormIdParamName, AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
+            ExistingLoanApiConstants.existingLoansParamName));
+
     public static final Set<String> CLIENT_NON_PERSON_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
             Arrays.asList(localeParamName, dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 
             		constitutionIdParamName, mainBusinessLineIdParamName));
 
     public static final Set<String> CLIENT_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, accountNoParamName, externalIdParamName, mobileNoParamName, firstnameParamName, middlenameParamName,
+            lastnameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName, savingsProductIdParamName,
+            dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName, submittedOnDateParamName,
+            clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName, AddressApiConstants.addressesParamName,
+            FamilyDetailsApiConstants.familyMembersParamName, ExistingLoanApiConstants.existingLoansParamName));
 
-    lastnameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName, savingsProductIdParamName,
-            dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName, submittedOnDateParamName, 
-            clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName));
-    
     public static final Set<String> CLIENT_NON_PERSON_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 
     		constitutionIdParamName, mainBusinessLineIdParamName));

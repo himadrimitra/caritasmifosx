@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 import javax.persistence.Column;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.OneToOne;
@@ -50,7 +51,7 @@ public abstract class AbstractAuditableCustom<U, PK extends Serializable> extend
 
     private static final long serialVersionUID = 141481953116476081L;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "createdby_id")
     private U createdBy;
 
@@ -58,7 +59,7 @@ public abstract class AbstractAuditableCustom<U, PK extends Serializable> extend
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdDate;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lastmodifiedby_id")
     private U lastModifiedBy;
 

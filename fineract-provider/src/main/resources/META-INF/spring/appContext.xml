@@ -55,7 +55,9 @@
 										  org.apache.fineract.template.service.*,
 										  org.apache.fineract.useradministration.*,
 										  org.apache.fineract.batch,
-										  org.apache.fineract.infrastructure.report.service">
+										  org.apache.fineract.infrastructure.report.service,
+										  com.finflux.*">
+
 		<context:exclude-filter expression="org.springframework.stereotype.Controller"
 			type="annotation" />
 
@@ -80,7 +82,9 @@
 	<jpa:repositories base-package="org.apache.fineract.mix.domain" />
 	<jpa:repositories base-package="org.apache.fineract.scheduledjobs.domain" />
 	<jpa:repositories base-package="org.apache.fineract.template.domain" />
-	
+	<jpa:repositories base-package="com.finflux.infrastructure.*.*.domain" />
+	<jpa:repositories base-package="com.finflux.*.domain" />
+	<jpa:repositories base-package="com.finflux.*.*.domain" />
 	<import resource="infrastructure.xml" />
 
 	<import resource="securityContext.xml" />

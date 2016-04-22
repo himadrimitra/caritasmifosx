@@ -2784,4 +2784,113 @@ public class CommandWrapperBuilder {
         this.href = "/centers/" + centerId + "?command=associateCenters";
         return this;
     }
+    
+    public CommandWrapperBuilder createFamilyDetails(final Long clientId) {
+        this.actionName = "CREATE";
+        this.entityName = "FAMILYDETAIL";
+        this.clientId = clientId;
+        this.href = "/clients" + "/" + clientId + "/familydetails";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateFamilyDetails(final Long clientId, final Long familyDetailsId) {
+        this.actionName = "UPDATE";
+        this.entityName = "FAMILYDETAIL";
+        this.entityId = familyDetailsId;
+        this.clientId = clientId;
+        this.href = "/clients" + "/" + clientId + "/familydetails/" + familyDetailsId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteFamilyDetails(final Long familyDetailsId, final Long clientId) {
+        this.actionName = "DELETE";
+        this.entityName = "FAMILYDETAIL";
+        this.entityId = familyDetailsId;
+        this.clientId = clientId;
+        this.href = "/clients" + "/" + clientId + "/familydetails/" + familyDetailsId;
+        return this;
+    }
+
+    public CommandWrapperBuilder storeExistingLoan(final Long clientId) {
+        this.actionName = "SAVE";
+        this.entityName = "EXISTINGLOAN";
+        this.clientId = clientId;
+        this.href = "clients/" + clientId + "/existingLoans/";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateExistingLoan(final Long clientId, final Long existingLoanId) {
+        this.actionName = "UPDATE";
+        this.entityName = "EXISTINGLOAN";
+        this.clientId = clientId;
+        this.entityId = existingLoanId;
+        this.href = "clients/" + clientId + "/existingLoans/" + existingLoanId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteExistingLoan(final Long clientId, final Long existingLoanId) {
+        this.actionName = "DELETE";
+        this.entityName = "EXISTINGLOAN";
+        this.entityId = existingLoanId;
+        this.clientId = clientId;
+        this.href = "clients/" + clientId + "/existingLoans/" + existingLoanId;
+        return this;
+    }
+
+    /**
+     * Create Address
+     * 
+     * @param entityTypeId
+     *            : This parameter is setting to entityId
+     * @param entityType
+     * @param entityId
+     *            : This parameter is setting to subentityId
+     * @return
+     */
+    public CommandWrapperBuilder createAddress(final Long entityTypeId, final String entityType, final Long entityId) {
+        this.actionName = "CREATE";
+        this.entityName = "ADDRESS";
+        this.entityId = entityTypeId;
+        this.subentityId = entityId;
+        this.href = entityType + "/" + entityId + "/addresses";
+        return this;
+    }
+
+    /**
+     * Update Address
+     * 
+     * @param entityType
+     * @param entityId
+     *            : This parameter is setting to subentityId
+     * @param addressId
+     *            : This parameter is setting to entityId
+     * @return
+     */
+    public CommandWrapperBuilder updateAddress(final String entityType, final Long entityId, final Long addressId) {
+        this.actionName = "UPDATE";
+        this.entityName = "ADDRESS";
+        this.entityId = addressId;
+        this.subentityId = entityId;
+        this.href = entityType + "/" + entityId + "/addresses/" + addressId;
+        return this;
+    }
+
+    /**
+     * Delete Address
+     * 
+     * @param entityType
+     * @param entityId
+     *            : This parameter is setting to subentityId
+     * @param addressId
+     *            : This parameter is setting to entityId
+     * @return
+     */
+    public CommandWrapperBuilder daleteAddress(final String entityType, final Long entityId, final Long addressId) {
+        this.actionName = "DELETE";
+        this.entityName = "ADDRESS";
+        this.entityId = addressId;
+        this.subentityId = entityId;
+        this.href = entityType + "/" + entityId + "/addresses/" + addressId;
+        return this;
+    }
 }

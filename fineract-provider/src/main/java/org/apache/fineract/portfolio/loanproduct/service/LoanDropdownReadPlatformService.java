@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 
 public interface LoanDropdownReadPlatformService {
@@ -53,5 +54,6 @@ public interface LoanDropdownReadPlatformService {
     List<EnumOptionData> retrieveInterestRecalculationFrequencyTypeOptions();
     
     List<EnumOptionData> retrivePreCloseInterestCalculationStrategyOptions();
+    
 
 }

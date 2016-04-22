@@ -41,6 +41,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionProcessingStrategyRepository;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
@@ -99,6 +101,7 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
                 loanTermFrequencyType(PeriodFrequencyType.YEARS));
         return loanTermFrequencyOptions;
     }
+    
 
     @Override
     public List<EnumOptionData> retrieveRepaymentFrequencyTypeOptions() {
