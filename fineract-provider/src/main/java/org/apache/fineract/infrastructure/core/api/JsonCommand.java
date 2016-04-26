@@ -40,7 +40,6 @@ import org.joda.time.format.DateTimeFormatter;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
 /**

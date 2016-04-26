@@ -100,7 +100,14 @@ public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer ex
                 }
             }
         }
-        return new CollectionSheetBulkRepaymentCommand(note, transactionDate, loanRepaymentTransactions);
+        return new CollectionSheetBulkRepaymentCommand(note, transactionDate, loanRepaymentTransactions,null);
     }
-
+    
+    public CollectionSheetBulkRepaymentCommand commandFromApiJsonDate(final String json) {
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed("transactionDate", element);
+        final boolean flag=this.fromApiJsonHelper.extractBooleanNamed("flag", element);
+        return new CollectionSheetBulkRepaymentCommand(null,transactionDate,null,flag);
+    }
 }

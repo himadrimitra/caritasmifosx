@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -33,7 +34,9 @@ import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulk
 import org.apache.fineract.portfolio.collectionsheet.data.CollectionSheetTransactionDataValidator;
 import org.apache.fineract.portfolio.collectionsheet.serialization.CollectionSheetBulkDisbursalCommandFromApiJsonDeserializer;
 import org.apache.fineract.portfolio.collectionsheet.serialization.CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer;
+import org.apache.fineract.portfolio.group.exception.CollectionSheetHasAlreadyBeenSubmitted;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
+import org.apache.fineract.portfolio.meeting.domain.MeetingRepository;
 import org.apache.fineract.portfolio.meeting.service.MeetingWritePlatformService;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailAssembler;
@@ -53,6 +56,7 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
     private final CollectionSheetBulkDisbursalCommandFromApiJsonDeserializer bulkDisbursalCommandFromApiJsonDeserializer;
     private final CollectionSheetTransactionDataValidator transactionDataValidator;
     private final MeetingWritePlatformService meetingWritePlatformService;
+    private final MeetingRepository meetingRepository;
     private final DepositAccountAssembler accountAssembler;
     private final DepositAccountWritePlatformService accountWritePlatformService;
     private final PaymentDetailAssembler paymentDetailAssembler;
@@ -64,7 +68,7 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
             final CollectionSheetBulkDisbursalCommandFromApiJsonDeserializer bulkDisbursalCommandFromApiJsonDeserializer,
             final CollectionSheetTransactionDataValidator transactionDataValidator,
             final MeetingWritePlatformService meetingWritePlatformService, final DepositAccountAssembler accountAssembler,
-            final DepositAccountWritePlatformService accountWritePlatformService, final PaymentDetailAssembler paymentDetailAssembler, final PaymentDetailWritePlatformService paymentDetailWritePlatformService) {
+            final DepositAccountWritePlatformService accountWritePlatformService, final PaymentDetailAssembler paymentDetailAssembler, final PaymentDetailWritePlatformService paymentDetailWritePlatformService,final MeetingRepository meetingRepository) {
         this.loanWritePlatformService = loanWritePlatformService;
         this.bulkRepaymentCommandFromApiJsonDeserializer = bulkRepaymentCommandFromApiJsonDeserializer;
         this.bulkDisbursalCommandFromApiJsonDeserializer = bulkDisbursalCommandFromApiJsonDeserializer;
@@ -74,6 +78,7 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
         this.accountWritePlatformService = accountWritePlatformService;
         this.paymentDetailAssembler = paymentDetailAssembler;
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
+        this.meetingRepository=meetingRepository;
     }
 
     @Override
@@ -96,9 +101,14 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
         changes.putAll(updateBulkDisbursals(command));
 
         changes.putAll(updateBulkMandatorySavingsDuePayments(command, paymentDetail));
-
+        final CollectionSheetBulkRepaymentCommand bulkRepaymentCommand = this.bulkRepaymentCommandFromApiJsonDeserializer
+                .commandFromApiJsonDate(command.json());
+        boolean flag = bulkRepaymentCommand.getFlag();
+        final Integer numberOfMeetingDate = this.meetingRepository.countOfMeetingDate(bulkRepaymentCommand.getTransactionDate()
+                .toDateTimeAtStartOfDay().toDate(), command.getGroupId());
+        if (numberOfMeetingDate != 0 && flag != true) { throw new CollectionSheetHasAlreadyBeenSubmitted(
+                bulkRepaymentCommand.getTransactionDate()); }
         this.meetingWritePlatformService.updateCollectionSheetAttendance(command);
-
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
                 .withEntityId(command.entityId()) //
