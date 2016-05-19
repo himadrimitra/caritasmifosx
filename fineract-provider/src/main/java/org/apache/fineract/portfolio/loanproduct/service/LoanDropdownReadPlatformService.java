@@ -48,6 +48,8 @@ public interface LoanDropdownReadPlatformService {
     List<EnumOptionData> retrieveLoanCycleValueConditionTypeOptions();
 
     List<EnumOptionData> retrieveInterestRecalculationCompoundingTypeOptions();
+    List<EnumOptionData> retrieveInterestRecalculationNthDayTypeOptions();
+    List<EnumOptionData> retrieveInterestRecalculationDayOfWeekTypeOptions();
 
     List<EnumOptionData> retrieveRescheduleStrategyTypeOptions();
     
