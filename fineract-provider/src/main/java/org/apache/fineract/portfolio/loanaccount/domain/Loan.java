@@ -2337,7 +2337,8 @@ public class Loan extends AbstractPersistable<Long> {
          * selected
          **/
 
-        if (isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()) {
+        if (isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()
+                && ((isMultiDisburmentLoan() && getDisbursedLoanDisbursementDetails().size() == 1) || !isMultiDisburmentLoan())) {
             final LoanTransaction interestAppliedTransaction = LoanTransaction.accrueInterest(getOffice(), this, interestApplied,
                     actualDisbursementDate);
             this.loanTransactions.add(interestAppliedTransaction);
@@ -2345,6 +2346,18 @@ public class Loan extends AbstractPersistable<Long> {
 
         return reprocessTransactionForDisbursement();
 
+    }
+    
+    private List<LoanDisbursementDetails> getDisbursedLoanDisbursementDetails() {
+        List<LoanDisbursementDetails> ret = new ArrayList<>();
+        if (this.disbursementDetails != null && this.disbursementDetails.size() > 0) {
+            for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
+                if (disbursementDetail.actualDisbursementDate() != null) {
+                    ret.add(disbursementDetail);
+                }
+            }
+        }
+        return ret;
     }
 
     private void validateTrancheDisbursalDateMustBeUniqueAndNotBeforeLastTransactionDate(final LocalDate actualDisbursementDate) {
