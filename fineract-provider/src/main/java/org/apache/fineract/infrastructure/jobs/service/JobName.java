@@ -41,7 +41,11 @@ public enum JobName {
     GENERATE_LOANLOSS_PROVISIONING("Generate Loan Loss Provisioning"), //
     POST_DIVIDENTS_FOR_SHARES("Post Dividends For Shares"), //
     UPDATE_SAVINGS_DORMANT_ACCOUNTS("Update Savings Dormant Accounts"), //
-    ADD_PERIODIC_ACCRUAL_ENTRIES_FOR_LOANS_WITH_INCOME_POSTED_AS_TRANSACTIONS("Add Accrual Transactions For Loans With Income Posted As Transactions");
+    ADD_PERIODIC_ACCRUAL_ENTRIES_FOR_LOANS_WITH_INCOME_POSTED_AS_TRANSACTIONS("Add Accrual Transactions For Loans With Income Posted As Transactions"),
+    SEND_MESSAGES_TO_SMS_GATEWAY("Send messages to SMS gateway"), 
+    GET_DELIVERY_REPORTS_FROM_SMS_GATEWAY("Get delivery reports from SMS gateway"),
+    UPDATE_SMS_OUTBOUND_WITH_CAMPAIGN_MESSAGE("Update Sms Outbound with campaign message"),
+    EXECUTE_REPORT_MAILING_JOBS("Execute Report Mailing Jobs");
 
     private final String name;
 

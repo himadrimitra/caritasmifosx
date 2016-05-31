@@ -54,9 +54,8 @@ public class SmsMessageAssembler {
     }
 
     public SmsMessage assembleFromJson(final JsonCommand command) {
-
-        final JsonElement element = command.parsedJson();
-
+    	final JsonElement element = command.parsedJson();
+        
         String mobileNo = null;
 
         Group group = null;
@@ -78,10 +77,9 @@ public class SmsMessageAssembler {
             staff = this.staffRepository.findOneWithNotFoundDetection(staffId);
             mobileNo = staff.mobileNo();
         }
-
         final String message = this.fromApiJsonHelper.extractStringNamed(SmsApiConstants.messageParamName, element);
-
-        return SmsMessage.pendingSms(group, client, staff, message, mobileNo);
+        
+        return SmsMessage.pendingSms(null, group, client, staff, message, null, mobileNo,null);
     }
 
     public SmsMessage assembleFromResourceId(final Long resourceId) {

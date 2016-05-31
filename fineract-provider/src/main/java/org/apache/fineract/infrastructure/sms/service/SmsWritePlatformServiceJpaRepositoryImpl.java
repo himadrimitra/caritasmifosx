@@ -28,6 +28,7 @@ import org.apache.fineract.infrastructure.sms.data.SmsDataValidator;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessage;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageAssembler;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
+import org.apache.fineract.infrastructure.sms.scheduler.SmsMessageScheduledJobService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,19 +44,21 @@ public class SmsWritePlatformServiceJpaRepositoryImpl implements SmsWritePlatfor
     private final SmsMessageAssembler assembler;
     private final SmsMessageRepository repository;
     private final SmsDataValidator validator;
+    private final SmsMessageScheduledJobService smsMessageScheduledJobService;
 
     @Autowired
     public SmsWritePlatformServiceJpaRepositoryImpl(final SmsMessageAssembler assembler, final SmsMessageRepository repository,
-            final SmsDataValidator validator) {
+            final SmsDataValidator validator, final SmsMessageScheduledJobService smsMessageScheduledJobService) {
         this.assembler = assembler;
         this.repository = repository;
         this.validator = validator;
+        this.smsMessageScheduledJobService = smsMessageScheduledJobService;
     }
 
     @Transactional
     @Override
     public CommandProcessingResult create(final JsonCommand command) {
-
+    	//smsMessageScheduledJobService.sendMessages();
         try {
             this.validator.validateForCreate(command.json());
 
