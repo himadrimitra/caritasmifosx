@@ -173,7 +173,7 @@ public class SmsReadPlatformServiceImpl implements SmsReadPlatformService {
 	}
 
     @Override
-    public Page<SmsData> retrieveSmsByStatus(final Integer limit, final Integer status,final Date dateFrom, final Date dateTo) {
+    public Page<SmsData> retrieveSmsByStatus(final Integer limit, final Integer status,final Date dateFrom, final Date dateTo, String dateFormat) {
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
         sqlBuilder.append(this.smsRowMapper.schema());
@@ -183,7 +183,7 @@ public class SmsReadPlatformServiceImpl implements SmsReadPlatformService {
         String fromDateString = null;
         String toDateString = null;
         if(dateFrom !=null && dateTo !=null){
-            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+            final DateFormat df = new SimpleDateFormat(dateFormat);
             fromDateString = df.format(dateFrom);
             toDateString  = df.format(dateTo);
             sqlBuilder.append(" and smo.submittedon_date >= ? and smo.submittedon_date <= ? ");

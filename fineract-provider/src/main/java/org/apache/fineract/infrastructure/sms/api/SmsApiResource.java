@@ -146,7 +146,7 @@ public class SmsApiResource {
             toDate = toDateParam.getDate("toDate", dateFormat, locale);
         }
 
-        final Page<SmsData> smsMessages = this.readPlatformService.retrieveSmsByStatus(limit.intValue(),status.intValue(),fromDate,toDate);
+        final Page<SmsData> smsMessages = this.readPlatformService.retrieveSmsByStatus(limit.intValue(),status.intValue(),fromDate,toDate, dateFormat);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, smsMessages);
