@@ -39,7 +39,7 @@ public interface SmsReadPlatformService {
     
     Collection<SmsData> retrieveAllFailed(Integer limit);
 
-    Page<SmsData> retrieveSmsByStatus(Integer limit,Integer status,Date dateFrom,Date dateTo);
+    Page<SmsData> retrieveSmsByStatus(Integer limit,Integer status,Date dateFrom,Date dateTo, String dateFormat);
     
     List<Long> retrieveExternalIdsOfAllSent(Integer limit);
 }
