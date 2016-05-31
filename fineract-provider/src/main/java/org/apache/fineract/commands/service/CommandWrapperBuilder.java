@@ -3003,5 +3003,77 @@ public class CommandWrapperBuilder {
         this.href = "/self/beneficiaries/tpt/"+beneficiaryId;
         return this;
 	}
+	
+	public CommandWrapperBuilder createSmsCampaign() {
+        this.actionName = "CREATE";
+        this.entityName = "SMS_CAMPAIGN";
+        this.entityId = null;
+        this.href = "/sms/campaign";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateSmsCampaign(final Long resourceId) {
+        this.actionName = "UPDATE";
+        this.entityName = "SMS_CAMPAIGN";
+        this.entityId = resourceId;
+        this.href = "/sms/campaign/"+resourceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteSmsCampaign(final Long resourceId) {
+        this.actionName = "DELETE";
+        this.entityName = "SMS_CAMPAIGN";
+        this.entityId = resourceId;
+        this.href = "/sms/campaign/"+resourceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateSmsCampaign(final Long resourceId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "SMS_CAMPAIGN";
+        this.entityId = resourceId;
+        this.href = "/sms/campaign/"+resourceId + "?command=activate";
+        return this;
+    }
+
+    public CommandWrapperBuilder closeSmsCampaign(final Long resourceId) {
+        this.actionName = "CLOSE";
+        this.entityName = "SMS_CAMPAIGN";
+        this.entityId = resourceId;
+        this.href = "/sms/campaign/"+resourceId + "?command=close";
+        return this;
+    }
+    
+    public CommandWrapperBuilder reactivateSmsCampaign(final Long resourceId) {
+        this.actionName = "REACTIVATE";
+        this.entityName = "SMS_CAMPAIGN";
+        this.entityId = resourceId;
+        this.href = "/sms/campaign/"+resourceId + "?command=reactivate";
+        return this;
+    }
+	
+	public CommandWrapperBuilder createReportMailingJob(final String entityName) {
+        this.actionName = "CREATE";
+        this.entityName = entityName;
+        this.entityId = null;
+        this.href = "/reportmailingjobs";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateReportMailingJob(final String entityName, final Long entityId) {
+        this.actionName = "UPDATE";
+        this.entityName = entityName;
+        this.entityId = entityId;
+        this.href = "/reportmailingjobs/" + entityId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder deleteReportMailingJob(final String entityName, final Long entityId) {
+        this.actionName = "DELETE";
+        this.entityName = entityName;
+        this.entityId = entityId;
+        this.href = "/reportmailingjobs/" + entityId;
+        return this;
+    }
 
 }

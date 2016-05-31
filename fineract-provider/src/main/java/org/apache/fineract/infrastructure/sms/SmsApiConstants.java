@@ -36,7 +36,11 @@ public class SmsApiConstants {
     public static final String clientIdParamName = "clientId";
     public static final String staffIdParamName = "staffId";
     public static final String messageParamName = "message";
-
+    
+    //recurrence pattern for time
+    public static final String secondly = "SECONDLY";
+    public static final String minutely = "MINUTELY";
+    public static final String hourly = "HOURLY";
     // response parameters
     public static final String statusParamName = "status";
 
