@@ -6529,5 +6529,4 @@ public class Loan extends AbstractPersistable<Long> {
         
         return isForeClosure;
     }
-
 }
