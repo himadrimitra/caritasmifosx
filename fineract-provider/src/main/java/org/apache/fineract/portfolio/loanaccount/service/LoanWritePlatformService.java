@@ -110,4 +110,6 @@ public interface LoanWritePlatformService {
 	
 	CommandProcessingResult revokeLoanSubsidy(Long loanId, JsonCommand command);
 
+    CommandProcessingResult forecloseLoan(final Long loanId, JsonCommand command);
+
 }

@@ -117,4 +117,8 @@ public interface LoanApiConstants {
     public static final String subsidyReleaseDate = "subsidyReleaseDate";
     public static final String subsidyAmountReleased = "subsidyAmountReleased";
 
+    // fore closure constants
+    public static final String transactionDateParamName = "transactionDate";
+    public static final String noteParamName = "note";
+
 }

@@ -20,6 +20,8 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.math.BigDecimal;
 import java.util.Locale;
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
@@ -67,4 +69,5 @@ public interface LoanAccountDomainService {
             BigDecimal transactionAmount, String txnExternalId, Locale locale, DateTimeFormatter dateFormat, String noteText,
             PaymentDetail paymentDetail);
 
+    Map<String, Object> foreCloseLoan(final Loan loan, final LocalDate foreClourseDate, String noteText);
 }

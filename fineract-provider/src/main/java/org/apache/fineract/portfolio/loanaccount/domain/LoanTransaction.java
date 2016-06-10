@@ -134,8 +134,8 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     private boolean manuallyAdjustedOrReversed;
 
     @LazyCollection(LazyCollectionOption.FALSE)
-    @OneToMany(cascade = CascadeType.ALL,  orphanRemoval = true)
-    @JoinColumn(name = "loan_transaction_id", referencedColumnName= "id" , nullable = false)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "loan_transaction_id", referencedColumnName = "id", nullable = false)
     private Set<LoanTransactionToRepaymentScheduleMapping> loanTransactionToRepaymentScheduleMappings = new HashSet<>();
     
     @Column(name = "is_reconciled")
@@ -232,6 +232,12 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 principalPortion, interestPortion, feesPortion, penaltiesPortion, overPaymentPortion, reversed, paymentDetail, externalId);
     }
     
+    public static LoanTransaction accrual(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges, final LocalDate transactionDate) {
+        return accrueTransaction(loan, office, transactionDate, amount.getAmount(), interest.getAmount(), feeCharges.getAmount(),
+                penaltyCharges.getAmount());
+    }
+    
     public static LoanTransaction accrueTransaction(final Loan loan, final Office office, final LocalDate dateOf, final BigDecimal amount,
             final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
             final BigDecimal penaltyChargesPortion) {
@@ -245,6 +251,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 principalPortion, interestPortion, feeChargesPortion, penaltyChargesPortion, overPaymentPortion, reversed, paymentDetail, externalId);
     }
 
+    
     public static LoanTransaction initiateTransfer(final Office office, final Loan loan, final LocalDate transferDate) {
         final Integer loanTransactionSubType = null;
         return new LoanTransaction(loan, office, LoanTransactionType.INITIATE_TRANSFER.getValue(), loanTransactionSubType,transferDate.toDateTimeAtStartOfDay()
@@ -773,15 +780,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isAccrual() {
         return LoanTransactionType.ACCRUAL.equals(getTypeOf()) && isNotReversed();
     }
-    
-    public boolean isNonMonetaryTransaction(){
-    	return isNotReversed() 
-    			&& (LoanTransactionType.CONTRA.equals(getTypeOf())
-    					|| LoanTransactionType.MARKED_FOR_RESCHEDULING.equals(getTypeOf())
-    					|| LoanTransactionType.APPROVE_TRANSFER.equals(getTypeOf())
-    					|| LoanTransactionType.INITIATE_TRANSFER.equals(getTypeOf())
-    					|| LoanTransactionType.REJECT_TRANSFER.equals(getTypeOf())
-    					|| LoanTransactionType.WITHDRAW_TRANSFER.equals(getTypeOf()));
+
+    public boolean isNonMonetaryTransaction() {
+        return isNotReversed()
+                && (LoanTransactionType.CONTRA.equals(getTypeOf()) || LoanTransactionType.MARKED_FOR_RESCHEDULING.equals(getTypeOf())
+                        || LoanTransactionType.APPROVE_TRANSFER.equals(getTypeOf())
+                        || LoanTransactionType.INITIATE_TRANSFER.equals(getTypeOf())
+                        || LoanTransactionType.REJECT_TRANSFER.equals(getTypeOf()) || LoanTransactionType.WITHDRAW_TRANSFER
+                            .equals(getTypeOf()));
     }
 
     public void updateOutstandingLoanBalance(BigDecimal outstandingLoanBalance) {
@@ -859,13 +865,20 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return isMappingUpdated;
     }
 
-    
     public Set<LoanTransactionToRepaymentScheduleMapping> getLoanTransactionToRepaymentScheduleMappings() {
         return this.loanTransactionToRepaymentScheduleMappings;
     }
-        
-    public Boolean isAllowTypeTransactionAtTheTimeOfLastUndo(){
-    	return isDisbursement() || isAccrual() || isRepaymentAtDisbursement();
+
+    public Boolean isAllowTypeTransactionAtTheTimeOfLastUndo() {
+        return isDisbursement() || isAccrual() || isRepaymentAtDisbursement();
+    }
+
+    public void updateCreatedDate(Date createdDate) {
+    	DateTime date = null;
+    	if(createdDate != null){
+    		date = new DateTime(createdDate);
+    	}
+        setCreatedDate(date);
     }
 
     public boolean isReconciled() {
@@ -882,5 +895,8 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     public Date getSubmittedOnDate() {
         return this.submittedOnDate;
+    }
+    public boolean isAccrualTransaction() {
+        return isAccrual();
     }
 }
