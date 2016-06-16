@@ -6283,23 +6283,22 @@ public class Loan extends AbstractPersistable<Long> {
                 fee = fee.plus(installment.getFeeChargesOutstanding(currency));
             } else if (installment.getFromDate().isBefore(paymentDate)) {
                 Money[] balancesForCurrentPeroid = fetchInterestFeeAndPenaltyTillDate(paymentDate, currency, installment);                        
-                if (balancesForCurrentPeroid[0].isGreaterThan(installment.getInterestPaid(currency))) {
-                    interest = interest.plus(balancesForCurrentPeroid[0].minus(installment.getInterestPaid(currency)));
+                if (balancesForCurrentPeroid[0].isGreaterThan(balancesForCurrentPeroid[5])) {
+                    interest = interest.plus(balancesForCurrentPeroid[0])
+                            .minus(balancesForCurrentPeroid[5]);
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency).minus(
-                            balancesForCurrentPeroid[0]));
+                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[5])
+                            .minus(balancesForCurrentPeroid[0]);
                 }
-                if (balancesForCurrentPeroid[1].isGreaterThan(installment.getFeeChargesPaid(currency))) {
-                    fee = fee.plus(balancesForCurrentPeroid[1].minus(installment.getFeeChargesPaid(currency)));
+                if (balancesForCurrentPeroid[1].isGreaterThan(balancesForCurrentPeroid[3])) {
+                    fee = fee.plus(balancesForCurrentPeroid[1].minus(balancesForCurrentPeroid[3]));
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getFeeChargesPaid(currency).minus(
-                            balancesForCurrentPeroid[1]));
+                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[3].minus(balancesForCurrentPeroid[1]));
                 }
-                if (balancesForCurrentPeroid[2].isGreaterThan(installment.getPenaltyChargesPaid(currency))) {
-                    penalty = penalty.plus(balancesForCurrentPeroid[2].minus(installment.getPenaltyChargesPaid(currency)));
+                if (balancesForCurrentPeroid[2].isGreaterThan(balancesForCurrentPeroid[4])) {
+                    penalty = penalty.plus(balancesForCurrentPeroid[2].minus(balancesForCurrentPeroid[4]));
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getPenaltyChargesPaid(currency).minus(
-                            balancesForCurrentPeroid[2]));
+                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[4]).minus(balancesForCurrentPeroid[2]);
                 }
             } else if (installment.getDueDate().isAfter(paymentDate)) {
                 paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency))
@@ -6483,7 +6482,13 @@ public class Loan extends AbstractPersistable<Long> {
             }   
             
         }
-
+        
+        for(LoanDisbursementDetails loanDisbursementDetails : getDisbursementDetails()){
+            if(loanDisbursementDetails.actualDisbursementDate() == null){
+                 totalPrincipal = Money.of(currency, totalPrincipal.getAmount().subtract(loanDisbursementDetails.principal()));
+            }
+        }
+        
         LocalDate installmentStartDate = getDisbursementDate();
 
         if (newInstallments.size() > 0) {
