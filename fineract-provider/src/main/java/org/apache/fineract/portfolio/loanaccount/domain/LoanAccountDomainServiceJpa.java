@@ -691,26 +691,27 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
         existingTransactionIds.addAll(loan.findExistingTransactionIds());
         existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
+        final ScheduleGeneratorDTO scheduleGeneratorDTO = null;
+        AppUser appUser = getAppUserIfPresent();
         final LoanRepaymentScheduleInstallment foreCloseDetail = loan.fetchLoanForeclosureDetail(foreClosureDate);
         if (loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()
                 && (loan.getAccruedTill() == null || !foreClosureDate.isEqual(loan.getAccruedTill()))) {
+            loan.reverseAccrualsAfter(foreClosureDate);
             Money[] accruedReceivables = loan.getReceivableIncome(foreClosureDate);
             Money interestPortion = foreCloseDetail.getInterestCharged(currency).minus(accruedReceivables[0]);
             Money feePortion = foreCloseDetail.getFeeChargesCharged(currency).minus(accruedReceivables[1]);
             Money penaltyPortion = foreCloseDetail.getPenaltyChargesCharged(currency).minus(accruedReceivables[2]);
             Money total = interestPortion.plus(feePortion).plus(penaltyPortion);
             if (total.isGreaterThanZero()) {
-                LoanTransaction accrualTransaction = LoanTransaction.accrual(loan, loan.getOffice(), total, interestPortion, feePortion,
-                        penaltyPortion, foreClosureDate);
+                LoanTransaction accrualTransaction = LoanTransaction.accrueTransaction(loan, loan.getOffice(), foreClosureDate,
+                        total.getAmount(), interestPortion.getAmount(), feePortion.getAmount(), penaltyPortion.getAmount());
                 LocalDate fromDate = loan.getDisbursementDate();
                 if (loan.getAccruedTill() != null) {
                     fromDate = loan.getAccruedTill();
                 }
-                LoanRepaymentScheduleInstallment installment = fetchLoanRepaymentScheduleInstallment(fromDate, loan);
-                installment.updateAccrualPortion(interestPortion, feePortion, penaltyPortion);
-                accrualTransaction.updateCreatedDate(createdDate.toDate());
                 createdDate = createdDate.plusSeconds(1);
                 newTransactions.add(accrualTransaction);
+                loan.getLoanTransactions().add(accrualTransaction);
                 Set<LoanChargePaidBy> accrualCharges = accrualTransaction.getLoanChargesPaid();
                 for (LoanCharge loanCharge : loan.charges()) {
                     if (loanCharge.isActive()
@@ -724,34 +725,31 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 }
             }
         }
+        
 
         Money interestPayable = foreCloseDetail.getInterestCharged(currency);
-
         Money feePayable = foreCloseDetail.getFeeChargesCharged(currency);
         Money penaltyPayable = foreCloseDetail.getPenaltyChargesCharged(currency);
-
-        Money payPrincipal = foreCloseDetail.getPrincipal(currency);
+        Money payPrincipal = foreCloseDetail.getPrincipal(currency);        
+        loan.updateInstallmentsPostDate(foreClosureDate);
 
         LoanTransaction payment = null;
+        
+         
         if (payPrincipal.plus(interestPayable).plus(feePayable).plus(penaltyPayable).isGreaterThanZero()) {
             final PaymentDetail paymentDetail = null;
-            String externalId = null;
+            String externalId = null;            
             payment = LoanTransaction.repayment(loan.getOffice(), payPrincipal.plus(interestPayable).plus(feePayable).plus(penaltyPayable),
                     paymentDetail, foreClosureDate, externalId);
             createdDate = createdDate.plusSeconds(1);
             payment.updateCreatedDate(createdDate.toDate());
-            payment.updateComponents(payPrincipal, interestPayable, feePayable, penaltyPayable);
             payment.updateLoan(loan);
             newTransactions.add(payment);
         }
+
         List<Long> transactionIds = new ArrayList<>();
-        loan.handleForeClosureTransactions(newTransactions, foreClosureDate, defaultLoanLifecycleStateMachine());
-        for (LoanTransaction newTransaction : newTransactions) {
-            saveLoanTransactionWithDataIntegrityViolationChecks(newTransaction);
-            transactionIds.add(newTransaction.getId());
-        }
-        changes.put("transactions", transactionIds);
-        changes.put("eventAmount", payPrincipal.getAmount().negate());
+        final ChangedTransactionDetail changedTransactionDetail = loan.handleForeClosureTransactions(payment,
+                defaultLoanLifecycleStateMachine(), scheduleGeneratorDTO, appUser);
 
         /***
          * TODO Vishwas Batch save is giving me a
@@ -761,6 +759,22 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
          * recorded against the loan)
          ***/
 
+        for (LoanTransaction newTransaction : newTransactions) {
+            saveLoanTransactionWithDataIntegrityViolationChecks(newTransaction);
+            transactionIds.add(newTransaction.getId());
+        }
+        changes.put("transactions", transactionIds);
+        changes.put("eventAmount", payPrincipal.getAmount().negate());
+        
+        if (changedTransactionDetail != null) {
+            for (Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
+                saveLoanTransactionWithDataIntegrityViolationChecks(mapEntry.getValue());
+                // update loan with references to the newly created transactions
+                loan.getLoanTransactions().add(mapEntry.getValue());
+                updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
+            }
+        }
+        
         saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
 
         if (StringUtils.isNotBlank(noteText)) {
@@ -770,7 +784,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         }
 
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, false);
-
         return changes;
 
     }

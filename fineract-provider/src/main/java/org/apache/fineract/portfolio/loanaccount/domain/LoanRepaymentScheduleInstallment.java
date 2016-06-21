@@ -790,4 +790,9 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
                 .plus(getInterestWrittenOff(currency));
         return getInterestAccrued(currency).minus(interestAccountedFor);
     }
+    
+    public Money getTotalPaid(final MonetaryCurrency currency) {
+        return getPenaltyChargesPaid(currency).plus(getFeeChargesPaid(currency)).plus(getInterestPaid(currency))
+                .plus(getPrincipalCompleted(currency));
+    }
 }
