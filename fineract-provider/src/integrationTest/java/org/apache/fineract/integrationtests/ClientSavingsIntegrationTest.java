@@ -1008,7 +1008,12 @@ public class ClientSavingsIntegrationTest {
         Calendar postedDate = Calendar.getInstance();
         postedDate.set(Calendar.DAY_OF_MONTH, 1);
        
-        final String POSTED_TRANSACTION_DATE = dateFormat.format(postedDate.getTime());
+        final String POSTED_TRANSACTION_DATE = dateFormat.format(postedDate.getTime());        
+        Calendar postedLastDate = Calendar.getInstance();
+        int countOfDate=postedDate.getActualMaximum(Calendar.DAY_OF_MONTH);
+        System.out.println("count Of Date---> "+countOfDate);
+        postedLastDate.set(Calendar.DAY_OF_MONTH,countOfDate);
+        final String POSTED_LAST_TRANSACTION_DATE = dateFormat.format(postedLastDate.getTime());
 
         /***
          * Activate the application and verify account status
@@ -1088,7 +1093,25 @@ public class ClientSavingsIntegrationTest {
        assertEquals("Verifying interest posted", interestPosted, actualInterestPosted);           
        System.out.println("------Post Interest As On Successful Worked--------");
        
+       this.savingsAccountHelper.postInterestAsOnSavings(savingsId, POSTED_LAST_TRANSACTION_DATE);
+       HashMap accountLastDetails = this.savingsAccountHelper.getSavingsDetails(savingsId);
+       summary = (HashMap) accountLastDetails.get("summary");
+       Float actualLastInterestPosted = Float.valueOf(summary.get("totalInterestPosted").toString());
        
+       final Float nominalLastAnnualInterest = Float.valueOf(accountDetails.get("nominalAnnualInterestRate").toString());
+       final HashMap interestLastCalculationDaysInYearType = (HashMap) accountDetails.get("interestCalculationDaysInYearType");
+       final Integer daysLastInYear = Integer.valueOf(interestCalculationDaysInYearType.get("id").toString());
+       double interestLastRateInFraction = (nominalAnnualInterest / 100);
+       double perLastDay = (double) 1 / (daysInYear);
+       double interestLastPerDay = interestLastRateInFraction * perLastDay;
+       Float interestLastPosted = (float) (interestLastPerDay * balance * 1);
+       
+       DecimalFormat decimalLastFormat = new DecimalFormat("", new DecimalFormatSymbols(Locale.US));
+       decimalLastFormat.applyPattern("#.###");
+       interestLastPosted = new Float(decimalLastFormat.format(interestLastPosted));
+       actualInterestPosted = new Float(decimalFormat.format(actualInterestPosted));
+      assertEquals("Verifying interest posted", interestLastPosted, actualInterestPosted);           
+      System.out.println("------Post Interest As On Successful Worked--------");
        
     }
     
