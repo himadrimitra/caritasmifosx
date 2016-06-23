@@ -1087,4 +1087,8 @@ public class LoanCharge extends AbstractPersistable<Long> {
             this.amount = this.amountSansTax.add(this.taxAmount);
         }
     }
+    
+    public boolean isDueDateCharge() {
+        return this.dueDate != null;
+    }
 }
