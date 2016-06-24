@@ -43,13 +43,13 @@ CREATE TABLE `f_address_entity` (
 )AUTO_INCREMENT=1;
 
 INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES 
-('kyc', 'CREATE_ADDRESS', 'ADDRESS', 'CREATE', 0),
-('kyc', 'CREATE_ADDRESS_CHECKER', 'ADDRESS', 'CREATE_CHECKER', 0),
-('kyc', 'UPDATE_ADDRESS', 'ADDRESS', 'UPDATE', 0),
-('kyc', 'UPDATE_ADDRESS_CHECKER', 'ADDRESS', 'UPDATE_CHECKER', 0),
-('kyc', 'DELETE_ADDRESS', 'ADDRESS', 'DELETE', 0),
-('kyc', 'DELETE_ADDRESS_CHECKER', 'ADDRESS', 'DELETE_CHECKER', 0),
-('kyc', 'READ_ADDRESS', 'ADDRESS', 'READ', 0);
+('kyc', 'CREATE_ADDRESSES', 'ADDRESSES', 'CREATE', 0),
+('kyc', 'CREATE_ADDRESSES_CHECKER', 'ADDRESSES', 'CREATE_CHECKER', 0),
+('kyc', 'UPDATE_ADDRESSES', 'ADDRESSES', 'UPDATE', 0),
+('kyc', 'UPDATE_ADDRESSES_CHECKER', 'ADDRESSES', 'UPDATE_CHECKER', 0),
+('kyc', 'DELETE_ADDRESSES', 'ADDRESSES', 'DELETE', 0),
+('kyc', 'DELETE_ADDRESSES_CHECKER', 'ADDRESSES', 'DELETE_CHECKER', 0),
+('kyc', 'READ_ADDRESSES', 'ADDRESSES', 'READ', 0);
 
 
 INSERT INTO `m_code` (`code_name`, `is_system_defined`) VALUES 

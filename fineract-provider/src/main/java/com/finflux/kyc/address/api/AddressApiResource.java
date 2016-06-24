@@ -73,7 +73,7 @@ public class AddressApiResource {
                 AddressApiConstants.ADDRESS_TEMPLATE_RESPONSE_DATA_PARAMETERS);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ })
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
@@ -110,7 +110,7 @@ public class AddressApiResource {
         return this.toApiJsonSerializer.serialize(settings, addressData, AddressApiConstants.ADDRESS_RESPONSE_DATA_PARAMETERS);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ })
     @PUT
     @Path("{addressId}")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -129,7 +129,7 @@ public class AddressApiResource {
         return this.toApiJsonSerializer.serialize(result);
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({ })
     @DELETE
     @Path("{addressId}")
     @Consumes({ MediaType.APPLICATION_JSON })

@@ -35,8 +35,4 @@ public class StateRepositoryWrapper {
     public void delete(final State state) {
         this.repository.delete(state);
     }
-
-    public List<State> findByEntityTypeIdAndEntityId(final Country country) {
-        return this.repository.findByCountry(country);
-    }
 }

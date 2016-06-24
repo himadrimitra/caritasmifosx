@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.kyc.address.service.AddressWritePlatformService;
 
 @Service
-@CommandType(entity = "ADDRESS", action = "DELETE")
+@CommandType(entity = "ADDRESSES", action = "DELETE")
 public class DeleteAddressCommandHandler implements NewCommandSourceHandler {
 
     private final AddressWritePlatformService writePlatformService;

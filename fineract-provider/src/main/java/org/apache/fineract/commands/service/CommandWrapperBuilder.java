@@ -2931,89 +2931,32 @@ public class CommandWrapperBuilder {
         this.href = "clients/" + clientId + "/existingLoans/" + existingLoanId;
         return this;
     }
-
-    /**
-     * Create Address
-     * 
-     * @param entityTypeId
-     *            : This parameter is setting to entityId
-     * @param entityType
-     * @param entityId
-     *            : This parameter is setting to subentityId
-     * @return
-     */
-    public CommandWrapperBuilder createAddress(final Long entityTypeId, final String entityType, final Long entityId) {
-        this.actionName = "CREATE";
-        this.entityName = "ADDRESS";
-        this.entityId = entityTypeId;
-        this.subentityId = entityId;
-        this.href = entityType + "/" + entityId + "/addresses";
-        return this;
-    }
-
-    /**
-     * Update Address
-     * 
-     * @param entityType
-     * @param entityId
-     *            : This parameter is setting to subentityId
-     * @param addressId
-     *            : This parameter is setting to entityId
-     * @return
-     */
-    public CommandWrapperBuilder updateAddress(final String entityType, final Long entityId, final Long addressId) {
-        this.actionName = "UPDATE";
-        this.entityName = "ADDRESS";
-        this.entityId = addressId;
-        this.subentityId = entityId;
-        this.href = entityType + "/" + entityId + "/addresses/" + addressId;
-        return this;
-    }
-
-    /**
-     * Delete Address
-     * 
-     * @param entityType
-     * @param entityId
-     *            : This parameter is setting to subentityId
-     * @param addressId
-     *            : This parameter is setting to entityId
-     * @return
-     */
-    public CommandWrapperBuilder daleteAddress(final String entityType, final Long entityId, final Long addressId) {
-        this.actionName = "DELETE";
-        this.entityName = "ADDRESS";
-        this.entityId = addressId;
-        this.subentityId = entityId;
-        this.href = entityType + "/" + entityId + "/addresses/" + addressId;
-        return this;
-    }
-    
-	public CommandWrapperBuilder addSelfServiceBeneficiaryTPT() {
+	
+    public CommandWrapperBuilder addSelfServiceBeneficiaryTPT() {
         this.actionName = "CREATE";
         this.entityName = "SSBENEFICIARYTPT";
         this.entityId = null;
         this.href = "/self/beneficiaries/tpt";
         return this;
-	}
+    }
 
-	public CommandWrapperBuilder updateSelfServiceBeneficiaryTPT(final Long beneficiaryId) {
+    public CommandWrapperBuilder updateSelfServiceBeneficiaryTPT(final Long beneficiaryId) {
         this.actionName = "UPDATE";
         this.entityName = "SSBENEFICIARYTPT";
         this.entityId = beneficiaryId;
-        this.href = "/self/beneficiaries/tpt/"+beneficiaryId;
+        this.href = "/self/beneficiaries/tpt/" + beneficiaryId;
         return this;
-	}
+    }
 
-	public CommandWrapperBuilder deleteSelfServiceBeneficiaryTPT(final Long beneficiaryId) {
+    public CommandWrapperBuilder deleteSelfServiceBeneficiaryTPT(final Long beneficiaryId) {
         this.actionName = "DELETE";
         this.entityName = "SSBENEFICIARYTPT";
         this.entityId = beneficiaryId;
-        this.href = "/self/beneficiaries/tpt/"+beneficiaryId;
+        this.href = "/self/beneficiaries/tpt/" + beneficiaryId;
         return this;
-	}
-	
-	public CommandWrapperBuilder createSmsCampaign() {
+    }
+
+    public CommandWrapperBuilder createSmsCampaign() {
         this.actionName = "CREATE";
         this.entityName = "SMS_CAMPAIGN";
         this.entityId = null;
@@ -3085,4 +3028,51 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    /**
+     * Create Address 
+     * @param entityTypeId : This parameter is setting to entityId
+     * @param entityType
+     * @param entityId : This parameter is setting to subentityId
+     * @return
+     */
+    public CommandWrapperBuilder createAddress(final Long entityTypeId, final String entityType, final Long entityId) {
+        this.actionName = "CREATE";
+        this.entityName = "ADDRESSES";
+        this.entityId = entityTypeId;
+        this.subentityId = entityId;
+        this.href = entityType + "/" + entityId + "/addresses";
+        return this;
+    }
+
+    /**
+     * Update Address
+     * @param entityType
+     * @param entityId : This parameter is setting to subentityId
+     * @param addressId : This parameter is setting to entityId
+     * @return
+     */
+    public CommandWrapperBuilder updateAddress(final String entityType, final Long entityId, final Long addressId) {
+        this.actionName = "UPDATE";
+        this.entityName = "ADDRESSES";
+        this.entityId = addressId;
+        this.subentityId = entityId;
+        this.href = entityType + "/" + entityId + "/addresses/" + addressId;
+        return this;
+    }
+
+    /**
+     * Delete Address
+     * @param entityType
+     * @param entityId : This parameter is setting to subentityId
+     * @param addressId : This parameter is setting to entityId
+     * @return
+     */
+    public CommandWrapperBuilder daleteAddress(final String entityType, final Long entityId, final Long addressId) {
+        this.actionName = "DELETE";
+        this.entityName = "ADDRESSES";
+        this.entityId = addressId;
+        this.subentityId = entityId;
+        this.href = entityType + "/" + entityId + "/addresses/" + addressId;
+        return this;
+    }
 }
