@@ -2540,11 +2540,18 @@ public class Loan extends AbstractPersistable<Long> {
     public void regenerateRepaymentSchedule(final ScheduleGeneratorDTO scheduleGeneratorDTO, AppUser currentUser) {
 
         final LoanScheduleModel loanSchedule = regenerateScheduleModel(scheduleGeneratorDTO);
-
+        if (loanSchedule == null) { return; }
         updateLoanSchedule(loanSchedule, currentUser);
         Set<LoanCharge> charges = this.charges();
+        LocalDate lastRepaymentDate = this.getLastRepaymentPeriodDueDate(true);
         for (LoanCharge loanCharge : charges) {
-            recalculateLoanCharge(loanCharge, scheduleGeneratorDTO.getPenaltyWaitPeriod());
+        	if(loanCharge.getDueLocalDate() == null || !lastRepaymentDate.isBefore(loanCharge.getDueLocalDate())){
+        		if(!loanCharge.isWaived()){
+        			recalculateLoanCharge(loanCharge, scheduleGeneratorDTO.getPenaltyWaitPeriod());
+        			}	
+        	}else{
+        		loanCharge.setActive(false);
+        	}
         }
     }
 
