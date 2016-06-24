@@ -60,7 +60,9 @@ public final class SavingsHelper {
             
             if (!postInterestAsOn.isEmpty()) {
                 for (LocalDate transactiondate : postInterestAsOn) {
-                    if (periodStartDate.isBefore(transactiondate) && periodEndDate.isAfter(transactiondate)) {
+					if (periodStartDate.isBefore(transactiondate)
+							&& (periodEndDate.isAfter(transactiondate) || periodEndDate
+									.isEqual(transactiondate))) {
                         periodEndDate = transactiondate.minusDays(1);
                         actualPeriodStartDate = periodEndDate;
                         break;
