@@ -820,10 +820,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final LoanTransaction transactionToAdjust = this.loanTransactionRepository.findOne(transactionId);
         if (transactionToAdjust == null) { throw new LoanTransactionNotFoundException(transactionId); }
 
-        if(loan.status().isClosed() && loan.getLoanSubStatus().equals(LoanSubStatus.FORECLOSED.getValue())) {
+        if (loan.status().isClosed() && loan.getLoanSubStatus() != null
+                && loan.getLoanSubStatus().equals(LoanSubStatus.FORECLOSED.getValue())) {
             final String defaultUserMessage = "The loan cannot reopend as it is foreclosed.";
-            throw new LoanForeclosureException("loan.cannot.be.reopened.as.it.is.foreclosured", defaultUserMessage,
-            		loan.getId());
+            throw new LoanForeclosureException("loan.cannot.be.reopened.as.it.is.foreclosured", defaultUserMessage, loan.getId());
         }
         if (loan.isClosedWrittenOff()) { throw new PlatformServiceUnavailableException("error.msg.loan.written.off.update.not.allowed",
                 "Loan transaction:" + transactionId + " update not allowed as loan status is written off", transactionId); }

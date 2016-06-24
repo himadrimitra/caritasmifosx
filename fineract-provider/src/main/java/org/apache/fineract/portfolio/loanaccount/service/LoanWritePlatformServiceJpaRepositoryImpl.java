@@ -960,7 +960,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     @Transactional
     @Override
     public CommandProcessingResult adjustLoanTransaction(final Long loanId, final Long transactionId, final JsonCommand command) {
-        AppUser currentUser = getAppUserIfPresent();
         AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
         this.loanEventApiJsonValidator.validateTransaction(command.json());
         Loan loan = this.loanAssembler.assembleFrom(loanId);
@@ -970,7 +969,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
         final Locale locale = command.extractLocale();
         final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
-        final String paymentTypeId = command.stringValueOfParameterNamed("paymentTypeId");
         final String noteText = command.stringValueOfParameterNamed("note");
         final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createPaymentDetail(command, changes);
         Long fromAccountId = null;
