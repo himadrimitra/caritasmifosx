@@ -29,7 +29,4 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long>, JpaSpec
 
     Meeting findByCalendarInstanceIdAndMeetingDate(Long calendarInstanceId, Date meetingDate);
     
-    @Query("select count(*) from CalendarInstance as c, Meeting as m where c.id = m.calendarInstance.id and m.meetingDate=:meetingdate and c.entityId=:centerId and c.entityTypeId=4")
-
-    Integer countOfMeetingDate(@Param("meetingdate") Date localDate,@Param("centerId") Long centerId);
 }

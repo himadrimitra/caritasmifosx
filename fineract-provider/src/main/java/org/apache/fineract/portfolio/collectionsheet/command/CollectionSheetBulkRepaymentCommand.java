@@ -28,17 +28,16 @@ public class CollectionSheetBulkRepaymentCommand {
     private final String note;
     private final LocalDate transactionDate;
     private final SingleRepaymentCommand[] repaymentTransactions;
-    private final Boolean flag;
+
     
     public CollectionSheetBulkRepaymentCommand(final String note, final LocalDate transactionDate,
-            final SingleRepaymentCommand[] repaymentTransactions,final Boolean flag) {
+            final SingleRepaymentCommand[] repaymentTransactions) {
         this.note = note;
         this.transactionDate = transactionDate;
         this.repaymentTransactions = repaymentTransactions;
-        this.flag=flag;
     }
     
-    public String getNote() {
+	public String getNote() {
         return this.note;
     }
 
@@ -46,11 +45,8 @@ public class CollectionSheetBulkRepaymentCommand {
         return this.repaymentTransactions;
     }
 
-    public LocalDate getTransactionDate() {
-        return this.transactionDate;
-    }
-    public Boolean getFlag(){
-        return this.flag;
-    }
+	public LocalDate getTransactionDate() {
+		return this.transactionDate;
+	}
     
 }
