@@ -126,7 +126,7 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         }
         result.setRollbackTransaction(null);
 
-        publishEvent(wrapper.entityName(), wrapper.actionName(), result);
+        publishEvent(wrapper, result);
 
         return result;
     }
@@ -207,11 +207,12 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         return rollbackTransaction;
     }
 
-    private void publishEvent(final String entityName, final String actionName, final CommandProcessingResult result) {
-
+    private void publishEvent(final CommandWrapper wrapper, final CommandProcessingResult result) {
+    	final String entityName = wrapper.entityName();
+    	final String actionName = wrapper.actionName();
         final String authToken = ThreadLocalContextUtil.getAuthToken();
         final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        final AppUser appUser = this.context.authenticatedUser();
+        final AppUser appUser = this.context.authenticatedUser(wrapper);
 
         final HookEventSource hookEventSource = new HookEventSource(entityName, actionName);
 
