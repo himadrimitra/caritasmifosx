@@ -379,8 +379,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         List<Map<String, Object>> dividendDetails = this.shareAccountDividendReadPlatformService.retriveDividendDetailsForPostDividents();
         StringBuilder errorMsg = new StringBuilder();
         for (Map<String, Object> dividendMap : dividendDetails) {
-            final Long id = ((BigInteger) dividendMap.get("id")).longValue();
-            final Long savingsId = ((BigInteger) dividendMap.get("savingsAccountId")).longValue();
+            final Long id = ((Long) dividendMap.get("id"));
+            final Long savingsId = ((BigInteger) dividendMap.get("savingsAccountId"));
             try {
                 this.shareAccountSchedularService.postDividend(id, savingsId);
             } catch (final PlatformApiDataValidationException e) {
