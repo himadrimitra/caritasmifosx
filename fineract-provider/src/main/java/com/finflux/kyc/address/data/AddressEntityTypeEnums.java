@@ -16,7 +16,8 @@ public enum AddressEntityTypeEnums {
     CLIENTS(1, "addressEntityType.clients"), //
     GROUPS(2, "addressEntityType.groups"), //
     CENTERS(3, "addressEntityType.centers"), //
-    OFFICES(4, "addressEntityType.offices"); //
+    OFFICES(4, "addressEntityType.offices"), //
+    BUSINESSCORRESPONDENTS(5, "addressEntityType.businesscorrespondents"); // ;
 
     private final Integer value;
     private final String code;
@@ -50,6 +51,9 @@ public enum AddressEntityTypeEnums {
                 case 4:
                     addressEntityTypeEnums = AddressEntityTypeEnums.OFFICES;
                 break;
+                case 5:
+                    addressEntityTypeEnums = AddressEntityTypeEnums.BUSINESSCORRESPONDENTS;
+                break;
             }
         }
         return addressEntityTypeEnums;
@@ -70,6 +74,9 @@ public enum AddressEntityTypeEnums {
                 break;
                 case AddressApiConstants.enumTypeOffices:
                     addressEntityTypeEnums = AddressEntityTypeEnums.OFFICES;
+                break;
+                case AddressApiConstants.enumTypeBusinessCorrespondents:
+                    addressEntityTypeEnums = AddressEntityTypeEnums.BUSINESSCORRESPONDENTS;
                 break;
 
             }
@@ -123,6 +130,9 @@ public enum AddressEntityTypeEnums {
             case OFFICES:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), AddressApiConstants.enumTypeOffices);
             break;
+            case BUSINESSCORRESPONDENTS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), AddressApiConstants.enumTypeBusinessCorrespondents);
+            break;
             default:
             break;
 
@@ -145,7 +155,11 @@ public enum AddressEntityTypeEnums {
     public boolean isOffice() {
         return this.value.equals(AddressEntityTypeEnums.OFFICES.getValue());
     }
-
+    
+    public boolean isBusinessCorrespondents() {
+        return this.value.equals(AddressEntityTypeEnums.BUSINESSCORRESPONDENTS.getValue());
+    }
+    
     private static final Map<String, AddressEntityTypeEnums> entityTypeNameToEnumMap = new HashMap<>();
 
     static {
@@ -153,7 +167,7 @@ public enum AddressEntityTypeEnums {
             entityTypeNameToEnumMap.put(entityType.name().toLowerCase(), entityType);
         }
     }
-
+    
     public static AddressEntityTypeEnums getEntityType(String entityType) {
         return entityTypeNameToEnumMap.get(entityType.toLowerCase());
     }

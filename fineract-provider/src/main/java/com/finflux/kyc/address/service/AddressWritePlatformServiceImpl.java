@@ -117,7 +117,7 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
 
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(address, entityId, entityTypeEnum, command);
 
-            this.repository.saveAndFlush(address);
+            this.repository.save(address);
 
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
@@ -207,8 +207,8 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
         if (realCause.getMessage().contains("f_entity_address_UNIQUE")) {
             final Long addressTypeId = command.longValueOfParameterNamed(AddressApiConstants.addressTypesParamName);
             final CodeValue addressType = this.codeValueRepository.findOneWithNotFoundDetection(addressTypeId);
-            throw new PlatformDataIntegrityException("error.msg.address.type.duplicate", "Address type `" + addressType.label()
-                    + "` already exists", "addressType", addressType.label());
+            throw new PlatformDataIntegrityException("error.msg.address.type.duplicate",
+                    "Address type `" + addressType.label() + "` already exists", "addressType", addressType.label());
         }
 
         logAsErrorUnexpectedDataIntegrityException(dve);
@@ -220,5 +220,4 @@ public class AddressWritePlatformServiceImpl implements AddressWritePlatformServ
     private void logAsErrorUnexpectedDataIntegrityException(final DataIntegrityViolationException dve) {
         logger.error(dve.getMessage(), dve);
     }
-
 }

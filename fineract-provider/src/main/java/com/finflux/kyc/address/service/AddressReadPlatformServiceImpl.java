@@ -16,7 +16,6 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
-import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -86,7 +85,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }
             final Integer entityTypeEnum = addressEntityType.getValue();
-            this.addressBusinessValidators.validateAddressEntityIdAndEntityType(entityTypeEnum, entityId);
+            //this.addressBusinessValidators.validateAddressEntityIdAndEntityType(entityTypeEnum, entityId);
             final Collection<AddressEntityData> addressEntityDatas = retrieveAddressEntityData(entityId, entityTypeEnum, addressId);
             if (addressEntityDatas != null) {
                 final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas);
@@ -183,14 +182,14 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
         return districtDatas;
     }
 
-    @SuppressWarnings({ "unused", "unchecked", "rawtypes", "null" })
+    @SuppressWarnings({ "unused" })
     @Override
     public Collection<AddressData> retrieveByentityTypeAndEntityId(final String entityType, final Long entityId) {
-    	final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
         try {
+            final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }
             final Integer entityTypeEnum = addressEntityType.getValue();
-            this.addressBusinessValidators.validateAddressEntityIdAndEntityType(entityTypeEnum, entityId);
+            //this.addressBusinessValidators.validateAddressEntityIdAndEntityType(entityTypeEnum, entityId);
             final Collection<AddressEntityData> addressEntityDatas = retrieveAddressEntityData(entityId, entityTypeEnum, null);
             if (addressEntityDatas != null) {
                 Set<Long> addressIds = new HashSet<Long>();
@@ -212,8 +211,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 }
             }
         } catch (final EmptyResultDataAccessException e) {
-        	throw new GeneralPlatformDomainRuleException("error.msg.address.with.entitytype.and.entityid.does.not.exists",
-                    "Address with " + addressEntityType.name() + " id "+entityId+" does not exists.");
+            
         }
         return null;
     }
@@ -247,9 +245,9 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             return this.schema;
         }
 
-        @SuppressWarnings({ "null", "unused" })
+        @SuppressWarnings({ "unused" })
         @Override
-        public AddressData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+        public AddressData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
 
             final Long addressId = rs.getLong("addressId");
             final String houseNo = rs.getString("houseNo");
@@ -346,7 +344,6 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             return this.schema;
         }
 
-        @SuppressWarnings("null")
         @Override
         public AddressEntityData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 

@@ -1,12 +1,9 @@
 package com.finflux.infrastructure.gis.district.domain;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.finflux.infrastructure.gis.district.exception.DistrictNotFoundException;
-import com.finflux.infrastructure.gis.state.domain.State;
 
 @Service
 public class DistrictRepositoryWrapper {
@@ -34,9 +31,5 @@ public class DistrictRepositoryWrapper {
 
     public void delete(final District district) {
         this.repository.delete(district);
-    }
-
-    public List<District> findByEntityTypeIdAndEntityId(final State state) {
-        return this.repository.findByState(state);
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.kyc.address.service.AddressWritePlatformService;
 
 @Service
-@CommandType(entity = "ADDRESS", action = "UPDATE")
+@CommandType(entity = "ADDRESSES", action = "UPDATE")
 public class UpdateAddressCommandHandler implements NewCommandSourceHandler {
 
     private final AddressWritePlatformService writePlatformService;
