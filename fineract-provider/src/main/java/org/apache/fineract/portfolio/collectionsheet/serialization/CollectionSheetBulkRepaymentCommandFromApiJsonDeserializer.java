@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.serialization.AbstractFromApiJsonDeserializer;
 import org.apache.fineract.infrastructure.core.serialization.FromApiJsonDeserializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.SingleRepaymentCommand;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
@@ -79,7 +80,6 @@ public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer ex
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
 
         SingleRepaymentCommand[] loanRepaymentTransactions = null;
-
         if (element.isJsonObject()) {
             if (topLevelJsonElement.has("bulkRepaymentTransactions") && topLevelJsonElement.get("bulkRepaymentTransactions").isJsonArray()) {
                 final JsonArray array = topLevelJsonElement.get("bulkRepaymentTransactions").getAsJsonArray();
@@ -100,14 +100,8 @@ public final class CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer ex
                 }
             }
         }
-        return new CollectionSheetBulkRepaymentCommand(note, transactionDate, loanRepaymentTransactions,null);
+		return new CollectionSheetBulkRepaymentCommand(note, transactionDate,
+				loanRepaymentTransactions);
     }
-    
-    public CollectionSheetBulkRepaymentCommand commandFromApiJsonDate(final String json) {
-        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
-        final JsonElement element = this.fromApiJsonHelper.parse(json);
-        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed("transactionDate", element);
-        final boolean flag=this.fromApiJsonHelper.extractBooleanNamed("flag", element);
-        return new CollectionSheetBulkRepaymentCommand(null,transactionDate,null,flag);
-    }
+       
 }

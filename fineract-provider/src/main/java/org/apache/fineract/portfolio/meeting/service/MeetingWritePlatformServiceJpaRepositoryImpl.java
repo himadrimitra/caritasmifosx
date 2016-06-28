@@ -48,9 +48,11 @@ import org.apache.fineract.portfolio.calendar.exception.CalendarNotFoundExceptio
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepository;
+import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
+import org.apache.fineract.portfolio.group.exception.CollectionSheetHasAlreadyBeenSubmittedException;
 import org.apache.fineract.portfolio.meeting.attendance.domain.ClientAttendance;
 import org.apache.fineract.portfolio.meeting.data.MeetingDataValidator;
 import org.apache.fineract.portfolio.meeting.domain.Meeting;
@@ -313,7 +315,7 @@ public class MeetingWritePlatformServiceJpaRepositoryImpl implements MeetingWrit
     public void updateCollectionSheetAttendance(final JsonCommand command) {
         final Date meetingDate = command.DateValueOfParameterNamed(transactionDateParamName);
         final Boolean isTransactionDateOnNonMeetingDate = command.booleanPrimitiveValueOfParameterNamed(isTransactionDateOnNonMeetingDateParamName);
-
+        final Boolean forcedSubmitOfCollectionSheet=command.booleanPrimitiveValueOfParameterNamed(CollectionSheetConstants.forcedSubmitOfCollectionSheet);
         try {
             final CalendarInstance calendarInstance = getCalendarInstance(command);
             
@@ -331,10 +333,17 @@ public class MeetingWritePlatformServiceJpaRepositoryImpl implements MeetingWrit
 				}
 			}
             // create new meeting
-            final Meeting newMeeting = (meeting != null) ? meeting : Meeting.createNew(calendarInstance, meetingDate, isTransactionDateOnNonMeetingDate,
-            		isSkipRepaymentOnFirstMonth, numberOfDays);
+			Meeting newMeeting = null;
+			if(meeting==null){
+				newMeeting=Meeting.createNew(calendarInstance, meetingDate,isTransactionDateOnNonMeetingDate,isSkipRepaymentOnFirstMonth, numberOfDays);
+			}else{
+				if(!forcedSubmitOfCollectionSheet){
+					throw new CollectionSheetHasAlreadyBeenSubmittedException(new LocalDate(meetingDate));
+				}
+				newMeeting = meeting;
+			}
 
-            final Collection<ClientAttendance> clientsAttendance = getClientsAttendance(newMeeting, command);
+			final Collection<ClientAttendance> clientsAttendance = getClientsAttendance(newMeeting, command);
             if (clientsAttendance != null && !clientsAttendance.isEmpty()) {
                 newMeeting.updateAttendance(clientsAttendance);
             }
