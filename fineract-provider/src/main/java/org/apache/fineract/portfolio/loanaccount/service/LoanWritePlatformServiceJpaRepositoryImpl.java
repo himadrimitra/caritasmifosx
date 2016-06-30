@@ -2416,7 +2416,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             for (Map.Entry<Integer, LocalDate> entry : scheduleDates.entrySet()) {
 
                 final LoanCharge loanCharge = LoanCharge.createNewFromJson(loan, chargeDefinition, command, entry.getValue());
-
+                if(loanCharge.getAmount(loan.getCurrency()).isGreaterThanZero()){
                 LoanOverdueInstallmentCharge overdueInstallmentCharge = new LoanOverdueInstallmentCharge(loanCharge, installment,
                         entry.getKey());
                 loanCharge.updateOverdueInstallmentCharge(overdueInstallmentCharge);
@@ -2429,6 +2429,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 if (entry.getValue().isAfter(lastChargeAppliedDate)) {
                     lastChargeAppliedDate = entry.getValue();
                 }
+               } 
             }
         }
 
