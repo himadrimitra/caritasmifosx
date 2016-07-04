@@ -78,6 +78,10 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> {
         this.amountPaid = null;
         this.amountWaived = null;
         this.amountWrittenOff = null;
+        
+        if (this.loancharge.getTaxGroup() != null) {
+            this.loancharge.updateLoanChargeTaxDetails(installment.getDueDate(), this.amount);
+        }      
     }
 
     public void copyFrom(final LoanInstallmentCharge loanChargePerInstallment) {

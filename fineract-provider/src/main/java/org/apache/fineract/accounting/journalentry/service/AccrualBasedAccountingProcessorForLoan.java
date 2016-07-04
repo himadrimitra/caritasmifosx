@@ -34,6 +34,7 @@ import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.accounting.journalentry.data.ChargePaymentDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanTransactionDTO;
+import org.apache.fineract.accounting.journalentry.data.TaxPaymentDTO;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -222,25 +223,26 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
 
         // handle fees payment of writeOff (and reversals)
         if (feesAmount != null && !(feesAmount.compareTo(BigDecimal.ZERO) == 0)) {
-            totalDebitAmount = totalDebitAmount.add(feesAmount);
-
+            totalDebitAmount = totalDebitAmount.add(feesAmount); 
+            BigDecimal totalTaxAmount = addTaxDetailsToGLAccount(loanTransactionDTO.getTaxPaymentDTOs(), accountMap);
             if (isIncomeFromFee) {
                 GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), paymentTypeId);
                 if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(feesAmount);
+                    BigDecimal amount = accountMap.get(account).add(feesAmount.subtract(totalTaxAmount));
                     accountMap.put(account, amount);
                 } else {
-                    accountMap.put(account, feesAmount);
+                    accountMap.put(account, feesAmount.subtract(totalTaxAmount));
                 }
+
             } else {
                 GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue(), paymentTypeId);
                 if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(feesAmount);
+                    BigDecimal amount = accountMap.get(account).add(feesAmount.subtract(totalTaxAmount));
                     accountMap.put(account, amount);
                 } else {
-                    accountMap.put(account, feesAmount);
+                    accountMap.put(account, feesAmount.subtract(totalTaxAmount));
                 }
             }
         }
@@ -248,24 +250,26 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
         // handle penalties payment of writeOff (and reversals)
         if (penaltiesAmount != null && !(penaltiesAmount.compareTo(BigDecimal.ZERO) == 0)) {
             totalDebitAmount = totalDebitAmount.add(penaltiesAmount);
+            BigDecimal totalTaxAmount = addTaxDetailsToGLAccount(loanTransactionDTO.getTaxPaymentDTOs(), accountMap);
             if (isIncomeFromFee) {
                 GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue(), paymentTypeId);
                 if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(penaltiesAmount);
+                    BigDecimal amount = accountMap.get(account).add(penaltiesAmount.subtract(totalTaxAmount));
                     accountMap.put(account, amount);
                 } else {
-                    accountMap.put(account, penaltiesAmount);
+                    accountMap.put(account, penaltiesAmount.subtract(totalTaxAmount));
                 }
             } else {
                 GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.PENALTIES_RECEIVABLE.getValue(), paymentTypeId);
                 if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(penaltiesAmount);
+                    BigDecimal amount = accountMap.get(account).add(penaltiesAmount.subtract(totalTaxAmount));
                     accountMap.put(account, amount);
                 } else {
-                    accountMap.put(account, penaltiesAmount);
+                    accountMap.put(account, penaltiesAmount.subtract(totalTaxAmount));
                 }
+
             }
         }
 
@@ -307,6 +311,23 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                 }
             }
         }
+    }
+
+    private BigDecimal addTaxDetailsToGLAccount(final List<TaxPaymentDTO> taxPaymentDetails, Map<GLAccount, BigDecimal> accountMap) {
+        BigDecimal totalTaxAmount = BigDecimal.ZERO;
+        for(TaxPaymentDTO taxPaymentDTO : taxPaymentDetails){
+            final GLAccount glAccount  = this.helper.getGLAccountById(taxPaymentDTO.getCreditAccountId());
+            if(taxPaymentDTO != null){
+                if (accountMap.containsKey(glAccount)) {
+                    BigDecimal amount = accountMap.get(glAccount).add(taxPaymentDTO.getAmount());
+                    accountMap.put(glAccount, amount);
+                } else {
+                    accountMap.put(glAccount, taxPaymentDTO.getAmount());
+                }
+                totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
+            }     
+        }
+        return totalTaxAmount;
     }
 
     /**
@@ -458,7 +479,7 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
             }
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), loanProductId, loanId, transactionId, transactionDate, feesAmount,
-                    !isReversal, chargePaymentDTOs);
+                    !isReversal, chargePaymentDTOs, loanTransactionDTO.getTaxPaymentDTOs());
         }
 
         if (penaltiesAmount != null && !(penaltiesAmount.compareTo(BigDecimal.ZERO) == 0)) {
@@ -473,7 +494,7 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
 
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue(), loanProductId, loanId, transactionId, transactionDate,
-                    penaltiesAmount, !isReversal, chargePaymentDTOs);
+                    penaltiesAmount, !isReversal, chargePaymentDTOs, loanTransactionDTO.getTaxPaymentDTOs());
         }
 
         if (overPaymentAmount != null && !(overPaymentAmount.compareTo(BigDecimal.ZERO) == 0)) {

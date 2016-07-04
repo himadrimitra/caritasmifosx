@@ -208,7 +208,7 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             }
 
             if (changes.containsKey("charges")) {
-                final List<Charge> productCharges = assembleListOfProductCharges(command, product.getCurrency().getCode());
+                List<Charge> productCharges = assembleListOfProductCharges(command, product.getCurrency().getCode());
                 final boolean updated = product.update(productCharges);
                 if (!updated) {
                     changes.remove("charges");
