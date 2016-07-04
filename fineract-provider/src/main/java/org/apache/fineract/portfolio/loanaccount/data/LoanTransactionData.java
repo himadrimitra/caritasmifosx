@@ -62,6 +62,8 @@ public class LoanTransactionData {
 
     // templates
     final Collection<PaymentTypeData> paymentTypeOptions;
+    private String groupExternalId = null;
+    private String loanAccountNumber = null;
 
     public static LoanTransactionData templateOnTop(final LoanTransactionData loanTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
@@ -200,9 +202,46 @@ public class LoanTransactionData {
          this.possibleNextRepaymentDate = possibleNextRepaymentDate;
 	}
 
-	
+    private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
+            final PaymentDetailData paymentDetailData, final LocalDate date, final BigDecimal amount,
+            Collection<PaymentTypeData> paymentOptions, final String externalId, final LocalDate submittedOnDate,
+            final String groupExternalId, final String loanAccountNumber) {
+        this.id = id;
+        this.officeId = officeId;
+        this.officeName = officeName;
+        this.type = transactionType;
+        this.paymentDetailData = paymentDetailData;
+        this.date = date;
+        this.amount = amount;
+        this.paymentTypeOptions = paymentOptions;
+        this.externalId = externalId;
+        this.submittedOnDate = submittedOnDate;
+        this.unrecognizedIncomePortion = null;
+        this.transfer = null;
+        this.principalPortion = null;
+        this.possibleNextRepaymentDate = null;
+        this.penaltyChargesPortion = null;
+        this.overpaymentPortion = null;
+        this.outstandingLoanBalance = null;
+        this.manuallyReversed = false;
+        this.interestPortion = null;
+        this.fixedEmiAmount = null;
+        this.feeChargesPortion = null;
+        this.currency = null;
+        this.groupExternalId = groupExternalId;
+        this.loanAccountNumber = loanAccountNumber;
+    }
 
-	public LocalDate dateOf() {
+    public static LoanTransactionData LoanTransactionDataTemplate(Long id, final Long officeId, final String officeName,
+            LoanTransactionEnumData transactionType, final PaymentDetailData paymentDetailData, final LocalDate date,
+            final BigDecimal amount, Collection<PaymentTypeData> paymentOptions, final String externalId, final LocalDate submittedOnDate,
+            final String groupExternalId, final String loanAccountNumber) {
+        return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, date, amount, paymentOptions,
+                externalId, submittedOnDate, groupExternalId, loanAccountNumber);
+
+    }
+
+    public LocalDate dateOf() {
         return this.date;
     }
 

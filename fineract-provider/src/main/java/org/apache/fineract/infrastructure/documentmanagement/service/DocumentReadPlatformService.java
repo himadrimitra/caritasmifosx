@@ -31,4 +31,6 @@ public interface DocumentReadPlatformService {
 
     DocumentData retrieveDocument(String entityType, Long entityId, Long documentId);
 
+    DocumentData retrieveDocument(String entityType, Long entityId, Long documentId, boolean isHideLocation, boolean idHideStorageType);
+
 }

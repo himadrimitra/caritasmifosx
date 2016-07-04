@@ -140,4 +140,15 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
         }
     }
 
+    @Override
+    public DocumentData retrieveDocument(String entityType, Long entityId, Long documentId, boolean isHideLocation,
+            boolean idHideStorageType) {
+        try {
+            final DocumentMapper mapper = new DocumentMapper(isHideLocation, idHideStorageType);
+            return fetchDocumentDetails(entityType, entityId, documentId, mapper);
+        } catch (final EmptyResultDataAccessException e) {
+            throw new DocumentNotFoundException(entityType, entityId, documentId);
+        }
+    }
+
 }
