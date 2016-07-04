@@ -137,6 +137,9 @@ public final class LoanTransaction extends AbstractPersistable<Long> {
     @JoinColumn(name = "loan_transaction_id", referencedColumnName= "id" , nullable = false)
     private Set<LoanTransactionToRepaymentScheduleMapping> loanTransactionToRepaymentScheduleMappings = new HashSet<>();
 
+    @Column(name = "is_reconciled")
+    private boolean isReconciled;
+
     protected LoanTransaction() {
         this.loan = null;
         this.dateOf = null;
@@ -763,6 +766,14 @@ public final class LoanTransaction extends AbstractPersistable<Long> {
         
     public Boolean isAllowTypeTransactionAtTheTimeOfLastUndo(){
     	return isDisbursement() || isAccrual() || isRepaymentAtDisbursement();
+    }
+
+    public boolean isReconciled() {
+        return this.isReconciled;
+    }
+
+    public void setReconciled(boolean isReconciled) {
+        this.isReconciled = isReconciled;
     }
 
 }
