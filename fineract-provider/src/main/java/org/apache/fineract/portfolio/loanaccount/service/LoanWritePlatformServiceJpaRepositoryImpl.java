@@ -1281,6 +1281,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     if (recalculateFrom.isAfter(disbursementDetail.expectedDisbursementDateAsLocalDate())) {
                         recalculateFrom = disbursementDetail.expectedDisbursementDateAsLocalDate();
                     }
+                    if (loanCharge.getTaxGroup() != null) {
+                        loanCharge.createLoanChargeTaxDetails(disbursementDetail.expectedDisbursementDateAsLocalDate(), loanCharge.amount());
+                    }
                 }
             }
             loan.addTrancheLoanCharge(chargeDefinition);
@@ -1294,6 +1297,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             if (loanCharge.getDueLocalDate() == null || recalculateFrom.isAfter(loanCharge.getDueLocalDate())) {
                 isAppliedOnBackDate = true;
                 recalculateFrom = loanCharge.getDueLocalDate();
+            }
+            if (loanCharge.getTaxGroup() != null) {
+                loanCharge.createLoanChargeTaxDetails(loan.getDisbursementDate(), loanCharge.amount());
             }
         }
 

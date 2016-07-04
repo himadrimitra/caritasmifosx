@@ -29,6 +29,7 @@ import org.apache.fineract.accounting.common.AccountingConstants.FINANCIAL_ACTIV
 import org.apache.fineract.accounting.journalentry.data.ChargePaymentDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanTransactionDTO;
+import org.apache.fineract.accounting.journalentry.data.TaxPaymentDTO;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -220,17 +221,17 @@ public class CashBasedAccountingProcessorForLoan implements AccountingProcessorF
         }
 
         if (feesAmount != null && !(feesAmount.compareTo(BigDecimal.ZERO) == 0)) {
-            totalDebitAmount = totalDebitAmount.add(feesAmount);
+            totalDebitAmount = totalDebitAmount.add(feesAmount);            
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), loanProductId, loanId, transactionId, transactionDate, feesAmount,
-                    isReversal, loanTransactionDTO.getFeePayments());
+                    isReversal, loanTransactionDTO.getFeePayments(), loanTransactionDTO.getTaxPaymentDTOs());
         }
 
         if (penaltiesAmount != null && !(penaltiesAmount.compareTo(BigDecimal.ZERO) == 0)) {
             totalDebitAmount = totalDebitAmount.add(penaltiesAmount);
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue(), loanProductId, loanId, transactionId, transactionDate,
-                    penaltiesAmount, isReversal, loanTransactionDTO.getPenaltyPayments());
+                    penaltiesAmount, isReversal, loanTransactionDTO.getPenaltyPayments(), loanTransactionDTO.getTaxPaymentDTOs());
         }
 
         if (overPaymentAmount != null && !(overPaymentAmount.compareTo(BigDecimal.ZERO) == 0)) {
@@ -357,7 +358,7 @@ public class CashBasedAccountingProcessorForLoan implements AccountingProcessorF
             }
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), loanProductId, loanId, transactionId, transactionDate, feesAmount,
-                    !isReversal, chargePaymentDTOs);
+                    !isReversal, chargePaymentDTOs, loanTransactionDTO.getTaxPaymentDTOs());
         }
 
         if (penaltiesAmount != null && !(penaltiesAmount.compareTo(BigDecimal.ZERO) == 0)) {
@@ -371,7 +372,7 @@ public class CashBasedAccountingProcessorForLoan implements AccountingProcessorF
             
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue(), loanProductId, loanId, transactionId, transactionDate,
-                    penaltiesAmount, !isReversal, chargePaymentDTOs);
+                    penaltiesAmount, !isReversal, chargePaymentDTOs, loanTransactionDTO.getTaxPaymentDTOs());
         }
 
         if (overPaymentAmount != null && !(overPaymentAmount.compareTo(BigDecimal.ZERO) == 0)) {
