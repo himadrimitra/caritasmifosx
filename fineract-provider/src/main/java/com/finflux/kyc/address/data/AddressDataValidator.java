@@ -54,7 +54,7 @@ public class AddressDataValidator {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                .resource(AddressApiConstants.ADDRESS_RESOURCE_NAME);
+                .resource(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
 
         final JsonElement parentElement = this.fromApiJsonHelper.parse(json);
         final JsonObject parentElementObj = parentElement.getAsJsonObject();
@@ -152,7 +152,7 @@ public class AddressDataValidator {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                .resource(AddressApiConstants.ADDRESS_RESOURCE_NAME);
+                .resource(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
 
         final JsonElement parentElement = this.fromApiJsonHelper.parse(json);
         final JsonObject parentElementObj = parentElement.getAsJsonObject();

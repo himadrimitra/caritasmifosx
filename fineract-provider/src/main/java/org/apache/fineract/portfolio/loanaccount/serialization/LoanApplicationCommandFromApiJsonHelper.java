@@ -1107,6 +1107,14 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
     }
 
+    public void validateRecalcuationFrequency(final LocalDate recalculationFrequencyDate, final LocalDate expectedDisbursementDate,
+            final List<ApiParameterError> dataValidationErrors, final String paramName) {
+
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan");
+        baseDataValidator.reset().parameter(paramName).value(recalculationFrequencyDate).notNull()
+                .validateDateBeforeOrEqual(expectedDisbursementDate);
+    }
+
     public void validateLoanCharges(final Set<LoanCharge> charges, final List<ApiParameterError> dataValidationErrors) {
         if (charges == null) { return; }
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan");

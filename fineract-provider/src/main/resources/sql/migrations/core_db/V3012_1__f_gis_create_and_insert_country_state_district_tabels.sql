@@ -34,3 +34,30 @@ CREATE TABLE `f_district` (
 	INDEX `INX_district_name` (`district_name`),
 	CONSTRAINT `FK_state_id` FOREIGN KEY (`state_id`) REFERENCES `f_state` (`id`)
 )AUTO_INCREMENT=1;
+
+INSERT IGNORE INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES 
+('gis', 'CREATE_COUNTRY', 'COUNTRY', 'CREATE', 0),
+('gis', 'CREATE_COUNTRY_CHECKER', 'COUNTRY', 'CREATE_CHECKER', 0),
+('gis', 'UPDATE_COUNTRY', 'COUNTRY', 'UPDATE', 0),
+('gis', 'UPDATE_COUNTRY_CHECKER', 'COUNTRY', 'UPDATE_CHECKER', 0),
+('gis', 'DELETE_COUNTRY', 'COUNTRY', 'DELETE', 0),
+('gis', 'DELETE_COUNTRY_CHECKER', 'COUNTRY', 'DELETE_CHECKER', 0),
+('gis', 'READ_COUNTRY', 'COUNTRY', 'READ', 0);
+
+INSERT IGNORE INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES 
+('gis', 'CREATE_STATE', 'STATE', 'CREATE', 0),
+('gis', 'CREATE_STATE_CHECKER', 'STATE', 'CREATE_CHECKER', 0),
+('gis', 'UPDATE_STATE', 'STATE', 'UPDATE', 0),
+('gis', 'UPDATE_STATE_CHECKER', 'STATE', 'UPDATE_CHECKER', 0),
+('gis', 'DELETE_STATE', 'STATE', 'DELETE', 0),
+('gis', 'DELETE_STATE_CHECKER', 'STATE', 'DELETE_CHECKER', 0),
+('gis', 'READ_STATE', 'STATE', 'READ', 0);
+
+INSERT IGNORE INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES 
+('gis', 'CREATE_DISTRICT', 'DISTRICT', 'CREATE', 0),
+('gis', 'CREATE_DISTRICT_CHECKER', 'DISTRICT', 'CREATE_CHECKER', 0),
+('gis', 'UPDATE_DISTRICT', 'DISTRICT', 'UPDATE', 0),
+('gis', 'UPDATE_DISTRICT_CHECKER', 'DISTRICT', 'UPDATE_CHECKER', 0),
+('gis', 'DELETE_DISTRICT', 'DISTRICT', 'DELETE', 0),
+('gis', 'DELETE_DISTRICT_CHECKER', 'DISTRICT', 'DELETE_CHECKER', 0),
+('gis', 'READ_DISTRICT', 'DISTRICT', 'READ', 0);

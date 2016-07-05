@@ -19,7 +19,10 @@
 package org.apache.fineract.portfolio.common.domain;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 
 public enum PeriodFrequencyType {
@@ -95,5 +98,41 @@ public enum PeriodFrequencyType {
         }
 
         return values.toArray();
+    }
+    
+    public static Collection<EnumOptionData> periodFrequencyTypeOptions() {
+        final Collection<EnumOptionData> periodFrequencyTypeOptions = new ArrayList<>();
+        for (final PeriodFrequencyType enumType : values()) {
+            final EnumOptionData enumOptionData = periodFrequencyType(enumType.getValue());
+            if (enumOptionData != null) {
+                periodFrequencyTypeOptions.add(enumOptionData);
+            }
+        }
+        return periodFrequencyTypeOptions;
+    }
+
+    public static EnumOptionData periodFrequencyType(final int id) {
+        return periodFrequencyType(PeriodFrequencyType.fromInt(id));
+    }
+
+    public static EnumOptionData periodFrequencyType(final PeriodFrequencyType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case DAYS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "DAYS");
+            break;
+            case WEEKS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "WEEKS");
+            break;
+            case MONTHS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "MONTHS");
+            break;
+            case YEARS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "YEARS");
+            break;
+            default:
+            break;
+        }
+        return optionData;
     }
 }

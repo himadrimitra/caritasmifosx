@@ -8,7 +8,7 @@ import com.finflux.kyc.address.data.AddressData;
 
 public class AddressApiConstants {
 
-    public static final String ADDRESS_RESOURCE_NAME = "address";
+    public static final String ADDRESSES_RESOURCE_NAME = "addresses";
 
     /**
      * Template
