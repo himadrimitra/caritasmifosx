@@ -25,11 +25,13 @@ public class TaxPaymentDTO {
     private final Long creditAccountId;
     private final Long debitAccountId;
     private final BigDecimal amount;
+    private final Long loanChargeId;
 
-    public TaxPaymentDTO(final Long debitAccountId, final Long creditAccountId, final BigDecimal amount) {
+    public TaxPaymentDTO(final Long debitAccountId, final Long creditAccountId, final BigDecimal amount, final Long loanChargeId) {
         this.debitAccountId = debitAccountId;
         this.creditAccountId = creditAccountId;
         this.amount = amount;
+        this.loanChargeId = loanChargeId;
     }
 
     public Long getCreditAccountId() {
@@ -42,6 +44,10 @@ public class TaxPaymentDTO {
 
     public BigDecimal getAmount() {
         return this.amount;
+    }
+
+    public Long getLoanChargeId() {
+        return this.loanChargeId;
     }
 
 }
