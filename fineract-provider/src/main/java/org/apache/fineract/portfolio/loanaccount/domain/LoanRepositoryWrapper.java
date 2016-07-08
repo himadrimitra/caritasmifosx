@@ -54,5 +54,9 @@ public class LoanRepositoryWrapper {
         final Collection<Loan> loans = this.repository.findByClientIdAndGroupIdAndLoanStatus(clientId, groupId, loanStatuses);
         return loans;
     }
+    
+    public void save(final Loan loan) {
+        this.repository.save(loan);
+    }
 
 }

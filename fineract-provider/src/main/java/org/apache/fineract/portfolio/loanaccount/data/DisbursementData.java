@@ -27,12 +27,10 @@ import org.joda.time.LocalDate;
  */
 public class DisbursementData implements Comparable<DisbursementData> {
 
-    @SuppressWarnings("unused")
     private final Long id;
     private final LocalDate expectedDisbursementDate;
     private final LocalDate actualDisbursementDate;
     private final BigDecimal principal;
-    @SuppressWarnings("unused")
     private final String loanChargeId;
     private final BigDecimal chargeAmount;
 
@@ -81,6 +79,27 @@ public class DisbursementData implements Comparable<DisbursementData> {
     private boolean occursOnDayFromAndUpToAndIncluding(final LocalDate fromNotInclusive, final LocalDate upToAndInclusive,
             final LocalDate target) {
         return target != null && target.isAfter(fromNotInclusive) && !target.isAfter(upToAndInclusive);
+    }
+
+    
+    public Long getId() {
+        return this.id;
+    }
+
+    public LocalDate getExpectedDisbursementDate() {
+        return this.expectedDisbursementDate;
+    }
+
+    public LocalDate getActualDisbursementDate() {
+        return this.actualDisbursementDate;
+    }
+
+    public BigDecimal getPrincipal() {
+        return this.principal;
+    }
+
+    public String getLoanChargeId() {
+        return this.loanChargeId;
     }
 
 }

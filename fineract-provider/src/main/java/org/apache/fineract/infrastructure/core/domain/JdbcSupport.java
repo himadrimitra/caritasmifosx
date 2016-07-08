@@ -119,4 +119,20 @@ public class JdbcSupport {
         }
         return result;
     }
+    
+    public static Long getLongActualValue(final ResultSet rs, final String columnName) throws SQLException {
+        if (rs.getObject(columnName) != null) {
+            final Long value = Long.parseLong(rs.getObject(columnName).toString());
+            if (value != null) { return value; }
+        }
+        return null;
+    }
+
+    public static Integer getIntegeActualValue(final ResultSet rs, final String columnName) throws SQLException {
+        if (rs.getObject(columnName) != null) {
+            final Integer value = Integer.parseInt(rs.getObject(columnName).toString());
+            if (value != null) { return value; }
+        }
+        return null;
+    }
 }

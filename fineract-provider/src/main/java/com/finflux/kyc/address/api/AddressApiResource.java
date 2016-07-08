@@ -63,7 +63,7 @@ public class AddressApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTemplate(@Context final UriInfo uriInfo) {
 
-        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESS_RESOURCE_NAME);
+        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
 
         final AddressTemplateData addressTemplateData = this.addressReadPlatformService.retrieveTemplate();
 
@@ -101,7 +101,7 @@ public class AddressApiResource {
     public String retrieveOne(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
             @PathParam("addressId") final Long addressId, @Context final UriInfo uriInfo) {
 
-        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESS_RESOURCE_NAME);
+        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
 
         final AddressData addressData = this.addressReadPlatformService.retrieveOne(entityType, entityId, addressId);
 

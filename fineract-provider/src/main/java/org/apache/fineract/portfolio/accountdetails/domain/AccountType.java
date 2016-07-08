@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.accountdetails.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Enum representation of account types .
  */
@@ -90,5 +93,13 @@ public enum AccountType {
 
     public boolean isJLGAccount() {
         return this.value.equals(AccountType.JLG.getValue());
+    }
+    
+    public static Object[] codeNames() {
+        final List<String> codes = new ArrayList<>();
+        for (final AccountType enumType : values()) {
+            codes.add(enumType.getName());
+        }
+        return codes.toArray();
     }
 }

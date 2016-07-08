@@ -3075,4 +3075,67 @@ public class CommandWrapperBuilder {
         this.href = entityType + "/" + entityId + "/addresses/" + addressId;
         return this;
     }
+    
+    public CommandWrapperBuilder createLoanApplicationReference() {
+        this.actionName = "CREATE";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.href = "/loanapplicationreferences";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "UPDATE";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "DELETE";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder requestForApprovalLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "REQUESTFORAPPROVAL";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder rejectLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "REJECT";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder approveLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "APPROVE";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder undoApproveLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "UNDOAPPROVE";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
+
+    public CommandWrapperBuilder disburseLoanApplicationReference(final Long loanApplicationReferenceId) {
+        this.actionName = "DISBURSE";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
 }

@@ -309,7 +309,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
-    private Set<LoanOfficerAssignmentHistory> loanOfficerHistory;
+    private Set<LoanOfficerAssignmentHistory> loanOfficerHistory = new HashSet<>();
 
     // see
     // http://stackoverflow.com/questions/4334970/hibernate-cannot-simultaneously-fetch-multiple-bags
@@ -479,7 +479,7 @@ public class Loan extends AbstractPersistable<Long> {
             this.charges = associateChargesWithThisLoan(loanCharges);
             this.summary = updateSummaryWithTotalFeeChargesDueAtDisbursement(deriveSumTotalOfChargesDueAtDisbursement());
         } else {
-            this.charges = null;
+            this.charges = new HashSet<>();
             this.summary = new LoanSummary();
         }
         if (collateral != null && !collateral.isEmpty()) {
@@ -487,12 +487,16 @@ public class Loan extends AbstractPersistable<Long> {
         } else {
             this.collateral = null;
         }
-        this.loanOfficerHistory = null;
+        this.loanOfficerHistory = new HashSet<>();
 
         this.syncDisbursementWithMeeting = syncDisbursementWithMeeting;
         this.fixedEmiAmount = fixedEmiAmount;
         this.maxOutstandingLoanBalance = maxOutstandingLoanBalance;
-        this.disbursementDetails = disbursementDetails;
+        if(disbursementDetails != null && disbursementDetails.size() > 0){
+            this.disbursementDetails = disbursementDetails;
+        }else{
+            this.disbursementDetails = new HashSet<>();
+        }
         this.approvedPrincipal = this.loanRepaymentScheduleDetail.getPrincipal().getAmount();
         this.createStandingInstructionAtDisbursement = createStandingInstructionAtDisbursement;
 
@@ -1793,6 +1797,15 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
+	public LocalDate getRecalculateFromDate(LocalDate recalculateFromDate, LocalDate expectedDisbursementDateAsLocalDate) {
+        if (recalculateFromDate == null) {
+            recalculateFromDate = expectedDisbursementDateAsLocalDate;
+        } else if (recalculateFromDate.isAfter(expectedDisbursementDateAsLocalDate)) {
+            recalculateFromDate = expectedDisbursementDateAsLocalDate;
+        }
+        return recalculateFromDate;
+    }
+	
     private void removeChargesByDisbursementID(Long id) {
         List<LoanCharge> tempCharges = new ArrayList<>();
         for (LoanCharge charge : this.charges) {
@@ -4154,6 +4167,14 @@ public class Loan extends AbstractPersistable<Long> {
 
     public BigDecimal getProposedPrincipal() {
         return this.proposedPrincipal;
+    }
+    
+    public void updateProposedPrincipal(final BigDecimal proposedPrincipal) {
+        this.proposedPrincipal = proposedPrincipal;
+    }
+
+    public void updateApprovedPrincipal(final BigDecimal approvedPrincipal) {
+        this.approvedPrincipal = approvedPrincipal;
     }
 
     public Map<String, Object> deriveAccountingBridgeData(final CurrencyData currencyData, final List<Long> existingTransactionIds,

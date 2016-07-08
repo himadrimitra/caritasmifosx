@@ -225,54 +225,16 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     public CommandProcessingResult submitApplication(final JsonCommand command) {
 
         try {
-            final AppUser currentUser = getAppUserIfPresent();
-            boolean isMeetingMandatoryForJLGLoans = configurationDomainService.isMeetingMandatoryForJLGLoans();
             final Long productId = this.fromJsonHelper.extractLongNamed("productId", command.parsedJson());
             final LoanProduct loanProduct = this.loanProductRepository.findOne(productId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(productId); }
+            
+            final Loan newLoanApplication = validateAndAssembleSubmitLoanApplication(loanProduct,command);
 
-            this.fromApiJsonDeserializer.validateForCreate(command.json(), isMeetingMandatoryForJLGLoans, loanProduct);
-
-            validateCollateralAmountWithPrincipal(command, loanProduct);
-
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-            final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan");
-
-            if (loanProduct.useBorrowerCycle()) {
-                final Long clientId = this.fromJsonHelper.extractLongNamed("clientId", command.parsedJson());
-                final Long groupId = this.fromJsonHelper.extractLongNamed("groupId", command.parsedJson());
-                Integer cycleNumber = 0;
-                if (clientId != null) {
-                    cycleNumber = this.loanReadPlatformService.retriveLoanCounter(clientId, loanProduct.getId());
-                } else if (groupId != null) {
-                    cycleNumber = this.loanReadPlatformService.retriveLoanCounter(groupId, AccountType.GROUP.getValue(),
-                            loanProduct.getId());
-                }
-                this.loanProductCommandFromApiJsonDeserializer.validateMinMaxConstraints(command.parsedJson(), baseDataValidator,
-                        loanProduct, cycleNumber);
-            } else {
-                this.loanProductCommandFromApiJsonDeserializer.validateMinMaxConstraints(command.parsedJson(), baseDataValidator,
-                        loanProduct);
+            if(!command.parameterExists("isonlyloanappcreate")){
+                this.loanRepository.save(newLoanApplication);
             }
-            if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-
-            final Loan newLoanApplication = this.loanAssembler.assembleFrom(command, currentUser);
-
-            validateSubmittedOnDate(newLoanApplication);
-
-            final LoanProductRelatedDetail productRelatedDetail = newLoanApplication.repaymentScheduleDetail();
-
-            if (loanProduct.getLoanProductConfigurableAttributes() != null) {
-                updateProductRelatedDetails(productRelatedDetail, newLoanApplication);
-            }
-
-            this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(newLoanApplication.getTermFrequency(),
-                    newLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
-                    productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
-                    newLoanApplication);
-
-            this.loanRepository.save(newLoanApplication);
-
+            
             if (loanProduct.isInterestRecalculationEnabled()) {
                 this.fromApiJsonDeserializer.validateLoanForInterestRecalculation(newLoanApplication);
                 createAndPersistCalendarInstanceForInterestRecalculation(newLoanApplication);
@@ -351,6 +313,54 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
     }
 
+private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProduct, final JsonCommand command) {
+
+        final AppUser currentUser = getAppUserIfPresent();
+
+        boolean isMeetingMandatoryForJLGLoans = configurationDomainService.isMeetingMandatoryForJLGLoans();
+        this.fromApiJsonDeserializer.validateForCreate(command.json(), isMeetingMandatoryForJLGLoans, loanProduct);
+
+        validateCollateralAmountWithPrincipal(command, loanProduct);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan");
+
+        if (loanProduct.useBorrowerCycle()) {
+            final Long clientId = this.fromJsonHelper.extractLongNamed("clientId", command.parsedJson());
+            final Long groupId = this.fromJsonHelper.extractLongNamed("groupId", command.parsedJson());
+            Integer cycleNumber = 0;
+            if (clientId != null) {
+                cycleNumber = this.loanReadPlatformService.retriveLoanCounter(clientId, loanProduct.getId());
+            } else if (groupId != null) {
+                cycleNumber = this.loanReadPlatformService.retriveLoanCounter(groupId, AccountType.GROUP.getValue(), loanProduct.getId());
+            }
+            this.loanProductCommandFromApiJsonDeserializer.validateMinMaxConstraints(command.parsedJson(), baseDataValidator, loanProduct,
+                    cycleNumber);
+        } else {
+            this.loanProductCommandFromApiJsonDeserializer.validateMinMaxConstraints(command.parsedJson(), baseDataValidator, loanProduct);
+        }
+        if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+
+        final Loan newLoanApplication = this.loanAssembler.assembleFrom(command, currentUser);
+        
+        validateSubmittedOnDate(newLoanApplication.getSubmittedOnDate(), newLoanApplication.getExpectedFirstRepaymentOnDate(),
+                newLoanApplication.loanProduct(), newLoanApplication.client());
+
+        final LoanProductRelatedDetail productRelatedDetail = newLoanApplication.repaymentScheduleDetail();
+
+        if (loanProduct.getLoanProductConfigurableAttributes() != null) {
+            updateProductRelatedDetails(productRelatedDetail, newLoanApplication);
+        }
+
+        this.fromApiJsonDeserializer
+                .validateLoanTermAndRepaidEveryValues(newLoanApplication.getTermFrequency(),
+                        newLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
+                        productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
+                        newLoanApplication);
+        
+        return newLoanApplication;
+    }
+	
     private void updateProductRelatedDetails(LoanProductRelatedDetail productRelatedDetail, Loan loan) {
         final Boolean amortization = loan.loanProduct().getLoanProductConfigurableAttributes().getAmortizationBoolean();
         final Boolean arrearsTolerance = loan.loanProduct().getLoanProductConfigurableAttributes().getArrearsToleranceBoolean();
@@ -602,7 +612,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             }
 
             existingLoanApplication.updateIsInterestRecalculationEnabled();
-            validateSubmittedOnDate(existingLoanApplication);
+            
+            validateSubmittedOnDate(existingLoanApplication.getSubmittedOnDate(),
+                    existingLoanApplication.getExpectedFirstRepaymentOnDate(), existingLoanApplication.loanProduct(),
+                    existingLoanApplication.client());
 
             final LoanProductRelatedDetail productRelatedDetail = existingLoanApplication.repaymentScheduleDetail();
             if (existingLoanApplication.loanProduct().getLoanProductConfigurableAttributes() != null) {
@@ -1104,13 +1117,28 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         return loan;
     }
 
-    private void validateSubmittedOnDate(final Loan loan) {
-        final LocalDate startDate = loan.loanProduct().getStartDate();
-        final LocalDate closeDate = loan.loanProduct().getCloseDate();
-        final LocalDate expectedFirstRepaymentOnDate = loan.getExpectedFirstRepaymentOnDate();
-        final LocalDate submittedOnDate = loan.getSubmittedOnDate();
+    public void validateSubmittedOnDate(final LocalDate submittedOnDate, final LocalDate expectedFirstRepaymentOnDate,
+            final LoanProduct loanProduct, final Client client) {
 
+        final LocalDate startDate = loanProduct.getStartDate();
+        final LocalDate closeDate = loanProduct.getCloseDate();
         String defaultUserMessage = "";
+        
+        if (client != null) {
+            final LocalDate activationDate = client.getActivationLocalDate();
+
+            if (activationDate == null) {
+                defaultUserMessage = "Client is not activated.";
+                throw new LoanApplicationDateException("client.is.not.activated", defaultUserMessage);
+            }
+
+            if (submittedOnDate.isBefore(activationDate)) {
+                defaultUserMessage = "Submitted on date cannot be before the client activation date.";
+                throw new LoanApplicationDateException("submitted.on.date.cannot.be.before.the.client.activation.date", defaultUserMessage,
+                        submittedOnDate.toString(), activationDate.toString());
+            }
+        }
+
         if (startDate != null && submittedOnDate.isBefore(startDate)) {
             defaultUserMessage = "submittedOnDate cannot be before the loan product startDate.";
             throw new LoanApplicationDateException("submitted.on.date.cannot.be.before.the.loan.product.start.date", defaultUserMessage,

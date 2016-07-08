@@ -650,5 +650,14 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
 		}
 		return newAppUserClientMappings;
 	}
+	
+    public void validateHasThesePermission(final String... permissionCodes) {
+        for (final String resourceType : permissionCodes) {
+            final String authorizationMessage = "User has no authority for " + resourceType.toLowerCase() + "s";
+            final String matchPermission = resourceType.toUpperCase();
+            if (hasNotPermissionForAnyOf("ALL_FUNCTIONS", "ALL_FUNCTIONS_READ", matchPermission)) { throw new NoAuthorizationException(
+                    authorizationMessage); }
+        }
+    }
 
 }
