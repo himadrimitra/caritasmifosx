@@ -60,6 +60,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
     /**
      * The parameters supported for this command.
      */
+
     final Set<String> supportedParameters = new HashSet<>(Arrays.asList(LoanApiConstants.dateFormatParameterName,
             LoanApiConstants.localeParameterName, LoanApiConstants.idParameterName, LoanApiConstants.clientIdParameterName,
             LoanApiConstants.groupIdParameterName, LoanApiConstants.loanTypeParameterName, LoanApiConstants.productIdParameterName,
@@ -92,7 +93,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanApiConstants.linkAccountIdParameterName, LoanApiConstants.disbursementDataParameterName,
             LoanApiConstants.emiAmountParameterName, LoanApiConstants.maxOutstandingBalanceParameterName,
             LoanProductConstants.graceOnArrearsAgeingParameterName, LoanApiConstants.createStandingInstructionAtDisbursementParameterName, "pledgeId", "collateralUserValue",
-            LoanApiConstants.recurringMoratoriumOnPrincipalPeriods));
+            LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
@@ -470,6 +471,14 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             baseDataValidator.reset().parameter(LoanApiConstants.maxOutstandingBalanceParameterName).value(maxOutstandingBalance)
                     .ignoreIfNull().positiveAmount();
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)) {
+            final Boolean isSubsidyApplicable = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.isSubsidyApplicableParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.isSubsidyApplicableParamName).value(isSubsidyApplicable)
+                    .ignoreIfNull().validateForBooleanValue();
+        }
+        
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -900,6 +909,14 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             baseDataValidator.reset().parameter(LoanApiConstants.maxOutstandingBalanceParameterName).value(maxOutstandingBalance)
                     .ignoreIfNull().positiveAmount();
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)) {
+            final Boolean isSubsidyApplicable = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.isSubsidyApplicableParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.isSubsidyApplicableParamName).value(isSubsidyApplicable)
+                    .ignoreIfNull().validateForBooleanValue();
+        }
+
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
 

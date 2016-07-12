@@ -38,6 +38,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.shareproducts.constants.ShareProductApiConstants;
@@ -137,8 +138,7 @@ public final class ProductToGLAccountMappingFromApiJsonDeserializer {
             final Long transfersInSuspenseAccountId = this.fromApiJsonHelper.extractLongNamed(
                     LOAN_PRODUCT_ACCOUNTING_PARAMS.TRANSFERS_SUSPENSE.getValue(), element);
             baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.TRANSFERS_SUSPENSE.getValue())
-                    .value(transfersInSuspenseAccountId).notNull().integerGreaterThanZero();
-
+                    .value(transfersInSuspenseAccountId).notNull().integerGreaterThanZero();            
         }
 
         if (isAccrualBasedAccounting(accountingRuleType)) {
@@ -157,6 +157,19 @@ public final class ProductToGLAccountMappingFromApiJsonDeserializer {
                     LOAN_PRODUCT_ACCOUNTING_PARAMS.PENALTIES_RECEIVABLE.getValue(), element);
             baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.PENALTIES_RECEIVABLE.getValue())
                     .value(receivablePenaltyAccountId).notNull().integerGreaterThanZero();
+            
+            if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)
+                    && this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.isSubsidyApplicableParamName, element)) {
+                final Long subsidyAccountId = this.fromApiJsonHelper.extractLongNamed(
+                        LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), element);
+                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue()).value(subsidyAccountId)
+                        .notNull().integerGreaterThanZero();
+
+                final Long subsidyFundSourcetId = this.fromApiJsonHelper.extractLongNamed(
+                        LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(), element);
+                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue())
+                        .value(subsidyFundSourcetId).notNull().integerGreaterThanZero();
+            }
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

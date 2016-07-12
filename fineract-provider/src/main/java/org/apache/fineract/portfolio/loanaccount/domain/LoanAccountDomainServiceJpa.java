@@ -19,10 +19,10 @@
 package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -174,9 +174,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final ChangedTransactionDetail changedTransactionDetail = loan.makeRepayment(newRepaymentTransaction,
                 defaultLoanLifecycleStateMachine(), existingTransactionIds, existingReversedTransactionIds, isRecoveryRepayment,
                 scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
-
         saveLoanTransactionWithDataIntegrityViolationChecks(newRepaymentTransaction);
-
+        
         /***
          * TODO Vishwas Batch save is giving me a
          * HibernateOptimisticLockingFailureException, looping and saving for
@@ -184,9 +183,24 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
          * only in edge cases (when a payment is made before the latest payment
          * recorded against the loan)
          ***/
-
         saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
-
+        
+        if (!isRecoveryRepayment && loan.isSubsidyApplicable()
+                && isRealizationTransactionApplicable(loan, transactionDate, scheduleGeneratorDTO)) {
+            final LoanTransaction newrealizationLoanSubsidyTransaction = LoanTransaction.realizationLoanSubsidy(loan.getOffice(),
+                    loan.getTotalSubsidyAmount(), paymentDetail, transactionDate, txnExternalId, currentDateTime.plusMinutes(1),
+                    currentUser);
+            final ChangedTransactionDetail changedTransactionDetailAfterRealization = loan.makeRepayment(
+                    newrealizationLoanSubsidyTransaction, defaultLoanLifecycleStateMachine(), existingTransactionIds,
+                    existingReversedTransactionIds, isRecoveryRepayment, scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
+             saveLoanTransactionWithDataIntegrityViolationChecks(newrealizationLoanSubsidyTransaction);
+            if (changedTransactionDetail != null && changedTransactionDetailAfterRealization != null) {
+                changedTransactionDetail.getNewTransactionMappings().putAll(
+                        changedTransactionDetailAfterRealization.getNewTransactionMappings());
+            }
+            saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
+        }
+        
         if (changedTransactionDetail != null) {
             for (Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
                 saveLoanTransactionWithDataIntegrityViolationChecks(mapEntry.getValue());
@@ -215,7 +229,86 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         return newRepaymentTransaction;
     }
+    
+    public Boolean isRealizationTransactionApplicable(final Loan loan, final LocalDate transactionDate,
+            final ScheduleGeneratorDTO scheduleGeneratorDTO) {
+        if (loan.getTotalSubsidyAmount().plus(loan.getTotalTransactionAmountPaid())
+                .isGreaterThanOrEqualTo(loan.getPrincpal().plus(loan.getTotalInterestAmountTillDate(transactionDate)))) {
+            final MonetaryCurrency currency = loan.getCurrency();
+            final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = loan.fetchPrepaymentDetail(scheduleGeneratorDTO,
+                    transactionDate);
+            Money totalOutstandingLoanBalance = loanRepaymentScheduleInstallment.getTotalOutstanding(currency).minus(
+                    loan.getTotalSubsidyAmount().getAmount());
+            if (totalOutstandingLoanBalance.isLessThan(Money.of(currency, BigDecimal.ONE))) { return true; }
+        }
+        return false;
+    }
+    
+    @Transactional
+    @Override
+    public LoanTransaction addOrRevokeLoanSubsidy(final Loan loan, final CommandProcessingResultBuilder builderResult,
+            final LocalDate transactionDate, final Money transactionAmount, final PaymentDetail paymentDetail, final String txnExternalId,
+            boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto, LoanTransactionType loanTransactionType) {
+        AppUser currentUser = getAppUserIfPresent();
+        checkClientOrGroupActive(loan);
+        BUSINESS_EVENTS businessEvent = null;
+        LoanEvent loanEvent = null;
+        if (loanTransactionType.isAddSubsidy()) {
+            businessEvent = BUSINESS_EVENTS.LOAN_ADD_SUBSIDY;
+            loanEvent = LoanEvent.LOAN_ADD_SUBSIDY;
+        } else {
+            businessEvent = BUSINESS_EVENTS.LOAN_REVOKE_SUBSIDY;
+            loanEvent = LoanEvent.LOAN_REVOKE_SUBSIDY;
+        }
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(businessEvent, constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
 
+        final List<Long> existingTransactionIds = new ArrayList<>();
+        final List<Long> existingReversedTransactionIds = new ArrayList<>();
+
+        existingTransactionIds.addAll(loan.findExistingTransactionIds());
+        existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
+
+        final LocalDateTime currentDateTime = DateUtils.getLocalDateTimeOfTenant();
+        LoanTransaction newSubsidyTransaction = LoanTransaction.addOrRevokeLoanSubsidy(loan.getOffice(), transactionAmount, paymentDetail,
+                transactionDate, txnExternalId, currentDateTime, currentUser, loanTransactionType);
+
+        LocalDate recalculateFrom = null;
+        if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            recalculateFrom = transactionDate;
+        }
+        final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                holidayDetailDto);
+
+        final ChangedTransactionDetail changedTransactionDetail = loan.addOrRevokeSubsidyTransaction(newSubsidyTransaction,
+                scheduleGeneratorDTO, currentUser, loanEvent);
+
+        newSubsidyTransaction.updateLoan(loan);
+        saveLoanTransactionWithDataIntegrityViolationChecks(newSubsidyTransaction);
+
+        saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
+
+        if (changedTransactionDetail != null) {
+            for (Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
+                saveLoanTransactionWithDataIntegrityViolationChecks(mapEntry.getValue());
+                // update loan with references to the newly created transactions
+                loan.getLoanTransactions().add(mapEntry.getValue());
+                updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
+            }
+        }
+
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
+
+        this.businessEventNotifierService.notifyBusinessEventWasExecuted(businessEvent,
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, newSubsidyTransaction));
+
+        builderResult.withEntityId(newSubsidyTransaction.getId()) //
+                .withOfficeId(loan.getOfficeId()) //
+                .withClientId(loan.getClientId()) //
+                .withGroupId(loan.getGroupId()); //
+
+        return newSubsidyTransaction;
+    }
+    
     private void saveLoanTransactionWithDataIntegrityViolationChecks(LoanTransaction newRepaymentTransaction) {
         try {
             this.loanTransactionRepository.save(newRepaymentTransaction);

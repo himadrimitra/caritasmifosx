@@ -124,6 +124,7 @@ public class LoanProductTestBuilder {
     private Integer recalculationRestFrequencyOnDayType = null;
     private Integer recalculationCompoundingFrequencyDayOfWeekType = null;
     private Integer recalculationRestFrequencyDayOfWeekType = null;
+    private Boolean isSubsidyApplicable = null;
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -210,6 +211,9 @@ public class LoanProductTestBuilder {
         if(allowVariableInstallments) {
             map.put("minimumGap", minimumGap) ;
             map.put("maximumGap", maximumGap) ;
+        }
+        if (isSubsidyApplicable != null) {
+            map.put("isSubsidyApplicable", this.isSubsidyApplicable);
         }
         return new Gson().toJson(map);
     }
@@ -351,6 +355,9 @@ public class LoanProductTestBuilder {
                 map.put("fundSourceAccountId", ID);
                 map.put("loanPortfolioAccountId", ID);
                 map.put("transfersInSuspenseAccountId", ID);
+                if (this.isSubsidyApplicable != null && this.isSubsidyApplicable) {
+                    map.put("subsidyAccountId", ID);
+                }
             }
             if (this.accountList[i].getAccountType().equals(Account.AccountType.INCOME)) {
                 final String ID = this.accountList[i].getAccountID().toString();
@@ -366,6 +373,9 @@ public class LoanProductTestBuilder {
             if (this.accountList[i].getAccountType().equals(Account.AccountType.LIABILITY)) {
                 final String ID = this.accountList[i].getAccountID().toString();
                 map.put("overpaymentLiabilityAccountId", ID);
+                if (this.isSubsidyApplicable != null && this.isSubsidyApplicable) {
+                    map.put("subsidyFundSourceId", ID);
+                }
             }
         }
         return map;
@@ -382,7 +392,9 @@ public class LoanProductTestBuilder {
                 map.put("receivableInterestAccountId", ID);
                 map.put("receivableFeeAccountId", ID);
                 map.put("receivablePenaltyAccountId", ID);
-
+                if (this.isSubsidyApplicable != null && this.isSubsidyApplicable) {
+                    map.put("subsidyAccountId", ID);
+                }
             }
             if (this.accountList[i].getAccountType().equals(Account.AccountType.INCOME)) {
                 final String ID = this.accountList[i].getAccountID().toString();
@@ -398,6 +410,9 @@ public class LoanProductTestBuilder {
             if (this.accountList[i].getAccountType().equals(Account.AccountType.LIABILITY)) {
                 final String ID = this.accountList[i].getAccountID().toString();
                 map.put("overpaymentLiabilityAccountId", ID);
+                if (this.isSubsidyApplicable != null && this.isSubsidyApplicable) {
+                    map.put("subsidyFundSourceId", ID);
+                }
             }
         }
 
@@ -497,5 +512,10 @@ public class LoanProductTestBuilder {
         this.minimumGap = minimumGap;
         this.maximumGap = maximumGap;
         return this ;
+    }
+    
+    public LoanProductTestBuilder withIsSubsidyApplicable(Boolean isSubsidyApplicable) {
+        this.isSubsidyApplicable = isSubsidyApplicable;
+        return this;
     }
 }

@@ -52,6 +52,8 @@ public class LoanTransactionHelper {
     private static final String WITHDRAW_LOAN_APPLICATION_COMMAND = "withdrawnByApplicant";
     private static final String RECOVER_FROM_GUARANTORS_COMMAND = "recoverGuarantees";
     private static final String MAKE_REFUND_BY_CASH_COMMAND = "refundByCash";
+    private static final String ADD_SUBSIDY_COMMAND = "addsubsidy";
+    private static final String REVOKE_SUBSIDY_COMMAND = "revokesubsidy";
 
     public LoanTransactionHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         this.requestSpec = requestSpec;
@@ -216,6 +218,15 @@ public class LoanTransactionHelper {
         return (HashMap) performLoanTransaction(createLoanTransactionURL(MAKE_REPAYMENT_COMMAND, loanID),
                 getRepaymentBodyAsJSON(date, amountToBePaid), "");
     }
+    
+    public HashMap addSubsidy(final String date, final Float amountToBePaid, final Integer loanID) {
+        return (HashMap) performLoanTransaction(createLoanTransactionURL(ADD_SUBSIDY_COMMAND, loanID),
+                getAddSubsidyBodyAsJSON(date, amountToBePaid), "");
+    }
+    
+    public HashMap revokeSubsidy(final String date, final Integer loanID) {
+        return (HashMap) performLoanTransaction(createLoanTransactionURL(REVOKE_SUBSIDY_COMMAND, loanID), getAddRevokeBodyAsJSON(date), "");
+    }
 
     public HashMap withdrawLoanApplicationByClient(final String date, final Integer loanID) {
         return performLoanTransaction(createLoanOperationURL(WITHDRAW_LOAN_APPLICATION_COMMAND, loanID),
@@ -325,7 +336,24 @@ public class LoanTransactionHelper {
         map.put("note", "Repayment Made!!!");
         return new Gson().toJson(map);
     }
+    
+    private String getAddSubsidyBodyAsJSON(final String transactionDate, final Float transactionAmount) {
+        final HashMap<String, String> map = new HashMap<>();
+        map.put("locale", "en");
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("subsidyReleaseDate", transactionDate);
+        map.put("subsidyAmountReleased", transactionAmount.toString());
+        return new Gson().toJson(map);
+    }
 
+    private String getAddRevokeBodyAsJSON(final String transactionDate) {
+        final HashMap<String, String> map = new HashMap<>();
+        map.put("locale", "en");
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("subsidyRevokeDate", transactionDate);
+        return new Gson().toJson(map);
+    }
+    
     private String getWriteOffBodyAsJSON(final String transactionDate) {
         final HashMap<String, String> map = new HashMap<>();
         map.put("dateFormat", "dd MMMM yyyy");

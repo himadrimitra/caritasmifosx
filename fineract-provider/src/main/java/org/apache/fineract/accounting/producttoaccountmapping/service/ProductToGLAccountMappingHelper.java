@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.fineract.accounting.common.AccountingConstants.ACCRUAL_ACCOUNTS_FOR_LOAN;
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_LOAN;
 import org.apache.fineract.accounting.common.AccountingConstants.LOAN_PRODUCT_ACCOUNTING_PARAMS;
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
@@ -425,6 +426,18 @@ public class ProductToGLAccountMappingHelper {
     public void deleteProductToGLAccountMapping(final Long loanProductId, final PortfolioProductType portfolioProductType) {
         final List<ProductToGLAccountMapping> productToGLAccountMappings = this.accountMappingRepository.findByProductIdAndProductType(
                 loanProductId, portfolioProductType.getValue());
+        if (productToGLAccountMappings != null && productToGLAccountMappings.size() > 0) {
+            this.accountMappingRepository.deleteInBatch(productToGLAccountMappings);
+        }
+    }
+
+    //    deleteProductToGLAccountMappings
+    public void deleteProductToGLAccountSubsidyMapping(final Long loanProductId, final PortfolioProductType portfolioProductType) {
+        List<Integer> subsidyAccounts = new ArrayList();
+        subsidyAccounts.add(ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_FUND_SOURCE.getValue());
+        subsidyAccounts.add(ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_ACCOUNT.getValue());
+        final List<ProductToGLAccountMapping> productToGLAccountMappings = this.accountMappingRepository
+                .findByProductIdProductTypeAndFinancialAccountType(loanProductId, portfolioProductType.getValue(), subsidyAccounts);
         if (productToGLAccountMappings != null && productToGLAccountMappings.size() > 0) {
             this.accountMappingRepository.deleteInBatch(productToGLAccountMappings);
         }

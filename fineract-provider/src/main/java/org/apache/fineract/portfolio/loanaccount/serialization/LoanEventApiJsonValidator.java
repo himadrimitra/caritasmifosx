@@ -34,6 +34,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.exception.NotValidRecurringDateException;
@@ -109,7 +110,7 @@ public final class LoanEventApiJsonValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    public void validateDisbursementDateWithMeetingDate(final LocalDate actualDisbursementDate, final CalendarInstance calendarInstance, 
+    public void validateDisbursementDateWithMeetingDate(final LocalDate actualDisbursementDate, final CalendarInstance calendarInstance,
             Boolean isSkipRepaymentOnFirstMonth, Integer numberOfDays) {
         if (null != calendarInstance) {
             final Calendar calendar = calendarInstance.getCalendar();
@@ -174,6 +175,55 @@ public final class LoanEventApiJsonValidator {
 
         final String note = this.fromApiJsonHelper.extractStringNamed("note", element);
         baseDataValidator.reset().parameter("note").value(note).notExceedingLengthOf(1000);
+
+        validatePaymentDetails(baseDataValidator, element);
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+    
+    public void validateNewAddSubsidyTransaction(final String json) {
+
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Set<String> transactionParameters = new HashSet<>(Arrays.asList(LoanApiConstants.subsidyReleaseDate,
+                LoanApiConstants.subsidyAmountReleased, "externalId", "note", "locale", "dateFormat", "paymentTypeId", "accountNumber",
+                "checkNumber", "routingCode", "receiptNumber", "bankNumber"));
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, transactionParameters);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan.transaction");
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed(LoanApiConstants.subsidyReleaseDate, element);
+        baseDataValidator.reset().parameter(LoanApiConstants.subsidyReleaseDate).value(transactionDate).notNull()
+                .validateDateBeforeOrEqual(DateUtils.getLocalDateOfTenant());
+
+        final BigDecimal subsidyAmountReleased = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                LoanApiConstants.subsidyAmountReleased, element);
+        baseDataValidator.reset().parameter(LoanApiConstants.subsidyAmountReleased).value(subsidyAmountReleased).notNull().positiveAmount();
+
+        validatePaymentDetails(baseDataValidator, element);
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+    
+    public void validateNewRevokeSubsidyTransaction(final String json) {
+
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+
+        final Set<String> transactionParameters = new HashSet<>(Arrays.asList("subsidyRevokeDate", "externalId", "note", "locale",
+                "dateFormat", "paymentTypeId", "accountNumber", "checkNumber", "routingCode", "receiptNumber", "bankNumber"));
+
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, transactionParameters);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan.transaction");
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed("subsidyRevokeDate", element);
+        baseDataValidator.reset().parameter("subsidyRevokeDate").value(transactionDate).notNull()
+                .validateDateBeforeOrEqual(DateUtils.getLocalDateOfTenant());
 
         validatePaymentDetails(baseDataValidator, element);
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
