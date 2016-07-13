@@ -111,5 +111,7 @@ public interface LoanApiConstants {
     public static final String principalParamName = "principal";
     public static final String installmentAmountParamName = "installmentAmount";
     public static final String recurringMoratoriumOnPrincipalPeriods = "recurringMoratoriumOnPrincipalPeriods";
+    //loan write off
+    public static final String WRITEOFFREASONS = "WriteOffReasons";
 
 }
