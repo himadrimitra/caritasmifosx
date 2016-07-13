@@ -37,41 +37,51 @@ public class CodeValueData implements Serializable {
     
     @SuppressWarnings("unused")
     private final boolean isActive;
+    
+    @SuppressWarnings("unused")
+    private final Integer codeScore;
 
-    public static CodeValueData instance(final Long id, final String name, final Integer position, final boolean isActive) {
-        String description = null;
-        return new CodeValueData(id, name, position, description,isActive);
-    }
+	public static CodeValueData instance(final Long id, final String name, final Integer position,
+			final boolean isActive, final Integer codeScore) {
+		String description = null;
+		return new CodeValueData(id, name, position, description, isActive, codeScore);
+	}
 
     public static CodeValueData instance(final Long id, final String name, final String description, final boolean isActive) {
         Integer position = null;
-        return new CodeValueData(id, name, position, description,isActive);
+        final Integer codeScore = null;
+        return new CodeValueData(id, name, position, description,isActive, codeScore);
     }
 
     public static CodeValueData instance(final Long id, final String name) {
         String description = null;
         Integer position = null;
         boolean isActive = false;
-        return new CodeValueData(id, name, position, description, isActive);
+        final Integer codeScore = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore);
     }
 
-    public static CodeValueData instance(final Long id, final String name, final Integer position, final String description, final boolean isActive) {
-        return new CodeValueData(id, name, position, description,isActive);
+	public static CodeValueData instance(final Long id, final String name, final Integer position,
+			final String description, final boolean isActive, final Integer codeScore) {
+        return new CodeValueData(id, name, position, description, isActive, codeScore);
     }
 
     public static CodeValueData instance(final Long id, final String name, final boolean isActive) {
         String description = null;
         Integer position = null;
-        return new CodeValueData(id, name, position, description, isActive);
+        final Integer codeScore = null;
+        return new CodeValueData(id, name, position, description, isActive, codeScore );
     }
     
-    private CodeValueData(final Long id, final String name, final Integer position, final String description, final boolean isActive) {
-        this.id = id;
-        this.name = name;
-        this.position = position;
-        this.description = description;
-        this.isActive = isActive;
-    }
+	private CodeValueData(final Long id, final String name, final Integer position, final String description,
+			final boolean isActive, final Integer codeScore) {
+		this.id = id;
+		this.name = name;
+		this.position = position;
+		this.description = description;
+		this.isActive = isActive;
+		this.codeScore = codeScore;
+	}
 
     public Long getId() {
         return this.id;

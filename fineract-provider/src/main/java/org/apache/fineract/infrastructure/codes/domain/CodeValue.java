@@ -51,24 +51,29 @@ public class CodeValue extends AbstractPersistable<Long> {
     @JoinColumn(name = "code_id", nullable = false)
     private Code code;
 
+    @Column(name = "code_score")
+    private Integer codeScore;
+    
     @Column(name = "is_active")
     private boolean isActive;
 
     public static CodeValue createNew(final Code code, final String label, final int position, final String description,
-            final boolean isActive) {
-        return new CodeValue(code, label, position, description, isActive);
+            final boolean isActive, final Integer codeScore) {
+        return new CodeValue(code, label, position, description, isActive, codeScore);
     }
 
     protected CodeValue() {
         //
     }
 
-    private CodeValue(final Code code, final String label, final int position, final String description, final boolean isActive) {
+	private CodeValue(final Code code, final String label, final int position, final String description,
+			final boolean isActive, final Integer codeScore) {
         this.code = code;
         this.label = StringUtils.defaultIfEmpty(label, null);
         this.position = position;
         this.description = description;
         this.isActive = isActive;
+        this.codeScore = codeScore;
     }
 
     public String label() {
@@ -85,6 +90,7 @@ public class CodeValue extends AbstractPersistable<Long> {
         Integer position = command.integerValueSansLocaleOfParameterNamed(CODEVALUE_JSON_INPUT_PARAMS.POSITION.getValue());
         String description = command.stringValueOfParameterNamed(CODEVALUE_JSON_INPUT_PARAMS.DESCRIPTION.getValue());
         Boolean isActiveObj = command.booleanObjectValueOfParameterNamed(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue());
+        final Integer codeScore = command.integerValueSansLocaleOfParameterNamed(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue());
         boolean isActive = true;
         if (isActiveObj != null) {
             isActive = isActiveObj;
@@ -92,7 +98,7 @@ public class CodeValue extends AbstractPersistable<Long> {
         if (position == null) {
             position = new Integer(0);
         }
-        return new CodeValue(code, label, position.intValue(), description, isActive);
+        return new CodeValue(code, label, position.intValue(), description, isActive, codeScore);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -117,7 +123,11 @@ public class CodeValue extends AbstractPersistable<Long> {
         if (command.isChangeInIntegerSansLocaleParameterNamed(positionParamName, this.position)) {
             final Integer newValue = command.integerValueSansLocaleOfParameterNamed(positionParamName);
             actualChanges.put(positionParamName, newValue);
-            this.position = newValue.intValue();
+			if (newValue == null) {
+				this.position = 0;
+			} else {
+				this.position = newValue.intValue();
+			}
         }
 
         final String isActiveParamName = CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue();
@@ -126,11 +136,22 @@ public class CodeValue extends AbstractPersistable<Long> {
             actualChanges.put(isActiveParamName, newValue);
             this.isActive = newValue.booleanValue();
         }
+        
+        final String codeScoreName = CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue();
+        if(command.isChangeInIntegerSansLocaleParameterNamed(codeScoreName, this.codeScore)) {
+        	final Integer newValue = command.integerValueSansLocaleOfParameterNamed(codeScoreName);
+        	actualChanges.put(codeScoreName, newValue);
+			if (newValue == null) {
+				this.codeScore = newValue;
+			} else {
+				this.codeScore = newValue.intValue();
+			}
+        }
 
         return actualChanges;
     }
 
     public CodeValueData toData() {
-        return CodeValueData.instance(getId(), this.label, this.position, this.isActive);
+        return CodeValueData.instance(getId(), this.label, this.position, this.isActive, this.codeScore);
     }
 }
