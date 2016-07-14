@@ -437,11 +437,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REPAYMENT);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         final BigDecimal outstandingLoanBalance = loanRepaymentScheduleInstallment.getPrincipalOutstanding(currency).getAmount();
+        BigDecimal principalOustandingAmount = loanRepaymentScheduleInstallment.getPrincipalOutstanding(currency).getAmount();
+        BigDecimal totalOutstandingLoanBalance = loanRepaymentScheduleInstallment.getTotalOutstanding(currency).getAmount();
         final BigDecimal unrecognizedIncomePortion = null;
+        if(loan.isSubsidyApplicable() && (loan.getTotalSubsidyAmount().isGreaterThanZero())){
+        	principalOustandingAmount = principalOustandingAmount.subtract(loan.getTotalSubsidyAmount().getAmount());
+        	totalOutstandingLoanBalance = totalOutstandingLoanBalance.subtract(loan.getTotalSubsidyAmount().getAmount());
+        }
         return new LoanTransactionData(null, null, null, transactionType, null, currencyData, earliestUnpaidInstallmentDate,
-                loanRepaymentScheduleInstallment.getTotalOutstanding(currency).getAmount(), loanRepaymentScheduleInstallment
-                        .getPrincipalOutstanding(currency).getAmount(), loanRepaymentScheduleInstallment.getInterestOutstanding(currency)
-                        .getAmount(), loanRepaymentScheduleInstallment.getFeeChargesOutstanding(currency).getAmount(),
+        		totalOutstandingLoanBalance, principalOustandingAmount, loanRepaymentScheduleInstallment.getInterestOutstanding(currency).getAmount(),
+                loanRepaymentScheduleInstallment.getFeeChargesOutstanding(currency).getAmount(),
                 loanRepaymentScheduleInstallment.getPenaltyChargesOutstanding(currency).getAmount(), null, unrecognizedIncomePortion,
                 paymentOptions, null, null, null, outstandingLoanBalance, false);
     }
@@ -621,7 +626,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " l.is_floating_interest_rate as isFloatingInterestRate, "
                     + " l.interest_rate_differential as interestRateDifferential, "
                     + " l.create_standing_instruction_at_disbursement as createStandingInstructionAtDisbursement, "
-                    + " lpvi.minimum_gap as minimuminstallmentgap, lpvi.maximum_gap as maximuminstallmentgap "
+                    + " lpvi.minimum_gap as minimuminstallmentgap, lpvi.maximum_gap as maximuminstallmentgap , "
+                    + " l.is_subsidy_applicable as isSubsidyApplicable"
                     + " from m_loan l" //
                     + " join m_product_loan lp on lp.id = l.product_id" //
                     + " left join m_loan_recalculation_details lir on lir.loan_id = l.id "
@@ -735,6 +741,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final Boolean isvariableInstallmentsAllowed = rs.getBoolean("isvariableInstallmentsAllowed");
             final Integer minimumGap = rs.getInt("minimuminstallmentgap");
             final Integer maximumGap = rs.getInt("maximuminstallmentgap");
+            
+            final Boolean isSubsidyApplicable = rs.getBoolean("isSubsidyApplicable");
 
             final LoanApplicationTimelineData timeline = new LoanApplicationTimelineData(submittedOnDate, submittedByUsername,
                     submittedByFirstname, submittedByLastname, rejectedOnDate, rejectedByUsername, rejectedByFirstname, rejectedByLastname,
@@ -941,7 +949,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance, inArrears,
                     graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
                     interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed, minimumGap,
-                    maximumGap);
+                    maximumGap, isSubsidyApplicable);
         }
     }
 
@@ -1796,14 +1804,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public LoanTransactionData retrieveLoanWriteoffTemplate(final Long loanId) {
 
-        final LoanAccountData loan = this.retrieveOne(loanId);
+        final LoanAccountData loanAccountData = this.retrieveOne(loanId);
+        final Loan loan = loanRepository.findOne(loanId);
         final BigDecimal outstandingLoanBalance = null;
         final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.WRITEOFF);
         final BigDecimal unrecognizedIncomePortion = null;
         final List<CodeValueData> writeOffReasonOptions = new ArrayList<>(
                 this.codeValueReadPlatformService.retrieveCodeValuesByCode(LoanApiConstants.WRITEOFFREASONS));
-        LoanTransactionData loanTransactionData = new LoanTransactionData(null, null, null, transactionType, null, loan.currency(), DateUtils.getLocalDateOfTenant(),
-                loan.getTotalOutstandingAmount(), null, null, null, null, null, null, null, null, outstandingLoanBalance,
+        LoanTransactionData loanTransactionData = new LoanTransactionData(null, null, null, transactionType, null,
+                loanAccountData.currency(), DateUtils.getLocalDateOfTenant(), loanAccountData.getTotalOutstandingAmount().subtract(
+                        loan.getTotalSubsidyAmount().getAmount()), null, null, null, null, null, null, null, null, outstandingLoanBalance,
                 unrecognizedIncomePortion, false);
         loanTransactionData.setWriteOffReasonOptions(writeOffReasonOptions);
         return loanTransactionData;

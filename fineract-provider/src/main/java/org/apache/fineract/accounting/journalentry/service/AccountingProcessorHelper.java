@@ -134,6 +134,7 @@ public class AccountingProcessorHelper {
             final String transactionId = ((Long) map.get("id")).toString();
             final Date transactionDate = ((LocalDate) map.get("date")).toDate();
             final LoanTransactionEnumData transactionType = (LoanTransactionEnumData) map.get("type");
+            final LoanTransactionEnumData transactionSubType = (LoanTransactionEnumData) map.get("subType");
             final BigDecimal amount = (BigDecimal) map.get("amount");
             final BigDecimal principal = (BigDecimal) map.get("principalPortion");
             final BigDecimal interest = (BigDecimal) map.get("interestPortion");
@@ -179,7 +180,7 @@ public class AccountingProcessorHelper {
             }
             final LoanTransactionDTO transaction = new LoanTransactionDTO(transactionOfficeId, paymentTypeId, transactionId,
                     transactionDate, transactionType, amount, principal, interest, fees, penalties, overPayments, reversed,
-                    feePaymentDetails, penaltyPaymentDetails, isAccountTransfer, taxPayments);
+                    feePaymentDetails, penaltyPaymentDetails, isAccountTransfer, taxPayments, transactionSubType);
 
             newLoanTransactions.add(transaction);
 

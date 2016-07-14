@@ -466,7 +466,7 @@ public class LoanScheduleAssembler {
                 recalculationFrequencyType, restCalendarInstance, compoundingMethod, compoundingCalendarInstance, compoundingFrequencyType,
                 principalThresholdForLastInstalment, installmentAmountInMultiplesOf, loanProduct.preCloseInterestCalculationStrategy(),
                 calendar, BigDecimal.ZERO, loanTermVariations, isInterestChargedFromDateSameAsDisbursalDateEnabled,numberOfDays, isSkipMeetingOnFirstDay, detailDTO,
-                allowCompoundingOnEod);
+                allowCompoundingOnEod, loanProduct.isSubsidyApplicable());
 }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,

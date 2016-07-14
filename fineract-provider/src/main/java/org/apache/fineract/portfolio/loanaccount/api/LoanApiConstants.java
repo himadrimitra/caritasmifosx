@@ -113,5 +113,8 @@ public interface LoanApiConstants {
     public static final String recurringMoratoriumOnPrincipalPeriods = "recurringMoratoriumOnPrincipalPeriods";
     //loan write off
     public static final String WRITEOFFREASONS = "WriteOffReasons";
+    
+    public static final String subsidyReleaseDate = "subsidyReleaseDate";
+    public static final String subsidyAmountReleased = "subsidyAmountReleased";
 
 }

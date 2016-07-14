@@ -33,6 +33,7 @@ import org.apache.fineract.accounting.producttoaccountmapping.domain.ProductToGL
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -97,7 +98,6 @@ public class LoanProductToGLAccountMappingHelper extends ProductToGLAccountMappi
         mergeProductToAccountMappingChanges(element, paramName, productId, accountTypeId, accountTypeName, changes,
                 GLAccountType.LIABILITY, PortfolioProductType.LOAN);
     }
-
     /*** Abstractions for payments channel related to loan products ***/
 
     public void savePaymentChannelToFundSourceMappings(final JsonCommand command, final JsonElement element, final Long productId,
@@ -252,6 +252,9 @@ public class LoanProductToGLAccountMappingHelper extends ProductToGLAccountMappi
                 // liabilities
                 mergeLoanToLiabilityAccountMappingChanges(element, LOAN_PRODUCT_ACCOUNTING_PARAMS.OVERPAYMENT.getValue(), loanProductId,
                         CASH_ACCOUNTS_FOR_LOAN.OVERPAYMENT.getValue(), CASH_ACCOUNTS_FOR_LOAN.OVERPAYMENT.toString(), changes);
+                
+                // subsidy
+                handleChangesToLoanProductToGLAccountSubsidyMappings(loanProductId, element, changes);
             break;
             case ACCRUAL_UPFRONT:
                 // fall through to periodic accrual
@@ -295,8 +298,36 @@ public class LoanProductToGLAccountMappingHelper extends ProductToGLAccountMappi
                 // liabilities
                 mergeLoanToLiabilityAccountMappingChanges(element, LOAN_PRODUCT_ACCOUNTING_PARAMS.OVERPAYMENT.getValue(), loanProductId,
                         CASH_ACCOUNTS_FOR_LOAN.OVERPAYMENT.getValue(), CASH_ACCOUNTS_FOR_LOAN.OVERPAYMENT.toString(), changes);
+                
+                // subsidy
+                handleChangesToLoanProductToGLAccountSubsidyMappings(loanProductId, element, changes);
             break;
         }
+    }
+    
+    public void handleChangesToLoanProductToGLAccountSubsidyMappings(Long loanProductId, JsonElement element,
+            final Map<String, Object> changes) {
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)
+                && this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.isSubsidyApplicableParamName, element)) {
+            if (!this.fromApiJsonHelper.parameterExists("createSubsidyAccountMappings", element)) {
+                mergeLoanToAssetAccountMappingChanges(element, LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), loanProductId,
+                        ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_ACCOUNT.getValue(), ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_ACCOUNT.toString(), changes);
+                mergeLoanToLiabilityAccountMappingChanges(element, LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(),
+                        loanProductId, ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_FUND_SOURCE.getValue(),
+                        ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_FUND_SOURCE.toString(), changes);
+            } else {
+                this.saveLoanToAssetAccountMapping(element, LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), loanProductId,
+                        ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_ACCOUNT.getValue());
+                this.saveLoanToLiabilityAccountMapping(element, LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(),
+                        loanProductId, ACCRUAL_ACCOUNTS_FOR_LOAN.SUBSIDY_FUND_SOURCE.getValue());
+            }
+        } else {
+            this.deleteLoanProductToGLAccountSubsidyMapping(loanProductId);
+        }
+    }
+    
+    public void deleteLoanProductToGLAccountSubsidyMapping(final Long loanProductId) {
+        deleteProductToGLAccountSubsidyMapping(loanProductId, PortfolioProductType.LOAN);
     }
 
     public void deleteLoanProductToGLAccountMapping(final Long loanProductId) {
