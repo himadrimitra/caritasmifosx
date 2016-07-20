@@ -339,8 +339,8 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     }
 
     public void updateLoanApplicationCharges(final List<LoanApplicationCharge> loanApplicationCharges) {
-        if (loanApplicationCharges != null && !loanApplicationCharges.isEmpty()) {
-            this.loanApplicationCharges.clear();
+        this.loanApplicationCharges.clear();
+        if (loanApplicationCharges != null) {
             this.loanApplicationCharges.addAll(loanApplicationCharges);
         }
     }
