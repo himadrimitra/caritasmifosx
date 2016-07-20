@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.CodeConstants.CODEVALUE_JSON_INPUT_PARAMS;
@@ -84,6 +85,14 @@ public final class CodeValueCommandFromApiJsonDeserializer {
             final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element);
             baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue()).value(isActive).validateForBooleanValue();
         }
+        
+		if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element)) {
+			// Validate input value is a valid Integer
+			final Integer codeScore = this.fromApiJsonHelper.extractIntegerNamed(
+					CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element, Locale.getDefault());
+			baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue()).value(codeScore)
+					.ignoreIfNull().integerZeroOrGreater();
+		}
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -120,6 +129,15 @@ public final class CodeValueCommandFromApiJsonDeserializer {
             final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element);
             baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue()).value(isActive).validateForBooleanValue();
         }
+        
+		if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element)) {
+			// Validate input value is a valid Integer
+			final Integer codeScore = this.fromApiJsonHelper.extractIntegerNamed(
+					CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element, Locale.getDefault());
+			baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue()).value(codeScore)
+					.ignoreIfNull().integerZeroOrGreater();
+		}
+
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
