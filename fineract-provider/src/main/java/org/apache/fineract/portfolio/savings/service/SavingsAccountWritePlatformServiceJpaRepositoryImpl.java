@@ -29,6 +29,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdraw
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -60,6 +61,9 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
+import org.apache.fineract.portfolio.account.domain.AccountTransferStandingInstruction;
+import org.apache.fineract.portfolio.account.domain.StandingInstructionRepository;
+import org.apache.fineract.portfolio.account.domain.StandingInstructionStatus;
 import org.apache.fineract.portfolio.account.service.AccountAssociationsReadPlatformService;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
 import org.apache.fineract.portfolio.charge.domain.Charge;
@@ -136,6 +140,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final ConfigurationDomainService configurationDomainService;
     private final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository;
     private final AppUserRepositoryWrapper appuserRepository;
+    private final StandingInstructionRepository standingInstructionRepository;
 
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -155,7 +160,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final SavingsAccountDataValidator fromApiJsonDeserializer, final SavingsAccountRepositoryWrapper savingsRepository,
             final StaffRepositoryWrapper staffRepository, final ConfigurationDomainService configurationDomainService,
             final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
-            final AppUserRepositoryWrapper appuserRepository) {
+            final AppUserRepositoryWrapper appuserRepository, 
+            final StandingInstructionRepository standingInstructionRepository) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
@@ -179,6 +185,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.configurationDomainService = configurationDomainService;
         this.depositAccountOnHoldTransactionRepository = depositAccountOnHoldTransactionRepository;
         this.appuserRepository = appuserRepository;
+        this.standingInstructionRepository = standingInstructionRepository;
     }
 
     @Transactional
@@ -692,6 +699,10 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             }
 
         }
+        
+        // disable all standing orders linked to the savings account
+        this.disableStandingInstructionsLinkedToClosedSavings(account);
+        
         return new CommandProcessingResultBuilder() //
                 .withEntityId(savingsId) //
                 .withOfficeId(account.officeId()) //
@@ -1328,36 +1339,58 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         return user;
     }
 
-	 @Override
-	public List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions) {
-		List<Long> savingsTransactionIds = new ArrayList<>();
-		boolean isRegularTransaction = false;
-		boolean isAccountTransfer = false;
-		boolean isApplyWithdrawFee = true;
-		boolean isInterestTransfer = false;
-		boolean isExceptionForBalanceCheck = false;
-		SavingsTransactionBooleanValues transactionBooleanValues = new SavingsTransactionBooleanValues(
-				isAccountTransfer, isRegularTransaction, isApplyWithdrawFee, isInterestTransfer,
-				isExceptionForBalanceCheck);
-		final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
-				.isSavingsInterestPostingAtCurrentPeriodEnd();
-		final Integer financialYearBeginningMonth = this.configurationDomainService
-				.retrieveFinancialYearBeginningMonth();
-		final boolean isSavingAccountsInculdedInCollectionSheet = this.configurationDomainService
-				.isSavingAccountsInculdedInCollectionSheet();
-		final boolean isWithDrawForSavingsIncludedInCollectionSheet = this.configurationDomainService
-				.isWithDrawForSavingsIncludedInCollectionSheet();
-		Set<Long> savingsIds = savingstransactions.keySet();
-		for (Long savingId : savingsIds) {
-			try {
-				savingsTransactionIds.addAll(this.savingsAccountDomainService.handleDepositAndwithdrawal(savingId,
-						savingstransactions.get(savingId), transactionBooleanValues,
-						isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth,
-						isSavingAccountsInculdedInCollectionSheet, isWithDrawForSavingsIncludedInCollectionSheet));
-			} catch (Exception e) {
-				throw e;
-			}
-		}
-		return savingsTransactionIds;
-	}
+    @Override
+    public List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions) {
+        List<Long> savingsTransactionIds = new ArrayList<>();
+        boolean isRegularTransaction = false;
+        boolean isAccountTransfer = false;
+        boolean isApplyWithdrawFee = true;
+        boolean isInterestTransfer = false;
+        boolean isExceptionForBalanceCheck = false;
+        SavingsTransactionBooleanValues transactionBooleanValues = new SavingsTransactionBooleanValues(isAccountTransfer,
+                isRegularTransaction, isApplyWithdrawFee, isInterestTransfer, isExceptionForBalanceCheck);
+        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
+                .isSavingsInterestPostingAtCurrentPeriodEnd();
+        final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+        final boolean isSavingAccountsInculdedInCollectionSheet = this.configurationDomainService
+                .isSavingAccountsInculdedInCollectionSheet();
+        final boolean isWithDrawForSavingsIncludedInCollectionSheet = this.configurationDomainService
+                .isWithDrawForSavingsIncludedInCollectionSheet();
+        Set<Long> savingsIds = savingstransactions.keySet();
+        for (Long savingId : savingsIds) {
+            try {
+                savingsTransactionIds.addAll(this.savingsAccountDomainService.handleDepositAndwithdrawal(savingId,
+                        savingstransactions.get(savingId), transactionBooleanValues, isSavingsInterestPostingAtCurrentPeriodEnd,
+                        financialYearBeginningMonth, isSavingAccountsInculdedInCollectionSheet,
+                        isWithDrawForSavingsIncludedInCollectionSheet));
+            } catch (Exception e) {
+                throw e;
+            }
+        }
+        return savingsTransactionIds;
+    }
+
+    /**
+     * Disable all standing instructions linked to the savings account if the
+     * status is "closed"
+     * 
+     * @param savingsAccount
+     *            -- the savings account object
+     * @return None
+     **/
+    @Transactional
+    private void disableStandingInstructionsLinkedToClosedSavings(final SavingsAccount savingsAccount) {
+        if (savingsAccount != null && savingsAccount.isClosed()) {
+            final Integer standingInstructionStatus = StandingInstructionStatus.ACTIVE.getValue();
+            final Collection<AccountTransferStandingInstruction> accountTransferStandingInstructions = this.standingInstructionRepository
+                    .findBySavingsAccountAndStatus(savingsAccount, standingInstructionStatus);
+
+            if (!accountTransferStandingInstructions.isEmpty()) {
+                for (AccountTransferStandingInstruction accountTransferStandingInstruction : accountTransferStandingInstructions) {
+                    accountTransferStandingInstruction.updateStatus(StandingInstructionStatus.DISABLED.getValue());
+                    this.standingInstructionRepository.save(accountTransferStandingInstruction);
+                }
+            }
+        }
+    }
 }
