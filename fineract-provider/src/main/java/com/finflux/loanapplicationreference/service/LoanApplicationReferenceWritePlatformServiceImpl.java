@@ -226,7 +226,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                 this.validator.validateLoanTermAndRepaidEveryValues(minimumNoOfRepayments, maximumNoOfRepayments, actualNumberOfRepayments);
             }
             
-            Map<String, Object> changes = this.assembler.assembleApproveForm(loanApplicationReference, approveCommand);
+            Map<String, Object> changes = this.assembler.assembleApproveForm(loanApplicationReference, approveCommand, validateCommand);
             
             final BigDecimal loanAmountApproved = approveCommand.bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName);
             if (loanAmountApproved.compareTo(loanApplicationReference.getLoanAmountRequested()) == 1) {

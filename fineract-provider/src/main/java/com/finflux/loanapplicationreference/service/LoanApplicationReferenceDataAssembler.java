@@ -233,8 +233,12 @@ public class LoanApplicationReferenceDataAssembler {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public Map<String, Object> assembleApproveForm(final LoanApplicationReference loanApplicationReference, final JsonCommand command) {
+    public Map<String, Object> assembleApproveForm(final LoanApplicationReference loanApplicationReference, final JsonCommand command, final JsonCommand validateCommand) {
 
+        final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
+                validateCommand.json());
+        loanApplicationReference.updateLoanApplicationCharges(loanApplicationCharges);
+        
         Map<String, Object> changes = new LinkedHashMap<>(10);
         final LoanProduct loanProduct = loanApplicationReference.getLoanProduct();
         final Integer statusEnum = LoanApplicationReferenceStatus.APPLICATION_APPROVED.getValue();
