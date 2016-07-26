@@ -29,7 +29,7 @@ public class GlobalConfigurationPropertyData {
     @SuppressWarnings("unused")
     private final boolean enabled;
     @SuppressWarnings("unused")
-    private final Long value;
+    private final String value;
     @SuppressWarnings("unused")
     private final Date dateValue;
     @SuppressWarnings("unused")
@@ -39,7 +39,7 @@ public class GlobalConfigurationPropertyData {
     @SuppressWarnings("unused")
     private final boolean trapDoor;
 
-    public GlobalConfigurationPropertyData(final String name, final boolean enabled, final Long value, final Date dateValue, final String description, 
+    public GlobalConfigurationPropertyData(final String name, final boolean enabled, final String value, final Date dateValue, final String description, 
             final boolean trapDoor) {
         this.name = name;
         this.enabled = enabled;
@@ -50,7 +50,7 @@ public class GlobalConfigurationPropertyData {
         this.trapDoor = trapDoor;
     }
 
-    public GlobalConfigurationPropertyData(final String name, final boolean enabled, final Long value, Date dateValue, final Long id,
+    public GlobalConfigurationPropertyData(final String name, final boolean enabled, final String value, Date dateValue, final Long id,
             final String description, final boolean isTrapDoor) {
         this.name = name;
         this.enabled = enabled;

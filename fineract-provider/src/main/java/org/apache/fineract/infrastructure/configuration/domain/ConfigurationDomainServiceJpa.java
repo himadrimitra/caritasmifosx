@@ -126,14 +126,14 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Long retrievePenaltyWaitPeriod() {
         final String propertyName = "penalty-wait-period";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        return property.getValue();
+        return longValue(property.getValue());
     }
 
     @Override
     public Long retrieveGraceOnPenaltyPostingPeriod() {
         final String propertyName = "grace-on-penalty-posting";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        return property.getValue();
+        return longValue(property.getValue());
     }
 
     @Override
@@ -147,14 +147,14 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Long retrievePasswordLiveTime() {
         final String propertyName = "force-password-reset-days";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        return property.getValue();
+        return longValue(property.getValue());
     }
 
     @Override
     public Long retrieveOpeningBalancesContraAccount() {
         final String propertyName = "office-opening-balances-contra-account";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        return property.getValue();
+        return longValue(property.getValue());
     }
 
     @Override
@@ -168,7 +168,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Integer retrieveFinancialYearBeginningMonth() {
         final String propertyName = "financial-year-beginning-month";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        if (property.isEnabled()) return property.getValue().intValue();
+        if (property.isEnabled()) return  integerValue(property.getValue());
         return 1;
     }
 
@@ -176,7 +176,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Integer retrieveMinAllowedClientsInGroup() {
         final String propertyName = "min-clients-in-group";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        if (property.isEnabled()) { return property.getValue().intValue(); }
+        if (property.isEnabled()) { return integerValue(property.getValue()); }
         return null;
     }
 
@@ -184,7 +184,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Integer retrieveMaxAllowedClientsInGroup() {
         final String propertyName = "max-clients-in-group";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        if (property.isEnabled()) { return property.getValue().intValue(); }
+        if (property.isEnabled()) { return integerValue(property.getValue()); }
         return null;
     }
 
@@ -201,7 +201,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         int defaultValue = 6; // 6 Stands for HALF-EVEN
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
         if (property.isEnabled()) {
-            int value = property.getValue().intValue();
+            int value = integerValue(property.getValue());
             if (value < 0 || value > 6) {
                 return defaultValue;
             }
@@ -247,8 +247,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Long retreivePeroidInNumberOfDaysForSkipMeetingDate() {
         final String propertyName = "skip-repayment-on-first-day-of-month";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        return property.getValue();
-
+        return longValue(property.getValue());
     }
 
     @Override
@@ -276,8 +275,34 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
 	public Long getDailyTPTLimit() {
         final String propertyName = "daily-tpt-limit";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-        return property.getValue();
+        return longValue(property.getValue());
 	}
 
+	@Override
+	public boolean isDefaultCurrencyEnabled() {
+		return this.globalConfigurationRepository.findOneByNameWithNotFoundDetection("default-organisation-currency").isEnabled();
+	}
+
+	@Override
+	public String retreiveDefaultCurrency() {
+		final String propertyName = "default-organisation-currency";
+		final GlobalConfigurationProperty property = this.globalConfigurationRepository
+				.findOneByNameWithNotFoundDetection(propertyName);
+		return property.getValue();
+	}
+	
+	public Long longValue(String value){
+		if(value == null){
+			return null;
+		}
+		return Long.parseLong(value);
+	}
+	
+	public Integer integerValue(String value){
+		if(value == null){
+			return null;
+		}
+		return Integer.parseInt(value);
+	}
   
 }
