@@ -83,4 +83,8 @@ public interface ConfigurationDomainService {
     
     Long getDailyTPTLimit();
     
+    boolean isDefaultCurrencyEnabled();
+    
+    String retreiveDefaultCurrency();
+    
 }

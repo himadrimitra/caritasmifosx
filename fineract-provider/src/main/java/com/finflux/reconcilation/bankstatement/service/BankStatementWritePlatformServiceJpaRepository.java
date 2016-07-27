@@ -37,6 +37,7 @@ import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentN
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformService;
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformServiceJpaRepositoryImpl;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -63,7 +64,6 @@ import com.finflux.reconcilation.bankstatement.exception.GLAccountNotFoundExcept
 import com.finflux.reconcilation.bankstatement.exception.InvalidCIFRowException;
 import com.finflux.reconcilation.bankstatement.exception.InvalidCifFileFormatException;
 import com.finflux.reconcilation.bankstatement.exception.NotExcelFileException;
-import com.finflux.reconcilation.bankstatement.handler.ReconcileBankStatementCommandHandler;
 import com.finflux.reconcilation.bankstatement.helper.ExcelUtility;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -88,15 +88,21 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final JournalEntryRepository journalEntryRepository;
     private final BankGLAccountReadPlatformService bankGLAccountReadPlatformService;
+    private final CurrencyReadPlatformService currencyReadPlatformService;
 
     @Autowired
-    public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
-            final DocumentRepository documentRepository, final ContentRepositoryFactory contentRepositoryFactory,
-            final BankStatementRepositoryWrapper bankStatementRepository, final BankStatementReadPlatformService bankStatementReadPlatformService,
-            final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepository,
-            final DocumentWritePlatformService documentWritePlatformService, final LoanTransactionRepositoryWrapper loanTransactionRepository,
-            final BankRepositoryWrapper bankRepository, final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            final JournalEntryRepository journalEntryRepository, final BankGLAccountReadPlatformService bankGLAccountReadPlatformService) {
+	public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
+			final DocumentRepository documentRepository, final ContentRepositoryFactory contentRepositoryFactory,
+			final BankStatementRepositoryWrapper bankStatementRepository,
+			final BankStatementReadPlatformService bankStatementReadPlatformService,
+			final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepository,
+			final DocumentWritePlatformService documentWritePlatformService,
+			final LoanTransactionRepositoryWrapper loanTransactionRepository,
+			final BankRepositoryWrapper bankRepository,
+			final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+			final JournalEntryRepository journalEntryRepository,
+			final BankGLAccountReadPlatformService bankGLAccountReadPlatformService,
+			final CurrencyReadPlatformService currencyReadPlatformService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = contentRepositoryFactory;
@@ -109,6 +115,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.journalEntryRepository = journalEntryRepository;
         this.bankGLAccountReadPlatformService = bankGLAccountReadPlatformService;
+        this.currencyReadPlatformService = currencyReadPlatformService;
     }
 
     @Transactional
@@ -664,6 +671,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         java.lang.reflect.Type type = new TypeToken<Map<String, String>>() {}.getType();
         Map<String, String> requestBodyMap = gson.fromJson(apiRequestBodyAsJson, type);
         String locale = requestBodyMap.get(ReconciliationApiConstants.localeParamName);
+        String currencyCode = currencyReadPlatformService.getDefaultCurrencyCode();
         for (BankStatementDetailsData bankStatementDetail : bankStatementDetailsData) {
             HashMap<String, Object> responseMap = new HashMap<String, Object>();
             HashMap<String, Object> requestMap = new HashMap<String, Object>();
@@ -671,7 +679,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             requestMap.put(ReconciliationApiConstants.dateFormatParamName, "MMM DD, YYYY");
             requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBranch());
             requestMap.put(ReconciliationApiConstants.transactionDateParamName, bankStatementDetail.getTransactionDate());
-            requestMap.put(ReconciliationApiConstants.currencyCodeParamName, "USD");
+            requestMap.put(ReconciliationApiConstants.currencyCodeParamName, currencyCode);
             requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId));
             String requestBody = gson.toJson(requestMap);
             CommandProcessingResult result = null;

@@ -42,7 +42,7 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
     private boolean enabled;
 
     @Column(name = "value", nullable = true)
-    private Long value;
+    private String value;
     
     @Column(name = "date_value", nullable = true)
     private Date dateValue;
@@ -62,7 +62,7 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         this.isTrapDoor = false;
     }
 
-    public GlobalConfigurationProperty(final String name, final boolean enabled, final Long value, final Date dateValue ,final String description,
+    public GlobalConfigurationProperty(final String name, final boolean enabled, final String value, final Date dateValue ,final String description,
             final boolean isTrapDoor) {
         this.name = name;
         this.enabled = enabled;
@@ -76,7 +76,7 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         return this.enabled;
     }
 
-    public Long getValue() {
+    public String getValue() {
         return this.value;
     }
     
@@ -88,6 +88,10 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         final boolean updated = this.enabled != value;
         this.enabled = value;
         return updated;
+    }
+    
+    public String getName(){
+    	return this.name;
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -104,9 +108,9 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         }
 
         final String valueParamName = "value";
-        final Long previousValue = this.value;
-        if (command.isChangeInLongParameterNamed(valueParamName, this.value)) {
-            final Long newValue = command.longValueOfParameterNamed(valueParamName);
+        final String previousValue = this.value;
+        if (command.isChangeInStringParameterNamed(valueParamName, this.value)) {
+            final String newValue = command.stringValueOfParameterNamed(valueParamName);
             actualChanges.put(valueParamName, newValue);
             this.value = newValue;
         }
@@ -120,8 +124,8 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
 
         final String passwordPropertyName = "force-password-reset-days";
         if (this.name.equalsIgnoreCase(passwordPropertyName)) {
-            if (this.enabled == true && command.hasParameter(valueParamName) && this.value == 0 || this.enabled == true
-                    && !command.hasParameter(valueParamName) && previousValue == 0) { throw new ForcePasswordResetException(); }
+            if (this.enabled == true && command.hasParameter(valueParamName) && loangValue(this.value) == 0 || this.enabled == true
+                    && !command.hasParameter(valueParamName) && loangValue(previousValue) == 0) { throw new ForcePasswordResetException(); }
         }
 
         return actualChanges;
@@ -131,5 +135,12 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
     public static GlobalConfigurationProperty newSurveyConfiguration(final String name) {
         return new GlobalConfigurationProperty(name, false, null, null, null, false);
     }
+    
+	private Long loangValue(String value) {
+		if (value == null) {
+			return null;
+		}
+		return Long.parseLong(value);
+	}
 
 }

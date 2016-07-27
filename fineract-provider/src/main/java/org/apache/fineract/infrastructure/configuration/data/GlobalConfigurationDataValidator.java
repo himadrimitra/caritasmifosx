@@ -19,10 +19,11 @@
 package org.apache.fineract.infrastructure.configuration.data;
 
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.CONFIGURATION_RESOURCE_NAME;
+import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.DATE_VALUE;
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.ENABLED;
+import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.STRING_VALUE_CONFIGURATIONS;
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.UPDATE_CONFIGURATION_DATA_PARAMETERS;
 import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.VALUE;
-import static org.apache.fineract.infrastructure.configuration.api.GlobalConfigurationApiConstant.DATE_VALUE;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -30,13 +31,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
-import org.joda.time.LocalDate;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -49,11 +50,11 @@ public class GlobalConfigurationDataValidator {
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
-    public GlobalConfigurationDataValidator(final FromJsonHelper fromApiJsonHelper) {
-        this.fromApiJsonHelper = fromApiJsonHelper;
-    }
+	public GlobalConfigurationDataValidator(final FromJsonHelper fromApiJsonHelper){
+		this.fromApiJsonHelper = fromApiJsonHelper;
+	}
 
-    public void validateForUpdate(final JsonCommand command) {
+    public void validateForUpdate(final String configurationName, final JsonCommand command) {
         final String json = command.json();
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
@@ -69,10 +70,12 @@ public class GlobalConfigurationDataValidator {
             baseDataValidator.reset().parameter(ENABLED).value(enabledBool).validateForBooleanValue();
         }
 
-        if (this.fromApiJsonHelper.parameterExists(VALUE, element)) {
-            final Long valueStr = this.fromApiJsonHelper.extractLongNamed(VALUE, element);
-            baseDataValidator.reset().parameter(ENABLED).value(valueStr).zeroOrPositiveAmount();
-        }
+		if (this.fromApiJsonHelper.parameterExists(VALUE, element)) {
+			if (!STRING_VALUE_CONFIGURATIONS.contains(configurationName)) {
+				final Long valueStr = this.fromApiJsonHelper.extractLongNamed(VALUE, element);
+				baseDataValidator.reset().parameter(ENABLED).value(valueStr).zeroOrPositiveAmount();
+			}
+		}
         
         if (this.fromApiJsonHelper.parameterExists(DATE_VALUE, element)) {
             final LocalDate dateValue = this.fromApiJsonHelper.extractLocalDateNamed(DATE_VALUE, element);
@@ -82,4 +85,5 @@ public class GlobalConfigurationDataValidator {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
     }
+    
 }

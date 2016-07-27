@@ -29,4 +29,6 @@ public interface CurrencyReadPlatformService {
     Collection<CurrencyData> retrieveAllPlatformCurrencies();
 
     CurrencyData retrieveCurrency(String code);
+    
+    String getDefaultCurrencyCode();
 }
