@@ -82,6 +82,8 @@ public interface ConfigurationDomainService {
     boolean isDailyTPTLimitEnabled();
     
     Long getDailyTPTLimit();
+
+    int getAdjustedAmountRoundingMode();
     
     boolean isDefaultCurrencyEnabled();
     

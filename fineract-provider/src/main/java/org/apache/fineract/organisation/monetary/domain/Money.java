@@ -91,6 +91,16 @@ public class Money implements Comparable<Money> {
         }
         this.amount = amountScaled.setScale(this.currencyDigitsAfterDecimal, MoneyHelper.getRoundingMode());
     }
+    
+    public static double roundToMultiplesOf(final double existingVal, final Integer inMultiplesOf, RoundingMode roundingMode) {
+        BigDecimal valueInBigDecimal = BigDecimal.valueOf(existingVal);
+        BigDecimal multiplesOfBigDecimal = BigDecimal.valueOf(inMultiplesOf);
+        return roundToMultiplesOf(valueInBigDecimal, multiplesOfBigDecimal, roundingMode).doubleValue();
+    }
+    
+    public static BigDecimal roundToMultiplesOf(final BigDecimal existingVal, final BigDecimal inMultiplesOf, RoundingMode roundingMode) {
+        return (existingVal.divide(inMultiplesOf).setScale(0, roundingMode).multiply(inMultiplesOf));
+    }
 
     public static double roundToMultiplesOf(final double existingVal, final Integer inMultiplesOf) {
         double amountScaled = existingVal;

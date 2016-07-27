@@ -19,10 +19,12 @@
 package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
 import org.joda.time.LocalDate;
 
 public class LoanTermVariationsDataWrapper {
@@ -95,6 +97,21 @@ public class LoanTermVariationsDataWrapper {
 
     public List<LoanTermVariationsData> getExceptionData() {
         return this.exceptionData;
+    }
+    
+    public boolean hasVariations(){
+        return !this.exceptionData.isEmpty();
+    }
+    
+    public boolean hasVariations(Collection<LoanTermVariationType> types){
+        boolean hasVariation = false;
+        for(LoanTermVariationsData variationData : this.exceptionData){
+            if(types.contains(variationData.getTermVariationType())){
+                hasVariation = true;
+                break;
+            }
+        }
+        return hasVariation;
     }
 
     public int adjustNumberOfRepayments() {

@@ -110,7 +110,8 @@ public final class LoanProductDataValidator {
             LoanProductConstants.isCompoundingToBePostedAsTransactionParamName, LoanProductConstants.allowCompoundingOnEodParamName,
             LoanProductConstants.isSubsidyApplicableParamName, LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(),
             LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), LoanProductConstants.createSubsidyAccountMappingsParamName,
-            LoanProductConstants.maximumGapBetweenInstallments));
+            LoanProductConstants.maximumGapBetweenInstallments, LoanProductConstants.adjustedInstallmentInMultiplesOfParamName,
+            LoanProductConstants.adjustFirstEMIAmountParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -531,6 +532,15 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter(LoanProductConstants.installmentAmountInMultiplesOfParamName)
                     .value(installmentAmountInMultiplesOf).ignoreIfNull().integerGreaterThanZero();
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName, element)) {
+            final Integer installmentAmountInMultiplesOf = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
+                    LoanProductConstants.adjustedInstallmentInMultiplesOfParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName)
+                    .value(installmentAmountInMultiplesOf).ignoreIfNull().integerGreaterThanZero();
+        }
+        
+        validateAdjustFirstInstallment(baseDataValidator, element, null);
 
         // accounting related data validation
         final Integer accountingRuleType = this.fromApiJsonHelper.extractIntegerNamed("accountingRule", element, Locale.getDefault());
@@ -646,6 +656,41 @@ public final class LoanProductDataValidator {
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, null);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    private void validateAdjustFirstInstallment(final DataValidatorBuilder baseDataValidator, final JsonElement element, LoanProduct loanProduct) {
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.adjustFirstEMIAmountParamName, element)) {
+            final Boolean adjustFirstEMIAmount = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.adjustFirstEMIAmountParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.adjustFirstEMIAmountParamName).value(adjustFirstEMIAmount)
+                    .ignoreIfNull().isOneOfTheseValues(true, false);
+            if(adjustFirstEMIAmount != null && adjustFirstEMIAmount){
+                Boolean multiDisburseLoan = null;
+                if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.multiDisburseLoanParameterName, element)) {
+                    multiDisburseLoan = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.multiDisburseLoanParameterName,
+                            element);
+                } else if (loanProduct != null) {
+                    multiDisburseLoan = loanProduct.isMultiDisburseLoan();
+                }
+                if (multiDisburseLoan != null && multiDisburseLoan) {
+                    baseDataValidator.reset().parameter(LoanProductConstants.multiDisburseLoanParameterName)
+                            .failWithCode("not.supported.with.adjust.first.repayment");
+                }
+
+                Boolean variableInstallments = null;
+                if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.allowVariableInstallmentsParamName, element)) {
+                    variableInstallments = this.fromApiJsonHelper.extractBooleanNamed(
+                            LoanProductConstants.allowVariableInstallmentsParamName, element);
+                } else if (loanProduct != null) {
+                    variableInstallments = loanProduct.allowVariabeInstallments();
+                }
+                if (variableInstallments != null && variableInstallments) {
+                    baseDataValidator.reset().parameter(LoanProductConstants.allowVariableInstallmentsParamName)
+                            .failWithCode("not.supported.with.adjust.first.repayment");
+                }
+            }
+            
+        }
     }
 
     private void validateVariableInstallmentSettings(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
@@ -932,6 +977,10 @@ public final class LoanProductDataValidator {
                 .ignoreIfNull()
                 .inMinMaxRange(LoanPreClosureInterestCalculationStrategy.getMinValue(),
                         LoanPreClosureInterestCalculationStrategy.getMaxValue());
+        
+        final Integer interestType = this.fromApiJsonHelper.extractIntegerNamed("interestType", element, Locale.getDefault());
+        baseDataValidator.reset().parameter("interestType").value(interestType).ignoreIfNull()
+                .integerSameAsNumber(InterestMethod.DECLINING_BALANCE.getValue());
     }
 
     public void validateForUpdate(final String json, final LoanProduct loanProduct) {
@@ -1378,6 +1427,15 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter(LoanProductConstants.installmentAmountInMultiplesOfParamName)
                     .value(installmentAmountInMultiplesOf).ignoreIfNull().integerGreaterThanZero();
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName, element)) {
+            final Integer installmentAmountInMultiplesOf = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(
+                    LoanProductConstants.adjustedInstallmentInMultiplesOfParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName)
+                    .value(installmentAmountInMultiplesOf).ignoreIfNull().integerGreaterThanZero();
+        }
+        
+        validateAdjustFirstInstallment(baseDataValidator, element, loanProduct);
 
         final Integer accountingRuleType = this.fromApiJsonHelper.extractIntegerNamed("accountingRule", element, Locale.getDefault());
         baseDataValidator.reset().parameter("accountingRule").value(accountingRuleType).ignoreIfNull().inMinMaxRange(1, 4);
@@ -2058,7 +2116,7 @@ public final class LoanProductDataValidator {
                     multiDisburseLoan = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.multiDisburseLoanParameterName,
                             element);
                 } else if (loanProduct != null) {
-                    isInterestRecalculationEnabled = loanProduct.isMultiDisburseLoan();
+                    multiDisburseLoan = loanProduct.isMultiDisburseLoan();
                 }
                 if (multiDisburseLoan != null && multiDisburseLoan) {
                     baseDataValidator.reset().parameter(LoanProductConstants.multiDisburseLoanParameterName)
@@ -2070,7 +2128,7 @@ public final class LoanProductDataValidator {
                     variableInstallments = this.fromApiJsonHelper.extractBooleanNamed(
                             LoanProductConstants.allowVariableInstallmentsParamName, element);
                 } else if (loanProduct != null) {
-                    isInterestRecalculationEnabled = loanProduct.allowVariabeInstallments();
+                    variableInstallments = loanProduct.allowVariabeInstallments();
                 }
                 if (variableInstallments != null && variableInstallments) {
                     baseDataValidator.reset().parameter(LoanProductConstants.allowVariableInstallmentsParamName)
@@ -2081,7 +2139,7 @@ public final class LoanProductDataValidator {
                 if (this.fromApiJsonHelper.parameterExists("isLinkedToFloatingInterestRates", element)) {
                     floatingInterestRates = this.fromApiJsonHelper.extractBooleanNamed("isLinkedToFloatingInterestRates", element);
                 } else if (loanProduct != null) {
-                    isInterestRecalculationEnabled = loanProduct.isLinkedToFloatingInterestRate();
+                    floatingInterestRates = loanProduct.isLinkedToFloatingInterestRate();
                 }
                 if (floatingInterestRates != null && floatingInterestRates) {
                     baseDataValidator.reset().parameter("isLinkedToFloatingInterestRates")

@@ -30,7 +30,10 @@ import org.springframework.stereotype.Component;
 public class MoneyHelper {
     
     private static RoundingMode roundingMode = null;
+    private static RoundingMode adjustedAmountRoundingMode = null;
     private static ConfigurationDomainService staticConfigurationDomainService;
+    private static final RoundingMode DEFAULT_INTERNAL_ROUNDING_MODE = RoundingMode.HALF_EVEN;
+    private static final int DEFAULT_INTERNAL_SCALE = 2;
     
     @Autowired
     private ConfigurationDomainService configurationDomainService;
@@ -46,6 +49,21 @@ public class MoneyHelper {
             roundingMode = RoundingMode.valueOf(staticConfigurationDomainService.getRoundingMode());
         }
         return roundingMode;
+    }
+    
+    public static RoundingMode getRoundingModeForInternalCalculations() {
+        return DEFAULT_INTERNAL_ROUNDING_MODE;
+    }
+
+    public static int getScaleForInternalCalculations() {
+        return DEFAULT_INTERNAL_SCALE;
+    }
+    
+    public static RoundingMode getAdjustedAmountRoundingMode() {
+        if (adjustedAmountRoundingMode == null) {
+            adjustedAmountRoundingMode = RoundingMode.valueOf(staticConfigurationDomainService.getAdjustedAmountRoundingMode());
+        }
+        return adjustedAmountRoundingMode;
     }
 
 }

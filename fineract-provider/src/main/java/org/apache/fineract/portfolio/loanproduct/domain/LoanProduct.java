@@ -186,8 +186,14 @@ public class LoanProduct extends AbstractPersistable<Long> {
     
     @Column(name = "is_subsidy_applicable")
     private Boolean isSubsidyApplicable;
+    
+    @Column(name = "adjust_first_emi_amount", nullable = true)
+    private boolean adjustFirstEMIAmount;
+    
+    @Column(name = "adjusted_instalment_in_multiples_of", nullable = true)
+    private Integer adjustedInstallmentInMultiplesOf;
 
-	public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
+    public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
             final List<Charge> productCharges, final JsonCommand command, final AprCalculator aprCalculator, FloatingRate floatingRate) {
 
         final String name = command.stringValueOfParameterNamed("name");
@@ -329,22 +335,28 @@ public class LoanProduct extends AbstractPersistable<Long> {
         final Integer installmentAmountInMultiplesOf = command
                 .integerValueOfParameterNamed(LoanProductConstants.installmentAmountInMultiplesOfParamName);
         
+        final boolean adjustFirstEMIAmount = command
+                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.adjustFirstEMIAmountParamName);
+        final Integer adjustedInstallmentInMultiplesOf = command
+                .integerValueOfParameterNamed(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName);
+        
         final Boolean isSubsidyApplicable = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
 
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
                 annualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion, repaymentEvery,
-                repaymentFrequencyType, numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods,
-                graceOnInterestPayment, graceOnInterestCharged, amortizationMethod, inArrearsTolerance, productCharges, accountingRuleType,
-                includeInBorrowerCycle, startDate, closeDate, externalId, useBorrowerCycle, loanProductBorrowerCycleVariations,
-                multiDisburseLoan, maxTrancheCount, outstandingLoanBalance, graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType,
-                daysInYearType, isInterestRecalculationEnabled, interestRecalculationSettings,
-                minimumDaysBetweenDisbursalAndFirstRepayment, holdGuarantorFunds, loanProductGuaranteeDetails,
-                principalThresholdForLastInstallment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineEmiAmount,
-                installmentAmountInMultiplesOf, loanConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRate,
-                interestRateDifferential, minDifferentialLendingRate, maxDifferentialLendingRate, defaultDifferentialLendingRate,
-                isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
-                maximumGapBetweenInstallments, isSubsidyApplicable);
+                repaymentFrequencyType, numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, graceOnPrincipalPayment,
+                recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, amortizationMethod,
+                inArrearsTolerance, productCharges, accountingRuleType, includeInBorrowerCycle, startDate, closeDate, externalId,
+                useBorrowerCycle, loanProductBorrowerCycleVariations, multiDisburseLoan, maxTrancheCount, outstandingLoanBalance,
+                graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
+                interestRecalculationSettings, minimumDaysBetweenDisbursalAndFirstRepayment, holdGuarantorFunds,
+                loanProductGuaranteeDetails, principalThresholdForLastInstallment, accountMovesOutOfNPAOnlyOnArrearsCompletion,
+                canDefineEmiAmount, installmentAmountInMultiplesOf, loanConfigurableAttributes, isLinkedToFloatingInterestRates,
+                floatingRate, interestRateDifferential, minDifferentialLendingRate, maxDifferentialLendingRate,
+                defaultDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed,
+                minimumGapBetweenInstallments, maximumGapBetweenInstallments, isSubsidyApplicable, adjustedInstallmentInMultiplesOf,
+                adjustFirstEMIAmount);
 
     }
 
@@ -575,7 +587,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Boolean isLinkedToFloatingInterestRates, FloatingRate floatingRate, BigDecimal interestRateDifferential,
             BigDecimal minDifferentialLendingRate, BigDecimal maxDifferentialLendingRate, BigDecimal defaultDifferentialLendingRate,
             Boolean isFloatingInterestRateCalculationAllowed, final Boolean isVariableInstallmentsAllowed,
-            final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments, final Boolean isSubsidyApplicable) {
+            final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments, final Boolean isSubsidyApplicable,
+            Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -649,6 +662,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.accountMovesOutOfNPAOnlyOnArrearsCompletion = accountMovesOutOfNPAOnlyOnArrearsCompletion;
         this.canDefineInstallmentAmount = canDefineEmiAmount;
         this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
+        this.adjustFirstEMIAmount = adjustFirstEMIAmount;
+        this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
         this.isSubsidyApplicable = isSubsidyApplicable;
     }
 
@@ -1022,6 +1037,20 @@ public class LoanProduct extends AbstractPersistable<Long> {
             this.installmentAmountInMultiplesOf = newValue;
         }
         
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.adjustFirstEMIAmountParamName, this.adjustFirstEMIAmount)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.adjustFirstEMIAmountParamName);
+            actualChanges.put(LoanProductConstants.adjustFirstEMIAmountParamName, newValue);
+            this.adjustFirstEMIAmount = newValue;
+        }
+
+        if (command.isChangeInIntegerParameterNamedWithNullCheck(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName,
+                this.adjustedInstallmentInMultiplesOf)) {
+            final Integer newValue = command
+                    .integerValueOfParameterNamed(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName);
+            actualChanges.put(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName, newValue);
+            this.adjustedInstallmentInMultiplesOf = newValue;
+        }
+        
         if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isSubsidyApplicableParamName, this.isSubsidyApplicable)) {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
             actualChanges.put(LoanProductConstants.isSubsidyApplicableParamName, newValue);
@@ -1355,6 +1384,14 @@ public class LoanProduct extends AbstractPersistable<Long> {
 
     public Boolean isSubsidyApplicable() {
         return isSubsidyApplicable;
+    }
+    
+    public boolean adjustFirstEMIAmount() {
+        return this.adjustFirstEMIAmount;
+    }
+
+    public Integer getAdjustedInstallmentInMultiplesOf() {
+        return this.adjustedInstallmentInMultiplesOf;
     }
 
 }
