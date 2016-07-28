@@ -595,7 +595,7 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
 
         recurrenceBuilder.append("FREQ=");
         recurrenceBuilder.append(frequencyType.toString().toUpperCase());
-        if (interval > 1) {
+        if (interval >= 1) {
             recurrenceBuilder.append(";INTERVAL=");
             recurrenceBuilder.append(interval);
         }

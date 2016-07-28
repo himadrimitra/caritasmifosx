@@ -4263,6 +4263,10 @@ public class Loan extends AbstractPersistable<Long> {
     public void updateApprovedPrincipal(final BigDecimal approvedPrincipal) {
         this.approvedPrincipal = approvedPrincipal;
     }
+    
+	public Integer getLoanType() {
+		return this.loanType;
+	}
 
     public Map<String, Object> deriveAccountingBridgeData(final CurrencyData currencyData, final List<Long> existingTransactionIds,
             final List<Long> existingReversedTransactionIds, boolean isAccountTransfer) {
