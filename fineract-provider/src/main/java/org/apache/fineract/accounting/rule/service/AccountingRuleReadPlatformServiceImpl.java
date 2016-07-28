@@ -73,13 +73,13 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder
                     .append(" rule.id as id,rule.name as name, rule.office_id as officeId,office.name as officeName,")
-                    .append(" rule.description as description, rule.system_defined as systemDefined, rule.allow_multiple_debits as allowMultipleDebitEntries, rule.allow_multiple_credits as allowMultipleCreditEntries, ")
+                    .append(" rule.description as description, rule.is_inherited_to_child_offices as isInheritedToChildOffices, rule.system_defined as systemDefined, rule.allow_multiple_debits as allowMultipleDebitEntries, rule.allow_multiple_credits as allowMultipleCreditEntries, ")
                     .append("debitAccount.id AS debitAccountId, debitAccount.name as debitAccountName, debitAccount.gl_code as debitAccountGLCode, ")
                     .append("creditAccount.id AS creditAccountId, creditAccount.name as creditAccountName, creditAccount.gl_code as creditAccountGLCode")
                     .append(" from m_office AS office, acc_accounting_rule AS rule ")
                     .append(" LEFT JOIN acc_gl_account AS creditAccount ON rule.credit_account_id = creditAccount.id ")
                     .append(" LEFT JOIN acc_gl_account AS debitAccount ON rule.debit_account_id = debitAccount.id ")
-                    .append("WHERE office.id=rule.office_id ");
+					.append("WHERE office.id=rule.office_id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -108,6 +108,7 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
                     final String creditAccountName = rs.getString("creditAccountName");
                     final String debitAccountGLCode = rs.getString("debitAccountGLCode");
                     final String creditAccountGLCode = rs.getString("creditAccountGLCode");
+                    final boolean isInheritedToChildOffices = rs.getBoolean("isInheritedToChildOffices");
 
                     final List<AccountingTagRuleData> creditTags;
                     final List<AccountingTagRuleData> debitTags;
@@ -136,8 +137,9 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
                                 debitAccountGLCode);
                         debitAccounts = new ArrayList<>(Arrays.asList(debitAccount));
                     }
-                    accountingRuleData = new AccountingRuleData(id, officeId, officeName, name, description, systemDefined,
-                            allowMultipleDebitEntries, allowMultipleCreditEntries, creditTags, debitTags, creditAccounts, debitAccounts);
+					accountingRuleData = new AccountingRuleData(id, officeId, officeName, name, description,
+							systemDefined, allowMultipleDebitEntries, allowMultipleCreditEntries, creditTags, debitTags,
+							creditAccounts, debitAccounts, isInheritedToChildOffices);
                 }
 
                 extractedData.put(id, accountingRuleData);
@@ -159,12 +161,12 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
         final AccountingRuleDataExtractor resultSetExtractor = new AccountingRuleDataExtractor(this.jdbcTemplate,
                 this.glAccountReadPlatformService, isAssociationParametersExists);
         Object[] arguments = new Object[] {};
-        String sql = "select " + resultSetExtractor.schema() + " and system_defined=0 ";
-        if (hierarchySearchString != null) {
-            sql = sql + " and office.hierarchy like ?";
-            arguments = new Object[] { hierarchySearchString };
-        }
-        sql = sql + " order by rule.id asc";
+		String sql = "select " + resultSetExtractor.schema() + " and system_defined=0 ";
+		if (hierarchySearchString != null) {
+			sql = sql + " and office.hierarchy like ?";
+			arguments = new Object[] { hierarchySearchString };
+		}
+		sql = sql + " order by rule.id asc";
         final Map<Long, AccountingRuleData> extractedData = this.jdbcTemplate.query(sql, resultSetExtractor, arguments);
         return new ArrayList<>(extractedData.values());
     }
@@ -174,7 +176,7 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
         try {
             final AccountingRuleDataExtractor resultSetExtractor = new AccountingRuleDataExtractor(this.jdbcTemplate,
                     this.glAccountReadPlatformService, false);
-            final String sql = "select " + resultSetExtractor.schema() + " and rule.id = ?";
+			final String sql = "select " + resultSetExtractor.schema() + " and rule.id = ?";
 
             final Map<Long, AccountingRuleData> extractedData = this.jdbcTemplate.query(sql, resultSetExtractor,
                     new Object[] { accountingRuleId });
@@ -205,4 +207,139 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
         }
 
     }
+
+    private static class AccountingInheritedRulesDataExtractor implements ResultSetExtractor<Map<Long, AccountingRuleData>> {
+    	
+    	private final String schemaSql;
+        private final JdbcTemplate jdbcTemplate;
+        private final GLAccountReadPlatformService glAccountReadPlatformService;
+        private final boolean isAssociationParametersExists;
+        private final boolean includeInheritedRules;
+        
+        
+		/*
+		 * if IncludeInheritedRules is set to true fetch all the parent offices rules 
+		 */
+		public AccountingInheritedRulesDataExtractor(final JdbcTemplate jdbcTemplate,
+				final GLAccountReadPlatformService glAccountReadPlatformService, final boolean includeInheritedRules,
+				final boolean isAssociationParametersExists) {
+			this.jdbcTemplate = jdbcTemplate;
+			this.glAccountReadPlatformService = glAccountReadPlatformService;
+			this.includeInheritedRules = includeInheritedRules;
+			this.isAssociationParametersExists = isAssociationParametersExists;
+			final StringBuilder sqlBuilder = new StringBuilder(400);
+			sqlBuilder.append(" rule.id as id,rule.name as name, rule.office_id as officeId,office.name as officeName,")
+					.append(" rule.description as description, rule.is_inherited_to_child_offices as isInheritedToChildOffices, rule.system_defined as systemDefined, rule.allow_multiple_debits as allowMultipleDebitEntries, rule.allow_multiple_credits as allowMultipleCreditEntries, ")
+					.append("debitAccount.id AS debitAccountId, debitAccount.name as debitAccountName, debitAccount.gl_code as debitAccountGLCode, ")
+					.append("creditAccount.id AS creditAccountId, creditAccount.name as creditAccountName, creditAccount.gl_code as creditAccountGLCode")
+					.append(" from m_office AS office, acc_accounting_rule AS rule ")
+					.append(" LEFT JOIN acc_gl_account AS creditAccount ON rule.credit_account_id = creditAccount.id ")
+					.append(" LEFT JOIN acc_gl_account AS debitAccount ON rule.debit_account_id = debitAccount.id ");
+			
+			if (this.includeInheritedRules) {
+				sqlBuilder
+						.append(" inner join m_office applicaleOffices ON applicaleOffices.id = rule.office_id and (rule.office_id = ? OR rule.is_inherited_to_child_offices = ? ) ")
+						.append(" inner join m_office office1 on office1.hierarchy like  concat(applicaleOffices.hierarchy, '%') ")
+						.append(" WHERE office.id=rule.office_id and system_defined=0 and office1.id = ?");
+			} else {
+				sqlBuilder
+						.append(" inner join m_office applicaleOffices ON applicaleOffices.id = rule.office_id and (rule.office_id = ? )")
+						.append(" WHERE office.id=rule.office_id and system_defined=0");
+			}
+							
+			this.schemaSql = sqlBuilder.toString();
+		}
+
+		public String schema() {
+			return this.schemaSql;
+		}
+
+		@Override
+		public Map<Long, AccountingRuleData> extractData(ResultSet rs) throws SQLException, DataAccessException {
+			final Map<Long, AccountingRuleData> extractedData = new HashMap<>();
+
+			while (rs.next()) {
+				final Long id = rs.getLong("id");
+				AccountingRuleData accountingRuleData = extractedData.get(id);
+				if (accountingRuleData == null) {
+					final Long officeId = JdbcSupport.getLong(rs, "officeId");
+					final String officeName = rs.getString("officeName");
+					final String name = rs.getString("name");
+					final String description = rs.getString("description");
+					final Long accountToDebitId = JdbcSupport.getLong(rs, "debitAccountId");
+					final Long accountToCreditId = JdbcSupport.getLong(rs, "creditAccountId");
+					final boolean systemDefined = rs.getBoolean("systemDefined");
+					final boolean allowMultipleDebitEntries = rs.getBoolean("allowMultipleDebitEntries");
+					final boolean allowMultipleCreditEntries = rs.getBoolean("allowMultipleCreditEntries");
+					final String debitAccountName = rs.getString("debitAccountName");
+					final String creditAccountName = rs.getString("creditAccountName");
+					final String debitAccountGLCode = rs.getString("debitAccountGLCode");
+					final String creditAccountGLCode = rs.getString("creditAccountGLCode");
+					final boolean isInheritedToChildOffices = rs.getBoolean("isInheritedToChildOffices");
+
+					final List<AccountingTagRuleData> creditTags;
+					final List<AccountingTagRuleData> debitTags;
+					final List<GLAccountDataForLookup> creditAccounts;
+					final List<GLAccountDataForLookup> debitAccounts;
+
+					if (accountToCreditId == null) {
+						creditTags = !this.isAssociationParametersExists
+								? getCreditOrDebitTags(id, JournalEntryType.CREDIT.getValue()) : null;
+						creditAccounts = this.isAssociationParametersExists ? this.glAccountReadPlatformService
+								.retrieveAccountsByTagId(id, JournalEntryType.CREDIT.getValue()) : null;
+					} else {
+						creditTags = null;
+						final GLAccountDataForLookup creditAccount = new GLAccountDataForLookup(accountToCreditId,
+								creditAccountName, creditAccountGLCode);
+						creditAccounts = new ArrayList<>(Arrays.asList(creditAccount));
+					}
+					if (accountToDebitId == null) {
+						debitTags = !this.isAssociationParametersExists
+								? getCreditOrDebitTags(id, JournalEntryType.DEBIT.getValue()) : null;
+						debitAccounts = this.isAssociationParametersExists ? this.glAccountReadPlatformService
+								.retrieveAccountsByTagId(id, JournalEntryType.DEBIT.getValue()) : null;
+					} else {
+						debitTags = null;
+						final GLAccountDataForLookup debitAccount = new GLAccountDataForLookup(accountToDebitId,
+								debitAccountName, debitAccountGLCode);
+						debitAccounts = new ArrayList<>(Arrays.asList(debitAccount));
+					}
+					accountingRuleData = new AccountingRuleData(id, officeId, officeName, name, description,
+							systemDefined, allowMultipleDebitEntries, allowMultipleCreditEntries, creditTags, debitTags,
+							creditAccounts, debitAccounts, isInheritedToChildOffices);
+				}
+
+				extractedData.put(id, accountingRuleData);
+			}
+			return extractedData;
+		}
+
+		private List<AccountingTagRuleData> getCreditOrDebitTags(final Long creditOrDebitAccount,
+				final Integer transactionType) {
+			final AccountingTagRuleDataMapper mapper = new AccountingTagRuleDataMapper();
+			final String taggedAccountsSchema = "Select " + mapper.taggedAccountSchema()
+					+ " where rule.id = ? and tag.acc_type_enum=?";
+			return this.jdbcTemplate.query(taggedAccountsSchema, mapper,
+					new Object[] { creditOrDebitAccount, transactionType });
+		}
+
+    }
+    
+	@Override
+	public List<AccountingRuleData> retrieveAllAccountingRules(Long officeId, boolean includeInheritedRules,
+			boolean isAssociationParametersExists) {
+		final AccountingInheritedRulesDataExtractor resultSetExtractor = new AccountingInheritedRulesDataExtractor(
+				this.jdbcTemplate, this.glAccountReadPlatformService, includeInheritedRules,
+				isAssociationParametersExists);
+		Object[] arguments = new Object[] {};
+		String sql = "select " + resultSetExtractor.schema() + " order by rule.id asc";
+		if (includeInheritedRules) {
+			arguments = new Object[] { officeId, includeInheritedRules, officeId };
+		} else {
+			arguments = new Object[] { officeId };
+		}
+		final Map<Long, AccountingRuleData> extractedData = this.jdbcTemplate.query(sql, resultSetExtractor, arguments);
+		return new ArrayList<>(extractedData.values());
+	}
 }
+

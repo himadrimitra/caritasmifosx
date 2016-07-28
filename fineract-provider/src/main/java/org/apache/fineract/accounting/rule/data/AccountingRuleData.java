@@ -43,6 +43,7 @@ public class AccountingRuleData {
     private final boolean systemDefined;
     private final boolean allowMultipleDebitEntries;
     private final boolean allowMultipleCreditEntries;
+    private final boolean isInheritedToChildOffices;
     private final List<AccountingTagRuleData> creditTags;
     private final List<AccountingTagRuleData> debitTags;
 
@@ -77,6 +78,7 @@ public class AccountingRuleData {
         this.debitTags = accountingRuleData.debitTags;
         this.creditAccounts = accountingRuleData.creditAccounts;
         this.debitAccounts = accountingRuleData.debitAccounts;
+        this.isInheritedToChildOffices = accountingRuleData.isInheritedToChildOffices;
     }
 
     public AccountingRuleData(final List<GLAccountData> allowedAccounts, final List<OfficeData> allowedOffices,
@@ -97,12 +99,13 @@ public class AccountingRuleData {
         this.debitTags = null;
         this.creditAccounts = null;
         this.debitAccounts = null;
+        this.isInheritedToChildOffices = false;
     }
 
     public AccountingRuleData(final Long id, final Long officeId, final String officeName, final String name, final String description,
             final boolean systemDefined, final boolean allowMultipleDebitEntries, final boolean allowMultipleCreditEntries,
             final List<AccountingTagRuleData> creditTags, final List<AccountingTagRuleData> debitTags,
-            final List<GLAccountDataForLookup> creditAccounts, final List<GLAccountDataForLookup> debitAccounts) {
+            final List<GLAccountDataForLookup> creditAccounts, final List<GLAccountDataForLookup> debitAccounts, final boolean isInheritedToChildOffices) {
         this.id = id;
         this.officeId = officeId;
         this.officeName = officeName;
@@ -119,6 +122,7 @@ public class AccountingRuleData {
         this.debitTags = debitTags;
         this.creditAccounts = creditAccounts;
         this.debitAccounts = debitAccounts;
+        this.isInheritedToChildOffices = isInheritedToChildOffices;
     }
 
     public List<AccountingTagRuleData> getCreditTags() {

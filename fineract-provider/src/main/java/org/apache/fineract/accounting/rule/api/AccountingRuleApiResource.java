@@ -35,6 +35,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -119,8 +120,8 @@ public class AccountingRuleApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllAccountingRules(@Context final UriInfo uriInfo) {
-
+    public String retrieveAllAccountingRules(@Context final UriInfo uriInfo, @QueryParam("officeId") Long officeId, @QueryParam("includeInheritedRules") boolean includeInheritedRules) {
+    	
         final AppUser currentUser = this.context.authenticatedUser();
         currentUser.validateHasReadPermission(this.resourceNameForPermission);
 
@@ -136,11 +137,17 @@ public class AccountingRuleApiResource {
                                                       // journal entry form.
             }
         }
-        final List<AccountingRuleData> accountingRuleDatas = this.accountingRuleReadPlatformService.retrieveAllAccountingRules(
-                hierarchySearchString, isAssociationParametersExists);
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.apiJsonSerializerService.serialize(settings, accountingRuleDatas, RESPONSE_DATA_PARAMETERS);
+		final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper
+				.process(uriInfo.getQueryParameters());
+		if (officeId != null) {
+			final List<AccountingRuleData> accountingRuleDatas = this.accountingRuleReadPlatformService
+					.retrieveAllAccountingRules(officeId, includeInheritedRules, isAssociationParametersExists);
+			return this.apiJsonSerializerService.serialize(settings, accountingRuleDatas, RESPONSE_DATA_PARAMETERS);
+		} else {
+			final List<AccountingRuleData> accountingRuleDatas = this.accountingRuleReadPlatformService
+					.retrieveAllAccountingRules(hierarchySearchString, isAssociationParametersExists);
+			return this.apiJsonSerializerService.serialize(settings, accountingRuleDatas, RESPONSE_DATA_PARAMETERS);
+		}
     }
 
     @GET

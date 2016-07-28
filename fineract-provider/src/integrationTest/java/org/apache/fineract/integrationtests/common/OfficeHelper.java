@@ -52,6 +52,13 @@ public class OfficeHelper {
 				OFFICE_URL + "?" + Utils.TENANT_IDENTIFIER, json,
 				CommonConstants.RESPONSE_RESOURCE_ID);
 	}
+	
+	public Integer createOfficeWithOfficeNameAndParentId(String officename,Integer parentId){
+		String json = getAsJSON(officename,parentId);
+		return Utils.performServerPost(this.requestSpec, this.responseSpec,
+				OFFICE_URL + "?" + Utils.TENANT_IDENTIFIER, json,
+				CommonConstants.RESPONSE_RESOURCE_ID);
+	}
 
 	public Integer updateOffice(int id, String name, String openingDate) {
 		final HashMap map = new HashMap<>();
@@ -71,6 +78,18 @@ public class OfficeHelper {
 		final HashMap<String, String> map = new HashMap<>();
 		map.put("parentId", "1");
 		map.put("name", Utils.randomNameGenerator("Office_", 4));
+		map.put("dateFormat", "dd MMMM yyyy");
+		map.put("locale", "en");
+		map.put("openingDate", openingDate);
+		System.out.println("map : " + map);
+		return new Gson().toJson(map);
+	}
+	
+	public static String getAsJSON(final String officeName,final Integer parentId){
+		final HashMap<String, String> map = new HashMap<>();
+		final String openingDate = "02 July 2015";
+		map.put("parentId", String.valueOf(parentId));
+		map.put("name", officeName);
 		map.put("dateFormat", "dd MMMM yyyy");
 		map.put("locale", "en");
 		map.put("openingDate", openingDate);

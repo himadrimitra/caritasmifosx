@@ -78,12 +78,15 @@ public class AccountingRule extends AbstractPersistable<Long> {
 
     @Column(name = "allow_multiple_debits", nullable = false)
     private boolean allowMultipleDebitEntries;
+    
+    @Column(name = "is_inherited_to_child_offices", nullable = false)
+    private boolean isInheritedToChildOffices;
 
     protected AccountingRule() {}
 
     private AccountingRule(final Office office, final GLAccount accountToDebit, final GLAccount accountToCredit, final String name,
             final String description, final boolean systemDefined, final boolean allowMultipleCreditEntries,
-            final boolean allowMultipleDebitEntries) {
+            final boolean allowMultipleDebitEntries, final boolean isInheritedToChildOffices) {
         this.accountToDebit = accountToDebit;
         this.accountToCredit = accountToCredit;
         this.name = name;
@@ -95,6 +98,7 @@ public class AccountingRule extends AbstractPersistable<Long> {
         this.systemDefined = systemDefined;
         this.allowMultipleCreditEntries = allowMultipleCreditEntries;
         this.allowMultipleDebitEntries = allowMultipleDebitEntries;
+        this.isInheritedToChildOffices = isInheritedToChildOffices;
     }
 
     public static AccountingRule fromJson(final Office office, final GLAccount accountToDebit, final GLAccount accountToCredit,
@@ -102,8 +106,9 @@ public class AccountingRule extends AbstractPersistable<Long> {
         final String name = command.stringValueOfParameterNamed(AccountingRuleJsonInputParams.NAME.getValue());
         final String description = command.stringValueOfParameterNamed(AccountingRuleJsonInputParams.DESCRIPTION.getValue());
         final boolean systemDefined = false;
+        final boolean isInheritedToChildOffices = command.booleanPrimitiveValueOfParameterNamed(AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue());
         return new AccountingRule(office, accountToDebit, accountToCredit, name, description, systemDefined, allowMultipleCreditEntries,
-                allowMultipleDebitEntries);
+                allowMultipleDebitEntries,isInheritedToChildOffices);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -121,6 +126,7 @@ public class AccountingRule extends AbstractPersistable<Long> {
                 this.allowMultipleCreditEntries);
         handlePropertyUpdate(command, actualChanges, AccountingRuleJsonInputParams.ALLOW_MULTIPLE_DEBIT_ENTRIES.getValue(),
                 this.allowMultipleDebitEntries);
+        handlePropertyUpdate(command, actualChanges, AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue(), this.isInheritedToChildOffices);
         return actualChanges;
     }
 
@@ -154,7 +160,9 @@ public class AccountingRule extends AbstractPersistable<Long> {
                 if (this.accountToDebit == null) {
                     this.allowMultipleDebitEntries = newValue;
                 }
-            }
+			} else if (paramName.equals(AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue())) {
+				this.isInheritedToChildOffices = newValue;
+			}
         }
     }
 

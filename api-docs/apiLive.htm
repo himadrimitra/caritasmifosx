@@ -19365,7 +19365,8 @@ GET https://DomainName/api/v1/accountingrules/template
 							<td><div class="fineractHeading2">Mandatory Fields</div></td>
 						</tr>
 						<tr class=alt>
-							<td>name, officeId,<br> accountToDebit OR debitTags,<br> accountToCredit OR creditTags.<br>
+							<td>name, officeId,  <br> accountToDebit OR debitTags,<br> accountToCredit OR creditTags,
+							<br> isInheritedToChildOffices ("if true the created rule can be viewed by the child offices")
 							</td>
 						</tr>
 					</table>
@@ -19392,6 +19393,7 @@ Request Body:
 	"officeId": "1",
 	"accountToDebit": "21",
 	"accountToCredit": "9",
+	"isInheritedToChildOffices":true,
 	"description": "Employee salary"
 }
 					</code>
@@ -19412,6 +19414,7 @@ Request Body:
 	"allowMultipleDebitEntries": "true",
 	"creditTags": ["12","13"],
 	"allowMultipleCreditEntries": "true",
+	"isInheritedToChildOffices":true,
 	"description": "for api docs"
 }
 					</code>
@@ -19431,6 +19434,7 @@ Request Body:
 	"accountToDebit": "21",
 	"creditTags": ["12", "13"],
 	"allowMultipleCreditEntries": "false",
+	"isInheritedToChildOffices":false,
 	"description": "Employee salary"
 }
 					</code>
@@ -19451,6 +19455,7 @@ Request Body:
 	"allowMultipleDebitEntries": "false",
 	"accountToCredit": "9",
 	"description": "for api docs"
+	"isInheritedToChildOffices":false
 }
 					</code>
 					<code class="method-response">
@@ -19467,8 +19472,23 @@ Request Body:
 				<div class="method-description">
 					<h4>Retrieve Accounting Rules</h4>
 					<p>Returns the list of defined accounting rules.</p>
+				
+						<br />
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Optional Parameters</div></td>
+						</tr>
+						<tr class=alt><td>officeId</td></tr>
+				<tr><td class=fielddesc>officeId of which accounting rules has to be listed.</td></tr>
+				<tr class=alt><td>includeInheritedRules</td></tr>
+				<tr><td class=fielddesc>if includeInheritedRules = true, list out all the rules that are applicable to the officeId and also list out all the parent office rules that it can access.</td></tr>
+					</table>
 					<p>Example Requests:</p>
 					<div class=apiClick>accountingrules</div>
+					<div class=apiClick>accountingRules?officeId=3&includeInheritedRules=true</div>
+					<div class=fielddesc>The above api list out all the rules that are created for the office with office Id 3 and all the rules of parent offices which can be inherited to child offices.</div>
+					<div class=apiClick>accountingRules?officeId=3</div>
+					<div class=fielddesc>The above api list out all the rules that are created for the office with office Id 3.</div>
 				</div>
 				<div class="method-example">
 					<code class="method-declaration">
@@ -19544,6 +19564,7 @@ GET https://DomainName/api/v1/accountingrules/{accountingruleId}
 	"name": "test",
 	"description": "Employee salary",
 	"systemDefined": false,
+	"isInheritedToChildOffices":true,
 	"debitAccountHead": {
 		"id": 21,
 		"name": "Cash 2",

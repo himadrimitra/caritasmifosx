@@ -138,6 +138,10 @@ public class AccountingRuleCommandFromApiJsonDeserializer {
                 AccountingRuleJsonInputParams.ALLOW_MULTIPLE_DEBIT_ENTRIES.getValue(), element);
         baseDataValidator.reset().parameter(AccountingRuleJsonInputParams.ALLOW_MULTIPLE_DEBIT_ENTRIES.getValue())
                 .value(allowMultipleDebitEntries).ignoreIfNull();
+		final Boolean isInheritedToChildOffices = this.fromApiJsonHelper
+				.extractBooleanNamed(AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue(), element);
+		baseDataValidator.reset().parameter(AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue())
+				.value(isInheritedToChildOffices).ignoreIfNull();
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -218,6 +222,10 @@ public class AccountingRuleCommandFromApiJsonDeserializer {
                 AccountingRuleJsonInputParams.ALLOW_MULTIPLE_DEBIT_ENTRIES.getValue(), element);
         baseDataValidator.reset().parameter(AccountingRuleJsonInputParams.ALLOW_MULTIPLE_DEBIT_ENTRIES.getValue())
                 .value(allowMultipleDebitEntries).ignoreIfNull();
+		final Boolean isInheritedToChildOffices = this.fromApiJsonHelper
+				.extractBooleanNamed(AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue(), element);
+		baseDataValidator.reset().parameter(AccountingRuleJsonInputParams.IS_INHERITED_TO_CHILD_OFFICES.getValue())
+				.value(isInheritedToChildOffices).ignoreIfNull();
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
