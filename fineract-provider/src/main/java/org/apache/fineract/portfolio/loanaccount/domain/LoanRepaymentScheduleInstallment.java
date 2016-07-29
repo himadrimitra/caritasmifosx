@@ -345,6 +345,12 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.obligationsMet = false;
         this.obligationsMetOnDate = null;
     }
+    
+    public void resetAccrualComponents() {
+        this.interestAccrued = null;
+        this.feeAccrued = null;
+        this.penaltyAccrued = null;
+    }
 
     public Money payPenaltyChargesComponent(final LocalDate transactionDate, final Money transactionAmountRemaining) {
 

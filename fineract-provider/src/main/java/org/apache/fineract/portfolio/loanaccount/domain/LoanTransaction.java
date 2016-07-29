@@ -899,4 +899,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isAccrualTransaction() {
         return isAccrual();
     }
+    
+    public boolean isPaymentTransaction() {
+        return this.isNotReversed()
+                && !(this.isDisbursement() || this.isAccrual() || this.isRepaymentAtDisbursement() || this.isNonMonetaryTransaction() || this
+                        .isIncomePosting());
+    }
 }

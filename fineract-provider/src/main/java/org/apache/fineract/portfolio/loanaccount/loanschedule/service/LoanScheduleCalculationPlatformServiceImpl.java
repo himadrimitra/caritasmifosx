@@ -170,9 +170,8 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         }
         LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(loan);
         LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = this.loanScheduleAssembler.calculatePrepaymentAmount(currency,
-                today, loanApplicationTerms, loan.charges(), loan.getOfficeId(),
-                loan.retreiveListOfTransactionsPostDisbursementExcludeAccruals(), loanRepaymentScheduleTransactionProcessor,
-                loan.fetchRepaymentScheduleInstallments());
+                today, loanApplicationTerms, loan, loan.getOfficeId(),
+                loanRepaymentScheduleTransactionProcessor);
         Money totalAmount = totalPrincipal.plus(loanRepaymentScheduleInstallment.getFeeChargesOutstanding(currency)).plus(
                 loanRepaymentScheduleInstallment.getPenaltyChargesOutstanding(currency));
         Money interestDue = Money.zero(currency);
@@ -192,7 +191,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         }
 
         LoanScheduleModel model = this.loanScheduleAssembler.assembleForInterestRecalculation(loanApplicationTerms, loan.getOfficeId(),
-                modifiedTransactions, loan.charges(), loanRepaymentScheduleTransactionProcessor, loan.fetchRepaymentScheduleInstallments(),
+                modifiedTransactions, loan, loanRepaymentScheduleTransactionProcessor, 
                 loan.fetchInterestRecalculateFromDate());
         LoanScheduleData scheduleDate = model.toData();
         Collection<LoanSchedulePeriodData> periodDatas = scheduleDate.getPeriods();

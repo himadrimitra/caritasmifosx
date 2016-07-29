@@ -30,31 +30,22 @@ import org.joda.time.LocalDate;
 public class LoanTermVariationsDataWrapper {
 
     private final List<LoanTermVariationsData> exceptionData;
-    private final ListIterator<LoanTermVariationsData> iterator;
+    private ListIterator<LoanTermVariationsData> iterator;
     private final List<LoanTermVariationsData> interestRateChanges;
+    private final List<LoanTermVariationsData> interestRateFromInstallment;
     private final List<LoanTermVariationsData> dueDateVariation;
-    private final ListIterator<LoanTermVariationsData> dueDateIterator;
+    private ListIterator<LoanTermVariationsData> dueDateIterator;
 
     public LoanTermVariationsDataWrapper(final List<LoanTermVariationsData> exceptionData) {
         if (exceptionData == null) {
             this.exceptionData = new ArrayList<>(1);
         } else {
             this.exceptionData = exceptionData;
-            Collections.sort(this.exceptionData);
         }
         this.interestRateChanges = new ArrayList<>();
         this.dueDateVariation = new ArrayList<>();
-        for (LoanTermVariationsData loanTermVariationsData : this.exceptionData) {
-            if (loanTermVariationsData.getTermVariationType().isInterestRateVariation()) {
-                this.interestRateChanges.add(loanTermVariationsData);
-            } else if (loanTermVariationsData.getTermVariationType().isDueDateVariation()) {
-                this.dueDateVariation.add(loanTermVariationsData);
-            }
-        }
-        this.exceptionData.removeAll(this.interestRateChanges);
-        this.exceptionData.removeAll(this.dueDateVariation);
-        iterator = this.exceptionData.listIterator();
-        dueDateIterator = this.dueDateVariation.listIterator();
+        this.interestRateFromInstallment = new ArrayList<>();
+        deriveLoanTermVariations();
     }
 
     public boolean hasVariation(final LocalDate date) {
@@ -107,15 +98,32 @@ public class LoanTermVariationsDataWrapper {
         return !this.exceptionData.isEmpty();
     }
     
-    public boolean hasVariations(Collection<LoanTermVariationType> types){
+    public boolean hasVariations(Collection<LoanTermVariationType> types) {
         boolean hasVariation = false;
-        for(LoanTermVariationsData variationData : this.exceptionData){
-            if(types.contains(variationData.getTermVariationType())){
+        for (LoanTermVariationsData variationData : this.exceptionData) {
+            if (types.contains(variationData.getTermVariationType())) {
                 hasVariation = true;
                 break;
             }
         }
         return hasVariation;
+    }
+
+    public void setExceptionData(final List<LoanTermVariationsData> exceptionData) {
+        clearTerms();
+        this.exceptionData.addAll(exceptionData);
+        deriveLoanTermVariations();
+    }
+
+    public void clearTerms() {
+        this.exceptionData.clear();
+        this.interestRateChanges.clear();
+        this.dueDateVariation.clear();
+        this.interestRateFromInstallment.clear();
+    }
+
+    public List<LoanTermVariationsData> getInterestRateFromInstallment() {
+        return this.interestRateFromInstallment;
     }
 
     public int adjustNumberOfRepayments() {
@@ -129,7 +137,7 @@ public class LoanTermVariationsDataWrapper {
         }
         return repaymetsForAdjust;
     }
-
+    
     public LoanTermVariationsData fetchLoanTermDueDateVariationsData(final LocalDate onDate) {
         LoanTermVariationsData data = null;
         for (LoanTermVariationsData termVariationsData : this.dueDateVariation) {
@@ -144,6 +152,41 @@ public class LoanTermVariationsDataWrapper {
     public boolean hasExceptionVariation(final LocalDate date, ListIterator<LoanTermVariationsData> exceptionDataListIterator) {
         ListIterator<LoanTermVariationsData> iterator = exceptionDataListIterator;
         return hasNext(date, iterator);
+    }
+
+    public void updateLoanTermVariationsData(final List<LoanTermVariationsData> exceptionData){
+        if(this.exceptionData != null && exceptionData != null && exceptionData.size() > 0){
+            this.exceptionData.addAll(exceptionData);
+            deriveLoanTermVariations();
+        }
+    }
+    
+    private void deriveLoanTermVariations() {
+        Collections.sort(this.exceptionData);
+        for (LoanTermVariationsData loanTermVariationsData : this.exceptionData) {
+            if (loanTermVariationsData.getTermVariationType().isInterestRateVariation()) {
+                this.interestRateChanges.add(loanTermVariationsData);
+            } else if (loanTermVariationsData.getTermVariationType().isDueDateVariation()) {
+                this.dueDateVariation.add(loanTermVariationsData);
+            } else if (loanTermVariationsData.getTermVariationType().isInterestRateFromInstallment()) {
+                this.interestRateFromInstallment.add(loanTermVariationsData);
+            }
+        }
+        Collections.sort(this.dueDateVariation);
+        this.exceptionData.removeAll(this.interestRateChanges);
+        this.exceptionData.removeAll(this.dueDateVariation);
+        this.exceptionData.removeAll(this.interestRateFromInstallment);
+        this.iterator = this.exceptionData.listIterator();
+        this.dueDateIterator = this.dueDateVariation.listIterator();
+    }
+    
+    public void resetVariations(){
+        
+        for (LoanTermVariationsData loanTermVariationsData : this.exceptionData) {
+            loanTermVariationsData.setProcessed(false);
+        }
+        this.iterator = this.exceptionData.listIterator();
+        this.dueDateIterator = this.dueDateVariation.listIterator();
     }
 
 }
