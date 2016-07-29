@@ -81,6 +81,12 @@ public class LoanTransactionHelper {
         return Utils.performServerPut(this.requestSpec, this.responseSpec, "/fineract-provider/api/v1/loans/" + id + "?"
                 + Utils.TENANT_IDENTIFIER, loanApplicationJSON, "loanId");
     }
+    
+	public Object updateLoan(final Integer id, final String loanApplicationJSON, final String responseAttribute) {
+		final String UPDATE_LOAN_URL = "/fineract-provider/api/v1/loans/" + id + "?" + Utils.TENANT_IDENTIFIER;
+		return Utils.performServerPut(this.requestSpec, this.responseSpec, UPDATE_LOAN_URL, loanApplicationJSON,
+				responseAttribute);
+	}
 
     public ArrayList getLoanRepaymentSchedule(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             final Integer loanID) {

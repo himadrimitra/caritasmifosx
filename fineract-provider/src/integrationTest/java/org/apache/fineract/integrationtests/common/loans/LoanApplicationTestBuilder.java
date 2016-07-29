@@ -87,6 +87,9 @@ public class LoanApplicationTestBuilder {
 
         if (this.loanType == "group") {
             map.put("groupId", ID);
+            if (this.calendarId != null) {
+                map.put("calendarId", this.calendarId);
+            }
         } else {
             map.put("clientId", ID);
         }

@@ -567,7 +567,7 @@ public class LoanScheduleAssembler {
 
     }
 
-    private void validateRepaymentFrequencyIsSameAsMeetingFrequency(final Integer meetingFrequency, final Integer repaymentFrequency,
+    public void validateRepaymentFrequencyIsSameAsMeetingFrequency(final Integer meetingFrequency, final Integer repaymentFrequency,
             final Integer meetingInterval, final Integer repaymentInterval) {
         // meeting with daily frequency should allow loan products with any
         // frequency.
@@ -579,12 +579,22 @@ public class LoanScheduleAssembler {
             } else if (meetingFrequency.equals(repaymentFrequency)) {
                 // repayment frequency is same as meeting frequency repayment
                 // interval should be same or multiple of meeting interval
-                if (repaymentInterval % meetingInterval != 0) {
-                    // throw exception: Loan product frequency/interval
-                    throw new MeetingFrequencyMismatchException("loanapplication.repayment.interval",
-                            "Loan repayment repaid every # must equal or multiple of meeting interval " + meetingInterval, meetingInterval,
-                            repaymentInterval);
-                }
+            	String userMessageGlobalisationCode = "loanapplication.repayment.interval";
+            	String developerMessage = null;
+				if (configurationDomainService.isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled()
+						&& (repaymentInterval != meetingInterval)) {
+					 developerMessage = "Loan repayment frequency period must match that of meeting frequency period and "
+							+ "repayment repaid every # must equal  meeting interval " + meetingInterval;
+				}
+				else if (repaymentInterval % meetingInterval != 0) {
+					// throw exception: Loan product frequency/interval
+					 developerMessage = "Loan repayment repaid every # must equal or multiple of meeting interval "
+							+ meetingInterval;
+				}
+				if( developerMessage != null){
+					throw new MeetingFrequencyMismatchException(userMessageGlobalisationCode, developerMessage,
+							meetingInterval, repaymentInterval);
+				}
             }
         }
     }
