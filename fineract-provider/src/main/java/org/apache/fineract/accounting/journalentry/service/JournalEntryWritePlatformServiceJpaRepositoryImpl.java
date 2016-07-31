@@ -31,6 +31,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.closure.domain.GLClosure;
 import org.apache.fineract.accounting.closure.domain.GLClosureRepository;
+import org.apache.fineract.accounting.common.AccountingConstants.FINANCIAL_ACTIVITY;
 import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccount;
 import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccountRepositoryWrapper;
 import org.apache.fineract.accounting.glaccount.data.GLAccountDataForLookup;
@@ -637,18 +638,18 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
             journalEntryCommand.validateForCreate();
 
             final FinancialActivityAccount financialActivityAccountId = this.financialActivityAccountRepositoryWrapper
-                    .findByFinancialActivityTypeWithNotFoundDetection(300);
+                    .findByFinancialActivityTypeWithNotFoundDetection(FINANCIAL_ACTIVITY.OPENING_BALANCES_TRANSFER_CONTRA.getValue());
             final Long contraId = financialActivityAccountId.getGlAccount().getId();
             if (contraId == null) { throw new GeneralPlatformDomainRuleException(
                     "error.msg.financial.activity.mapping.opening.balance.contra.account.cannot.be.null",
                     "office-opening-balances-contra-account value can not be null", "office-opening-balances-contra-account"); }
 
-            validateJournalEntriesArePostedBefore(contraId);
-
             // check office is valid
             final Long officeId = command.longValueOfParameterNamed(JournalEntryJsonInputParams.OFFICE_ID.getValue());
             final Office office = this.officeRepository.findOne(officeId);
             if (office == null) { throw new OfficeNotFoundException(officeId); }
+            
+            validateJournalEntriesArePostedBefore(contraId,officeId);
 
             final String currencyCode = command.stringValueOfParameterNamed(JournalEntryJsonInputParams.CURRENCY_CODE.getValue());
 
@@ -735,8 +736,8 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
         return contraType;
     }
 
-    private void validateJournalEntriesArePostedBefore(final Long contraId) {
-        final List<String> transactionIds = this.glJournalEntryRepository.findNonContraTansactionIds(contraId);
+    private void validateJournalEntriesArePostedBefore(final Long contraId, final Long officeId) {
+        final List<String> transactionIds = this.glJournalEntryRepository.findNonContraTansactionIds(contraId, officeId);
         if (!CollectionUtils.isEmpty(transactionIds)) { throw new GeneralPlatformDomainRuleException(
                 "error.msg.journalentry.defining.openingbalance.not.allowed",
                 "Defining Opening balances not allowed after journal entries posted", transactionIds); }
