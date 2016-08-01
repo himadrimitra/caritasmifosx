@@ -110,6 +110,8 @@ public interface LoanProductConstants {
     // Fixed installment configuration related
     public static final String canDefineEmiAmountParamName = "canDefineInstallmentAmount";
     public static final String installmentAmountInMultiplesOfParamName = "installmentAmountInMultiplesOf";
+    public static final String adjustedInstallmentInMultiplesOfParamName = "adjustedInstallmentInMultiplesOf";
+    public static final String adjustFirstEMIAmountParamName = "adjustFirstEMIAmount";
     
     //Loan Configurable Attributes
     public static final String allowAttributeOverridesParamName = "allowAttributeOverrides";

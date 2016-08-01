@@ -209,6 +209,21 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         }
         return defaultValue;
     }
+    
+    @Override
+    public int getAdjustedAmountRoundingMode() {
+        final String propertyName = "adjusted-amount-rounding-mode";
+        int defaultValue = 6; // 6 Stands for HALF-EVEN
+        final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
+        if (property.isEnabled()) {
+            int value = integerValue(property.getValue());
+            if (value < 0 || value > 6) {
+                return defaultValue;
+            }
+            return value;
+        }
+        return defaultValue;
+    }
 
     @Override
     public boolean isBackdatePenaltiesEnabled() {

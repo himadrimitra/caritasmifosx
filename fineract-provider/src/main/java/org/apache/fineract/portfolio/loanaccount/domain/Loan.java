@@ -40,7 +40,6 @@ import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -398,6 +397,9 @@ public class Loan extends AbstractPersistable<Long> {
 
     @Column(name = "is_subsidy_applicable")
     private Boolean isSubsidyApplicable;
+    
+    @Column(name = "first_emi_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal firstEmiAmount;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final CodeValue loanPurpose,
@@ -2590,6 +2592,13 @@ public class Loan extends AbstractPersistable<Long> {
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
 
         final LoanScheduleGenerator loanScheduleGenerator = scheduleGeneratorDTO.getLoanScheduleFactory().create(interestMethod);
+        if (this.loanProduct.adjustFirstEMIAmount() && !this.isOpen()) {
+            final BigDecimal firstInstallmentEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms,
+                    charges(), scheduleGeneratorDTO.getHolidayDetailDTO());
+            loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
+            this.firstEmiAmount = firstInstallmentEmiAmount;
+            loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
+        }
         final LoanScheduleModel loanSchedule = loanScheduleGenerator.generate(mc, loanApplicationTerms, charges(),
                 scheduleGeneratorDTO.getHolidayDetailDTO());
         return loanSchedule;
@@ -5361,6 +5370,13 @@ public class Loan extends AbstractPersistable<Long> {
 
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
+        
+        if (this.loanProduct.adjustFirstEMIAmount() && !this.isOpen()) {
+            final BigDecimal firstInstallmentEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms,
+                    charges(), generatorDTO.getHolidayDetailDTO());
+            loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
+            this.firstEmiAmount = firstInstallmentEmiAmount;
+        }
 
         return loanScheduleGenerator.rescheduleNextInstallments(mc, loanApplicationTerms, charges(), generatorDTO.getHolidayDetailDTO(),
                 retreiveListOfTransactionsPostDisbursementExcludeAccruals(), loanRepaymentScheduleTransactionProcessor,
@@ -5442,9 +5458,10 @@ public class Loan extends AbstractPersistable<Long> {
                 this.maxOutstandingLoanBalance, interestChargedFromDate, this.loanProduct.getPrincipalThresholdForLastInstallment(),
                 this.loanProduct.getInstallmentAmountInMultiplesOf(), recalculationFrequencyType, restCalendarInstance, compoundingMethod,
                 compoundingCalendarInstance, compoundingFrequencyType, this.loanProduct.preCloseInterestCalculationStrategy(),
-                rescheduleStrategyMethod, calendar, getApprovedPrincipal(), annualNominalInterestRate, loanTermVariations, calendarHistoryDataWrapper,
-				scheduleGeneratorDTO.getNumberOfdays(), scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod,
-				isSubsidyApplicable());
+                rescheduleStrategyMethod, calendar, getApprovedPrincipal(), annualNominalInterestRate, loanTermVariations,
+                calendarHistoryDataWrapper, scheduleGeneratorDTO.getNumberOfdays(),
+                scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable(),
+                firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount());
         return loanApplicationTerms;
     }
 
@@ -5706,7 +5723,9 @@ public class Loan extends AbstractPersistable<Long> {
                 this.loanProduct.getInstallmentAmountInMultiplesOf(), recalculationFrequencyType, restCalendarInstance, compoundingMethod,
                 compoundingCalendarInstance, compoundingFrequencyType, this.loanProduct.preCloseInterestCalculationStrategy(),
                 rescheduleStrategyMethod, loanCalendar, getApprovedPrincipal(), annualNominalInterestRate, loanTermVariations, 
-                calendarHistoryDataWrapper, numberofdays, isSkipRepaymentonmonthFirst, holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable());
+                calendarHistoryDataWrapper, numberofdays, isSkipRepaymentonmonthFirst, holidayDetailDTO, allowCompoundingOnEod,
+                isSubsidyApplicable(), firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(),
+                this.loanProduct.adjustFirstEMIAmount());
     }
 
     /**
