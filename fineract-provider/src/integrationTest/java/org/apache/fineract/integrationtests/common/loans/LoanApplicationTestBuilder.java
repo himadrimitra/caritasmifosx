@@ -37,7 +37,7 @@ public class LoanApplicationTestBuilder {
     private static final String CALCULATION_PERIOD_SAME_AS_REPAYMENT_PERIOD = "1";
     public static final String DEFAULT_STRATEGY = "1";
     public static final String RBI_INDIA_STRATEGY = "4";
-
+    
     private String principal = "10,000";
     private String loanTermFrequency = "";
     private String loanTermFrequencyType = "";
@@ -53,10 +53,11 @@ public class LoanApplicationTestBuilder {
     private String expectedDisbursmentDate = "";
     private String submittedOnDate = "";
     private String loanType = "individual";
-    private String fixedEmiAmount = "10000";
+    private String fixedEmiAmount = null;
     private String maxOutstandingLoanBalance = "36000";
     private String graceOnPrincipalPayment = null;
     private String graceOnInterestPayment = null;
+
     @SuppressWarnings("rawtypes")
     private List<HashMap> disbursementData = null;
     @SuppressWarnings("rawtypes")
@@ -134,15 +135,18 @@ public class LoanApplicationTestBuilder {
 
         if (disbursementData != null) {
             map.put("disbursementData", disbursementData);
-            map.put("fixedEmiAmount", fixedEmiAmount);
             map.put("maxOutstandingLoanBalance", maxOutstandingLoanBalance);
-
+        }
+        
+        if(this.fixedEmiAmount != null){
+        	map.put("fixedEmiAmount", fixedEmiAmount);
         }
         
         if(isSubsidyApplicable != null){
             map.put("isSubsidyApplicable", isSubsidyApplicable);
         }
 
+       
         System.out.println("Loan Application request : " + map);
         return new Gson().toJson(map);
     }
@@ -320,12 +324,12 @@ public class LoanApplicationTestBuilder {
         this.fixedEmiAmount = installmentAmount;
         return this;
     }
-    
+
     public LoanApplicationTestBuilder withLoanSubsidy(final boolean isSubsidyApplicable) {
         this.isSubsidyApplicable = isSubsidyApplicable;
         return this;
     }
-    
+
     public LoanApplicationTestBuilder withMaxOutstandingLoanBalance(final String maxOutstandingLoanBalance) {
         this.maxOutstandingLoanBalance = maxOutstandingLoanBalance;
         return this;

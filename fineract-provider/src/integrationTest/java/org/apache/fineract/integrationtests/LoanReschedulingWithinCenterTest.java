@@ -364,7 +364,6 @@ public class LoanReschedulingWithinCenterTest {
                 .withRepaymentFrequencyTypeAsWeeks() //
                 .withInterestRatePerPeriod("2").withLoanType("jlg") //
                 .withCalendarID(calendarId.toString()).withAmortizationTypeAsEqualInstallments() //
-                .withFixedEmiAmount("") //
                 .withTranches(tranches).withInterestTypeAsDecliningBalance() //
                 .withInterestCalculationPeriodTypeAsDays() //
                 .withInterestCalculationPeriodTypeAsDays() //
