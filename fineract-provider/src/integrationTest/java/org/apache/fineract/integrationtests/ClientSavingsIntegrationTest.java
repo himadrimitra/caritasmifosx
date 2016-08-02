@@ -1481,7 +1481,6 @@ public class ClientSavingsIntegrationTest {
     public void testSavingsAccountPostInterestWithOverdraft() {
         this.savingsAccountHelper = new SavingsAccountHelper(this.requestSpec, this.responseSpec);
         final ResponseSpecification errorResponse = new ResponseSpecBuilder().expectStatusCode(403).build();
-        final SavingsAccountHelper validationErrorHelper = new SavingsAccountHelper(this.requestSpec, errorResponse);
 
         /***
          * Create a client to apply for savings account (overdraft account).
@@ -1596,6 +1595,7 @@ public class ClientSavingsIntegrationTest {
         this.savingsAccountHelper.postInterestAsOnSavings(savingsId, POSTED_TRANSACTION_DATE);
         HashMap accountDetailsPostInterest = this.savingsAccountHelper.getSavingsDetails(savingsId);
         summary = (HashMap) accountDetails.get("summary");
+        ArrayList interestPostingTransaction = (ArrayList)((HashMap)((ArrayList) accountDetails.get("transactions")).get(0)).get("date");
         Float accountDetailsPostInterestPosted = Float.valueOf(summary.get("totalInterestPosted").toString());
         
     
@@ -1625,11 +1625,26 @@ public class ClientSavingsIntegrationTest {
 
        todaysDate = Calendar.getInstance();
        final String CLOSEDON_DATE = dateFormat.format(todaysDate.getTime());
-       String withdrawBalance = "false";
-       ArrayList<HashMap> savingsAccountErrorData = (ArrayList<HashMap>) validationErrorHelper.closeSavingsAccountPostInterestAndGetBackRequiredField(
-               savingsId, withdrawBalance, CommonConstants.RESPONSE_ERROR, CLOSEDON_DATE);
-       assertEquals("error.msg.postInterest.notDone",
-               savingsAccountErrorData.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+       
+       Calendar interestPostingDate = Calendar.getInstance();
+       Calendar todysDate = Calendar.getInstance();
+        interestPostingDate.set((int) interestPostingTransaction.get(0), (int) interestPostingTransaction.get(1) -1,
+                (int) interestPostingTransaction.get(2));
+        final String INTEREST_POSTING_DATE = dateFormat.format(interestPostingDate.getTime());
+        final String TODYS_POSTING_DATE = dateFormat.format(todysDate.getTime());
+        String withdrawBalance = "true";
+        
+        if (TODYS_POSTING_DATE.equalsIgnoreCase(INTEREST_POSTING_DATE)) {
+            final SavingsAccountHelper validationErrorHelper = new SavingsAccountHelper(this.requestSpec, this.responseSpec);
+            validationErrorHelper.closeSavingsAccountPostInterestAndGetBackRequiredField(savingsId, withdrawBalance,
+                    CommonConstants.RESPONSE_ERROR, CLOSEDON_DATE);
+        } else {
+            final SavingsAccountHelper validationErrorHelper = new SavingsAccountHelper(this.requestSpec, errorResponse);
+            ArrayList<HashMap> savingsAccountErrorData = (ArrayList<HashMap>) validationErrorHelper
+                    .closeSavingsAccountPostInterestAndGetBackRequiredField(savingsId, withdrawBalance, CommonConstants.RESPONSE_ERROR,
+                            CLOSEDON_DATE);
+            assertEquals("error.msg.postInterest.notDone", savingsAccountErrorData.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+        }
        
       }
     

@@ -627,7 +627,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " l.interest_rate_differential as interestRateDifferential, "
                     + " l.create_standing_instruction_at_disbursement as createStandingInstructionAtDisbursement, "
                     + " lpvi.minimum_gap as minimuminstallmentgap, lpvi.maximum_gap as maximuminstallmentgap , "
-                    + " l.is_subsidy_applicable as isSubsidyApplicable"
+                    + " lir.is_subsidy_applicable as isSubsidyApplicable"
                     + " from m_loan l" //
                     + " join m_product_loan lp on lp.id = l.product_id" //
                     + " left join m_loan_recalculation_details lir on lir.loan_id = l.id "
@@ -742,8 +742,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final Integer minimumGap = rs.getInt("minimuminstallmentgap");
             final Integer maximumGap = rs.getInt("maximuminstallmentgap");
             
-            final Boolean isSubsidyApplicable = rs.getBoolean("isSubsidyApplicable");
-
             final LoanApplicationTimelineData timeline = new LoanApplicationTimelineData(submittedOnDate, submittedByUsername,
                     submittedByFirstname, submittedByLastname, rejectedOnDate, rejectedByUsername, rejectedByFirstname, rejectedByLastname,
                     withdrawnOnDate, withdrawnByUsername, withdrawnByFirstname, withdrawnByLastname, approvedOnDate, approvedByUsername,
@@ -926,6 +924,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                             .interestRecalculationCompoundingDayOfWeekType(compoundingFrequencyWeekDayEnumValue);
                 }
                 final Integer compoundingFrequencyOnDay = JdbcSupport.getInteger(rs, "compoundingFrequencyOnDay");
+                
+                final Boolean isSubsidyApplicable = rs.getBoolean("isSubsidyApplicable");
 
                 final Boolean isCompoundingToBePostedAsTransaction = rs.getBoolean("isCompoundingToBePostedAsTransaction");
                 final Boolean allowCompoundingOnEod = rs.getBoolean("allowCompoundingOnEod");
@@ -933,7 +933,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                         rescheduleStrategyType, calendarData, restFrequencyType, restFrequencyInterval, restFrequencyNthDayEnum,
                         restFrequencyWeekDayEnum, restFrequencyOnDay, compoundingCalendarData, compoundingFrequencyType,
                         compoundingInterval, compoundingFrequencyNthDayEnum, compoundingFrequencyWeekDayEnum, compoundingFrequencyOnDay,
-                        isCompoundingToBePostedAsTransaction, allowCompoundingOnEod);
+                        isCompoundingToBePostedAsTransaction, allowCompoundingOnEod, isSubsidyApplicable);
             }
 
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName,
@@ -949,7 +949,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance, inArrears,
                     graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
                     interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed, minimumGap,
-                    maximumGap, isSubsidyApplicable);
+                    maximumGap);
         }
     }
 

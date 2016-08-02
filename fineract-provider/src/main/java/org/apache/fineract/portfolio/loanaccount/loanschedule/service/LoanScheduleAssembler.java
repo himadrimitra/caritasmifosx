@@ -346,9 +346,11 @@ public class LoanScheduleAssembler {
         CalendarInstance compoundingCalendarInstance = null;
         InterestRecalculationCompoundingMethod compoundingMethod = null;
         boolean allowCompoundingOnEod = false;
+        boolean isSubsidyApplicable = false;
         if (isInterestRecalculationEnabled) {
             LoanProductInterestRecalculationDetails loanProductInterestRecalculationDetails = loanProduct
                     .getProductInterestRecalculationDetails();
+            isSubsidyApplicable = loanProductInterestRecalculationDetails.isSubsidyApplicable();
             recalculationFrequencyType = loanProductInterestRecalculationDetails.getRestFrequencyType();
             Integer repeatsOnDay = null;
             Integer recalculationFrequencyNthDay = loanProductInterestRecalculationDetails.getRestFrequencyOnDay();
@@ -468,7 +470,7 @@ public class LoanScheduleAssembler {
                 compoundingMethod, compoundingCalendarInstance, compoundingFrequencyType, principalThresholdForLastInstalment,
                 installmentAmountInMultiplesOf, loanProduct.preCloseInterestCalculationStrategy(), calendar, BigDecimal.ZERO,
                 loanTermVariations, isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfDays, isSkipMeetingOnFirstDay, detailDTO,
-                allowCompoundingOnEod, loanProduct.isSubsidyApplicable(), firstEmiAmount,
+                allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount,
                 loanProduct.getAdjustedInstallmentInMultiplesOf(), loanProduct.adjustFirstEMIAmount());
     }
 

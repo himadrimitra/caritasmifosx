@@ -98,6 +98,9 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
     @Column(name = "allow_compounding_on_eod")
     private Boolean allowCompoundingOnEod;
 
+    @Column(name = "is_subsidy_applicable")
+    private Boolean isSubsidyApplicable;
+    
     protected LoanProductInterestRecalculationDetails() {
         //
     }
@@ -161,12 +164,15 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
 
         final boolean isCompoundingToBePostedAsTransaction = command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName);
-
+        
+        final Boolean isSubsidyApplicable = command
+                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
+        
         return new LoanProductInterestRecalculationDetails(interestRecalculationCompoundingMethod, loanRescheduleStrategyMethod,
                 recurrenceFrequency, recurrenceInterval, recurrenceOnNthDay, recurrenceOnDay, recurrenceOnWeekday,
                 compoundingRecurrenceFrequency, compoundingInterval, compoundingRecurrenceOnNthDay, compoundingRecurrenceOnDay,
                 compoundingRecurrenceOnWeekday, isArrearsBasedOnOriginalSchedule, preCloseInterestCalculationStrategy,
-                isCompoundingToBePostedAsTransaction, allowCompoundingOnEod);
+                isCompoundingToBePostedAsTransaction, allowCompoundingOnEod, isSubsidyApplicable);
     }
 
     private LoanProductInterestRecalculationDetails(final Integer interestRecalculationCompoundingMethod,
@@ -175,7 +181,7 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
             Integer compoundingFrequencyType, Integer compoundingInterval, final Integer compoundingFrequencyNthDay,
             final Integer compoundingFrequencyOnDay, final Integer compoundingFrequencyWeekday,
             final boolean isArrearsBasedOnOriginalSchedule, final Integer preCloseInterestCalculationStrategy,
-            final boolean isCompoundingToBePostedAsTransaction, final boolean allowCompoundingOnEod) {
+            final boolean isCompoundingToBePostedAsTransaction, final boolean allowCompoundingOnEod , final Boolean isSubsidApplicable) {
         this.interestRecalculationCompoundingMethod = interestRecalculationCompoundingMethod;
         this.rescheduleStrategyMethod = rescheduleStrategyMethod;
         this.restFrequencyType = restFrequencyType;
@@ -192,6 +198,7 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
         this.preClosureInterestCalculationStrategy = preCloseInterestCalculationStrategy;
         this.isCompoundingToBePostedAsTransaction = isCompoundingToBePostedAsTransaction;
         this.allowCompoundingOnEod = allowCompoundingOnEod;
+        this.isSubsidyApplicable = isSubsidApplicable;
     }
 
     public void updateProduct(final LoanProduct loanProduct) {
@@ -404,6 +411,12 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
             actualChanges.put(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName, newValue);
             this.isCompoundingToBePostedAsTransaction = newValue;
         }
+        
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isSubsidyApplicableParamName, this.isSubsidyApplicable)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
+            actualChanges.put(LoanProductConstants.isSubsidyApplicableParamName, newValue);
+            this.isSubsidyApplicable = newValue;
+        }
 
     }
 
@@ -461,5 +474,9 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
 
     public Boolean allowCompoundingOnEod() {
         return this.allowCompoundingOnEod;
+    }
+    
+    public Boolean isSubsidyApplicable() {
+        return isSubsidyApplicable;
     }
 }

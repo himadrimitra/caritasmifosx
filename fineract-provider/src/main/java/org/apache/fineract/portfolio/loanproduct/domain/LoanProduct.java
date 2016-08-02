@@ -184,9 +184,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "loanProduct", optional = true, orphanRemoval = true)
     private LoanProductVariableInstallmentConfig variableInstallmentConfig;
     
-    @Column(name = "is_subsidy_applicable")
-    private Boolean isSubsidyApplicable;
-    
     @Column(name = "adjust_first_emi_amount", nullable = true)
     private boolean adjustFirstEMIAmount;
     
@@ -340,23 +337,20 @@ public class LoanProduct extends AbstractPersistable<Long> {
         final Integer adjustedInstallmentInMultiplesOf = command
                 .integerValueOfParameterNamed(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName);
         
-        final Boolean isSubsidyApplicable = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
-
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
                 annualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion, repaymentEvery,
-                repaymentFrequencyType, numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, graceOnPrincipalPayment,
-                recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, amortizationMethod,
-                inArrearsTolerance, productCharges, accountingRuleType, includeInBorrowerCycle, startDate, closeDate, externalId,
-                useBorrowerCycle, loanProductBorrowerCycleVariations, multiDisburseLoan, maxTrancheCount, outstandingLoanBalance,
-                graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
-                interestRecalculationSettings, minimumDaysBetweenDisbursalAndFirstRepayment, holdGuarantorFunds,
-                loanProductGuaranteeDetails, principalThresholdForLastInstallment, accountMovesOutOfNPAOnlyOnArrearsCompletion,
-                canDefineEmiAmount, installmentAmountInMultiplesOf, loanConfigurableAttributes, isLinkedToFloatingInterestRates,
-                floatingRate, interestRateDifferential, minDifferentialLendingRate, maxDifferentialLendingRate,
-                defaultDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed,
-                minimumGapBetweenInstallments, maximumGapBetweenInstallments, isSubsidyApplicable, adjustedInstallmentInMultiplesOf,
-                adjustFirstEMIAmount);
+                repaymentFrequencyType, numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods,
+                graceOnInterestPayment, graceOnInterestCharged, amortizationMethod, inArrearsTolerance, productCharges, accountingRuleType,
+                includeInBorrowerCycle, startDate, closeDate, externalId, useBorrowerCycle, loanProductBorrowerCycleVariations,
+                multiDisburseLoan, maxTrancheCount, outstandingLoanBalance, graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType,
+                daysInYearType, isInterestRecalculationEnabled, interestRecalculationSettings,
+                minimumDaysBetweenDisbursalAndFirstRepayment, holdGuarantorFunds, loanProductGuaranteeDetails,
+                principalThresholdForLastInstallment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineEmiAmount,
+                installmentAmountInMultiplesOf, loanConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRate,
+                interestRateDifferential, minDifferentialLendingRate, maxDifferentialLendingRate, defaultDifferentialLendingRate,
+                isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
+                maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
 
     }
 
@@ -587,7 +581,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Boolean isLinkedToFloatingInterestRates, FloatingRate floatingRate, BigDecimal interestRateDifferential,
             BigDecimal minDifferentialLendingRate, BigDecimal maxDifferentialLendingRate, BigDecimal defaultDifferentialLendingRate,
             Boolean isFloatingInterestRateCalculationAllowed, final Boolean isVariableInstallmentsAllowed,
-            final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments, final Boolean isSubsidyApplicable,
+            final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments,
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
@@ -664,7 +658,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
         this.adjustFirstEMIAmount = adjustFirstEMIAmount;
         this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
-        this.isSubsidyApplicable = isSubsidyApplicable;
     }
 
     public MonetaryCurrency getCurrency() {
@@ -1051,13 +1044,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
             this.adjustedInstallmentInMultiplesOf = newValue;
         }
         
-        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isSubsidyApplicableParamName, this.isSubsidyApplicable)) {
-            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
-            actualChanges.put(LoanProductConstants.isSubsidyApplicableParamName, newValue);
-            this.isSubsidyApplicable = newValue;
-        }
-        
-
         return actualChanges;
     }
 
@@ -1381,8 +1367,12 @@ public class LoanProduct extends AbstractPersistable<Long> {
     public boolean allowVariabeInstallments() {
         return this.allowVariabeInstallments;
     }
-
+    
     public Boolean isSubsidyApplicable() {
+        boolean isSubsidyApplicable = false;
+        if (this.isInterestRecalculationEnabled()) {
+            isSubsidyApplicable = this.getProductInterestRecalculationDetails().isSubsidyApplicable();
+        }
         return isSubsidyApplicable;
     }
     

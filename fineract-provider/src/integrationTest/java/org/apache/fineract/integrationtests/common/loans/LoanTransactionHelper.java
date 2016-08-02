@@ -131,6 +131,12 @@ public class LoanTransactionHelper {
         final String URL = "/fineract-provider/api/v1/loanproducts/" + loanProductId + "?associations=all&" + Utils.TENANT_IDENTIFIER;
         return Utils.performServerGet(requestSpec, responseSpec, URL, null);
     }
+    
+    public Object getLoanProductTemplate(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final Integer loanProductId) {
+        final String URL = "/fineract-provider/api/v1/loanproducts/" + loanProductId + "?template=true&" + Utils.TENANT_IDENTIFIER;
+        return Utils.performServerGet(requestSpec, responseSpec, URL, "");
+    }
 
     public ArrayList getLoanCharges(final Integer loanId) {
         final String GET_LOAN_CHARGES_URL = "/fineract-provider/api/v1/loans/" + loanId + "/charges?" + Utils.TENANT_IDENTIFIER;
