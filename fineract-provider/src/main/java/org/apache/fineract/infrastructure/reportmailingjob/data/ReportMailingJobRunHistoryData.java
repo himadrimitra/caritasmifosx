@@ -51,7 +51,7 @@ public class ReportMailingJobRunHistoryData {
      * 
      * @return ReportMailingJobRunHistoryData object
      **/
-    public static ReportMailingJobRunHistoryData instance(Long id, Long reportMailingJobId, DateTime startDateTime,
+    public static ReportMailingJobRunHistoryData newInstance(Long id, Long reportMailingJobId, DateTime startDateTime,
             DateTime endDateTime, String status, String errorMessage, String errorLog) {
         return new ReportMailingJobRunHistoryData(id, reportMailingJobId, startDateTime, endDateTime, status, errorMessage, errorLog);
     }

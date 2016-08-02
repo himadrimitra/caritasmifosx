@@ -23,13 +23,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.joda.time.DateTime;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobRunHistoryData;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -99,7 +99,7 @@ public class ReportMailingJobRunHistoryReadPlatformServiceImpl implements Report
             final String errorMessage = rs.getString("errorMessage");
             final String errorLog = rs.getString("errorLog");
             
-            return ReportMailingJobRunHistoryData.instance(id, reportMailingJobId, startDateTime, endDateTime, status, 
+            return ReportMailingJobRunHistoryData.newInstance(id, reportMailingJobId, startDateTime, endDateTime, status, 
                     errorMessage, errorLog);
         }
     }

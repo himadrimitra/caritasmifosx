@@ -63,10 +63,4 @@ public class ReportMailingJobEmailData {
     public File getAttachment() {
         return attachment;
     }
-    
-    @Override
-    public String toString() {
-        return "ReportMailingJobEmailData [to=" + to + ", text=" + text + ", subject=" + subject + ", attachment="
-                + attachment + "]";
-    }
 }

@@ -27,6 +27,12 @@ public class ReportMailingJobConstants {
     // define the API resource entity name
     public static final String REPORT_MAILING_JOB_ENTITY_NAME = "REPORTMAILINGJOB";
     
+    // define the API resource name for the report mailing job resource
+    public static final String REPORT_MAILING_JOB_RESOURCE_NAME = "reportmailingjobs";
+    
+    // define the API resource name for the report mailing job history resource
+    public static final String REPORT_MAILING_JOB_RUN_HISTORY_RESOURCE_NAME = "reportmailingjobrunhistory";
+    
     // general API resource request parameter constants
     public static final String LOCALE_PARAM_NAME = "locale";
     public static final String DATE_FORMAT_PARAM_NAME = "dateFormat";

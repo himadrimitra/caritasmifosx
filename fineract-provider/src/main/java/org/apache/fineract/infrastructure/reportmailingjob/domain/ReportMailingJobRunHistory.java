@@ -29,13 +29,13 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.joda.time.DateTime;
-import org.joda.time.LocalDateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
-@SuppressWarnings("serial")
 @Entity
 @Table(name = "m_report_mailing_job_run_history")
 public class ReportMailingJobRunHistory extends AbstractPersistable<Long> {
+    private static final long serialVersionUID = -3757370929988421076L;
+
     @ManyToOne
     @JoinColumn(name = "job_id", nullable = false)
     private ReportMailingJob reportMailingJob;
@@ -90,7 +90,7 @@ public class ReportMailingJobRunHistory extends AbstractPersistable<Long> {
      * 
      * @return ReportMailingJobRunHistory object
      **/
-    public static ReportMailingJobRunHistory instance(final ReportMailingJob reportMailingJob, final DateTime startDateTime, final DateTime endDateTime, 
+    public static ReportMailingJobRunHistory newInstance(final ReportMailingJob reportMailingJob, final DateTime startDateTime, final DateTime endDateTime, 
             final String status, final String errorMessage, final String errorLog) {
         return new ReportMailingJobRunHistory(reportMailingJob, startDateTime, endDateTime, status, errorMessage, errorLog);
     }

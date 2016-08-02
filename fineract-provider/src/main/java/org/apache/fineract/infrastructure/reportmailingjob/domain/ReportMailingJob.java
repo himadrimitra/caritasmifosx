@@ -32,21 +32,23 @@ import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
+import org.apache.fineract.infrastructure.dataqueries.domain.Report;
+import org.apache.fineract.infrastructure.reportmailingjob.ReportMailingJobConstants;
+import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobEmailAttachmentFileFormat;
+import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobPreviousRunStatus;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.infrastructure.dataqueries.domain.Report;
-import org.apache.fineract.infrastructure.reportmailingjob.ReportMailingJobConstants;
-import org.apache.fineract.useradministration.domain.AppUser;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
-@SuppressWarnings("serial")
 @Entity
 @Table(name = "m_report_mailing_job", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "unique_name") })
-public class ReportMailingJob extends AbstractPersistable<Long> {
+public class ReportMailingJob extends AbstractAuditableCustom<AppUser, Long> {
+    private static final long serialVersionUID = -2197602941230009227L;
+    
     @Column(name = "name", nullable = false)
     private String name;
     
@@ -59,14 +61,6 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
     
     @Column(name = "recurrence", nullable = true)
     private String recurrence;
-    
-    @Column(name = "created_on_date", nullable = false)
-    @Temporal(TemporalType.DATE)
-    private Date createdOnDate;
-    
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "created_by_userid", nullable = false)
-    private AppUser createdByUser;
     
     @Column(name = "email_recipients", nullable = false)
     private String emailRecipients;
@@ -126,8 +120,8 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
      * ReportMailingJob private constructor 
      **/
     private ReportMailingJob(final String name, final String description, final LocalDateTime startDateTime, 
-            final String recurrence, final LocalDate createdOnDate, final AppUser createdByUser, final String emailRecipients, 
-            final String emailSubject, final String emailMessage, final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat, 
+            final String recurrence, final String emailRecipients, final String emailSubject, 
+            final String emailMessage, final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat, 
             final Report stretchyReport, final String stretchyReportParamMap, final LocalDateTime previousRunDateTime, final LocalDateTime nextRunDateTime, 
             final ReportMailingJobPreviousRunStatus previousRunStatus, final String previousRunErrorLog, final String previousRunErrorMessage, 
             final boolean isActive, final boolean isDeleted, final AppUser runAsUser) { 
@@ -140,13 +134,6 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
         }
         
         this.recurrence = recurrence;
-        this.createdOnDate = null;
-        
-        if (createdOnDate != null) {
-            this.createdOnDate = createdOnDate.toDate();
-        }
-        
-        this.createdByUser = createdByUser;
         this.emailRecipients = emailRecipients;
         this.emailSubject = emailSubject;
         this.emailMessage = emailMessage;
@@ -187,11 +174,11 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
      * 
      * @return ReportMailingJob object
      **/
-    public static ReportMailingJob instance(final String name, final String description, final LocalDateTime startDateTime, final String recurrence, 
-            final LocalDate createdOnDate, final AppUser createdByUser, final String emailRecipients, final String emailSubject, final String emailMessage, 
+    public static ReportMailingJob newInstance(final String name, final String description, final LocalDateTime startDateTime, final String recurrence, 
+            final String emailRecipients, final String emailSubject, final String emailMessage, 
             final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat, final Report stretchyReport, final String stretchyReportParamMap, 
             final boolean isActive, final AppUser runAsUser) {
-        return new ReportMailingJob(name, description, startDateTime, recurrence, createdOnDate, createdByUser, emailRecipients, emailSubject, 
+        return new ReportMailingJob(name, description, startDateTime, recurrence, emailRecipients, emailSubject, 
                 emailMessage, emailAttachmentFileFormat, stretchyReport, stretchyReportParamMap, null, null, null, null, null, isActive, false, runAsUser);
     }
     
@@ -200,8 +187,8 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
      * 
      * @return ReportMailingJob object
      **/
-    public static ReportMailingJob instance(JsonCommand jsonCommand, final Report stretchyReport, final LocalDate createdOnDate, 
-            final AppUser createdByUser, final AppUser runAsUser) {
+    public static ReportMailingJob newInstance(JsonCommand jsonCommand, final Report stretchyReport, 
+            final AppUser runAsUser) {
         final String name = jsonCommand.stringValueOfParameterNamed(ReportMailingJobConstants.NAME_PARAM_NAME);
         final String description = jsonCommand.stringValueOfParameterNamed(ReportMailingJobConstants.DESCRIPTION_PARAM_NAME);
         final String recurrence = jsonCommand.stringValueOfParameterNamed(ReportMailingJobConstants.RECURRENCE_PARAM_NAME);
@@ -211,7 +198,7 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
         final String emailMessage = jsonCommand.stringValueOfParameterNamed(ReportMailingJobConstants.EMAIL_MESSAGE_PARAM_NAME);
         final String stretchyReportParamMap = jsonCommand.stringValueOfParameterNamed(ReportMailingJobConstants.STRETCHY_REPORT_PARAM_MAP_PARAM_NAME);
         final Integer emailAttachmentFileFormatId = jsonCommand.integerValueOfParameterNamed(ReportMailingJobConstants.EMAIL_ATTACHMENT_FILE_FORMAT_ID_PARAM_NAME);
-        final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat = ReportMailingJobEmailAttachmentFileFormat.instance(emailAttachmentFileFormatId);
+        final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat = ReportMailingJobEmailAttachmentFileFormat.newInstance(emailAttachmentFileFormatId);
         LocalDateTime startDateTime = new LocalDateTime();
         
         if (jsonCommand.hasParameter(ReportMailingJobConstants.START_DATE_TIME_PARAM_NAME)) {
@@ -223,7 +210,7 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
             }
         }
         
-        return new ReportMailingJob(name, description, startDateTime, recurrence, createdOnDate, createdByUser, emailRecipients, emailSubject, 
+        return new ReportMailingJob(name, description, startDateTime, recurrence, emailRecipients, emailSubject, 
                 emailMessage, emailAttachmentFileFormat, stretchyReport, stretchyReportParamMap, null, startDateTime, null, null, null, isActive, false, runAsUser);
     }
     
@@ -292,13 +279,13 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
             this.stretchyReportParamMap = stretchyReportParamMap;
         }
         
-        final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat = ReportMailingJobEmailAttachmentFileFormat.instance(this.emailAttachmentFileFormat);
+        final ReportMailingJobEmailAttachmentFileFormat emailAttachmentFileFormat = ReportMailingJobEmailAttachmentFileFormat.newInstance(this.emailAttachmentFileFormat);
         
         if (jsonCommand.isChangeInIntegerParameterNamed(ReportMailingJobConstants.EMAIL_ATTACHMENT_FILE_FORMAT_ID_PARAM_NAME, emailAttachmentFileFormat.getId())) {
             final Integer emailAttachmentFileFormatId = jsonCommand.integerValueOfParameterNamed(ReportMailingJobConstants.EMAIL_ATTACHMENT_FILE_FORMAT_ID_PARAM_NAME);
             actualChanges.put(ReportMailingJobConstants.EMAIL_ATTACHMENT_FILE_FORMAT_ID_PARAM_NAME, emailAttachmentFileFormatId);
             
-            final ReportMailingJobEmailAttachmentFileFormat newEmailAttachmentFileFormat = ReportMailingJobEmailAttachmentFileFormat.instance(emailAttachmentFileFormatId);
+            final ReportMailingJobEmailAttachmentFileFormat newEmailAttachmentFileFormat = ReportMailingJobEmailAttachmentFileFormat.newInstance(emailAttachmentFileFormatId);
             this.emailAttachmentFileFormat = newEmailAttachmentFileFormat.getValue();
         }
         
@@ -344,14 +331,14 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
     }
     
     /** 
-     * delete the credit check, set the isDeleted property to 1 and alter the name 
+     * delete the report mailing job, set the isDeleted property to 1 and alter the name 
      * 
      * @return None
      **/
     public void delete() {
         this.isDeleted = true;
         this.isActive = false;
-        this.name = this.getId() + "_" + this.name;
+        this.name = this.name + "_deleted_" + this.getId();
     }
     
     /** 
@@ -408,20 +395,6 @@ public class ReportMailingJob extends AbstractPersistable<Long> {
      **/
     public boolean isNotActive() {
         return !this.isActive;
-    }
-
-    /**
-     * @return the createdOnDate
-     */
-    public Date getCreatedOnDate() {
-        return createdOnDate;
-    }
-
-    /**
-     * @return the createdByUser
-     */
-    public AppUser getCreatedByUser() {
-        return createdByUser;
     }
 
     /**

@@ -20,13 +20,15 @@ package org.apache.fineract.infrastructure.reportmailingjob.service;
 
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobData;
 
 public interface ReportMailingJobReadPlatformService {
     /** 
      * Retrieve all report mailing jobs that have the isDeleted property set to 0  
      **/
-    Collection<ReportMailingJobData> retrieveAllReportMailingJobs();
+    Page<ReportMailingJobData> retrieveAllReportMailingJobs(SearchParameters searchParameters);
     
     /** 
      * Retrieve a report mailing job that has the isDeleted property set to 0 

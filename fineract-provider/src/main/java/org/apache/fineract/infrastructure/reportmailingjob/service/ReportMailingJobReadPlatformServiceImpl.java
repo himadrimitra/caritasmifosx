@@ -20,19 +20,24 @@ package org.apache.fineract.infrastructure.reportmailingjob.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportData;
 import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobData;
-import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobEnumerations;
+import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobEmailAttachmentFileFormat;
+import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobStretchyReportParamDateOption;
 import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobTimelineData;
 import org.apache.fineract.infrastructure.reportmailingjob.exception.ReportMailingJobNotFoundException;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -42,21 +47,43 @@ import org.springframework.stereotype.Service;
 @Service
 public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJobReadPlatformService {
     private final JdbcTemplate jdbcTemplate;
-    private final ReportMailingJobDropdownReadPlatformService reportMailingJobDropdownReadPlatformService;
     
     @Autowired
-    public ReportMailingJobReadPlatformServiceImpl(final RoutingDataSource dataSource, 
-            final ReportMailingJobDropdownReadPlatformService reportMailingJobDropdownReadPlatformService) {
+    public ReportMailingJobReadPlatformServiceImpl(final RoutingDataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.reportMailingJobDropdownReadPlatformService = reportMailingJobDropdownReadPlatformService;
     }
 
     @Override
-    public Collection<ReportMailingJobData> retrieveAllReportMailingJobs() {
+    public Page<ReportMailingJobData> retrieveAllReportMailingJobs(final SearchParameters searchParameters) {
+        final StringBuilder sqlStringBuilder = new StringBuilder(200);
+        final List<Object> queryParameters = new ArrayList<>();
         final ReportMailingJobMapper mapper = new ReportMailingJobMapper();
-        final String sql = "select " + mapper.ReportMailingJobSchema() + " where rmj.is_deleted = 0 order by rmj.name";
+        final PaginationHelper<ReportMailingJobData> paginationHelper = new PaginationHelper<>();
         
-        return this.jdbcTemplate.query(sql, mapper, new Object[] {});
+        sqlStringBuilder.append("select SQL_CALC_FOUND_ROWS ");
+        sqlStringBuilder.append(mapper.ReportMailingJobSchema());
+        sqlStringBuilder.append(" where rmj.is_deleted = 0");
+        
+        if (searchParameters.isOrderByRequested()) {
+            sqlStringBuilder.append(" order by ").append(searchParameters.getOrderBy());
+
+            if (searchParameters.isSortOrderProvided()) {
+                sqlStringBuilder.append(" ").append(searchParameters.getSortOrder());
+            }
+        } else {
+            sqlStringBuilder.append(" order by rmj.name ");
+        }
+
+        if (searchParameters.isLimited()) {
+            sqlStringBuilder.append(" limit ").append(searchParameters.getLimit());
+            
+            if (searchParameters.isOffset()) {
+                sqlStringBuilder.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+        
+        return paginationHelper.fetchPage(this.jdbcTemplate, "SELECT FOUND_ROWS()", sqlStringBuilder.toString(), 
+                queryParameters.toArray(), mapper);
     }
     
     @Override
@@ -84,16 +111,18 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
 
     @Override
     public ReportMailingJobData retrieveReportMailingJobEnumOptions() {
-        final List<EnumOptionData> emailAttachmentFileFormatOptions = this.reportMailingJobDropdownReadPlatformService.retrieveEmailAttachmentFileFormatOptions();
-        final List<EnumOptionData> stretchyReportParamDateOptions = this.reportMailingJobDropdownReadPlatformService.retrieveStretchyReportDateOptions();
+        final List<EnumOptionData> emailAttachmentFileFormatOptions = ReportMailingJobEmailAttachmentFileFormat.validOptions();
+        final List<EnumOptionData> stretchyReportParamDateOptions = ReportMailingJobStretchyReportParamDateOption.validOptions();
         
-        return ReportMailingJobData.instance(emailAttachmentFileFormatOptions, stretchyReportParamDateOptions);
+        return ReportMailingJobData.newInstance(emailAttachmentFileFormatOptions, stretchyReportParamDateOptions);
     }
     
     private static final class ReportMailingJobMapper implements RowMapper<ReportMailingJobData> {
         public String ReportMailingJobSchema() {
-            return "rmj.id, rmj.name, rmj.description, rmj.start_datetime as startDateTime, rmj.recurrence, rmj.created_on_date as createdOnDate, "
+            return "rmj.id, rmj.name, rmj.description, rmj.start_datetime as startDateTime, rmj.recurrence, rmj.created_date as createdOnDate, "
                     + "cbu.username as createdByUsername, cbu.firstname as createdByFirstname, cbu.lastname as createdByLastname, "
+                    + "rmj.lastmodified_date as updatedOnDate, "
+                    + "mbu.username as updatedByUsername, mbu.firstname as updatedByFirstname, mbu.lastname as updatedByLastname, "
                     + "rmj.email_recipients as emailRecipients, "
                     + "rmj.email_subject as emailSubject, rmj.email_message as emailMessage, "
                     + "rmj.email_attachment_file_format as emailAttachmentFileFormat, "
@@ -106,7 +135,9 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
                     + "sr.core_report as coreReport, sr.use_report as useReport "
                     + "from m_report_mailing_job rmj "
                     + "inner join m_appuser cbu "
-                    + "on cbu.id = rmj.created_by_userid "
+                    + "on cbu.id = rmj.createdby_id "
+                    + "left join m_appuser mbu "
+                    + "on mbu.id = rmj.lastmodifiedby_id "
                     + "left join stretchy_report sr "
                     + "on rmj.stretchy_report_id = sr.id";
         }
@@ -119,6 +150,7 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
             final DateTime startDateTime = JdbcSupport.getDateTime(rs, "startDateTime");
             final String recurrence = rs.getString("recurrence");
             final LocalDate createdOnDate = JdbcSupport.getLocalDate(rs, "createdOnDate");
+            final LocalDate updatedOnDate = JdbcSupport.getLocalDate(rs, "updatedOnDate");
             final String emailRecipients = rs.getString("emailRecipients");
             final String emailSubject = rs.getString("emailSubject");
             final String emailMessage = rs.getString("emailMessage");
@@ -126,7 +158,9 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
             EnumOptionData emailAttachmentFileFormat = null;
             
             if (emailAttachmentFileFormatString != null) {
-                emailAttachmentFileFormat = ReportMailingJobEnumerations.emailAttachementFileFormat(emailAttachmentFileFormatString);
+                ReportMailingJobEmailAttachmentFileFormat format = ReportMailingJobEmailAttachmentFileFormat.newInstance(emailAttachmentFileFormatString);
+                
+                emailAttachmentFileFormat = format.toEnumOptionData();
             }
             
             final String stretchyReportParamMap = rs.getString("stretchyReportParamMap");
@@ -140,8 +174,11 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
             final String createdByUsername = rs.getString("createdByUsername");
             final String createdByFirstname = rs.getString("createdByFirstname");
             final String createdByLastname = rs.getString("createdByLastname");
+            final String updatedByUsername = rs.getString("updatedByUsername");
+            final String updatedByFirstname = rs.getString("updatedByFirstname");
+            final String updatedByLastname = rs.getString("updatedByLastname");
             final ReportMailingJobTimelineData timeline = new ReportMailingJobTimelineData(createdOnDate, createdByUsername, 
-                    createdByFirstname, createdByLastname);
+                    createdByFirstname, createdByLastname, updatedOnDate, updatedByUsername, updatedByFirstname, updatedByLastname);
             final Long runAsUserId = JdbcSupport.getLong(rs, "runAsUserId");
             
             final Long reportId = JdbcSupport.getLong(rs, "reportId");
@@ -157,7 +194,7 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
             final ReportData stretchyReport = new ReportData(reportId, reportName, reportType, reportSubType, reportCategory, 
                     reportDescription, reportSql, coreReport, useReport, null);
             
-            return ReportMailingJobData.instance(id, name, description, startDateTime, recurrence, timeline, emailRecipients, 
+            return ReportMailingJobData.newInstance(id, name, description, startDateTime, recurrence, timeline, emailRecipients, 
                     emailSubject, emailMessage, emailAttachmentFileFormat, stretchyReport, stretchyReportParamMap, previousRunDateTime, 
                     nextRunDateTime, previousRunStatus, previousRunErrorLog, previousRunErrorMessage, numberOfRuns, isActive, 
                     runAsUserId);
