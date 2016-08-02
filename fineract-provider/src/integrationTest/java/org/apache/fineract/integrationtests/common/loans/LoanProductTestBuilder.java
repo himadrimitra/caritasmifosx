@@ -47,6 +47,9 @@ public class LoanProductTestBuilder {
     // private static final String CREO_CORE_STRATEGY ="3";
     public static final String RBI_INDIA_STRATEGY = "4";
 
+    
+    
+
     public static final String RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD = "1";
     public static final String RECALCULATION_FREQUENCY_TYPE_DAILY = "2";
     public static final String RECALCULATION_FREQUENCY_TYPE_WEEKLY = "3";
@@ -125,6 +128,10 @@ public class LoanProductTestBuilder {
     private Integer recalculationCompoundingFrequencyDayOfWeekType = null;
     private Integer recalculationRestFrequencyDayOfWeekType = null;
     private Boolean isSubsidyApplicable = null;
+    private Integer installmentAmountInMultiplesOf = null;
+    private Boolean isAdjustFirstEMIAmount = Boolean.FALSE;
+    private Integer adjustedInstallmentInMultiplesOf = null;
+    private Boolean canDefineInstallmentAmount = Boolean.FALSE;
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -215,6 +222,24 @@ public class LoanProductTestBuilder {
         if (isSubsidyApplicable != null) {
             map.put("isSubsidyApplicable", this.isSubsidyApplicable);
         }
+
+        if (isAdjustFirstEMIAmount) {
+            map.put("adjustFirstEMIAmount", this.isAdjustFirstEMIAmount);
+
+            if (adjustedInstallmentInMultiplesOf != null) {
+                map.put("adjustedInstallmentInMultiplesOf", this.adjustedInstallmentInMultiplesOf);
+            }
+        }
+
+        if (installmentAmountInMultiplesOf != null) {
+            map.put("installmentAmountInMultiplesOf", this.installmentAmountInMultiplesOf);
+
+        }
+        if (canDefineInstallmentAmount) {
+            map.put("canDefineInstallmentAmount", this.canDefineInstallmentAmount);
+            map.put("principalThresholdForLastInstallment", 50);
+        }
+
         return new Gson().toJson(map);
     }
 
@@ -516,6 +541,27 @@ public class LoanProductTestBuilder {
     
     public LoanProductTestBuilder withIsSubsidyApplicable(Boolean isSubsidyApplicable) {
         this.isSubsidyApplicable = isSubsidyApplicable;
+        return this;
+    }
+
+    public LoanProductTestBuilder withinstallmentAmountInMultiplesOfType(Integer installmentAmountInMultiplesOf) {
+        this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
+        return this;
+    }
+    
+    public LoanProductTestBuilder withadjustedInstallmentInMultiplesOf(Integer adjustedInstallmentInMultiplesOf) {
+        this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
+        return this;
+    }
+	
+	public LoanProductTestBuilder withAdjustFirstEMi(Boolean isAdjustFirstEMIAmount) {
+        this.isAdjustFirstEMIAmount  = isAdjustFirstEMIAmount;
+        return this;
+    }
+	
+	
+	public LoanProductTestBuilder withcanDefineInstallmentAmount(Boolean canDefineInstallmentAmount) {
+        this.canDefineInstallmentAmount  = canDefineInstallmentAmount;
         return this;
     }
 }
