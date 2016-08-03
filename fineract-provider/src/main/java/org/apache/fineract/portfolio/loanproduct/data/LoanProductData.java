@@ -184,8 +184,6 @@ public class LoanProductData {
     private final Boolean accountMovesOutOfNPAOnlyOnArrearsCompletion;
     private LoanProductConfigurableAttributes allowAttributeOverrides;
     
-    private final boolean isSubsidyApplicable;
-
     /**
      * Used when returning lookup information about loan product for dropdowns.
      */
@@ -278,7 +276,7 @@ public class LoanProductData {
                 installmentAmountInMultiplesOf, loanProductConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRateId,
                 floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
-                maximumGap, isSubsidyApplicable, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
+                maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
 
     }
 
@@ -372,7 +370,7 @@ public class LoanProductData {
                 installmentAmountInMultiplesOf, loanProductConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRateId,
                 floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
-                maximumGap, isSubsidyApplicable, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
+                maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
 
     }
 
@@ -473,7 +471,7 @@ public class LoanProductData {
                 accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineInstallmentAmount, installmentAmountInMultiplesOf,
                 loanProductConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRateId, floatingRateName,
                 interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate, maxDifferentialLendingRate,
-                isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap, isSubsidyApplicable,
+                isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
 
     }
@@ -514,7 +512,7 @@ public class LoanProductData {
             boolean isLinkedToFloatingInterestRates, Integer floatingRateId, String floatingRateName, BigDecimal interestRateDifferential,
             BigDecimal minDifferentialLendingRate, BigDecimal defaultDifferentialLendingRate, BigDecimal maxDifferentialLendingRate,
             boolean isFloatingInterestRateCalculationAllowed, final boolean isVariableInstallmentsAllowed,
-            final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments, final boolean isSubsidyApplicable,
+            final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments,
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount) {
         this.id = id;
         this.name = name;
@@ -618,7 +616,6 @@ public class LoanProductData {
         this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
         this.preClosureInterestCalculationStrategyOptions = null;
         
-        this.isSubsidyApplicable = isSubsidyApplicable;
         this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
         this.adjustFirstEMIAmount = adjustFirstEMIAmount;
 
@@ -755,8 +752,6 @@ public class LoanProductData {
         this.canDefineInstallmentAmount = productData.canDefineInstallmentAmount;
         this.installmentAmountInMultiplesOf = productData.installmentAmountInMultiplesOf;
         this.preClosureInterestCalculationStrategyOptions = preCloseInterestCalculationStrategyOptions;
-        
-        this.isSubsidyApplicable = productData.isSubsidyApplicable;
         this.adjustedInstallmentInMultiplesOf = productData.adjustedInstallmentInMultiplesOf;
         this.adjustFirstEMIAmount = productData.adjustFirstEMIAmount;
     }
@@ -990,7 +985,7 @@ public class LoanProductData {
                 getInterestRecalculationRestOnDayType(), compoundingCalendarData, getRecalculationCompoundingFrequencyType(),
                 getRecalculationCompoundingFrequencyInterval(), getInterestRecalculationCompoundingNthDayType(),
                 getInterestRecalculationCompoundingWeekDayType(), getInterestRecalculationCompoundingOnDayType(),
-                isCompoundingToBePostedAsTransaction(), allowCompoundingOnEod());
+                isCompoundingToBePostedAsTransaction(), allowCompoundingOnEod(), isSubsidyApplicable());
     }
 
     private EnumOptionData getRescheduleStrategyType() {
@@ -1107,9 +1102,12 @@ public class LoanProductData {
     public Boolean getAllowPartialPeriodInterestCalcualtion() {
         return this.allowPartialPeriodInterestCalcualtion;
     }
-
-	public boolean isSubsidyApplicable() {
-		return isSubsidyApplicable;
-	}
     
+    public Boolean isSubsidyApplicable() {
+        boolean isSubsidyApplicable = false;
+        if (isInterestRecalculationEnabled) {
+            isSubsidyApplicable = this.interestRecalculationData.isSubsidyApplicable();
+        }
+        return isSubsidyApplicable;
+    }
 }

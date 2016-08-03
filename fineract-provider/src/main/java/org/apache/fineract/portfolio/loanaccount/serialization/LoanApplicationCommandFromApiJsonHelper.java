@@ -472,13 +472,6 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                     .ignoreIfNull().positiveAmount();
         }
         
-        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)) {
-            final Boolean isSubsidyApplicable = this.fromApiJsonHelper.extractBooleanNamed(
-                    LoanProductConstants.isSubsidyApplicableParamName, element);
-            baseDataValidator.reset().parameter(LoanProductConstants.isSubsidyApplicableParamName).value(isSubsidyApplicable)
-                    .ignoreIfNull().validateForBooleanValue();
-        }
-        
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -910,13 +903,6 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                     .ignoreIfNull().positiveAmount();
         }
         
-        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)) {
-            final Boolean isSubsidyApplicable = this.fromApiJsonHelper.extractBooleanNamed(
-                    LoanProductConstants.isSubsidyApplicableParamName, element);
-            baseDataValidator.reset().parameter(LoanProductConstants.isSubsidyApplicableParamName).value(isSubsidyApplicable)
-                    .ignoreIfNull().validateForBooleanValue();
-        }
-
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
 

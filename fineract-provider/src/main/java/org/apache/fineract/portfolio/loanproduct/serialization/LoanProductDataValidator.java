@@ -1513,29 +1513,25 @@ public final class LoanProductDataValidator {
                 validateBorrowerCycleVariations(element, baseDataValidator);
             }
         }
-
-        Boolean isSubsidyApplicable = loanProduct.isSubsidyApplicable();
-        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)) {
-            isSubsidyApplicable = this.fromApiJsonHelper.extractBooleanNamed(
-                    LoanProductConstants.isSubsidyApplicableParamName, element);
+        Boolean isSubsidyApplicable = false;
+        if (isInterestRecalculationEnabled
+                && this.fromApiJsonHelper.parameterExists(LoanProductConstants.isSubsidyApplicableParamName, element)) {
+            isSubsidyApplicable = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.isSubsidyApplicableParamName, element);
             baseDataValidator.reset().parameter(LoanProductConstants.isSubsidyApplicableParamName).value(isSubsidyApplicable)
                     .validateForBooleanValue();
         }
-        if (isSubsidyApplicable && (isAccrualBasedAccounting(accountingRuleType) || isCashBasedAccounting(accountingRuleType))) {
-            if (this.fromApiJsonHelper.parameterExists(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(), element)) {
-                final Long subsidyFundSourceId = this.fromApiJsonHelper.extractLongNamed(
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(), element);
-                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue())
-                        .value(subsidyFundSourceId).notNull().integerGreaterThanZero();
-            }
 
-            if (this.fromApiJsonHelper.parameterExists(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), element)) {
-                final Long subsidyAccountId = this.fromApiJsonHelper.extractLongNamed(
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), element);
-                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue()).value(subsidyAccountId)
-                        .notNull().integerGreaterThanZero();
-            }
-        }        
+        if (isSubsidyApplicable && (isAccrualBasedAccounting(accountingRuleType) || isCashBasedAccounting(accountingRuleType))) {
+            final Long subsidyFundSourceId = this.fromApiJsonHelper.extractLongNamed(
+                    LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(), element);
+            baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue()).value(subsidyFundSourceId)
+                    .notNull().integerGreaterThanZero();
+
+            final Long subsidyAccountId = this.fromApiJsonHelper.extractLongNamed(
+                    LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), element);
+            baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue()).value(subsidyAccountId)
+                    .notNull().integerGreaterThanZero();
+        }      
 
         validateMultiDisburseLoanData(baseDataValidator, element);
 

@@ -1,10 +1,12 @@
 package org.apache.fineract.integrationtests;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.apache.fineract.integrationtests.common.ClientHelper;
@@ -59,17 +61,15 @@ public class LoanSubsidyIntegrationTest {
         // CREATE LOAN MULTIDISBURSAL PRODUCT
         final Integer loanProductID = this.loanTransactionHelper.getLoanProductId(new LoanProductTestBuilder()
                 .withInterestTypeAsDecliningBalance().withTranches(true).withInterestCalculationPeriodTypeAsRepaymentPeriod(true)
-                .withIsSubsidyApplicable(true).build(null));
+                .withIsSubsidyApplicable(true).withInterestRecalculationDetails(LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
+                        LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_NUMBER_OF_INSTALLMENTS,
+                        LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE).build(null));
         System.out.println("----------------------------------LOAN PRODUCT CREATED WITH ID-------------------------------------------"
                 + loanProductID);
-        /*
-         * HashMap repaymentScheduleWithEmi = (HashMap)
-         * this.loanTransactionHelper.getLoanProductDetail(this.requestSpec,
-         * this.responseSpec, loanProductID, "repaymentSchedule");
-         */
-        Boolean isSubsidyApplicable = (Boolean) this.loanTransactionHelper.getLoanProductDetail(this.requestSpec, this.responseSpec,
-                loanProductID, "isSubsidyApplicable");
-        assertTrue(isSubsidyApplicable.booleanValue());
+        HashMap loanProductData = (HashMap) this.loanTransactionHelper.getLoanProductTemplate(this.requestSpec, this.responseSpec,
+                loanProductID);
+        boolean isSsubsidyApplicable =(boolean)((HashMap) loanProductData.get("interestRecalculationData")).get("isSubsidyApplicable");
+        assertTrue(isSsubsidyApplicable);
 
     }
 
@@ -82,9 +82,10 @@ public class LoanSubsidyIntegrationTest {
                 .withIsSubsidyApplicable(false).build(null));
         System.out.println("----------------------------------LOAN PRODUCT CREATED WITH ID-------------------------------------------"
                 + loanProductID);
-        Boolean isSubsidyApplicable = (Boolean) this.loanTransactionHelper.getLoanProductDetail(this.requestSpec, this.responseSpec,
-                loanProductID, "isSubsidyApplicable");
-        assertTrue(!isSubsidyApplicable.booleanValue());
+        HashMap loanProductData = (HashMap) this.loanTransactionHelper.getLoanProductTemplate(this.requestSpec, this.responseSpec,
+                loanProductID);
+        HashMap interestRecalculationData =(HashMap) loanProductData.get("interestRecalculationData");
+        assertNull(interestRecalculationData);
 
     }
 
@@ -99,18 +100,33 @@ public class LoanSubsidyIntegrationTest {
         Account[] accounts = { assetAccount, incomeAccount, expenseAccount, overpaymentAccount };
 
         System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
-        final String loanProductJSON = new LoanProductTestBuilder().withPrincipal(this.LP_PRINCIPAL.toString()).withRepaymentTypeAsMonth()
-                .withRepaymentAfterEvery(this.LP_REPAYMENT_PERIOD).withNumberOfRepayments(this.LP_REPAYMENTS).withRepaymentTypeAsMonth()
-                .withinterestRatePerPeriod(this.LP_INTEREST_RATE).withInterestRateFrequencyTypeAsMonths()
-                .withAmortizationTypeAsEqualPrincipalPayment().withInterestTypeAsFlat().withAccountingRulePeriodicAccrual(accounts)
-                .withIsSubsidyApplicable(true).withDaysInMonth("30").withDaysInYear("365").build(null);
+        final String loanProductJSON = new LoanProductTestBuilder()
+        .withPrincipal("5000000")
+        .withMinPrincipal("1")
+        .withMaxPrincipal("1000000000")
+        .withinterestRatePerPeriod("13")
+        .withInterestRateFrequencyTypeAsYear()
+        .withRepaymentTypeAsMonth()
+        .withNumberOfRepayments("36")
+        .withInterestTypeAsDecliningBalance()
+        .withTranches(true)
+        .withInterestCalculationPeriodTypeAsDays()
+        .withAccountingRulePeriodicAccrual(accounts)
+        .withIsSubsidyApplicable(true)
+        .withInterestRecalculationDetails(LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
+                LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_NUMBER_OF_INSTALLMENTS,
+                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE)
+        .withInterestRecalculationRestFrequencyDetails(LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", null, null)
+        .withInterestRecalculationCompoundingFrequencyDetails(
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, null, null, null).build(null);
 
         final Integer loanProductID = this.loanTransactionHelper.getLoanProductId(loanProductJSON);
         System.out.println("----------------------------------LOAN PRODUCT CREATED WITH ID-------------------------------------------"
                 + loanProductID);
-        Boolean isSubsidyApplicable = (Boolean) this.loanTransactionHelper.getLoanProductDetail(this.requestSpec, this.responseSpec,
-                loanProductID, "isSubsidyApplicable");
-        assertTrue(isSubsidyApplicable.booleanValue());
+        HashMap loanProductData = (HashMap) this.loanTransactionHelper.getLoanProductTemplate(this.requestSpec, this.responseSpec,
+                loanProductID);
+        boolean isSsubsidyApplicable =(boolean)((HashMap) loanProductData.get("interestRecalculationData")).get("isSubsidyApplicable");
+        assertTrue(isSsubsidyApplicable);
 
     }
 
@@ -138,7 +154,7 @@ public class LoanSubsidyIntegrationTest {
                 + loanProductID);
         Boolean isSubsidyApplicable = (Boolean) this.loanTransactionHelper.getLoanProductDetail(this.requestSpec, this.responseSpec,
                 loanProductID, "isSubsidyApplicable");
-        assertTrue(!isSubsidyApplicable.booleanValue());
+        assertNull(isSubsidyApplicable);
     }
 
     @Test
