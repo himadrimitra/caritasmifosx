@@ -118,6 +118,18 @@ public class AccountTransferTest {
                     break;
                 }
             }
+            if(financialActivityAccountId == null){
+            /** Setup liability transfer account **/
+            /** Create a Liability and an Asset Transfer Account **/
+            liabilityTransferAccount = accountHelper.createLiabilityAccount();
+            Assert.assertNotNull(liabilityTransferAccount);
+
+            /*** Create A Financial Activity to Account Mapping **/
+
+            financialActivityAccountId = (Integer) financialActivityAccountHelper.createFinancialActivityAccount(
+                    FinancialActivityAccountsTest.liabilityTransferFinancialActivityId, liabilityTransferAccount.getAccountID(),
+                    responseSpec, CommonConstants.RESPONSE_RESOURCE_ID);
+            }
         }
     }
 
