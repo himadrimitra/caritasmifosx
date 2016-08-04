@@ -1,5 +1,7 @@
 package com.finflux.kyc.address.api;
 
+import java.util.Collection;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -73,7 +75,6 @@ public class AddressApiResource {
                 AddressApiConstants.ADDRESS_TEMPLATE_RESPONSE_DATA_PARAMETERS);
     }
 
-    @SuppressWarnings({ })
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
@@ -95,6 +96,23 @@ public class AddressApiResource {
 
     @SuppressWarnings("unchecked")
     @GET
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAll(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
+            @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
+
+        final Collection<AddressData> addressDatas = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(entityType,
+                entityId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.toApiJsonSerializer.serialize(settings, addressDatas, AddressApiConstants.ADDRESS_RESPONSE_DATA_PARAMETERS);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @GET
     @Path("{addressId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
@@ -110,7 +128,6 @@ public class AddressApiResource {
         return this.toApiJsonSerializer.serialize(settings, addressData, AddressApiConstants.ADDRESS_RESPONSE_DATA_PARAMETERS);
     }
 
-    @SuppressWarnings({ })
     @PUT
     @Path("{addressId}")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -129,7 +146,6 @@ public class AddressApiResource {
         return this.toApiJsonSerializer.serialize(result);
     }
 
-    @SuppressWarnings({ })
     @DELETE
     @Path("{addressId}")
     @Consumes({ MediaType.APPLICATION_JSON })

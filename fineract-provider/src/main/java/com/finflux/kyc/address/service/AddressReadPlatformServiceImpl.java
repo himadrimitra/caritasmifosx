@@ -184,7 +184,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
 
     @SuppressWarnings({ "unused" })
     @Override
-    public Collection<AddressData> retrieveByentityTypeAndEntityId(final String entityType, final Long entityId) {
+    public Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId) {
         try {
             final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }

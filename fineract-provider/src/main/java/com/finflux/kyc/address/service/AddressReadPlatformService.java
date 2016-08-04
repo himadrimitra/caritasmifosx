@@ -11,5 +11,5 @@ public interface AddressReadPlatformService {
 
     AddressData retrieveOne(final String entityType, final Long entityId, final Long addressId);
 
-    Collection<AddressData> retrieveByentityTypeAndEntityId(final String entityType, final Long entityId);
+    Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId);
 }
