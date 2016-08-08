@@ -1,7 +1,13 @@
 package org.apache.fineract.integrationtests;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.HashMap;
+import java.util.List;
+
 import org.apache.fineract.integrationtests.common.AddressHelper;
 import org.apache.fineract.integrationtests.common.ClientHelper;
+import org.apache.fineract.integrationtests.common.CommonConstants;
 import org.apache.fineract.integrationtests.common.Utils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -17,6 +23,7 @@ public class AddressTest {
 
     private ResponseSpecification responseSpec;
     private RequestSpecification requestSpec;
+    private ResponseSpecification responseCode;
     private AddressHelper helper;
 
     @Before
@@ -25,6 +32,7 @@ public class AddressTest {
         this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
         this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
         this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+        this.responseCode = new ResponseSpecBuilder().expectStatusCode(403).build();
 
     }
 
@@ -36,5 +44,18 @@ public class AddressTest {
 
         final Integer addressId = this.helper.createAddress("clients", clientId.toString());
         Assert.assertNotNull(addressId);
+        
+        HashMap actualChanges = (HashMap)this.helper.updateAddress("clients",clientId.toString(),addressId.toString());
+        Assert.assertNotNull(actualChanges);
+        Assert.assertEquals("32", ((HashMap)(actualChanges.get("changes"))).get("districtId"));
+        Assert.assertEquals("560080", ((HashMap)(actualChanges.get("changes"))).get("postalCode"));
+        Assert.assertEquals("145", ((HashMap)(actualChanges.get("changes"))).get("houseNo"));
+        Assert.assertEquals("17", ((HashMap)(actualChanges.get("changes"))).get("stateId"));
+        Assert.assertEquals("addressLineTwo", ((HashMap)(actualChanges.get("changes"))).get("addressLineOne"));
+        
+        List<HashMap> error = (List<HashMap>)this.helper.updateStateAddress("clients", clientId.toString(), addressId.toString(),this.responseCode);
+        assertEquals("error.msg.address.state.does.not.belongs.to.country",
+                error.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+     }
     }
-}
+    

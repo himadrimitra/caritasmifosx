@@ -90,33 +90,46 @@ public class AddressDataAssembler {
             final JsonCommand command) {
 
         final Map<String, Object> actualChanges = address.update(command);
-
-        if (command.parameterExists(AddressApiConstants.stateIdParamName)) {
-            final Long stateId = command.longValueOfParameterNamed(AddressApiConstants.stateIdParamName);
-            if (address.getDistrict() != null) {
-                validateDistrictWithStateAndGetStateObject(address.getDistrict(), stateId);
-            }
-        } else if (address.getDistrict() != null && address.getDistrict().getState() != null && address.getState() == null) {
-            /**
-             * Not as part of the requirement. If you want to auto set remove
-             * the commented code
-             */
-            // address.updateState(address.getDistrict().getState());
-        }
-
+        Country country = null;
+        State state = null;
+        District district = null;
+        
         if (command.parameterExists(AddressApiConstants.countryIdParamName)) {
-            final Long countryId = command.longValueOfParameterNamed(AddressApiConstants.countryIdParamName);
-            if (address.getState() != null) {
-                validateStateWithCountryAndGetCountryObject(address.getState(), countryId);
-            }
-        } else if (address.getState() != null && address.getState().getCountry() != null && address.getCountry() == null) {
-            /**
-             * Not as part of the requirement. If you want to auto set remove
-             * the commented code
-             */
-            address.updateCountry(address.getState().getCountry());
-        }
 
+        	 final Long countryId = command.longValueOfParameterNamed(AddressApiConstants.countryIdParamName);
+        	 if(countryId != null){
+        		 country = this.countryRepository.findOneWithNotFoundDetection(countryId);
+        	 }
+        	 address.updateCountry(country);
+        		 
+        	 }
+        	 
+             if (command.parameterExists(AddressApiConstants.stateIdParamName)) {
+            	 final Long stateId = command.longValueOfParameterNamed(AddressApiConstants.stateIdParamName);
+            	 if(stateId != null){
+            	 if(address.getCountryId()!= null){
+            		 state = this.stateRepository.findOneWithNotFoundDetection(stateId);
+            	 validateStateWithCountryAndGetCountryObject(state, address.getCountryId());
+            	 }else{
+            		 state = this.stateRepository.findOneWithNotFoundDetection(stateId); 
+            	 }
+             }
+            	 address.updateState(state);
+          
+             if (command.parameterExists(AddressApiConstants.districtIdParamName)) {
+            	 final Long districtId = command.longValueOfParameterNamed(AddressApiConstants.districtIdParamName);
+            	 if(districtId != null){
+            	 if(address.getStateId()!= null){
+            	 district = this.districtRepository.findOneWithNotFoundDetection(districtId);
+            	 validateDistrictWithStateAndGetStateObject(district, address.getStateId());
+            	 }else{
+            		 district = this.districtRepository.findOneWithNotFoundDetection(districtId);
+            	}
+            	 address.updateDistrict(district);
+             }
+           }
+        }
+        
         final JsonElement element = command.parsedJson();
         final String[] addressTypes = this.fromApiJsonHelper.extractArrayNamed(AddressApiConstants.addressTypesParamName, element);
 

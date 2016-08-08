@@ -28,7 +28,6 @@ import org.springframework.stereotype.Component;
 
 import com.finflux.kyc.address.data.AddressData;
 import com.finflux.kyc.address.data.AddressEntityTypeEnums;
-import com.finflux.kyc.address.data.AddressTemplateData;
 import com.finflux.kyc.address.exception.AddressEntityTypeNotSupportedException;
 import com.finflux.kyc.address.service.AddressReadPlatformService;
 
@@ -58,23 +57,6 @@ public class AddressApiResource {
 
     }
 
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("template")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveTemplate(@Context final UriInfo uriInfo) {
-
-        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
-
-        final AddressTemplateData addressTemplateData = this.addressReadPlatformService.retrieveTemplate();
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
-        return this.toApiJsonSerializer.serialize(settings, addressTemplateData,
-                AddressApiConstants.ADDRESS_TEMPLATE_RESPONSE_DATA_PARAMETERS);
-    }
-
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
@@ -93,7 +75,7 @@ public class AddressApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
-
+    
     @SuppressWarnings("unchecked")
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })

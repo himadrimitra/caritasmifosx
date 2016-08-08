@@ -185,7 +185,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
     @SuppressWarnings({ "unused" })
     @Override
     public Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId) {
-        try {
+    	try {
             final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }
             final Integer entityTypeEnum = addressEntityType.getValue();
@@ -213,7 +213,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
         } catch (final EmptyResultDataAccessException e) {
             
         }
-        return null;
+        return new ArrayList<AddressData>();
     }
 
     private static final class AddressDataMapper implements RowMapper<AddressData> {

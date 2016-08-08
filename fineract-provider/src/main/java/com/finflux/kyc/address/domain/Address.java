@@ -241,6 +241,9 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
         }
         return countryId;
     }
+    public void updateDistrict(final District district) {
+        this.district = district;
+    }
 
     public void updateState(final State state) {
         this.state = state;
