@@ -23,40 +23,39 @@ import com.finflux.kyc.address.service.AddressReadPlatformService;
 @Component
 @Scope("singleton")
 public class AddressTemplateApiResource {
-	
-	private final PlatformSecurityContext context;
-	 private final ApiRequestParameterHelper apiRequestParameterHelper;
-	    @SuppressWarnings("rawtypes")
-	    private final DefaultToApiJsonSerializer toApiJsonSerializer;
-	    private final AddressReadPlatformService addressReadPlatformService;
 
-	    @SuppressWarnings("rawtypes")
-	    @Autowired
-	    public AddressTemplateApiResource(final PlatformSecurityContext context, final ApiRequestParameterHelper apiRequestParameterHelper,
-	            final DefaultToApiJsonSerializer toApiJsonSerializer,
-	            final AddressReadPlatformService addressReadPlatformService) {
-	        this.context = context;
-	        this.apiRequestParameterHelper = apiRequestParameterHelper;
-	        this.toApiJsonSerializer = toApiJsonSerializer;
-	        this.addressReadPlatformService = addressReadPlatformService;
+    private final PlatformSecurityContext context;
+    private final ApiRequestParameterHelper apiRequestParameterHelper;
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer toApiJsonSerializer;
+    private final AddressReadPlatformService addressReadPlatformService;
 
-	    }
-	    
-	    @SuppressWarnings("unchecked")
-	    @GET
-	    @Path("template")
-	    @Consumes({ MediaType.APPLICATION_JSON })
-	    @Produces({ MediaType.APPLICATION_JSON })
-	    public String retrieveTemplate(@Context final UriInfo uriInfo) {
+    @SuppressWarnings("rawtypes")
+    @Autowired
+    public AddressTemplateApiResource(final PlatformSecurityContext context, final ApiRequestParameterHelper apiRequestParameterHelper,
+            final DefaultToApiJsonSerializer toApiJsonSerializer, final AddressReadPlatformService addressReadPlatformService) {
+        this.context = context;
+        this.apiRequestParameterHelper = apiRequestParameterHelper;
+        this.toApiJsonSerializer = toApiJsonSerializer;
+        this.addressReadPlatformService = addressReadPlatformService;
 
-	        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
+    }
 
-	        final AddressTemplateData addressTemplateData = this.addressReadPlatformService.retrieveTemplate();
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveTemplate(@Context final UriInfo uriInfo) {
 
-	        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
 
-	        return this.toApiJsonSerializer.serialize(settings, addressTemplateData,
-	                AddressApiConstants.ADDRESS_TEMPLATE_RESPONSE_DATA_PARAMETERS);
-	    }
+        final AddressTemplateData addressTemplateData = this.addressReadPlatformService.retrieveTemplate();
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.toApiJsonSerializer.serialize(settings, addressTemplateData,
+                AddressApiConstants.ADDRESS_TEMPLATE_RESPONSE_DATA_PARAMETERS);
+    }
 
 }

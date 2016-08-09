@@ -85,51 +85,35 @@ public class AddressDataAssembler {
         return addresses;
     }
 
-    @SuppressWarnings("null")
     public Map<String, Object> assembleUpdateForm(final Address address, final Long entityId, final Integer entityTypeEnum,
             final JsonCommand command) {
 
         final Map<String, Object> actualChanges = address.update(command);
-        Country country = null;
-        State state = null;
-        District district = null;
-        
-        if (command.parameterExists(AddressApiConstants.countryIdParamName)) {
 
-        	 final Long countryId = command.longValueOfParameterNamed(AddressApiConstants.countryIdParamName);
-        	 if(countryId != null){
-        		 country = this.countryRepository.findOneWithNotFoundDetection(countryId);
-        	 }
-        	 address.updateCountry(country);
-        		 
-        	 }
-        	 
-             if (command.parameterExists(AddressApiConstants.stateIdParamName)) {
-            	 final Long stateId = command.longValueOfParameterNamed(AddressApiConstants.stateIdParamName);
-            	 if(stateId != null){
-            	 if(address.getCountryId()!= null){
-            		 state = this.stateRepository.findOneWithNotFoundDetection(stateId);
-            	 validateStateWithCountryAndGetCountryObject(state, address.getCountryId());
-            	 }else{
-            		 state = this.stateRepository.findOneWithNotFoundDetection(stateId); 
-            	 }
-             }
-            	 address.updateState(state);
-          
-             if (command.parameterExists(AddressApiConstants.districtIdParamName)) {
-            	 final Long districtId = command.longValueOfParameterNamed(AddressApiConstants.districtIdParamName);
-            	 if(districtId != null){
-            	 if(address.getStateId()!= null){
-            	 district = this.districtRepository.findOneWithNotFoundDetection(districtId);
-            	 validateDistrictWithStateAndGetStateObject(district, address.getStateId());
-            	 }else{
-            		 district = this.districtRepository.findOneWithNotFoundDetection(districtId);
-            	}
-            	 address.updateDistrict(district);
-             }
-           }
+        if (actualChanges.containsKey(AddressApiConstants.countryIdParamName)) {
+            final Long countryId = (Long) actualChanges.get(AddressApiConstants.countryIdParamName);
+            final Country country = this.countryRepository.findOneWithNotFoundDetection(countryId);
+            address.updateCountry(country);
         }
-        
+
+        if (actualChanges.containsKey(AddressApiConstants.stateIdParamName)) {
+            final Long stateId = (Long) actualChanges.get(AddressApiConstants.stateIdParamName);
+            final State state = this.stateRepository.findOneWithNotFoundDetection(stateId);
+            if (address.getCountryId() != null) {
+                validateStateWithCountryAndGetCountryObject(state, address.getCountryId());
+            }
+            address.updateState(state);
+        }
+
+        if (actualChanges.containsKey(AddressApiConstants.districtIdParamName)) {
+            final Long districtId = (Long) actualChanges.get(AddressApiConstants.districtIdParamName);
+            final District district = this.districtRepository.findOneWithNotFoundDetection(districtId);
+            if (address.getStateId() != null) {
+                validateDistrictWithStateAndGetStateObject(district, address.getStateId());
+            }
+            address.updateDistrict(district);
+        }
+
         final JsonElement element = command.parsedJson();
         final String[] addressTypes = this.fromApiJsonHelper.extractArrayNamed(AddressApiConstants.addressTypesParamName, element);
 
@@ -159,7 +143,6 @@ public class AddressDataAssembler {
         return address;
     }
 
-    @SuppressWarnings("null")
     private Address constructAddressObject(final JsonObject element, final Locale locale) {
 
         final String houseNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.houseNoParamName, element);

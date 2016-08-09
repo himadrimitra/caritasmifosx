@@ -75,7 +75,7 @@ public class AddressApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
-    
+
     @SuppressWarnings("unchecked")
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -92,7 +92,7 @@ public class AddressApiResource {
 
         return this.toApiJsonSerializer.serialize(settings, addressDatas, AddressApiConstants.ADDRESS_RESPONSE_DATA_PARAMETERS);
     }
-    
+
     @SuppressWarnings("unchecked")
     @GET
     @Path("{addressId}")

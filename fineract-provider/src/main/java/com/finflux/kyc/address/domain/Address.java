@@ -104,6 +104,7 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     }
 
     public Map<String, Object> update(final JsonCommand command) {
+
         final Map<String, Object> actualChanges = new LinkedHashMap<>(10);
 
         if (command.isChangeInStringParameterNamed(AddressApiConstants.houseNoParamName, this.houseNo)) {
@@ -148,34 +149,46 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
             this.taluka = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (this.district != null) {
-            if (command.isChangeInLongParameterNamed(AddressApiConstants.districtIdParamName, this.district.getId())) {
-                final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.districtIdParamName);
+        if (!command.parameterExists(AddressApiConstants.districtIdParamName)) {
+            this.district = null;
+        } else {
+            if (this.district != null) {
+                if (command.isChangeInLongParameterNamed(AddressApiConstants.districtIdParamName, this.district.getId())) {
+                    final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.districtIdParamName);
+                    actualChanges.put(AddressApiConstants.districtIdParamName, newValue);
+                }
+            } else if (command.parameterExists(AddressApiConstants.districtIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.districtIdParamName);
                 actualChanges.put(AddressApiConstants.districtIdParamName, newValue);
             }
-        } else if (command.parameterExists(AddressApiConstants.districtIdParamName)) {
-            final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.districtIdParamName);
-            actualChanges.put(AddressApiConstants.districtIdParamName, newValue);
         }
 
-        if (this.state != null) {
-            if (command.isChangeInLongParameterNamed(AddressApiConstants.stateIdParamName, this.state.getId())) {
-                final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.stateIdParamName);
+        if (!command.parameterExists(AddressApiConstants.stateIdParamName)) {
+            this.state = null;
+        } else {
+            if (this.state != null) {
+                if (command.isChangeInLongParameterNamed(AddressApiConstants.stateIdParamName, this.state.getId())) {
+                    final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.stateIdParamName);
+                    actualChanges.put(AddressApiConstants.stateIdParamName, newValue);
+                }
+            } else if (command.parameterExists(AddressApiConstants.stateIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.stateIdParamName);
                 actualChanges.put(AddressApiConstants.stateIdParamName, newValue);
             }
-        } else if (command.parameterExists(AddressApiConstants.stateIdParamName)) {
-            final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.stateIdParamName);
-            actualChanges.put(AddressApiConstants.stateIdParamName, newValue);
         }
 
-        if (this.country != null) {
-            if (command.isChangeInLongParameterNamed(AddressApiConstants.countryIdParamName, this.country.getId())) {
-                final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.countryIdParamName);
+        if (!command.parameterExists(AddressApiConstants.countryIdParamName)) {
+            this.country = null;
+        } else {
+            if (this.country != null) {
+                if (command.isChangeInLongParameterNamed(AddressApiConstants.countryIdParamName, this.country.getId())) {
+                    final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.countryIdParamName);
+                    actualChanges.put(AddressApiConstants.countryIdParamName, newValue);
+                }
+            } else if (command.parameterExists(AddressApiConstants.countryIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.countryIdParamName);
                 actualChanges.put(AddressApiConstants.countryIdParamName, newValue);
             }
-        } else if (command.parameterExists(AddressApiConstants.countryIdParamName)) {
-            final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.countryIdParamName);
-            actualChanges.put(AddressApiConstants.countryIdParamName, newValue);
         }
 
         if (command.isChangeInStringParameterNamed(AddressApiConstants.postalCodeParamName, this.postalCode)) {
@@ -241,6 +254,7 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
         }
         return countryId;
     }
+
     public void updateDistrict(final District district) {
         this.district = district;
     }

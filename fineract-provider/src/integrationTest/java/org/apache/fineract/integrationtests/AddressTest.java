@@ -47,15 +47,15 @@ public class AddressTest {
         
         HashMap actualChanges = (HashMap)this.helper.updateAddress("clients",clientId.toString(),addressId.toString());
         Assert.assertNotNull(actualChanges);
-        Assert.assertEquals("32", ((HashMap)(actualChanges.get("changes"))).get("districtId"));
+        Assert.assertEquals(32, ((HashMap)(actualChanges.get("changes"))).get("districtId"));
         Assert.assertEquals("560080", ((HashMap)(actualChanges.get("changes"))).get("postalCode"));
         Assert.assertEquals("145", ((HashMap)(actualChanges.get("changes"))).get("houseNo"));
-        Assert.assertEquals("17", ((HashMap)(actualChanges.get("changes"))).get("stateId"));
+        Assert.assertEquals(17, ((HashMap)(actualChanges.get("changes"))).get("stateId"));
         Assert.assertEquals("addressLineTwo", ((HashMap)(actualChanges.get("changes"))).get("addressLineOne"));
         
         List<HashMap> error = (List<HashMap>)this.helper.updateStateAddress("clients", clientId.toString(), addressId.toString(),this.responseCode);
         assertEquals("error.msg.address.state.does.not.belongs.to.country",
                 error.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
-     }
     }
+}
     

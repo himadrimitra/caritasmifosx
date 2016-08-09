@@ -18,25 +18,25 @@ public class AddressHelper {
         this.requestSpec = requestSpec;
         this.responseSpec = responseSpec;
     }
-    
+
     public Integer createAddress(final String entityType, final String entityId) {
         System.out.println("--------------------------------- Create Address " + entityType + " -------------------------------");
         System.out.println(createAddressOperationURL(entityType, entityId));
-        final Integer addressId = Utils.performServerPost(this.requestSpec, this.responseSpec, createAddressOperationURL(entityType, entityId),
-                getTestCreateAddressAsJSON(entityId), "resourceId");
-        System.out.println("Address Id : "+addressId);
+        final Integer addressId = Utils.performServerPost(this.requestSpec, this.responseSpec,
+                createAddressOperationURL(entityType, entityId), getTestCreateAddressAsJSON(entityId), "resourceId");
+        System.out.println("Address Id : " + addressId);
         return addressId;
     }
 
     private String createAddressOperationURL(final String entityType, final String entityId) {
         return API_URL + "/" + entityType + "/" + entityId + "/addresses?" + Utils.TENANT_IDENTIFIER;
     }
-    
+
     public String getTestCreateAddressAsJSON(final String entityId) {
         final HashMap<String, Object> map = new HashMap<>();
         map.put("entityTypeEnum", "1");
         map.put("entityId", entityId);
-        map.put("addressTypes", new Integer[] {13,14});
+        map.put("addressTypes", new Integer[] { 14 });
         map.put("houseNo", "123");
         map.put("addressLineOne", "addressLineOne");
         map.put("districtId", "1");
