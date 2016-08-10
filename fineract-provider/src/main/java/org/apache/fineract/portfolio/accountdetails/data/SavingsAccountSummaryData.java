@@ -86,7 +86,9 @@ public class SavingsAccountSummaryData {
         final CurrencyData currency = null;
         final EnumOptionData accountType = null;
         final EnumOptionData depositType = null;
+        final SavingsAccountSubStatusEnumData subStatus = null;
+        final LocalDate lastActiveTransactionDate = null;
         return new SavingsAccountSummaryData(id, accountNo, externalId, productId, productName, shortProductName, status, currency,
-                accountBalance, accountType, timeline, depositType);
+                accountBalance, accountType, timeline, depositType, subStatus, lastActiveTransactionDate);
     }
 }
