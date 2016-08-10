@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.client.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -29,6 +30,8 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
+import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
+import org.apache.fineract.portfolio.accountdetails.data.SavingsAccountSummaryData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
@@ -96,12 +99,16 @@ final public class ClientData implements Comparable<ClientData> {
     
     private final ClientNonPersonData clientNonPersonDetails;
 
+    // lookup
+    private Collection<LoanAccountSummaryData> loanAccountSummaryDatas;
+    private Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas;
+
     public static ClientData template(final Long officeId, final LocalDate joinedDate, final Collection<OfficeData> officeOptions,
             final Collection<StaffData> staffOptions, final Collection<CodeValueData> narrations,
             final Collection<CodeValueData> genderOptions, final Collection<SavingsProductData> savingProductOptions,
-            final Collection<CodeValueData> clientTypeOptions, final Collection<CodeValueData> clientClassificationOptions, 
-            final Collection<CodeValueData> clientNonPersonConstitutionOptions, final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions,
-            final List<EnumOptionData> clientLegalFormOptions) {
+            final Collection<CodeValueData> clientTypeOptions, final Collection<CodeValueData> clientClassificationOptions,
+            final Collection<CodeValueData> clientNonPersonConstitutionOptions,
+            final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions, final List<EnumOptionData> clientLegalFormOptions) {
         final String accountNo = null;
         final EnumOptionData status = null;
         final CodeValueData subStatus = null;
@@ -131,12 +138,14 @@ final public class ClientData implements Comparable<ClientData> {
         final CodeValueData clientClassification = null;
         final EnumOptionData legalForm = null;
         final ClientNonPersonData clientNonPersonDetails = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, dateOfBirth, gender, joinedDate, imageId, staffId,
                 staffName, officeOptions, groups, staffOptions, narrations, genderOptions, timeline, savingProductOptions,
                 savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
-                clientNonPersonDetails, clientLegalFormOptions, legalForm);
+                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
+                clientNonPersonDetails, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
 
     }
 
@@ -149,9 +158,10 @@ final public class ClientData implements Comparable<ClientData> {
                 clientData.staffName, templateData.officeOptions, clientData.groups, templateData.staffOptions, templateData.narrations,
                 templateData.genderOptions, clientData.timeline, templateData.savingProductOptions, clientData.savingsProductId,
                 clientData.savingsProductName, clientData.savingsAccountId, clientData.savingAccountOptions, clientData.clientType,
-                clientData.clientClassification, templateData.clientTypeOptions, templateData.clientClassificationOptions, 
-                templateData.clientNonPersonConstitutionOptions, templateData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails,
-                templateData.clientLegalFormOptions, clientData.legalForm);
+                clientData.clientClassification, templateData.clientTypeOptions, templateData.clientClassificationOptions,
+                templateData.clientNonPersonConstitutionOptions, templateData.clientNonPersonMainBusinessLineOptions,
+                clientData.clientNonPersonDetails, templateData.clientLegalFormOptions, clientData.legalForm,
+                clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas);
 
     }
 
@@ -166,8 +176,9 @@ final public class ClientData implements Comparable<ClientData> {
                 clientData.genderOptions, clientData.timeline, clientData.savingProductOptions, clientData.savingsProductId,
                 clientData.savingsProductName, clientData.savingsAccountId, savingAccountOptions, clientData.clientType,
                 clientData.clientClassification, clientData.clientTypeOptions, clientData.clientClassificationOptions,
-                clientData.clientNonPersonConstitutionOptions, clientData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails,
-                clientData.clientLegalFormOptions, clientData.legalForm);
+                clientData.clientNonPersonConstitutionOptions, clientData.clientNonPersonMainBusinessLineOptions,
+                clientData.clientNonPersonDetails, clientData.clientLegalFormOptions, clientData.legalForm,
+                clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas);
 
     }
 
@@ -179,8 +190,9 @@ final public class ClientData implements Comparable<ClientData> {
                 clientData.staffName, clientData.officeOptions, parentGroups, clientData.staffOptions, null, null, clientData.timeline,
                 clientData.savingProductOptions, clientData.savingsProductId, clientData.savingsProductName, clientData.savingsAccountId,
                 clientData.savingAccountOptions, clientData.clientType, clientData.clientClassification, clientData.clientTypeOptions,
-                clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions, clientData.clientNonPersonMainBusinessLineOptions, 
-                clientData.clientNonPersonDetails, clientData.clientLegalFormOptions, clientData.legalForm);
+                clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
+                clientData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails, clientData.clientLegalFormOptions,
+                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas);
 
     }
 
@@ -219,12 +231,14 @@ final public class ClientData implements Comparable<ClientData> {
         final CodeValueData subStatus = null;
         final EnumOptionData legalForm = null;
         final ClientNonPersonData clientNonPerson = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
                 staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
                 savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
-                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
-                clientNonPerson, clientLegalFormOptions, legalForm);
+                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
+                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
     }
 
     public static ClientData lookup(final Long id, final String displayName, final Long officeId, final String officeName) {
@@ -265,12 +279,14 @@ final public class ClientData implements Comparable<ClientData> {
         final List<EnumOptionData> clientLegalFormOptions = null;
         final EnumOptionData legalForm = null;
         final ClientNonPersonData clientNonPerson = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
                 staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
                 savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
                 clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
-                clientNonPerson, clientLegalFormOptions, legalForm);
+                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
 
     }
 
@@ -280,7 +296,8 @@ final public class ClientData implements Comparable<ClientData> {
             final String externalId, final String mobileNo, final LocalDate dateOfBirth, final CodeValueData gender,
             final LocalDate activationDate, final Long imageId, final Long staffId, final String staffName,
             final ClientTimelineData timeline, final Long savingsProductId, final String savingsProductName, final Long savingsAccountId,
-            final CodeValueData clientType, final CodeValueData clientClassification, final EnumOptionData legalForm, final ClientNonPersonData clientNonPerson) {
+            final CodeValueData clientType, final CodeValueData clientClassification, final EnumOptionData legalForm,
+            final ClientNonPersonData clientNonPerson) {
 
         final Collection<OfficeData> allowedOffices = null;
         final Collection<GroupGeneralData> groups = null;
@@ -293,13 +310,62 @@ final public class ClientData implements Comparable<ClientData> {
         final Collection<CodeValueData> clientNonPersonConstitutionOptions = null;
         final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
         final List<EnumOptionData> clientLegalFormOptions = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
         return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
                 middlename, lastname, fullname, displayName, externalId, mobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
                 staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
                 savingsProductId, savingsProductName, savingsAccountId, null, clientType, clientClassification, clientTypeOptions,
                 clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientNonPerson,
-                clientLegalFormOptions, legalForm);
+                clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
 
+    }
+
+    public static ClientData instance(final Long id, final String accountNo, final String displayName, final EnumOptionData status) {
+        final CodeValueData subStatus = null;
+        final Long officeId = null;
+        final String officeName = null;
+        final Long transferToOfficeId = null;
+        final String transferToOfficeName = null;
+        final String firstname = null;
+        final String middlename = null;
+        final String lastname = null;
+        final String fullname = null;
+        final String externalId = null;
+        final String mobileNo = null;
+        final LocalDate dateOfBirth = null;
+        final CodeValueData gender = null;
+        final LocalDate activationDate = null;
+        final Long imageId = null;
+        final Long staffId = null;
+        final String staffName = null;
+        final ClientTimelineData timeline = null;
+        final Long savingsProductId = null;
+        final String savingsProductName = null;
+        final Long savingsAccountId = null;
+        final CodeValueData clientType = null;
+        final CodeValueData clientClassification = null;
+        final EnumOptionData legalForm = null;
+        final ClientNonPersonData clientNonPerson = null;
+        final Collection<OfficeData> allowedOffices = null;
+        final Collection<GroupGeneralData> groups = null;
+        final Collection<StaffData> staffOptions = null;
+        final Collection<CodeValueData> closureReasons = null;
+        final Collection<CodeValueData> genderOptions = null;
+        final Collection<SavingsProductData> savingProductOptions = null;
+        final Collection<CodeValueData> clientTypeOptions = null;
+        final Collection<CodeValueData> clientClassificationOptions = null;
+        final Collection<CodeValueData> clientNonPersonConstitutionOptions = null;
+        final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
+        final List<EnumOptionData> clientLegalFormOptions = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
+        return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
+                middlename, lastname, fullname, displayName, externalId, mobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
+                staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
+                savingsProductId, savingsProductName, savingsAccountId, null, clientType, clientClassification, clientTypeOptions,
+                clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientNonPerson,
+                clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
     }
 
     private ClientData(final String accountNo, final EnumOptionData status, final CodeValueData subStatus, final Long officeId,
@@ -313,9 +379,12 @@ final public class ClientData implements Comparable<ClientData> {
             final Collection<SavingsProductData> savingProductOptions, final Long savingsProductId, final String savingsProductName,
             final Long savingsAccountId, final Collection<SavingsAccountData> savingAccountOptions, final CodeValueData clientType,
             final CodeValueData clientClassification, final Collection<CodeValueData> clientTypeOptions,
-            final Collection<CodeValueData> clientClassificationOptions, final Collection<CodeValueData> clientNonPersonConstitutionOptions,
+            final Collection<CodeValueData> clientClassificationOptions,
+            final Collection<CodeValueData> clientNonPersonConstitutionOptions,
             final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions, final ClientNonPersonData clientNonPerson,
-            final List<EnumOptionData> clientLegalFormOptions, final EnumOptionData legalForm) {
+            final List<EnumOptionData> clientLegalFormOptions, final EnumOptionData legalForm,
+            final Collection<LoanAccountSummaryData> loanAccountSummaryDatas,
+            final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas) {
         this.accountNo = accountNo;
         this.status = status;
         if (status != null) {
@@ -361,7 +430,7 @@ final public class ClientData implements Comparable<ClientData> {
         this.genderOptions = genderOptions;
         this.clientClassificationOptions = clientClassificationOptions;
         this.clientTypeOptions = clientTypeOptions;
-        
+
         this.clientNonPersonConstitutionOptions = clientNonPersonConstitutionOptions;
         this.clientNonPersonMainBusinessLineOptions = clientNonPersonMainBusinessLineOptions;
         this.clientLegalFormOptions = clientLegalFormOptions;
@@ -374,6 +443,8 @@ final public class ClientData implements Comparable<ClientData> {
         this.savingAccountOptions = savingAccountOptions;
         this.legalForm = legalForm;
         this.clientNonPersonDetails = clientNonPerson;
+        this.loanAccountSummaryDatas = loanAccountSummaryDatas;
+        this.savingsAccountSummaryDatas = savingsAccountSummaryDatas;
 
     }
 
@@ -454,5 +525,13 @@ final public class ClientData implements Comparable<ClientData> {
 
     public LocalDate getActivationDate() {
         return this.activationDate;
+    }
+
+    public void addLoanAccountSummaryData(final LoanAccountSummaryData loanAccountSummaryData) {
+
+        if (this.loanAccountSummaryDatas == null) {
+            this.loanAccountSummaryDatas = new ArrayList<>();
+        }
+        this.loanAccountSummaryDatas.add(loanAccountSummaryData);
     }
 }
