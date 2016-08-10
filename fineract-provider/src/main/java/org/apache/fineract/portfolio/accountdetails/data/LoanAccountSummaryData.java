@@ -63,4 +63,17 @@ public class LoanAccountSummaryData {
         this.originalLoan = originalLoan;
         this.amountPaid = amountPaid;
     }
+
+    public static LoanAccountSummaryData instance(final Long id, final String accountNo, final String loanProductName,
+            final String shortLoanProductName, final LoanStatusEnumData loanStatus, final BigDecimal originalLoan,
+            final BigDecimal loanBalance, final BigDecimal amountPaid) {
+        final String externalId = null;
+        final EnumOptionData loanType = null;
+        final LoanApplicationTimelineData timeline = null;
+        final Boolean inArrears = null;
+        final Integer loanCycle = null;
+        final Long productId = null;
+        return new LoanAccountSummaryData(id, accountNo, externalId, productId, loanProductName, shortLoanProductName, loanStatus,
+                loanType, loanCycle, timeline, inArrears, originalLoan, loanBalance, amountPaid);
+    }
 }

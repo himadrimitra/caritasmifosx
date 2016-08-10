@@ -65,6 +65,7 @@ import org.apache.fineract.portfolio.collectionsheet.service.CollectionSheetRead
 import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.data.StaffCenterData;
+import org.apache.fineract.portfolio.group.service.CenterGroupMemberAccountReadPlatformService;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformServiceImpl;
 import org.apache.fineract.portfolio.meeting.data.MeetingData;
@@ -93,7 +94,9 @@ public class CentersApiResource {
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final MeetingReadPlatformService meetingReadPlatformService;
-   
+    private final CenterGroupMemberAccountReadPlatformService centerGroupMemberAccountReadPlatformService;
+    private final ToApiJsonSerializer<Collection<GroupGeneralData>> centerGroupMemberToApiJsonSerializer;
+
     @Autowired
     public CentersApiResource(final PlatformSecurityContext context, final CenterReadPlatformService centerReadPlatformService,
             final ToApiJsonSerializer<CenterData> centerApiJsonSerializer, final ToApiJsonSerializer<Object> toApiJsonSerializer,
@@ -102,7 +105,9 @@ public class CentersApiResource {
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final CollectionSheetReadPlatformService collectionSheetReadPlatformService, final FromJsonHelper fromJsonHelper,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService) {
+            final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService, 
+            final CenterGroupMemberAccountReadPlatformService centerGroupMemberAccountReadPlatformService, 
+            final ToApiJsonSerializer<Collection<GroupGeneralData>> centerGroupMemberToApiJsonSerializer) {
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
         this.centerApiJsonSerializer = centerApiJsonSerializer;
@@ -115,6 +120,8 @@ public class CentersApiResource {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.meetingReadPlatformService = meetingReadPlatformService;
+        this.centerGroupMemberAccountReadPlatformService = centerGroupMemberAccountReadPlatformService;
+        this.centerGroupMemberToApiJsonSerializer = centerGroupMemberToApiJsonSerializer;
     }
 
     @GET
@@ -332,5 +339,24 @@ public class CentersApiResource {
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.groupSummaryToApiJsonSerializer.serialize(settings, groupAccount, GROUP_ACCOUNTS_DATA_PARAMETERS);
+    }
+
+    @GET
+    @Path("{centerId}/memberaccountdetails")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAccounts(@PathParam("centerId") final Long centerId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
+
+        final Collection<GroupGeneralData> groupGeneralDatas = this.centerGroupMemberAccountReadPlatformService
+                .retrieveAssociatedMembersByCenterId(centerId);
+
+        final Set<String> CENTER_GROUP_MEMBER_ACCOUNTS_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "accountNo", "name",
+                "activeClientMembers"));
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.centerGroupMemberToApiJsonSerializer.serialize(settings, groupGeneralDatas,
+                CENTER_GROUP_MEMBER_ACCOUNTS_DATA_PARAMETERS);
     }
 }

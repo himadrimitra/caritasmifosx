@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.group.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -55,7 +56,7 @@ public class GroupGeneralData {
 
     // associations
     private final Collection<ClientData> clientMembers;
-    private final Collection<ClientData> activeClientMembers;
+    private Collection<ClientData> activeClientMembers;
     private final Collection<GroupRoleData> groupRoles;
     private final Collection<CalendarData> calendarsData;
     private final CalendarData collectionMeetingCalendar;
@@ -69,13 +70,17 @@ public class GroupGeneralData {
     private final GroupRoleData selectedRole;
     private final Collection<CodeValueData> closureReasons;
     private final GroupTimelineData timeline;
+    
+    // global configuration
+    private final boolean isShowLoanDetailsInCenterPageEnabled;
 
     public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName) {
         final Collection<ClientData> clientMembers = null;
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
+        final boolean isShowLoanDetailsInCenterPageEnabled = false;
         return new GroupGeneralData(groupId, accountNo, groupName, null, null, null, null, null, null, null, null, null, null, null, clientMembers, null, null,
-                null, null, null, groupRoles, null, null, null, null, closureReasons, null);
+                null, null, null, groupRoles, null, null, null, null, closureReasons, null, isShowLoanDetailsInCenterPageEnabled);
     }
 
     public static GroupGeneralData template(final Long officeId, final Long centerId, final String accountNo, final String centerName, final Long staffId,
@@ -86,10 +91,10 @@ public class GroupGeneralData {
         final Collection<ClientData> clientMembers = null;
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
-
+        final boolean isShowLoanDetailsInCenterPageEnabled = false;
         return new GroupGeneralData(null, accountNo , null, null, null, null, officeId, null, centerId, centerName, staffId, staffName, null, null,
                 clientMembers, null, centerOptions, officeOptions, staffOptions, clientOptions, groupRoles, availableRoles, null, null, null,
-                closureReasons, null);
+                closureReasons, null, isShowLoanDetailsInCenterPageEnabled);
     }
 
     public static GroupGeneralData withTemplate(final GroupGeneralData templatedGrouping, final GroupGeneralData grouping) {
@@ -98,7 +103,7 @@ public class GroupGeneralData {
                 grouping.hierarchy, grouping.groupLevel, grouping.clientMembers, grouping.activeClientMembers, templatedGrouping.centerOptions, templatedGrouping.officeOptions,
                 templatedGrouping.staffOptions, templatedGrouping.clientOptions, grouping.groupRoles, templatedGrouping.availableRoles,
                 grouping.selectedRole, grouping.calendarsData, grouping.collectionMeetingCalendar, grouping.closureReasons,
-                templatedGrouping.timeline);
+                templatedGrouping.timeline, grouping.isShowLoanDetailsInCenterPageEnabled);
     }
 
     public static GroupGeneralData withAssocations(final GroupGeneralData grouping, final Collection<ClientData> membersOfGroup,
@@ -108,7 +113,7 @@ public class GroupGeneralData {
                 grouping.officeId, grouping.officeName, grouping.centerId, grouping.centerName, grouping.staffId, grouping.staffName,
                 grouping.hierarchy, grouping.groupLevel, membersOfGroup, activeClientMembers, grouping.centerOptions, grouping.officeOptions, grouping.staffOptions,
                 grouping.clientOptions, groupRoles, grouping.availableRoles, grouping.selectedRole, calendarsData,
-                collectionMeetingCalendar, grouping.closureReasons, grouping.timeline);
+                collectionMeetingCalendar, grouping.closureReasons, grouping.timeline, grouping.isShowLoanDetailsInCenterPageEnabled);
     }
 
     public static GroupGeneralData instance(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
@@ -127,10 +132,12 @@ public class GroupGeneralData {
         final Collection<CalendarData> calendarsData = null;
         final CalendarData collectionMeetingCalendar = null;
         final Collection<CodeValueData> closureReasons = null;
+        final boolean isShowLoanDetailsInCenterPageEnabled = false;
 
         return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
                 staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions,
-                clientOptions, groupRoles, availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, timeline);
+                clientOptions, groupRoles, availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, timeline, 
+                isShowLoanDetailsInCenterPageEnabled);
     }
 
     private GroupGeneralData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
@@ -141,7 +148,7 @@ public class GroupGeneralData {
             final Collection<ClientData> clientOptions, final Collection<GroupRoleData> groupRoles,
             final Collection<CodeValueData> availableRoles, final GroupRoleData role,
             final Collection<CalendarData> calendarsData, final CalendarData collectionMeetingCalendar,
-            final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline) {
+            final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline, final boolean isShowLoanDetailsInCenterPageEnabled) {
         this.id = id;
         this.accountNo = accountNo;
         this.name = name;
@@ -183,6 +190,7 @@ public class GroupGeneralData {
         this.collectionMeetingCalendar = collectionMeetingCalendar;
         this.closureReasons = closureReasons;
         this.timeline = timeline;
+        this.isShowLoanDetailsInCenterPageEnabled = isShowLoanDetailsInCenterPageEnabled;
     }
 
     public Long getId() {
@@ -214,11 +222,12 @@ public class GroupGeneralData {
     }
 
     public static GroupGeneralData updateSelectedRole(final GroupGeneralData grouping, final GroupRoleData selectedRole) {
-        return new GroupGeneralData(grouping.id, grouping.accountNo, grouping.name, grouping.externalId, grouping.status, grouping.activationDate,
-                grouping.officeId, grouping.officeName, grouping.centerId, grouping.centerName, grouping.staffId, grouping.staffName,
-                grouping.hierarchy, grouping.groupLevel, grouping.clientMembers, grouping.activeClientMembers, grouping.centerOptions,
-                grouping.officeOptions, grouping.staffOptions, grouping.clientOptions, grouping.groupRoles, grouping.availableRoles,
-                selectedRole, grouping.calendarsData, grouping.collectionMeetingCalendar, grouping.closureReasons, null);
+        return new GroupGeneralData(grouping.id, grouping.accountNo, grouping.name, grouping.externalId, grouping.status,
+                grouping.activationDate, grouping.officeId, grouping.officeName, grouping.centerId, grouping.centerName, grouping.staffId,
+                grouping.staffName, grouping.hierarchy, grouping.groupLevel, grouping.clientMembers, grouping.activeClientMembers,
+                grouping.centerOptions, grouping.officeOptions, grouping.staffOptions, grouping.clientOptions, grouping.groupRoles,
+                grouping.availableRoles, selectedRole, grouping.calendarsData, grouping.collectionMeetingCalendar, grouping.closureReasons,
+                null, grouping.isShowLoanDetailsInCenterPageEnabled);
     }
 
     public static GroupGeneralData withClosureReasons(final Collection<CodeValueData> closureReasons) {
@@ -247,13 +256,41 @@ public class GroupGeneralData {
         final GroupRoleData role = null;
         final Collection<CalendarData> calendarsData = null;
         final CalendarData collectionMeetingCalendar = null;
+        final boolean isShowLoanDetailsInCenterPageEnabled = false;
 
         return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
                 staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions, clientOptions, groupRoles,
-                availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, null);
+                availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, null, isShowLoanDetailsInCenterPageEnabled);
     }
 
     public Collection<ClientData> clientMembers() {
         return this.clientMembers;
+    }
+
+    public void addActiveClientMember(final ClientData clientData) {
+
+        if (this.activeClientMembers == null) {
+            this.activeClientMembers = new ArrayList<>();
+        }
+        this.activeClientMembers.add(clientData);
+    }
+
+    public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName, final EnumOptionData status) {
+        final Collection<ClientData> clientMembers = null;
+        final Collection<GroupRoleData> groupRoles = null;
+        final Collection<CodeValueData> closureReasons = null;
+        final boolean isShowLoanDetailsInCenterPageEnabled = false;
+        return new GroupGeneralData(groupId, accountNo, groupName, null, status, null, null, null, null, null, null, null, null, null,
+                clientMembers, null, null, null, null, null, groupRoles, null, null, null, null, closureReasons, null,
+                isShowLoanDetailsInCenterPageEnabled);
+    }
+
+    public static GroupGeneralData withConfig(final GroupGeneralData generalData, final boolean isShowLoanDetailsInCenterPageEnabled) {
+        final Collection<ClientData> clientMembers = null;
+        final Collection<GroupRoleData> groupRoles = null;
+        final Collection<CodeValueData> closureReasons = null;
+        return new GroupGeneralData(generalData.id, generalData.accountNo, generalData.name, null, generalData.status, null, null, null,
+                null, null, null, null, null, null, clientMembers, null, null, null, null, null, groupRoles, null, null, null, null,
+                closureReasons, null, isShowLoanDetailsInCenterPageEnabled);
     }
 }

@@ -326,5 +326,12 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     	 final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
          return property.isEnabled();
     }
-  
+
+    @Override
+    public boolean isShowLoanDetailsInCenterPageEnabled() {
+        final String propertyName = "show-loan-details-in-center-page";
+        final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
+        return property.isEnabled();
+    }
+
 }

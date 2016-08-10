@@ -89,5 +89,7 @@ public interface ConfigurationDomainService {
     
     String retreiveDefaultCurrency();
     boolean isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled();
-    
+
+    boolean isShowLoanDetailsInCenterPageEnabled();
+
 }
