@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.apache.fineract.accounting.provisioning.data.LoanProductProvisioningEntryData;
 import org.apache.fineract.accounting.provisioning.data.ProvisioningEntryData;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -73,10 +74,13 @@ public class ProvisioningEntriesReadPlatformServiceImpl implements ProvisioningE
                     .append("GREATEST(datediff(")
                     .append(formattedDate)
                     .append(",sch.duedate),0) as numberofdaysoverdue,sch.duedate, pcd.category_id, pcd.provision_percentage,")
-                    .append("loan.total_outstanding_derived as outstandingbalance, pcd.liability_account, pcd.expense_account from m_loan_repayment_schedule sch")
+                    .append("loan.total_outstanding_derived as outstandingbalance, loan.principal_outstanding_derived as totalPrincipalOutstandingBalnce, ")
+                    .append("pcd.liability_account, pcd.expense_account, criteria.provisioning_amount_type as provisioningAmountType ")
+                    .append("from m_loan_repayment_schedule sch ")
                     .append(" LEFT JOIN m_loan loan on sch.loan_id = loan.id")
                     .append(" JOIN m_loanproduct_provisioning_mapping lpm on lpm.product_id = loan.product_id")
-                    .append(" JOIN m_provisioning_criteria_definition pcd on pcd.criteria_id = lpm.criteria_id and ")
+                    .append(" JOIN m_provisioning_criteria_definition pcd on pcd.criteria_id = lpm.criteria_id")
+                    .append(" JOIN m_provisioning_criteria criteria on pcd.criteria_id = criteria.id and ")
                     .append("(pcd.min_age <= GREATEST(datediff(").append(formattedDate).append(",sch.duedate),0) and ")
                     .append("GREATEST(datediff(").append(formattedDate).append(",sch.duedate),0) <= pcd.max_age) and ")
                     .append("pcd.criteria_id is not null ").append("LEFT JOIN m_client mclient ON mclient.id = loan.client_id ")
@@ -95,13 +99,15 @@ public class ProvisioningEntriesReadPlatformServiceImpl implements ProvisioningE
             Long categoryId = rs.getLong("category_id");
             BigDecimal percentage = rs.getBigDecimal("provision_percentage");
             BigDecimal outstandingBalance = rs.getBigDecimal("outstandingbalance");
+            BigDecimal totalPrincipalOutstandingBalnce = rs.getBigDecimal("totalPrincipalOutstandingBalnce");
             Long liabilityAccountCode = rs.getLong("liability_account");
             Long expenseAccountCode = rs.getLong("expense_account");
             Long criteriaId = rs.getLong("criteriaid");
             Long historyId = null;
-
+            Integer provisioningAmountTypeEnum  = JdbcSupport.getInteger(rs, "provisioningAmountType");
+            
             return new LoanProductProvisioningEntryData(historyId, officeId, currentcyCode, productId, categoryId, overdueDays, percentage,
-                    outstandingBalance, liabilityAccountCode, expenseAccountCode, criteriaId);
+                    outstandingBalance, liabilityAccountCode, expenseAccountCode, criteriaId, totalPrincipalOutstandingBalnce, provisioningAmountTypeEnum);
         }
 
         public String schema() {
