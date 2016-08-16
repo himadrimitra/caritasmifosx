@@ -115,7 +115,8 @@ public final class LoanProductDataValidator {
             LoanProductConstants.maximumGapBetweenInstallments, LoanProductConstants.adjustedInstallmentInMultiplesOfParamName,
             LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
             LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
-            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.considerFutureDisbursmentsInSchedule));
+            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.considerFutureDisbursmentsInSchedule,
+            LoanProductConstants.canUseForTopup));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -717,6 +718,12 @@ public final class LoanProductDataValidator {
         validateVariableInstallmentSettings(baseDataValidator, element);
 
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, null);
+
+        if(this.fromApiJsonHelper.parameterExists(LoanProductConstants.canUseForTopup, element)){
+            final Boolean canUseForTopup = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.canUseForTopup,
+                    element);
+            baseDataValidator.reset().parameter(LoanProductConstants.canUseForTopup).value(canUseForTopup).validateForBooleanValue();
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -1675,6 +1682,12 @@ public final class LoanProductDataValidator {
         validateVariableInstallmentSettings(baseDataValidator, element);
 
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
+
+        if(this.fromApiJsonHelper.parameterExists(LoanProductConstants.canUseForTopup, element)){
+            final Boolean canUseForTopup = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.canUseForTopup,
+                    element);
+            baseDataValidator.reset().parameter(LoanProductConstants.canUseForTopup).value(canUseForTopup).validateForBooleanValue();
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }

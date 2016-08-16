@@ -135,6 +135,8 @@ public interface LoanProductConstants {
     public static final String loanTenureFrequencyType = "loanTenureFrequencyType";
     
     public static final String allowPartialPeriodInterestCalcualtionParamName = "allowPartialPeriodInterestCalcualtion";
+
+    public static final String canUseForTopup = "canUseForTopup";
     
     //Subsidy related constants
     public static final String isSubsidyApplicableParamName = "isSubsidyApplicable";

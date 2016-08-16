@@ -53,6 +53,8 @@ public class LoanTransactionDTO {
     private final boolean isAccountTransfer;
     private final List<TaxPaymentDTO> taxPayments;
 
+    private boolean isLoanToLoanTransfer;
+
     public LoanTransactionDTO(final Long officeId, final Long paymentTypeId, final String transactionId, final Date transactionDate,
             final LoanTransactionEnumData transactionType, final BigDecimal amount, final BigDecimal principal, final BigDecimal interest,
             final BigDecimal fees, final BigDecimal penalties, final BigDecimal overPayment, final boolean reversed,
@@ -145,4 +147,11 @@ public class LoanTransactionDTO {
         return this.transactionSubType;
     }
 
+        public void setIsLoanToLoanTransfer(boolean isLoanToLoanTransfer) {
+                this.isLoanToLoanTransfer = isLoanToLoanTransfer;
+        }
+
+        public boolean isLoanToLoanTransfer(){
+            return this.isLoanToLoanTransfer;
+        }
 }

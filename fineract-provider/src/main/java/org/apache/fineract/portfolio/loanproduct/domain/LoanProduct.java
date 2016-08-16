@@ -204,6 +204,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @Column(name = "loan_tenure_frequency_type", nullable = true)
     private PeriodFrequencyType loanTenureFrequencyType;
 
+    @Column(name = "can_use_for_topup", nullable = false)
+    private boolean canUseForTopup = false;
+
     public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
             final List<ProductLoanCharge> productLoanCharges, final JsonCommand command, final AprCalculator aprCalculator, FloatingRate floatingRate) {
 
@@ -363,6 +366,10 @@ public class LoanProduct extends AbstractPersistable<Long> {
         final PeriodFrequencyType loanTenureFrequencyType = PeriodFrequencyType.fromInt(loanTermFrequencyTypeEnum);
         final Boolean considerFutureDisbursmentsInSchedule = command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.considerFutureDisbursmentsInSchedule);
+        
+		final boolean canUseForTopup = command.parameterExists(LoanProductConstants.canUseForTopup)
+				? command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canUseForTopup)
+				: false;
 
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
@@ -379,7 +386,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
                 maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
-                loanTenureFrequencyType, considerFutureDisbursmentsInSchedule);
+                loanTenureFrequencyType, considerFutureDisbursmentsInSchedule, canUseForTopup);
+
     }
 
     public void updateLoanProductInRelatedClasses() {
@@ -613,8 +621,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment, 
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
-            final Boolean considerFutureDisbursmentsInSchedule) {
-
+            final Boolean considerFutureDisbursmentsInSchedule, final boolean canUseForTopup) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -624,9 +631,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
         } else {
             this.description = null;
         }
-
-        if (productLoanCharges != null) {
-            this.productLoanCharges = productLoanCharges;
+        
+        if (charges != null) {
+            this.productLoanCharges = charges;
         }
 
         this.isLinkedToFloatingInterestRate = isLinkedToFloatingInterestRates == null ? false : isLinkedToFloatingInterestRates;
@@ -700,6 +707,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         } else {
             this.loanTenureFrequencyType = loanTenureFrequencyType;
         }
+        this.canUseForTopup = canUseForTopup;
     }
 
     public MonetaryCurrency getCurrency() {
@@ -1127,6 +1135,12 @@ public class LoanProduct extends AbstractPersistable<Long> {
             actualChanges.put(LoanProductConstants.loanTenureFrequencyType, newValue);
             this.loanTenureFrequencyType = PeriodFrequencyType.fromInt(newValue);
         }
+        
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.canUseForTopup, this.canUseForTopup)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canUseForTopup);
+            actualChanges.put(LoanProductConstants.canUseForTopup, newValue);
+            this.canUseForTopup = newValue;
+        }
 
         return actualChanges;
     }
@@ -1479,4 +1493,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
     public boolean isCloseLoanOnOverpayment() {
         return closeLoanOnOverpayment;
     }
+    public boolean canUseForTopup(){
+        return this.canUseForTopup;
+    }
+
 }

@@ -519,9 +519,11 @@ public final class SearchParameters {
     public static SearchParameters fromReportMailingJobRunHistory(final Integer offset, 
             final Integer limit, final String orderBy, final String sortOrder) {
         final Integer maxLimitAllowed = getCheckedLimit(limit);
+        final Long centerId = null;
+        final Long groupId = null;
         
         return new SearchParameters(null, null, null, null, null, null, null, offset, maxLimitAllowed, orderBy,
-                sortOrder, null, null, null, null, null, false);
+                sortOrder, null, null, null, null, null, false,centerId,groupId);
     }
     
     /**
@@ -536,8 +538,9 @@ public final class SearchParameters {
     public static SearchParameters fromReportMailingJob(final Integer offset, 
             final Integer limit, final String orderBy, final String sortOrder) {
         final Integer maxLimitAllowed = getCheckedLimit(limit);
-        
+        final Long centerId = null;
+        final Long groupId = null;
         return new SearchParameters(null, null, null, null, null, null, null, offset, maxLimitAllowed, orderBy,
-                sortOrder, null, null, null, null, null, false);
+                sortOrder, null, null, null, null, null, false,centerId,groupId);
     }
 }
