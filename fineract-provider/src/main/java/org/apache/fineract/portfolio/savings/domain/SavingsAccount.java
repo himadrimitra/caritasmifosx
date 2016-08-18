@@ -207,7 +207,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @ManyToOne(optional = true)
     @JoinColumn(name = "closedon_userid", nullable = true)
     protected AppUser closedBy;
-
+    
     @Embedded
     protected MonetaryCurrency currency;
 
@@ -1534,7 +1534,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     public void unassignSavingsOfficer() {
         this.savingsOfficer = null;
     }
-
+    
     public void assignSavingsOfficer(final Staff fieldOfficer) {
         this.savingsOfficer = fieldOfficer;
     }
@@ -1580,6 +1580,19 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         // assignment date should not be less than savings account submitted
         // date
+       
+        if (isClosed())
+        {
+            final String defaultUserMessage = "Savings Officer assignment is not allowed. Account is not active.";
+            final ApiParameterError error = ApiParameterError.parameterError("error.msg.savingsaccount.is.not.active",
+                    defaultUserMessage, getClosedOnDate().toString());
+
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            dataValidationErrors.add(error);
+
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+      
         if (isSubmittedOnDateAfter(assignmentDate)) {
 
             final String errorMessage = "The Savings Officer assignment date (" + assignmentDate.toString()
@@ -1664,6 +1677,17 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             latestHistoryRecord.updateEndDate(unassignDate);
         }
         this.savingsOfficer = null;
+        if (isClosed())
+        {
+            final String defaultUserMessage = "Savings Officer unassignment is not allowed. Account is not active.";
+            final ApiParameterError error = ApiParameterError.parameterError("error.msg.savingsaccount.is.not.active.for.unassignmnet",
+                    defaultUserMessage, getClosedOnDate().toString());
+
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            dataValidationErrors.add(error);
+
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
     }
 
     private SavingsOfficerAssignmentHistory findLatestIncompleteHistoryRecord() {
@@ -1697,7 +1721,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             throw new SavingsOfficerUnassignmentDateException("cannot.be.a.future.date", errorMessage, unassignDate);
         }
     }
-
     public MonetaryCurrency getCurrency() {
         return this.currency;
     }
