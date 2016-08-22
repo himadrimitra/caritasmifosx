@@ -4784,7 +4784,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    private LocalDate getLastUserTransactionDate() {
+    public LocalDate getLastUserTransactionDate() {
         LocalDate currentTransactionDate = getDisbursementDate();
         for (final LoanTransaction previousTransaction : this.loanTransactions) {
             if (!(previousTransaction.isReversed() || previousTransaction.isAccrual() || previousTransaction.isIncomePosting())) {
