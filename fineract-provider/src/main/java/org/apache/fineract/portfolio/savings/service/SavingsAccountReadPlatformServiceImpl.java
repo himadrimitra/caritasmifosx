@@ -181,6 +181,12 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             arrayPos = arrayPos + 1;
         }
 
+        if (searchParameters.isOfficeIdPassed()) {
+            sqlBuilder.append(" and c.office_id = ?");
+            objectArray[arrayPos] = searchParameters.getOfficeId();
+            arrayPos = arrayPos + 1;
+        }
+        
         if (searchParameters.isOrderByRequested()) {
             sqlBuilder.append(" order by ").append(searchParameters.getOrderBy());
 
