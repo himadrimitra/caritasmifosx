@@ -51,11 +51,8 @@ import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.organisation.provisioning.data.ProvisioningCriteriaData;
-import org.apache.fineract.organisation.provisioning.domain.ProvisioningAmountType;
 import org.apache.fineract.organisation.provisioning.domain.ProvisioningCategory;
 import org.apache.fineract.organisation.provisioning.domain.ProvisioningCategoryRepository;
-import org.apache.fineract.organisation.provisioning.domain.ProvisioningCriteria;
-import org.apache.fineract.organisation.provisioning.domain.ProvisioningCriteriaRepository;
 import org.apache.fineract.organisation.provisioning.service.ProvisioningCriteriaReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
@@ -233,13 +230,7 @@ public class ProvisioningEntriesWritePlatformServiceJpaRepositoryImpl implements
             GLAccount expenseAccount = glAccountRepository.findOne(data.getExpenseAccount());
             MonetaryCurrency currency = loanProduct.getPrincipalAmount().getCurrency();
 			Long criteriaId = data.getCriteriaId();
-			Money money = null;
-			if (data.getProvisioningAmountType()
-					.equals(ProvisioningAmountType.TotalOutstanding.getValue())) {
-				money = Money.of(currency, data.getOutstandingBalance());
-			} else {
-				money = Money.of(currency, data.getTotalPrincipalOutstandingBalnce());
-			}
+			Money money = Money.of(currency, data.getOutstandingAsPerType());
             Money amountToReserve = money.percentageOf(data.getPercentage(), MoneyHelper.getRoundingMode());
             LoanProductProvisioningEntry entry = new LoanProductProvisioningEntry(loanProduct, office, data.getCurrencyCode(),
                     provisioningCategory, data.getOverdueInDays(), amountToReserve.getAmount(), liabilityAccount, expenseAccount, criteriaId);
