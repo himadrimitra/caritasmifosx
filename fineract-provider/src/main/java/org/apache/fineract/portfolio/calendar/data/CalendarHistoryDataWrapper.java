@@ -38,7 +38,7 @@ public class CalendarHistoryDataWrapper {
         final Comparator<CalendarHistory> orderByDate = new Comparator<CalendarHistory>() {
             @Override
             public int compare(CalendarHistory calendarHistory1, CalendarHistory calendarHistory2) {
-                return calendarHistory1.getEndDateLocalDate().compareTo(calendarHistory2.getEndDateLocalDate());
+                return calendarHistory1.getStartDateLocalDate().compareTo(calendarHistory2.getStartDateLocalDate());
             }
         };
         Collections.sort(this.calendarHistoryList, orderByDate);

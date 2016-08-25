@@ -157,6 +157,19 @@ public class DataValidatorBuilder {
         }
         return this;
     }
+    
+    public DataValidatorBuilder mustBeTrueValueRequired(final Boolean trueValueRequired) {
+        if (trueValueRequired != null && !trueValueRequired && !this.ignoreNullValue) {
+            final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(this.resource).append(".")
+                    .append(this.parameter).append(".must.be.true");
+            final StringBuilder defaultEnglishMessage = new StringBuilder("The parameter ").append(this.parameter).append(
+                    " must be set as true.");
+            final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
+                    defaultEnglishMessage.toString(), this.parameter);
+            this.dataValidationErrors.add(error);
+        }
+        return this;
+    }
 
     public DataValidatorBuilder notNull() {
         if (this.value == null && !this.ignoreNullValue) {

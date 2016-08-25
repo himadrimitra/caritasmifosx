@@ -80,16 +80,6 @@ public class VillageDataValidator {
         final String name = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.villageNameParamName, element);
         baseDataValidator.reset().parameter(VillageTypeApiConstants.villageNameParamName).value(name).notNull();
         
-        
-        final String taluk = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.talukParamName, element);
-        baseDataValidator.reset().parameter(VillageTypeApiConstants.talukParamName).value(taluk).notNull();
-        
-        final String district = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.districtParamName, element);
-        baseDataValidator.reset().parameter(VillageTypeApiConstants.districtParamName).value(district).notNull();
-        
-        final String state = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.stateParamName, element);
-        baseDataValidator.reset().parameter(VillageTypeApiConstants.stateParamName).value(state).notNull();
-        
         final Boolean active = this.fromApiJsonHelper.extractBooleanNamed(VillageTypeApiConstants.activeParamName, element);
         if (active != null) {
             if (active.booleanValue()) {
@@ -135,15 +125,6 @@ public class VillageDataValidator {
         
         final String name = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.villageNameParamName, element);
         baseDataValidator.reset().parameter(VillageTypeApiConstants.villageNameParamName).value(name).notNull();
-        
-        final String taluk = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.talukParamName, element);
-        baseDataValidator.reset().parameter(VillageTypeApiConstants.talukParamName).value(taluk).notNull();
-        
-        final String district = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.districtParamName, element);
-        baseDataValidator.reset().parameter(VillageTypeApiConstants.districtParamName).value(district).notNull();
-        
-        final String state = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.stateParamName, element);
-        baseDataValidator.reset().parameter(VillageTypeApiConstants.stateParamName).value(state).notNull();
         
         if (this.fromApiJsonHelper.parameterExists(VillageTypeApiConstants.externalIdParamName, element)) {
             final String externalId = this.fromApiJsonHelper.extractStringNamed(VillageTypeApiConstants.externalIdParamName, element);

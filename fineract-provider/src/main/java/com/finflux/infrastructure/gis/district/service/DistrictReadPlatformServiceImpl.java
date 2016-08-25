@@ -3,6 +3,7 @@ package com.finflux.infrastructure.gis.district.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -16,6 +17,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 import com.finflux.infrastructure.gis.district.data.DistrictData;
+import com.finflux.infrastructure.gis.taluka.data.TalukaData;
+import com.finflux.infrastructure.gis.taluka.services.TalukaReadPlatformServices;
 
 @Service
 public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformService {
@@ -23,21 +26,23 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
     @SuppressWarnings("unused")
     private final PlatformSecurityContext context;
     private final JdbcTemplate jdbcTemplate;
-    private final DistrictDataMapper dataMapper;
+    private final TalukaReadPlatformServices talukaReadPlatformService;
 
     @Autowired
-    public DistrictReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
+    public DistrictReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,final TalukaReadPlatformServices talukaReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.dataMapper = new DistrictDataMapper();
+        this.talukaReadPlatformService = talukaReadPlatformService;
     }
 
     @Override
     public DistrictData retrieveOne(final Long districtId) {
         try {
             if (districtId != null && districtId > 0) {
-                final String sql = "SELECT " + this.dataMapper.schema() + " WHERE d.id = ? ";
-                return this.jdbcTemplate.queryForObject(sql, this.dataMapper, new Object[] { districtId });
+                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictId(districtId);
+                final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas);
+                final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id = ? ";
+                return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { districtId });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -48,8 +53,10 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
         try {
             if (districtIds != null && !districtIds.isEmpty()) {
                 final String districtIdsStr = StringUtils.join(districtIds, ',');
-                final String sql = "SELECT " + this.dataMapper.schema() + " WHERE d.id IN (" + districtIdsStr + ") ";
-                return this.jdbcTemplate.query(sql, this.dataMapper);
+                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
+                final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas);
+                final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id IN (" + districtIdsStr + ") ";
+                return this.jdbcTemplate.query(sql, dataMapper);
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -59,8 +66,12 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
     public Collection<DistrictData> retrieveAllDistrictDataByStateId(final Long stateId) {
         try {
             if (stateId != null && stateId > 0) {
-                final String sql = "SELECT " + this.dataMapper.schema() + " WHERE d.state_id = ? ";
-                return this.jdbcTemplate.query(sql, this.dataMapper, new Object[] { stateId });
+                final String districtIdsSql = "SELECT s.id FROM f_district s WHERE s.state_id = " + stateId + "";
+                final List<Long> districtIds = this.jdbcTemplate.queryForList(districtIdsSql, Long.class);
+                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
+                final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas);
+                final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id = ? ";
+                return this.jdbcTemplate.query(sql, dataMapper, new Object[] { stateId });
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -71,8 +82,12 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
         try {
             if (stateIds != null && !stateIds.isEmpty()) {
                 final String stateIdsStr = StringUtils.join(stateIds, ',');
-                final String sql = "SELECT " + this.dataMapper.schema() + " WHERE d.state_id IN(" + stateIdsStr + ") ";
-                return this.jdbcTemplate.query(sql, this.dataMapper);
+                final String districtIdsSql = "SELECT s.id FROM f_district s WHERE s.state_id IN( " + stateIdsStr + " ) ";
+                final List<Long> districtIds = this.jdbcTemplate.queryForList(districtIdsSql, Long.class);
+                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
+                final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas);
+                final String sql = "SELECT " + dataMapper.schema() + " WHERE d.state_id IN(" + stateIdsStr + ") ";
+                return this.jdbcTemplate.query(sql, dataMapper);
             }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
@@ -81,8 +96,11 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
     private static final class DistrictDataMapper implements RowMapper<DistrictData> {
 
         private final String schema;
+        private final Collection<TalukaData> talukaDatas;
 
-        public DistrictDataMapper() {
+        public DistrictDataMapper(final Collection<TalukaData> talukaDatas) {
+            this.talukaDatas = talukaDatas;
+            
             final StringBuilder builder = new StringBuilder(200);
             builder.append("d.id As districtId, d.state_id AS stateId, d.iso_district_code AS isoDistrictCode, ");
             builder.append("d.district_name As districtName ");
@@ -100,7 +118,15 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
             final Long stateId = rs.getLong("stateId");
             final String isoDistrictCode = rs.getString("isoDistrictCode");
             final String districtName = rs.getString("districtName");
-            return DistrictData.instance(districtId, stateId, isoDistrictCode, districtName);
+            Collection<TalukaData> talukaDatas = new ArrayList<TalukaData>();
+            if (this.talukaDatas != null && this.talukaDatas.size() > 0) {
+                for (final TalukaData talukaData : this.talukaDatas) {
+                    if (talukaData.getDistrictId() == districtId) {
+                        talukaDatas.add(talukaData);
+                    }
+                }
+            }
+            return DistrictData.instance(districtId, stateId, isoDistrictCode, districtName,talukaDatas);
         }
     }
 }

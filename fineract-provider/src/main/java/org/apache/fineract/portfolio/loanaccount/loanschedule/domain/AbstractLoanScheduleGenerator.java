@@ -881,14 +881,14 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                                         currentPeriodParams.minusEarlyPaidAmount(unprocessed);
                                         updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), unprocessed.negated(), applicableDate);
                                         LoanTransaction loanTransaction = LoanTransaction.repayment(null, unprocessed, null,
-                                                transactionDate, null, DateUtils.getLocalDateTimeOfTenant(), null);
+                                                transactionDate, null);
                                         RecalculationDetail recalculationDetail = new RecalculationDetail(transactionDate, loanTransaction);
                                         unprocessedTransactions.add(recalculationDetail);
                                         break;
                                     }
                                 }
                                 LoanTransaction loanTransaction = LoanTransaction.repayment(null, unprocessed, null, scheduledDueDate,
-                                        null, DateUtils.getLocalDateTimeOfTenant(), null);
+                                        null);
                                 RecalculationDetail recalculationDetail = new RecalculationDetail(scheduledDueDate, loanTransaction);
                                 unprocessedTransactions.add(recalculationDetail);
                                 checkForOutstanding = false;
@@ -2131,7 +2131,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 periods.add(disbursementPeriod);
                 principal = principal.add(disbursementData.amount());
             } else if (!excludePastUndisbursed || disbursementData.isDisbursed()
-                    || !disbursementData.disbursementDate().isBefore(DateUtils.getLocalDateOfTenant())) {
+                    || (loanApplicationTerms.isConsiderFutureDisbursmentsInSchedule() && !disbursementData.disbursementDate().isBefore(DateUtils.getLocalDateOfTenant()))) {
                 disurseDetail.put(disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()));
             }
         }
@@ -2388,6 +2388,11 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     }
                     LocalDate previousRepaymentDate = actualRepaymentDate;
                     ArrayList<LoanTermVariationsData> dueDateVariationsDataList = new ArrayList<>();
+                    actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(actualRepaymentDate,
+                            loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+                    isFirstRepayment = false;
+                    lastInstallmentDate = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
+                            holidayDetailDTO);
 
                  // check for date changes
                     while (loanApplicationTerms.getLoanTermVariations().hasDueDateVariation(lastInstallmentDate)) {
@@ -2395,10 +2400,14 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         if (!variation.isSpecificToInstallment()) {
                             actualRepaymentDate = variation.getDateValue();
                         }
+                        lastInstallmentDate = variation.getDateValue();
                         dueDateVariationsDataList.add(variation);
                     }
+                    
+                    loanTermVariationParams = applyExceptionLoanTermVariations(loanApplicationTerms, lastInstallmentDate,
+                            exceptionDataListIterator);
 
-                    do {
+                    while (loanTermVariationParams != null && loanTermVariationParams.isSkipPeriod()) {
                         actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(actualRepaymentDate,
                                 loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
                         isFirstRepayment = false;
@@ -2406,10 +2415,15 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                                 holidayDetailDTO);
                         loanTermVariationParams = applyExceptionLoanTermVariations(loanApplicationTerms, lastInstallmentDate,
                                 exceptionDataListIterator);
-                    } while (loanTermVariationParams != null && loanTermVariationParams.isSkipPeriod());
+                    }
 
                     if (!lastInstallmentDate.isBefore(rescheduleFrom)) {
                         actualRepaymentDate = previousRepaymentDate;
+                        int dueDateVariationsProcessed = dueDateVariationsDataList.size();
+                        while (dueDateVariationsProcessed > 0) {
+                            loanApplicationTerms.getLoanTermVariations().previousDueDateVariation();
+                            dueDateVariationsProcessed--;
+                        }
                         break;
                     }
                     periodNumber++;
@@ -2609,7 +2623,6 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         holidayDetailDTO);
                 updateMapWithAmount(principalPortionMap, unprocessed, applicableDate);
                 totalUnprocessed = totalUnprocessed.plus(unprocessed);
-
             }
         }
         return totalUnprocessed;

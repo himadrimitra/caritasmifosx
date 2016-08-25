@@ -50,13 +50,9 @@ import org.apache.fineract.portfolio.calendar.exception.CalendarParameterUpdateN
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.apache.poi.openxml4j.util.Nullable;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
-import org.joda.time.LocalTime;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 @Entity
 @Table(name = "m_calendar")
@@ -665,5 +661,15 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
 
     public void setRecurrence(String recurrence) {
         this.recurrence = recurrence;
+    }
+    
+    public Set<CalendarHistory> getActiveCalendarHistory() {
+        Set<CalendarHistory> activeCalendarHistory = new HashSet<>();
+        for(CalendarHistory calendarHistory : this.calendarHistory) {
+            if (calendarHistory.isActive()) {
+                activeCalendarHistory.add(calendarHistory);
+            }         
+        }
+        return activeCalendarHistory;  
     }
 }

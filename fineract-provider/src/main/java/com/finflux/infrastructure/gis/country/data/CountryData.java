@@ -3,6 +3,7 @@ package com.finflux.infrastructure.gis.country.data;
 import java.util.Collection;
 
 import com.finflux.infrastructure.gis.state.data.StateData;
+import com.finflux.infrastructure.gis.taluka.data.TalukaData;
 
 public class CountryData {
 
@@ -39,5 +40,4 @@ public class CountryData {
     public Collection<StateData> getStatesDatas() {
         return this.statesDatas;
     }
-
 }

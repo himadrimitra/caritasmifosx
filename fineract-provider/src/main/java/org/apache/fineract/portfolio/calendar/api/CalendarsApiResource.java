@@ -200,10 +200,18 @@ public class CalendarsApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String updateCalendar(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
-            @PathParam("calendarId") final Long calendarId, final String jsonRequestBody) {
+            @PathParam("calendarId") final Long calendarId, final String jsonRequestBody, @DefaultValue("false") 
+            @QueryParam("isUpdateFutureMeeting") final Boolean isUpdateFutureMeeting) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().updateCalendar(entityType, entityId, calendarId)
-                .withJson(jsonRequestBody).build();
+        //check permission for updating the future meeting dates
+        CommandWrapper commandRequest = null;
+        if (isUpdateFutureMeeting) {
+            commandRequest = new CommandWrapperBuilder().updateFutureMeetingCalendar(entityType, entityId, calendarId)
+                    .withJson(jsonRequestBody).build();
+        } else {
+            commandRequest = new CommandWrapperBuilder().updateCalendar(entityType, entityId, calendarId)
+                    .withJson(jsonRequestBody).build();
+        }
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 

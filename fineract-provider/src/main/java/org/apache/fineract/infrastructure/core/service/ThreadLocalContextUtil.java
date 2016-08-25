@@ -34,6 +34,8 @@ public class ThreadLocalContextUtil {
     
     private static final ThreadLocal<String> authTokenContext = new ThreadLocal<>();
     
+    private static final ThreadLocal<Boolean> ignoreOverdue = new ThreadLocal<>();
+    
     public static void setTenant(final FineractPlatformTenant tenant) {
         Assert.notNull(tenant, "tenant cannot be null");
         tenantcontext.set(tenant);
@@ -65,6 +67,14 @@ public class ThreadLocalContextUtil {
 
     public static String getAuthToken() {
         return authTokenContext.get();
+    }
+    
+    public static void setIgnoreOverdue(final Boolean setIgnoreOverdue) {
+        ignoreOverdue.set(setIgnoreOverdue);
+    }
+    
+    public static Boolean getIgnoreOverdue() {
+        return ignoreOverdue.get();
     }
 
 }

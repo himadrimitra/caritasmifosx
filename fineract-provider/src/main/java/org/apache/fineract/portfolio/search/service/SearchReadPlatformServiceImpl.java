@@ -118,7 +118,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                     + " from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search)) ";
 
             final String villageExactMatchSql = " (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
-                    + ", v.office_id as parentId, o.name as parentName, v.status as entityStatusEnum "
+                    + ", v.office_id as parentId, o.name as parentName,null as entityMobileNo,null as parentType, v.status as entityStatusEnum "
                     + " from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))";
             
             final String villageMatchSql = " (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
@@ -155,10 +155,10 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 sql.append(villageExactMatchSql).append(union);
             }
             
-            if (searchConditions.isVillageSearch()) {
+          /*  if (searchConditions.isVillageSearch()) {
                 sql.append(villageMatchSql).append(union);
             }
-            
+            */
 
             sql.replace(sql.lastIndexOf(union), sql.length(), "");
 

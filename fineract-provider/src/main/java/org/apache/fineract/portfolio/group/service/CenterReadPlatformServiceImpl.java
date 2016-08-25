@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -41,7 +43,6 @@ import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.data.PaginationParametersDataValidator;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
-import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -51,7 +52,9 @@ import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.service.CalendarEnumerations;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
@@ -77,6 +80,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -102,7 +106,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     private final CenterDataMapper centerMapper = new CenterDataMapper();
     private final GroupDataMapper groupDataMapper = new GroupDataMapper();
     private final CentersAssociatedMapper centers = new CentersAssociatedMapper();
-
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final PaginationHelper<CenterData> paginationHelper = new PaginationHelper<>();
     private final PaginationParametersDataValidator paginationParametersDataValidator;
     private final static Set<String> supportedOrderByValues = new HashSet<>(Arrays.asList("id", "name", "officeId", "officeName"));
@@ -124,6 +128,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         this.paginationParametersDataValidator = paginationParametersDataValidator;
         this.configurationDomainService = configurationDomainService;
         this.calendarReadPlatformService = calendarReadPlatformService;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
     }
 
     // 'g.' preffix because of ERROR 1052 (23000): Column 'column_name' in where
@@ -231,7 +236,6 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final String activatedByUsername = rs.getString("activatedByUsername");
             final String activatedByFirstname = rs.getString("activatedByFirstname");
             final String activatedByLastname = rs.getString("activatedByLastname");
-            
             final BigDecimal totalCollected = null;
             final BigDecimal totalOverdue = null;
             final BigDecimal totaldue = null;
@@ -241,9 +245,8 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
-            return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
- timeline, null, totalCollected, totalOverdue,
-					totaldue, installmentDue);
+            return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName,
+                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue);
         }
     }
 
@@ -259,20 +262,20 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
                     + " g.hierarchy as hierarchy,   c.id as calendarId, ci.id as calendarInstanceId, ci.entity_id as entityId,"
                     + " ci.entity_type_enum as entityTypeId, c.title as title,  c.description as description,"
                     + "c.location as location, c.start_date as startDate, c.end_date as endDate, c.recurrence as recurrence,c.meeting_time as meetingTime,"
-                    + "sum(if(l.loan_status_id=300 and lrs.duedate = ?,"
+                    + "sum(if(l.loan_status_id=300 and lrs.duedate = :meetingDate,"
                     + "(ifnull(lrs.principal_amount,0)) + (ifnull(lrs.interest_amount,0)),0)) as installmentDue,"
-                    + "sum(if(l.loan_status_id=300 and lrs.duedate = ?,"
+                    + "sum(if(l.loan_status_id=300 and lrs.duedate = :meetingDate,"
                     + "(ifnull(lrs.principal_completed_derived,0)) + (ifnull(lrs.interest_completed_derived,0)),0)) as totalCollected,"
-                    + "sum(if(l.loan_status_id=300 and lrs.duedate <= ?, (ifnull(lrs.principal_amount,0)) + (ifnull(lrs.interest_amount,0)),0))"
-                    + "- sum(if(l.loan_status_id=300 and lrs.duedate <= ?, (ifnull(lrs.principal_completed_derived,0)) + (ifnull(lrs.interest_completed_derived,0)),0)) as totaldue, "
-                    + "sum(if(l.loan_status_id=300 and lrs.duedate < ?, (ifnull(lrs.principal_amount,0)) + (ifnull(lrs.interest_amount,0)),0))"
-                    + "- sum(if(l.loan_status_id=300 and lrs.duedate < ?, (ifnull(lrs.principal_completed_derived,0)) + (ifnull(lrs.interest_completed_derived,0)),0)) as totaloverdue"
-                    + " from m_calendar c join m_calendar_instance ci on ci.calendar_id=c.id and ci.entity_type_enum=4"
+                    + "sum(if(l.loan_status_id=300 and lrs.duedate <= :meetingDate, (ifnull(lrs.principal_amount,0)) + (ifnull(lrs.interest_amount,0)),0))"
+                    + "- sum(if(l.loan_status_id=300 and lrs.duedate <= :meetingDate, (ifnull(lrs.principal_completed_derived,0)) + (ifnull(lrs.interest_completed_derived,0)),0)) as totaldue, "
+                    + "sum(if(l.loan_status_id=300 and lrs.duedate < :meetingDate, (ifnull(lrs.principal_amount,0)) + (ifnull(lrs.interest_amount,0)),0))"
+                    + "- sum(if(l.loan_status_id=300 and lrs.duedate < :meetingDate, (ifnull(lrs.principal_completed_derived,0)) + (ifnull(lrs.interest_completed_derived,0)),0)) as totaloverdue"
+                    + " from m_calendar c join m_calendar_instance ci on ci.calendar_id=c.id and ci.entity_type_enum=:entityType"
                     + " join m_group ce on ce.id = ci.entity_id" + " join m_group g   on g.parent_id = ce.id"
                     + " join m_group_client gc on gc.group_id=g.id" + " join m_client cl on cl.id=gc.client_id"
                     + " join m_loan l on l.client_id = cl.id"
                     + " join m_loan_repayment_schedule lrs on lrs.loan_id=l.id join m_staff s on g.staff_id = s.id"
-                    + " where g.office_id=?";
+                    + " where g.office_id=:officeId";
         }
 
         public String schema() {
@@ -305,18 +308,18 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final LocalDate startDate = JdbcSupport.getLocalDate(rs, "startDate");
             final LocalDate endDate = JdbcSupport.getLocalDate(rs, "endDate");
             final String recurrence = rs.getString("recurrence");
-            final LocalTime meetingTime = JdbcSupport.getLocalTime(rs,"meetingTime");
-            final BigDecimal totalCollected=JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs,"totalCollected");
-            final BigDecimal totalOverdue=JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs,"totalOverdue");
-            final BigDecimal totaldue=JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs,"totaldue");
-            final BigDecimal installmentDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "installmentDue"); 
+            final LocalTime meetingTime = JdbcSupport.getLocalTime(rs, "meetingTime");
+            final BigDecimal totalCollected = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalCollected");
+            final BigDecimal totalOverdue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalOverdue");
+            final BigDecimal totaldue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totaldue");
+            final BigDecimal installmentDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "installmentDue");
             Integer monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
 
             CalendarData calendarData = CalendarData.instance(calendarId, calendarInstanceId, entityId, entityType, title, description,
                     location, startDate, endDate, null, null, false, recurrence, null, null, null, null, null, null, null, null, null,
                     null, null, null, null, null, meetingTime, monthOnDay);
-            return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, null, staffId, staffName, hierarchy, null,
-                    calendarData,totalCollected,totalOverdue,totaldue,installmentDue);
+            return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, null, staffId, staffName,
+                    hierarchy, null, calendarData, totalCollected, totalOverdue, totaldue, installmentDue);
         }
     }
 
@@ -502,9 +505,8 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         // final boolean clientPendingApprovalAllowed =
         // this.configurationDomainService.isClientPendingApprovalAllowedEnabled();
 
-
-        return CenterData.template(officeIdDefaulted, accountNo, new LocalDate(), officeOptions, villageOptions, villageCounter, 
-        		staffOptions, groupMembersOptions, totalCollected, totalOverdue, totaldue, installmentDue,null,null);
+        return CenterData.template(officeIdDefaulted, accountNo, new LocalDate(), officeOptions, villageOptions, villageCounter,
+                staffOptions, groupMembersOptions, totalCollected, totalOverdue, totaldue, installmentDue);
     }
     
     private Collection<GroupGeneralData> retrieveAllGroupsForCenterDropdown(final Long officeId) {
@@ -668,19 +670,17 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             final String activatedByUsername = rs.getString("activatedByUsername");
             final String activatedByFirstname = rs.getString("activatedByFirstname");
             final String activatedByLastname = rs.getString("activatedByLastname");
-			final BigDecimal totalCollected = null;
-			final BigDecimal totalOverdue = null;
-			final BigDecimal totaldue = null;
-			final BigDecimal installmentDue = null;   
+            final BigDecimal totalCollected = null;
+            final BigDecimal totalOverdue = null;
+            final BigDecimal totaldue = null;
+            final BigDecimal installmentDue = null;
 
             final GroupTimelineData timeline = new GroupTimelineData(submittedOnDate, submittedByUsername, submittedByFirstname,
                     submittedByLastname, activationDate, activatedByUsername, activatedByFirstname, activatedByLastname, closedOnDate,
                     closedByUsername, closedByFirstname, closedByLastname);
 
-			return CenterData.instance(id, accountNo, name, externalId, status,
-					activationDate, officeId, officeName, staffId, staffName,
-					hierarchy, timeline, null, totalCollected, totalOverdue,
-					totaldue, installmentDue);
+            return CenterData.instance(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName,
+                    hierarchy, timeline, null, totalCollected, totalOverdue, totaldue, installmentDue);
         }
         
     }
@@ -695,21 +695,26 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
     @Override
     public Collection<StaffCenterData> retriveAllCentersByMeetingDate(final Long officeId, final Date meetingDate, final Long staffId) {
         validateForGenerateCollectionSheet(staffId);
-        LocalDate localDate = new LocalDate(meetingDate);
+        LocalDate meetingDateTolocalDateFormat = new LocalDate(meetingDate);
         final CenterCalendarDataMapper centerCalendarMapper = new CenterCalendarDataMapper();
         String sql = centerCalendarMapper.schema();
         Collection<CenterData> centerDataArray = null;
-        String passeddate = formatter.print(localDate);
+        String formattedMeetingDate = formatter.print(meetingDateTolocalDateFormat);
+        Map<String, Object> paramMap = new HashMap<>(5);
         if (staffId != null) {
-            sql += " and g.staff_id=? ";
-
-            sql += "and lrs.duedate<='" + passeddate + "' and l.loan_type_enum=3";
+            sql += " and g.staff_id=:staffid ";
+            sql += "and lrs.duedate<=:meetingDate and l.loan_type_enum=:loantype";
             sql += " group by c.id,ci.id";
-            centerDataArray = this.jdbcTemplate.query(sql, centerCalendarMapper, new Object[] { passeddate, passeddate, passeddate, passeddate,
-                    passeddate, passeddate, officeId, staffId });
+
+            paramMap.put("meetingDate", formattedMeetingDate);
+            paramMap.put("loantype", AccountType.JLG.getValue());
+            paramMap.put("staffid", staffId);
+            paramMap.put("officeId", officeId);
+            paramMap.put("entityType", CalendarEntityType.CENTERS.getValue());
+
+            centerDataArray = this.namedParameterJdbcTemplate.query(sql, paramMap, centerCalendarMapper);
         } else {
-            centerDataArray = this.jdbcTemplate.query(sql, centerCalendarMapper, new Object[] { passeddate, passeddate, passeddate, passeddate,
-                    passeddate, passeddate, officeId });
+            centerDataArray = this.namedParameterJdbcTemplate.query(sql, paramMap, centerCalendarMapper);
         }
 
         Collection<StaffCenterData> staffCenterDataArray = new ArrayList<>();

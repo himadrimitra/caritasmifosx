@@ -187,8 +187,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
             modifiedTransactions.add(LoanTransaction.copyTransactionProperties(loanTransaction));
         }
         if (isNewPaymentRequired) {
-            LoanTransaction ondayPaymentTransaction = LoanTransaction.repayment(null, totalAmount, null, today, null,
-                    DateUtils.getLocalDateTimeOfTenant(), null);
+            LoanTransaction ondayPaymentTransaction = LoanTransaction.repayment(null, totalAmount, null, today, null);
             modifiedTransactions.add(ondayPaymentTransaction);
         }
 
@@ -204,7 +203,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
                                 .principalLoanBalanceOutstanding(), interestDue.getAmount(), loanRepaymentScheduleInstallment
                                 .getFeeChargesCharged(currency).getAmount(),
                         loanRepaymentScheduleInstallment.getPenaltyChargesCharged(currency).getAmount(), totalAmount.getAmount(),
-                        totalPrincipal.plus(interestDue).getAmount());
+                        totalPrincipal.plus(interestDue).getAmount(), periodData.getRecalculatedInterestComponent());
                 futureInstallments.add(loanSchedulePeriodData);
                 isNewPaymentRequired = false;
             } else if (periodData.periodDueDate().isAfter(today)) {
@@ -260,7 +259,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
                     installment.getFromDate(), installment.getDueDate(), installment.getPrincipal(currency).getAmount(),
                     outstanding.getAmount(), installment.getInterestCharged(currency).getAmount(),
                     installment.getFeeChargesCharged(currency).getAmount(), installment.getPenaltyChargesCharged(currency).getAmount(),
-                    installment.getDue(currency).getAmount(), installment.getTotalPrincipalAndInterest(currency).getAmount());
+                    installment.getDue(currency).getAmount(), installment.getTotalPrincipalAndInterest(currency).getAmount(), installment.isRecalculatedInterestComponent());
             installmentData.add(loanSchedulePeriodData);
             totalInterest = totalInterest.plus(installment.getInterestCharged(currency));
             totalCharge = totalCharge.plus(installment.getFeeChargesCharged(currency));

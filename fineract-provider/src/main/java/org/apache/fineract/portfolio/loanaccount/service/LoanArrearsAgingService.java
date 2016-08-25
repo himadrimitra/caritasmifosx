@@ -18,11 +18,12 @@
  */
 package org.apache.fineract.portfolio.loanaccount.service;
 
+import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 
 public interface LoanArrearsAgingService {
 
-    void updateLoanArrearsAgeingDetails();
+    void updateLoanArrearsAgeingDetails() throws JobExecutionException;
 
     void updateLoanArrearsAgeingDetailsWithOriginalSchedule(Loan loan);
 

@@ -70,19 +70,7 @@ public class Village extends AbstractPersistable<Long> {
     
     @Column(name="counter")
     private Long count;
-    
-    @Column(name = "taluk")
-    private String taluk;
-    
-    @Column(name = "district")
-    private String district;
-    
-    @Column(name = "pincode")
-    private Long pinCode;
-    
-    @Column(name = "state")
-    private String state;
-    
+  
     @Column(name="activatedon_date", nullable = true)
     @Temporal(TemporalType.DATE)
     private Date activationDate;
@@ -117,11 +105,7 @@ public class Village extends AbstractPersistable<Long> {
         
         final String externalId = command.stringValueOfParameterNamed(VillageTypeApiConstants.externalIdParamName);
         final String villageCode = command.stringValueOfParameterNamed(VillageTypeApiConstants.villageCodeParamName);
-        final String taluk = command.stringValueOfParameterNamed(VillageTypeApiConstants.talukParamName);
-        final String district = command.stringValueOfParameterNamed(VillageTypeApiConstants.districtParamName);
-        final String state = command.stringValueOfParameterNamed(VillageTypeApiConstants.stateParamName);
-        final Long pincode = command.longValueOfParameterNamed(VillageTypeApiConstants.pincodeParamName);
-        
+       
         VillageTypeStatus status = VillageTypeStatus.PENDING;
         LocalDate villageActivaionDate = null;
         if (active) {
@@ -129,11 +113,11 @@ public class Village extends AbstractPersistable<Long> {
             villageActivaionDate = activationDate;
         }
         
-        return new Village(externalId, office, villageCode, villageName, count, taluk, district, pincode, state, currentUser, status, villageActivaionDate, submittedOnDate);
+        return new Village(externalId, office, villageCode, villageName, count, currentUser, status, villageActivaionDate, submittedOnDate);
     }
     
-    private Village(final String externalId, final Office office,final String villageCode, final String villageName, final Long count, final String taluk,
-            final String district, final Long pincode, final String state, final AppUser currentUser, final VillageTypeStatus status,
+    private Village(final String externalId, final Office office,final String villageCode, final String villageName, final Long count,
+             final AppUser currentUser, final VillageTypeStatus status,
             final LocalDate activationDate, final LocalDate submittedOnDate){
        
         final List<ApiParameterError> dataValidationErorrs = new ArrayList<>();
@@ -147,10 +131,6 @@ public class Village extends AbstractPersistable<Long> {
         this.villageCode = villageCode;
         this.villageName = villageName;
         this.count = count;
-        this.taluk = taluk;
-        this.district = district;
-        this.pinCode = pincode;
-        this.state = state;
         this.activedBy = currentUser;
         this.submittedOnDate = submittedOnDate.toDate();
         this.submitedBy = currentUser;
@@ -308,31 +288,7 @@ public class Village extends AbstractPersistable<Long> {
             actualChanges.put(VillageTypeApiConstants.villageCodeParamName, newValue);
             this.villageCode = StringUtils.defaultIfEmpty(newValue, null);
         }
-        
-        if (command.isChangeInStringParameterNamed(VillageTypeApiConstants.talukParamName, this.taluk)) {
-            final String newValue = command.stringValueOfParameterNamed(VillageTypeApiConstants.talukParamName);
-            actualChanges.put(VillageTypeApiConstants.talukParamName, newValue);
-            this.taluk = StringUtils.defaultIfEmpty(newValue, null);
-        }
-        
-        if (command.isChangeInStringParameterNamed(VillageTypeApiConstants.districtParamName, this.district)) {
-            final String newValue = command.stringValueOfParameterNamed(VillageTypeApiConstants.districtParamName);
-            actualChanges.put(VillageTypeApiConstants.districtParamName, newValue);
-            this.district = StringUtils.defaultIfEmpty(newValue, null);
-        }
-        
-        if (command.isChangeInLongParameterNamed(VillageTypeApiConstants.pincodeParamName, this.pinCode)) {
-            final String newValue = command.stringValueOfParameterNamed(VillageTypeApiConstants.pincodeParamName);
-            actualChanges.put(VillageTypeApiConstants.pincodeParamName, newValue);
-            this.pinCode = Long.parseLong(newValue);
-        }
-        
-        if (command.isChangeInStringParameterNamed(VillageTypeApiConstants.stateParamName, this.state)) {
-            final String newValue = command.stringValueOfParameterNamed(VillageTypeApiConstants.stateParamName);
-            actualChanges.put(VillageTypeApiConstants.stateParamName, newValue);
-            this.state = StringUtils.defaultIfEmpty(newValue, null);
-        }
-
+    
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
 

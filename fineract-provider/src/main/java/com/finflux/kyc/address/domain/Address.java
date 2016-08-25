@@ -24,13 +24,14 @@ import org.hibernate.annotations.LazyCollectionOption;
 import com.finflux.infrastructure.gis.country.domain.Country;
 import com.finflux.infrastructure.gis.district.domain.District;
 import com.finflux.infrastructure.gis.state.domain.State;
+import com.finflux.infrastructure.gis.taluka.domain.Taluka;
 import com.finflux.kyc.address.api.AddressApiConstants;
 
 @Entity
 @Table(name = "f_address")
 public class Address extends AbstractAuditableCustom<AppUser, Long> {
 
-    @Column(name = "house_no", length = 20, nullable = false)
+    @Column(name = "house_no", length = 20, nullable = true)
     private String houseNo;
 
     @Column(name = "street_no", length = 20, nullable = true)
@@ -48,9 +49,10 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "village_town", length = 100, nullable = true)
     private String villageTown;
 
-    @Column(name = "taluka", length = 100, nullable = true)
-    private String taluka;
-
+    @ManyToOne
+    @JoinColumn(name = "taluka_id")
+    private Taluka taluka;
+    
     @ManyToOne
     @JoinColumn(name = "district_id")
     private District district;
@@ -63,7 +65,7 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     @JoinColumn(name = "country_id")
     private Country country;
 
-    @Column(name = "postal_code", length = 10)
+    @Column(name = "postal_code", length = 10,nullable = true)
     private String postalCode;
 
     @Column(name = "latitude", scale = 6, precision = 19, nullable = true)
@@ -79,7 +81,7 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     protected Address() {}
 
     private Address(final String houseNo, final String streetNo, final String addressLineOne, final String addressLineTwo,
-            final String landmark, final String villageTown, final String taluka, final District district, final State state,
+            final String landmark, final String villageTown, final Taluka taluka, final District district, final State state,
             final Country country, final String postalCode, final BigDecimal latitude, final BigDecimal longitude) {
         this.houseNo = houseNo;
         this.streetNo = streetNo;
@@ -97,7 +99,7 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     }
 
     public static Address create(final String houseNo, final String streetNo, final String addressLineOne, final String addressLineTwo,
-            final String landmark, final String villageTown, final String taluka, final District district, final State state,
+            final String landmark, final String villageTown, final Taluka taluka, final District district, final State state,
             final Country country, final String postalCode, final BigDecimal latitude, final BigDecimal longitude) {
         return new Address(houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, taluka, district, state, country,
                 postalCode, latitude, longitude);
@@ -143,10 +145,18 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
             this.villageTown = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(AddressApiConstants.talukaParamName, this.taluka)) {
-            final String newValue = command.stringValueOfParameterNamed(AddressApiConstants.talukaParamName);
-            actualChanges.put(AddressApiConstants.talukaParamName, newValue);
-            this.taluka = StringUtils.defaultIfEmpty(newValue, null);
+        if (!command.parameterExists(AddressApiConstants.talukaIdParamName)) {
+            this.taluka = null;
+        } else {
+            if (this.taluka != null) {
+                if (command.isChangeInLongParameterNamed(AddressApiConstants.talukaIdParamName, this.taluka.getId())) {
+                    final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.talukaIdParamName);
+                    actualChanges.put(AddressApiConstants.talukaIdParamName, newValue);
+                }
+            } else if (command.parameterExists(AddressApiConstants.talukaIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.talukaIdParamName);
+                actualChanges.put(AddressApiConstants.talukaIdParamName, newValue);
+            }
         }
 
         if (!command.parameterExists(AddressApiConstants.districtIdParamName)) {
@@ -226,11 +236,31 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     public Set<AddressEntity> getAddressEntities() {
         return this.addressEntities;
     }
+    
+    public Taluka getTaluka() {
+        return this.taluka;
+    }
+
+    public Long getTalukaId() {
+        Long talukaId = null;
+        if (this.district != null) {
+            talukaId = this.taluka.getId();
+        }
+        return talukaId;
+    }
 
     public District getDistrict() {
         return this.district;
     }
 
+    public Long getDistrictId() {
+        Long districtId = null;
+        if (this.taluka != null) {
+            districtId = this.district.getId();
+        }
+        return districtId;
+    }
+    
     public State getState() {
         return this.state;
     }
@@ -253,6 +283,9 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
             countryId = this.country.getId();
         }
         return countryId;
+    }
+    public void updateTaluka(final Taluka taluka) {
+        this.taluka = taluka;
     }
 
     public void updateDistrict(final District district) {

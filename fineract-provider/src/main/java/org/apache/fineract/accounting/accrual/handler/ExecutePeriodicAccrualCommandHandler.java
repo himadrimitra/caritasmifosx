@@ -38,7 +38,6 @@ public class ExecutePeriodicAccrualCommandHandler implements NewCommandSourceHan
         this.writePlatformService = writePlatformService;
     }
 
-    @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
         return this.writePlatformService.executeLoansPeriodicAccrual(command);

@@ -86,6 +86,10 @@ public class LoanTermVariationsDataWrapper {
     public LoanTermVariationsData nextDueDateVariation() {
         return this.dueDateIterator.next();
     }
+    
+    public LoanTermVariationsData previousDueDateVariation() {
+        return this.dueDateIterator.previous();
+    }
 
     public List<LoanTermVariationsData> getInterestRateChanges() {
         return this.interestRateChanges;

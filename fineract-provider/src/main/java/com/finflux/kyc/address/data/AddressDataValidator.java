@@ -89,16 +89,16 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.entityIdParamName).value(entityId).notBlank();
 
         final String[] addressTypes = this.fromApiJsonHelper.extractArrayNamed(AddressApiConstants.addressTypesParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.addressTypesParamName).value(addressTypes).notBlank().arrayNotEmpty();
+        baseDataValidator.reset().parameter(AddressApiConstants.addressTypesParamName).value(addressTypes).ignoreIfNull().arrayNotEmpty();
 
         final String houseNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.houseNoParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.houseNoParamName).value(houseNo).notBlank().notExceedingLengthOf(20);
+        baseDataValidator.reset().parameter(AddressApiConstants.houseNoParamName).value(houseNo).ignoreIfNull().notExceedingLengthOf(20);
 
         final String streetNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.streetNoParamName, element);
         baseDataValidator.reset().parameter(AddressApiConstants.streetNoParamName).value(streetNo).ignoreIfNull().notExceedingLengthOf(20);
 
         final String addressLineOne = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.addressLineOneParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.addressLineOneParamName).value(addressLineOne).notBlank()
+        baseDataValidator.reset().parameter(AddressApiConstants.addressLineOneParamName).value(addressLineOne).ignoreIfNull()
                 .notExceedingLengthOf(200);
 
         final String addressLineTwo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.addressLineTwoParamName, element);
@@ -112,8 +112,8 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.villageTownParamName).value(villageTown).ignoreIfNull()
                 .notExceedingLengthOf(100);
 
-        final String taluka = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.talukaParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.talukaParamName).value(taluka).ignoreIfNull().notExceedingLengthOf(100);
+        final Long talukaId = this.fromApiJsonHelper.extractLongNamed(AddressApiConstants.talukaIdParamName, element);
+        baseDataValidator.reset().parameter(AddressApiConstants.talukaIdParamName).value(talukaId).ignoreIfNull();
 
         final Long districtId = this.fromApiJsonHelper.extractLongNamed(AddressApiConstants.districtIdParamName, element);
         baseDataValidator.reset().parameter(AddressApiConstants.districtIdParamName).value(districtId).ignoreIfNull();
@@ -125,7 +125,7 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.countryIdParamName).value(countryId).ignoreIfNull();
 
         final String postalCode = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.postalCodeParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.postalCodeParamName).value(postalCode).notBlank();
+        baseDataValidator.reset().parameter(AddressApiConstants.postalCodeParamName).value(postalCode).ignoreIfNull();
 
         final BigDecimal latitude = this.fromApiJsonHelper.extractBigDecimalNamed(AddressApiConstants.latitudeParamName, element, locale);
         baseDataValidator.reset().parameter(AddressApiConstants.latitudeParamName).value(latitude).ignoreIfNull();
@@ -185,19 +185,19 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.entityIdParamName).value(entityId).notBlank();
 
         final String[] addressTypes = this.fromApiJsonHelper.extractArrayNamed(AddressApiConstants.addressTypesParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.addressTypesParamName).value(addressTypes).notBlank().arrayNotEmpty();
+        baseDataValidator.reset().parameter(AddressApiConstants.addressTypesParamName).value(addressTypes).ignoreIfNull().arrayNotEmpty();
 
         final Long addressId = this.fromApiJsonHelper.extractLongNamed(AddressApiConstants.addressIdParamName, element);
         baseDataValidator.reset().parameter(AddressApiConstants.addressIdParamName).value(addressId).notBlank();
 
         final String houseNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.houseNoParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.houseNoParamName).value(houseNo).notBlank().notExceedingLengthOf(20);
+        baseDataValidator.reset().parameter(AddressApiConstants.houseNoParamName).value(houseNo).ignoreIfNull().notExceedingLengthOf(20);
 
         final String streetNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.streetNoParamName, element);
         baseDataValidator.reset().parameter(AddressApiConstants.streetNoParamName).value(streetNo).ignoreIfNull().notExceedingLengthOf(20);
 
         final String addressLineOne = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.addressLineOneParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.addressLineOneParamName).value(addressLineOne).notBlank()
+        baseDataValidator.reset().parameter(AddressApiConstants.addressLineOneParamName).value(addressLineOne).ignoreIfNull()
                 .notExceedingLengthOf(200);
 
         final String addressLineTwo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.addressLineTwoParamName, element);
@@ -211,8 +211,8 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.villageTownParamName).value(villageTown).ignoreIfNull()
                 .notExceedingLengthOf(100);
 
-        final String taluka = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.talukaParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.talukaParamName).value(taluka).ignoreIfNull().notExceedingLengthOf(100);
+        final Long talukaId = this.fromApiJsonHelper.extractLongNamed(AddressApiConstants.talukaIdParamName, element);
+        baseDataValidator.reset().parameter(AddressApiConstants.talukaIdParamName).value(talukaId).ignoreIfNull();
 
         final Long districtId = this.fromApiJsonHelper.extractLongNamed(AddressApiConstants.districtIdParamName, element);
         baseDataValidator.reset().parameter(AddressApiConstants.districtIdParamName).value(districtId).ignoreIfNull();
@@ -224,7 +224,7 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.countryIdParamName).value(countryId).ignoreIfNull();
 
         final String postalCode = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.postalCodeParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.postalCodeParamName).value(postalCode).notBlank();
+        baseDataValidator.reset().parameter(AddressApiConstants.postalCodeParamName).value(postalCode).ignoreIfNull();
 
         final BigDecimal latitude = this.fromApiJsonHelper.extractBigDecimalNamed(AddressApiConstants.latitudeParamName, element, locale);
         baseDataValidator.reset().parameter(AddressApiConstants.latitudeParamName).value(latitude).ignoreIfNull();

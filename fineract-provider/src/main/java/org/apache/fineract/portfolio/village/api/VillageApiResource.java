@@ -56,6 +56,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.kyc.address.data.AddressData;
+import com.finflux.kyc.address.service.AddressReadPlatformService;
+
 
 @Path("/villages")
 @Component
@@ -69,12 +72,13 @@ public class VillageApiResource {
     private final ToApiJsonSerializer<VillageData> villageDataApiJsonSerializer;
     private final PortfolioCommandSourceWritePlatformService commandSourceWritePlatformService;
     private final ToApiJsonSerializer<Object> toApiJsonSerializer;
+    private final AddressReadPlatformService addressReadPlatformService;
     
     @Autowired
     public VillageApiResource(PlatformSecurityContext context, VillageReadPlatformService villageReadPlatformService,
             ApiRequestParameterHelper apiRequestParameterHelper, ToApiJsonSerializer<VillageData> villageDataApiJsonSerializer, 
             PortfolioCommandSourceWritePlatformService commandSourceWritePlatformService, ToApiJsonSerializer<Object> toApiJsonSerializer, 
-            CenterReadPlatformService centerReadPlatformService) {
+            CenterReadPlatformService centerReadPlatformService,final AddressReadPlatformService addressReadPlatformService) {
 
         this.context = context;
         this.villageReadPlatformService = villageReadPlatformService;
@@ -83,6 +87,7 @@ public class VillageApiResource {
         this.villageDataApiJsonSerializer = villageDataApiJsonSerializer;
         this.commandSourceWritePlatformService = commandSourceWritePlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
+        this.addressReadPlatformService = addressReadPlatformService;
     }
     
     @GET
@@ -147,6 +152,7 @@ public class VillageApiResource {
 
         // associations:
         Collection<CenterData> centers = null;
+        Collection<AddressData> address  = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(VillageTypeApiConstants.pathParamName,villageId);
         
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("setOfCenters")) {
@@ -156,7 +162,7 @@ public class VillageApiResource {
         
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         
-        village = VillageData.withAssociations(village, centers);
+        village = VillageData.withAssociations(village, centers,address);
        // village.getAssociations(centers);
         
         return this.villageDataApiJsonSerializer.serialize(settings, village, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);

@@ -112,7 +112,7 @@ public class LoanUtilService {
         CalendarHistoryDataWrapper calendarHistoryDataWrapper = null;
         if (calendarInstance != null) {
             calendar = calendarInstance.getCalendar();
-            Set<CalendarHistory> calendarHistory = calendar.getCalendarHistory();
+            Set<CalendarHistory> calendarHistory = calendar.getActiveCalendarHistory();
             calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(calendarHistory);
         }
         LocalDate calculatedRepaymentsStartingFromDate = this.getCalculatedRepaymentsStartingFromDate(loan.getDisbursementDate(), loan,

@@ -279,47 +279,42 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return property.isEnabled();
     }
 
-	@Override
-	public boolean isDailyTPTLimitEnabled() {
+    @Override
+    public boolean isDailyTPTLimitEnabled() {
         final String propertyName = "daily-tpt-limit";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
         return property.isEnabled();
-	}
+    }
 
-	@Override
-	public Long getDailyTPTLimit() {
+    @Override
+    public Long getDailyTPTLimit() {
         final String propertyName = "daily-tpt-limit";
         final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
         return longValue(property.getValue());
-	}
+    }
 
-	@Override
-	public boolean isDefaultCurrencyEnabled() {
-		return this.globalConfigurationRepository.findOneByNameWithNotFoundDetection("default-organisation-currency").isEnabled();
-	}
+    @Override
+    public boolean isDefaultCurrencyEnabled() {
+        return this.globalConfigurationRepository.findOneByNameWithNotFoundDetection("default-organisation-currency").isEnabled();
+    }
 
-	@Override
-	public String retreiveDefaultCurrency() {
-		final String propertyName = "default-organisation-currency";
-		final GlobalConfigurationProperty property = this.globalConfigurationRepository
-				.findOneByNameWithNotFoundDetection(propertyName);
-		return property.getValue();
-	}
-	
-	public Long longValue(String value){
-		if(value == null){
-			return null;
-		}
-		return Long.parseLong(value);
-	}
-	
-	public Integer integerValue(String value){
-		if(value == null){
-			return null;
-		}
-		return Integer.parseInt(value);
-	}
-	
+    @Override
+    public String retreiveDefaultCurrency() {
+        final String propertyName = "default-organisation-currency";
+        final GlobalConfigurationProperty property = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
+        return property.getValue();
+    }
+
+    public Long longValue(String value) {
+        if (value == null) { return null; }
+        return Long.parseLong(value);
+    }
+
+    public Integer integerValue(String value) {
+        if (value == null) { return null; }
+        return Integer.parseInt(value);
+    }
+
     @Override
     public boolean isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled(){
     	final String propertyName = "force-loan-repayment-frequency-match-with-meeting-frequency";

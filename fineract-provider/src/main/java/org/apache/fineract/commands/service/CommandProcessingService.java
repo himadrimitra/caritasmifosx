@@ -26,10 +26,14 @@ import org.apache.fineract.useradministration.domain.AppUser;
 
 public interface CommandProcessingService {
 
-    CommandProcessingResult processAndLogCommand(CommandWrapper wrapper, JsonCommand command, boolean isApprovedByChecker);
-
     CommandProcessingResult logCommand(CommandSource commandSourceResult);
     
     boolean validateCommand(final CommandWrapper commandWrapper,final AppUser user);
+
+	CommandProcessingResult processAndLogCommandWithoutTransactionalScope(CommandWrapper wrapper, JsonCommand command,
+			boolean isApprovedByChecker);
+
+	CommandProcessingResult processAndLogCommandWithTransactionalScope(CommandWrapper wrapper, JsonCommand command,
+			boolean isApprovedByChecker);
 
 }

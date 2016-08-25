@@ -88,6 +88,9 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
 
     @Column(name = "version")
     private Integer version;
+    
+    @Column(name = "recalculated_interest_component", nullable = false)
+    private Boolean recalculatedInterestComponent;
 
     /**
      * LoanRepaymentScheduleHistory constructor
@@ -101,7 +104,7 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
             final Integer installmentNumber, final Date fromDate, final Date dueDate, final BigDecimal principal,
             final BigDecimal interestCharged, final BigDecimal feeChargesCharged, final BigDecimal penaltyCharges,
             final Date createdOnDate, final AppUser createdByUser, final AppUser lastModifiedByUser, final Date lastModifiedOnDate,
-            final Integer version) {
+            final Integer version, final Boolean recalculatedInterestComponent) {
 
         this.loan = loan;
         this.loanRescheduleRequest = loanRescheduleRequest;
@@ -117,6 +120,7 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
         this.lastModifiedByUser = lastModifiedByUser;
         this.lastModifiedOnDate = lastModifiedOnDate;
         this.version = version;
+        this.recalculatedInterestComponent = recalculatedInterestComponent;
     }
 
     /**
@@ -126,11 +130,11 @@ public class LoanRepaymentScheduleHistory extends AbstractPersistable<Long> {
             final Integer installmentNumber, final Date fromDate, final Date dueDate, final BigDecimal principal,
             final BigDecimal interestCharged, final BigDecimal feeChargesCharged, final BigDecimal penaltyCharges,
             final Date createdOnDate, final AppUser createdByUser, final AppUser lastModifiedByUser, final Date lastModifiedOnDate,
-            final Integer version) {
+            final Integer version, boolean recalculatedInterestComponent) {
 
         return new LoanRepaymentScheduleHistory(loan, loanRescheduleRequest, installmentNumber, fromDate, dueDate, principal,
                 interestCharged, feeChargesCharged, penaltyCharges, createdOnDate, createdByUser, lastModifiedByUser, lastModifiedOnDate,
-                version);
+                version, recalculatedInterestComponent);
 
     }
 

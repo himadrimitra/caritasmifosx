@@ -29,6 +29,8 @@ import com.finflux.infrastructure.gis.district.data.DistrictData;
 import com.finflux.infrastructure.gis.district.service.DistrictReadPlatformService;
 import com.finflux.infrastructure.gis.state.data.StateData;
 import com.finflux.infrastructure.gis.state.service.StateReadPlatformService;
+import com.finflux.infrastructure.gis.taluka.data.TalukaData;
+import com.finflux.infrastructure.gis.taluka.services.TalukaReadPlatformServices;
 import com.finflux.kyc.address.api.AddressApiConstants;
 import com.finflux.kyc.address.data.AddressData;
 import com.finflux.kyc.address.data.AddressEntityData;
@@ -50,12 +52,13 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
     private final DistrictReadPlatformService districtReadPlatformService;
     private final StateReadPlatformService stateReadPlatformService;
     private final CountryReadPlatformService countryReadPlatformService;
+    private final TalukaReadPlatformServices talukaReadPlatformService;
 
     @Autowired
     public AddressReadPlatformServiceImpl(final RoutingDataSource dataSource, final AddressBusinessValidators addressBusinessValidators,
             final CodeValueReadPlatformService codeValueReadPlatformService, final AddressRepositoryWrapper addressRepository,
             final DistrictReadPlatformService districtReadPlatformService, final StateReadPlatformService stateReadPlatformService,
-            final CountryReadPlatformService countryReadPlatformService) {
+            final CountryReadPlatformService countryReadPlatformService,final TalukaReadPlatformServices talukaReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.addressEntityDataMapper = new AddressEntityDataMapper();
         this.addressBusinessValidators = addressBusinessValidators;
@@ -64,6 +67,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
         this.districtReadPlatformService = districtReadPlatformService;
         this.stateReadPlatformService = stateReadPlatformService;
         this.countryReadPlatformService = countryReadPlatformService;
+        this.talukaReadPlatformService = talukaReadPlatformService;
     }
 
     @Override
@@ -79,6 +83,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
     public AddressData retrieveOne(final String entityType, final Long entityId, final Long addressId) {
         try {
             final Address address = this.addressRepository.findOneWithNotFoundDetection(addressId);
+            final Collection<TalukaData> talukaDatas = getTalukaDatas(address,null);
             final Collection<DistrictData> districtDatas = getDistrictDatas(address, null);
             final Collection<StateData> stateDatas = getStateDatas(address, null);
             final Collection<CountryData> countryDatas = getCountryDatas(address, null);
@@ -88,7 +93,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             //this.addressBusinessValidators.validateAddressEntityIdAndEntityType(entityTypeEnum, entityId);
             final Collection<AddressEntityData> addressEntityDatas = retrieveAddressEntityData(entityId, entityTypeEnum, addressId);
             if (addressEntityDatas != null) {
-                final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas);
+                final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas,talukaDatas);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE a.id = ? ";
                 return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { addressId });
             }
@@ -181,6 +186,33 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
         }
         return districtDatas;
     }
+    
+    private Collection<TalukaData> getTalukaDatas(final Address address, final List<Map<String, Object>> listOfMapForCountryStateDistrictIds) {
+        Collection<TalukaData> talukaDatas = null;
+        if (listOfMapForCountryStateDistrictIds != null && listOfMapForCountryStateDistrictIds.size() > 0) {
+            final List<Long> talukaIds = new ArrayList<Long>();
+            for (final Map<String, Object> mapIds : listOfMapForCountryStateDistrictIds) {
+                if (mapIds.containsKey("talukaId") && mapIds.get("talukaId") != null) {
+                    final Long talukaId = Long.parseLong(mapIds.get("talukaId").toString());
+                    if (!talukaIds.contains(talukaId)) {
+                        talukaIds.add(talukaId);
+                    }
+                }
+            }
+            if (!talukaIds.isEmpty()) {
+                talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByTalukaIds(talukaIds);
+            }
+        } else if (address != null && address.getTaluka() != null) {
+            final Long talukaId = address.getTaluka().getId();
+            final TalukaData talukaData = this.talukaReadPlatformService.retrieveOne(talukaId);
+            if (talukaData != null) {
+                talukaDatas = new ArrayList<TalukaData>();
+                talukaDatas.add(talukaData);
+            }
+        }
+        return talukaDatas;
+    }
+
 
     @SuppressWarnings({ "unused" })
     @Override
@@ -198,14 +230,15 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 }
                 if (!addressIds.isEmpty()) {
                     final String addressIdsAsString = StringUtils.join(addressIds, ',');
-                    final String sqlForCountryStateDistrictIds = "SELECT a.district_id AS districtId, a.state_id AS stateId,a.country_id AS countryId FROM f_address a WHERE a.id IN ("
+                    final String sqlForCountryStateDistrictIds = "SELECT a.taluka_id AS talukaId, a.district_id AS districtId, a.state_id AS stateId,a.country_id AS countryId FROM f_address a WHERE a.id IN ("
                             + addressIdsAsString + ") ";
                     final List<Map<String, Object>> listOfMapForCountryStateDistrictIds = this.jdbcTemplate
                             .queryForList(sqlForCountryStateDistrictIds);
+                    final Collection<TalukaData> talukaDatas = getTalukaDatas(null, listOfMapForCountryStateDistrictIds);
                     final Collection<DistrictData> districtDatas = getDistrictDatas(null, listOfMapForCountryStateDistrictIds);
                     final Collection<StateData> stateDatas = getStateDatas(null, listOfMapForCountryStateDistrictIds);
                     final Collection<CountryData> countryDatas = getCountryDatas(null, listOfMapForCountryStateDistrictIds);
-                    final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas);
+                    final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas,talukaDatas);
                     final String sql = "SELECT " + dataMapper.schema() + " WHERE a.id IN (" + addressIdsAsString + ") ";
                     return this.jdbcTemplate.query(sql, dataMapper);
                 }
@@ -219,22 +252,24 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
     private static final class AddressDataMapper implements RowMapper<AddressData> {
 
         private final String schema;
+        private final Collection<TalukaData> talukaDatas;
         private final Collection<DistrictData> districtDatas;
         private final Collection<StateData> stateDatas;
         private final Collection<CountryData> countryDatas;
         private final Collection<AddressEntityData> addressEntityDatas;
 
         public AddressDataMapper(final Collection<DistrictData> districtDatas, final Collection<StateData> stateDatas,
-                final Collection<CountryData> countryDatas, final Collection<AddressEntityData> addressEntityDatas) {
+                final Collection<CountryData> countryDatas, final Collection<AddressEntityData> addressEntityDatas,final Collection<TalukaData> talukaDatas) {
             this.districtDatas = districtDatas;
             this.stateDatas = stateDatas;
             this.countryDatas = countryDatas;
             this.addressEntityDatas = addressEntityDatas;
+            this.talukaDatas = talukaDatas;
 
             final StringBuilder sqlBuilder = new StringBuilder(200);
             sqlBuilder.append("a.id AS addressId, a.house_no AS houseNo, a.street_no AS streetNo, ");
             sqlBuilder.append("a.address_line_one AS addressLineOne, a.address_line_two AS addressLineTwo, a.landmark AS landmark, ");
-            sqlBuilder.append("a.village_town AS villageTown, a.taluka AS taluka, ");
+            sqlBuilder.append("a.village_town AS villageTown,a.taluka_id AS talukaId, ");
             sqlBuilder.append("a.district_id AS districtId,a.state_id AS stateId,a.country_id AS countryId, ");
             sqlBuilder.append("a.postal_code AS postalCode, a.latitude AS latitude,a.longitude AS longitude ");
             sqlBuilder.append("FROM f_address a ");
@@ -256,7 +291,17 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             final String addressLineTwo = rs.getString("addressLineTwo");
             final String landmark = rs.getString("landmark");
             final String villageTown = rs.getString("villageTown");
-            final String taluka = rs.getString("taluka");
+            
+            final Long talukaId = rs.getLong("talukaId");
+            TalukaData talukaData = null;
+            if (this.talukaDatas != null && this.talukaDatas.size() > 0) {
+                for (final TalukaData tt : this.talukaDatas) {
+                    if (tt.getTalukaId() == talukaId) {
+                        talukaData = tt;
+                        break;
+                    }
+                }
+            }
 
             final Long districtId = rs.getLong("districtId");
             DistrictData districtData = null;
@@ -304,7 +349,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 }
             }
 
-            return AddressData.instance(addressId, houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, taluka,
+            return AddressData.instance(addressId, houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, talukaData,
                     districtData, stateData, countryData, postalCode, latitude, longitude, addressEntityData);
         }
     }
@@ -335,7 +380,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             sqlBuilder.append(
                     "ae.parent_address_type AS parentAddressTypeId, paddressTypeCv.code_value AS parentAddressTypeName,paddressTypeCv.is_active AS parentAddressTypeIsActive ");
             sqlBuilder.append("FROM f_address_entity ae ");
-            sqlBuilder.append("JOIN m_code_value addressTypeCv ON addressTypeCv.id = ae.address_type ");
+            sqlBuilder.append("LEFT JOIN m_code_value addressTypeCv ON addressTypeCv.id = ae.address_type ");
             sqlBuilder.append("LEFT JOIN m_code_value paddressTypeCv ON paddressTypeCv.id = ae.parent_address_type ");
             this.schema = sqlBuilder.toString();
         }

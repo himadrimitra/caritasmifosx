@@ -69,7 +69,6 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -155,13 +154,12 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         final Money repaymentAmount = Money.of(loan.getCurrency(), transactionAmount);
         LoanTransaction newRepaymentTransaction = null;
-        final LocalDateTime currentDateTime = DateUtils.getLocalDateTimeOfTenant();
         if (isRecoveryRepayment) {
             newRepaymentTransaction = LoanTransaction.recoveryRepayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
-                    txnExternalId, currentDateTime, currentUser);
+                    txnExternalId);
         } else {
             newRepaymentTransaction = LoanTransaction.repayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
-                    txnExternalId, currentDateTime, currentUser);
+                    txnExternalId);
         }
 
         LocalDate recalculateFrom = null;
@@ -188,8 +186,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         if (!isRecoveryRepayment && loan.isSubsidyApplicable()
                 && isRealizationTransactionApplicable(loan, transactionDate, scheduleGeneratorDTO)) {
             final LoanTransaction newrealizationLoanSubsidyTransaction = LoanTransaction.realizationLoanSubsidy(loan.getOffice(),
-                    loan.getTotalSubsidyAmount(), paymentDetail, transactionDate, txnExternalId, currentDateTime.plusMinutes(1),
-                    currentUser);
+                    loan.getTotalSubsidyAmount(), paymentDetail, transactionDate, txnExternalId);
             final ChangedTransactionDetail changedTransactionDetailAfterRealization = loan.makeRepayment(
                     newrealizationLoanSubsidyTransaction, defaultLoanLifecycleStateMachine(), existingTransactionIds,
                     existingReversedTransactionIds, isRecoveryRepayment, scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
@@ -217,7 +214,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
 
-        recalculateAccruals(loan);
+        //Fix to recalculate Accruals only in case of back dated entries.
+        if (!DateUtils.getLocalDateOfTenant().isEqual(transactionDate)) {
+        	recalculateAccruals(loan);
+        }
 
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, newRepaymentTransaction));
@@ -268,9 +268,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         existingTransactionIds.addAll(loan.findExistingTransactionIds());
         existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
 
-        final LocalDateTime currentDateTime = DateUtils.getLocalDateTimeOfTenant();
         LoanTransaction newSubsidyTransaction = LoanTransaction.addOrRevokeLoanSubsidy(loan.getOffice(), transactionAmount, paymentDetail,
-                transactionDate, txnExternalId, currentDateTime, currentUser, loanTransactionType);
+                transactionDate, txnExternalId, loanTransactionType);
 
         LocalDate recalculateFrom = null;
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
@@ -373,7 +372,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     public LoanTransaction makeChargePayment(final Loan loan, final Long chargeId, final LocalDate transactionDate,
             final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText, final String txnExternalId,
             final Integer transactionType, Integer installmentNumber) {
-        AppUser currentUser = getAppUserIfPresent();
         boolean isAccountTransfer = true;
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_CHARGE_PAYMENT,
@@ -383,9 +381,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         final Money paymentAmout = Money.of(loan.getCurrency(), transactionAmount);
         final LoanTransactionType loanTransactionType = LoanTransactionType.fromInt(transactionType);
-
         final LoanTransaction newPaymentTransaction = LoanTransaction.loanPayment(null, loan.getOffice(), paymentAmout, paymentDetail,
-                transactionDate, txnExternalId, loanTransactionType, DateUtils.getLocalDateTimeOfTenant(), currentUser);
+                transactionDate, txnExternalId, loanTransactionType);
 
         if (loanTransactionType.isRepaymentAtDisbursement()) {
             loan.handlePayDisbursementTransaction(chargeId, newPaymentTransaction, existingTransactionIds, existingReversedTransactionIds);
@@ -448,7 +445,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     public LoanTransaction makeRefund(final Long accountId, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
             final String txnExternalId) {
-        AppUser currentUser = getAppUserIfPresent();
         boolean isAccountTransfer = true;
         final Loan loan = this.loanAccountAssembler.assembleFrom(accountId);
         checkClientOrGroupActive(loan);
@@ -459,7 +455,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         final Money refundAmount = Money.of(loan.getCurrency(), transactionAmount);
         final LoanTransaction newRefundTransaction = LoanTransaction.refund(loan.getOffice(), refundAmount, paymentDetail, transactionDate,
-                txnExternalId, DateUtils.getLocalDateTimeOfTenant(), currentUser);
+                txnExternalId);
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(),
                 transactionDate.toDate(), HolidayStatusType.ACTIVE.getValue());
@@ -492,7 +488,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public LoanTransaction makeDisburseTransaction(final Long loanId, final LocalDate transactionDate, final BigDecimal transactionAmount,
             final PaymentDetail paymentDetail, final String noteText, final String txnExternalId) {
-        AppUser currentUser = getAppUserIfPresent();
         final Loan loan = this.loanAccountAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
         boolean isAccountTransfer = true;
@@ -500,7 +495,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
         final Money amount = Money.of(loan.getCurrency(), transactionAmount);
         LoanTransaction disbursementTransaction = LoanTransaction.disbursement(loan.getOffice(), amount, paymentDetail, transactionDate,
-                txnExternalId, DateUtils.getLocalDateTimeOfTenant(), currentUser);
+                txnExternalId);
         disbursementTransaction.updateLoan(loan);
         loan.getLoanTransactions().add(disbursementTransaction);
         saveLoanTransactionWithDataIntegrityViolationChecks(disbursementTransaction);
@@ -578,7 +573,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final Set<LoanCharge> loanCharges, final LoanRepaymentScheduleInstallment installment) {
         
         if (!accruedTill.isBefore(installment.getDueDate())
-                || (accruedTill.isAfter(installment.getFromDate()) && !accruedTill.isAfter(installment.getDueDate()))) {
+               /* || (accruedTill.isAfter(installment.getFromDate()) && !accruedTill.isAfter(installment.getDueDate()))*/) {
             BigDecimal dueDateFeeIncome = BigDecimal.ZERO;
             BigDecimal dueDatePenaltyIncome = BigDecimal.ZERO;
             LocalDate chargesTillDate = installment.getDueDate();
@@ -632,11 +627,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
-        AppUser currentUser = getAppUserIfPresent();
 
         final Money refundAmount = Money.of(loan.getCurrency(), transactionAmount);
         final LoanTransaction newRefundTransaction = LoanTransaction.refundForActiveLoan(loan.getOffice(), refundAmount, paymentDetail,
-                transactionDate, txnExternalId, DateUtils.getLocalDateTimeOfTenant(), currentUser);
+                transactionDate, txnExternalId);
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(),
                 transactionDate.toDate(), HolidayStatusType.ACTIVE.getValue());

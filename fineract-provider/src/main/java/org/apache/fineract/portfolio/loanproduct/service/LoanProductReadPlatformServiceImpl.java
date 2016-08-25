@@ -206,6 +206,10 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lpr.allow_compounding_on_eod as allowCompoundingOnEod, "
                     + "lp.hold_guarantee_funds as holdGuaranteeFunds, "
                     + "lp.principal_threshold_for_last_installment as principalThresholdForLastInstallment, "
+                    + "sync_expected_with_disbursement_date as syncExpectedWithDisbursementDate, "
+                    + "lp.min_periods_between_disbursal_and_first_repayment as minimumPeriodsBetweenDisbursalAndFirstRepayment, "
+                    + "lp.min_loan_term as minLoanTerm, lp.max_loan_term as maxLoanterm ,"
+                    + "lp.loan_tenure_frequency_type as loanTenureFrequencyType , "
                     + "lpg.id as lpgId, lpg.mandatory_guarantee as mandatoryGuarantee, "
                     + "lpg.minimum_guarantee_from_own_funds as minimumGuaranteeFromOwnFunds, lpg.minimum_guarantee_from_guarantor_funds as minimumGuaranteeFromGuarantor, "
                     + "lp.account_moves_out_of_npa_only_on_arrears_completion as accountMovesOutOfNPAOnlyOnArrearsCompletion, "
@@ -223,8 +227,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lfr.is_floating_interest_rate_calculation_allowed as isFloatingInterestRateCalculationAllowed, "
                     + "lp.allow_variabe_installments as isVariableIntallmentsAllowed, "
                     + "lvi.minimum_gap as minimumGap, "
-                    + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, "
-                    + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount "
+                    + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, "
+                    + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, lp.consider_future_disbursments_in_schedule AS considerfuturedisbursmentsinschedule "
                     + " from m_product_loan lp "
                     + " left join m_fund f on f.id = lp.fund_id "
                     + " left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id "
@@ -278,6 +282,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final Integer overdueDaysForNPA = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "overdueDaysForNPA");
             final Integer minimumDaysBetweenDisbursalAndFirstRepayment = JdbcSupport.getInteger(rs,
                     "minimumDaysBetweenDisbursalAndFirstRepayment");
+            final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment = JdbcSupport.getInteger(rs,
+                    "minimumPeriodsBetweenDisbursalAndFirstRepayment");
 
             final Integer accountingRuleId = JdbcSupport.getInteger(rs, "accountingType");
             final EnumOptionData accountingRuleType = AccountingEnumerations.accountingRuleType(accountingRuleId);
@@ -443,10 +449,19 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
             final BigDecimal principalThresholdForLastInstallment = rs.getBigDecimal("principalThresholdForLastInstallment");
             final boolean accountMovesOutOfNPAOnlyOnArrearsCompletion = rs.getBoolean("accountMovesOutOfNPAOnlyOnArrearsCompletion");
-            
             final Integer adjustedInstallmentInMultiplesOf = JdbcSupport.getInteger(rs,"adjustedInstallmentInMultiplesOf");
             final boolean adjustFirstEMIAmount = rs.getBoolean("adjustFirstEMIAmount");
-
+            final Boolean closeLoanOnOverpayment = rs.getBoolean("closeLoanOnOverpayment");
+            final boolean syncExpectedWithDisbursementDate = rs.getBoolean("syncExpectedWithDisbursementDate");
+            
+            final Integer minLoanTerm = JdbcSupport.getInteger(rs, "minLoanTerm");
+            final Integer maxLoanTerm = JdbcSupport.getInteger(rs, "maxLoanTerm");
+            EnumOptionData loanTenureFrequencyType = null;
+            final Integer loanTenureFrequencyTypeEnum = JdbcSupport.getInteger(rs, "loanTenureFrequencyType");
+            final boolean considerFutureDisbursmentsInSchedule = rs.getBoolean("considerfuturedisbursmentsinschedule");
+            if(loanTenureFrequencyTypeEnum != null){
+            loanTenureFrequencyType = LoanEnumerations.loanTenureFrequencyType(loanTenureFrequencyTypeEnum.intValue());
+            }
             return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                     numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                     minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType,
@@ -462,7 +477,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     installmentAmountInMultiplesOf, allowAttributeOverrides, isLinkedToFloatingInterestRates, floatingRateId,
                     floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
-                    maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount);
+                    maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
+                    minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, considerFutureDisbursmentsInSchedule);
         }
     }
 

@@ -88,7 +88,7 @@ public class LoanScheduleHistoryWritePlatformServiceImpl implements LoanSchedule
 
             LoanRepaymentScheduleHistory loanRepaymentScheduleHistory = LoanRepaymentScheduleHistory.instance(loan, loanRescheduleRequest,
                     installmentNumber, fromDate, dueDate, principal, interestCharged, feeChargesCharged, penaltyCharges, createdOnDate,
-                    createdByUser, lastModifiedByUser, lastModifiedOnDate, version);
+                    createdByUser, lastModifiedByUser, lastModifiedOnDate, version, repaymentScheduleInstallment.isRecalculatedInterestComponent());
 
             loanRepaymentScheduleHistoryList.add(loanRepaymentScheduleHistory);
         }

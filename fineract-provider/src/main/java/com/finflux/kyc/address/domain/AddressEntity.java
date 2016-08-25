@@ -20,7 +20,7 @@ public class AddressEntity extends AbstractPersistable<Long> {
     private Address address;
 
     @ManyToOne
-    @JoinColumn(name = "address_type", nullable = false)
+    @JoinColumn(name = "address_type", nullable = true)
     private CodeValue addressType;
 
     @Column(name = "entity_id", nullable = false)

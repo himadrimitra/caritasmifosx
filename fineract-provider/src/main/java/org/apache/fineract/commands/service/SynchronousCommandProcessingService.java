@@ -70,10 +70,9 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         this.configurationDomainService = configurationDomainService;
         this.commandHandlerProvider = commandHandlerProvider;
     }
-
-    @Transactional
-    @Override
-    public CommandProcessingResult processAndLogCommand(final CommandWrapper wrapper, final JsonCommand command,
+    
+    
+    private CommandProcessingResult processAndLogCommand(final CommandWrapper wrapper, final JsonCommand command,
             final boolean isApprovedByChecker) {
 
         final boolean rollbackTransaction = this.configurationDomainService.isMakerCheckerEnabledForTask(wrapper.taskPermissionName());
@@ -130,6 +129,29 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
 
         return result;
     }
+    
+    /*	processAndLogCommandWithoutTransactionalScope function is only for those tasks which involve multiple object processing and where we should not rollback 
+     * 	all the transaction if the failure is on a few objects.
+     * 	For eg. For Periodic Accrual Job we need to process quite a few loans. Just because a few loans accrual failed we 
+     * 	should not be roll back the accruals for all the Loans.
+     */
+    
+    @Override
+    public CommandProcessingResult processAndLogCommandWithoutTransactionalScope(final CommandWrapper wrapper, final JsonCommand command,
+            final boolean isApprovedByChecker) {
+
+    	return processAndLogCommand(wrapper, command, isApprovedByChecker);
+    }
+
+    @Transactional
+    @Override
+    public CommandProcessingResult processAndLogCommandWithTransactionalScope(final CommandWrapper wrapper, final JsonCommand command,
+            final boolean isApprovedByChecker) {
+
+    	return processAndLogCommand(wrapper, command, isApprovedByChecker);
+    }
+    
+    
 
     @Transactional
     @Override

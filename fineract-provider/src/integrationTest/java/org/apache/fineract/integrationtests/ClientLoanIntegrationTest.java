@@ -782,6 +782,76 @@ public class ClientLoanIntegrationTest {
         LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
 
     }
+    
+    @Test
+    public void test_DISBURSEMENT_WITH_TRANCHES() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        final boolean considerFutureDisbursmentsInSchedule = false;
+        final Integer loanProductID = createLoanProductwithFutureDisbursements(true, NONE, considerFutureDisbursmentsInSchedule);
+
+        List<HashMap> tranches = new ArrayList<>();
+        tranches.add(createTrancheDetail("1 January 2016", "25000"));
+        tranches.add(createTrancheDetail("23 April 2016", "20000"));
+
+        final Integer loanID = applyForLoanApplicationWithTranchesWithFutureDisbursements(clientID, loanProductID, null, null, "45,000.00", tranches, true);
+        Assert.assertNotNull(loanID);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan("1 January 2016", loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        // DISBURSE first Tranche
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("1 January 2016", loanID);
+        System.out.println("DISBURSE " + loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        // DISBURSE Second Tranche
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("23 April 2016", loanID);
+        System.out.println("DISBURSE " + loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+    }
+
+    @Test
+    public void test_DISBURSEMENT_WITH_TRANCHES_WITH_FUTURE_DISBURSAL() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        final boolean considerFutureDisbursmentsInSchedule = true;
+        final Integer loanProductID = createLoanProductwithFutureDisbursements(true, NONE, considerFutureDisbursmentsInSchedule);
+
+        List<HashMap> tranches = new ArrayList<>();
+        tranches.add(createTrancheDetail("1 January 2016", "25000"));
+        tranches.add(createTrancheDetail("23 April 2016", "20000"));
+
+        final Integer loanID = applyForLoanApplicationWithTranchesWithFutureDisbursements(clientID, loanProductID, null, null, "45,000.00", tranches, false);
+        Assert.assertNotNull(loanID);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan("1 January 2016", loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        // DISBURSE first Tranche
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("1 January 2016", loanID);
+        System.out.println("DISBURSE " + loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        // DISBURSE Second Tranche
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("23 April 2016", loanID);
+        System.out.println("DISBURSE " + loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+    }
 
     @Test
     public void testLoanCharges_DISBURSEMENT_TO_SAVINGS_WITH_TRANCHES() {
@@ -892,6 +962,29 @@ public class ClientLoanIntegrationTest {
                 .withInterestTypeAsDecliningBalance() //
                 .withTranches(multiDisburseLoan) //
                 .withAccounting(accountingRule, accounts);
+               
+        if (multiDisburseLoan) {
+            builder = builder.withInterestCalculationPeriodTypeAsRepaymentPeriod(true);
+        }
+        final String loanProductJSON = builder.build(null);
+        return this.loanTransactionHelper.getLoanProductId(loanProductJSON);
+    }
+    
+    private Integer createLoanProductwithFutureDisbursements(final boolean multiDisburseLoan, final String accountingRule, final boolean considerFutureDisbursmentsInSchedule, final Account... accounts) {
+        System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
+        LoanProductTestBuilder builder = new LoanProductTestBuilder() //
+                .withPrincipal("40000.00") //
+                .withNumberOfRepayments("24") //
+                .withRepaymentAfterEvery("1") //
+                .withRepaymentTypeAsMonth() //
+                .withinterestRatePerPeriod("1") //
+                .withInterestRateFrequencyTypeAsMonths() //
+                .withAmortizationTypeAsEqualInstallments() //
+                .withInterestTypeAsDecliningBalance() //
+                .withTranches(multiDisburseLoan) //
+                .withAccounting(accountingRule, accounts)
+                .withFutureDisbursements(considerFutureDisbursmentsInSchedule)
+                .withInterestRecalculation(true);
         if (multiDisburseLoan) {
             builder = builder.withInterestCalculationPeriodTypeAsRepaymentPeriod(true);
         }
@@ -912,6 +1005,22 @@ public class ClientLoanIntegrationTest {
                 .withAmortizationTypeAsEqualPrincipalPayment() //
                 .withInterestTypeAsDecliningBalance() //
                 .currencyDetails(digitsAfterDecimal, inMultiplesOf).build(null);
+        return this.loanTransactionHelper.getLoanProductId(loanProductJSON);
+    }
+    
+    private Integer createLoanProductWithOnOverpaymentCloseLoan(final String inMultiplesOf, final String digitsAfterDecimal, final String repaymentStrategy) {
+        System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
+        final String loanProductJSON = new LoanProductTestBuilder() //
+                .withPrincipal("10000000.00") //
+                .withNumberOfRepayments("24") //
+                .withRepaymentAfterEvery("1") //
+                .withRepaymentTypeAsMonth() //
+                .withinterestRatePerPeriod("2") //
+                .withInterestRateFrequencyTypeAsMonths() //
+                .withRepaymentStrategy(repaymentStrategy) //
+                .withAmortizationTypeAsEqualPrincipalPayment() //
+                .withInterestTypeAsDecliningBalance() //
+                .currencyDetails(digitsAfterDecimal, inMultiplesOf).withonOverPaymentCloseLoan(true).build(null);
         return this.loanTransactionHelper.getLoanProductId(loanProductJSON);
     }
 
@@ -989,6 +1098,28 @@ public class ClientLoanIntegrationTest {
                 .withTranches(tranches) //
                 .withSubmittedOnDate("1 March 2014") //
 
+                .withCharges(charges).build(clientID.toString(), loanProductID.toString(), savingsId);
+        return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
+    }
+    
+    private Integer applyForLoanApplicationWithTranchesWithFutureDisbursements(final Integer clientID, final Integer loanProductID, List<HashMap> charges,
+            final String savingsId, String principal, List<HashMap> tranches, final Boolean considerFutureDisbursmentsInSchedule ) {
+        System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
+        final String loanApplicationJSON = new LoanApplicationTestBuilder() //
+                .withPrincipal(principal) //
+                .withLoanTermFrequency("4") //
+                .withLoanTermFrequencyAsMonths() //
+                .withNumberOfRepayments("4") //
+                .withRepaymentEveryAfter("1") //
+                .withRepaymentFrequencyTypeAsMonths() //
+                .withInterestRatePerPeriod("2") //
+                .withAmortizationTypeAsEqualInstallments() //
+                .withInterestTypeAsDecliningBalance() //
+                .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
+                .withExpectedDisbursementDate("1 JANUARY 2016") //
+                .withTranches(tranches) //
+                .withSubmittedOnDate("1 JANUARY 2016") //
+                .withFutureDisbursements(considerFutureDisbursmentsInSchedule)
                 .withCharges(charges).build(clientID.toString(), loanProductID.toString(), savingsId);
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }
@@ -5025,6 +5156,28 @@ public class ClientLoanIntegrationTest {
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }
 
+    @Test
+    public void testOnoverpaymentLoanClose() {
+        final String proposedAmount = "10000";
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        Integer loanProductID = createLoanProductWithOnOverpaymentCloseLoan("0", "0", LoanProductTestBuilder.DEFAULT_STRATEGY);
+        Integer loanID = applyForLoanApplicationWithProductConfigurationAsTrue(clientID, loanProductID, proposedAmount);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        System.out.println("------------------------LOAN CREATED WITH ID------------------------------" + loanID);
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan("1 March 2014", loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+        System.out.println("-------------------------------DISBURSE LOAN-------------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("1 March 2014", loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+        System.out.println("-------------------------------Make OverPayment-------------------------------------------");
+        this.loanTransactionHelper.makeRepayment("11 March 2014", Float.valueOf("15000"), loanID);
+        loanStatusHashMap = (HashMap) this.loanTransactionHelper.getLoanDetail(this.requestSpec, this.responseSpec, loanID, "status");
+        LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
+    }
+
     public Integer getDayOfWeek(Calendar date) {
         Integer dayOfWeek = null;
         if (null != date) {
@@ -5046,4 +5199,5 @@ public class ClientLoanIntegrationTest {
         }
         return dayOfMonth;
     }
+
 }

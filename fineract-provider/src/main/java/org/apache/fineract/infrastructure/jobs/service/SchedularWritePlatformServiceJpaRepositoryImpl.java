@@ -150,4 +150,17 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         return isStopExecution;
     }
 
+    @Transactional
+    @Override
+    public boolean updateCurrentlyRunningStatus(final String jobName, final boolean status) {
+        final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobName(jobName);
+        boolean updated = false;
+        if (scheduledJobDetail.isCurrentlyRunning() != status) {
+            scheduledJobDetail.updateCurrentlyRunningStatus(status);
+            this.scheduledJobDetailsRepository.save(scheduledJobDetail);
+            updated = true;
+        }
+        return updated;
+    }
+
 }

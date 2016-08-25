@@ -181,8 +181,8 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final StringBuilder builder = new StringBuilder(400);
             
             builder.append("v.id as villageId, v.external_id as externalId, v.office_id as officeId, o.name as officeName, v.village_code as villageCode, ");
-            builder.append("v.village_name as villageName, v.counter as counter, v.taluk as taluk, v.district as district, v.pincode as pincode, ");
-            builder.append("v.state as state, v.status as status, ");
+            builder.append("v.village_name as villageName, v.counter as counter,");
+            builder.append("v.status as status, ");
             
             builder.append("v.activatedon_date as activatedOnDate, ");
             builder.append("acu.username as activatedByUsername, ");
@@ -216,10 +216,6 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final String villageCode = rs.getString("villageCode");
             final String villageName = rs.getString("villageName");
             final Long counter = rs.getLong("counter");
-            final String taluk = rs.getString("taluk");
-            final String district = rs.getString("district");
-            final Long pincode = rs.getLong("pincode");
-            final String state = rs.getString("state");
             final Integer status = JdbcSupport.getInteger(rs, "status");
             final EnumOptionData statusName = VillageTypeEnumerations.status(status);
             final LocalDate activatedOnDate = JdbcSupport.getLocalDate(rs, "activatedOnDate");
@@ -234,8 +230,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final VillageTimelineData timeline = new VillageTimelineData(activatedOnDate, activatedByUsername, activatedByFirstName, 
                     activatedByLastName, submittedOnDate, submittedByUsername, submittedByFirstName, submittedByLastName);
 
-            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, taluk, district, pincode, 
-                    state, statusName, timeline);
+            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline);
         }
         
     }
@@ -286,8 +281,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final StringBuilder builder = new StringBuilder(200);
             
             builder.append(" v.id as id, v.external_id as externalId, v.office_id as officeId, o.name as officeName, ");
-            builder.append(" v.village_code as villageCode, v.village_name as villageName, v.counter as counter, v.taluk as taluk, ");
-            builder.append(" v.district as district, v.pincode as pincode, v.state as state, v.`status` as status, ");
+            builder.append(" v.village_code as villageCode, v.village_name as villageName, v.counter as counter, v.`status` as status,");
             builder.append(" v.activatedon_date as activatedOnDate, v.submitedon_date as submittedOnDate, ");
             builder.append(" acu.username as activatedByUsername, acu.firstname as activatedByFirstName, acu.lastname as activatedByLastName, ");
             builder.append(" sbu.username as submittedByUsername, sbu.firstname as submittedByFirstName, sbu.lastname as submittedByLastName ");
@@ -313,10 +307,6 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final String villageCode = rs.getString("villageCode");
             final String villageName = rs.getString("villageName");
             final Long counter = rs.getLong("counter");
-            final String taluk = rs.getString("taluk");
-            final String district = rs.getString("district");
-            final Long pincode = rs.getLong("pincode");
-            final String state = rs.getString("state");
             final Integer status = JdbcSupport.getInteger(rs, "status");
             final EnumOptionData statusName = VillageTypeEnumerations.status(status);
             final LocalDate activatedOnDate = JdbcSupport.getLocalDate(rs, "activatedOnDate");
@@ -331,8 +321,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final VillageTimelineData timeline = new VillageTimelineData(activatedOnDate, activatedByUsername, activatedByFirstName, 
                     activatedByLastName, submittedOnDate, submittedByUsername, submittedByFirstName, submittedByLastName);
 
-            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, taluk, district, pincode, 
-                    state, statusName, timeline);
+            return VillageData.instance(id, externalId, officeId, officeName, villageCode, villageName, counter, statusName, timeline);
         }
     }
 

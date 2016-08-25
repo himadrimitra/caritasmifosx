@@ -30,9 +30,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 import org.apache.fineract.integrationtests.common.CalendarHelper;
 import org.apache.fineract.integrationtests.common.CenterDomain;
 import org.apache.fineract.integrationtests.common.CenterHelper;
@@ -46,6 +43,10 @@ import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
 import org.apache.fineract.integrationtests.common.loans.LoanStatusChecker;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import com.google.gson.Gson;
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -152,6 +153,113 @@ public class LoanReschedulingWithinCenterTest {
 
     }
     
+    @SuppressWarnings("rawtypes")
+    @Ignore
+    @Test
+    public void testChangeCenterMeetingDateReschedulingLoansWithInterestRecalculationEnabled() {
+
+        Integer officeId = new OfficeHelper(requestSpec, responseSpec).createOffice("01 July 2007");
+        String name = "TestFullCreation" + new Timestamp(new java.util.Date().getTime());
+        String externalId = Utils.randomStringGenerator("ID_", 7, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        int staffId = StaffHelper.createStaff(requestSpec, responseSpec);
+        int[] groupMembers = generateGroupMembers(1, officeId);
+        final String centerActivationDate = "01 July 2007";
+        Integer centerId = CenterHelper.createCenter(name, officeId, externalId, staffId, groupMembers, centerActivationDate, requestSpec,
+                responseSpec);
+        CenterDomain center = CenterHelper.retrieveByID(centerId, requestSpec, responseSpec);
+        Integer groupId = groupMembers[0];
+        Assert.assertNotNull(center);
+        Assert.assertTrue(center.getStaffId() == staffId);
+        Assert.assertTrue(center.isActive() == true);
+
+        Integer calendarId = createCalendarMeeting(centerId);
+
+        Integer clientId = createClient(officeId);
+
+        associateClientsToGroup(groupId, clientId);
+
+        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy");
+        dateFormat.setTimeZone(Utils.getTimeZoneOfTenant());
+        Calendar today = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        today.add(Calendar.DAY_OF_MONTH, -10);
+        // CREATE A LOAN PRODUCT
+        final String disbursalDate = dateFormat.format(today.getTime());
+        final String recalculationRestFrequencyDate = "01 January 2012";
+        final boolean isMultiTrancheLoan = false;
+
+        // CREATE LOAN MULTIDISBURSAL PRODUCT WITH INTEREST RECALCULATION
+        final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.RBI_INDIA_STRATEGY,
+                LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
+                LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_NUMBER_OF_INSTALLMENTS,
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "0", recalculationRestFrequencyDate,
+                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, isMultiTrancheLoan, null, null);
+
+        // APPLY FOR TRANCHE LOAN WITH INTEREST RECALCULATION
+        final Integer loanId = applyForLoanApplicationForInterestRecalculation(clientId, groupId, calendarId, loanProductID, disbursalDate,
+                recalculationRestFrequencyDate, LoanApplicationTestBuilder.RBI_INDIA_STRATEGY, new ArrayList<HashMap>(0), null);
+
+        // Test for loan account is created
+        Assert.assertNotNull(loanId);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanId);
+
+        // Test for loan account is created, can be approved
+        this.loanTransactionHelper.approveLoan(disbursalDate, loanId);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanId);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+
+        // Test for loan account approved can be disbursed
+        this.loanTransactionHelper.disburseLoan(disbursalDate, loanId);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanId);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        System.out.println("---------------------------------CHANGING CENTER MEETING DATE ------------------------------------------");
+        Calendar todaysdate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysdate.add(Calendar.DAY_OF_MONTH, 1);
+
+        String oldMeetingDate = dateFormat.format(todaysdate.getTime());
+        todaysdate.add(Calendar.DAY_OF_MONTH, 14);
+        final String centerMeetingNewStartDate = dateFormat.format(todaysdate.getTime());
+
+        CalendarHelper.updateMeetingCalendarForCenter(this.requestSpec, this.responseSpec, centerId, calendarId.toString(), oldMeetingDate,
+                centerMeetingNewStartDate);
+
+        ArrayList loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(requestSpec, generalResponseSpec, loanId);
+        // VERIFY RESCHEDULED DATE
+        ArrayList dueDateLoanSchedule = (ArrayList) ((HashMap) loanRepaymnetSchedule.get(2)).get("dueDate");
+        assertEquals(getDateAsArray(todaysdate, 0), dueDateLoanSchedule);
+
+        // VERIFY THE INTEREST
+        Float interestDue = (Float) ((HashMap) loanRepaymnetSchedule.get(2)).get("interestDue");
+        assertEquals(String.valueOf(interestDue), "90.82");
+
+        System.out.println("----------------- CHANGING CENTER MEETING DATE FROM PRESENT DATE TO PREVIOUS DATE ------------------");
+        Calendar todaysdate1 = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+
+        // todaysdate1.set(Calendar.MONTH, 01);
+        todaysdate1.add(Calendar.DAY_OF_MONTH, 28);
+
+        String oldMeetingDate1 = dateFormat.format(todaysdate1.getTime());
+        todaysdate1.add(Calendar.DAY_OF_MONTH, -14);
+        final String centerMeetingNewStartDate1 = dateFormat.format(todaysdate1.getTime());
+
+        // if new date is older then old meeting date, interest will be
+        // calculated on new meeting date
+        oldMeetingDate1 = centerMeetingNewStartDate1;
+
+        CalendarHelper.updateMeetingCalendarForCenter(this.requestSpec, this.responseSpec, centerId, calendarId.toString(), oldMeetingDate1,
+                centerMeetingNewStartDate1);
+
+        ArrayList loanRepaymnetSchedule1 = this.loanTransactionHelper.getLoanRepaymentSchedule(requestSpec, generalResponseSpec, loanId);
+        // VERIFY RESCHEDULED DATE
+        ArrayList dueDateLoanSchedule1 = (ArrayList) ((HashMap) loanRepaymnetSchedule1.get(2)).get("dueDate");
+        assertEquals(getDateAsArray(todaysdate1, 0), dueDateLoanSchedule1);
+
+        // VERIFY THE INTEREST
+        Float interestDue1 = (Float) ((HashMap) loanRepaymnetSchedule1.get(2)).get("interestDue");
+        assertEquals(String.valueOf(interestDue1), "84.76");
+    }
+
+    
     private void associateClientsToGroup(Integer groupId, Integer clientId) {
         // Associate client to the group
         GroupHelper.associateClient(this.requestSpec, this.responseSpec, groupId.toString(), clientId.toString());
@@ -229,6 +337,13 @@ public class LoanReschedulingWithinCenterTest {
         Calendar seondTrancheDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());  
         seondTrancheDate.add(Calendar.MONTH, 1);  
         String secondDisbursement = dateFormat.format(seondTrancheDate.getTime()) ;  
+//=======
+//                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, isMultiTrancheLoan);
+//        Calendar seondTrancheDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());  
+//        seondTrancheDate.add(Calendar.MONTH, 1);  
+//        String secondDisbursement = dateFormat.format(seondTrancheDate.getTime()); 
+//
+//>>>>>>> 310bdf8... #650:Validation of loan tenure with minimum and maximum loan term in the loan product level
 
         // CREATE TRANCHES
         List<HashMap> createTranches = new ArrayList<>();

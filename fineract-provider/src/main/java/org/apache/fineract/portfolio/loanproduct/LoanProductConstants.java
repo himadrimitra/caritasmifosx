@@ -76,6 +76,7 @@ public interface LoanProductConstants {
     public static final String graceOnArrearsAgeingParameterName = "graceOnArrearsAgeing";
     public static final String overdueDaysForNPAParameterName = "overdueDaysForNPA";
     public static final String minimumDaysBetweenDisbursalAndFirstRepayment = "minimumDaysBetweenDisbursalAndFirstRepayment";
+    public static final String minimumPeriodsBetweenDisbursalAndFirstRepayment = "minimumPeriodsBetweenDisbursalAndFirstRepayment";
     public static final String accountMovesOutOfNPAOnlyOnArrearsCompletionParamName = "accountMovesOutOfNPAOnlyOnArrearsCompletion";
 
     // Interest recalculation related
@@ -123,12 +124,15 @@ public interface LoanProductConstants {
     public static final String repaymentEveryParamName = "repaymentEvery";
     public static final String graceOnPrincipalAndInterestPaymentParamName = "graceOnPrincipalAndInterestPayment";
     public static final String allowCompoundingOnEodParamName = "allowCompoundingOnEod";
+    public static final String syncExpectedWithDisbursementDate = "syncExpectedWithDisbursementDate";
     
     //Variable Installments Settings
     public static final String allowVariableInstallmentsParamName = "allowVariableInstallments" ;
     public static final String minimumGapBetweenInstallments = "minimumGap" ;
     public static final String maximumGapBetweenInstallments = "maximumGap" ;
-    
+    public static final String minLoanTerm = "minLoanTerm";
+    public static final String maxLoanTerm = "maxLoanTerm";
+    public static final String loanTenureFrequencyType = "loanTenureFrequencyType";
     
     public static final String allowPartialPeriodInterestCalcualtionParamName = "allowPartialPeriodInterestCalcualtion";
     
@@ -136,5 +140,6 @@ public interface LoanProductConstants {
     public static final String isSubsidyApplicableParamName = "isSubsidyApplicable";
     public static final String createSubsidyAccountMappingsParamName = "createSubsidyAccountMappings";
     
-
+    public static final String closeLoanOnOverpayment = "closeLoanOnOverpayment";
+    public static final String considerFutureDisbursmentsInSchedule = "considerFutureDisbursmentsInSchedule";
 }

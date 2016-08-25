@@ -138,7 +138,8 @@ public class LoansApiResource {
             "termFrequencyTypeOptions", "interestRateFrequencyTypeOptions", "fundOptions", "repaymentStrategyOptions", "chargeOptions",
             "loanOfficerOptions", "loanPurposeOptions", "loanCollateralOptions", "chargeTemplate", "calendarOptions",
             "syncDisbursementWithMeeting", "loanCounter", "loanProductCounter", "notes", "accountLinkingOptions", "linkedAccount",
-            "interestRateDifferential", "isFloatingInterestRate", "interestRatesPeriods"));
+            "interestRateDifferential", "isFloatingInterestRate", "interestRatesPeriods",
+            LoanProductConstants.considerFutureDisbursmentsInSchedule));
 
     private final Set<String> LOAN_APPROVAL_DATA_PARAMETERS = new HashSet<>(Arrays.asList("approvalDate", "approvalAmount"));
     private final String resourceNameForPermissions = "LOAN";
@@ -352,44 +353,12 @@ public class LoansApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveLoan(@PathParam("loanId") final Long loanId,
             @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
+            @DefaultValue("false") @QueryParam("isFetchSpecificData") final boolean isFetchSpecificData,
             @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
-        LoanAccountData loanBasicDetails = this.loanReadPlatformService.retrieveOne(loanId);
-        if (loanBasicDetails.isInterestRecalculationEnabled()) {
-            Collection<CalendarData> interestRecalculationCalendarDatas = this.calendarReadPlatformService
-                    .retrieveCalendarsByEntity(loanBasicDetails.getInterestRecalculationDetailId(),
-                            CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL.getValue(), null);
-            CalendarData calendarData = null;
-            if (!CollectionUtils.isEmpty(interestRecalculationCalendarDatas)) {
-                calendarData = interestRecalculationCalendarDatas.iterator().next();
-            }
-
-            Collection<CalendarData> interestRecalculationCompoundingCalendarDatas = this.calendarReadPlatformService
-                    .retrieveCalendarsByEntity(loanBasicDetails.getInterestRecalculationDetailId(),
-                            CalendarEntityType.LOAN_RECALCULATION_COMPOUNDING_DETAIL.getValue(), null);
-            CalendarData compoundingCalendarData = null;
-            if (!CollectionUtils.isEmpty(interestRecalculationCompoundingCalendarDatas)) {
-                compoundingCalendarData = interestRecalculationCompoundingCalendarDatas.iterator().next();
-            }
-            loanBasicDetails = LoanAccountData.withInterestRecalculationCalendarData(loanBasicDetails, calendarData,
-                    compoundingCalendarData);
-        }
-        if (loanBasicDetails.isMonthlyRepaymentFrequencyType()) {
-        	Collection<CalendarData> loanCalendarDatas = this.calendarReadPlatformService
-                    .retrieveCalendarsByEntity(loanId,
-                            CalendarEntityType.LOANS.getValue(), null);
-            CalendarData calendarData = null;
-            if (!CollectionUtils.isEmpty(loanCalendarDatas)) {
-                calendarData = loanCalendarDatas.iterator().next();
-            }
-            if(calendarData != null)
-            	loanBasicDetails = LoanAccountData.withLoanCalendarData(loanBasicDetails, calendarData);
-        }
-
-        Collection<InterestRatePeriodData> interestRatesPeriods = this.loanReadPlatformService.retrieveLoanInterestRatePeriodData(loanId);
-
+        LoanAccountData loanBasicDetails = null;
         Collection<LoanTransactionData> loanRepayments = null;
         LoanScheduleData repaymentSchedule = null;
         Collection<LoanChargeData> charges = null;
@@ -400,9 +369,61 @@ public class LoansApiResource {
         PortfolioAccountData linkedAccount = null;
         Collection<DisbursementData> disbursementData = null;
         Collection<LoanTermVariationsData> emiAmountVariations = null;
+        Collection<InterestRatePeriodData> interestRatesPeriods = null;
+        Collection<ChargeData> overdueCharges = null;
+        Long pledgeId = null;
+        /**
+         * Template data variables
+         */
+        Collection<LoanProductData> productOptions = null;
+        LoanProductData product = null;
+        Collection<EnumOptionData> loanTermFrequencyTypeOptions = null;
+        Collection<EnumOptionData> repaymentFrequencyTypeOptions = null;
+        Collection<TransactionProcessingStrategyData> repaymentStrategyOptions = null;
+        Collection<EnumOptionData> interestRateFrequencyTypeOptions = null;
+        Collection<EnumOptionData> amortizationTypeOptions = null;
+        Collection<EnumOptionData> interestTypeOptions = null;
+        Collection<EnumOptionData> interestCalculationPeriodTypeOptions = null;
+        Collection<FundData> fundOptions = null;
+        Collection<StaffData> allowedLoanOfficers = null;
+        Collection<ChargeData> chargeOptions = null;
+        ChargeData chargeTemplate = null;
+        Collection<CodeValueData> loanPurposeOptions = null;
+        Collection<CodeValueData> loanCollateralOptions = null;
+        Collection<CalendarData> calendarOptions = null;
+        Collection<PortfolioAccountData> accountLinkingOptions = null;
+        PaidInAdvanceData paidInAdvanceTemplate = null;
+        Collection<PledgeData> loanProductCollateralPledgesOptions = null;
+        Collection<EnumOptionData> repaymentFrequencyNthDayTypeOptions = null;
+        Collection<EnumOptionData> repaymentFrequencyDayOfWeekTypeOptions = null;
+        
+        loanBasicDetails = this.loanReadPlatformService.retrieveOne(loanId);
+        
+        if(!isFetchSpecificData){
+        	if (loanBasicDetails.isInterestRecalculationEnabled()) {
+                Collection<CalendarData> interestRecalculationCalendarDatas = this.calendarReadPlatformService
+                        .retrieveCalendarsByEntity(loanBasicDetails.getInterestRecalculationDetailId(),
+                                CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL.getValue(), null);
+                CalendarData calendarData = null;
+                if (!CollectionUtils.isEmpty(interestRecalculationCalendarDatas)) {
+                    calendarData = interestRecalculationCalendarDatas.iterator().next();
+                }
 
+                Collection<CalendarData> interestRecalculationCompoundingCalendarDatas = this.calendarReadPlatformService
+                        .retrieveCalendarsByEntity(loanBasicDetails.getInterestRecalculationDetailId(),
+                                CalendarEntityType.LOAN_RECALCULATION_COMPOUNDING_DETAIL.getValue(), null);
+                CalendarData compoundingCalendarData = null;
+                if (!CollectionUtils.isEmpty(interestRecalculationCompoundingCalendarDatas)) {
+                    compoundingCalendarData = interestRecalculationCompoundingCalendarDatas.iterator().next();
+                }
+                loanBasicDetails = LoanAccountData.withInterestRecalculationCalendarData(loanBasicDetails, calendarData,
+                        compoundingCalendarData);
+            }
+        }
+        
         final Set<String> mandatoryResponseParameters = new HashSet<>();
         final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
+        
         if (!associationParameters.isEmpty()) {
 
             if (associationParameters.contains("all")) {
@@ -443,8 +464,7 @@ public class LoansApiResource {
                 mandatoryResponseParameters.add("repaymentSchedule");
                 final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedData = loanBasicDetails.repaymentScheduleRelatedData();
                 repaymentSchedule = this.loanReadPlatformService.retrieveRepaymentSchedule(loanId, repaymentScheduleRelatedData,
-                        disbursementData, loanBasicDetails.isInterestRecalculationEnabled(), loanBasicDetails.getTotalPaidFeeCharges());
-
+                        disbursementData, loanBasicDetails.isInterestRecalculationEnabled(), loanBasicDetails.getTotalPaidFeeCharges(), loanBasicDetails.considerFutureDisbursmentsInSchedule());
                 if (associationParameters.contains("futureSchedule") && loanBasicDetails.isInterestRecalculationEnabled()) {
                     mandatoryResponseParameters.add("futureSchedule");
                     this.calculationPlatformService.updateFutureSchedule(repaymentSchedule, loanId);
@@ -453,7 +473,7 @@ public class LoansApiResource {
                 if (associationParameters.contains("originalSchedule") && loanBasicDetails.isInterestRecalculationEnabled()
                         && loanBasicDetails.isActive()) {
                     mandatoryResponseParameters.add("originalSchedule");
-                    LoanScheduleData loanScheduleData = this.loanScheduleHistoryReadPlatformService.retrieveRepaymentArchiveSchedule(
+                    LoanScheduleData loanScheduleData = this.loanScheduleHistoryReadPlatformService.retrieveRepaymentArchiveSchedule(   
                             loanId, repaymentScheduleRelatedData, disbursementData);
                     loanBasicDetails = LoanAccountData.withOriginalSchedule(loanBasicDetails, loanScheduleData);
                 }
@@ -492,92 +512,77 @@ public class LoansApiResource {
                 mandatoryResponseParameters.add("linkedAccount");
                 linkedAccount = this.accountAssociationsReadPlatformService.retriveLoanLinkedAssociation(loanId);
             }
+            
+            if (associationParameters.contains("interestRatesPeriods")) {
+                mandatoryResponseParameters.add("interestRatesPeriods");
+                interestRatesPeriods = this.loanReadPlatformService.retrieveLoanInterestRatePeriodData(loanId);
+            }
 
         }
         
-        final Long pledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(loanId);        
-        Collection<LoanProductData> productOptions = null;
-        LoanProductData product = null;
-        Collection<EnumOptionData> loanTermFrequencyTypeOptions = null;
-        Collection<EnumOptionData> repaymentFrequencyTypeOptions = null;
-        Collection<EnumOptionData> repaymentFrequencyNthDayTypeOptions = null;
-        Collection<EnumOptionData> repaymentFrequencyDayOfWeekTypeOptions = null;
-        Collection<TransactionProcessingStrategyData> repaymentStrategyOptions = null;
-        Collection<EnumOptionData> interestRateFrequencyTypeOptions = null;
-        Collection<EnumOptionData> amortizationTypeOptions = null;
-        Collection<EnumOptionData> interestTypeOptions = null;
-        Collection<EnumOptionData> interestCalculationPeriodTypeOptions = null;
-        Collection<FundData> fundOptions = null;
-        Collection<StaffData> allowedLoanOfficers = null;
-        Collection<ChargeData> chargeOptions = null;
-        ChargeData chargeTemplate = null;
-        Collection<CodeValueData> loanPurposeOptions = null;
-        Collection<CodeValueData> loanCollateralOptions = null;
-        Collection<CalendarData> calendarOptions = null;
-        Collection<PortfolioAccountData> accountLinkingOptions = null;
-        PaidInAdvanceData paidInAdvanceTemplate = null;
-        Collection<PledgeData> loanProductCollateralPledgesOptions = null;
+        if(!isFetchSpecificData){
+        	
+            pledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(loanId);        
 
-        final boolean template = ApiParameterHelper.template(uriInfo.getQueryParameters());
-        if (template) {
-            productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
-            product = this.loanProductReadPlatformService.retrieveLoanProduct(loanBasicDetails.loanProductId());
-            loanBasicDetails.setProduct(product);
-            loanTermFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveLoanTermFrequencyTypeOptions();
-            repaymentFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
-            repaymentFrequencyNthDayTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyOptionsForNthDayOfMonth();
-            repaymentFrequencyDayOfWeekTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyOptionsForDaysOfWeek();
-            interestRateFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveInterestRateFrequencyTypeOptions();
-            loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(loanBasicDetails.clientId(), loanBasicDetails.loanProductId(), loanId);
+            final boolean template = ApiParameterHelper.template(uriInfo.getQueryParameters());
+            if (template) {
+                productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
+                product = this.loanProductReadPlatformService.retrieveLoanProduct(loanBasicDetails.loanProductId());
+                loanBasicDetails.setProduct(product);
+                loanTermFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveLoanTermFrequencyTypeOptions();
+                repaymentFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
+                interestRateFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveInterestRateFrequencyTypeOptions();
+                loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(loanBasicDetails.clientId(), loanBasicDetails.loanProductId(), loanId);
 
-            amortizationTypeOptions = this.dropdownReadPlatformService.retrieveLoanAmortizationTypeOptions();
-            if (product.isLinkedToFloatingInterestRates()) {
-                interestTypeOptions = Arrays.asList(interestType(InterestMethod.DECLINING_BALANCE));
-            } else {
-                interestTypeOptions = this.dropdownReadPlatformService.retrieveLoanInterestTypeOptions();
-            }
-            interestCalculationPeriodTypeOptions = this.dropdownReadPlatformService.retrieveLoanInterestRateCalculatedInPeriodOptions();
+                amortizationTypeOptions = this.dropdownReadPlatformService.retrieveLoanAmortizationTypeOptions();
+                if (product.isLinkedToFloatingInterestRates()) {
+                    interestTypeOptions = Arrays.asList(interestType(InterestMethod.DECLINING_BALANCE));
+                } else {
+                    interestTypeOptions = this.dropdownReadPlatformService.retrieveLoanInterestTypeOptions();
+                }
+                interestCalculationPeriodTypeOptions = this.dropdownReadPlatformService.retrieveLoanInterestRateCalculatedInPeriodOptions();
 
-            fundOptions = this.fundReadPlatformService.retrieveAllFunds();
-            repaymentStrategyOptions = this.dropdownReadPlatformService.retreiveTransactionProcessingStrategies();
-            if (product.getMultiDisburseLoan()) {
-                chargeOptions = this.chargeReadPlatformService.retrieveLoanAccountApplicableCharges(loanId,
-                        new ChargeTimeType[] { ChargeTimeType.OVERDUE_INSTALLMENT });
-            } else {
-                chargeOptions = this.chargeReadPlatformService.retrieveLoanAccountApplicableCharges(loanId, new ChargeTimeType[] {
-                        ChargeTimeType.OVERDUE_INSTALLMENT, ChargeTimeType.TRANCHE_DISBURSEMENT });
-            }
-            chargeTemplate = this.loanChargeReadPlatformService.retrieveLoanChargeTemplate();
+                fundOptions = this.fundReadPlatformService.retrieveAllFunds();
+                repaymentStrategyOptions = this.dropdownReadPlatformService.retreiveTransactionProcessingStrategies();
+                if (product.getMultiDisburseLoan()) {
+                    chargeOptions = this.chargeReadPlatformService.retrieveLoanAccountApplicableCharges(loanId,
+                            new ChargeTimeType[] { ChargeTimeType.OVERDUE_INSTALLMENT });
+                } else {
+                    chargeOptions = this.chargeReadPlatformService.retrieveLoanAccountApplicableCharges(loanId, new ChargeTimeType[] {
+                            ChargeTimeType.OVERDUE_INSTALLMENT, ChargeTimeType.TRANCHE_DISBURSEMENT });
+                }
+                chargeTemplate = this.loanChargeReadPlatformService.retrieveLoanChargeTemplate();
 
-            allowedLoanOfficers = this.loanReadPlatformService.retrieveAllowedLoanOfficers(loanBasicDetails.officeId(),
-                    staffInSelectedOfficeOnly);
+                allowedLoanOfficers = this.loanReadPlatformService.retrieveAllowedLoanOfficers(loanBasicDetails.officeId(),
+                        staffInSelectedOfficeOnly);
 
-            loanPurposeOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanPurpose");
-            loanCollateralOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanCollateral");
-            final CurrencyData currencyData = loanBasicDetails.currency();
-            String currencyCode = null;
-            if (currencyData != null) {
-                currencyCode = currencyData.code();
-            }
-            final long[] accountStatus = { SavingsAccountStatusType.ACTIVE.getValue() };
-            PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(PortfolioAccountType.SAVINGS.getValue(),
-                    loanBasicDetails.clientId(), currencyCode, accountStatus, DepositAccountType.SAVINGS_DEPOSIT.getValue());
-            accountLinkingOptions = this.portfolioAccountReadPlatformService.retrieveAllForLookup(portfolioAccountDTO);
+                loanPurposeOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanPurpose");
+                loanCollateralOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanCollateral");
+                final CurrencyData currencyData = loanBasicDetails.currency();
+                String currencyCode = null;
+                if (currencyData != null) {
+                    currencyCode = currencyData.code();
+                }
+                final long[] accountStatus = { SavingsAccountStatusType.ACTIVE.getValue() };
+                PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(PortfolioAccountType.SAVINGS.getValue(),
+                        loanBasicDetails.clientId(), currencyCode, accountStatus, DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                accountLinkingOptions = this.portfolioAccountReadPlatformService.retrieveAllForLookup(portfolioAccountDTO);
 
-            if (!associationParameters.contains("linkedAccount")) {
-                mandatoryResponseParameters.add("linkedAccount");
-                linkedAccount = this.accountAssociationsReadPlatformService.retriveLoanLinkedAssociation(loanId);
-            }
-            if (loanBasicDetails.groupId() != null) {
-                calendarOptions = this.loanReadPlatformService.retrieveCalendars(loanBasicDetails.groupId());
+                if (!associationParameters.contains("linkedAccount")) {
+                    mandatoryResponseParameters.add("linkedAccount");
+                    linkedAccount = this.accountAssociationsReadPlatformService.retriveLoanLinkedAssociation(loanId);
+                }
+                if (loanBasicDetails.groupId() != null) {
+                    calendarOptions = this.loanReadPlatformService.retrieveCalendars(loanBasicDetails.groupId());
+                }
+
             }
 
+            overdueCharges = this.chargeReadPlatformService.retrieveLoanProductCharges(loanBasicDetails.loanProductId(),
+                    ChargeTimeType.OVERDUE_INSTALLMENT);
+
+            paidInAdvanceTemplate = this.loanReadPlatformService.retrieveTotalPaidInAdvance(loanId);
         }
-
-        Collection<ChargeData> overdueCharges = this.chargeReadPlatformService.retrieveLoanProductCharges(loanBasicDetails.loanProductId(),
-                ChargeTimeType.OVERDUE_INSTALLMENT);
-
-        paidInAdvanceTemplate = this.loanReadPlatformService.retrieveTotalPaidInAdvance(loanId);
 
         final LoanAccountData loanAccount = LoanAccountData.associationsAndTemplate(loanBasicDetails, repaymentSchedule, loanRepayments,
                 charges, collateral, guarantors, meeting, productOptions, loanTermFrequencyTypeOptions, repaymentFrequencyTypeOptions,
@@ -589,10 +594,11 @@ public class LoansApiResource {
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),
                 mandatoryResponseParameters);
+        
         return this.toApiJsonSerializer.serialize(settings, loanAccount, this.LOAN_DATA_PARAMETERS);
     }
 
-    @GET
+	@GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveAll(@Context final UriInfo uriInfo,

@@ -17,7 +17,8 @@ public enum AddressEntityTypeEnums {
     GROUPS(2, "addressEntityType.groups"), //
     CENTERS(3, "addressEntityType.centers"), //
     OFFICES(4, "addressEntityType.offices"), //
-    BUSINESSCORRESPONDENTS(5, "addressEntityType.businesscorrespondents"); // ;
+    BUSINESSCORRESPONDENTS(5, "addressEntityType.businesscorrespondents"),
+    VILLAGES(6,"addressEntityType.villages");// ;
 
     private final Integer value;
     private final String code;
@@ -54,6 +55,9 @@ public enum AddressEntityTypeEnums {
                 case 5:
                     addressEntityTypeEnums = AddressEntityTypeEnums.BUSINESSCORRESPONDENTS;
                 break;
+                case 6:
+                    addressEntityTypeEnums = AddressEntityTypeEnums.VILLAGES;
+                break;
             }
         }
         return addressEntityTypeEnums;
@@ -77,6 +81,9 @@ public enum AddressEntityTypeEnums {
                 break;
                 case AddressApiConstants.enumTypeBusinessCorrespondents:
                     addressEntityTypeEnums = AddressEntityTypeEnums.BUSINESSCORRESPONDENTS;
+                break;
+                case AddressApiConstants.enumTypeVillages:
+                    addressEntityTypeEnums = AddressEntityTypeEnums.VILLAGES;
                 break;
 
             }
@@ -133,6 +140,9 @@ public enum AddressEntityTypeEnums {
             case BUSINESSCORRESPONDENTS:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), AddressApiConstants.enumTypeBusinessCorrespondents);
             break;
+            case VILLAGES:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), AddressApiConstants.enumTypeVillages);
+            break;
             default:
             break;
 
@@ -158,6 +168,9 @@ public enum AddressEntityTypeEnums {
     
     public boolean isBusinessCorrespondents() {
         return this.value.equals(AddressEntityTypeEnums.BUSINESSCORRESPONDENTS.getValue());
+    }
+    public boolean isVillages() {
+        return this.value.equals(AddressEntityTypeEnums.VILLAGES.getValue());
     }
     
     private static final Map<String, AddressEntityTypeEnums> entityTypeNameToEnumMap = new HashMap<>();

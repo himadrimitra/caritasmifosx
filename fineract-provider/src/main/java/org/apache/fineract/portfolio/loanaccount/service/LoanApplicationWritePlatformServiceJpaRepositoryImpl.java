@@ -846,18 +846,22 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
                 }
 
             }
-			
-			final AccountType loanType = AccountType.fromInt(existingLoanApplication.getLoanType());
-			if ((loanType.isJLGAccount() || loanType.isGroupAccount()) && calendar != null) {
-				final PeriodFrequencyType meetingPeriodFrequency = CalendarUtils
-						.getMeetingPeriodFrequencyType(calendar.getRecurrence());
-				final Integer repaymentFrequencyType = existingLoanApplication.getLoanProductRelatedDetail()
-						.getRepaymentPeriodFrequencyType().getValue();
-				final Integer repaymentEvery = existingLoanApplication.getLoanProductRelatedDetail().getRepayEvery();
-				this.loanScheduleAssembler.validateRepaymentFrequencyIsSameAsMeetingFrequency(
-						meetingPeriodFrequency.getValue(), repaymentFrequencyType,
-						CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
-			}
+
+            final AccountType loanType = AccountType.fromInt(existingLoanApplication.getLoanType());
+            if ((loanType.isJLGAccount() || loanType.isGroupAccount()) && calendar != null) {
+                final PeriodFrequencyType meetingPeriodFrequency = CalendarUtils.getMeetingPeriodFrequencyType(calendar.getRecurrence());
+                final Integer repaymentFrequencyType = existingLoanApplication.getLoanProductRelatedDetail()
+                        .getRepaymentPeriodFrequencyType().getValue();
+                final Integer repaymentEvery = existingLoanApplication.getLoanProductRelatedDetail().getRepayEvery();
+                this.loanScheduleAssembler.validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(),
+                        repaymentFrequencyType, CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
+            }
+            LocalDate repaymentsStartingFromDate = existingLoanApplication.getExpectedFirstRepaymentOnDate();
+            if (repaymentsStartingFromDate != null) {
+                LocalDate expectedDisbursementDate = existingLoanApplication.getExpectedDisbursedOnLocalDate();
+                this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(repaymentsStartingFromDate,
+                        existingLoanApplication, expectedDisbursementDate);
+            }
 
             return new CommandProcessingResultBuilder() //
                     .withEntityId(loanId) //

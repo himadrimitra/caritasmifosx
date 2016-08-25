@@ -21,8 +21,12 @@ package org.apache.fineract.portfolio.village.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 
 public interface VillageRepository extends JpaRepository<Village, Long>, JpaSpecificationExecutor<Village> {
 
+    @Query("select count(villageName) from Village where villageName=:villageName and officeId.id=:officeId")
+    Integer retrieveVillageNameCount(@Param("villageName") String villageName,@Param("officeId") Long officeId);
 }

@@ -132,6 +132,16 @@ public class LoanProductTestBuilder {
     private Boolean isAdjustFirstEMIAmount = Boolean.FALSE;
     private Integer adjustedInstallmentInMultiplesOf = null;
     private Boolean canDefineInstallmentAmount = Boolean.FALSE;
+    private Boolean closeLoanOnOverpayment = Boolean.FALSE;
+    private Boolean syncExpectedWithDisbursementDate = Boolean.FALSE;
+    private Integer minimumPeriodsBetweenDisbursalAndFirstRepayment;
+    private Integer maxLoanTerm = null;
+    private Integer minLoanTerm = null;
+    private Integer minNumberOfRepayments = null;
+    private Integer maxNumberOfRepayments = null;
+    private Integer loanTenureFrequencyType = null;
+    private Boolean considerFutureDisbursmentsInSchedule = true;
+
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -165,6 +175,10 @@ public class LoanProductTestBuilder {
         map.put("minPrincipal", this.minPrincipal);
         map.put("maxPrincipal", this.maxPrincipal);
         map.put("overdueDaysForNPA", this.overdueDaysForNPA);
+        map.put("considerFutureDisbursmentsInSchedule", this.considerFutureDisbursmentsInSchedule);
+        if (this.minimumPeriodsBetweenDisbursalAndFirstRepayment != null) {
+            map.put("minimumPeriodsBetweenDisbursalAndFirstRepayment", this.minimumPeriodsBetweenDisbursalAndFirstRepayment);
+        }
         if (this.minimumDaysBetweenDisbursalAndFirstRepayment != null) {
             map.put("minimumDaysBetweenDisbursalAndFirstRepayment", this.minimumDaysBetweenDisbursalAndFirstRepayment);
         }
@@ -219,6 +233,7 @@ public class LoanProductTestBuilder {
             map.put("minimumGap", minimumGap) ;
             map.put("maximumGap", maximumGap) ;
         }
+
         if (isSubsidyApplicable != null) {
             map.put("isSubsidyApplicable", this.isSubsidyApplicable);
         }
@@ -240,6 +255,19 @@ public class LoanProductTestBuilder {
             map.put("principalThresholdForLastInstallment", 50);
         }
 
+        if(closeLoanOnOverpayment){
+            map.put("closeLoanOnOverpayment", closeLoanOnOverpayment);
+        }
+
+        if (syncExpectedWithDisbursementDate) {
+            map.put("syncExpectedWithDisbursementDate", this.syncExpectedWithDisbursementDate);
+        }
+		map.put("maxLoanTerm", this.maxLoanTerm);
+		map.put("minLoanTerm", this.minLoanTerm);
+		map.put("canDefineInstallmentAmount", this.canDefineInstallmentAmount);
+		map.put("minNumberOfRepayments", this.minNumberOfRepayments);
+		map.put("maxNumberOfRepayments", this.maxNumberOfRepayments);
+		map.put("loanTenureFrequencyType", this.loanTenureFrequencyType);
         return new Gson().toJson(map);
     }
 
@@ -369,6 +397,16 @@ public class LoanProductTestBuilder {
 
     public LoanProductTestBuilder withTranches(boolean multiDisburseLoan) {
         this.multiDisburseLoan = multiDisburseLoan;
+        return this;
+    }
+    
+    public LoanProductTestBuilder withFutureDisbursements(boolean considerFutureDisbursmentsInSchedule) {
+        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
+        return this;
+    }
+    
+    public LoanProductTestBuilder withInterestRecalculation(boolean interestRecalculation) {
+        this.isInterestRecalculationEnabled = interestRecalculation;
         return this;
     }
 
@@ -506,6 +544,11 @@ public class LoanProductTestBuilder {
         this.minimumDaysBetweenDisbursalAndFirstRepayment = minimumDaysBetweenDisbursalAndFirstRepayment;
         return this;
     }
+    
+    public LoanProductTestBuilder withMinimumPeriodsBetweenDisbursalAndFirstRepayment(final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment) {
+        this.minimumPeriodsBetweenDisbursalAndFirstRepayment = minimumPeriodsBetweenDisbursalAndFirstRepayment;
+        return this;
+    }
 
     public LoanProductTestBuilder withArrearsConfiguration() {
         this.isArrearsBasedOnOriginalSchedule = "true";
@@ -531,14 +574,14 @@ public class LoanProductTestBuilder {
         this.allowAttributeOverrides = loanProductConfigurableAttributes;
         return this;
     }
-    
+
     public LoanProductTestBuilder withVariableInstallmentsConfig(Boolean allowVariableInstallments, Integer minimumGap, Integer maximumGap) {
-        this.allowVariableInstallments = allowVariableInstallments ;
+        this.allowVariableInstallments = allowVariableInstallments;
         this.minimumGap = minimumGap;
         this.maximumGap = maximumGap;
-        return this ;
+        return this;
     }
-    
+
     public LoanProductTestBuilder withIsSubsidyApplicable(Boolean isSubsidyApplicable) {
         this.isSubsidyApplicable = isSubsidyApplicable;
         return this;
@@ -548,20 +591,52 @@ public class LoanProductTestBuilder {
         this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
         return this;
     }
-    
+
     public LoanProductTestBuilder withadjustedInstallmentInMultiplesOf(Integer adjustedInstallmentInMultiplesOf) {
         this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
         return this;
     }
-	
-	public LoanProductTestBuilder withAdjustFirstEMi(Boolean isAdjustFirstEMIAmount) {
-        this.isAdjustFirstEMIAmount  = isAdjustFirstEMIAmount;
+
+    public LoanProductTestBuilder withAdjustFirstEMi(Boolean isAdjustFirstEMIAmount) {
+        this.isAdjustFirstEMIAmount = isAdjustFirstEMIAmount;
         return this;
     }
-	
-	
-	public LoanProductTestBuilder withcanDefineInstallmentAmount(Boolean canDefineInstallmentAmount) {
-        this.canDefineInstallmentAmount  = canDefineInstallmentAmount;
+
+    public LoanProductTestBuilder withcanDefineInstallmentAmount(Boolean canDefineInstallmentAmount) {
+        this.canDefineInstallmentAmount = canDefineInstallmentAmount;
         return this;
     }
+
+    public LoanProductTestBuilder withonOverPaymentCloseLoan(Boolean closeLoanOnOverpayment) {
+        this.closeLoanOnOverpayment = closeLoanOnOverpayment;
+        return this;
+    }
+    public LoanProductTestBuilder withSyncExpectedWithDisbursementDate(Boolean syncExpectedWithDisbursementDate) {
+        this.syncExpectedWithDisbursementDate = syncExpectedWithDisbursementDate;
+        return this ;
+    }
+    
+    public LoanProductTestBuilder withLoanTerms(final Integer minLoanTerm, final Integer maxLoanTerm ){
+    	this.minLoanTerm = minLoanTerm;
+    	this.maxLoanTerm = maxLoanTerm;
+    	return this;
+    }
+    
+    public LoanProductTestBuilder withCanDefineInstallmentAmount(Boolean canDefineInstallmentAmount){
+    	this.canDefineInstallmentAmount = canDefineInstallmentAmount;
+    	return this;
+    }
+    
+    public LoanProductTestBuilder withMininmumAndMaximumNumberOfRepayments(final Integer minNumberOfRepayments,
+    final Integer maxNumberOfRepayments){
+    	this.minNumberOfRepayments = minNumberOfRepayments;
+    	this.maxNumberOfRepayments = maxNumberOfRepayments;
+    	return this;
+    }
+    
+    public LoanProductTestBuilder withLoanTenureFrequencyType(final Integer loanTenureFrequencyType){
+    	this.loanTenureFrequencyType = loanTenureFrequencyType;
+    	return this;
+    }
+    
 }

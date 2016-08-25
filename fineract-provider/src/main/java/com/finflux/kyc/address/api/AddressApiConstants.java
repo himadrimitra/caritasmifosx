@@ -23,6 +23,7 @@ public class AddressApiConstants {
     public static final String enumTypeCenters = "CENTERS";
     public static final String enumTypeOffices = "OFFICES";
     public static final String enumTypeBusinessCorrespondents = "BUSINESSCORRESPONDENTS";
+    public static final String enumTypeVillages = "VILLAGES";
 
     /**
      * Address Parameters
@@ -39,7 +40,7 @@ public class AddressApiConstants {
     public final static String addressLineTwoParamName = "addressLineTwo";
     public final static String landmarkParamName = "landmark";
     public final static String villageTownParamName = "villageTown";
-    public final static String talukaParamName = "taluka";
+    public final static String talukaIdParamName = "talukaId";
     public final static String districtIdParamName = "districtId";
     public final static String stateIdParamName = "stateId";
     public final static String countryIdParamName = "countryId";
@@ -63,13 +64,13 @@ public class AddressApiConstants {
      */
     public static final Set<String> CREATE_ADDRESS_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(addressesParamName,
             addressTypesParamName, entityIdParamName, entityTypeEnumParamName, houseNoParamName, streetNoParamName, addressLineOneParamName,
-            addressLineTwoParamName, landmarkParamName, villageTownParamName, talukaParamName, districtIdParamName, stateIdParamName,
+            addressLineTwoParamName, landmarkParamName, villageTownParamName, talukaIdParamName, districtIdParamName, stateIdParamName,
             countryIdParamName, postalCodeParamName, latitudeParamName, longitudeParamName, localeParamName, dateFormatParamName));
 
     public static final Set<String> UPDATE_ADDRESS_REQUEST_DATA_PARAMETERS = new HashSet<>(
             Arrays.asList(addressesParamName, addressIdParamName, addressTypesParamName, entityIdParamName, entityTypeEnumParamName,
                     houseNoParamName, streetNoParamName, addressLineOneParamName, addressLineTwoParamName, landmarkParamName,
-                    villageTownParamName, talukaParamName, districtIdParamName, stateIdParamName, countryIdParamName, postalCodeParamName,
+                    villageTownParamName, talukaIdParamName, districtIdParamName, stateIdParamName, countryIdParamName, postalCodeParamName,
                     latitudeParamName, longitudeParamName, localeParamName, dateFormatParamName));
 
     /**

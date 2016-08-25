@@ -37,9 +37,12 @@ import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterExc
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleAssembler;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -97,12 +100,14 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
+    private final LoanScheduleAssembler loanScheduleAssembler;
 
     @Autowired
     public LoanApplicationCommandFromApiJsonHelper(final FromJsonHelper fromApiJsonHelper,
-            final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper) {
+            final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper, final LoanScheduleAssembler loanScheduleAssembler) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.apiJsonHelper = apiJsonHelper;
+        this.loanScheduleAssembler = loanScheduleAssembler;
     }
 
     public void validateForCreate(final String json, final boolean isMeetingMandatoryForJLGLoans, final LoanProduct loanProduct) {
@@ -142,9 +147,18 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
                 // if it is JLG loan that must have meeting details
                 if (isMeetingMandatoryForJLGLoans) {
+                    
                     final String calendarIdParameterName = "calendarId";
                     final Long calendarId = this.fromApiJsonHelper.extractLongNamed(calendarIdParameterName, element);
                     baseDataValidator.reset().parameter(calendarIdParameterName).value(calendarId).notNull().integerGreaterThanZero();
+                    
+                    // Global configuration meeting enabled for JLG loans.
+                    // If calendarId is null then through Sync Repayments With Meeting should be checked at UI level
+                    if (calendarId == null) {
+                        final String syncRepaymentsWithMeetingParameterName = "syncRepaymentsWithMeeting";
+                        baseDataValidator.reset().parameter(syncRepaymentsWithMeetingParameterName).value(false).notNull()
+                                .mustBeTrueValueRequired(false);
+                    }
 
                     // if it is JLG loan then must have a value for
                     // syncDisbursement passed in
@@ -956,37 +970,82 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                 numberOfRepayments, repaymentEvery, repaymentEveryType);
 
         /**
-         * For multi-disbursal loans where schedules are auto-generated based on
-         * a fixed EMI, ensure the number of repayments is within the
-         * permissible range defined by the loan product
-         **/
-        if (loan.getFixedEmiAmount() != null) {
-            Integer minimumNoOfRepayments = loan.loanProduct().getMinNumberOfRepayments();
-            Integer maximumNoOfRepayments = loan.loanProduct().getMaxNumberOfRepayments();
-            Integer actualNumberOfRepayments = loan.getRepaymentScheduleInstallments().size();
-            // validate actual number of repayments is > minimum number of
-            // repayments
-            if (minimumNoOfRepayments != null && minimumNoOfRepayments != 0 && actualNumberOfRepayments < minimumNoOfRepayments) {
-                final ApiParameterError error = ApiParameterError.generalError(
-                        "validation.msg.loan.numberOfRepayments.lesser.than.minimumNumberOfRepayments",
-                        "The total number of calculated repayments for this loan " + actualNumberOfRepayments
-                                + " is lesser than the allowed minimum of " + minimumNoOfRepayments, actualNumberOfRepayments,
-                        minimumNoOfRepayments);
-                dataValidationErrors.add(error);
-            }
+		 * For multi-disbursal loans where schedules are auto-generated based on
+		 * a fixed EMI, ensure the number of repayments is within the
+		 * permissible range defined by the loan product
+		 **/
+				final Integer minimumNoOfRepayments = loan.loanProduct().getMinNumberOfRepayments();
+		final Integer maximumNoOfRepayments = loan.loanProduct().getMaxNumberOfRepayments();
+		final Integer minLoanTerm = loan.loanProduct().getMinLoanTerm();
+		final Integer maxLoanTerm = loan.loanProduct().getMaxLoanTerm();
+		final Integer actualNumberOfRepayments = loan.getRepaymentScheduleInstallments().size();
+		final Integer actualNumberOfRepaymentsInDays = calculateLoanTermInDays(loan, actualNumberOfRepayments);
+		final LocalDate disbursalDate = loan.getDisbursementDate();
+		final PeriodFrequencyType loanTenureFrequencyType = loan.loanProduct().getLoanTenureFrequencyType();
+		final PeriodFrequencyType loanTermPeriodFrequencyTypeOfLoanProduct = loan.loanProduct()
+				.getLoanProductRelatedDetail().getRepaymentPeriodFrequencyType();
+		final PeriodFrequencyType loanTermFrequencyTypeOfLoan = PeriodFrequencyType.fromInt(loanTermFrequencyType);
+		
+		// validate actual number of repayments is > minimum number of
+		// repayments
+		if (minimumNoOfRepayments != null) {
+			final Integer minimumNoOfRepaymentsInDays = calculateLoanTermInDays(loan.loanProduct(),
+					minimumNoOfRepayments, disbursalDate);
+			if (minimumNoOfRepaymentsInDays != 0 && actualNumberOfRepaymentsInDays < minimumNoOfRepaymentsInDays) {
+				final ApiParameterError error = ApiParameterError.generalError(
+						"validation.msg.loan.number.of.repayments.lesser.than.minimum.number.of.repayments",
+						"The total number of calculated repayments for this loan " + actualNumberOfRepayments + " "
+								+ loanTermFrequencyTypeOfLoan + " is lesser than the allowed minimum of "
+								+ minimumNoOfRepayments + " " + loanTermPeriodFrequencyTypeOfLoanProduct,
+						actualNumberOfRepayments, minimumNoOfRepayments);
+				dataValidationErrors.add(error);
+			}
+		}
 
-            // validate actual number of repayments is < maximum number of
-            // repayments
-            if (maximumNoOfRepayments != null && maximumNoOfRepayments != 0 && actualNumberOfRepayments > maximumNoOfRepayments) {
-                final ApiParameterError error = ApiParameterError.generalError(
-                        "validation.msg.loan.numberOfRepayments.greater.than.maximumNumberOfRepayments",
-                        "The total number of calculated repayments for this loan " + actualNumberOfRepayments
-                                + " is greater than the allowed maximum of " + maximumNoOfRepayments, actualNumberOfRepayments,
-                        maximumNoOfRepayments);
-                dataValidationErrors.add(error);
-            }
+		// validate actual number of repayments is < maximum number of
+		// repayments
+		if (maximumNoOfRepayments != null) {
+			final Integer maximumNoOfRepaymentsInDays = calculateLoanTermInDays(loan.loanProduct(),
+					maximumNoOfRepayments, disbursalDate);
+			if (maximumNoOfRepaymentsInDays != 0 && actualNumberOfRepaymentsInDays > maximumNoOfRepaymentsInDays) {
+				final ApiParameterError error = ApiParameterError.generalError(
+						"validation.msg.loan.number.of.repayments.greater.than.maximum.number.of.repayments",
+						"The total number of calculated repayments for this loan " + actualNumberOfRepayments + " "
+								+ loanTermFrequencyTypeOfLoan + " is greater than the allowed maximum of "
+								+ maximumNoOfRepayments + " " + loanTermPeriodFrequencyTypeOfLoanProduct,
+						actualNumberOfRepayments, maximumNoOfRepayments);
+				dataValidationErrors.add(error);
+			}
+		}
 
-        }
+		// validate actual number of repayments is > minimum loanTerm
+		if (minLoanTerm != null) {
+			final Integer minLoanTermInDays = calculateLoanTermInDays(loanTenureFrequencyType, minLoanTerm,
+					disbursalDate);
+			if (minLoanTermInDays != 0 && actualNumberOfRepaymentsInDays < minLoanTermInDays) {
+				final ApiParameterError error = ApiParameterError.generalError(
+						"validation.msg.loan.number.of.repayments.lesser.than.min.loan.term",
+						"The total number of calculated repayments for this loan " + actualNumberOfRepayments + " "
+								+ loanTermFrequencyTypeOfLoan + " is lesser than the allowed minimum of " + minLoanTerm
+								+ " " + loanTenureFrequencyType,
+						actualNumberOfRepayments, minLoanTerm);
+				dataValidationErrors.add(error);
+			}
+		}
+		// validate actual number of repayments is < maximum loanTerm
+		if (maxLoanTerm != null) {
+			final Integer maxLoanTermInDays = calculateLoanTermInDays(loanTenureFrequencyType, maxLoanTerm,
+					disbursalDate);
+			if (maxLoanTermInDays != 0 && actualNumberOfRepaymentsInDays > maxLoanTermInDays) {
+				final ApiParameterError error = ApiParameterError.generalError(
+						"validation.msg.loan.number.of.repayments.greater.than.max.loan.term",
+						"The total number of calculated repayments for this loan " + actualNumberOfRepayments + " "
+								+ loanTermFrequencyTypeOfLoan + " is greater than the allowed maximum of " + maxLoanTerm
+								+ " " + loanTenureFrequencyType,
+						actualNumberOfRepayments, maxLoanTerm);
+				dataValidationErrors.add(error);
+			}
+		}
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
     }
@@ -1206,5 +1265,41 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
         }
     }
+    
+    private Integer calculateLoanTermInDays(Loan loan, final Integer numberOfRepaymentPeriods) {
+        final LocalDate disbursalDate = loan.getDisbursementDate();
+        final PeriodFrequencyType repaymentFrequencyType = loan.getLoanProductRelatedDetail().getRepaymentPeriodFrequencyType();
+        final Integer repaymentEvery = loan.getLoanProductRelatedDetail().getRepayEvery();
+        final Integer nthDay = null;
+        final Integer dayOfWeek = null;
+        final DayOfWeekType weekDayType = DayOfWeekType.fromInt(dayOfWeek);
+        return calculateLoanTermInDays(disbursalDate, repaymentFrequencyType, repaymentEvery, nthDay, weekDayType, numberOfRepaymentPeriods);
+    }
 
+    private Integer calculateLoanTermInDays(final LoanProduct loanProduct, final Integer numberOfRepaymentPeriods,
+            final LocalDate disbursalDate) {
+
+        final PeriodFrequencyType loanTermPeriodFrequencyType = loanProduct.getLoanProductRelatedDetail().getRepaymentPeriodFrequencyType();
+        final Integer repaymentEvery = loanProduct.getLoanProductRelatedDetail().getRepayEvery();
+        final Integer nthDay = null;
+        final DayOfWeekType weekDayType = null;
+        return calculateLoanTermInDays(disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType,
+                numberOfRepaymentPeriods);
+    }
+
+    private Integer calculateLoanTermInDays(PeriodFrequencyType loanTermPeriodFrequencyType, final Integer numberOfRepaymentPeriods,
+            final LocalDate disbursalDate) {
+        final Integer repaymentEvery = 1;
+        final Integer nthDay = null;
+        final DayOfWeekType weekDayType = null;
+        return calculateLoanTermInDays(disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType,
+                numberOfRepaymentPeriods);
+    }
+
+    private Integer calculateLoanTermInDays(final LocalDate disbursalDate, final PeriodFrequencyType loanTermPeriodFrequencyType,
+            final Integer repaymentEvery, Integer nthDay, DayOfWeekType dayOfWeek, Integer numberOfRepaymentPeriods) {
+        return this.loanScheduleAssembler.calculateNumberOfDaysBetweenDisbursalRepaymentDateWithRepaymentPeriod(disbursalDate,
+                loanTermPeriodFrequencyType, repaymentEvery, nthDay, dayOfWeek, numberOfRepaymentPeriods);
+    }
+    
 }

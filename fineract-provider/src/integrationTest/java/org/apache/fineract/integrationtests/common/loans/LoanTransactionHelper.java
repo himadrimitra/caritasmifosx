@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.fineract.integrationtests.common.CommonConstants;
 import org.apache.fineract.integrationtests.common.Utils;
 import org.joda.time.LocalDate;
 
@@ -177,8 +178,13 @@ public class LoanTransactionHelper {
     }
 
     public HashMap disburseLoan(final String date, final Integer loanID) {
-        return performLoanTransaction(createLoanOperationURL(DISBURSE_LOAN_COMMAND, loanID), getDisburseLoanAsJSON(date, null));
+    	 final String jsonToBeSent = null;
+        return performLoanTransaction(createLoanOperationURL(DISBURSE_LOAN_COMMAND, loanID), getDisburseLoanAsJSON(date, jsonToBeSent));
     }
+    
+    public Object disburseLoan(final String date, final Integer loanID, ResponseSpecification responseValidationError) {
+    	        return performLoanTransaction(createLoanOperationURL(DISBURSE_LOAN_COMMAND, loanID), getDisburseLoanAsJSON(date, null),  responseValidationError);
+    	    }
     
     public HashMap disburseLoanWithRepaymentReschedule(final String date, final Integer loanID, String adjustRepaymentDate) {
         return performLoanTransaction(createLoanOperationURL(DISBURSE_LOAN_COMMAND, loanID), getDisburseLoanWithRepaymentRescheduleAsJSON(date,
@@ -504,6 +510,11 @@ public class LoanTransactionHelper {
                 "changes");
         return (HashMap) response.get("status");
     }
+    
+    private Object performLoanTransaction(final String postURLForLoanTransaction, final String jsonToBeSent, ResponseSpecification responseValidationError) {
+    	
+    	        return  Utils.performServerPost(this.requestSpec, responseValidationError, postURLForLoanTransaction, jsonToBeSent, CommonConstants.RESPONSE_ERROR);    	       
+    	   }
     
     private Float performUndoLastLoanDisbursementTransaction(final String postURLForLoanTransaction, final String jsonToBeSent) {
 

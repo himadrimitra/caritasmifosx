@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
@@ -28,6 +29,8 @@ import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
 import org.joda.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +39,7 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
 
     private final LoanReadPlatformService loanReadPlatformService;
     private final LoanAccrualWritePlatformService loanAccrualWritePlatformService;
+    private final static Logger logger = LoggerFactory.getLogger(LoanAccrualPlatformServiceImpl.class);
 
     @Autowired
     public LoanAccrualPlatformServiceImpl(final LoanReadPlatformService loanReadPlatformService,
@@ -78,13 +82,14 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
     @Override
     @CronTarget(jobName = JobName.ADD_PERIODIC_ACCRUAL_ENTRIES)
     public void addPeriodicAccruals() throws JobExecutionException {
-        String errors = addPeriodicAccruals(LocalDate.now());
+    	List<Long> loanList = null;
+        String errors = addPeriodicAccruals(LocalDate.now(), loanList);
         if (errors.length() > 0) { throw new JobExecutionException(errors); }
     }
 
     @Override
-    public String addPeriodicAccruals(final LocalDate tilldate) {
-        Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas = this.loanReadPlatformService.retrivePeriodicAccrualData(tilldate);
+    public String addPeriodicAccruals(final LocalDate tilldate, List<Long> loanList) {
+        Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas = this.loanReadPlatformService.retrivePeriodicAccrualData(tilldate, loanList);
         return addPeriodicAccruals(tilldate, loanScheduleAccrualDatas);
     }
 
@@ -102,8 +107,11 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
             }
         }
 
+        long counter = 0;
         for (Map.Entry<Long, Collection<LoanScheduleAccrualData>> mapEntry : loanDataMap.entrySet()) {
             try {
+            	counter++;
+            	logger.debug("Add Periodic Accrual Counter[" + counter + "], LoanId[" + mapEntry.getKey() + "]");
                 this.loanAccrualWritePlatformService.addPeriodicAccruals(tilldate, mapEntry.getKey(), mapEntry.getValue());
             } catch (Exception e) {
                 Throwable realCause = e;

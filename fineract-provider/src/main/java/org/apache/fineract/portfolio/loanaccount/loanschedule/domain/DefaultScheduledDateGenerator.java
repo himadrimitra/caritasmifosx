@@ -66,7 +66,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                     null);
             dueRepaymentPeriodDate = CalendarUtils.adjustDate(dueRepaymentPeriodDate, loanApplicationTerms.getSeedDate(),
                     loanApplicationTerms.getRepaymentPeriodFrequencyType());
-            if (currentCalendar != null) {
+            if (currentCalendar != null && useCalendar(lastRepaymentDate, loanApplicationTerms, currentCalendar)) {
                 // If we have currentCalendar object, this means there is a
                 // calendar associated with
                 // the loan, and we should use it in order to calculate next
@@ -98,6 +98,19 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
         }
         
         return dueRepaymentPeriodDate;
+    }
+    
+    private boolean useCalendar(final LocalDate lastRepaymentDate, final LoanApplicationTerms loanApplicationTerms,
+            final Calendar currentCalendar) {
+        LocalDate newCodeMigrationDate = new LocalDate().withDayOfMonth(8).withYear(2016).withMonthOfYear(4);
+        boolean useCalendar = lastRepaymentDate.isAfter(newCodeMigrationDate);
+        if (useCalendar) {
+            if(loanApplicationTerms.getExpectedDisbursementDate().isBefore(newCodeMigrationDate)){
+                useCalendar = currentCalendar.getStartDateLocalDate().isAfter(newCodeMigrationDate);
+            }
+        }
+
+        return useCalendar;
     }
 
     @Override

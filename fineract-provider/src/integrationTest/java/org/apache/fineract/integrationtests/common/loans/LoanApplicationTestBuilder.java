@@ -68,6 +68,8 @@ public class LoanApplicationTestBuilder {
     private boolean syncDisbursementWithMeeting = false;
     
     private Boolean isSubsidyApplicable = null;
+    private Boolean canDefineInstallmentAmount = false;
+    private Boolean considerFutureDisbursmentsInSchedule = true;
 
     public String build(final String clientID, final String groupID, final String loanProductId, final String savingsID) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -153,6 +155,11 @@ public class LoanApplicationTestBuilder {
 
     public LoanApplicationTestBuilder withPrincipal(final String principalAmount) {
         this.principal = principalAmount;
+        return this;
+    }
+    
+    public LoanApplicationTestBuilder withFutureDisbursements(final Boolean considerFutureDisbursmentsInSchedule) {
+        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
         return this;
     }
 
@@ -332,6 +339,11 @@ public class LoanApplicationTestBuilder {
 
     public LoanApplicationTestBuilder withMaxOutstandingLoanBalance(final String maxOutstandingLoanBalance) {
         this.maxOutstandingLoanBalance = maxOutstandingLoanBalance;
+        return this;
+    }
+
+    public LoanApplicationTestBuilder withCanDefineInstallmentAmount(final Boolean canDefineInstallmentAmount) {
+        this.canDefineInstallmentAmount = canDefineInstallmentAmount;
         return this;
     }
 }

@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.joda.time.LocalDate;
@@ -215,6 +216,22 @@ public final class LoanSummaryWrapper {
 
         return principalOverdue.plus(interestOverdue).plus(feeChargesOverdue).plus(penaltyChargesOverdue);
     }
+    
+    public LocalDate determineOverdueSince(final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments) {
+        LocalDate overdueSince = null;
+        for (final LoanRepaymentScheduleInstallment installment : repaymentScheduleInstallments) {
+            if (installment.getDueDate().isAfter(DateUtils.getLocalDateOfTenant())) {
+                break;
+            }
+            if (installment.isNotFullyPaidOff()) {
+                overdueSince = installment.getDueDate();
+                break;
+            }
+        }
+
+        return overdueSince;
+    }
+
 
     public LocalDate determineOverdueSinceDateFrom(final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments,
             final MonetaryCurrency currency, final LocalDate from) {

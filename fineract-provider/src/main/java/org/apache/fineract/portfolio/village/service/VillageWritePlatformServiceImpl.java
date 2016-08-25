@@ -35,8 +35,11 @@ import org.apache.fineract.organisation.office.exception.OfficeNotFoundException
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.CenterNotFoundException;
+import org.apache.fineract.portfolio.village.exception.DuplicateVillageNameException;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductCannotBeModifiedDueToNonClosedLoansException;
 import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
 import org.apache.fineract.portfolio.village.domain.Village;
+import org.apache.fineract.portfolio.village.domain.VillageRepository;
 import org.apache.fineract.portfolio.village.domain.VillageRepositoryWrapper;
 import org.apache.fineract.portfolio.village.exception.InvalidVillageStateTransitionException;
 import org.apache.fineract.portfolio.village.exception.VillageMustBePendingToBeDeletedException;
@@ -49,6 +52,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.kyc.address.api.AddressApiConstants;
+import com.finflux.kyc.address.data.AddressEntityTypeEnums;
+import com.finflux.kyc.address.service.AddressWritePlatformService;
+
 @Service
 public class VillageWritePlatformServiceImpl implements VillageWritePlatformService {
 
@@ -60,9 +67,11 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
     private final OfficeRepository officeRepository;
     private final GroupRepository centerRepository;
     private final CommandProcessingService commandProcessingService;
+    private final VillageRepository villageRepo;
+    private final AddressWritePlatformService addressWritePlatformService;
     @Autowired
     public VillageWritePlatformServiceImpl(PlatformSecurityContext context, VillageDataValidator fromApiJsonDeserializer, VillageRepositoryWrapper villageRepository, 
-            OfficeRepository officeRepository, GroupRepository centerRepository, CommandProcessingService commandProcessingService) {
+            OfficeRepository officeRepository, GroupRepository centerRepository, CommandProcessingService commandProcessingService,VillageRepository villageRepo, final AddressWritePlatformService addressWritePlatformService) {
 
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -70,6 +79,8 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
         this.officeRepository = officeRepository;
         this.centerRepository = centerRepository;
         this.commandProcessingService = commandProcessingService;
+        this.villageRepo=villageRepo;
+        this.addressWritePlatformService = addressWritePlatformService;
     }
     
     
@@ -127,7 +138,20 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
                 final CommandWrapper commandWrapper = new CommandWrapperBuilder().activateVillage(null).build();
                 rollbackTransaction = this.commandProcessingService.validateCommand(commandWrapper, currentUser);
             }
+            Integer VillageNameCount=this.villageRepo.retrieveVillageNameCount(villageName,officeId);
+            if(VillageNameCount!=0){
+                throw new DuplicateVillageNameException(villageName);
+            }
             this.villageRepository.save(newVillage);
+            
+            /**
+             * Call Address Service
+             */
+            if (newVillage != null && newVillage.getId() != null && command.parameterExists(AddressApiConstants.addressesParamName)) {
+                final AddressEntityTypeEnums entityType = AddressEntityTypeEnums.VILLAGES;
+                this.addressWritePlatformService.createOrUpdateAddress(entityType, newVillage.getId(), command);
+            }
+
             
             return new CommandProcessingResultBuilder() //
                         .withCommandId(command.commandId()) //

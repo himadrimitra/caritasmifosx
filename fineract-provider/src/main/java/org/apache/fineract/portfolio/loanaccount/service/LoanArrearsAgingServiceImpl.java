@@ -19,20 +19,22 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
+import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
@@ -44,6 +46,8 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleIns
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSummary;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
+import org.apache.fineract.scheduledjobs.service.ExecuteBatchUpdateTransactional;
+import org.apache.fineract.scheduledjobs.service.PageDataForArrearsAgeingDetailsWithOriginalSchedule;
 import org.apache.fineract.scheduledjobs.service.ScheduledJobRunnerServiceImpl;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
@@ -55,7 +59,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, BusinessEventListner {
@@ -64,11 +67,17 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
     private final BusinessEventNotifierService businessEventNotifierService;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
     private final JdbcTemplate jdbcTemplate;
+    private final PageDataForArrearsAgeingDetailsWithOriginalSchedule pageDataForArrearsAgeingDetailsWithOriginalSchedule;
+    private final ExecuteBatchUpdateTransactional executeBatchUpdateTransactional;
 
     @Autowired
-    public LoanArrearsAgingServiceImpl(final RoutingDataSource dataSource, final BusinessEventNotifierService businessEventNotifierService) {
+    public LoanArrearsAgingServiceImpl(final RoutingDataSource dataSource, final BusinessEventNotifierService businessEventNotifierService,
+            final PageDataForArrearsAgeingDetailsWithOriginalSchedule pageDataForArrearsAgeingDetailsWithOriginalSchedule,
+            final ExecuteBatchUpdateTransactional executeBatchUpdateTransactional) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.businessEventNotifierService = businessEventNotifierService;
+        this.pageDataForArrearsAgeingDetailsWithOriginalSchedule = pageDataForArrearsAgeingDetailsWithOriginalSchedule;
+        this.executeBatchUpdateTransactional = executeBatchUpdateTransactional;
     }
 
     @PostConstruct
@@ -85,11 +94,14 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL, new DisbursementEventListner());
     }
 
-    @Transactional
     @Override
     @CronTarget(jobName = JobName.UPDATE_LOAN_ARREARS_AGEING)
-    public void updateLoanArrearsAgeingDetails() {
-
+    public void updateLoanArrearsAgeingDetails() throws JobExecutionException{
+        final StringBuilder errorMessage = new StringBuilder();
+        Map<String,Integer> returnMap = new HashMap<>();
+        List<String> insertStatement = new ArrayList<>();
+        int result = 0 ;
+       
         this.jdbcTemplate.execute("truncate table m_loan_arrears_aging");
 
         final StringBuilder updateSqlBuilder = new StringBuilder(900);
@@ -120,15 +132,21 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         updateSqlBuilder.append(" and (prd.arrears_based_on_original_schedule = 0 or prd.arrears_based_on_original_schedule is null) ");
         updateSqlBuilder.append(" GROUP BY ml.id");
 
-        List<String> insertStatements = updateLoanArrearsAgeingDetailsWithOriginalSchedule();
-        insertStatements.add(0, updateSqlBuilder.toString());
-        final int[] results = this.jdbcTemplate.batchUpdate(insertStatements.toArray(new String[0]));
-        int result = 0;
-        for (int i : results) {
-            result += i;
+        returnMap = updateLoanArrearsAgeingDetailsWithOriginalSchedule();
+        insertStatement.add(updateSqlBuilder.toString());
+        returnMap.putAll(this.executeBatchUpdateTransactional.executeBatchUpdate(insertStatement));
+        for (String message : returnMap.keySet()) {
+            if (!message.isEmpty()) {
+                errorMessage.append(message);
+            }
         }
-
-        logger.info(ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
+        Iterator<Integer> iterator = returnMap.values().iterator();
+        while (iterator.hasNext()) {
+            result += iterator.next();
+        }
+        if (errorMessage.length() > 0) { throw new JobExecutionException(errorMessage.toString()); }
+        logger.info(
+                ThreadLocalContextUtil.getTenant().getName() + ": Results affected by update: " + result);
     }
 
     @Override
@@ -198,30 +216,44 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         return updateSql;
     }
 
-    private List<String> updateLoanArrearsAgeingDetailsWithOriginalSchedule() {
-        List<String> insertStatement = new ArrayList<>();
+    private Map<String,Integer> updateLoanArrearsAgeingDetailsWithOriginalSchedule() {
+        Map<String,Integer> returnMap = new HashMap<>();
+        int result = 0;
+        int limit = 1000;
+        int offset =0;
+        int totalRecords = 0;
+        StringBuilder errorMessage = new StringBuilder();
 
-        final StringBuilder loanIdentifier = new StringBuilder();
-        loanIdentifier.append("select ml.id as loanId FROM m_loan ml  ");
-        loanIdentifier.append("INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id ");
-        loanIdentifier
-                .append("inner join m_product_loan_recalculation_details prd on prd.product_id = ml.product_id and prd.arrears_based_on_original_schedule = 1  ");
-        loanIdentifier
-                .append("WHERE ml.loan_status_id = 300  and mr.completed_derived is false  and mr.duedate < SUBDATE(CURDATE(),INTERVAL  ifnull(ml.grace_on_arrears_ageing,0) day) group by ml.id");
-        List<Long> loanIds = this.jdbcTemplate.queryForList(loanIdentifier.toString(), Long.class);
-        if (!loanIds.isEmpty()) {
-            String loanIdsAsString = loanIds.toString();
-            loanIdsAsString = loanIdsAsString.substring(1, loanIdsAsString.length() - 1);
-            OriginalScheduleExtractor originalScheduleExtractor = new OriginalScheduleExtractor(loanIdsAsString);
-            Map<Long, List<LoanSchedulePeriodData>> scheduleDate = this.jdbcTemplate.query(originalScheduleExtractor.schema,
-                    originalScheduleExtractor);
+        do {
+            List<String> insertStatement = new ArrayList<>();
+            Page<Long> pageitems = this.pageDataForArrearsAgeingDetailsWithOriginalSchedule.getPageData(limit, offset);
+            totalRecords = pageitems.getTotalFilteredRecords();
+            List<Long> loanIds = pageitems.getPageItems();
+            offset = offset + loanIds.size();
+            if (!loanIds.isEmpty()) {
+                String loanIdsAsString = loanIds.toString();
+                loanIdsAsString = loanIdsAsString.substring(1, loanIdsAsString.length() - 1);
+                OriginalScheduleExtractor originalScheduleExtractor = new OriginalScheduleExtractor(loanIdsAsString);
+                Map<Long, List<LoanSchedulePeriodData>> scheduleDate = this.jdbcTemplate.query(originalScheduleExtractor.schema,
+                        originalScheduleExtractor);
 
-            List<Map<String, Object>> loanSummary = getLoanSummary(loanIdsAsString);
-            updateSchheduleWithPaidDetail(scheduleDate, loanSummary);
-            createInsertStatements(insertStatement, scheduleDate, true);
-        }
-
-        return insertStatement;
+                List<Map<String, Object>> loanSummary = getLoanSummary(loanIdsAsString);
+                updateSchheduleWithPaidDetail(scheduleDate, loanSummary);
+                createInsertStatements(insertStatement, scheduleDate, true);
+                returnMap = this.executeBatchUpdateTransactional.executeBatchUpdate(insertStatement);
+                for(String message: returnMap.keySet()){
+                    if(!message.isEmpty()){
+                errorMessage.append(message);
+                    }
+                }
+                Iterator<Integer> iterator = returnMap.values().iterator();
+                while(iterator.hasNext()){
+                    result += iterator.next();
+                }
+            }
+        }while(offset < totalRecords);
+        returnMap.put(errorMessage.toString(), result);
+        return returnMap;
 
     }
 
@@ -457,7 +489,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
             final BigDecimal totalDueForPeriod = null;
             return LoanSchedulePeriodData.repaymentOnlyPeriod(periodNumber, fromDate, dueDate, principalDue, principalOutstanding,
                     interestDueOnPrincipalOutstanding, feeChargesDueForPeriod, penaltyChargesDueForPeriod, totalDueForPeriod,
-                    totalInstallmentAmount);
+                    totalInstallmentAmount, false);
 
         }
     }
@@ -514,6 +546,5 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
             }
 
         }
-
     }
 }

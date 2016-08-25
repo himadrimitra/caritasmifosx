@@ -105,8 +105,8 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
             StringBuilder stringBuilder = new StringBuilder(200);
             stringBuilder.append(" ls.installment as period, ls.fromdate as fromDate, ls.duedate as dueDate, ");
             stringBuilder
-                    .append("ls.principal_amount as principalDue, ls.interest_amount as interestDue, ls.fee_charges_amount as feeChargesDue, ls.penalty_charges_amount as penaltyChargesDue ");
-            stringBuilder.append(" from m_loan_repayment_schedule_history ls ");
+                    .append("ls.principal_amount as principalDue, ls.interest_amount as interestDue, ls.fee_charges_amount as feeChargesDue, ls.penalty_charges_amount as penaltyChargesDue, ");
+            stringBuilder.append(" ls.recalculated_interest_component as recalculatedInterestComponent from m_loan_repayment_schedule_history ls ");
             return stringBuilder.toString();
         }
 
@@ -146,14 +146,15 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
                 if (disbursementData != null) {
                     BigDecimal principal = BigDecimal.ZERO;
                     for (DisbursementData data : disbursementData) {
-                        if (fromDate.equals(this.disbursement.disbursementDate()) && data.disbursementDate().equals(fromDate)) {
-                            principal = principal.add(data.amount());
-                            final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                                    data.disbursementDate(), data.amount(), this.totalFeeChargesDueAtDisbursement, data.isDisbursed());
-                            periods.add(periodData);
-                            this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(data.amount());
-                        } else if (data.isDueForDisbursement(fromDate, dueDate)
-                                && this.outstandingLoanPrincipalBalance.compareTo(BigDecimal.ZERO) == 1) {
+                        if (periods.size() == 0) {
+                            if (fromDate.equals(this.disbursement.disbursementDate()) && data.disbursementDate().equals(fromDate)) {
+                                principal = principal.add(data.amount());
+                                final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
+                                        data.disbursementDate(), data.amount(), this.totalFeeChargesDueAtDisbursement, data.isDisbursed());
+                                periods.add(periodData);
+                                this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(data.amount());
+                            } 
+                        } else if (data.isDueForDisbursement(fromDate, dueDate)) {
                             principal = principal.add(data.amount());
                             final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
                                     data.disbursementDate(), data.amount(), BigDecimal.ZERO, data.isDisbursed());
@@ -200,10 +201,12 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
                 // update based on current period values
                 this.lastDueDate = dueDate;
                 this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.subtract(principalDue);
+                
+                final Boolean recalculatedInterestComponent = rs.getBoolean("recalculatedInterestComponent");
 
                 final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.repaymentOnlyPeriod(period, fromDate, dueDate,
                         principalDue, outstandingPrincipalBalanceOfLoan, interestExpectedDue, feeChargesExpectedDue,
-                        penaltyChargesExpectedDue, totalDueForPeriod, totalInstallmentAmount);
+                        penaltyChargesExpectedDue, totalDueForPeriod, totalInstallmentAmount, recalculatedInterestComponent);
 
                 periods.add(periodData);
             }
@@ -214,5 +217,4 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
         }
 
     }
-
 }

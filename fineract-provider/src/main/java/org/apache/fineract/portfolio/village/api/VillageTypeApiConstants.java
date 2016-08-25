@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.finflux.kyc.address.api.AddressApiConstants;
+
 
 public class VillageTypeApiConstants {
     
@@ -47,17 +49,19 @@ public class VillageTypeApiConstants {
     public static final String activeParamName = "active";
     public static final String centerIdParamName = "centerId";
     public static final String centersOfVillageParamName = "setOfCenters";
+    public static final String addressesParamName = "addresses";
+    public static final String pathParamName = "villages";
     
     public static final String timelineParamName = "timeline";
        
     public static final Set<String> VILLAGE_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, externalIdParamName, officeIdParamName, 
             officeNameParamName, villageCodeParamName, villageNameParamName, statusParamName, countParamName, talukParamName, districtParamName, 
             pincodeParamName, stateParamName, localeParamName,dateFormatParamName, submittedOnDateParamName, activationDateParamName, 
-             officeOptionsParamName, centersOfVillageParamName, centersOfVillageParamName));
+             officeOptionsParamName, centersOfVillageParamName, centersOfVillageParamName,addressesParamName));
 
     public static final Set<String> VILLAGE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdParamName, officeIdParamName, 
             villageCodeParamName, villageNameParamName, countParamName, talukParamName, districtParamName, pincodeParamName, stateParamName,
-            activeParamName, localeParamName,dateFormatParamName, activationDateParamName , submittedOnDateParamName, timelineParamName));
+            activeParamName, localeParamName,dateFormatParamName, activationDateParamName , submittedOnDateParamName, timelineParamName,addressesParamName));
     
     public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, activationDateParamName));

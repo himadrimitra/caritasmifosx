@@ -93,7 +93,7 @@ public class SelfLoansApiResource {
 
 		final boolean staffInSelectedOfficeOnly = false;
 		return this.loansApiResource.retrieveLoan(loanId,
-				staffInSelectedOfficeOnly, uriInfo);
+				staffInSelectedOfficeOnly, false, uriInfo);
 	}
 
 	@GET

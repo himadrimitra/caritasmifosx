@@ -37,9 +37,11 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.exception.CalendarDateException;
 import org.apache.fineract.portfolio.calendar.exception.NotValidRecurringDateException;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -495,6 +497,23 @@ public final class LoanEventApiJsonValidator {
 
         validatePaymentDetails(baseDataValidator, element);
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    public void validateGroupMeetingDateHasActiveLoans(final List<Loan> loans, final Boolean reschedulebasedOnMeetingDates,
+            final LocalDate presentMeetingDate) {
+        if (!reschedulebasedOnMeetingDates) {
+            List<Long> activeLoanIds = new ArrayList<>();
+            for (final Loan loan : loans) {
+                if (loan.isDisbursed()) {
+                    activeLoanIds.add(loan.getId());
+                }
+            }
+            if (!activeLoanIds.isEmpty()) {
+                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has active loans";
+                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.active.loans (" + activeLoanIds + ") ",
+                        defaultUserMessage, presentMeetingDate);
+            }
+        }
     }
 
 }

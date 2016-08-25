@@ -6,6 +6,7 @@ import java.util.Collection;
 import com.finflux.infrastructure.gis.country.data.CountryData;
 import com.finflux.infrastructure.gis.district.data.DistrictData;
 import com.finflux.infrastructure.gis.state.data.StateData;
+import com.finflux.infrastructure.gis.taluka.data.TalukaData;
 
 public class AddressData {
 
@@ -16,7 +17,7 @@ public class AddressData {
     private final String addressLineTwo;
     private final String landmark;
     private final String villageTown;
-    private final String taluka;
+    private final TalukaData talukaData;
     private final DistrictData districtData;
     private final StateData stateData;
     private final CountryData countryData;
@@ -26,7 +27,7 @@ public class AddressData {
     private final Collection<AddressEntityData> addressEntityData;
 
     private AddressData(final Long addressId, final String houseNo, final String streetNo, final String addressLineOne,
-            final String addressLineTwo, final String landmark, final String villageTown, final String taluka,
+            final String addressLineTwo, final String landmark, final String villageTown, final TalukaData talukaData,
             final DistrictData districtData, final StateData stateData, final CountryData countryData, final String postalCode,
             final BigDecimal latitude, final BigDecimal longitude, final Collection<AddressEntityData> addressEntityData) {
         this.addressId = addressId;
@@ -36,7 +37,7 @@ public class AddressData {
         this.addressLineTwo = addressLineTwo;
         this.landmark = landmark;
         this.villageTown = villageTown;
-        this.taluka = taluka;
+        this.talukaData = talukaData;
         this.districtData = districtData;
         this.stateData = stateData;
         this.countryData = countryData;
@@ -47,10 +48,10 @@ public class AddressData {
     }
 
     public static AddressData instance(final Long addressId, final String houseNo, final String streetNo, final String addressLineOne,
-            final String addressLineTwo, final String landmark, final String villageTown, final String taluka,
+            final String addressLineTwo, final String landmark, final String villageTown, final TalukaData talukaData,
             final DistrictData districtData, final StateData stateData, final CountryData countryData, final String postalCode,
             final BigDecimal latitude, final BigDecimal longitude, final Collection<AddressEntityData> addressEntityData) {
-        return new AddressData(addressId, houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, taluka, districtData,
+        return new AddressData(addressId, houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, talukaData, districtData,
                 stateData, countryData, postalCode, latitude, longitude, addressEntityData);
     }
 
@@ -82,8 +83,8 @@ public class AddressData {
         return this.villageTown;
     }
 
-    public String getTaluka() {
-        return this.taluka;
+    public TalukaData getTalukaData() {
+        return this.talukaData;
     }
 
     public DistrictData getDistrictData() {

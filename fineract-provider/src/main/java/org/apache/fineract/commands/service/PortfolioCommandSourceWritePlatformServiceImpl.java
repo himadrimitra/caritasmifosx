@@ -64,9 +64,15 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
         this.processAndLogCommandService = processAndLogCommandService;
         this.schedulerJobRunnerReadService = schedulerJobRunnerReadService;
     }
+    
+    @Override
+    public CommandProcessingResult logCommandSource(final CommandWrapper wrapper){
+    	//By default we should set the  isTransactionalScopeRequiredInprocessAndLogCommand to true
+    	return logCommandSource(wrapper, true);
+    }
 
     @Override
-    public CommandProcessingResult logCommandSource(final CommandWrapper wrapper) {
+    public CommandProcessingResult logCommandSource(final CommandWrapper wrapper, boolean isTransactionalScopeRequiredInprocessAndLogCommand) {
 
         boolean isApprovedByChecker = false;
         // check if is update of own account details
@@ -95,7 +101,11 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
                 wrapper.getTransactionId(), wrapper.getHref(), wrapper.getProductId());
         while (numberOfRetries <= maxNumberOfRetries) {
             try {
-                result = this.processAndLogCommandService.processAndLogCommand(wrapper, command, isApprovedByChecker);
+            	if(isTransactionalScopeRequiredInprocessAndLogCommand){
+            		result = this.processAndLogCommandService.processAndLogCommandWithTransactionalScope(wrapper, command, isApprovedByChecker);
+            	} else {
+            		result = this.processAndLogCommandService.processAndLogCommandWithoutTransactionalScope(wrapper, command, isApprovedByChecker);
+            	}
                 numberOfRetries = maxNumberOfRetries + 1;
             } catch (CannotAcquireLockException | ObjectOptimisticLockingFailureException exception) {
                 logger.info("The following command " + command.json() + " has been retried  " + numberOfRetries + " time(s)");
@@ -148,7 +158,7 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
                 commandSourceInput.getResourceGetUrl(), commandSourceInput.getProductId());
 
         final boolean makerCheckerApproval = true;
-        return this.processAndLogCommandService.processAndLogCommand(wrapper, command, makerCheckerApproval);
+        return this.processAndLogCommandService.processAndLogCommandWithTransactionalScope(wrapper, command, makerCheckerApproval);
     }
 
     @Transactional

@@ -139,6 +139,7 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
                     groupGeneralDataList.add(groupGeneralData);
                 } else if (groupId != null && groupId.equals(tempGroupId)) {
                     if (clientData == null || (clientId != null && !clientId.equals(tempClientId))) {
+                        clientId = tempClientId;
                         clientData = clientDataExtractor.mapRow(rs, rowIndex);
                         if (clientData != null) {
                             if (this.isShowLoanDetailsInCenterPageEnabled) {

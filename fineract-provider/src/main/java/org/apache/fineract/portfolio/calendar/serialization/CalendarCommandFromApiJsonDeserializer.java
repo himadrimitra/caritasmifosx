@@ -230,6 +230,11 @@ public class CalendarCommandFromApiJsonDeserializer extends AbstractFromApiJsonD
                     CALENDAR_SUPPORTED_PARAMETERS.RESCHEDULE_BASED_ON_MEETING_DATES.getValue(), element);
             baseDataValidator.reset().parameter(CALENDAR_SUPPORTED_PARAMETERS.RESCHEDULE_BASED_ON_MEETING_DATES.getValue())
                     .value(rescheduleBasedOnMeetingDates).validateForBooleanValue();
+            if (rescheduleBasedOnMeetingDates) {
+                final String newMeetingDate = this.fromApiJsonHelper.extractStringNamed(
+                        CALENDAR_SUPPORTED_PARAMETERS.NEW_MEETING_DATE.getValue(), element);
+                baseDataValidator.reset().parameter(CALENDAR_SUPPORTED_PARAMETERS.NEW_MEETING_DATE.getValue()).value(newMeetingDate).notNull();
+            }
         }
 
         if (this.fromApiJsonHelper.parameterExists(CALENDAR_SUPPORTED_PARAMETERS.PRESENT_MEETING_DATE.getValue(), element)) {

@@ -47,5 +47,7 @@ public interface SchedularWritePlatformService {
     public void updateSchedulerDetail(final SchedulerDetail schedulerDetail);
 
     public boolean processJobDetailForExecution(String jobKey, String triggerType);
+    
+    boolean updateCurrentlyRunningStatus(String jobName, boolean status);
 
 }

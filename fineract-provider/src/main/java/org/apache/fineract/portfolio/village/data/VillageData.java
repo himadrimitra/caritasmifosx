@@ -24,6 +24,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.portfolio.group.data.CenterData;
 
+import com.finflux.kyc.address.data.AddressData;
+
 
 public class VillageData {
 
@@ -34,10 +36,6 @@ public class VillageData {
     private final String villageCode;
     private final String villageName;
     private final Long counter;
-    private final String taluk;
-    private final String district;
-    private final Long pincode;
-    private final String state;
     private final EnumOptionData status;
     
     // template
@@ -45,17 +43,17 @@ public class VillageData {
     
     //associations
     private final Collection<CenterData> setOfCenters;
+    private final Collection<AddressData> addressData;
     
     final VillageTimelineData timeline;
     
     public static VillageData template(final Long officeId, final Collection<OfficeData> officeOptions) {
         
-        return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null, null, null, null, null);
+        return new VillageData(null, null, officeId, null, null, null, null, officeOptions, null, null, null,null);
     }
     
     private VillageData(final Long id, final String externalId, final Long officeId, final String officeName, final String villageCode,
-            final String villageName, final Long counter, final Collection<OfficeData> officeOptions, final String taluk, final String district, 
-            final Long pincode, final String state, final EnumOptionData status, final VillageTimelineData timeline, final Collection<CenterData> setOfCenters){
+            final String villageName, final Long counter, final Collection<OfficeData> officeOptions, final EnumOptionData status, final VillageTimelineData timeline, final Collection<CenterData> setOfCenters,final Collection<AddressData> addressData){
         
         this.villageId = id;
         this.externalId = externalId;
@@ -65,36 +63,33 @@ public class VillageData {
         this.villageName = villageName;
         this.counter = counter;
         this.officeOptions = officeOptions;
-        this.taluk = taluk;
-        this.district = district;
-        this.pincode = pincode;
-        this.state = state;
         this.status = status;
         this.timeline = timeline;
         this.setOfCenters = setOfCenters;
+        this.addressData = addressData;
     }
     
     public static VillageData instance(final Long id, final String externalId, final Long officeId, final String officeName, final String villageCode, 
-            final String villageName, final Long counter, final String taluk, final String district, final Long pincode, final String state, 
+            final String villageName, final Long counter, 
             final EnumOptionData status, final VillageTimelineData timeline) {
         
-        return new VillageData(id, externalId, officeId, officeName, villageCode, villageName, counter, null, taluk, district, pincode, state, status, 
-                 timeline, null);
+        return new VillageData(id, externalId, officeId, officeName, villageCode, villageName, counter, null, status, 
+                 timeline, null,null);
     }
     
     public static VillageData lookup(final Long id, final String villageName) {
         
-        return new VillageData(id, null, null, null, null, villageName, null, null, null, null, null, null, null, null, null);
+        return new VillageData(id, null, null, null, null, villageName, null, null, null, null, null,null);
     }
     
     public static VillageData countValue(final Long counter, final String villageName) {
         
-        return new VillageData(null, null, null, null, null, villageName, counter, null, null, null, null, null, null, null, null);
+        return new VillageData(null, null, null, null, null, villageName, counter, null, null, null, null,null);
     }
 
-    public static VillageData withAssociations(VillageData village, Collection<CenterData> centers) {
+    public static VillageData withAssociations(VillageData village, Collection<CenterData> centers, Collection<AddressData> address) {
         return new VillageData(village.villageId, village.externalId, village.officeId, village.officeName, village.villageCode, village.villageName, 
-                village.counter, null, village.taluk, village.district, village.pincode, village.state, village.status, village.timeline, centers);
+                village.counter, null, village.status, village.timeline, centers,address);
     }
     
 }

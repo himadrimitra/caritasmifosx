@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.filter.GenericFilterBean;
@@ -118,7 +119,7 @@ public class TenantAwareTenantIdentifierFilter extends GenericFilterBean {
 
                 String pathInfo = request.getRequestURI();
                 boolean isReportRequest = false;
-                if (pathInfo != null && pathInfo.contains("report")) {
+                if (pathInfo != null && pathInfo.contains("report") && request.getMethod().equals(HttpMethod.GET.toString())) {
                     isReportRequest = true;
                 }
                 final FineractPlatformTenant tenant = this.basicAuthTenantDetailsService.loadTenantById(tenantIdentifier, isReportRequest);
