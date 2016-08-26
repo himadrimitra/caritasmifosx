@@ -26,11 +26,8 @@ public class GlobalConfigurationPropertyData {
 
     @SuppressWarnings("unused")
     private final String name;
-    @SuppressWarnings("unused")
     private final boolean enabled;
-    @SuppressWarnings("unused")
     private final String value;
-    @SuppressWarnings("unused")
     private final Date dateValue;
     @SuppressWarnings("unused")
     private final Long id;
@@ -59,5 +56,18 @@ public class GlobalConfigurationPropertyData {
         this.id = id;
         this.description = description;
         this.trapDoor = isTrapDoor;
+    }
+
+    
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    public String getValue() {
+        return this.value;
+    }
+
+    public Date getDateValue() {
+        return this.dateValue;
     }
 }

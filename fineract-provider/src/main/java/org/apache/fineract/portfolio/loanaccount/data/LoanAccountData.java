@@ -1574,4 +1574,23 @@ public class LoanAccountData {
         return (this.repaymentFrequencyType.getId().intValue() == PeriodFrequencyType.MONTHS.getValue());
     }
 
+    
+    public boolean isLoanProductLinkedToFloatingRate() {
+        return this.isLoanProductLinkedToFloatingRate;
+    }
+    
+    public LocalDate getDisbursementDate(){
+        return this.timeline.getDisbursementDate();
+    }
+
+    
+    public boolean isFloatingInterestRate() {
+        return this.isFloatingInterestRate;
+    }
+
+    
+    public BigDecimal getInterestRateDifferential() {
+        return this.interestRateDifferential;
+    }
+
 }

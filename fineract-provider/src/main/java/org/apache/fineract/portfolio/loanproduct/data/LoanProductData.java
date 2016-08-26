@@ -806,6 +806,112 @@ public class LoanProductData {
         this.loanTenureFrequencyType = productData.loanTenureFrequencyType;
         this.considerFutureDisbursmentsInSchedule = productData.isConsiderFutureDisbursmentsInSchedule();
     }
+    
+    public static LoanProductData loanProductWithFloatingRates(final Long id, final String name,
+            final boolean isLinkedToFloatingInterestRates, final Integer floatingRateId, final String floatingRateName,
+            final BigDecimal interestRateDifferential, final BigDecimal minDifferentialLendingRate,
+            final BigDecimal defaultDifferentialLendingRate, final BigDecimal maxDifferentialLendingRate,
+            final boolean isFloatingInterestRateCalculationAllowed) {
+        final String shortName = null;
+        final String description = null;
+        final CurrencyData currency = CurrencyData.blank();
+        final BigDecimal principal = null;
+        final BigDecimal minPrincipal = null;
+        final BigDecimal maxPrincipal = null;
+        final BigDecimal tolerance = null;
+        final Integer numberOfRepayments = null;
+        final Integer minNumberOfRepayments = null;
+        final Integer maxNumberOfRepayments = null;
+
+        final Integer repaymentEvery = null;
+        final BigDecimal interestRatePerPeriod = null;
+        final BigDecimal minInterestRatePerPeriod = null;
+        final BigDecimal maxInterestRatePerPeriod = null;
+        final BigDecimal annualInterestRate = null;
+        final boolean isVariableInstallmentsAllowed = false;
+        final Integer minimumGap = null;
+        final Integer maximumGap = null;
+        final EnumOptionData repaymentFrequencyType = LoanEnumerations.repaymentFrequencyType(PeriodFrequencyType.MONTHS);
+        final EnumOptionData interestRateFrequencyType = LoanEnumerations.interestRateFrequencyType(PeriodFrequencyType.MONTHS);
+        final EnumOptionData amortizationType = LoanEnumerations.amortizationType(AmortizationMethod.EQUAL_INSTALLMENTS);
+        final EnumOptionData interestType = LoanEnumerations.interestType(InterestMethod.DECLINING_BALANCE);
+        final EnumOptionData interestCalculationPeriodType = LoanEnumerations
+                .interestCalculationPeriodType(InterestCalculationPeriodMethod.SAME_AS_REPAYMENT_PERIOD);
+        final Boolean allowPartialPeriodInterestCalcualtion = null;
+        final Long fundId = null;
+        final String fundName = null;
+        final Long transactionProcessingStrategyId = null;
+        final String transactionProcessingStrategyName = null;
+
+        final Integer graceOnPrincipalPayment = null;
+        final Integer recurringMoratoriumOnPrincipalPeriods = null;
+        final Integer graceOnInterestPayment = null;
+        final Integer graceOnInterestCharged = null;
+        final Integer graceOnArrearsAgeing = null;
+        final Integer overdueDaysForNPA = null;
+
+        final Collection<ChargeData> charges = null;
+        final Collection<LoanProductBorrowerCycleVariationData> principalVariationsForBorrowerCycle = new ArrayList<>(1);
+        final Collection<LoanProductBorrowerCycleVariationData> interestRateVariationsForBorrowerCycle = new ArrayList<>(1);
+        final Collection<LoanProductBorrowerCycleVariationData> numberOfRepaymentVariationsForBorrowerCycle = new ArrayList<>(1);
+
+        final EnumOptionData accountingType = AccountingEnumerations.accountingRuleType(AccountingRuleType.NONE);
+        final boolean includeInBorrowerCycle = false;
+        final boolean useBorrowerCycle = false;
+        final LocalDate startDate = null;
+        final LocalDate closeDate = null;
+        final String status = null;
+        final String externalId = null;
+        final Boolean multiDisburseLoan = null;
+        final Integer maxTrancheCount = null;
+        final BigDecimal outstandingLoanBalance = null;
+
+        final EnumOptionData daysInMonthType = CommonEnumerations.daysInMonthType(DaysInMonthType.ACTUAL);
+        final EnumOptionData daysInYearType = CommonEnumerations.daysInYearType(DaysInYearType.ACTUAL);
+        final boolean isInterestRecalculationEnabled = false;
+        final LoanProductInterestRecalculationData interestRecalculationData = LoanProductInterestRecalculationData
+                .sensibleDefaultsForNewLoanProductCreation();
+        final Integer minimumDaysBetweenDisbursalAndFirstRepayment = null;
+        final Boolean holdGuaranteeFunds = false;
+        final LoanProductGuaranteeData productGuaranteeData = null;
+        final BigDecimal principalThresholdForLastInstallment = null;
+        final boolean accountMovesOutOfNPAOnlyOnArrearsCompletion = false;
+        final boolean canDefineInstallmentAmount = false;
+        final Integer installmentAmountInMultiplesOf = null;
+        final LoanProductConfigurableAttributes loanProductConfigurableAttributes = null;
+
+        final boolean isSubsidyApplicable = false;
+        final Integer adjustedInstallmentInMultiplesOf = null;
+        final boolean adjustFirstEMIAmount = false;
+        final Boolean isoverpaymentcloseloan = false;
+        final Boolean syncExpectedWithDisbursementDate = false;
+        final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment = null;
+        final Integer minLoanTerm = null;
+        final Integer maxLoanTerm = null;
+        final EnumOptionData loanTenureFrequencyType = null;
+        final boolean considerFutureDisbursmentsInSchedule = false;
+
+        return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
+                numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
+                minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
+                amortizationType, interestType, interestCalculationPeriodType, allowPartialPeriodInterestCalcualtion, fundId, fundName,
+                transactionProcessingStrategyId, transactionProcessingStrategyName, graceOnPrincipalPayment,
+                recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, charges, accountingType,
+                includeInBorrowerCycle, useBorrowerCycle, startDate, closeDate, status, externalId, principalVariationsForBorrowerCycle,
+                interestRateVariationsForBorrowerCycle, numberOfRepaymentVariationsForBorrowerCycle, multiDisburseLoan, maxTrancheCount,
+                outstandingLoanBalance, graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType, daysInYearType,
+                isInterestRecalculationEnabled, interestRecalculationData, minimumDaysBetweenDisbursalAndFirstRepayment,
+                holdGuaranteeFunds, productGuaranteeData, principalThresholdForLastInstallment,
+                accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineInstallmentAmount, installmentAmountInMultiplesOf,
+                loanProductConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRateId, floatingRateName,
+                interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate, maxDifferentialLendingRate,
+                isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
+                adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
+                minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
+                considerFutureDisbursmentsInSchedule);
+
+    }
+
 
     private Collection<ChargeData> nullIfEmpty(final Collection<ChargeData> charges) {
         Collection<ChargeData> chargesLocal = charges;
@@ -1184,4 +1290,7 @@ public class LoanProductData {
         return considerFutureDisbursmentsInSchedule;
     }
     
+    public BigDecimal getInterestRateDifferential() {
+        return this.interestRateDifferential;
+    }
 }

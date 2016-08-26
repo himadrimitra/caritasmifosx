@@ -26,6 +26,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 import org.apache.fineract.infrastructure.configuration.exception.GlobalConfigurationPropertyCannotBeModfied;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.security.exception.ForcePasswordResetException;
@@ -84,12 +85,6 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         return this.dateValue;
     }
 
-    public boolean updateTo(final boolean value) {
-        final boolean updated = this.enabled != value;
-        this.enabled = value;
-        return updated;
-    }
-    
     public String getName(){
     	return this.name;
     }
@@ -136,11 +131,14 @@ public class GlobalConfigurationProperty extends AbstractPersistable<Long> {
         return new GlobalConfigurationProperty(name, false, null, null, null, false);
     }
     
-	private Long loangValue(String value) {
-		if (value == null) {
-			return null;
-		}
-		return Long.parseLong(value);
-	}
+    private Long loangValue(String value) {
+        if (value == null) { return null; }
+        return Long.parseLong(value);
+    }
+    
+    public GlobalConfigurationPropertyData toData() {
+        return new GlobalConfigurationPropertyData(getName(), isEnabled(), getValue(), getDateValue(), this.getId(), this.description,
+                this.isTrapDoor);
+    }
 
 }

@@ -2070,22 +2070,19 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
 
     @Override
-    public Collection<InterestRatePeriodData> retrieveLoanInterestRatePeriodData(Long loanId) {
+    public Collection<InterestRatePeriodData> retrieveLoanInterestRatePeriodData(LoanAccountData loanData) {
         this.context.authenticatedUser();
 
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
-
-        if (loan.loanProduct().isLinkedToFloatingInterestRate()) {
+        if (loanData.isLoanProductLinkedToFloatingRate()) {
             final Collection<InterestRatePeriodData> intRatePeriodData = new ArrayList<>();
-            final Collection<InterestRatePeriodData> intRates = this.floatingRatesReadPlatformService.retrieveInterestRatePeriods(loan
-                    .loanProduct().getFloatingRates().getFloatingRate().getId());
+            final Collection<InterestRatePeriodData> intRates = this.floatingRatesReadPlatformService.retrieveInterestRatePeriods(loanData
+                    .loanProductId());
             for (final InterestRatePeriodData rate : intRates) {
-                if (rate.getFromDate().compareTo(loan.getDisbursementDate().toDate()) > 0 && loan.getIsFloatingInterestRate()) {
-                    updateInterestRatePeriodData(rate, loan);
+                if (rate.getFromDate().compareTo(loanData.getDisbursementDate().toDate()) > 0 && loanData.isFloatingInterestRate()) {
+                    updateInterestRatePeriodData(rate, loanData);
                     intRatePeriodData.add(rate);
-                } else if (rate.getFromDate().compareTo(loan.getDisbursementDate().toDate()) <= 0) {
-                    updateInterestRatePeriodData(rate, loan);
+                } else if (rate.getFromDate().compareTo(loanData.getDisbursementDate().toDate()) <= 0) {
+                    updateInterestRatePeriodData(rate, loanData);
                     intRatePeriodData.add(rate);
                     break;
                 }
@@ -2096,8 +2093,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         return null;
     }
 
-    private void updateInterestRatePeriodData(InterestRatePeriodData rate, Loan loan) {
-        rate.setLoanProductDifferentialInterestRate(loan.loanProduct().getFloatingRates().getInterestRateDifferential());
+    private void updateInterestRatePeriodData(InterestRatePeriodData rate, LoanAccountData loan) {
+        LoanProductData loanProductData = loanProductReadPlatformService.retrieveLoanProductFloatingDetails(loan.loanProductId());
+        rate.setLoanProductDifferentialInterestRate(loanProductData.getInterestRateDifferential());
         rate.setLoanDifferentialInterestRate(loan.getInterestRateDifferential());
 
         BigDecimal effectiveInterestRate = BigDecimal.ZERO;
