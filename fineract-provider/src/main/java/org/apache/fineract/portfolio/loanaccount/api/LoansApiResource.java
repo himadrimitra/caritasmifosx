@@ -359,6 +359,7 @@ public class LoansApiResource {
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
         LoanAccountData loanBasicDetails = null;
+
         Collection<LoanTransactionData> loanRepayments = null;
         LoanScheduleData repaymentSchedule = null;
         Collection<LoanChargeData> charges = null;
@@ -428,7 +429,7 @@ public class LoansApiResource {
 
             if (associationParameters.contains("all")) {
                 associationParameters.addAll(Arrays.asList("repaymentSchedule", "futureSchedule", "originalSchedule", "transactions",
-                        "charges", "guarantors", "collateral", "notes", "linkedAccount", "multiDisburseDetails"));
+                        "charges", "guarantors", "collateral", "notes", "linkedAccount", "multiDisburseDetails", "interestRatesPeriods","meeting"));
             }
 
             ApiParameterHelper.excludeAssociationsForResponseIfProvided(uriInfo.getQueryParameters(), associationParameters);
@@ -485,6 +486,8 @@ public class LoansApiResource {
                 if (CollectionUtils.isEmpty(charges)) {
                     charges = null;
                 }
+                overdueCharges = this.chargeReadPlatformService.retrieveLoanProductCharges(loanBasicDetails.loanProductId(),
+                        ChargeTimeType.OVERDUE_INSTALLMENT);
             }
 
             if (associationParameters.contains("collateral")) {
@@ -515,9 +518,9 @@ public class LoansApiResource {
             
             if (associationParameters.contains("interestRatesPeriods")) {
                 mandatoryResponseParameters.add("interestRatesPeriods");
-                interestRatesPeriods = this.loanReadPlatformService.retrieveLoanInterestRatePeriodData(loanId);
+                interestRatesPeriods = this.loanReadPlatformService.retrieveLoanInterestRatePeriodData(loanBasicDetails);
             }
-
+            
         }
         
         if(!isFetchSpecificData){
@@ -577,9 +580,6 @@ public class LoansApiResource {
                 }
 
             }
-
-            overdueCharges = this.chargeReadPlatformService.retrieveLoanProductCharges(loanBasicDetails.loanProductId(),
-                    ChargeTimeType.OVERDUE_INSTALLMENT);
 
             paidInAdvanceTemplate = this.loanReadPlatformService.retrieveTotalPaidInAdvance(loanId);
         }
