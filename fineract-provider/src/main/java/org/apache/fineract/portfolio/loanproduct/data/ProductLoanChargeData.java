@@ -20,4 +20,8 @@ public class ProductLoanChargeData {
             final Boolean isMandatory) {
         return new ProductLoanChargeData(id, productLoanId, chargeData, isMandatory);
     }
+
+    public ChargeData chargeData() {
+        return this.chargeData;
+    }
 }

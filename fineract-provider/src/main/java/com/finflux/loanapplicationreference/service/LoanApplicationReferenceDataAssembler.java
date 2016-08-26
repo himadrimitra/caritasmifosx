@@ -186,10 +186,16 @@ public class LoanApplicationReferenceDataAssembler {
                     if (localdueDate != null) {
                         dueDate = localdueDate.toDate();
                     }
+                    
+                    Boolean isMandatory = this.fromApiJsonHelper.extractBooleanNamed("isMandatory", loanChargeElement);
+                    if (isMandatory == null) {
+                        isMandatory = false;
+                    }
                     if (loanApplicationCharge != null) {
-                        loanApplicationCharge.update(loanApplicationReference, charge, dueDate, amountOrPercentage);
+                        loanApplicationCharge.update(loanApplicationReference, charge, dueDate, amountOrPercentage, isMandatory);
                     } else {
-                        loanApplicationCharge = LoanApplicationCharge.create(loanApplicationReference, charge, dueDate, amountOrPercentage);
+                        loanApplicationCharge = LoanApplicationCharge.create(loanApplicationReference, charge, dueDate, amountOrPercentage,
+                                isMandatory);
                     }
                     loanApplicationCharges.add(loanApplicationCharge);
                 }
@@ -233,10 +239,10 @@ public class LoanApplicationReferenceDataAssembler {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public Map<String, Object> assembleApproveForm(final LoanApplicationReference loanApplicationReference, final JsonCommand command, final JsonCommand validateCommand) {
+    public Map<String, Object> assembleApproveForm(final LoanApplicationReference loanApplicationReference, final JsonCommand command) {
 
         final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
-                validateCommand.json());
+                command.json());
         loanApplicationReference.updateLoanApplicationCharges(loanApplicationCharges);
         
         Map<String, Object> changes = new LinkedHashMap<>(10);

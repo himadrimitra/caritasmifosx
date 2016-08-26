@@ -45,6 +45,7 @@ import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductBorrowerCycleVariationData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.data.ProductLoanChargeData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
@@ -1030,9 +1031,9 @@ public class LoanAccountData {
         final EnumOptionData termPeriodFrequencyType = product.getRepaymentFrequencyType();
 
         final Collection<LoanChargeData> charges = new ArrayList<LoanChargeData>();
-        for (final ChargeData charge : product.charges()) {
-            if (!charge.isOverdueInstallmentCharge()) {
-                charges.add(charge.toLoanChargeData());
+        for (final ProductLoanChargeData productLoanCharge : product.charges()) {
+            if (!productLoanCharge.chargeData().isOverdueInstallmentCharge()) {
+                charges.add(productLoanCharge.chargeData().toLoanChargeData());
             }
         }
 
@@ -1144,8 +1145,8 @@ public class LoanAccountData {
         final EnumOptionData termPeriodFrequencyType = product.getRepaymentFrequencyType();
 
         final Collection<LoanChargeData> charges = new ArrayList<LoanChargeData>();
-        for (final ChargeData charge : product.charges()) {
-            charges.add(charge.toLoanChargeData());
+        for (final ProductLoanChargeData productLoanCharge : product.charges()) {
+            charges.add(productLoanCharge.chargeData().toLoanChargeData());
         }
 
         return new LoanAccountData(acc.id, acc.accountNo, acc.status, acc.externalId, acc.clientId, acc.clientAccountNo, acc.clientName,

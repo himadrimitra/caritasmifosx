@@ -19,6 +19,8 @@
 package org.apache.fineract.portfolio.loanproduct.service;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductBorrowerCycleVariationData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
@@ -48,4 +50,6 @@ public interface LoanProductReadPlatformService {
     Collection<LoanProductBorrowerCycleVariationData> retrieveLoanProductBorrowerCycleVariations(Long loanProductId);
 
     LoanProductData retrieveLoanProductFloatingDetails(Long loanProductId);
+    
+    List<Map<String, Object>> getLoanProductMandatoryCharges(final Long productId, final Boolean isPenalty);
 }

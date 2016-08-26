@@ -84,6 +84,6 @@ public class LoanApplicationReferenceApiConstants {
             approvedOnDateParaName, expectedDisbursementDateParaName, numberOfRepaymentsParamName, repaymentPeriodFrequencyEnumParamName,
             repayEveryParamName, termPeriodFrequencyEnumParamName, termFrequencyParamName, fixedEmiAmountParamName,
             maxOutstandingLoanBalanceParamName, loanApplicationSanctionTrancheDatasParamName, repaymentsStartingFromDateParaName,
-            localeParamName, dateFormatParamName));
+            localeParamName, dateFormatParamName, chargesParamName));
 
 }
