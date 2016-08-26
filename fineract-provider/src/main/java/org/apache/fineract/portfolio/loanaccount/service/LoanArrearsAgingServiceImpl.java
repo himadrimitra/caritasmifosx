@@ -101,7 +101,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         Map<String,Integer> returnMap = new HashMap<>();
         List<String> insertStatement = new ArrayList<>();
         int result = 0 ;
-       
+        
         this.jdbcTemplate.execute("truncate table m_loan_arrears_aging");
 
         final StringBuilder updateSqlBuilder = new StringBuilder(900);
@@ -132,8 +132,10 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         updateSqlBuilder.append(" and (prd.arrears_based_on_original_schedule = 0 or prd.arrears_based_on_original_schedule is null) ");
         updateSqlBuilder.append(" GROUP BY ml.id");
 
-        returnMap = updateLoanArrearsAgeingDetailsWithOriginalSchedule();
+     //   returnMap = updateLoanArrearsAgeingDetailsWithOriginalSchedule();
+        
         insertStatement.add(updateSqlBuilder.toString());
+        insertStatement.add("CALL ArrearsAging");
         returnMap.putAll(this.executeBatchUpdateTransactional.executeBatchUpdate(insertStatement));
         for (String message : returnMap.keySet()) {
             if (!message.isEmpty()) {
