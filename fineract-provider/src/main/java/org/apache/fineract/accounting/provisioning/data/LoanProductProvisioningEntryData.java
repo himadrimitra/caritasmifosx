@@ -42,7 +42,7 @@ public class LoanProductProvisioningEntryData {
 
     private final BigDecimal percentage;
 
-    private final BigDecimal balance;
+    private final BigDecimal outstandingAsPerType;
 
     private final BigDecimal amountreserved ;
     
@@ -60,13 +60,9 @@ public class LoanProductProvisioningEntryData {
     
     private final Long criteriaId ;
     
-    private final BigDecimal totalPrincipalOutstandingBalnce;
-    
-    private final Integer provisioningAmountType;
-    
     public LoanProductProvisioningEntryData(final Long historyId, final Long officeId, final String currencyCode, final Long productId,
-            final Long categoryId, final Long overdueInDays, final BigDecimal percentage, final BigDecimal balance, Long liablityAccount,
-            Long expenseAccount, final Long criteriaId, final BigDecimal totalPrincipalOutstandingBalnce, final Integer provisioningAmountType) {
+            final Long categoryId, final Long overdueInDays, final BigDecimal percentage, final BigDecimal outstandingAsPerType, Long liablityAccount,
+            Long expenseAccount, final Long criteriaId) {
         this.historyId = historyId;
         this.officeId = officeId;
         this.currencyCode = currencyCode;
@@ -74,7 +70,7 @@ public class LoanProductProvisioningEntryData {
         this.categoryId = categoryId;
         this.overdueInDays = overdueInDays;
         this.percentage = percentage;
-        this.balance = balance;
+        this.outstandingAsPerType = outstandingAsPerType;
         this.liablityAccount = liablityAccount;
         this.expenseAccount = expenseAccount;
         this.amountreserved = null ;
@@ -86,8 +82,6 @@ public class LoanProductProvisioningEntryData {
         this.expenseAccountCode = null ;
         this.expenseAccountName = null ;
         this.criteriaId = criteriaId ;
-        this.totalPrincipalOutstandingBalnce = totalPrincipalOutstandingBalnce;
-        this.provisioningAmountType = provisioningAmountType;
     }
 
     public LoanProductProvisioningEntryData(final Long historyId, final Long officeId, final String officeName, final String currencyCode, final Long productId,
@@ -102,7 +96,7 @@ public class LoanProductProvisioningEntryData {
         this.categoryName = categoryName ;
         this.overdueInDays = overdueInDays;
         this.percentage = null;
-        this.balance = null;
+        this.outstandingAsPerType = null;
         this.liablityAccount = liablityAccount;
         this.expenseAccount = expenseAccount;
         this.officeName = officeName ;
@@ -113,8 +107,6 @@ public class LoanProductProvisioningEntryData {
         this.expenseAccountCode = expenseAccountglCode ;
         this.expenseAccountName = expenseAccountName ;
         this.criteriaId = criteriaId ;
-        this.totalPrincipalOutstandingBalnce = null;
-        this.provisioningAmountType = null;
     }
     public Long getHistoryId() {
         return this.historyId;
@@ -136,8 +128,8 @@ public class LoanProductProvisioningEntryData {
         return this.overdueInDays;
     }
 
-    public BigDecimal getOutstandingBalance() {
-        return balance;
+    public BigDecimal getOutstandingAsPerType() {
+        return outstandingAsPerType;
     }
 
     public BigDecimal getPercentage() {
@@ -160,12 +152,4 @@ public class LoanProductProvisioningEntryData {
         return this.criteriaId ;
     }
 
-	public BigDecimal getTotalPrincipalOutstandingBalnce() {
-		return this.totalPrincipalOutstandingBalnce;
-	}
-
-	public Integer getProvisioningAmountType() {
-		return this.provisioningAmountType;
-	}
-	
 }
