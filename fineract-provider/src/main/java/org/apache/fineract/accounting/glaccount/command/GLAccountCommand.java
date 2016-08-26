@@ -44,9 +44,11 @@ public class GLAccountCommand {
     private final Integer type;
     private final String description;
     private final Long tagId;
+    private final Integer glClassificationType;
 
     public GLAccountCommand(final Long id, final String name, final Long parentId, final String glCode, final Boolean disabled,
-            final Boolean manualEntriesAllowed, final Integer type, final Integer usage, final String description, final Long tagId) {
+            final Boolean manualEntriesAllowed, final Integer type, final Integer usage, final String description, final Long tagId,
+            final Integer glClassificationType) {
         this.id = id;
         this.name = name;
         this.parentId = parentId;
@@ -57,6 +59,7 @@ public class GLAccountCommand {
         this.usage = usage;
         this.description = description;
         this.tagId = tagId;
+        this.glClassificationType = glClassificationType;
     }
 
     public void validateForCreate() {
@@ -87,6 +90,9 @@ public class GLAccountCommand {
 
         baseDataValidator.reset().parameter(GLAccountJsonInputParams.TAGID.getValue()).value(this.tagId).ignoreIfNull()
                 .longGreaterThanZero();
+        
+        baseDataValidator.reset().parameter(GLAccountJsonInputParams.GL_CLASSIFICATION_TYPE.getValue()).
+        value(this.glClassificationType).inMinMaxRange(1, 3);
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
@@ -117,6 +123,9 @@ public class GLAccountCommand {
         baseDataValidator.reset().parameter(GLAccountJsonInputParams.DISABLED.getValue()).value(this.disabled).ignoreIfNull();
 
         baseDataValidator.reset().anyOfNotNull(this.name, this.glCode, this.parentId, this.type, this.description, this.disabled);
+        
+        baseDataValidator.reset().parameter(GLAccountJsonInputParams.GL_CLASSIFICATION_TYPE.getValue()).
+        value(this.glClassificationType).inMinMaxRange(1, 3);
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
