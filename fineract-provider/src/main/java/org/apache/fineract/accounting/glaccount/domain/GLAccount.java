@@ -21,6 +21,7 @@ package org.apache.fineract.accounting.glaccount.domain;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.persistence.Column;
@@ -78,13 +79,17 @@ public class GLAccount extends AbstractPersistable<Long> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tag_id")
     private CodeValue tagId;
+    
+    @Column(name = "gl_classification_type", nullable = true)
+    private Integer glClassificationType;
 
     protected GLAccount() {
         //
     }
 
     private GLAccount(final GLAccount parent, final String name, final String glCode, final boolean disabled,
-            final boolean manualEntriesAllowed, final Integer type, final Integer usage, final String description, final CodeValue tagId) {
+            final boolean manualEntriesAllowed, final Integer type, final Integer usage, final String description, 
+            final CodeValue tagId, final Integer glClassificationType) {
         this.name = StringUtils.defaultIfEmpty(name, null);
         this.glCode = StringUtils.defaultIfEmpty(glCode, null);
         this.disabled = BooleanUtils.toBooleanDefaultIfNull(disabled, false);
@@ -94,6 +99,7 @@ public class GLAccount extends AbstractPersistable<Long> {
         this.description = StringUtils.defaultIfEmpty(description, null);
         this.parent = parent;
         this.tagId = tagId;
+        this.glClassificationType = glClassificationType;
     }
 
     public static GLAccount fromJson(final GLAccount parent, final JsonCommand command, final CodeValue glAccountTagType) {
@@ -105,7 +111,8 @@ public class GLAccount extends AbstractPersistable<Long> {
         final Integer usage = command.integerValueSansLocaleOfParameterNamed(GLAccountJsonInputParams.USAGE.getValue());
         final Integer type = command.integerValueSansLocaleOfParameterNamed(GLAccountJsonInputParams.TYPE.getValue());
         final String description = command.stringValueOfParameterNamed(GLAccountJsonInputParams.DESCRIPTION.getValue());
-        return new GLAccount(parent, name, glCode, disabled, manualEntriesAllowed, type, usage, description, glAccountTagType);
+        final Integer glClassificationType = command.integerValueSansLocaleOfParameterNamed(GLAccountJsonInputParams.GL_CLASSIFICATION_TYPE.getValue());
+        return new GLAccount(parent, name, glCode, disabled, manualEntriesAllowed, type, usage, description, glAccountTagType, glClassificationType);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -120,6 +127,8 @@ public class GLAccount extends AbstractPersistable<Long> {
         handlePropertyUpdate(command, actualChanges, GLAccountJsonInputParams.USAGE.getValue(), this.usage, true);
         handlePropertyUpdate(command, actualChanges, GLAccountJsonInputParams.TAGID.getValue(),
                 this.tagId == null ? 0L : this.tagId.getId());
+        handlePropertyUpdate(command, actualChanges,GLAccountJsonInputParams.GL_CLASSIFICATION_TYPE.getValue(), 
+        		this.glClassificationType, true);
         return actualChanges;
     }
 
@@ -144,6 +153,8 @@ public class GLAccount extends AbstractPersistable<Long> {
                 this.type = newValue;
             } else if (paramName.equals(GLAccountJsonInputParams.USAGE.getValue())) {
                 this.usage = newValue;
+            }else if (paramName.equals(GLAccountJsonInputParams.GL_CLASSIFICATION_TYPE.getValue())){
+            	this.glClassificationType = newValue;
             }
         }
     }
@@ -189,7 +200,7 @@ public class GLAccount extends AbstractPersistable<Long> {
             }
         }
     }
-
+    
     public boolean isHeaderAccount() {
         return GLAccountUsage.HEADER.getValue().equals(this.usage);
     }
@@ -247,4 +258,5 @@ public class GLAccount extends AbstractPersistable<Long> {
         this.parent = parentAccount;
         generateHierarchy();
     }
+    
 }

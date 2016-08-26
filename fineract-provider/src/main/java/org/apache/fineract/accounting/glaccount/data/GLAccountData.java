@@ -24,6 +24,8 @@ import java.util.List;
 import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountUsage;
+import org.apache.fineract.accounting.glaccount.domain.GlClassificationType;
+import org.apache.fineract.accounting.glaccount.service.GlAccountEnumerations;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
@@ -47,6 +49,7 @@ public class GLAccountData {
     private final String nameDecorated;
     private final CodeValueData tagId;
     private final Long organizationRunningBalance;
+    private final EnumOptionData glClassificationType;
 
     // templates
     final List<EnumOptionData> accountTypeOptions;
@@ -61,10 +64,13 @@ public class GLAccountData {
     final Collection<CodeValueData> allowedEquityTagOptions;
     final Collection<CodeValueData> allowedIncomeTagOptions;
     final Collection<CodeValueData> allowedExpensesTagOptions;
+    final Collection<EnumOptionData> glClassificationTypeOptions;
+    
 
     public GLAccountData(final Long id, final String name, final Long parentId, final String glCode, final boolean disabled,
             final boolean manualEntriesAllowed, final EnumOptionData type, final EnumOptionData usage, final String description,
-            final String nameDecorated, final CodeValueData tagId, final Long organizationRunningBalance) {
+            final String nameDecorated, final CodeValueData tagId, final Long organizationRunningBalance,
+            final EnumOptionData glClassificationType) {
         this.id = id;
         this.name = name;
         this.parentId = parentId;
@@ -89,15 +95,18 @@ public class GLAccountData {
         this.allowedEquityTagOptions = null;
         this.allowedIncomeTagOptions = null;
         this.allowedExpensesTagOptions = null;
+        this.glClassificationTypeOptions = null;
+        this.glClassificationType =  glClassificationType;;
     }
-
+    
     public GLAccountData(final GLAccountData accountData, final List<EnumOptionData> accountTypeOptions,
             final List<EnumOptionData> usageOptions, final List<GLAccountData> assetHeaderAccountOptions,
             final List<GLAccountData> liabilityHeaderAccountOptions, final List<GLAccountData> equityHeaderAccountOptions,
             final List<GLAccountData> incomeHeaderAccountOptions, final List<GLAccountData> expenseHeaderAccountOptions,
             final Collection<CodeValueData> allowedAssetsTagOptions, final Collection<CodeValueData> allowedLiabilitiesTagOptions,
             final Collection<CodeValueData> allowedEquityTagOptions, final Collection<CodeValueData> allowedIncomeTagOptions,
-            final Collection<CodeValueData> allowedExpensesTagOptions) {
+            final Collection<CodeValueData> allowedExpensesTagOptions, final Collection<EnumOptionData> glClassificationTypeOptions,
+            final EnumOptionData glClassificationType) {
         this.id = accountData.id;
         this.name = accountData.name;
         this.parentId = accountData.parentId;
@@ -122,6 +131,8 @@ public class GLAccountData {
         this.allowedEquityTagOptions = allowedEquityTagOptions;
         this.allowedIncomeTagOptions = allowedIncomeTagOptions;
         this.allowedExpensesTagOptions = allowedExpensesTagOptions;
+        this.glClassificationTypeOptions = glClassificationTypeOptions;
+        this.glClassificationType = glClassificationType;
     }
 
     public static GLAccountData sensibleDefaultsForNewGLAccountCreation(final Integer glAccType) {
@@ -142,9 +153,10 @@ public class GLAccountData {
         final String nameDecorated = null;
         final CodeValueData tagId = null;
         final Long organizationRunningBalance = null;
+		final EnumOptionData glClassificationType = null;
 
-        return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, nameDecorated,
-                tagId, organizationRunningBalance);
+		return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description,
+				nameDecorated, tagId, organizationRunningBalance, glClassificationType);
     }
 
     public GLAccountData(final Long id, final String name, final String glCode) {
@@ -172,6 +184,8 @@ public class GLAccountData {
         this.allowedEquityTagOptions = null;
         this.allowedIncomeTagOptions = null;
         this.allowedExpensesTagOptions = null;
+        this.glClassificationTypeOptions = null;
+        this.glClassificationType = null;
     }
 
     public Long getId() {
@@ -195,4 +209,12 @@ public class GLAccountData {
         return null;
     }
 
+	public Collection<EnumOptionData> getGlClassificationTypeOptions() {
+		return this.glClassificationTypeOptions;
+	}
+
+	public EnumOptionData getGlClassificationType() {
+		return this.glClassificationType;
+	}
+	
 }

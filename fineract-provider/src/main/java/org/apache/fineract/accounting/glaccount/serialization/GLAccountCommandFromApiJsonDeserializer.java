@@ -71,7 +71,9 @@ public final class GLAccountCommandFromApiJsonDeserializer extends AbstractFromA
         final Integer usage = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(GLAccountJsonInputParams.USAGE.getValue(), element);
         final String description = this.fromApiJsonHelper.extractStringNamed(GLAccountJsonInputParams.DESCRIPTION.getValue(), element);
         final Long tagId = this.fromApiJsonHelper.extractLongNamed(GLAccountJsonInputParams.TAGID.getValue(), element);
+        final Integer glClassificationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(GLAccountJsonInputParams.
+        		GL_CLASSIFICATION_TYPE.getValue(), element);
 
-        return new GLAccountCommand(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, tagId);
+        return new GLAccountCommand(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, tagId, glClassificationType);
     }
 }
