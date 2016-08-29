@@ -3165,4 +3165,14 @@ public class CommandWrapperBuilder {
         this.href = "/" + entityType + "/" + entityId + "/calendars/" + calendarId;
         return this;
     }
+
+    public CommandWrapperBuilder createTaluka(String entityType, Long entityId) {
+        this.actionName = "CREATE";
+        this.entityName = "TALUKA";
+        this.entityId = entityId;
+        this.href = entityType + "/" + entityId + "/talukas";
+        return this;
+
+    }
+
 }

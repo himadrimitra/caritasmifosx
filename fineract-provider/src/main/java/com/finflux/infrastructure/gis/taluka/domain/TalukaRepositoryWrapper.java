@@ -1,5 +1,12 @@
 package com.finflux.infrastructure.gis.taluka.domain;
 
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +28,8 @@ public class TalukaRepositoryWrapper {
         return taluka;
     }
 
-    public void save(final Taluka taluka) {
-        this.repository.save(taluka);
+    public void save(final Taluka talukas) {
+        this.repository.save(talukas);
     }
 
     public void saveAndFlush(final Taluka taluka) {
