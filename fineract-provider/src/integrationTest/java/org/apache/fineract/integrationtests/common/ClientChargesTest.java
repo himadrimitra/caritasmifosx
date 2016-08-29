@@ -18,6 +18,10 @@
  */
 package org.apache.fineract.integrationtests.common;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 import org.apache.fineract.integrationtests.common.charges.ChargesHelper;
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,7 +54,6 @@ public class ClientChargesTest {
         this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
         this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
     }
-
     @Test
     public void clientChargeTest() {
 
@@ -103,8 +106,12 @@ public class ClientChargesTest {
          * updated properly
          */
         ResponseSpecification responseSpecFailure = new ResponseSpecBuilder().expectStatusCode(400).build();
+        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy");
+        dateFormat.setTimeZone(Utils.getTimeZoneOfTenant());
+        Calendar today = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        today.add(Calendar.DAY_OF_MONTH, +1);
         final String responseId_futureDate_failure = ClientHelper.payChargesForClients(this.requestSpec, responseSpecFailure, clientId,
-                clientChargeId, ClientHelper.getPayChargeJSON("28 AUGUST 2016", "20"));
+                clientChargeId, ClientHelper.getPayChargeJSON(dateFormat.format(today.getTime()), "20"));
         Assert.assertNull(responseId_futureDate_failure);
 
         // waived off the outstanding client charge

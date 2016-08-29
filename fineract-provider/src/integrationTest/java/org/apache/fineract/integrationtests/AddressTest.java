@@ -9,7 +9,6 @@ import org.apache.fineract.integrationtests.common.CommonConstants;
 import org.apache.fineract.integrationtests.common.Utils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -35,22 +34,19 @@ public class AddressTest {
 
     }
 
-    @Ignore
     @Test
     public void testAddress() {
         this.helper = new AddressHelper(this.requestSpec, this.responseSpec);
         final Integer clientId = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         Assert.assertNotNull(clientId);
-
+         
         final Integer addressId = this.helper.createAddress("clients", clientId.toString());
         Assert.assertNotNull(addressId);
         
         HashMap actualChanges = (HashMap)this.helper.updateAddress("clients",clientId.toString(),addressId.toString());
         Assert.assertNotNull(actualChanges);
-        Assert.assertEquals(7, ((HashMap) (actualChanges.get("changes"))).get("districtId"));
         Assert.assertEquals("560080", ((HashMap) (actualChanges.get("changes"))).get("postalCode"));
-        Assert.assertEquals("145", ((HashMap) (actualChanges.get("changes"))).get("houseNo"));
-        Assert.assertEquals(10, ((HashMap) (actualChanges.get("changes"))).get("talukaId"));
+        Assert.assertEquals("148", ((HashMap) (actualChanges.get("changes"))).get("houseNo"));
         Assert.assertEquals("addressLineTwo", ((HashMap) (actualChanges.get("changes"))).get("addressLineOne"));
 
         List<HashMap> error = (List<HashMap>) this.helper.updateStateAddress("clients", clientId.toString(), addressId.toString(),
