@@ -19,10 +19,12 @@
 package org.apache.fineract.portfolio.savings.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -37,4 +39,9 @@ public interface SavingsAccountDomainService {
     void postJournalEntries(SavingsAccount savingsAccount, Set<Long> existingTransactionIds, Set<Long> existingReversedTransactionIds);
 
     SavingsAccountTransaction handleDividendPayout(SavingsAccount account, LocalDate transactionDate, BigDecimal transactionAmount);
+    
+	List<Long> handleDepositAndwithdrawal(Long accountId, List<SavingsAccountTransactionDTO> savingstransactions,
+			SavingsTransactionBooleanValues transactionBooleanValues,
+			boolean isSavingsInterestPostingAtCurrentPeriodEnd, Integer financialYearBeginningMonth, 
+			final boolean isSavingAccountsInculdedInCollectionSheet, final boolean isWithDrawForSavingsIncludedInCollectionSheet);
 }

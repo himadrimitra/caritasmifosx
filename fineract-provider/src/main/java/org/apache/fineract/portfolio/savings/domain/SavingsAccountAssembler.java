@@ -42,15 +42,27 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productI
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.submittedOnDateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.transactionDateParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.savingsIdParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.bulkSavingsTransactionsParamName;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
@@ -58,23 +70,30 @@ import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
+import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
 import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.exception.SavingsProductNotFoundException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class SavingsAccountAssembler {
@@ -88,6 +107,7 @@ public class SavingsAccountAssembler {
     private final SavingsAccountRepositoryWrapper savingsAccountRepository;
     private final SavingsAccountChargeAssembler savingsAccountChargeAssembler;
     private final FromJsonHelper fromApiJsonHelper;
+    private final PlatformSecurityContext context;
 
     @Autowired
     public SavingsAccountAssembler(final SavingsAccountTransactionSummaryWrapper savingsAccountTransactionSummaryWrapper,
@@ -95,7 +115,8 @@ public class SavingsAccountAssembler {
             final StaffRepositoryWrapper staffRepository, final SavingsProductRepository savingProductRepository,
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final SavingsAccountChargeAssembler savingsAccountChargeAssembler, final FromJsonHelper fromApiJsonHelper,
-            final AccountTransfersReadPlatformService accountTransfersReadPlatformService) {
+            final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
+            final PlatformSecurityContext context) {
         this.savingsAccountTransactionSummaryWrapper = savingsAccountTransactionSummaryWrapper;
         this.clientRepository = clientRepository;
         this.groupRepository = groupRepository;
@@ -104,7 +125,8 @@ public class SavingsAccountAssembler {
         this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountChargeAssembler = savingsAccountChargeAssembler;
         this.fromApiJsonHelper = fromApiJsonHelper;
-        savingsHelper = new SavingsHelper(accountTransfersReadPlatformService);
+        this.savingsHelper = new SavingsHelper(accountTransfersReadPlatformService);
+        this.context = context;
     }
 
     /**
@@ -350,5 +372,51 @@ public class SavingsAccountAssembler {
 
     public void assignSavingAccountHelpers(final SavingsAccount savingsAccount) {
         savingsAccount.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
+    }
+    
+    public Map<Long,List<SavingsAccountTransactionDTO>> assembleBulkSavingsAccountDepositAndWithdrawTransactionDTOs(final JsonCommand command,
+            final PaymentDetail paymentDetail) {
+        Map<Long, List<SavingsAccountTransactionDTO>> transactionMap = new HashMap<>();
+        final String json = command.json();
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed(transactionDateParamName, element);
+        final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(element.getAsJsonObject());
+        final JsonObject topLevelJsonElement = element.getAsJsonObject();
+        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+        final DateTimeFormatter formatter = DateTimeFormat.forPattern(dateFormat).withLocale(locale);
+
+        if (element.isJsonObject()) {
+            if (topLevelJsonElement.has(bulkSavingsTransactionsParamName)
+                    && topLevelJsonElement.get(bulkSavingsTransactionsParamName).isJsonArray()) {
+                final JsonArray array = topLevelJsonElement.get(bulkSavingsTransactionsParamName).getAsJsonArray();
+
+                for (int i = 0; i < array.size(); i++) {
+                    final List<SavingsAccountTransactionDTO> savingsAccountTransactions = new ArrayList<>();
+                    final JsonObject savingsTransactionElement = array.get(i).getAsJsonObject();
+                    final Long savingsId = this.fromApiJsonHelper.extractLongNamed(savingsIdParamName, savingsTransactionElement);
+                    final BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed(CollectionSheetConstants.transactionAmountParamName,
+                            savingsTransactionElement, locale);
+                    PaymentDetail detail = paymentDetail;
+                    if(!(transactionAmount == null)&&transactionAmount.intValue() != 0){
+                    final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
+                            transactionDate, transactionAmount, detail, new Date(), savingsId, this.context.getAuthenticatedUserIfPresent(),true);
+                    savingsAccountTransactions.add(savingsAccountTransactionDTO);
+                    }
+                    final BigDecimal withdrawAmount = this.fromApiJsonHelper.extractBigDecimalNamed(CollectionSheetConstants.withdrawAmountParamName,
+                            savingsTransactionElement, locale);
+                    if(!(withdrawAmount == null)&&withdrawAmount.intValue() != 0){
+                        final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
+                                transactionDate, withdrawAmount, detail, new Date(), savingsId, this.context.getAuthenticatedUserIfPresent(),false);
+                        savingsAccountTransactions.add(savingsAccountTransactionDTO);
+                        }
+                    if(!savingsAccountTransactions.isEmpty()){
+                    transactionMap.put(savingsId, savingsAccountTransactions);
+                    }
+                }
+            }
+        }
+
+        return transactionMap;
     }
 }

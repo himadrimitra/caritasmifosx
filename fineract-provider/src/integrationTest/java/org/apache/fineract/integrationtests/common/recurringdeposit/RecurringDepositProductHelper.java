@@ -89,7 +89,7 @@ public class RecurringDepositProductHelper {
     private final boolean preClosurePenalApplicable = true;
     private final String currencyCode = USD;
     private final String interestCalculationDaysInYearType = DAYS_365;
-    private final boolean isMandatoryDeposit = false;
+    private boolean isMandatoryDeposit = false;
     private final String recurringFrequencyType = MONTHS;
     private final String recurringFrequency = "1";
     private final String depositAmount = "100000";
@@ -164,7 +164,7 @@ public class RecurringDepositProductHelper {
         this.accountingRule = NONE;
         return this;
     }
-
+    
     public RecurringDepositProductHelper withAccountingRuleAsCashBased(final Account[] account_list) {
         this.accountingRule = CASH_BASED;
         this.accountList = account_list;
@@ -458,5 +458,9 @@ public class RecurringDepositProductHelper {
 
         return chartSlabs;
     }
-
+    
+    public RecurringDepositProductHelper withMandatoryDeposit() {
+        this.isMandatoryDeposit = true;
+        return this;
+    }
 }

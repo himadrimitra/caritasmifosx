@@ -96,4 +96,7 @@ public interface ConfigurationDomainService {
 
     void removeGlobalConfigurationPropertyDataFromCache(String propertyName);
 
+    boolean isSavingAccountsInculdedInCollectionSheet();
+    
+    boolean isWithDrawForSavingsIncludedInCollectionSheet();
 }

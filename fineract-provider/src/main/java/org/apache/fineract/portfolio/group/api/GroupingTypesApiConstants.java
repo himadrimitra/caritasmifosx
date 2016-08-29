@@ -125,7 +125,7 @@ public class GroupingTypesApiConstants {
             dateFormatParamName, activationDateParamName));
 
     public static final Set<String> COLLECTIONSHEET_DATA_PARAMETERS = new HashSet<>(
-            Arrays.asList("dueDate", "loanProducts", "groups"));
+            Arrays.asList("dueDate", "loanProducts", "groups", "isWithDrawForSavingsIncludedInCollectionSheet"));
 
     public static final Set<String> GROUP_CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, closureDateParamName, closureReasonIdParamName));

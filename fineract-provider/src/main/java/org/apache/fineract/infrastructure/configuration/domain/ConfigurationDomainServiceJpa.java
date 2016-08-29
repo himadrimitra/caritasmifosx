@@ -347,4 +347,14 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return configurations.get(key);
     }
 
+
+    @Override
+    public boolean isSavingAccountsInculdedInCollectionSheet() {
+        return getGlobalConfigurationPropertyData("savings_account_included_in_collection_sheet").isEnabled();
+    }
+
+	@Override
+	public boolean isWithDrawForSavingsIncludedInCollectionSheet() {
+		return getGlobalConfigurationPropertyData("savings_withdraw_included_in_collection_sheet").isEnabled();
+	}
 }

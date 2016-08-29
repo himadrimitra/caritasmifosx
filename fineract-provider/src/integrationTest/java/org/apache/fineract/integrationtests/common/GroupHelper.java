@@ -83,6 +83,13 @@ public class GroupHelper {
         return Utils.performServerPut(requestSpec, responseSpec, GROUP_ASSOCIATE_URL, updateGroupAsJSON(name), "groupId");
     }
 
+    public static Integer updateGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final HashMap<String, Object> map,
+            final String groupId) {
+        final String GROUP_ASSOCIATE_URL = "/fineract-provider/api/v1/groups/" + groupId + "?" + Utils.TENANT_IDENTIFIER;
+        System.out.println("---------------------------------UPDATE GROUP---------------------------------------------");
+        return Utils.performServerPut(requestSpec, responseSpec, GROUP_ASSOCIATE_URL, new Gson().toJson(map), "groupId");
+    }
+    
     public static Integer deleteGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final String groupId) {
         final String GROUP_ASSOCIATE_URL = "/fineract-provider/api/v1/groups/" + groupId + "?" + Utils.TENANT_IDENTIFIER;
         System.out.println("---------------------------------DELETE GROUP---------------------------------------------");
