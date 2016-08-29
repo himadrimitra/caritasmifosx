@@ -18,12 +18,15 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.joda.time.LocalDate;
@@ -88,4 +91,6 @@ public interface SavingsAccountWritePlatformService {
     CommandProcessingResult postInterest(JsonCommand command);
 
     void postInterest(SavingsAccount account, boolean postInterestAs, LocalDate transactionDate);
+    
+    List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions);
 }

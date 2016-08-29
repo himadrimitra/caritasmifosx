@@ -31,6 +31,7 @@ public class CalendarHelper {
 
     private static final String BASE_URL = "/fineract-provider/api/v1/";
     private static final String PARENT_ENTITY_NAME = "groups/";
+    private static final String PARENT_ENTITY_NAME_CENTER = "centers/";
     private static final String ENITY_NAME = "/calendars";
     private static final String Center_Entity = "centers/";
     private static final String Edit_Calendar = "editcalendarbasedonmeetingdates/";
@@ -41,6 +42,19 @@ public class CalendarHelper {
         System.out.println("---------------------------------CREATING A MEETING CALENDAR FOR THE GROUP------------------------------");
 
         final String CALENDAR_RESOURCE_URL = BASE_URL + PARENT_ENTITY_NAME + groupId + ENITY_NAME + "?" + Utils.TENANT_IDENTIFIER;
+
+        System.out.println(CALENDAR_RESOURCE_URL);
+
+        return Utils.performServerPost(requestSpec, responseSpec, CALENDAR_RESOURCE_URL,
+                getTestCalendarAsJSON(frequency, interval, repeatsOnDay, startDate), "resourceId");
+    }
+
+    public static Integer createMeetingCalendarForCenter(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final Integer centerId, final String startDate, final String frequency, final String interval, final String repeatsOnDay) {
+
+        System.out.println("---------------------------------CREATING A MEETING CALENDAR FOR THE GROUP------------------------------");
+
+        final String CALENDAR_RESOURCE_URL = BASE_URL + PARENT_ENTITY_NAME_CENTER + centerId + ENITY_NAME + "?" + Utils.TENANT_IDENTIFIER;
 
         System.out.println(CALENDAR_RESOURCE_URL);
 

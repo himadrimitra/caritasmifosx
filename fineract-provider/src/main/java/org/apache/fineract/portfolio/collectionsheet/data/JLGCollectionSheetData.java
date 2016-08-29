@@ -40,29 +40,31 @@ public class JLGCollectionSheetData {
     private final Collection<JLGGroupData> groups;
     private final List<EnumOptionData> attendanceTypeOptions;
     private final Collection<PaymentTypeData> paymentTypeOptions;
+    private final boolean isWithDrawForSavingsIncludedInCollectionSheet;
 
     public static JLGCollectionSheetData instance(final LocalDate date, final Collection<LoanProductData> loanProducts,
             final Collection<JLGGroupData> groups, final List<EnumOptionData> attendanceTypeOptions,
-            final Collection<PaymentTypeData> paymentTypeOptions) {
-        return new JLGCollectionSheetData(date, loanProducts, null, groups, attendanceTypeOptions, paymentTypeOptions);
+            final Collection<PaymentTypeData> paymentTypeOptions, boolean isWithDrawForSavingsIncludedInCollectionSheet) {
+        return new JLGCollectionSheetData(date, loanProducts, null, groups, attendanceTypeOptions, paymentTypeOptions, isWithDrawForSavingsIncludedInCollectionSheet);
     }
 
     public static JLGCollectionSheetData withSavingsProducts(final JLGCollectionSheetData data,
             final Collection<SavingsProductData> savingsProducts) {
 
         return new JLGCollectionSheetData(data.dueDate, data.loanProducts, savingsProducts, data.groups, data.attendanceTypeOptions,
-                data.paymentTypeOptions);
+                data.paymentTypeOptions, data.isWithDrawForSavingsIncludedInCollectionSheet);
     }
 
     private JLGCollectionSheetData(LocalDate dueDate, Collection<LoanProductData> loanProducts,
             Collection<SavingsProductData> savingsProducts, Collection<JLGGroupData> groups, List<EnumOptionData> attendanceTypeOptions,
-            final Collection<PaymentTypeData> paymentTypeOptions) {
+            final Collection<PaymentTypeData> paymentTypeOptions, boolean isWithDrawForSavingsIncludedInCollectionSheet) {
         this.dueDate = dueDate;
         this.loanProducts = loanProducts;
         this.savingsProducts = savingsProducts;
         this.groups = groups;
         this.attendanceTypeOptions = attendanceTypeOptions;
         this.paymentTypeOptions = paymentTypeOptions;
+        this.isWithDrawForSavingsIncludedInCollectionSheet = isWithDrawForSavingsIncludedInCollectionSheet;
     }
 
     public LocalDate getDate() {

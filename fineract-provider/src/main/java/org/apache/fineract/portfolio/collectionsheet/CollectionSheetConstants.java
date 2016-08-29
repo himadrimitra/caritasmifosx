@@ -35,13 +35,15 @@ public class CollectionSheetConstants {
     public static final String actualDisbursementDateParamName = "actualDisbursementDate";
     public static final String bulkRepaymentTransactionsParamName = "bulkRepaymentTransactions";
     public static final String bulkDisbursementTransactionsParamName = "bulkDisbursementTransactions";
-    public static final String bulkSavingsDueTransactionsParamName = "bulkSavingsDueTransactions";
+    public static final String bulkSavingsTransactionsParamName = "bulkSavingsTransactions";
     public static final String noteParamName = "note";
     public static final String calendarIdParamName = "calendarId";
     public static final String officeIdParamName = "officeId";
     public static final String staffIdParamName = "staffId";
     public static final String isTransactionDateOnNonMeetingDateParamName = "isTransactionDateOnNonMeetingDate";
 	public static final String forcedSubmitOfCollectionSheet = "forcedSubmitOfCollectionSheet";
+	public static final String withdrawAmountParamName = "withdrawAmount";
+	public static final String bulkSavingsDueTransactionsParamName = "bulkSavingsDueTransactions";
 
     // attendance parameters
     public static final String clientsAttendanceParamName = "clientsAttendance";
@@ -55,7 +57,7 @@ public class CollectionSheetConstants {
     public static final Set<String> COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName, bulkRepaymentTransactionsParamName,
             bulkDisbursementTransactionsParamName, noteParamName, calendarIdParamName, clientsAttendanceParamName,
-            bulkSavingsDueTransactionsParamName, PaymentDetailConstants.paymentTypeParamName,
+            bulkSavingsTransactionsParamName, PaymentDetailConstants.paymentTypeParamName,
             PaymentDetailConstants.accountNumberParamName, PaymentDetailConstants.checkNumberParamName,
             PaymentDetailConstants.routingCodeParamName, PaymentDetailConstants.receiptNumberParamName,
 					PaymentDetailConstants.bankNumberParamName,
@@ -64,7 +66,7 @@ public class CollectionSheetConstants {
 
     public static final Set<String> INDIVIDUAL_COLLECTIONSHEET_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, transactionDateParamName, actualDisbursementDateParamName, bulkRepaymentTransactionsParamName,
-            bulkDisbursementTransactionsParamName, noteParamName, bulkSavingsDueTransactionsParamName));
+            bulkDisbursementTransactionsParamName, noteParamName, bulkSavingsTransactionsParamName));
 
     public static final Set<String> INDIVIDUAL_COLLECTIONSHEET_SUPPORTED_PARAMS = new HashSet<>(Arrays.asList(transactionDateParamName,
             localeParamName, dateFormatParamName, officeIdParamName, staffIdParamName));

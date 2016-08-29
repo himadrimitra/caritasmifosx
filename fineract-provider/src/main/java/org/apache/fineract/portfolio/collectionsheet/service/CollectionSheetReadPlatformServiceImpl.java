@@ -34,8 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.fineract.infrastructure.codes.data.CodeValueData;
-import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -45,7 +43,6 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
-import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarRepositoryWrapper;
 import org.apache.fineract.portfolio.calendar.exception.NotValidRecurringDateException;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
@@ -66,7 +63,6 @@ import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.meeting.attendance.service.AttendanceDropdownReadPlatformService;
 import org.apache.fineract.portfolio.meeting.attendance.service.AttendanceEnumerations;
-import org.apache.fineract.portfolio.paymentdetail.PaymentDetailConstants;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
@@ -92,11 +88,9 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
     private final CalendarRepositoryWrapper calendarRepositoryWrapper;
     private final AttendanceDropdownReadPlatformService attendanceDropdownReadPlatformService;
     private final MandatorySavingsCollectionsheetExtractor mandatorySavingsExtractor = new MandatorySavingsCollectionsheetExtractor();
-    private final CodeValueReadPlatformService codeValueReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final ConfigurationDomainService configurationDomainService;
-    private final CalendarInstanceRepository calendarInstanceRepository;
 
     @Autowired
     public CollectionSheetReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -104,9 +98,8 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
             final CollectionSheetGenerateCommandFromApiJsonDeserializer collectionSheetGenerateCommandFromApiJsonDeserializer,
             final CalendarRepositoryWrapper calendarRepositoryWrapper,
             final AttendanceDropdownReadPlatformService attendanceDropdownReadPlatformService,
-            final CodeValueReadPlatformService codeValueReadPlatformService, final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-            final CalendarReadPlatformService calendarReadPlatformService, final ConfigurationDomainService configurationDomainService,
-            final CalendarInstanceRepository calendarInstanceRepository) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final CalendarReadPlatformService calendarReadPlatformService, final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
         this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
@@ -114,11 +107,9 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
         this.groupReadPlatformService = groupReadPlatformService;
         this.calendarRepositoryWrapper = calendarRepositoryWrapper;
         this.attendanceDropdownReadPlatformService = attendanceDropdownReadPlatformService;
-        this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.configurationDomainService = configurationDomainService;
-        this.calendarInstanceRepository = calendarInstanceRepository;
     }
 
     /*
@@ -134,6 +125,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
         Long prevGroupId = null;
         Long prevClientId = null;
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+        final boolean isWithDrawForSavingsIncludedInCollectionSheet = this.configurationDomainService.isWithDrawForSavingsIncludedInCollectionSheet();
                 
 
         final List<JLGGroupData> jlgGroupsData = new ArrayList<>();
@@ -209,7 +201,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
             }
 
             jlgCollectionSheetData = JLGCollectionSheetData.instance(dueDate, loanProducts, jlgGroupsData,
-                    this.attendanceDropdownReadPlatformService.retrieveAttendanceTypeOptions(), paymentOptions);
+                    this.attendanceDropdownReadPlatformService.retrieveAttendanceTypeOptions(), paymentOptions, isWithDrawForSavingsIncludedInCollectionSheet);
         }
 
         return jlgCollectionSheetData;
@@ -323,6 +315,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
     public JLGCollectionSheetData generateGroupCollectionSheet(final Long groupId, final JsonQuery query) {
 
         this.collectionSheetGenerateCommandFromApiJsonDeserializer.validateForGenerateCollectionSheet(query.json());
+        final boolean issavingsIncludedInCollectionSheet = this.configurationDomainService.isSavingAccountsInculdedInCollectionSheet();
 
         final Long calendarId = query.longValueOfParameterNamed(calendarIdParamName);
         final LocalDate transactionDate = query.localDateValueOfParameterNamed(transactionDateParamName);
@@ -377,7 +370,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         // mandatory savings data for collection sheet
         Collection<JLGGroupData> groupsWithSavingsData = this.namedParameterjdbcTemplate.query(
-                mandatorySavingsExtractor.collectionSheetSchema(false), namedParameters, mandatorySavingsExtractor);
+                mandatorySavingsExtractor.collectionSheetSchema(false, issavingsIncludedInCollectionSheet), namedParameters, mandatorySavingsExtractor);
 
         // merge savings data into loan data
         mergeSavingsGroupDataIntoCollectionsheetData(groupsWithSavingsData, collectionSheetData);
@@ -450,7 +443,8 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
     public JLGCollectionSheetData generateCenterCollectionSheet(final Long centerId, final JsonQuery query) {
 
         this.collectionSheetGenerateCommandFromApiJsonDeserializer.validateForGenerateCollectionSheet(query.json());
-
+        final boolean issavingsIncludedInCollectionSheet = this.configurationDomainService.isSavingAccountsInculdedInCollectionSheet();
+        
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String officeHierarchy = hierarchy + "%";
@@ -477,7 +471,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         // mandatory savings data for collection sheet
         Collection<JLGGroupData> groupsWithSavingsData = this.namedParameterjdbcTemplate.query(
-                mandatorySavingsExtractor.collectionSheetSchema(true), namedParameters, mandatorySavingsExtractor);
+                mandatorySavingsExtractor.collectionSheetSchema(true, issavingsIncludedInCollectionSheet), namedParameters, mandatorySavingsExtractor);
 
         // merge savings data into loan data
         mergeSavingsGroupDataIntoCollectionsheetData(groupsWithSavingsData, collectionSheetData);
@@ -492,7 +486,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         private final GroupSavingsDataMapper groupSavingsDataMapper = new GroupSavingsDataMapper();
 
-        public String collectionSheetSchema(final boolean isCenterCollection) {
+        public String collectionSheetSchema(final boolean isCenterCollection, final boolean issavingsIncludedInCollectionSheet) {
 
             final StringBuffer sql = new StringBuffer(400);
             sql.append("SELECT gp.display_name As groupName, ")
@@ -523,10 +517,15 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                     .append("JOIN m_group_client gc ON gc.group_id = gp.id ")
                     .append("JOIN m_client cl ON cl.id = gc.client_id ")
                     .append("JOIN m_savings_account sa ON sa.client_id=cl.id and sa.status_enum=300 ")
-                    .append("JOIN m_savings_product sp ON sa.product_id=sp.id ")
-                    .append("JOIN m_deposit_account_recurring_detail dard ON sa.id = dard.savings_account_id AND dard.is_mandatory = true AND dard.is_calendar_inherited = true ")
-                    .append("JOIN m_mandatory_savings_schedule mss ON mss.savings_account_id=sa.id AND mss.duedate <= :dueDate ")
-                    .append("LEFT JOIN m_currency rc on rc.`code` = sa.currency_code ");
+                    .append("JOIN m_savings_product sp ON sa.product_id=sp.id ");
+                    if(issavingsIncludedInCollectionSheet){
+                        sql.append("LEFT JOIN m_deposit_account_recurring_detail dard ON sa.id = dard.savings_account_id AND dard.is_mandatory = true AND dard.is_calendar_inherited = true ")
+                        .append("LEFT JOIN m_mandatory_savings_schedule mss ON mss.savings_account_id=sa.id AND mss.duedate <= :dueDate ");
+                    }else{
+                    sql.append("JOIN m_deposit_account_recurring_detail dard ON sa.id = dard.savings_account_id AND dard.is_mandatory = true AND dard.is_calendar_inherited = true ")
+                    .append("JOIN m_mandatory_savings_schedule mss ON mss.savings_account_id=sa.id AND mss.duedate <= :dueDate ");
+                    }
+                    sql.append("LEFT JOIN m_currency rc on rc.`code` = sa.currency_code ");
 
             if (isCenterCollection) {
                 sql.append("WHERE gp.parent_id = :centerId ");

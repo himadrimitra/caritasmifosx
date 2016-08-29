@@ -84,6 +84,7 @@ import org.apache.fineract.portfolio.savings.domain.RecurringDepositAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountCharge;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
@@ -130,6 +131,7 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepositoryWrapper;
     private final JournalEntryWritePlatformService journalEntryWritePlatformService;
     private final DepositAccountDomainService depositAccountDomainService;
+    private final SavingsAccountDomainService savingsAccountDomainService;
     private final NoteRepository noteRepository;
     private final AccountTransfersReadPlatformService accountTransfersReadPlatformService;
     private final ChargeRepositoryWrapper chargeRepository;
@@ -142,6 +144,7 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     private final HolidayRepositoryWrapper holidayRepository;
     private final WorkingDaysRepositoryWrapper workingDaysRepository;
     private final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository;
+    private final SavingsAccountRepository savingsAccountRepository;
 
     @Autowired
     public DepositAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -161,7 +164,9 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
             final AccountTransfersWritePlatformService accountTransfersWritePlatformService,
             final DepositAccountReadPlatformService depositAccountReadPlatformService,
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
-            final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository) {
+            final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
+            final SavingsAccountDomainService savingsAccountDomainService,
+            final SavingsAccountRepository savingsAccountRepository) {
 
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
@@ -185,6 +190,8 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.configurationDomainService = configurationDomainService;
         this.depositAccountOnHoldTransactionRepository = depositAccountOnHoldTransactionRepository;
+        this.savingsAccountDomainService = savingsAccountDomainService;
+        this.savingsAccountRepository = savingsAccountRepository;
     }
 
     @Transactional
@@ -378,7 +385,9 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     @Override
     public CommandProcessingResult depositToFDAccount(final Long savingsId, @SuppressWarnings("unused") final JsonCommand command) {
         // this.context.authenticatedUser();
-        throw new DepositAccountTransactionNotAllowedException(savingsId, "deposit", DepositAccountType.FIXED_DEPOSIT);
+        throw new DepositAccountTransactionNotAllowedException(
+				"error.msg.deposit.for.account." + savingsId + ".not.allowed",
+				"deposit for account " + savingsId + " not allowed", savingsId+":"+DepositAccountType.FIXED_DEPOSIT);
 
     }
 
@@ -573,7 +582,9 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     public CommandProcessingResult undoFDTransaction(final Long savingsId, @SuppressWarnings("unused") final Long transactionId,
             @SuppressWarnings("unused") final boolean allowAccountTransferModification) {
 
-        throw new DepositAccountTransactionNotAllowedException(savingsId, "undo", DepositAccountType.FIXED_DEPOSIT);
+        throw new DepositAccountTransactionNotAllowedException(
+				"error.msg.deposit.for.account." + savingsId + ".not.allowed",
+				"deposit for account " + savingsId + " not allowed", savingsId+":"+DepositAccountType.FIXED_DEPOSIT);
     }
 
     @Override
@@ -651,7 +662,9 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     public CommandProcessingResult adjustFDTransaction(final Long savingsId, @SuppressWarnings("unused") final Long transactionId,
             @SuppressWarnings("unused") final JsonCommand command) {
 
-        throw new DepositAccountTransactionNotAllowedException(savingsId, "modify", DepositAccountType.FIXED_DEPOSIT);
+        throw new DepositAccountTransactionNotAllowedException(
+				"error.msg.modify.for.account." + savingsId + ".not.allowed",
+				"modify for account " + savingsId + " not allowed", savingsId+":"+DepositAccountType.FIXED_DEPOSIT);
     }
 
     @Override
@@ -1350,21 +1363,6 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
         final Map<String, Object> accountingBridgeData = savingsAccount.deriveAccountingBridgeData(applicationCurrency.toData(),
                 existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
         this.journalEntryWritePlatformService.createJournalEntriesForSavings(accountingBridgeData);
-    }
-
-    @Transactional
-    @Override
-    public SavingsAccountTransaction mandatorySavingsAccountDeposit(final SavingsAccountTransactionDTO accountTransactionDTO) {
-        boolean isRegularTransaction = false;
-        final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(
-                accountTransactionDTO.getSavingsAccountId(), DepositAccountType.RECURRING_DEPOSIT);
-        final PaymentDetail paymentDetail = accountTransactionDTO.getPaymentDetail();
-        if (paymentDetail != null && paymentDetail.getId() == null) {
-            this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
-        }
-        return this.depositAccountDomainService.handleRDDeposit(account, accountTransactionDTO.getFormatter(),
-                accountTransactionDTO.getTransactionDate(), accountTransactionDTO.getTransactionAmount(), paymentDetail,
-                isRegularTransaction);
     }
 
     private AppUser getAppUserIfPresent() {

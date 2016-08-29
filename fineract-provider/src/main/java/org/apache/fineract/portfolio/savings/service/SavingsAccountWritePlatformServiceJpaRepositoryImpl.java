@@ -1328,4 +1328,36 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         return user;
     }
 
+	 @Override
+	public List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions) {
+		List<Long> savingsTransactionIds = new ArrayList<>();
+		boolean isRegularTransaction = false;
+		boolean isAccountTransfer = false;
+		boolean isApplyWithdrawFee = true;
+		boolean isInterestTransfer = false;
+		boolean isExceptionForBalanceCheck = false;
+		SavingsTransactionBooleanValues transactionBooleanValues = new SavingsTransactionBooleanValues(
+				isAccountTransfer, isRegularTransaction, isApplyWithdrawFee, isInterestTransfer,
+				isExceptionForBalanceCheck);
+		final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
+				.isSavingsInterestPostingAtCurrentPeriodEnd();
+		final Integer financialYearBeginningMonth = this.configurationDomainService
+				.retrieveFinancialYearBeginningMonth();
+		final boolean isSavingAccountsInculdedInCollectionSheet = this.configurationDomainService
+				.isSavingAccountsInculdedInCollectionSheet();
+		final boolean isWithDrawForSavingsIncludedInCollectionSheet = this.configurationDomainService
+				.isWithDrawForSavingsIncludedInCollectionSheet();
+		Set<Long> savingsIds = savingstransactions.keySet();
+		for (Long savingId : savingsIds) {
+			try {
+				savingsTransactionIds.addAll(this.savingsAccountDomainService.handleDepositAndwithdrawal(savingId,
+						savingstransactions.get(savingId), transactionBooleanValues,
+						isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth,
+						isSavingAccountsInculdedInCollectionSheet, isWithDrawForSavingsIncludedInCollectionSheet));
+			} catch (Exception e) {
+				throw e;
+			}
+		}
+		return savingsTransactionIds;
+	}
 }

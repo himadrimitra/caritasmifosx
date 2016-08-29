@@ -514,5 +514,10 @@ public class RecurringDepositAccountHelper {
         this.mandatoryRecommendedDepositAmount = depositAmount;
         return this;
     }
+    
+    public RecurringDepositAccountHelper withCalanderInherited(){
+    	this.isCalendarInherited = true;
+    	return this;
+    }
 
 }

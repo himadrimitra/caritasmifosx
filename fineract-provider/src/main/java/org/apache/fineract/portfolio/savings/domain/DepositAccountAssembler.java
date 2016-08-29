@@ -348,7 +348,7 @@ public class DepositAccountAssembler {
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
         return account;
     }
-
+    
     public void assignSavingAccountHelpers(final SavingsAccount savingsAccount) {
         savingsAccount.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
     }
@@ -420,49 +420,4 @@ public class DepositAccountAssembler {
                 depositRecurringDetail, null, isCalendarInherited);
         return depositAccountRecurringDetail;
     }
-
-    public Collection<SavingsAccountTransactionDTO> assembleBulkMandatorySavingsAccountTransactionDTOs(final JsonCommand command,final PaymentDetail paymentDetail) {
-        AppUser user = getAppUserIfPresent();
-        final String json = command.json();
-        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
-        final JsonElement element = this.fromApiJsonHelper.parse(json);
-        final Collection<SavingsAccountTransactionDTO> savingsAccountTransactions = new ArrayList<>();
-        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed(transactionDateParamName, element);
-        final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(element.getAsJsonObject());
-        final JsonObject topLevelJsonElement = element.getAsJsonObject();
-        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
-        final DateTimeFormatter formatter = DateTimeFormat.forPattern(dateFormat).withLocale(locale);
-
-        if (element.isJsonObject()) {
-            if (topLevelJsonElement.has(bulkSavingsDueTransactionsParamName)
-                    && topLevelJsonElement.get(bulkSavingsDueTransactionsParamName).isJsonArray()) {
-                final JsonArray array = topLevelJsonElement.get(bulkSavingsDueTransactionsParamName).getAsJsonArray();
-
-                for (int i = 0; i < array.size(); i++) {
-                    final JsonObject savingsTransactionElement = array.get(i).getAsJsonObject();
-                    final Long savingsId = this.fromApiJsonHelper.extractLongNamed(savingsIdParamName, savingsTransactionElement);
-                    final BigDecimal dueAmount = this.fromApiJsonHelper.extractBigDecimalNamed(transactionAmountParamName,
-                            savingsTransactionElement, locale);
-                    PaymentDetail detail = paymentDetail;
-                    if (paymentDetail == null) {
-                        detail = this.paymentDetailAssembler.fetchPaymentDetail(savingsTransactionElement);
-                    }
-                    final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
-                            transactionDate, dueAmount, detail, new Date(), savingsId, user);
-                    savingsAccountTransactions.add(savingsAccountTransactionDTO);
-                }
-            }
-        }
-
-        return savingsAccountTransactions;
-    }
-
-    private AppUser getAppUserIfPresent() {
-        AppUser user = null;
-        if (this.context != null) {
-            user = this.context.getAuthenticatedUserIfPresent();
-        }
-        return user;
-    }
-
 }
