@@ -45,7 +45,7 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long
     List<JournalEntry> findJournalEntries(@Param("transactionId") String transactionId, @Param("entityType") Integer entityType);
 
     @Query("from JournalEntry journalEntry where glAccount.id= :accountId and transactionId= :transactionId and transactionDate= :transactionDate"
-            + " and type= :journalEntryType and entityType=1 and entityId= :loanId and loanTransaction.id= :loanTransactionId")
+            + " and type= :journalEntryType and entityType=1 and entityId= :loanId and loanTransactionId= :loanTransactionId")
     JournalEntry findLOANJournalEntryWith(@Param("accountId") Long accountId, @Param("transactionId") String transactionId,
             @Param("transactionDate") Date transactionDate, @Param("journalEntryType") Integer journalEntryType,
             @Param("loanId") Long loanId, @Param("loanTransactionId") Long loanTransactionId);

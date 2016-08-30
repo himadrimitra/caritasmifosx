@@ -44,9 +44,9 @@ import org.apache.fineract.accounting.journalentry.data.LoanDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanTransactionDTO;
 import org.apache.fineract.accounting.journalentry.data.SavingsDTO;
 import org.apache.fineract.accounting.journalentry.data.SavingsTransactionDTO;
-import org.apache.fineract.accounting.journalentry.data.TaxPaymentDTO;
 import org.apache.fineract.accounting.journalentry.data.SharesDTO;
 import org.apache.fineract.accounting.journalentry.data.SharesTransactionDTO;
+import org.apache.fineract.accounting.journalentry.data.TaxPaymentDTO;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntry;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepository;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryType;
@@ -63,15 +63,9 @@ import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
-import org.apache.fineract.portfolio.client.domain.ClientTransaction;
-import org.apache.fineract.portfolio.client.domain.ClientTransactionRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionEnumData;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
 import org.apache.fineract.portfolio.shareaccounts.data.ShareAccountTransactionEnumData;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,30 +85,22 @@ public class AccountingProcessorHelper {
     private final GLClosureRepository closureRepository;
     private final GLAccountRepositoryWrapper accountRepositoryWrapper;
     private final OfficeRepository officeRepository;
-    private final LoanTransactionRepository loanTransactionRepository;
-    private final ClientTransactionRepositoryWrapper clientTransactionRepository;
-    private final SavingsAccountTransactionRepository savingsAccountTransactionRepository;
     private final AccountTransfersReadPlatformService accountTransfersReadPlatformService;
 
     @Autowired
     public AccountingProcessorHelper(final JournalEntryRepository glJournalEntryRepository,
             final ProductToGLAccountMappingRepository accountMappingRepository, final GLClosureRepository closureRepository,
-            final OfficeRepository officeRepository, final LoanTransactionRepository loanTransactionRepository,
-            final SavingsAccountTransactionRepository savingsAccountTransactionRepository,
+            final OfficeRepository officeRepository, 
             final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepository,
             final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
-            final GLAccountRepositoryWrapper accountRepositoryWrapper,
-            final ClientTransactionRepositoryWrapper clientTransactionRepositoryWrapper) {
+            final GLAccountRepositoryWrapper accountRepositoryWrapper) {
         this.glJournalEntryRepository = glJournalEntryRepository;
         this.accountMappingRepository = accountMappingRepository;
         this.closureRepository = closureRepository;
         this.officeRepository = officeRepository;
-        this.loanTransactionRepository = loanTransactionRepository;
-        this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.financialActivityAccountRepository = financialActivityAccountRepository;
         this.accountTransfersReadPlatformService = accountTransfersReadPlatformService;
         this.accountRepositoryWrapper = accountRepositoryWrapper;
-        this.clientTransactionRepository = clientTransactionRepositoryWrapper;
     }
 
     public LoanDTO populateLoanDtoFromMap(final Map<String, Object> accountingBridgeData, final boolean cashBasedAccountingEnabled,
@@ -807,13 +793,6 @@ public class AccountingProcessorHelper {
         }
     }
 
-    public LoanTransaction getLoanTransactionById(final long loanTransactionId) {
-        return this.loanTransactionRepository.findOne(loanTransactionId);
-    }
-
-    public SavingsAccountTransaction getSavingsTransactionById(final long savingsTransactionId) {
-        return this.savingsAccountTransactionRepository.findOne(savingsTransactionId);
-    }
 
     private void createCreditJournalEntryOrReversalForLoan(final Office office, final String currencyCode, final int accountMappingTypeId,
             final Long loanProductId, final Long paymentTypeId, final Long loanId, final String transactionId, final Date transactionDate,
@@ -835,13 +814,11 @@ public class AccountingProcessorHelper {
     private void createCreditJournalEntryForClientPayments(final Office office, final String currencyCode, final GLAccount account,
             final Long clientId, final Long transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = transactionId;
         final PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
-
-        clientTransaction = this.clientTransactionRepository.findOneWithNotFoundDetection(clientId, transactionId);
 
         String modifiedTransactionId = transactionId.toString();
         modifiedTransactionId = CLIENT_TRANSACTION_IDENTIFIER + transactionId;
@@ -854,15 +831,15 @@ public class AccountingProcessorHelper {
     private void createCreditJournalEntryForSavings(final Office office, final String currencyCode, final GLAccount account,
             final Long savingsId, final String transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         final Long shareTransactionId = null;
         final PaymentDetail paymentDetail = null;
         String modifiedTransactionId = transactionId;
         if (StringUtils.isNumeric(transactionId)) {
             long id = Long.parseLong(transactionId);
-            savingsAccountTransaction = this.savingsAccountTransactionRepository.findOne(id);
+            savingsAccountTransaction = id;
             modifiedTransactionId = SAVINGS_TRANSACTION_IDENTIFIER + transactionId;
         }
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
@@ -874,15 +851,15 @@ public class AccountingProcessorHelper {
     private void createCreditJournalEntryForLoan(final Office office, final String currencyCode, final GLAccount account,
             final Long loanId, final String transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         final PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
         String modifiedTransactionId = transactionId;
         if (StringUtils.isNumeric(transactionId)) {
             long id = Long.parseLong(transactionId);
-            loanTransaction = this.loanTransactionRepository.findOne(id);
+            loanTransaction = id;
             modifiedTransactionId = LOAN_TRANSACTION_IDENTIFIER + transactionId;
         }
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
@@ -893,9 +870,9 @@ public class AccountingProcessorHelper {
 
     public void createProvisioningDebitJournalEntry(Date transactionDate, Long provisioningentryId, Office office, String currencyCode,
             GLAccount account, BigDecimal amount) {
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
         final boolean manualEntry = false;
@@ -908,9 +885,9 @@ public class AccountingProcessorHelper {
 
     public void createProvisioningCreditJournalEntry(Date transactionDate, Long provisioningentryId, Office office, String currencyCode,
             GLAccount account, BigDecimal amount) {
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
         final boolean manualEntry = false;
@@ -924,15 +901,15 @@ public class AccountingProcessorHelper {
     private void createDebitJournalEntryForLoan(final Office office, final String currencyCode, final GLAccount account, final Long loanId,
             final String transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         final PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
         String modifiedTransactionId = transactionId;
         if (StringUtils.isNumeric(transactionId)) {
             long id = Long.parseLong(transactionId);
-            loanTransaction = this.loanTransactionRepository.findOne(id);
+            loanTransaction = id;
             modifiedTransactionId = LOAN_TRANSACTION_IDENTIFIER + transactionId;
         }
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
@@ -944,15 +921,15 @@ public class AccountingProcessorHelper {
     private void createDebitJournalEntryForSavings(final Office office, final String currencyCode, final GLAccount account,
             final Long savingsId, final String transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         final PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
         String modifiedTransactionId = transactionId;
         if (StringUtils.isNumeric(transactionId)) {
             long id = Long.parseLong(transactionId);
-            savingsAccountTransaction = this.savingsAccountTransactionRepository.findOne(id);
+            savingsAccountTransaction = id;
             modifiedTransactionId = SAVINGS_TRANSACTION_IDENTIFIER + transactionId;
         }
         final JournalEntry journalEntry = JournalEntry.createNew(office, paymentDetail, account, currencyCode, modifiedTransactionId,
@@ -964,13 +941,13 @@ public class AccountingProcessorHelper {
     private void createDebitJournalEntryForClientPayments(final Office office, final String currencyCode, final GLAccount account,
             final Long clientId, final Long transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        ClientTransaction clientTransaction = null;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
+        Long clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
         final PaymentDetail paymentDetail = null;
         final Long shareTransactionId = null;
 
-        clientTransaction = this.clientTransactionRepository.findOneWithNotFoundDetection(clientId, transactionId);
+        clientTransaction =  transactionId;
         String modifiedTransactionId = transactionId.toString();
         modifiedTransactionId = CLIENT_TRANSACTION_IDENTIFIER + transactionId;
 
@@ -1079,9 +1056,9 @@ public class AccountingProcessorHelper {
     private void createDebitJournalEntryForShares(final Office office, final String currencyCode, final GLAccount account,
             final Long shareAccountId, final String transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         final PaymentDetail paymentDetail = null;
         Long shareTransactionId = null;
         String modifiedTransactionId = transactionId;
@@ -1098,9 +1075,9 @@ public class AccountingProcessorHelper {
     private void createCreditJournalEntryForShares(final Office office, final String currencyCode, final GLAccount account,
             final Long shareAccountId, final String transactionId, final Date transactionDate, final BigDecimal amount) {
         final boolean manualEntry = false;
-        LoanTransaction loanTransaction = null;
-        SavingsAccountTransaction savingsAccountTransaction = null;
-        ClientTransaction clientTransaction = null;
+        Long loanTransaction = null;
+        Long savingsAccountTransaction = null;
+        Long clientTransaction = null;
         Long shareTransactionId = null;
         final PaymentDetail paymentDetail = null;
         String modifiedTransactionId = transactionId;
