@@ -47,10 +47,12 @@ public class LoanScheduleHistoryWritePlatformServiceImpl implements LoanSchedule
 
     }
 
+    @SuppressWarnings("unused")
     @Override
     public List<LoanRepaymentScheduleHistory> createLoanScheduleArchive(
             List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Loan loan, LoanRescheduleRequest loanRescheduleRequest) {
-        Integer version = this.loanScheduleHistoryReadPlatformService.fetchCurrentVersionNumber(loan.getId()) + 1;
+        Integer version =loan.getRepaymentHistoryVersion()+1;
+        loan.setRepaymentHistoryVersion(version);
         final MonetaryCurrency currency = loan.getCurrency();
         final List<LoanRepaymentScheduleHistory> loanRepaymentScheduleHistoryList = new ArrayList<>();
 

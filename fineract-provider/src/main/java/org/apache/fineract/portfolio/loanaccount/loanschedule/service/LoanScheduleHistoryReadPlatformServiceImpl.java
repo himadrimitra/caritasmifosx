@@ -55,30 +55,21 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public Integer fetchCurrentVersionNumber(Long loanId) {
-        final String sql = "select MAX(lrs.version) from m_loan_repayment_schedule_history lrs where lrs.loan_id = ?";
-        return this.jdbcTemplate.queryForInt(sql, loanId);
-    }
-
+     
     @Override
     public LoanScheduleData retrieveRepaymentArchiveSchedule(final Long loanId,
             final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedLoanData, Collection<DisbursementData> disbursementData) {
 
         try {
             this.context.authenticatedUser();
-            Integer versionNumber = fetchCurrentVersionNumber(loanId);
-            if (versionNumber == 0) { return null; }
             final LoanScheduleArchiveResultSetExtractor fullResultsetExtractor = new LoanScheduleArchiveResultSetExtractor(
                     repaymentScheduleRelatedLoanData, disbursementData);
             final String sql = "select " + fullResultsetExtractor.schema()
-                    + " where ls.loan_id = ? and ls.version = ? order by ls.loan_id, ls.installment";
+                    + " where ml.id = ? order by ls.loan_id, ls.installment";
 
-            return this.jdbcTemplate.query(sql, fullResultsetExtractor, new Object[] { loanId, versionNumber });
+            return this.jdbcTemplate.query(sql, fullResultsetExtractor, new Object[] { loanId });
         } catch (final EmptyResultDataAccessException e) {
-            throw new LoanNotFoundException(loanId);
+           return null;
         }
     }
 
@@ -106,7 +97,7 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
             stringBuilder.append(" ls.installment as period, ls.fromdate as fromDate, ls.duedate as dueDate, ");
             stringBuilder
                     .append("ls.principal_amount as principalDue, ls.interest_amount as interestDue, ls.fee_charges_amount as feeChargesDue, ls.penalty_charges_amount as penaltyChargesDue, ");
-            stringBuilder.append(" ls.recalculated_interest_component as recalculatedInterestComponent from m_loan_repayment_schedule_history ls ");
+            stringBuilder.append(" ls.recalculated_interest_component as recalculatedInterestComponent from m_loan ml inner join m_loan_repayment_schedule_history ls on ls.loan_id=ml.id and ls.version=ml.repayment_history_version ");
             return stringBuilder.toString();
         }
 
