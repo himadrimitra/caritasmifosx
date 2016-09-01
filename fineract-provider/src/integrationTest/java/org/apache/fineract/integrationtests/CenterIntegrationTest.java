@@ -24,11 +24,18 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.fineract.integrationtests.common.CenterDomain;
 import org.apache.fineract.integrationtests.common.CenterHelper;
+import org.apache.fineract.integrationtests.common.ClientHelper;
+import org.apache.fineract.integrationtests.common.GroupHelper;
 import org.apache.fineract.integrationtests.common.OfficeHelper;
 import org.apache.fineract.integrationtests.common.Utils;
+import org.apache.fineract.integrationtests.common.loans.LoanApplicationTestBuilder;
+import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
+import org.apache.fineract.integrationtests.common.loans.LoanStatusChecker;
+import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,6 +52,7 @@ public class CenterIntegrationTest {
 
     private RequestSpecification requestSpec;
     private ResponseSpecification responseSpec;
+    private LoanTransactionHelper loanTransactionHelper;
 
     @Before
     public void setup() {
@@ -258,4 +266,159 @@ public class CenterIntegrationTest {
         
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Test
+    public void testBulkUndoRepaymentTxnForCenter() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        int officeId = new OfficeHelper(requestSpec, responseSpec).createOffice("04 Mar 2011");
+        String name = "TestFullCreation" + new Timestamp(new java.util.Date().getTime());
+        String externalId = Utils.randomStringGenerator("ID_", 7, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        int staffId = StaffHelper.createStaff(requestSpec, responseSpec);
+        int[] groupMembers = generateGroupMembers(3, officeId);
+        int resourceId = CenterHelper.createCenter(name, officeId, externalId, staffId, groupMembers, requestSpec, responseSpec);
+
+        String newName = "TestCenterUpdateNew" + new Timestamp(new java.util.Date().getTime());
+        String newExternalId = Utils.randomStringGenerator("newID_", 7, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        int newStaffId = StaffHelper.createStaff(requestSpec, responseSpec);
+        int[] associateGroupMembers = generateGroupMembers(2, officeId);
+
+        int[] associateResponse = CenterHelper.associateGroups(resourceId, associateGroupMembers, requestSpec, responseSpec);
+        Arrays.sort(associateResponse);
+        Arrays.sort(associateGroupMembers);
+        Assert.assertArrayEquals(associateResponse, associateGroupMembers);
+
+        final Integer clientID = ClientHelper.createClient(requestSpec, responseSpec, "04 Mar 2011", Integer.toString(officeId));
+        Integer groupID = GroupHelper.associateClient(this.requestSpec, this.responseSpec, Integer.toString(associateResponse[0]), clientID.toString());
+
+        final Integer loanProductID = createLoanProduct();
+        final Integer loanID = applyForLoanApplication(groupID, loanProductID);
+        
+        Assert.assertNotNull(loanID);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan("04 Mar 2011", loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        // DISBURSE first Tranche
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("04 Mar 2011", loanID);
+        System.out.println("DISBURSE " + loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+        
+        System.out.println("-------------Make repayment 1-----------");
+        HashMap<String, Object> lOneRepayOne = this.loanTransactionHelper.makeRepayment("04 Mar 2011", Float.valueOf("500"), loanID);
+        System.out.println("lOneRepayOne......."+lOneRepayOne);
+        System.out.println("-------------Make repayment 2-----------");
+        HashMap<String, Object> lOneRepayTwo = this.loanTransactionHelper.makeRepayment("04 Mar 2011", Float.valueOf("600"), loanID);
+        System.out.println("lOneRepayTwo......."+lOneRepayTwo);
+        
+        //Second Loan
+        final Integer loanProductID2 = createLoanProduct();
+        final Integer loanID2 = applyForLoanApplication(groupID, loanProductID2);
+        
+        Assert.assertNotNull(loanID2);
+
+        HashMap loanStatusHashMap2 = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID2);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap2);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap2 = this.loanTransactionHelper.approveLoan("04 Mar 2011", loanID2);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap2);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap2);
+
+        // DISBURSE first Tranche
+        loanStatusHashMap2 = this.loanTransactionHelper.disburseLoan("04 Mar 2011", loanID2);
+        System.out.println("DISBURSE " + loanStatusHashMap2);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap2);
+        
+        System.out.println("-------------Make repayment 1-----------");
+        HashMap<String, Object> lTwoRepayOne = this.loanTransactionHelper.waiveInterest("04 Mar 2011", "222", loanID2);
+        System.out.println("lTwoRepayOne......."+lTwoRepayOne);
+        System.out.println("-------------Make repayment 2-----------");
+        HashMap<String, Object> lTwoRepayTwo = this.loanTransactionHelper.makeRepayment("04 Mar 2011", Float.valueOf("400"), loanID2);
+        System.out.println("lTwoRepayTwo......."+lTwoRepayTwo);
+        
+        ArrayList<HashMap<String, Object>> txnData = (ArrayList<HashMap<String, Object>>) CenterHelper
+                        .retrieveRepaymentTransactionsByCenterID(resourceId, "2011-03-04", requestSpec, responseSpec);
+        
+        Object obj =CenterHelper.MakeBulkUndoRepaymentTransactions(getJsonForUndoRepaymentTrasactions(txnData), requestSpec, responseSpec);
+        
+        List<HashMap<String, Object>> loanOne = (List<HashMap<String, Object>>) this.loanTransactionHelper
+                        .getLoanDetail(requestSpec, responseSpec, loanID, "transactions");
+        boolean reversedTransactionOfLoanOne = false;
+        for (HashMap<String, Object> hashMap : loanOne) {
+                        if(hashMap.get("id").toString().equalsIgnoreCase(lOneRepayTwo.get("resourceId").toString())){
+                                reversedTransactionOfLoanOne = (boolean)hashMap.get("manuallyReversed");
+                        }
+                }
+        
+        List<HashMap<String, Object>> loanTwo = (List<HashMap<String, Object>>) this.loanTransactionHelper
+                        .getLoanDetail(requestSpec, responseSpec, loanID2, "transactions");
+        boolean reversedTransactionOfLoanTwo = false;
+        for (HashMap<String, Object> hashMap : loanTwo) {
+                        if(hashMap.get("id").toString().equalsIgnoreCase(lTwoRepayTwo.get("resourceId").toString())){
+                                reversedTransactionOfLoanTwo = (boolean)hashMap.get("manuallyReversed");
+                        }
+                }
+        Assert.assertTrue(reversedTransactionOfLoanOne);
+        Assert.assertTrue(reversedTransactionOfLoanTwo);
+        
+    }
+    
+    private String getJsonForUndoRepaymentTrasactions(final ArrayList<HashMap<String, Object>> txnData){
+        
+        List<HashMap> txnDataJson = new ArrayList();
+        for(int i = 0; i < txnData.size(); i++){
+                        HashMap<String, String> map = new HashMap<String, String>();
+                        map.put("requestId", Integer.toString(i));
+                        String relativeUrl = "loans/"+txnData.get(i).get("id")+"/transactions/"+((HashMap)((List)txnData.get(i)
+                                        .get("transactions")).get(0)).get("id")+"?command=undo";
+                        map.put("relativeUrl", relativeUrl);
+                        map.put("method", "POST");
+                        String body = "{\"dateFormat\":\"dd MMMM yyyy\",\"locale\":\"en\",\"transactionAmount\":0,\"transactionDate\":\"04 March 2011\"}";
+                        map.put("body", body);
+                        txnDataJson.add(map);
+                }
+        System.out.println("........................."+new Gson().toJson(txnDataJson));
+        return new Gson().toJson(txnDataJson);
+    }
+    
+    private Integer createLoanProduct() {
+        System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
+        final String loanProductJSON = new LoanProductTestBuilder() //
+                .withPrincipal("12,000.00") //
+                .withNumberOfRepayments("4") //
+                .withRepaymentAfterEvery("1") //
+                .withRepaymentTypeAsMonth() //
+                .withinterestRatePerPeriod("1") //
+                .withInterestRateFrequencyTypeAsMonths() //
+                .withAmortizationTypeAsEqualInstallments() //
+                .withInterestTypeAsDecliningBalance() //
+                .build(null);
+        return this.loanTransactionHelper.getLoanProductId(loanProductJSON);
+    }
+    
+    private Integer applyForLoanApplication(final Integer groupID, final Integer loanProductID) {
+        System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
+        final String loanApplicationJSON = new LoanApplicationTestBuilder() //
+                .withPrincipal("12,000.00") //
+                .withLoanTermFrequency("4") //
+                .withLoanTermFrequencyAsMonths() //
+                .withNumberOfRepayments("4") //
+                .withRepaymentEveryAfter("1") //
+                .withRepaymentFrequencyTypeAsMonths() //
+                .withInterestRatePerPeriod("2") //
+                .withAmortizationTypeAsEqualInstallments() //
+                .withInterestTypeAsDecliningBalance() //
+                .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
+                .withExpectedDisbursementDate("04 Mar 2011") //
+                .withSubmittedOnDate("04 Mar 2011") //
+                .withLoanType("group").build(groupID.toString(), loanProductID.toString(), null);
+        System.out.println(loanApplicationJSON);
+        return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
+    }
+    
 }

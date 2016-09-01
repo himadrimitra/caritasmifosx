@@ -45,12 +45,18 @@ public class GroupHelper {
     public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             final String activationDate) {
         System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
-        return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(true, activationDate), "groupId");
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(true, activationDate, null), "groupId");
+    }
+    
+    public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            @SuppressWarnings("unused") final boolean active, final String activationDate, final String officeId) {
+        System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(active, activationDate, officeId), "groupId");
     }
 
     public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
-        return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(false, ""), "groupId");
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(false, "", null), "groupId");
     }
 
     public static Integer associateClient(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
@@ -109,9 +115,13 @@ public class GroupHelper {
     }
 
 
-    public static String getTestGroupAsJSON(final boolean active, final String activationDate) {
+    public static String getTestGroupAsJSON(final boolean active, final String activationDate, final String officeId) {
         final HashMap<String, String> map = new HashMap<>();
-        map.put("officeId", "1");
+        if (officeId != null) {
+            map.put("officeId", officeId);
+        } else {
+            map.put("officeId", "1");
+        }
         map.put("name", randomNameGenerator("Group_Name_", 5));
         map.put("externalId", randomIDGenerator("ID_", 7));
         map.put("dateFormat", "dd MMMM yyyy");

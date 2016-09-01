@@ -19,9 +19,11 @@
 package org.apache.fineract.portfolio.accountdetails.service;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectionData;
 import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 
 public interface AccountDetailsReadPlatformService {
 
@@ -32,4 +34,6 @@ public interface AccountDetailsReadPlatformService {
     public Collection<LoanAccountSummaryData> retrieveClientLoanAccountsByLoanOfficerId(final Long clientId, final Long loanOfficerId);
 
     public Collection<LoanAccountSummaryData> retrieveGroupLoanAccountsByLoanOfficerId(final Long groupId, final Long loanOfficerId);
+    
+    public List<LoanAccountData> retrieveAllTransactionsForCenterId(final Long centerId, final String transactionDate);
 }

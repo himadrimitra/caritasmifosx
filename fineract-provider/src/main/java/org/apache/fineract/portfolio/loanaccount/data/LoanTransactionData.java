@@ -111,6 +111,31 @@ public class LoanTransactionData {
                 feeChargesPortion, penaltyChargesPortion, overpaymentPortion, unrecognizedIncomePortion, null, externalId, transfer,
                 fixedEmiAmount, outstandingLoanBalance, submittedOnDate,manuallyReversed);
     }
+    
+    public static LoanTransactionData populateLoanTransactionData(final Long id, final BigDecimal amount) {
+        final Long officeId = null;
+        final String officeName = null;
+        final LocalDate date = null;
+        final CurrencyData currency = null;
+        final PaymentDetailData paymentDetailData = null;
+        final BigDecimal principalPortion = null;
+        final BigDecimal interestPortion = null;
+        final BigDecimal feeChargesPortion = null;
+        final BigDecimal penaltyChargesPortion = null;
+        final BigDecimal overpaymentPortion = null;
+        final BigDecimal unrecognizedIncomePortion = null;
+        final String externalId = null;
+        final AccountTransferData transfer = null;
+        final BigDecimal fixedEmiAmount = null;
+        final BigDecimal outstandingLoanBalance = null;
+        final LocalDate submittedOnDate = null;
+        final boolean manuallyReversed = false;
+        final Collection<PaymentTypeData> paymentTypeOptions = null;
+        final LoanTransactionEnumData transactionType = null;
+        return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currency, date, amount, principalPortion, interestPortion,
+                feeChargesPortion, penaltyChargesPortion, overpaymentPortion, unrecognizedIncomePortion, paymentTypeOptions, externalId, transfer,
+                fixedEmiAmount, outstandingLoanBalance, submittedOnDate,manuallyReversed);
+    }
 
     public LoanTransactionData(final Long id, final Long officeId, final String officeName, final LoanTransactionEnumData transactionType,
             final PaymentDetailData paymentDetailData, final CurrencyData currency, final LocalDate date, final BigDecimal amount,
