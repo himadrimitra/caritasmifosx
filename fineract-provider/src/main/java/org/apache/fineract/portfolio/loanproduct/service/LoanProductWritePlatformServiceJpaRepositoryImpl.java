@@ -45,6 +45,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculat
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
+import org.apache.fineract.portfolio.loanproduct.domain.ProductLoanCharge;
 import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductCannotBeModifiedDueToNonClosedLoansException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductDateException;
@@ -117,18 +118,20 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy = findStrategyByIdIfProvided(transactionProcessingStrategyId);
 
             final String currencyCode = command.stringValueOfParameterNamed("currencyCode");
-            final List<Charge> charges = assembleListOfProductCharges(command, currencyCode);
-
+            
             FloatingRate floatingRate = null;
             if(command.parameterExists("floatingRatesId")){
             	floatingRate = this.floatingRateRepository
             			.findOneWithNotFoundDetection(command.longValueOfParameterNamed("floatingRatesId"));
             }
-            final LoanProduct loanproduct = LoanProduct.assembleFromJson(fund, loanTransactionProcessingStrategy, charges, command,
+            final LoanProduct loanproduct = LoanProduct.assembleFromJson(fund, loanTransactionProcessingStrategy, null, command,
                     this.aprCalculator, floatingRate);
             loanproduct.updateLoanProductInRelatedClasses();
-
+            
             this.loanProductRepository.save(loanproduct);
+            
+            final List<ProductLoanCharge> productLoanCharges = assembleListOfProductCharges(command, currencyCode, loanproduct);
+            loanproduct.update(productLoanCharges);
 
             // save accounting mappings
             this.accountMappingWritePlatformService.createLoanProductToGLAccountMapping(loanproduct.getId(), command);
@@ -208,7 +211,7 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             }
 
             if (changes.containsKey("charges")) {
-                List<Charge> productCharges = assembleListOfProductCharges(command, product.getCurrency().getCode());
+                final List<ProductLoanCharge> productCharges = assembleListOfProductCharges(command, product.getCurrency().getCode(),product);
                 final boolean updated = product.update(productCharges);
                 if (!updated) {
                     changes.remove("charges");
@@ -245,9 +248,9 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
 		return isChangeFromFloatingToFlatOrViceVersa || isChangeInCriticalFloatingRateParams;
 	}
 
-	private List<Charge> assembleListOfProductCharges(final JsonCommand command, final String currencyCode) {
+    private List<ProductLoanCharge> assembleListOfProductCharges(final JsonCommand command, final String currencyCode, final LoanProduct product) {
 
-        final List<Charge> charges = new ArrayList<>();
+        final List<ProductLoanCharge> productLoanCharges = new ArrayList<>();
 
         String loanProductCurrencyCode = command.stringValueOfParameterNamed("currencyCode");
         if (loanProductCurrencyCode == null) {
@@ -258,24 +261,26 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             final JsonArray chargesArray = command.arrayOfParameterNamed("charges");
             if (chargesArray != null) {
                 for (int i = 0; i < chargesArray.size(); i++) {
-
                     final JsonObject jsonObject = chargesArray.get(i).getAsJsonObject();
                     if (jsonObject.has("id")) {
                         final Long id = jsonObject.get("id").getAsLong();
-
                         final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(id);
-
                         if (!loanProductCurrencyCode.equals(charge.getCurrencyCode())) {
                             final String errorMessage = "Charge and Loan Product must have the same currency.";
                             throw new InvalidCurrencyException("charge", "attach.to.loan.product", errorMessage);
                         }
-                        charges.add(charge);
+                        Boolean isMandatory = jsonObject.get("isMandatory").getAsBoolean();
+                        if(isMandatory == null){
+                            isMandatory = false;
+                        }
+                        final ProductLoanCharge productLoanCharge = ProductLoanCharge.create(product, charge, isMandatory);
+                        productLoanCharges.add(productLoanCharge);
                     }
                 }
             }
         }
 
-        return charges;
+        return productLoanCharges;
     }
 
     /*

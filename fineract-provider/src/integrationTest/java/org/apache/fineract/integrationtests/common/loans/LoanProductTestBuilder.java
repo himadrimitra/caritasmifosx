@@ -147,9 +147,10 @@ public class LoanProductTestBuilder {
         final HashMap<String, Object> map = new HashMap<>();
 
         if (chargeId != null) {
-            List<HashMap<String, String>> charges = new ArrayList<>();
-            HashMap<String, String> chargeMap = new HashMap<>();
+            List<HashMap<String, Object>> charges = new ArrayList<>();
+            HashMap<String, Object> chargeMap = new HashMap<>();
             chargeMap.put("id", chargeId);
+            chargeMap.put("isMandatory", true);
             charges.add(chargeMap);
             map.put("charges", charges);
         }
