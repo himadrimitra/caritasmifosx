@@ -113,7 +113,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         final BigDecimal loanTxnIsReversed = BigDecimal.ZERO;
         final Integer loanTxnRepayment = LoanTransactionType.REPAYMENT.getValue();
         final String sql = "select " + rm.schema() ;
-        return this.jdbcTemplate.query(sql, rm, new Object[]{transactionDate, loanTxnIsReversed, centerId, loanTxnRepayment});
+        return this.jdbcTemplate.query(sql, rm, new Object[]{transactionDate, transactionDate, loanTxnIsReversed, centerId, loanTxnRepayment});
         
     }
     
@@ -512,15 +512,17 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
 
         public BulkUndoTransactionDataMapper() {
                 final StringBuilder bulkUndoTransactionSql = new StringBuilder();
-                        bulkUndoTransactionSql.append(" ml.id AS loanId, mlt.id AS transactionId, mlt.amount AS transactionAmount, mc.firstname AS clientName, ")
-                                .append("mc.account_no AS accountNumber , mpl.name AS loanProductName ")
-                                .append("FROM m_loan ml ")
-                                .append("LEFT JOIN m_client mc ON ml.client_id = mc.id ")
-                                .append("LEFT JOIN m_product_loan mpl ON ml.product_id = mpl.id ")
-                                .append("LEFT JOIN m_group mg ON ml.group_id =mg.id ")
-                                .append("LEFT JOIN m_loan_transaction mlt ON ml.id =mlt.loan_id ")
-                                .append("INNER JOIN (SELECT MAX(dmlt.id) AS dmltId FROM m_loan_transaction dmlt GROUP BY dmlt.loan_id ) ddmlt on mlt.id = ddmlt.dmltId ")
-                                .append("WHERE mlt.transaction_date = ? AND mlt.is_reversed = ? AND mg.parent_id=? AND mlt.transaction_type_enum = ? ");
+                    bulkUndoTransactionSql.append(" ml.id AS loanId, mlt.id AS transactionId, mlt.amount AS transactionAmount, mc.firstname AS clientName ")
+                    .append(", mc.account_no AS accountNumber, mpl.name AS loanProductName ")
+                    .append("FROM m_loan ml ")
+                    .append("LEFT JOIN m_client mc ON ml.client_id = mc.id ")
+                    .append("LEFT JOIN m_product_loan mpl ON ml.product_id = mpl.id ")
+                    .append("LEFT JOIN m_group mg ON ml.group_id =mg.id ")
+                    .append("LEFT JOIN m_loan_transaction mlt ON ml.id =mlt.loan_id ")
+                    .append("INNER JOIN (SELECT max(dmlt.id) as dmltId FROM m_loan_transaction dmlt  ")
+                    .append("where dmlt.transaction_date = ? AND dmlt.is_reversed = 0 AND dmlt.transaction_type_enum = 2 ")
+                    .append("group by dmlt.loan_id) ddmlt ON mlt.id = ddmlt.dmltId ")
+                    .append("WHERE mlt.transaction_date = ? AND mlt.is_reversed = ? AND mg.parent_id = ? AND mlt.transaction_type_enum = ? ");
                 
                 this.schemaSql = bulkUndoTransactionSql.toString();
         }
