@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.charge.domain;
 
+import java.util.Collection;
+
 import org.apache.fineract.portfolio.charge.exception.ChargeIsNotActiveException;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,5 +54,9 @@ public class ChargeRepositoryWrapper {
         if (!chargeDefinition.isActive()) { throw new ChargeIsNotActiveException(id, chargeDefinition.getName()); }
 
         return chargeDefinition;
+    }
+    
+    public Collection<Charge> findAllCharges(final Collection<Long> ids){
+        return this.repository.findAll(ids);
     }
 }

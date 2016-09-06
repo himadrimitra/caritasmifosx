@@ -1392,6 +1392,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         boolean isAppliedOnBackDate = false;
         LoanCharge loanCharge = null;
         LocalDate recalculateFrom = loan.fetchInterestRecalculateFromDate();
+        Collection<LoanCharge> createdCharges = new ArrayList<>();
+        Collection<LoanTransaction> chargeTransactions = new ArrayList<>();
         if (chargeDefinition.isPercentageOfDisbursementAmount()) {
             LoanTrancheDisbursementCharge loanTrancheDisbursementCharge = null;
             for (LoanDisbursementDetails disbursementDetail : loanDisburseDetails) {
@@ -1403,7 +1405,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADD_CHARGE,
                             constructEntityMap(BUSINESS_ENTITY.LOAN_CHARGE, loanCharge));
                     validateAddLoanCharge(loan, chargeDefinition, loanCharge);
-                    addCharge(loan, chargeDefinition, loanCharge);
+                    addCharge(loan, chargeDefinition, loanCharge, createdCharges, chargeTransactions);
                     isAppliedOnBackDate = true;
                     if (recalculateFrom.isAfter(disbursementDetail.expectedDisbursementDateAsLocalDate())) {
                         recalculateFrom = disbursementDetail.expectedDisbursementDateAsLocalDate();
@@ -1420,7 +1422,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     constructEntityMap(BUSINESS_ENTITY.LOAN_CHARGE, loanCharge));
 
             validateAddLoanCharge(loan, chargeDefinition, loanCharge);
-            isAppliedOnBackDate = addCharge(loan, chargeDefinition, loanCharge);
+            isAppliedOnBackDate = addCharge(loan, chargeDefinition, loanCharge, createdCharges, chargeTransactions);
             if (loanCharge.getDueLocalDate() == null || recalculateFrom.isAfter(loanCharge.getDueLocalDate())) {
                 isAppliedOnBackDate = true;
                 recalculateFrom = loanCharge.getDueLocalDate();
@@ -1430,6 +1432,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             }
         }
 
+        if(!createdCharges.isEmpty()){
+            this.loanChargeRepository.save(createdCharges);
+            if(!chargeTransactions.isEmpty()){
+                this.loanTransactionRepository.save(chargeTransactions);
+            }
+        } 
+        
         boolean reprocessRequired = true;
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             if (isAppliedOnBackDate && loan.isFeeCompoundingEnabledForInterestRecalculation()) {
@@ -1439,6 +1448,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             }
             updateOriginalSchedule(loan);
         }
+
+        
         if (reprocessRequired) {
             ChangedTransactionDetail changedTransactionDetail = loan.reprocessTransactions();
             if (changedTransactionDetail != null) {
@@ -1450,8 +1461,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
                 }
             }
-            saveLoanWithDataIntegrityViolationChecks(loan);
         }
+        saveLoanWithDataIntegrityViolationChecks(loan);
 
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
 
@@ -1525,7 +1536,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
     }
 
-    private boolean addCharge(final Loan loan, final Charge chargeDefinition, final LoanCharge loanCharge) {
+    private boolean addCharge(final Loan loan, final Charge chargeDefinition, final LoanCharge loanCharge,
+            final Collection<LoanCharge> createdCharges, final Collection<LoanTransaction> chargeTransactions) {
 
         AppUser currentUser = getAppUserIfPresent();
         if (!loan.hasCurrencyCodeOf(chargeDefinition.getCurrencyCode())) {
@@ -1543,8 +1555,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
 
         loan.addLoanCharge(loanCharge);
+        createdCharges.add(loanCharge);
 
-        this.loanChargeRepository.save(loanCharge);
+//        this.loanChargeRepository.save(loanCharge);
 
         /**
          * we want to apply charge transactions only for those loans charges
@@ -1553,7 +1566,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
          **/
         if (loan.status().isActive() && loan.isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()) {
             final LoanTransaction applyLoanChargeTransaction = loan.handleChargeAppliedTransaction(loanCharge, null, currentUser);
-            this.loanTransactionRepository.save(applyLoanChargeTransaction);
+            chargeTransactions.add(applyLoanChargeTransaction);
+//            this.loanTransactionRepository.save(applyLoanChargeTransaction);
         }
         boolean isAppliedOnBackDate = false;
         if (loanCharge.getDueLocalDate() == null || DateUtils.getLocalDateOfTenant().isAfter(loanCharge.getDueLocalDate())) {
@@ -2412,18 +2426,34 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     public void applyOverdueChargesForLoan(final Long loanId, Collection<OverdueLoanScheduleData> overdueLoanScheduleDatas) {
 
         Loan loan = null;
+        final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
+        final Long penaltyPostingWaitPeriodValue = this.configurationDomainService.retrieveGraceOnPenaltyPostingPeriod();
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
         boolean runInterestRecalculation = false;
         LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
         LocalDate lastChargeDate = null;
+        Map<Long, Charge> chargeDetails = new HashMap<>();
+        Collection<Long> chargeIds = new ArrayList<>();
+        for (final OverdueLoanScheduleData overdueInstallment : overdueLoanScheduleDatas) {
+            chargeIds.add(overdueInstallment.getChargeId());
+        }
+        Collection<Charge> charges = this.chargeRepository.findAllCharges(chargeIds);
+        for(Charge charge: charges){
+            chargeDetails.put(charge.getId(), charge);
+        }
+        
+        Collection<LoanCharge> createdCharges = new ArrayList<>();
+        Collection<LoanTransaction> chargeTransactions = new ArrayList<>();
+        
         for (final OverdueLoanScheduleData overdueInstallment : overdueLoanScheduleDatas) {
 
             final JsonElement parsedCommand = this.fromApiJsonHelper.parse(overdueInstallment.toString());
             final JsonCommand command = JsonCommand.from(overdueInstallment.toString(), parsedCommand, this.fromApiJsonHelper, null, null,
                     null, null, null, loanId, null, null, null, null);
-            LoanOverdueDTO overdueDTO = applyChargeToOverdueLoanInstallment(loanId, overdueInstallment.getChargeId(),
-                    overdueInstallment.getPeriodNumber(), command, loan, existingTransactionIds, existingReversedTransactionIds);
+            LoanOverdueDTO overdueDTO = applyChargeToOverdueLoanInstallment(loanId, chargeDetails.get(overdueInstallment.getChargeId()),
+                    overdueInstallment.getPeriodNumber(), command, loan, existingTransactionIds, existingReversedTransactionIds,
+                    penaltyWaitPeriodValue, penaltyPostingWaitPeriodValue, createdCharges, chargeTransactions);
             loan = overdueDTO.getLoan();
             runInterestRecalculation = runInterestRecalculation || overdueDTO.isRunInterestRecalculation();
             if (recalculateFrom.isAfter(overdueDTO.getRecalculateFrom())) {
@@ -2447,6 +2477,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 }
                 updateOriginalSchedule(loan);
             }
+            
+            if(!createdCharges.isEmpty()){
+                this.loanChargeRepository.save(createdCharges);
+                if(!chargeTransactions.isEmpty()){
+                    this.loanTransactionRepository.save(chargeTransactions);
+                }
+            }
 
             if (reprocessRequired) {
                 addInstallmentIfPenaltyAppliedAfterLastDueDate(loan, lastChargeDate);
@@ -2460,8 +2497,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                         this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
                     }
                 }
-                saveLoanWithDataIntegrityViolationChecks(loan);
             }
+            
+            saveLoanWithDataIntegrityViolationChecks(loan);
 
             postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
 
@@ -2498,10 +2536,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
     }
 
-    public LoanOverdueDTO applyChargeToOverdueLoanInstallment(final Long loanId, final Long loanChargeId, final Integer periodNumber,
-            final JsonCommand command, Loan loan, final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds) {
+    public LoanOverdueDTO applyChargeToOverdueLoanInstallment(final Long loanId, final Charge chargeDefinition, final Integer periodNumber,
+            final JsonCommand command, Loan loan, final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds,
+            final Long penaltyWaitPeriodValue, final Long penaltyPostingWaitPeriodValue, Collection<LoanCharge> createdCharges, Collection<LoanTransaction> chargeTransactions) {
         boolean runInterestRecalculation = false;
-        final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(loanChargeId);
 
         Collection<Integer> frequencyNumbers = loanChargeReadPlatformService.retrieveOverdueInstallmentChargeFrequencyNumber(loanId,
                 chargeDefinition.getId(), periodNumber);
@@ -2509,8 +2547,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         Integer feeFrequency = chargeDefinition.feeFrequency();
         final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
         Map<Integer, LocalDate> scheduleDates = new HashMap<>();
-        final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
-        final Long penaltyPostingWaitPeriodValue = this.configurationDomainService.retrieveGraceOnPenaltyPostingPeriod();
         final LocalDate dueDate = command.localDateValueOfParameterNamed("dueDate");
         Long diff = penaltyWaitPeriodValue + 1 - penaltyPostingWaitPeriodValue;
         if (diff < 0) {
@@ -2549,8 +2585,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         LocalDate recalculateFrom = DateUtils.getLocalDateOfTenant();
 
         if (loan != null) {
-            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_APPLY_OVERDUE_CHARGE,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
             for (Map.Entry<Integer, LocalDate> entry : scheduleDates.entrySet()) {
 
                 final LoanCharge loanCharge = LoanCharge.createNewFromJson(loan, chargeDefinition, command, entry.getValue());
@@ -2559,7 +2593,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                         entry.getKey());
                 loanCharge.updateOverdueInstallmentCharge(overdueInstallmentCharge);
 
-                boolean isAppliedOnBackDate = addCharge(loan, chargeDefinition, loanCharge);
+                boolean isAppliedOnBackDate = addCharge(loan, chargeDefinition, loanCharge, createdCharges, chargeTransactions);
                 runInterestRecalculation = runInterestRecalculation || isAppliedOnBackDate;
                 if (entry.getValue().isBefore(recalculateFrom)) {
                     recalculateFrom = entry.getValue();
