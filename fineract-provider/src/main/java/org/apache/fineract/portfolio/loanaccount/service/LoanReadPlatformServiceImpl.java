@@ -977,8 +977,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " ls.penalty_charges_amount as penaltyChargesDue, ls.penalty_charges_completed_derived as penaltyChargesPaid, ls.penalty_charges_waived_derived as penaltyChargesWaived, ls.penalty_charges_writtenoff_derived as penaltyChargesWrittenOff, "
                     + " ls.total_paid_in_advance_derived as totalPaidInAdvanceForPeriod, ls.total_paid_late_derived as totalPaidLateForPeriod, "
                     + " mc.amount,mc.id as chargeId "
-                    + " from m_loan_repayment_schedule ls "
-                    + " inner join m_loan ml on ml.id = ls.loan_id "
+                    + " from m_loan ml "
+                    + " inner join m_loan_repayment_schedule ls on ml.id = ls.loan_id "
                     + " join m_product_loan_charge plc on plc.product_loan_id = ml.product_id "
                     + " join m_charge mc on mc.id = plc.charge_id ";
 
@@ -1479,10 +1479,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final MusoniOverdueLoanScheduleMapper rm = new MusoniOverdueLoanScheduleMapper();
 
         final StringBuilder sqlBuilder = new StringBuilder(400);
-        sqlBuilder.append("select ").append(rm.schema()).append(" where DATE_SUB(CURDATE(),INTERVAL ? DAY) > ls.duedate ")
-                .append(" and ls.completed_derived <> 1 and mc.charge_applies_to_enum =1 ")
+        sqlBuilder.append("select ").append(rm.schema()).append(" where ml.loan_status_id = 300 ")
+                .append(" and mc.charge_time_enum = 9 ")
+                .append(" and DATE_SUB(CURDATE(),INTERVAL ? DAY) > ls.duedate ")
                 .append(" and ls.recalculated_interest_component <> 1 ")
-                .append(" and mc.charge_time_enum = 9 and ml.loan_status_id = 300 ");
+                .append(" and ls.completed_derived <> 1 and mc.charge_applies_to_enum =1 ");
 
         if (backdatePenalties) { return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { penaltyWaitPeriod }); }
         // Only apply for duedate = yesterday (so that we don't apply
