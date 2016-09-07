@@ -79,6 +79,7 @@ import org.apache.fineract.portfolio.account.domain.StandingInstructionType;
 import org.apache.fineract.portfolio.account.service.AccountAssociationsReadPlatformService;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
 import org.apache.fineract.portfolio.account.service.AccountTransfersWritePlatformService;
+import org.apache.fineract.portfolio.account.service.StandingInstructionWritePlatformService;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
@@ -235,7 +236,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessingStrategy;
     private final LoanScheduleAssembler loanScheduleAssembler;
     private final CodeValueRepositoryWrapper codeValueRepository;
-
+    private final StandingInstructionWritePlatformService standingInstructionWritePlatformService;
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final LoanEventApiJsonValidator loanEventApiJsonValidator,
@@ -264,7 +265,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanUtilService loanUtilService, final LoanSummaryWrapper loanSummaryWrapper,
             final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessingStrategy,
             final LoanScheduleAssembler loanScheduleAssembler,
-            final CodeValueRepositoryWrapper codeValueRepository) {
+            final CodeValueRepositoryWrapper codeValueRepository,final StandingInstructionWritePlatformService standingInstructionWritePlatformService) {
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
         this.loanAssembler = loanAssembler;
@@ -303,6 +304,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.loanScheduleAssembler = loanScheduleAssembler;
         this.codeValueRepository = codeValueRepository;
+        this.standingInstructionWritePlatformService = standingInstructionWritePlatformService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -750,6 +752,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         if (!changes.isEmpty()) {
             saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
             this.accountTransfersWritePlatformService.reverseAllTransactions(loanId, PortfolioAccountType.LOAN);
+            Collection<Long> deletedIds = this.standingInstructionWritePlatformService.delete(loanId, PortfolioAccountType.LOAN);
+            changes.put("deletedInstructions", deletedIds);
             String noteText = null;
             if (command.hasParameter("note")) {
                 noteText = command.stringValueOfParameterNamed("note");

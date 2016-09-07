@@ -24,8 +24,10 @@ import static org.apache.fineract.portfolio.account.AccountDetailConstants.toAcc
 import static org.apache.fineract.portfolio.account.api.StandingInstructionApiConstants.statusParamName;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -178,7 +180,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
     @Override
     public CommandProcessingResult delete(final Long id) {
         AccountTransferStandingInstruction standingInstructionsForUpdate = this.standingInstructionRepository.findOne(id);
-        standingInstructionsForUpdate.updateStatus(StandingInstructionStatus.DELETED.getValue());
+        standingInstructionsForUpdate.delete();
         final Map<String, Object> actualChanges = new HashMap<>();
         actualChanges.put(statusParamName, StandingInstructionStatus.DELETED.getValue());
         return new CommandProcessingResultBuilder() //
@@ -292,4 +294,24 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
         this.jdbcTemplate.update(updateQuery.toString());
 
     }
-}
+
+    @Override
+    public Collection<Long> delete(Long accountId, PortfolioAccountType type) {
+        Collection<AccountTransferStandingInstruction> instructionlist = null;
+        final List<Long> deletedInstructionIds = new ArrayList<>();
+        if(type.isLoanAccount()){
+            instructionlist = this.standingInstructionRepository.findAllByLoanId(accountId, StandingInstructionStatus.ACTIVE.getValue());
+        }
+        if(instructionlist!=null){
+            for(AccountTransferStandingInstruction instruction:instructionlist){
+                instruction.delete();
+                deletedInstructionIds.add(instruction.getId());
+            }
+            this.standingInstructionRepository.save(instructionlist);
+    }
+    
+    return deletedInstructionIds;
+    
+           
+        }
+    }
