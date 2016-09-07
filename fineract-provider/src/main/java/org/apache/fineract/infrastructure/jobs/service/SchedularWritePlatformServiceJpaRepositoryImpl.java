@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailDataValidator;
 import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetail;
 import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetailRepository;
@@ -33,6 +34,7 @@ import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobRunHistoryRepo
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetail;
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetailRepository;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,15 +49,19 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
     private final SchedulerDetailRepository schedulerDetailRepository;
 
     private final JobDetailDataValidator dataValidator;
+    
+    private final SchedulerJobRunnerReadService schedulerJobRunnerReadService;
 
     @Autowired
     public SchedularWritePlatformServiceJpaRepositoryImpl(final ScheduledJobDetailRepository scheduledJobDetailsRepository,
             final ScheduledJobRunHistoryRepository scheduledJobRunHistoryRepository, final JobDetailDataValidator dataValidator,
-            final SchedulerDetailRepository schedulerDetailRepository) {
+            final SchedulerDetailRepository schedulerDetailRepository,
+            final SchedulerJobRunnerReadService schedulerJobRunnerReadService) {
         this.scheduledJobDetailsRepository = scheduledJobDetailsRepository;
         this.scheduledJobRunHistoryRepository = scheduledJobRunHistoryRepository;
         this.schedulerDetailRepository = schedulerDetailRepository;
         this.dataValidator = dataValidator;
+        this.schedulerJobRunnerReadService = schedulerJobRunnerReadService;
     }
 
     @Override
@@ -136,7 +142,7 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         boolean isStopExecution = false;
         final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
         if (scheduledJobDetail.isCurrentlyRunning()
-                || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && (scheduledJobDetail.getNextRunTime().after(new Date())))) {
+                || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && (scheduledJobDetail.getNextRunTime().after(DateUtils.getLocalDateOfTenant().toDate())))) {
             isStopExecution = true;
         }
         final SchedulerDetail schedulerDetail = retriveSchedulerDetail();
@@ -146,6 +152,21 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         } else if (!isStopExecution) {
             scheduledJobDetail.updateCurrentlyRunningStatus(true);
         }
+
+		String dependentJobs = this.schedulerJobRunnerReadService.getDependentJobs(scheduledJobDetail.getJobName());
+		
+		if (dependentJobs != null) {
+			String[] dependentJobList = dependentJobs.split(":");
+
+			for (String job : dependentJobList) {
+				Date lastRunDate = this.schedulerJobRunnerReadService.getLastRunDate(job);
+				if (lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate())) {
+					isStopExecution = true;
+					break;
+				}
+			}
+		}
+        
         this.scheduledJobDetailsRepository.save(scheduledJobDetail);
         return isStopExecution;
     }

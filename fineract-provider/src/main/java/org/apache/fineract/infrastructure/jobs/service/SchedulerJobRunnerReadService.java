@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.jobs.service;
 
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -34,5 +35,9 @@ public interface SchedulerJobRunnerReadService {
     public Page<JobDetailHistoryData> retrieveJobHistory(Long jobId, SearchParameters searchParameters);
 
     public boolean isUpdatesAllowed();
+    
+    public String getDependentJobs(String jobName);
+    
+    public Date getLastRunDate(String jobName);
 
 }

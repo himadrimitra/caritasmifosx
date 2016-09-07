@@ -31,6 +31,7 @@ import org.apache.fineract.infrastructure.jobs.data.JobDetailData;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailHistoryData;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
 import org.apache.fineract.infrastructure.jobs.exception.OperationNotAllowedException;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -186,5 +187,17 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
         }
 
     }
+
+	@Override
+	public String getDependentJobs(String jobName) {
+		return this.jdbcTemplate.queryForObject("select j.depands_on_job_name from job j where j.name = '"+jobName+"'", String.class);
+	}
+
+	@Override
+	public Date getLastRunDate(String jobName) {
+		return this.jdbcTemplate.queryForObject(
+				"select DATE(max(jh.end_time)) from job j join job_run_history jh on j.id = jh.job_id where jh.`status` = 'success' and j.currently_running = 0 and j.name = '"+jobName+"'",
+				Date.class);
+	}
 
 }
