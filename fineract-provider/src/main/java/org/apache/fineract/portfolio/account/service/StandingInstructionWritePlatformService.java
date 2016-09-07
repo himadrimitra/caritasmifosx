@@ -18,9 +18,11 @@
  */
 package org.apache.fineract.portfolio.account.service;
 
+import java.util.Collection;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
+import org.apache.fineract.portfolio.account.PortfolioAccountType;
 
 public interface StandingInstructionWritePlatformService {
 
@@ -32,4 +34,5 @@ public interface StandingInstructionWritePlatformService {
 
     CommandProcessingResult delete(Long id);
 
+    Collection<Long> delete(Long accountId, PortfolioAccountType type);
 }
