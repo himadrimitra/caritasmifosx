@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -95,6 +96,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
     }
 
     @Override
+    @Transactional
     @CronTarget(jobName = JobName.UPDATE_LOAN_ARREARS_AGEING)
     public void updateLoanArrearsAgeingDetails() throws JobExecutionException{
         final StringBuilder errorMessage = new StringBuilder();
