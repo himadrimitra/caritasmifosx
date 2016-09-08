@@ -49,6 +49,8 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
+import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
+import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
@@ -178,6 +180,12 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
 		if (groupId != null) {
 			centerOrGroup = this.groupRepository
 					.findOneWithNotFoundDetection(groupId);
+			if(centerOrGroup.isNotActive()){
+			    if(centerOrGroup.isCenter()){
+			        throw new CenterNotActiveException(centerOrGroup.getId());
+			    }
+                            throw new GroupNotActiveException(centerOrGroup.getId());
+			}
 			final Group parent = centerOrGroup.getParent();
 			/* Check if it is a Group and belongs to a center */
 			if (centerOrGroup.isGroup() && parent != null) {
