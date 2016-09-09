@@ -138,23 +138,16 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 
     @Transactional
     @Override
-    public boolean processJobDetailForExecution(final String jobKey, final String triggerType) {
-        boolean isStopExecution = false;
-        final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
-        if (scheduledJobDetail.isCurrentlyRunning()
-                || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && (scheduledJobDetail.getNextRunTime().after(DateUtils.getLocalDateOfTenant().toDate())))) {
-            isStopExecution = true;
-        }
-        final SchedulerDetail schedulerDetail = retriveSchedulerDetail();
-        if (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && schedulerDetail.isSuspended()) {
-            scheduledJobDetail.updateTriggerMisfired(true);
-            isStopExecution = true;
-        } else if (!isStopExecution) {
-            scheduledJobDetail.updateCurrentlyRunningStatus(true);
-        }
+	public boolean processJobDetailForExecution(final String jobKey, final String triggerType) {
+		boolean isStopExecution = false;
+		final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
+		if (scheduledJobDetail.isCurrentlyRunning() || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON)
+				&& (scheduledJobDetail.getNextRunTime().after(DateUtils.getLocalDateOfTenant().toDate())))) {
+			isStopExecution = true;
+		}
 
 		String dependentJobs = this.schedulerJobRunnerReadService.getDependentJobs(scheduledJobDetail.getJobName());
-		
+
 		if (dependentJobs != null) {
 			String[] dependentJobList = dependentJobs.split(":");
 
@@ -166,10 +159,18 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 				}
 			}
 		}
-        
-        this.scheduledJobDetailsRepository.save(scheduledJobDetail);
-        return isStopExecution;
-    }
+		
+		final SchedulerDetail schedulerDetail = retriveSchedulerDetail();
+		if (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && schedulerDetail.isSuspended()) {
+			scheduledJobDetail.updateTriggerMisfired(true);
+			isStopExecution = true;
+		} else if (!isStopExecution) {
+			scheduledJobDetail.updateCurrentlyRunningStatus(true);
+		}
+
+		this.scheduledJobDetailsRepository.save(scheduledJobDetail);
+		return isStopExecution;
+	}
 
     @Transactional
     @Override
