@@ -269,10 +269,7 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
                             final String errorMessage = "Charge and Loan Product must have the same currency.";
                             throw new InvalidCurrencyException("charge", "attach.to.loan.product", errorMessage);
                         }
-                        Boolean isMandatory = jsonObject.get("isMandatory").getAsBoolean();
-                        if(isMandatory == null){
-                            isMandatory = false;
-                        }
+                        Boolean isMandatory = jsonObject.has("isMandatory") ? jsonObject.get("isMandatory").getAsBoolean() : false;
                         final ProductLoanCharge productLoanCharge = ProductLoanCharge.create(product, charge, isMandatory);
                         productLoanCharges.add(productLoanCharge);
                     }
