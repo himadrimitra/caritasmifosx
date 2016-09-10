@@ -1507,7 +1507,14 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final String sql = "Select MAX(l.loan_product_counter) from m_loan l where l.client_id = ? and l.product_id=?";
         return this.jdbcTemplate.queryForInt(sql, clientId, productId);
     }
-
+    
+    @Override
+    public Collection<Long> retrieveAllActiveSubmittedAprrovedGroupLoanIds(final Long groupId){
+    	final String sql = "select loan.id from m_loan loan where loan.loan_status_id in(?, ?, ?) AND loan.group_id=?";
+    	 return this.jdbcTemplate.queryForList(sql, Long.class, new Object[] { LoanStatus.ACTIVE.getValue(),
+    			 LoanStatus.APPROVED.getValue(), LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(), groupId });
+    }
+    
     @Override
     public Collection<DisbursementData> retrieveLoanDisbursementDetails(final Long loanId) {
         final LoanDisbursementDetailMapper rm = new LoanDisbursementDetailMapper();

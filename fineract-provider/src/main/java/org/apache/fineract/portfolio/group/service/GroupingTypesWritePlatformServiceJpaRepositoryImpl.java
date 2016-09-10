@@ -52,6 +52,7 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarType;
+import org.apache.fineract.portfolio.calendar.exception.CalendarDateException;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -72,6 +73,7 @@ import org.apache.fineract.portfolio.group.serialization.GroupingTypesDataValida
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -113,6 +115,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final AccountNumberGenerator accountNumberGenerator;
     private final VillageRepositoryWrapper villageRepository; 
+    private final LoanReadPlatformService loanReadPlatformService;
 
     @Autowired
     public GroupingTypesWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -124,7 +127,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
             final SavingsAccountRepository savingsAccountRepository, final LoanRepositoryWrapper loanRepositoryWrapper, 
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator,
-            final VillageRepositoryWrapper villageRepository) {
+            final VillageRepositoryWrapper villageRepository, final LoanReadPlatformService loanReadPlatformService) {
         this.context = context;
         this.groupRepository = groupRepository;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
@@ -144,6 +147,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.accountNumberFormatRepository = accountNumberFormatRepository;
         this.accountNumberGenerator = accountNumberGenerator;
         this.villageRepository = villageRepository;
+        this.loanReadPlatformService = loanReadPlatformService;
     }
 
     private CommandProcessingResult createGroupingType(final JsonCommand command, final GroupTypes groupingType, final Long centerId) {
@@ -848,7 +852,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         final Set<Group> groupMembers = assembleSetOfChildGroups(centerForUpdate.officeId(), command);
 
         final Map<String, Object> actualChanges = new HashMap<>();
-
+        validateGroupMembersHasLoans(groupMembers);
         final List<String> changes = centerForUpdate.disassociateGroups(groupMembers);
         if (!changes.isEmpty()) {
             actualChanges.put(GroupingTypesApiConstants.clientMembersParamName, changes);
@@ -957,4 +961,17 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             this.villageRepository.saveAndFlush(village);
         }
     }
+    
+    private void validateGroupMembersHasLoans(final Set<Group> groupMembersSet) {
+		for (final Group group : groupMembersSet) {
+			final Collection<Long> loanIds = loanReadPlatformService
+					.retrieveAllActiveSubmittedAprrovedGroupLoanIds(group.getId());
+			if (!loanIds.isEmpty()) {
+				final String defaultUserMessage = "Romoval of group from center is not possible since  it has  submitted and pending for approval, approved and active loans";
+				throw new CalendarDateException(
+						"removal.of.group.not.possible.since.it.has.submitted.or.approved.or.active.loans",
+						defaultUserMessage, loanIds);
+			}
+		}
+	}
 }
