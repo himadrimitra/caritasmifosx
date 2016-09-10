@@ -129,5 +129,7 @@ public interface LoanReadPlatformService {
     Collection<InterestRatePeriodData> retrieveLoanInterestRatePeriodData(LoanAccountData loanData);
 
     Collection<Long> retrieveLoanIdsWithPendingIncomePostingTransactions();
+    
+    Collection<Long> retrieveAllActiveSubmittedAprrovedGroupLoanIds(Long groupId); 
 	
 }

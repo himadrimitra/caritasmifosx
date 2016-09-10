@@ -156,9 +156,15 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
          * TODO: for now we need to ensure that only one collection sheet
          * calendar can be linked with a center or group entity <br/>
          **/
-        final CalendarInstance sourceGroupCalendarInstance = this.calendarInstanceRepository
+         CalendarInstance sourceGroupCalendarInstance = this.calendarInstanceRepository
                 .findByEntityIdAndEntityTypeIdAndCalendarTypeId(sourceGroup.getId(), CalendarEntityType.GROUPS.getValue(),
                         CalendarType.COLLECTION.getValue());
+        if(sourceGroupCalendarInstance == null){
+        Group sourceParentGroup = sourceGroup.getParent();
+        sourceGroupCalendarInstance = this.calendarInstanceRepository
+                .findByEntityIdAndEntityTypeIdAndCalendarTypeId(sourceParentGroup.getId(), CalendarEntityType.CENTERS.getValue(),
+                        CalendarType.COLLECTION.getValue());
+        }
         // get all customer loans synced with this group calendar Instance
         final List<CalendarInstance> activeLoanCalendarInstances = this.calendarInstanceRepository
                 .findCalendarInstancesForActiveLoansByGroupIdAndClientId(sourceGroup.getId(), client.getId());
@@ -170,33 +176,48 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
          **/
         if (sourceGroupCalendarInstance != null && !activeLoanCalendarInstances.isEmpty()) {
             // get the destination calendar
-            final CalendarInstance destinationGroupCalendarInstance = this.calendarInstanceRepository
+             CalendarInstance destinationGroupCalendarInstance = this.calendarInstanceRepository
                     .findByEntityIdAndEntityTypeIdAndCalendarTypeId(destinationGroup.getId(), CalendarEntityType.GROUPS.getValue(),
                             CalendarType.COLLECTION.getValue());
+			if (destinationGroupCalendarInstance == null) {
+				Group destinationParentGroup = destinationGroup.getParent();
+				destinationGroupCalendarInstance = this.calendarInstanceRepository
+						.findByEntityIdAndEntityTypeIdAndCalendarTypeId(destinationParentGroup.getId(),
+								CalendarEntityType.CENTERS.getValue(), CalendarType.COLLECTION.getValue());
+			}
 
             if (destinationGroupCalendarInstance == null) { throw new TransferNotSupportedException(
                     TRANSFER_NOT_SUPPORTED_REASON.DESTINATION_GROUP_HAS_NO_MEETING, destinationGroup.getId());
 
             }
-            final Calendar sourceGroupCalendar = sourceGroupCalendarInstance.getCalendar();
-            final Calendar destinationGroupCalendar = destinationGroupCalendarInstance.getCalendar();
+			if (!sourceGroupCalendarInstance.equals(destinationGroupCalendarInstance)) {
+				final Calendar sourceGroupCalendar = sourceGroupCalendarInstance.getCalendar();
+				final Calendar destinationGroupCalendar = destinationGroupCalendarInstance.getCalendar();
 
-            /***
-             * Ensure that the recurrence pattern are same for collection
-             * meeting in both the source and the destination calendar
-             ***/
-            if (!(CalendarUtils.isFrequencySame(sourceGroupCalendar.getRecurrence(), destinationGroupCalendar.getRecurrence()) && CalendarUtils
-                    .isIntervalSame(sourceGroupCalendar.getRecurrence(), destinationGroupCalendar.getRecurrence()))) { throw new TransferNotSupportedException(
-                    TRANSFER_NOT_SUPPORTED_REASON.DESTINATION_GROUP_MEETING_FREQUENCY_MISMATCH, sourceGroup.getId(),
-                    destinationGroup.getId()); }
+				/***
+				 * Ensure that the recurrence pattern are same for collection
+				 * meeting in both the source and the destination calendar
+				 ***/
+				if (!(CalendarUtils.isFrequencySame(sourceGroupCalendar.getRecurrence(),
+						destinationGroupCalendar.getRecurrence())
+						&& CalendarUtils.isIntervalSame(sourceGroupCalendar.getRecurrence(),
+								destinationGroupCalendar.getRecurrence()))) {
+					throw new TransferNotSupportedException(
+							TRANSFER_NOT_SUPPORTED_REASON.DESTINATION_GROUP_MEETING_FREQUENCY_MISMATCH,
+							sourceGroup.getId(), destinationGroup.getId());
+				}
 
-            /** map all JLG loans for this client to the destinationGroup **/
-            for (final CalendarInstance calendarInstance : activeLoanCalendarInstances) {
-                calendarInstance.updateCalendar(destinationGroupCalendar);
-                this.calendarInstanceRepository.save(calendarInstance);
-            }
-            // reschedule all JLG Loans to follow new Calendar
-            this.loanWritePlatformService.applyMeetingDateChanges(destinationGroupCalendar, activeLoanCalendarInstances);
+				/**
+				 * map all JLG loans for this client to the destinationGroup
+				 **/
+				for (final CalendarInstance calendarInstance : activeLoanCalendarInstances) {
+					calendarInstance.updateCalendar(destinationGroupCalendar);
+					this.calendarInstanceRepository.save(calendarInstance);
+				}
+				// reschedule all JLG Loans to follow new Calendar
+				this.loanWritePlatformService.applyMeetingDateChanges(destinationGroupCalendar,
+						activeLoanCalendarInstances);
+			}
         }
 
         /**

@@ -2125,8 +2125,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     public void applyMeetingDateChanges(final Calendar calendar, final Collection<CalendarInstance> loanCalendarInstances) {
 
         final Boolean reschedulebasedOnMeetingDates = false;
-        final LocalDate presentMeetingDate = null;
-        final LocalDate newMeetingDate = null;
+        final LocalDate presentMeetingDate = DateUtils.getLocalDateOfTenant();
+        final LocalDate newMeetingDate = DateUtils.getLocalDateOfTenant();
 
         applyMeetingDateChanges(calendar, loanCalendarInstances, reschedulebasedOnMeetingDates, presentMeetingDate, newMeetingDate);
 

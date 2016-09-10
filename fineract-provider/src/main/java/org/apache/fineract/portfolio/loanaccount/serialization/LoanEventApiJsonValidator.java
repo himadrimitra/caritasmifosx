@@ -56,7 +56,6 @@ public final class LoanEventApiJsonValidator {
     private final FromJsonHelper fromApiJsonHelper;
     private final LoanApplicationCommandFromApiJsonHelper fromApiJsonDeserializer;
 
-
     @Autowired
     public LoanEventApiJsonValidator(final FromJsonHelper fromApiJsonHelper, 
     		 final LoanApplicationCommandFromApiJsonHelper fromApiJsonDeserializer) {
@@ -499,21 +498,22 @@ public final class LoanEventApiJsonValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
+    //valiadting for all submitted approved anctive loans
     public void validateGroupMeetingDateHasActiveLoans(final List<Loan> loans, final Boolean reschedulebasedOnMeetingDates,
             final LocalDate presentMeetingDate) {
         if (!reschedulebasedOnMeetingDates) {
             List<Long> activeLoanIds = new ArrayList<>();
             for (final Loan loan : loans) {
-                if (loan.isDisbursed()) {
+                if (loan.isDisbursed() || loan.isApproved() || loan.isSubmittedAndPendingApproval()) {
                     activeLoanIds.add(loan.getId());
                 }
             }
             if (!activeLoanIds.isEmpty()) {
-                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has active loans";
-                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.active.loans (" + activeLoanIds + ") ",
+                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has  submitted and pending for approval, approved and active loans";
+                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.submitted.or.approved.or.active.loans (" + activeLoanIds + ") ",
                         defaultUserMessage, presentMeetingDate);
             }
         }
     }
-
+  
 }
