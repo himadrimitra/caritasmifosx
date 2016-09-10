@@ -429,6 +429,28 @@ public class LoanApplicationReferenceDataValidator {
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.maxOutstandingLoanBalanceParamName)
                 .value(maxOutstandingLoanBalance).ignoreIfNull().zeroOrPositiveAmount();
 
+        final String chargesParameterName = "charges";
+        if (element.isJsonObject() && this.fromApiJsonHelper.parameterExists(chargesParameterName, element)) {
+            final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(topLevelJsonElement);
+            if (topLevelJsonElement.get(chargesParameterName).isJsonArray()) {
+                final JsonArray array = topLevelJsonElement.get("charges").getAsJsonArray();
+                for (int i = 1; i <= array.size(); i++) {
+
+                    final JsonObject loanChargeElement = array.get(i - 1).getAsJsonObject();
+
+                    final Long chargeId = this.fromApiJsonHelper.extractLongNamed("chargeId", loanChargeElement);
+                    baseDataValidator.reset().parameter("charges").parameterAtIndexArray("chargeId", i).value(chargeId).notNull()
+                            .longGreaterThanZero();
+
+                    final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed("amount", loanChargeElement, locale);
+                    baseDataValidator.reset().parameter("charges").parameterAtIndexArray("amount", i).value(amount).notNull()
+                            .positiveAmount();
+
+                    this.fromApiJsonHelper.extractLocalDateNamed("dueDate", loanChargeElement, dateFormat, locale);
+                }
+            }
+        }
+        
         if (this.fromApiJsonHelper.parameterExists(LoanApplicationReferenceApiConstants.loanApplicationSanctionTrancheDatasParamName,
                 element)) {
             final JsonArray trancheDataArray = this.fromApiJsonHelper.extractJsonArrayNamed(
@@ -457,7 +479,7 @@ public class LoanApplicationReferenceDataValidator {
                 baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.expectedTrancheDisbursementDateParaName)
                         .value(expectedTrancheDisbursementDate).notNull();
             }
-            
+
             validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, loanAmountApproved);
         }
 
@@ -598,7 +620,7 @@ public class LoanApplicationReferenceDataValidator {
         baseDataValidator.reset().parameter("transactionAmount").value(transactionAmount).notBlank().positiveAmount();
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
-        
+
         if (transactionAmount.compareTo(loanAmountApproved) > 0) {
             final String defaultUserMessage = "Disbursal amount cannot be greater than loan application approved amount.";
             throw new LoanApplicationDateException("disbursal.amount.cannot.be.greater.than.loan.application.approved.amount",
@@ -609,7 +631,7 @@ public class LoanApplicationReferenceDataValidator {
 
     public void validateLoanTermAndRepaidEveryValues(final Integer minimumNoOfRepayments, final Integer maximumNoOfRepayments,
             final Integer actualNumberOfRepayments) {
-        
+
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         /**
@@ -617,7 +639,7 @@ public class LoanApplicationReferenceDataValidator {
          * a fixed EMI, ensure the number of repayments is within the
          * permissible range defined by the loan product
          **/
-        
+
         // validate actual number of repayments is > minimum number of
         // repayments
         if (minimumNoOfRepayments != null && minimumNoOfRepayments != 0 && actualNumberOfRepayments < minimumNoOfRepayments) {
@@ -639,11 +661,11 @@ public class LoanApplicationReferenceDataValidator {
                     maximumNoOfRepayments);
             dataValidationErrors.add(error);
         }
-        
+
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
     }
-    
+
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }

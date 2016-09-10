@@ -122,7 +122,7 @@ public class LoanProductData {
     private final boolean adjustFirstEMIAmount;
 
     // charges
-    private final Collection<ChargeData> charges;
+    private Collection<ProductLoanChargeData> charges;
 
     private final Collection<LoanProductBorrowerCycleVariationData> principalVariationsForBorrowerCycle;
     private final Collection<LoanProductBorrowerCycleVariationData> interestRateVariationsForBorrowerCycle;
@@ -190,8 +190,6 @@ public class LoanProductData {
     private final Integer maxLoanTerm;
     private final EnumOptionData loanTenureFrequencyType;
     private final boolean considerFutureDisbursmentsInSchedule;
-    
-    private Collection<ProductLoanChargeData> productLoanCharges;
 
     /**
      * Used when returning lookup information about loan product for dropdowns.
@@ -239,7 +237,7 @@ public class LoanProductData {
         final Integer graceOnInterestCharged = null;
         final Integer graceOnArrearsAgeing = null;
         final Integer overdueDaysForNPA = null;
-        final Collection<ChargeData> charges = null;
+        final Collection<ProductLoanChargeData> charges = null;
         final Collection<LoanProductBorrowerCycleVariationData> principalVariations = new ArrayList<>(1);
         final Collection<LoanProductBorrowerCycleVariationData> interestRateVariations = new ArrayList<>(1);
         final Collection<LoanProductBorrowerCycleVariationData> numberOfRepaymentVariations = new ArrayList<>(1);
@@ -340,7 +338,7 @@ public class LoanProductData {
         final Integer graceOnArrearsAgeing = null;
         final Integer overdueDaysForNPA = null;
 
-        final Collection<ChargeData> charges = null;
+        final Collection<ProductLoanChargeData> charges = null;
         final EnumOptionData accountingType = null;
         final boolean includeInBorrowerCycle = false;
         final boolean useBorrowerCycle = false;
@@ -449,7 +447,7 @@ public class LoanProductData {
         final Integer graceOnArrearsAgeing = null;
         final Integer overdueDaysForNPA = null;
 
-        final Collection<ChargeData> charges = null;
+        final Collection<ProductLoanChargeData> charges = null;
         final Collection<LoanProductBorrowerCycleVariationData> principalVariationsForBorrowerCycle = new ArrayList<>(1);
         final Collection<LoanProductBorrowerCycleVariationData> interestRateVariationsForBorrowerCycle = new ArrayList<>(1);
         final Collection<LoanProductBorrowerCycleVariationData> numberOfRepaymentVariationsForBorrowerCycle = new ArrayList<>(1);
@@ -531,7 +529,7 @@ public class LoanProductData {
             final EnumOptionData interestCalculationPeriodType, final Boolean allowPartialPeriodInterestCalcualtion, final Long fundId,
             final String fundName, final Long transactionProcessingStrategyId, final String transactionProcessingStrategyName,
             final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
-            final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final Collection<ChargeData> charges,
+            final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final Collection<ProductLoanChargeData> charges,
             final EnumOptionData accountingType, final boolean includeInBorrowerCycle, boolean useBorrowerCycle, final LocalDate startDate,
             final LocalDate closeDate, final String status, final String externalId,
             Collection<LoanProductBorrowerCycleVariationData> principalVariations,
@@ -807,7 +805,6 @@ public class LoanProductData {
         this.maxLoanTerm = productData.maxLoanTerm;
         this.loanTenureFrequencyType = productData.loanTenureFrequencyType;
         this.considerFutureDisbursmentsInSchedule = productData.isConsiderFutureDisbursmentsInSchedule();
-        this.productLoanCharges = productData.productLoanCharges;
     }
     
     public static LoanProductData loanProductWithFloatingRates(final Long id, final String name,
@@ -853,7 +850,7 @@ public class LoanProductData {
         final Integer graceOnArrearsAgeing = null;
         final Integer overdueDaysForNPA = null;
 
-        final Collection<ChargeData> charges = null;
+        final Collection<ProductLoanChargeData> charges = null;
         final Collection<LoanProductBorrowerCycleVariationData> principalVariationsForBorrowerCycle = new ArrayList<>(1);
         final Collection<LoanProductBorrowerCycleVariationData> interestRateVariationsForBorrowerCycle = new ArrayList<>(1);
         final Collection<LoanProductBorrowerCycleVariationData> numberOfRepaymentVariationsForBorrowerCycle = new ArrayList<>(1);
@@ -916,16 +913,16 @@ public class LoanProductData {
     }
 
 
-    private Collection<ChargeData> nullIfEmpty(final Collection<ChargeData> charges) {
-        Collection<ChargeData> chargesLocal = charges;
+    private Collection<ProductLoanChargeData> nullIfEmpty(final Collection<ProductLoanChargeData> charges) {
+        Collection<ProductLoanChargeData> chargesLocal = charges;
         if (charges == null || charges.isEmpty()) {
             chargesLocal = null;
         }
         return chargesLocal;
     }
 
-    public Collection<ChargeData> charges() {
-        Collection<ChargeData> chargesLocal = new ArrayList<>();
+    public Collection<ProductLoanChargeData> charges() {
+        Collection<ProductLoanChargeData> chargesLocal = new ArrayList<>();
         if (this.charges != null) {
             chargesLocal = this.charges;
         }
@@ -1125,10 +1122,10 @@ public class LoanProductData {
 
     public Collection<ChargeData> overdueFeeCharges() {
         Collection<ChargeData> overdueFeeCharges = new ArrayList<>();
-        Collection<ChargeData> charges = charges();
-        for (ChargeData chargeData : charges) {
-            if (chargeData.isOverdueInstallmentCharge()) {
-                overdueFeeCharges.add(chargeData);
+        Collection<ProductLoanChargeData> charges = charges();
+        for (ProductLoanChargeData chargeData : charges) {
+            if (chargeData.chargeData().isOverdueInstallmentCharge()) {
+                overdueFeeCharges.add(chargeData.chargeData());
             }
         }
         return overdueFeeCharges;
@@ -1291,12 +1288,6 @@ public class LoanProductData {
 
     public boolean isConsiderFutureDisbursmentsInSchedule() {
         return considerFutureDisbursmentsInSchedule;
-    }
-
-    @SuppressWarnings("unused")
-    public void updateProductLoanCharges(final Collection<ProductLoanChargeData> productLoanCharges) {
-        this.productLoanCharges = new ArrayList<ProductLoanChargeData>();
-        this.productLoanCharges.addAll(productLoanCharges);
     }
     
     public BigDecimal getInterestRateDifferential() {

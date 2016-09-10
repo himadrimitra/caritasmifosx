@@ -169,6 +169,7 @@ import org.apache.fineract.portfolio.loanaccount.serialization.LoanUpdateCommand
 import org.apache.fineract.portfolio.loanproduct.data.LoanOverdueDTO;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductBusinessRuleValidator;
 import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
 import org.apache.fineract.portfolio.loanproduct.exception.LinkedAccountRequiredException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
@@ -237,6 +238,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanScheduleAssembler loanScheduleAssembler;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final StandingInstructionWritePlatformService standingInstructionWritePlatformService;
+    private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
+
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final LoanEventApiJsonValidator loanEventApiJsonValidator,
@@ -265,7 +268,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanUtilService loanUtilService, final LoanSummaryWrapper loanSummaryWrapper,
             final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessingStrategy,
             final LoanScheduleAssembler loanScheduleAssembler,
-            final CodeValueRepositoryWrapper codeValueRepository,final StandingInstructionWritePlatformService standingInstructionWritePlatformService) {
+            final CodeValueRepositoryWrapper codeValueRepository,final StandingInstructionWritePlatformService standingInstructionWritePlatformService,
+            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator) {
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
         this.loanAssembler = loanAssembler;
@@ -305,6 +309,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanScheduleAssembler = loanScheduleAssembler;
         this.codeValueRepository = codeValueRepository;
         this.standingInstructionWritePlatformService = standingInstructionWritePlatformService;
+        this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -1705,6 +1710,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
         final LoanCharge loanCharge = retrieveLoanChargeBy(loanId, loanChargeId);
+        final Long productId = loan.productId();
+        final Boolean isPenalty = false;
+        final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(productId,
+                isPenalty);
+        this.loanProductBusinessRuleValidator.validateLoanProductChargeMandatoryOrNot(chargeIdList, loanCharge.getCharge().getId());
 
         // Charges may be deleted only when the loan associated with them are
         // yet to be approved (are in submitted and pending status)

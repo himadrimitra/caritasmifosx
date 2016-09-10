@@ -23,6 +23,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -72,15 +75,11 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     @Override
     public LoanProductData retrieveLoanProduct(final Long loanProductId) {
         try {
-            final Collection<ChargeData> charges = null;
-            //this.chargeReadPlatformService.retrieveLoanProductCharges(loanProductId);
+            final Collection<ProductLoanChargeData> charges = retrieveProductLoanCharges(loanProductId);
             final Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationDatas = retrieveLoanProductBorrowerCycleVariations(loanProductId);
             final LoanProductMapper rm = new LoanProductMapper(charges, borrowerCycleVariationDatas);
             final String sql = "select " + rm.loanProductSchema() + " where lp.id = ?";
-            final LoanProductData loanProductData = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanProductId });
-            final Collection<ProductLoanChargeData> productLoanCharges = retrieveProductLoanCharges(loanProductId);
-            loanProductData.updateProductLoanCharges(productLoanCharges);
-            return loanProductData;
+            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanProductId });
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanProductNotFoundException(loanProductId);
         }
@@ -175,11 +174,11 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
     private static final class LoanProductMapper implements RowMapper<LoanProductData> {
 
-        private final Collection<ChargeData> charges;
+        private final Collection<ProductLoanChargeData> charges;
 
         private final Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationDatas;
 
-        public LoanProductMapper(final Collection<ChargeData> charges,
+        public LoanProductMapper(final Collection<ProductLoanChargeData> charges,
                 final Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationDatas) {
             this.charges = charges;
             this.borrowerCycleVariationDatas = borrowerCycleVariationDatas;
@@ -719,6 +718,20 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         }
     }
 
-
+    @Override
+    public List<Map<String, Object>> getLoanProductMandatoryCharges(final Long productId, final Boolean isPenalty) {
+        final List<Map<String, Object>> chargeIdList = new LinkedList<>();
+        String sql = "SELECT plc.charge_id FROM m_product_loan_charge plc JOIN m_charge mc ON mc.id = plc.charge_id ";
+        if (isPenalty != null) {
+            int v = 0;
+            if (isPenalty) {
+                v = 1;
+            }
+            sql += "AND mc.is_penalty = " + v + " ";
+        }
+        sql += "WHERE plc.product_loan_id = '" + productId + "' AND plc.is_mandatory = '1'";
+        chargeIdList.addAll(this.jdbcTemplate.queryForList(sql));
+        return chargeIdList;
+    }
 
 }

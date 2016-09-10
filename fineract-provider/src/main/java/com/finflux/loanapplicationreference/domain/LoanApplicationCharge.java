@@ -32,27 +32,32 @@ public class LoanApplicationCharge extends AbstractPersistable<Long> {
 
     @Column(name = "charge_amount_or_percentage", scale = 6, precision = 19, nullable = false)
     private BigDecimal amountOrPercentage;
+    
+    @Column(name = "is_mandatory", nullable = false)
+    private Boolean isMandatory;
 
     protected LoanApplicationCharge() {}
 
     LoanApplicationCharge(final LoanApplicationReference loanApplicationReference, final Charge charge, final Date dueDate,
-            final BigDecimal amountOrPercentage) {
+            final BigDecimal amountOrPercentage, final Boolean isMandatory) {
         this.loanApplicationReference = loanApplicationReference;
         this.charge = charge;
         this.dueDate = dueDate;
         this.amountOrPercentage = amountOrPercentage;
+        this.isMandatory = isMandatory;
     }
 
     public static LoanApplicationCharge create(final LoanApplicationReference loanApplicationReference, final Charge charge,
-            final Date dueDate, final BigDecimal amountOrPercentage) {
-        return new LoanApplicationCharge(loanApplicationReference, charge, dueDate, amountOrPercentage);
+            final Date dueDate, final BigDecimal amountOrPercentage, final Boolean isMandatory) {
+        return new LoanApplicationCharge(loanApplicationReference, charge, dueDate, amountOrPercentage, isMandatory);
     }
 
     public void update(final LoanApplicationReference loanApplicationReference, final Charge charge, final Date dueDate,
-            final BigDecimal amountOrPercentage) {
+            final BigDecimal amountOrPercentage, final Boolean isMandatory) {
         this.loanApplicationReference = loanApplicationReference;
         this.charge = charge;
         this.dueDate = dueDate;
         this.amountOrPercentage = amountOrPercentage;
+        this.isMandatory = isMandatory;
     }
 }

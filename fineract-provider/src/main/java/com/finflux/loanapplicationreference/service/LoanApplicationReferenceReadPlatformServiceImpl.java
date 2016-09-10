@@ -190,6 +190,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lac.charge_id AS chargeId ");
             sqlBuilder.append(",lac.due_for_collection_as_of_date AS dueDate ");
             sqlBuilder.append(",lac.charge_amount_or_percentage AS amount ");
+            sqlBuilder.append(",lac.is_mandatory AS isMandatory ");
             sqlBuilder.append("FROM f_loan_application_charge lac ");
             sqlBuilder.append("INNER JOIN f_loan_application_reference lar ON lar.id = lac.loan_app_ref_id ");
             this.schemaSql = sqlBuilder.toString();
@@ -202,7 +203,8 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final Long chargeId = JdbcSupport.getLongActualValue(rs, "chargeId");
             final LocalDate dueDate = JdbcSupport.getLocalDate(rs, "dueDate");
             final BigDecimal amount = rs.getBigDecimal("amount");
-            return LoanApplicationChargeData.instance(loanAppChargeId, loanApplicationReferenceId, chargeId, dueDate, amount);
+            final Boolean isMandatory = rs.getBoolean("isMandatory");
+            return LoanApplicationChargeData.instance(loanAppChargeId, loanApplicationReferenceId, chargeId, dueDate, amount, isMandatory);
         }
     }
 

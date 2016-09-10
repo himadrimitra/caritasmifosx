@@ -102,6 +102,7 @@ import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCo
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationTransitionApiJsonValidator;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductBusinessRuleValidator;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
@@ -109,6 +110,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyTy
 import org.apache.fineract.portfolio.loanproduct.exception.LinkedAccountRequiredException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.serialization.LoanProductDataValidator;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -162,6 +164,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final PledgeReadPlatformService pledgeReadPlatformService;
     private final LoanUtilService loanUtilService;
     private final CalendarReadPlatformService calendarReadPlatformService;
+    private final LoanProductReadPlatformService loanProductReadPlatformService;
+    private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -180,8 +184,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final LoanReadPlatformService loanReadPlatformService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository,
             final BusinessEventNotifierService businessEventNotifierService, final ConfigurationDomainService configurationDomainService,
-            final LoanScheduleAssembler loanScheduleAssembler, final PledgeRepositoryWrapper pledgeRepositoryWrapper, final PledgeReadPlatformService pledgeReadPlatformService, 
-            final LoanUtilService loanUtilService, final CalendarReadPlatformService calendarReadPlatformService) {
+            final LoanScheduleAssembler loanScheduleAssembler, final PledgeRepositoryWrapper pledgeRepositoryWrapper,
+            final PledgeReadPlatformService pledgeReadPlatformService, final LoanUtilService loanUtilService,
+            final CalendarReadPlatformService calendarReadPlatformService,
+            final LoanProductReadPlatformService loanProductReadPlatformService,
+            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -214,6 +221,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.pledgeReadPlatformService = pledgeReadPlatformService;
         this.loanUtilService = loanUtilService;
         this.calendarReadPlatformService = calendarReadPlatformService;
+        this.loanProductReadPlatformService = loanProductReadPlatformService;
+        this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -224,18 +233,21 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     @Transactional
     @Override
     public CommandProcessingResult submitApplication(final JsonCommand command) {
-
         try {
             final Long productId = this.fromJsonHelper.extractLongNamed("productId", command.parsedJson());
             final LoanProduct loanProduct = this.loanProductRepository.findOne(productId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(productId); }
+            final Boolean isPenalty = false;
+            final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(productId,
+                    isPenalty);
+            this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
+            final Loan newLoanApplication = validateAndAssembleSubmitLoanApplication(loanProduct, command);
             
-            final Loan newLoanApplication = validateAndAssembleSubmitLoanApplication(loanProduct,command);
 
-            if(!command.parameterExists("isonlyloanappcreate")){
+            if (!command.parameterExists("isonlyloanappcreate")) {
                 this.loanRepository.save(newLoanApplication);
             }
-            
+
             if (loanProduct.isInterestRecalculationEnabled()) {
                 this.fromApiJsonDeserializer.validateLoanForInterestRecalculation(newLoanApplication);
                 createAndPersistCalendarInstanceForInterestRecalculation(newLoanApplication);
@@ -297,7 +309,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         savingsAccount, AccountAssociationType.LINKED_ACCOUNT_ASSOCIATION.getValue(), isActive);
                 this.accountAssociationsRepository.save(accountAssociations);
             }
-            
+
             attachLoanAccountToPledge(command, newLoanApplication);
 
             return new CommandProcessingResultBuilder() //
@@ -314,7 +326,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
     }
 
-private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProduct, final JsonCommand command) {
+
+    private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProduct, final JsonCommand command) {
 
         final AppUser currentUser = getAppUserIfPresent();
 
@@ -343,7 +356,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
         final Loan newLoanApplication = this.loanAssembler.assembleFrom(command, currentUser);
-        
+
         validateSubmittedOnDate(newLoanApplication.getSubmittedOnDate(), newLoanApplication.getExpectedFirstRepaymentOnDate(),
                 newLoanApplication.loanProduct(), newLoanApplication.client());
 
@@ -358,7 +371,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
                         newLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
                         productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
                         newLoanApplication);
-        
+
         return newLoanApplication;
     }
 	
@@ -468,7 +481,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
             default:
             break;
         }
-         
+
         final Calendar calendar = Calendar.createRepeatingCalendar(title, calendarStartDate, CalendarType.COLLECTION.getValue(),
                 calendarFrequencyType, frequency, updatedRepeatsOnDay, recalculationFrequencyNthDay);
         final CalendarInstance calendarInstance = CalendarInstance.from(calendar, loan.loanInterestRecalculationDetails().getId(),
@@ -495,12 +508,15 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
             }
 
             LoanProduct loanProductForValidations = newLoanProduct == null ? existingLoanApplication.loanProduct() : newLoanProduct;
-
+            final Boolean isPenalty = false;
+            final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(
+                    loanProductForValidations.getId(), isPenalty);
+            this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
             this.fromApiJsonDeserializer.validateForModify(command.json(), loanProductForValidations, existingLoanApplication);
-
-            checkClientOrGroupActive(existingLoanApplication);
-            LoanProduct product = existingLoanApplication.loanProduct();    
             
+            checkClientOrGroupActive(existingLoanApplication);
+            LoanProduct product = existingLoanApplication.loanProduct();
+
             validateCollateralAmount(command, product);
 
             final Set<LoanCharge> existingCharges = existingLoanApplication.charges();
@@ -613,7 +629,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
             }
 
             existingLoanApplication.updateIsInterestRecalculationEnabled();
-            
+
             validateSubmittedOnDate(existingLoanApplication.getSubmittedOnDate(),
                     existingLoanApplication.getExpectedFirstRepaymentOnDate(), existingLoanApplication.loanProduct(),
                     existingLoanApplication.client());
@@ -835,9 +851,9 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
             // pointer exception after saveAndFlush
             // http://stackoverflow.com/questions/17151757/hibernate-cascade-update-gives-null-pointer/17334374#17334374
             this.loanRepository.save(existingLoanApplication);
-            
+
             validatePledgeForLoan(command, existingLoanApplication);
-            
+
             if (productRelatedDetail.isInterestRecalculationEnabled()) {
                 this.fromApiJsonDeserializer.validateLoanForInterestRecalculation(existingLoanApplication);
                 if (changes.containsKey(LoanProductConstants.isInterestRecalculationEnabledParameterName)) {
@@ -856,6 +872,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
                 this.loanScheduleAssembler.validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(),
                         repaymentFrequencyType, CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
             }
+            
             LocalDate repaymentsStartingFromDate = existingLoanApplication.getExpectedFirstRepaymentOnDate();
             if (repaymentsStartingFromDate != null) {
                 LocalDate expectedDisbursementDate = existingLoanApplication.getExpectedDisbursedOnLocalDate();
@@ -876,7 +893,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
         }
     }
 
-	/*
+    /*
      * Guaranteed to throw an exception no matter what the data integrity issue
      * is.
      */
@@ -969,7 +986,9 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
             boolean isSkipRepaymentOnFirstMonthEnabled = this.configurationDomainService.isSkippingMeetingOnFirstDayOfMonthEnabled();
             if (isSkipRepaymentOnFirstMonthEnabled) {
                 isSkipRepaymentOnFirstMonth = this.loanUtilService.isLoanRepaymentsSyncWithMeeting(loan.group(), calendar);
-                if(isSkipRepaymentOnFirstMonth) { numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue(); }
+                if (isSkipRepaymentOnFirstMonth) {
+                    numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue();
+                }
             }
             this.loanScheduleAssembler.validateDisbursementDateWithMeetingDates(expectedDisbursementDate, calendar,
                     isSkipRepaymentOnFirstMonth, numberOfDays);
@@ -1140,7 +1159,7 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
         final LocalDate startDate = loanProduct.getStartDate();
         final LocalDate closeDate = loanProduct.getCloseDate();
         String defaultUserMessage = "";
-        
+
         if (client != null) {
             final LocalDate activationDate = client.getActivationLocalDate();
 
@@ -1220,53 +1239,53 @@ private Loan validateAndAssembleSubmitLoanApplication(final LoanProduct loanProd
         map.put(entityEvent, entity);
         return map;
     }
-    
-    private void validatePledgeForLoan(JsonCommand command, Loan existingLoanApplication){
-    	final Long existingPledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(existingLoanApplication.getId());
-        if(existingPledgeId != null){
-			Pledges existingPledge = this.pledgeRepositoryWrapper
-					.findOneWithNotFoundDetection(existingPledgeId);
-			if(existingPledge != null){
-				existingPledge.updateLoanId(null);
-				this.pledgeRepositoryWrapper.save(existingPledge);
-			}
-		}
-        
+
+    private void validatePledgeForLoan(JsonCommand command, Loan existingLoanApplication) {
+        final Long existingPledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(existingLoanApplication.getId());
+        if (existingPledgeId != null) {
+            Pledges existingPledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(existingPledgeId);
+            if (existingPledge != null) {
+                existingPledge.updateLoanId(null);
+                this.pledgeRepositoryWrapper.save(existingPledge);
+            }
+        }
+
         final Long pledgeId = command.longValueOfParameterNamed("pledgeId");
         if (pledgeId != null) {
-        	final Pledges pledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(pledgeId);
-        	pledge.updateLoanId(existingLoanApplication);
-        	this.pledgeRepositoryWrapper.save(pledge);
+            final Pledges pledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(pledgeId);
+            pledge.updateLoanId(existingLoanApplication);
+            this.pledgeRepositoryWrapper.save(pledge);
         }
     }
-    
+
     private void validateCollateralAmount(JsonCommand command, LoanProduct product) {
-    	final String principalParameterName = "principal";
+        final String principalParameterName = "principal";
         final String collateralUserValueParameterName = "collateralUserValue";
         BigDecimal principal = command.bigDecimalValueOfParameterNamed(principalParameterName);
         BigDecimal collateralUserValue = command.bigDecimalValueOfParameterNamed(collateralUserValueParameterName);
         if (principal != null && collateralUserValue != null) {
-        	product.validateCollateralAmountShouldNotExceedPrincipleAmount(principal, collateralUserValue);
+            product.validateCollateralAmountShouldNotExceedPrincipleAmount(principal, collateralUserValue);
         }
-	}
-    
+    }
+
     private void validateCollateralAmountWithPrincipal(JsonCommand command, LoanProduct loanProduct) {
         final BigDecimal principal = this.fromJsonHelper.extractBigDecimalWithLocaleNamed("principal", command.parsedJson());
-        final BigDecimal collateralUserValue = this.fromJsonHelper.extractBigDecimalWithLocaleNamed("collateralUserValue", command.parsedJson());
-        if(principal != null && collateralUserValue != null){
-        	 loanProduct.validateCollateralAmountShouldNotExceedPrincipleAmount(principal, collateralUserValue);
-        } 
-	}
-    
-    private void attachLoanAccountToPledge(JsonCommand command, Loan newLoanApplication){        
+        final BigDecimal collateralUserValue = this.fromJsonHelper.extractBigDecimalWithLocaleNamed("collateralUserValue",
+                command.parsedJson());
+        if (principal != null && collateralUserValue != null) {
+            loanProduct.validateCollateralAmountShouldNotExceedPrincipleAmount(principal, collateralUserValue);
+        }
+    }
+
+    private void attachLoanAccountToPledge(JsonCommand command, Loan newLoanApplication) {
         // Save linked loan account in pledge
-           final Long pledgeId = command.longValueOfParameterNamed("pledgeId");
-           if (pledgeId != null) {
-           	final Pledges pledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(pledgeId);
-           	pledge.updateLoanId(newLoanApplication);
-           	pledge.updatePledgeStatus();
-           	this.pledgeRepositoryWrapper.save(pledge);                            
-           }
+        final Long pledgeId = command.longValueOfParameterNamed("pledgeId");
+        if (pledgeId != null) {
+            final Pledges pledge = this.pledgeRepositoryWrapper.findOneWithNotFoundDetection(pledgeId);
+            pledge.updateLoanId(newLoanApplication);
+            pledge.updatePledgeStatus();
+            this.pledgeRepositoryWrapper.save(pledge);
+        }
     }
 
 }
