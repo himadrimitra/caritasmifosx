@@ -21,13 +21,18 @@ package org.apache.fineract.portfolio.savings.service;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -45,9 +50,11 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.organisation.staff.domain.StaffRepository;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.group.domain.Group;
@@ -88,10 +95,12 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     private final SavingsAccountDataValidator savingsAccountDataValidator;
     private final AccountNumberGenerator accountNumberGenerator;
     private final ClientRepositoryWrapper clientRepository;
+    private final ClientRepository clientrepo;
     private final GroupRepository groupRepository;
     private final SavingsProductRepository savingsProductRepository;
     private final NoteRepository noteRepository;
     private final StaffRepositoryWrapper staffRepository;
+    private final StaffRepository staffRepo;
     private final SavingsAccountApplicationTransitionApiJsonValidator savingsAccountApplicationTransitionApiJsonValidator;
     private final SavingsAccountChargeAssembler savingsAccountChargeAssembler;
     private final CommandProcessingService commandProcessingService;
@@ -110,7 +119,8 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final SavingsAccountChargeAssembler savingsAccountChargeAssembler, final CommandProcessingService commandProcessingService,
             final SavingsAccountDomainService savingsAccountDomainService,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository) {
+            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final ClientRepository clientrepo,
+            final StaffRepository staffRepo) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingAccountAssembler = savingAccountAssembler;
@@ -127,6 +137,8 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         this.savingsAccountDomainService = savingsAccountDomainService;
         this.accountNumberFormatRepository = accountNumberFormatRepository;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
+        this.clientrepo = clientrepo;
+        this.staffRepo = staffRepo;
     }
 
     /*
@@ -472,8 +484,8 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         boolean rollbackTransaction = this.commandProcessingService.validateCommand(commandWrapper, savingsAccountDataDTO.getAppliedBy());
 
         final SavingsAccount account = this.savingAccountAssembler.assembleFrom(savingsAccountDataDTO.getClient(),
-                savingsAccountDataDTO.getGroup(), savingsAccountDataDTO.getSavingsProduct(), savingsAccountDataDTO.getApplicationDate(),
-                savingsAccountDataDTO.getAppliedBy());
+                savingsAccountDataDTO.getGroup(), savingsAccountDataDTO.getSavingsProduct(), savingsAccountDataDTO.getStaff(),
+                savingsAccountDataDTO.getApplicationDate(), savingsAccountDataDTO.getAppliedBy());
         account.approveAndActivateApplication(savingsAccountDataDTO.getApplicationDate().toDate(), savingsAccountDataDTO.getAppliedBy());
         Money amountForDeposit = account.activateWithBalance();
 
@@ -495,5 +507,70 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 .withSavingsId(account.getId()) //
                 .setRollbackTransaction(rollbackTransaction)//
                 .build();
+    }
+
+    @Override
+    public CommandProcessingResult createApplication(final SavingsAccountDataDTO savingsAccountDataDTO) {
+
+        final CommandWrapper commandWrapper = new CommandWrapperBuilder().savingsAccountActivation(null).build();
+        boolean rollbackTransaction = this.commandProcessingService.validateCommand(commandWrapper, savingsAccountDataDTO.getAppliedBy());
+
+        final SavingsAccount account = this.savingAccountAssembler.assembleFrom(savingsAccountDataDTO.getClient(),
+                savingsAccountDataDTO.getGroup(), savingsAccountDataDTO.getSavingsProduct(), savingsAccountDataDTO.getStaff(),
+                savingsAccountDataDTO.getApplicationDate(), savingsAccountDataDTO.getAppliedBy());
+
+        this.savingAccountRepository.save(account);
+
+        generateAccountNumber(account);
+
+        return new CommandProcessingResultBuilder() //
+                .withSavingsId(account.getId()) //
+                .setRollbackTransaction(rollbackTransaction)//
+                .build();
+    }
+
+    @Override
+    public CommandProcessingResult createOrActivateSavingsApplication(JsonCommand command) {
+        // TODO Auto-generated method stub
+        try {
+
+            final AppUser submittedBy = this.context.authenticatedUser();
+            this.savingsAccountDataValidator.validateForCreateActiveSavingsApplication(command.json());
+            CommandProcessingResult commandProcessingResult = CommandProcessingResult.empty();
+
+            final Long clientId = command.longValueOfParameterNamed(SavingsApiConstants.clientIdParamName);
+            final Long productId = command.longValueOfParameterNamed(SavingsApiConstants.productIdParamName);
+            final Date date = command.DateValueOfParameterNamed(SavingsApiConstants.dateParamName);
+            final boolean isactive = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.activeParamName);
+            final Long fieldOfficerId = command.longValueOfParameterNamed(SavingsApiConstants.fieldOfficerIdParamName);
+
+            final Locale locale = command.extractLocale();
+            final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
+            final SavingsProduct product = this.savingsProductRepository.findOne(productId);
+            final Client client = this.clientrepo.findOne(clientId);
+            final Group group = null;
+            Staff staff = null;
+            if (fieldOfficerId != null) {
+                staff = this.staffRepo.findOne(fieldOfficerId);
+            }
+
+            SavingsAccountDataDTO savingsAccountDataDTO = new SavingsAccountDataDTO(client, group, product, staff, new LocalDate(date),
+                    submittedBy, fmt);
+            if (!isactive) {
+                commandProcessingResult = this.createApplication(savingsAccountDataDTO);
+            } else {
+                commandProcessingResult = this.createActiveApplication(savingsAccountDataDTO);
+            }
+
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(commandProcessingResult.getSavingsId()) //
+                    .withClientId(clientId) //
+                    .withSavingsId(commandProcessingResult.getSavingsId()) //
+                    .build();
+        } catch (final DataAccessException dve) {
+            handleDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
     }
 }

@@ -133,6 +133,21 @@ public class BatchHelper {
      * @param externalId
      * @return BatchRequest
      */
+
+    public static BatchRequest createOrActivateSavingsAccountRequest(final Long requestId, Long productId, Long fieldOfficerId,
+            Long clientID, boolean isactivated) {
+        final BatchRequest br = new BatchRequest();
+        br.setRequestId(requestId);
+        br.setRelativeUrl("savingsaccounts?command=defaultValues");
+        br.setMethod("POST");
+        final String body = "{\"clientId\":" + clientID + ",\"date\":\"25 August 2016\",\"active\":" + isactivated + ",\"fieldOfficerId\":"
+                + fieldOfficerId + ",\"locale\":\"en\",\"dateFormat" + "\":\"dd MMMM yyyy\",\"productId\":" + productId + "}";
+
+        br.setBody(body);
+
+        return br;
+    }
+
     public static BatchRequest createClientRequest(final Long requestId, final String externalId) {
 
         final BatchRequest br = new BatchRequest();

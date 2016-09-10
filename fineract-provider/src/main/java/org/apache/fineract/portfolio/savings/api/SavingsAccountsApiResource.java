@@ -128,10 +128,15 @@ public class SavingsAccountsApiResource {
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String submitApplication(final String apiRequestBodyAsJson) {
+    public String submitApplication(@QueryParam("command") final String commandParam, final String apiRequestBodyAsJson) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().createSavingsAccount().withJson(apiRequestBodyAsJson).build();
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "defaultValues")) {
+            commandRequest = new CommandWrapperBuilder().createOrActivateSavings().withJson(apiRequestBodyAsJson).build();
 
+        } else {
+            commandRequest = new CommandWrapperBuilder().createSavingsAccount().withJson(apiRequestBodyAsJson).build();
+        }
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);

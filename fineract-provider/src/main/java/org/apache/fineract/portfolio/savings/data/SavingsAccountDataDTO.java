@@ -24,6 +24,7 @@ import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
+import org.apache.fineract.organisation.staff.domain.Staff;
 
 public class SavingsAccountDataDTO {
 
@@ -33,8 +34,9 @@ public class SavingsAccountDataDTO {
     private final LocalDate applicationDate;
     private final AppUser appliedBy;
     private final DateTimeFormatter fmt;
+    private final Staff staff;
 
-    public SavingsAccountDataDTO(final Client client, final Group group, final SavingsProduct savingsProduct,
+    public SavingsAccountDataDTO(final Client client, final Group group, final SavingsProduct savingsProduct, final Staff staff,
             final LocalDate applicationDate, final AppUser appliedBy, final DateTimeFormatter fmt) {
         this.client = client;
         this.group = group;
@@ -42,6 +44,7 @@ public class SavingsAccountDataDTO {
         this.applicationDate = applicationDate;
         this.appliedBy = appliedBy;
         this.fmt = fmt;
+        this.staff = staff;
     }
 
     public Client getClient() {
@@ -49,7 +52,11 @@ public class SavingsAccountDataDTO {
     }
 
     public Group getGroup() {
-        return this.group;
+        return this.group;   
+    }
+
+    public Staff getStaff() {
+        return this.staff;
     }
 
     public SavingsProduct getSavingsProduct() {
