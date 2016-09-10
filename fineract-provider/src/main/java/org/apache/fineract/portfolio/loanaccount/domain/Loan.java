@@ -3258,9 +3258,12 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanStatus statusEnum = loanLifecycleStateMachine.transition(LoanEvent.REPAID_IN_FULL,
                     LoanStatus.fromInt(this.loanStatus));
             this.loanStatus = statusEnum.getValue();
-
-            this.closedOnDate = transactionDate.toDate();
-            this.actualMaturityDate = transactionDate.toDate();
+            LocalDate closureDate = getLastUserTransactionDate();
+            if(closureDate.isBefore(transactionDate)){
+                closureDate = transactionDate;
+            }
+            this.closedOnDate = closureDate.toDate();
+            this.actualMaturityDate = closureDate.toDate();
         } else if (LoanStatus.fromInt(this.loanStatus).isOverpaid()) {
             final LoanStatus statusEnum = loanLifecycleStateMachine.transition(LoanEvent.LOAN_REPAYMENT_OR_WAIVER,
                     LoanStatus.fromInt(this.loanStatus));

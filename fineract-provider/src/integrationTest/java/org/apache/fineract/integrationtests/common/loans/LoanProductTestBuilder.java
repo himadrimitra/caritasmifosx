@@ -46,6 +46,7 @@ public class LoanProductTestBuilder {
     // private static final String HEAVENS_FAMILY_STRATEGY ="2";
     // private static final String CREO_CORE_STRATEGY ="3";
     public static final String RBI_INDIA_STRATEGY = "4";
+    public static final String PRINCIPAL_INTEREST_CHARGE_STRATEGY = "5";
 
     
     
