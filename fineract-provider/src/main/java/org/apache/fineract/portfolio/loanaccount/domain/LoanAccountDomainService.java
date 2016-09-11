@@ -19,12 +19,14 @@
 package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.math.BigDecimal;
-
+import java.util.Locale;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormatter;
+import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 
 public interface LoanAccountDomainService {
 
@@ -60,5 +62,9 @@ public interface LoanAccountDomainService {
     void recalculateAccruals(Loan loan);
 
     void saveLoanWithDataIntegrityViolationChecks(Loan loan);
+
+    AdjustedLoanTransactionDetails reverseLoanTransactions(Loan loan, Long transactionId, LocalDate transactionDate,
+            BigDecimal transactionAmount, String txnExternalId, Locale locale, DateTimeFormatter dateFormat, String noteText,
+            PaymentDetail paymentDetail);
 
 }
