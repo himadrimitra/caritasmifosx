@@ -25,6 +25,7 @@ import java.util.HashSet;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
@@ -48,7 +49,7 @@ public class ProvisioningEntry extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "entry", orphanRemoval = true)
     Collection<LoanProductProvisioningEntry> provisioningEntries = new HashSet<>();
     
-    @OneToOne
+    @OneToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "createdby_id")
     private AppUser createdBy;
 
@@ -56,7 +57,7 @@ public class ProvisioningEntry extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date createdDate;
 
-    @OneToOne
+    @OneToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "lastmodifiedby_id")
     private AppUser lastModifiedBy;
 

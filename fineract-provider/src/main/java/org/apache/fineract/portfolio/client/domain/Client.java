@@ -158,7 +158,7 @@ public final class Client extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date rejectionDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "rejectedon_userid", nullable = true)
     private AppUser rejectedBy;
 
@@ -170,7 +170,7 @@ public final class Client extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date withdrawalDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "withdraw_on_userid", nullable = true)
     private AppUser withdrawnBy;
 
@@ -178,11 +178,11 @@ public final class Client extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date reactivateDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "reactivated_on_userid", nullable = true)
     private AppUser reactivatedBy;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "closedon_userid", nullable = true)
     private AppUser closedBy;
 
@@ -190,7 +190,7 @@ public final class Client extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date submittedOnDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true , fetch=FetchType.LAZY)
     @JoinColumn(name = "submittedon_userid", nullable = true)
     private AppUser submittedBy;
 
@@ -198,7 +198,7 @@ public final class Client extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date updatedOnDate;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "updated_by", nullable = true)
     private AppUser updatedBy;
 
@@ -206,13 +206,11 @@ public final class Client extends AbstractPersistable<Long> {
     @JoinColumn(name = "activatedon_userid", nullable = true)
     private AppUser activatedBy;
 
-    @ManyToOne
-    @JoinColumn(name = "default_savings_product", nullable = true)
-    private SavingsProduct savingsProduct;
+    @Column(name = "default_savings_product", nullable = true)
+    private Long savingsProductId;
 
-    @ManyToOne
-    @JoinColumn(name = "default_savings_account", nullable = true)
-    private SavingsAccount savingsAccount;
+    @Column(name = "default_savings_account", nullable = true)
+    private Long savingsAccountId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_type_cv_id", nullable = true)
@@ -338,8 +336,12 @@ public final class Client extends AbstractPersistable<Long> {
         }
 
         this.staff = staff;
-        this.savingsProduct = savingsProduct;
-        this.savingsAccount = savingsAccount;
+        if (savingsProduct != null) {
+            this.savingsProductId = savingsProduct.getId();
+        }
+        if (savingsAccount != null) {
+            this.savingsAccountId = savingsAccount.getId();
+        }
 
         if (gender != null) {
             this.gender = gender;
@@ -834,32 +836,28 @@ public final class Client extends AbstractPersistable<Long> {
         return false;
     }
 
-    private Long savingsProductId() {
-        Long savingsProductId = null;
-        if (this.savingsProduct != null) {
-            savingsProductId = this.savingsProduct.getId();
-        }
-        return savingsProductId;
-    }
-
-    public SavingsProduct SavingsProduct() {
-        return this.savingsProduct;
+    public Long savingsProductId() {
+        return this.savingsProductId;
     }
 
     public void updateSavingsProduct(SavingsProduct savingsProduct) {
-        this.savingsProduct = savingsProduct;
+        if (savingsProduct == null) {
+            this.savingsProductId = null;
+        } else {
+            this.savingsProductId = savingsProduct.getId();
+        }
     }
 
     public AppUser activatedBy() {
         return this.activatedBy;
     }
 
-    public SavingsAccount savingsAccount() {
-        return this.savingsAccount;
-    }
-
     public void updateSavingsAccount(SavingsAccount savingsAccount) {
-        this.savingsAccount = savingsAccount;
+        if (savingsAccount == null) {
+            this.savingsAccountId = null;
+        } else {
+            this.savingsAccountId = savingsAccount.getId();
+        }
     }
 
     public Long genderId() {

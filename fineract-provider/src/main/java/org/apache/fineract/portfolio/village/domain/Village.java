@@ -28,6 +28,7 @@ import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToOne;
@@ -38,9 +39,6 @@ import javax.persistence.TemporalType;
 
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
-import org.joda.time.LocalDate;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
@@ -49,6 +47,9 @@ import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
+import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -75,7 +76,7 @@ public class Village extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date activationDate;
     
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
     @JoinColumn(name="activatedon_userid", nullable = true)
     private AppUser activedBy;
     
@@ -83,7 +84,7 @@ public class Village extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date submittedOnDate;
     
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name="submitedon_userid", nullable = true)
     private AppUser submitedBy;
     

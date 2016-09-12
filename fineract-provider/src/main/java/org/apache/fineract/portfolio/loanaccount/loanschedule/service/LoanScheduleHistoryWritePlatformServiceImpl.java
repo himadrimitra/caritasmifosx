@@ -29,25 +29,20 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleIns
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanRepaymentScheduleHistory;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanRepaymentScheduleHistoryRepository;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class LoanScheduleHistoryWritePlatformServiceImpl implements LoanScheduleHistoryWritePlatformService {
 
-    private final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService;
     private final LoanRepaymentScheduleHistoryRepository loanRepaymentScheduleHistoryRepository;
 
     @Autowired
-    public LoanScheduleHistoryWritePlatformServiceImpl(final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService,
-            final LoanRepaymentScheduleHistoryRepository loanRepaymentScheduleHistoryRepository) {
-        this.loanScheduleHistoryReadPlatformService = loanScheduleHistoryReadPlatformService;
+    public LoanScheduleHistoryWritePlatformServiceImpl(final LoanRepaymentScheduleHistoryRepository loanRepaymentScheduleHistoryRepository) {
         this.loanRepaymentScheduleHistoryRepository = loanRepaymentScheduleHistoryRepository;
 
     }
 
-    @SuppressWarnings("unused")
     @Override
     public List<LoanRepaymentScheduleHistory> createLoanScheduleArchive(
             List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Loan loan, LoanRescheduleRequest loanRescheduleRequest) {
@@ -74,23 +69,9 @@ public class LoanScheduleHistoryWritePlatformServiceImpl implements LoanSchedule
             final BigDecimal feeChargesCharged = repaymentScheduleInstallment.getFeeChargesCharged(currency).getAmount();
             final BigDecimal penaltyCharges = repaymentScheduleInstallment.getPenaltyChargesCharged(currency).getAmount();
 
-            Date createdOnDate = null;
-            if (repaymentScheduleInstallment.getCreatedDate() != null) {
-                createdOnDate = repaymentScheduleInstallment.getCreatedDate().toDate();
-            }
-
-            final AppUser createdByUser = repaymentScheduleInstallment.getCreatedBy();
-            final AppUser lastModifiedByUser = repaymentScheduleInstallment.getLastModifiedBy();
-
-            Date lastModifiedOnDate = null;
-
-            if (repaymentScheduleInstallment.getLastModifiedDate() != null) {
-                lastModifiedOnDate = repaymentScheduleInstallment.getLastModifiedDate().toDate();
-            }
-
             LoanRepaymentScheduleHistory loanRepaymentScheduleHistory = LoanRepaymentScheduleHistory.instance(loan, loanRescheduleRequest,
-                    installmentNumber, fromDate, dueDate, principal, interestCharged, feeChargesCharged, penaltyCharges, createdOnDate,
-                    createdByUser, lastModifiedByUser, lastModifiedOnDate, version, repaymentScheduleInstallment.isRecalculatedInterestComponent());
+                    installmentNumber, fromDate, dueDate, principal, interestCharged, feeChargesCharged, penaltyCharges, version,
+                    repaymentScheduleInstallment.isRecalculatedInterestComponent());
 
             loanRepaymentScheduleHistoryList.add(loanRepaymentScheduleHistory);
         }
