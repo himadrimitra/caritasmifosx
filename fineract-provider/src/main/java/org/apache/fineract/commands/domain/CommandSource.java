@@ -22,6 +22,7 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -71,7 +72,7 @@ public class CommandSource extends AbstractPersistable<Long> {
     @Column(name = "command_as_json", length = 1000)
     private String commandAsJson;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "maker_id", nullable = false)
     private AppUser maker;
 
@@ -79,7 +80,7 @@ public class CommandSource extends AbstractPersistable<Long> {
     @Temporal(TemporalType.TIMESTAMP)
     private Date madeOnDate;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "checker_id", nullable = true)
     private AppUser checker;
 

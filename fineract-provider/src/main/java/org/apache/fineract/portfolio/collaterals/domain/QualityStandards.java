@@ -25,6 +25,7 @@ import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
@@ -57,7 +58,7 @@ public class QualityStandards  extends AbstractPersistable<Long> {
 	@Column(name = "absolute_price", scale = 6, precision = 19, nullable = true)
         private BigDecimal absolutePrice;
 	
-	@ManyToOne
+	@ManyToOne(fetch=FetchType.LAZY)
         @JoinColumn(name = "created_by", nullable = false)
 	private AppUser createdBy;
 	
@@ -65,7 +66,7 @@ public class QualityStandards  extends AbstractPersistable<Long> {
         @Temporal(TemporalType.DATE)
         private Date createdDate;
 	
-	@ManyToOne
+	@ManyToOne(fetch=FetchType.LAZY)
         @JoinColumn(name = "updated_by", nullable = true)
 	private AppUser updatedBy;
 	

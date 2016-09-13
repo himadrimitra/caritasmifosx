@@ -30,6 +30,7 @@ import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -70,11 +71,11 @@ public class FloatingRate extends AbstractPersistable<Long> {
 	@OneToMany(cascade = CascadeType.ALL, mappedBy = "floatingRate", orphanRemoval = true)
 	private Set<FloatingRatePeriod> floatingRatePeriods;
 
-	@ManyToOne(optional = true)
+	@ManyToOne(optional = true,fetch=FetchType.LAZY)
 	@JoinColumn(name = "createdby_id", nullable = false)
 	private AppUser createdBy;
 
-	@ManyToOne(optional = true)
+	@ManyToOne(optional = true, fetch=FetchType.LAZY)
 	@JoinColumn(name = "lastmodifiedby_id", nullable = false)
 	private AppUser modifiedBy;
 
@@ -169,14 +170,6 @@ public class FloatingRate extends AbstractPersistable<Long> {
 
 	public Set<FloatingRatePeriod> getFloatingRatePeriods() {
 		return this.floatingRatePeriods;
-	}
-
-	public AppUser getCreatedBy() {
-		return this.createdBy;
-	}
-
-	public AppUser getModifiedBy() {
-		return this.modifiedBy;
 	}
 
 	public Date getCreatedOn() {

@@ -279,7 +279,8 @@ public class LoanReschedulingWithinCenterTest {
         final String startDate = dateFormat.format(today.getTime());
         final String frequency = "2"; // 2:Weekly
         final String interval = "2"; // Every one week
-        final Integer repeatsOnDay = today.get(Calendar.DAY_OF_WEEK) - 1;
+        final Integer dayOfWeek = today.get(Calendar.DAY_OF_WEEK);
+        final Integer repeatsOnDay = dayOfWeek == 1 ? 7 : dayOfWeek - 1;
 
         Integer calendarId = CalendarHelper.createMeetingForGroup(this.requestSpec, this.responseSpec, centerId, startDate, frequency,
                 interval, repeatsOnDay.toString());
