@@ -343,7 +343,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             final Collection<AddressEntityData> addressEntityData = new ArrayList<AddressEntityData>();
             if (this.addressEntityDatas != null && this.addressEntityDatas.size() > 0) {
                 for (AddressEntityData a : this.addressEntityDatas) {
-                    if (a.getAddressId() == addressId) {
+                    if (a.getAddressId().equals(addressId)) {
                         addressEntityData.add(a);
                     }
                 }

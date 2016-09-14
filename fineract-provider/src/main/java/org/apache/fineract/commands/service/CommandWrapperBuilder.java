@@ -3207,4 +3207,12 @@ public class CommandWrapperBuilder {
         this.href = "/reportmailingjobs/" + entityId;
         return this;
     }
+    
+    public CommandWrapperBuilder createFingerPrint(String entityType, Long clientId) {
+        this.actionName = "CREATE";
+        this.entityName = "FINGERPRINT";
+        this.clientId = clientId;
+        this.href = entityType + "/" + clientId + "/fingerprint";
+        return this;
+    }
 }
