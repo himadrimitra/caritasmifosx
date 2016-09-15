@@ -95,6 +95,8 @@ import org.springframework.util.ObjectUtils;
 public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements GroupingTypesWritePlatformService {
 
     private final static Logger logger = LoggerFactory.getLogger(GroupingTypesWritePlatformServiceJpaRepositoryImpl.class);
+    private boolean loadLazyEntities = true;
+    
 
     private final PlatformSecurityContext context;
     private final GroupRepositoryWrapper groupRepository;
@@ -164,7 +166,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             if (centerId == null) {
                 officeId = command.longValueOfParameterNamed(GroupingTypesApiConstants.officeIdParamName);
             } else {
-                parentGroup = this.groupRepository.findOneWithNotFoundDetection(centerId);
+                parentGroup = this.groupRepository.findOneWithNotFoundDetection(centerId,loadLazyEntities);
                 officeId = parentGroup.officeId();
             }
             
@@ -301,7 +303,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
             final AppUser currentUser = this.context.authenticatedUser();
 
-            final Group group = this.groupRepository.findOneWithNotFoundDetection(groupId);
+            final Group group = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
 
             if (group.isGroup()) {
                 validateGroupRulesBeforeActivation(group);
@@ -362,7 +364,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
         try {
             this.context.authenticatedUser();
-            final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId);
+            final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
             final Long officeId = groupForUpdate.officeId();
             final Office groupOffice = groupForUpdate.getOffice();
             final String groupHierarchy = groupOffice.getHierarchy();
@@ -407,7 +409,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                     actualChanges.put(GroupingTypesApiConstants.centerIdParamName, newValue);
                     Group newParentGroup = null;
                     if (newValue != null) {
-                        newParentGroup = this.groupRepository.findOneWithNotFoundDetection(newValue);
+                        newParentGroup = this.groupRepository.findOneWithNotFoundDetection(newValue, loadLazyEntities);
 
                         if (!newParentGroup.isOfficeIdentifiedBy(officeId)) {
                             final String errorMessage = "Group and parent group must have the same office";
@@ -469,7 +471,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         final Map<String, Object> actualChanges = new LinkedHashMap<>(9);
 
         this.fromApiJsonDeserializer.validateForUnassignStaff(command.json());
-        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(grouptId);
+        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(grouptId,loadLazyEntities);
         final Staff presentStaff = groupForUpdate.getStaff();
         Long presentStaffId = null;
         if (presentStaff == null) { throw new GroupHasNoStaffException(grouptId); }
@@ -501,7 +503,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
         this.fromApiJsonDeserializer.validateForAssignStaff(command.json());
 
-        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId);
+        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
 
         Staff staff = null;
         final Long staffId = command.longValueOfParameterNamed(GroupingTypesApiConstants.staffIdParamName);
@@ -554,7 +556,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     @Override
     public CommandProcessingResult deleteGroup(final Long groupId) {
 
-        final Group groupForDelete = this.groupRepository.findOneWithNotFoundDetection(groupId);
+        final Group groupForDelete = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
 
         if (groupForDelete.isNotPending()) { throw new GroupMustBePendingToBeDeletedException(groupId); }
 
@@ -573,7 +575,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     @Override
     public CommandProcessingResult closeGroup(final Long groupId, final JsonCommand command) {
         this.fromApiJsonDeserializer.validateForGroupClose(command);
-        final Group group = this.groupRepository.findOneWithNotFoundDetection(groupId);
+        final Group group = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
         final LocalDate closureDate = command.localDateValueOfParameterNamed(GroupingTypesApiConstants.closureDateParamName);
         final Long closureReasonId = command.longValueOfParameterNamed(GroupingTypesApiConstants.closureReasonIdParamName);
 
@@ -645,7 +647,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     @Override
     public CommandProcessingResult closeCenter(final Long centerId, final JsonCommand command) {
         this.fromApiJsonDeserializer.validateForCenterClose(command);
-        final Group center = this.groupRepository.findOneWithNotFoundDetection(centerId);
+        final Group center = this.groupRepository.findOneWithNotFoundDetection(centerId,loadLazyEntities);
         final LocalDate closureDate = command.localDateValueOfParameterNamed(GroupingTypesApiConstants.closureDateParamName);
         final Long closureReasonId = command.longValueOfParameterNamed(GroupingTypesApiConstants.closureReasonIdParamName);
 
@@ -700,7 +702,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         if (!ObjectUtils.isEmpty(childGroupsArray)) {
             for (final String groupId : childGroupsArray) {
                 final Long id = Long.valueOf(groupId);
-                final Group group = this.groupRepository.findOneWithNotFoundDetection(id);
+                final Group group = this.groupRepository.findOneWithNotFoundDetection(id,loadLazyEntities);
 
                 if (!group.isOfficeIdentifiedBy(officeId)) {
                     final String errorMessage = "Group and child groups must have the same office.";
@@ -763,7 +765,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
         this.fromApiJsonDeserializer.validateForAssociateClients(command.json());
 
-        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId);
+        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
         final Set<Client> clientMembers = assembleSetOfClients(groupForUpdate.officeId(), command);
         final Map<String, Object> actualChanges = new HashMap<>();
 
@@ -792,7 +794,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     public CommandProcessingResult disassociateClientsFromGroup(final Long groupId, final JsonCommand command) {
         this.fromApiJsonDeserializer.validateForDisassociateClients(command.json());
 
-        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId);
+        final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
         final Set<Client> clientMembers = assembleSetOfClients(groupForUpdate.officeId(), command);
 
         // check if any client has got group loans
@@ -821,7 +823,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     public CommandProcessingResult associateGroupsToCenter(final Long centerId, final JsonCommand command) {
 
         this.fromApiJsonDeserializer.validateForAssociateGroups(command.json());
-        final Group centerForUpdate = this.groupRepository.findOneWithNotFoundDetection(centerId);
+        final Group centerForUpdate = this.groupRepository.findOneWithNotFoundDetection(centerId,loadLazyEntities);
         final Set<Group> groupMembers = assembleSetOfChildGroups(centerForUpdate.officeId(), command);
         checkGroupMembersMeetingSyncWithCenterMeeting(centerId, groupMembers);
 
@@ -848,7 +850,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     public CommandProcessingResult disassociateGroupsToCenter(final Long centerId, final JsonCommand command) {
         this.fromApiJsonDeserializer.validateForDisassociateGroups(command.json());
 
-        final Group centerForUpdate = this.groupRepository.findOneWithNotFoundDetection(centerId);
+        final Group centerForUpdate = this.groupRepository.findOneWithNotFoundDetection(centerId,loadLazyEntities);
         final Set<Group> groupMembers = assembleSetOfChildGroups(centerForUpdate.officeId(), command);
 
         final Map<String, Object> actualChanges = new HashMap<>();
