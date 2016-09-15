@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -58,14 +59,16 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
     private final PlatformSecurityContext context;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final OfficeReadPlatformService officeReadPlatformService;
+    private static ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public SearchReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService) {
+            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService, final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.officeReadPlatformService = officeReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -88,82 +91,121 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
     private static final class SearchMapper implements RowMapper<SearchData> {
 
         public String searchSchema(final SearchConditions searchConditions) {
-
-            final String union = " union ";
-            final String clientMatchSql = " (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
-                    + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum, null as parentType "
-                    + " from m_client c join m_office o on o.id = c.office_id where o.hierarchy like :hierarchy and (c.account_no like :search or c.display_name like :search or c.external_id like :search or c.mobile_no like :search)) ";
-
-            final String loanMatchSql = " (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
-                    + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, l.loan_status_id as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType "
-                    + " from m_loan l left join m_client c on l.client_id = c.id left join m_group g ON l.group_id = g.id left join m_office o on o.id = c.office_id left join m_product_loan pl on pl.id=l.product_id where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (l.account_no like :search or l.external_id like :search)) ";
-
-
-            final String savingMatchSql = " (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
-                    + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, s.status_enum as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType "
-                    + " from m_savings_account s left join m_client c on s.client_id = c.id left join m_group g ON s.group_id = g.id left join m_office o on o.id = c.office_id left join m_savings_product sp on sp.id=s.product_id "
-                    + " where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (s.account_no like :search or s.external_id like :search)) ";
-            
-            final String clientIdentifierMatchSql = " (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
-                    + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum, null as parentType "
-                    + " from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id "
-                    + " where o.hierarchy like :hierarchy and ci.document_key like :search ) ";
-            
-            final String groupMatchSql = " (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, g.account_no as entityAccountNo "
-                    + " , g.office_id as parentId, o.name as parentName, null as entityMobileNo, g.status_enum as entityStatusEnum, null as parentType "
-                    + " from m_group g join m_office o on o.id = g.office_id where o.hierarchy like :hierarchy and (g.account_no like :search or g.display_name like :search or g.external_id like :search or g.id like :search )) ";
-
-            final String pledgeMatchSql = "(select 'PLEDGE' as entityType, p.id as entityId, c.display_name as entityName, p.pledge_number as entityExternalId, p.seal_number as entityAccountNo "
-                    + " , c.id as parentId, o.name as parentName, p.status as status, p.system_value as systemValue, p.user_value as userValue, null as entityMobileNo, null as entityStatusEnum, null as parentType  "
-                    + " from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search)) ";
-
-            final String villageExactMatchSql = " (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
-                    + ", v.office_id as parentId, o.name as parentName,null as entityMobileNo,null as parentType, v.status as entityStatusEnum "
-                    + " from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))";
-            
-            final String villageMatchSql = " (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
-                    + ", v.office_id as parentId, o.name as parentName, v.status as entityStatusEnum "
-                    + " from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :partialSearch or v.external_id like :partialSearch))";
-            
-            final StringBuffer sql = new StringBuffer();
+            final StringBuilder sqlBuilder = new StringBuilder(200);
 
             if (searchConditions.isClientSearch()) {
-                sql.append(clientMatchSql).append(union);
-            }
+                sqlBuilder
+                        .append(" (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
+                                + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum, null as parentType");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(",g.display_name as groupName, ce.display_name as centerName, null as officeName ");
+                } else {
+                    sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append(" from m_client c join m_office o on o.id = c.office_id ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder
+                            .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
+                }
+                sqlBuilder
+                        .append(" where o.hierarchy like :hierarchy and (c.account_no like :search or c.display_name like :search or c.external_id like :search or c.mobile_no like :search ))");
+                sqlBuilder.append(" union ");
 
+            }
             if (searchConditions.isLoanSeach()) {
-                sql.append(loanMatchSql).append(union);
+                sqlBuilder
+                        .append(" (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
+                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, l.loan_status_id as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(",gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
+                } else {
+                    sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder
+                        .append(" from m_loan l left join m_client c on l.client_id = c.id left join m_group g ON l.group_id = g.id left join m_office o on o.id = c.office_id left join m_product_loan pl on pl.id=l.product_id ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder
+                            .append(" left join m_group_client as gc on gc.client_id = l.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
+                }
+                sqlBuilder
+                        .append(" where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (l.account_no like :search or l.external_id like :search)) ");
+                sqlBuilder.append(" union ");
             }
-
             if (searchConditions.isSavingSeach()) {
-                sql.append(savingMatchSql).append(union);
+                sqlBuilder
+                        .append(" (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
+                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, s.status_enum as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(", gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
+                } else {
+                    sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder
+                        .append(" from m_savings_account s left join m_client c on s.client_id = c.id left join m_group g ON s.group_id = g.id left join m_office o on o.id = c.office_id left join m_savings_product sp on sp.id=s.product_id ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder
+                            .append(" left join m_group_client as gc on gc.client_id = s.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
+                }
+                sqlBuilder
+                        .append(" where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (s.account_no like :search or s.external_id like :search))");
+                sqlBuilder.append(" union ");
             }
-
             if (searchConditions.isClientIdentifierSearch()) {
-                sql.append(clientIdentifierMatchSql).append(union);
+                sqlBuilder
+                        .append(" (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
+                                + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum, null as parentType ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
+                } else {
+                    sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder
+                        .append(" from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder
+                            .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
+                }
+                sqlBuilder.append(" where o.hierarchy like :hierarchy and ci.document_key like :search ) ");
+                sqlBuilder.append(" union ");
             }
-
             if (searchConditions.isGroupSearch()) {
-                sql.append(groupMatchSql).append(union);
+                sqlBuilder
+                        .append(" (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, g.account_no as entityAccountNo "
+                                + " , g.office_id as parentId, o.name as parentName, null as entityMobileNo, g.status_enum as entityStatusEnum, null as parentType ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, null as officeName ");
+                } else {
+                    sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
+                }
+                sqlBuilder.append("  from m_group g join m_office o on o.id = g.office_id ");
+                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                    sqlBuilder.append(" left join m_group as ce on ce.id = g.parent_id ");
+                }
+                sqlBuilder
+                        .append(" where o.hierarchy like :hierarchy and (g.account_no like :search or g.display_name like :search or g.external_id like :search or g.id like :search ))");
+                sqlBuilder.append(" union ");
             }
-            
             if (searchConditions.isPledgeSearch()) {
-            	 sql.append(pledgeMatchSql).append(union);
+                sqlBuilder
+                        .append("(select 'PLEDGE' as entityType, p.id as entityId, c.display_name as entityName, p.pledge_number as entityExternalId, p.seal_number as entityAccountNo "
+                                + " , c.id as parentId, o.name as parentName, p.status as status, p.system_value as systemValue, p.user_value as userValue, null as entityMobileNo, null as entityStatusEnum, null as parentType  ");
+                sqlBuilder.append(", null as groupName, null as centerName,null as officeName ");
+                sqlBuilder
+                        .append(" from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search)) ");
+                sqlBuilder.append(" union ");
             }
-
             if (searchConditions.isVillageSearch()) {
-                sql.append(villageExactMatchSql).append(union);
+                sqlBuilder
+                        .append(" (select 'VILLAGE' as entityType, v.id as entityId, v.village_name as entityName, v.external_id as entityExternalId, NULL as entityAccountNo "
+                                + ", v.office_id as parentId, o.name as parentName,null as entityMobileNo,null as parentType, v.status as entityStatusEnum ");
+                sqlBuilder.append(", null as groupName, null as centerName,null as officeName ");
+                sqlBuilder
+                        .append(" from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))");
+                sqlBuilder.append(" union ");
             }
-            
-          /*  if (searchConditions.isVillageSearch()) {
-                sql.append(villageMatchSql).append(union);
-            }
-            */
-
-            sql.replace(sql.lastIndexOf(union), sql.length(), "");
-
+            sqlBuilder.replace(sqlBuilder.lastIndexOf("union"), sqlBuilder.length(), "");
             // remove last occurrence of "union all" string
-            return sql.toString();
+            return sqlBuilder.toString();
         }
 
         @Override
@@ -178,6 +220,9 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             final String entityMobileNo = rs.getString("entityMobileNo");
             final Integer entityStatusEnum = JdbcSupport.getInteger(rs, "entityStatusEnum");
             final String parentType = rs.getString("parentType");
+            final String groupName = rs.getString("groupName");
+            final String centerName = rs.getString("centerName");
+            final String officeName = rs.getString("officeName");
             Integer status = null;
             BigDecimal userValue = null;
             BigDecimal systemValue = null;
@@ -210,7 +255,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             }
 
             return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType, 
-                    entityMobileNo, entityStatus, systemValue, userValue);
+                    entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName);
         }
 
     }

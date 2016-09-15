@@ -99,4 +99,6 @@ public interface ConfigurationDomainService {
     boolean isSavingAccountsInculdedInCollectionSheet();
     
     boolean isWithDrawForSavingsIncludedInCollectionSheet();
+    
+    boolean isSearchIncludeGroupInfo();
 }
