@@ -31,7 +31,7 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepos
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
-import org.apache.fineract.organisation.office.domain.OfficeRepository;
+import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
 import org.apache.fineract.organisation.office.domain.OfficeTransaction;
 import org.apache.fineract.organisation.office.domain.OfficeTransactionRepository;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
@@ -55,7 +55,7 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
     private final PlatformSecurityContext context;
     private final OfficeCommandFromApiJsonDeserializer fromApiJsonDeserializer;
     private final OfficeTransactionCommandFromApiJsonDeserializer moneyTransferCommandFromApiJsonDeserializer;
-    private final OfficeRepository officeRepository;
+    private final OfficeRepositoryWrapper officeRepository;
     private final OfficeTransactionRepository officeTransactionRepository;
     private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository;
 
@@ -63,7 +63,7 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
     public OfficeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final OfficeCommandFromApiJsonDeserializer fromApiJsonDeserializer,
             final OfficeTransactionCommandFromApiJsonDeserializer moneyTransferCommandFromApiJsonDeserializer,
-            final OfficeRepository officeRepository, final OfficeTransactionRepository officeMonetaryTransferRepository,
+            final OfficeRepositoryWrapper officeRepository, final OfficeTransactionRepository officeMonetaryTransferRepository,
             final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -164,15 +164,16 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
 
         Long officeId = null;
         Office fromOffice = null;
+        boolean loanAllLazyEntities = true;
         final Long fromOfficeId = command.longValueOfParameterNamed("fromOfficeId");
         if (fromOfficeId != null) {
-            fromOffice = this.officeRepository.findOne(fromOfficeId);
+            fromOffice = this.officeRepository.findOneWithNotFoundDetection(fromOfficeId, loanAllLazyEntities);
             officeId = fromOffice.getId();
         }
         Office toOffice = null;
         final Long toOfficeId = command.longValueOfParameterNamed("toOfficeId");
         if (toOfficeId != null) {
-            toOffice = this.officeRepository.findOne(toOfficeId);
+            toOffice = this.officeRepository.findOneWithNotFoundDetection(toOfficeId, loanAllLazyEntities);
             officeId = toOffice.getId();
         }
 
@@ -237,18 +238,16 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
      * office or lower (child) in the office hierarchy
      */
     private Office validateUserPriviledgeOnOfficeAndRetrieve(final AppUser currentUser, final Long officeId) {
-
+        boolean loanAllLazyEntities = true;
         final Long userOfficeId = currentUser.getOffice().getId();
-        final Office userOffice = this.officeRepository.findOne(userOfficeId);
-        if (userOffice == null) { throw new OfficeNotFoundException(userOfficeId); }
+        final Office userOffice = this.officeRepository.findOneWithNotFoundDetection(userOfficeId, loanAllLazyEntities);
 
         if (userOffice.doesNotHaveAnOfficeInHierarchyWithId(officeId)) { throw new NoAuthorizationException(
                 "User does not have sufficient priviledges to act on the provided office."); }
 
         Office officeToReturn = userOffice;
         if (!userOffice.identifiedBy(officeId)) {
-            officeToReturn = this.officeRepository.findOne(officeId);
-            if (officeToReturn == null) { throw new OfficeNotFoundException(officeId); }
+            officeToReturn = this.officeRepository.findOneWithNotFoundDetection(officeId, loanAllLazyEntities);
         }
 
         return officeToReturn;

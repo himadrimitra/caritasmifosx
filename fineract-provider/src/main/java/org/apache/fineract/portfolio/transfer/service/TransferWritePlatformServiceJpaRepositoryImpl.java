@@ -68,6 +68,7 @@ import com.google.gson.JsonObject;
 @Service
 public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWritePlatformService {
 
+    final boolean loadLazyEntities = true;
     private final ClientRepositoryWrapper clientRepository;
     private final OfficeRepositoryWrapper officeRepository;
     private final CalendarInstanceRepository calendarInstanceRepository;
@@ -106,9 +107,9 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     public CommandProcessingResult transferClientsBetweenGroups(final Long sourceGroupId, final JsonCommand jsonCommand) {
         this.transfersDataValidator.validateForClientsTransferBetweenGroups(jsonCommand.json());
 
-        final Group sourceGroup = this.groupRepository.findOneWithNotFoundDetection(sourceGroupId);
+        final Group sourceGroup = this.groupRepository.findOneWithNotFoundDetection(sourceGroupId,loadLazyEntities);
         final Long destinationGroupId = jsonCommand.longValueOfParameterNamed(TransferApiConstants.destinationGroupIdParamName);
-        final Group destinationGroup = this.groupRepository.findOneWithNotFoundDetection(destinationGroupId);
+        final Group destinationGroup = this.groupRepository.findOneWithNotFoundDetection(destinationGroupId,loadLazyEntities);
         final Long staffId = jsonCommand.longValueOfParameterNamed(TransferApiConstants.newStaffIdParamName);
         final Boolean inheritDestinationGroupLoanOfficer = jsonCommand
                 .booleanObjectValueOfParameterNamed(TransferApiConstants.inheritDestinationGroupLoanOfficer);

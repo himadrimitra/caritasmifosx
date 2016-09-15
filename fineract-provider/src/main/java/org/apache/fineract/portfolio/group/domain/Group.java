@@ -61,6 +61,8 @@ import org.apache.fineract.portfolio.group.exception.GroupNotExistsInCenterExcep
 import org.apache.fineract.portfolio.group.exception.InvalidGroupStateTransitionException;
 import org.apache.fineract.portfolio.village.domain.Village;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -107,15 +109,17 @@ public final class Group extends AbstractPersistable<Long> {
     @Column(name = "hierarchy", length = 100)
     private String hierarchy;
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @LazyCollection(LazyCollectionOption.TRUE)
+    @OneToMany
     @JoinColumn(name = "parent_id")
     private final List<Group> groupMembers = new LinkedList<>();
 
+    @LazyCollection(LazyCollectionOption.TRUE)
     @ManyToMany
     @JoinTable(name = "m_group_client", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "client_id"))
     private Set<Client> clientMembers = new HashSet<>();
     
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinTable(name="chai_village_center", joinColumns = @JoinColumn(name="center_id"), inverseJoinColumns = @JoinColumn(name = "village_id"))
     private Village village;
 
@@ -139,6 +143,7 @@ public final class Group extends AbstractPersistable<Long> {
     @JoinColumn(name = "submittedon_userid", nullable = true)
     private AppUser submittedBy;
 
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "center", orphanRemoval = true)
     private Set<StaffAssignmentHistory> staffHistory;
     
@@ -746,7 +751,17 @@ public final class Group extends AbstractPersistable<Long> {
         this.accountNumberRequiresAutoGeneration = false;
     }
 
-	public void setVillage(final Village village) {
-		this.village = village;
-	}
+    public void setVillage(final Village village) {
+        this.village = village;
+    }
+
+    public List<Group> getGroupMembers() {
+        return this.groupMembers;
+    }
+
+    
+    public Set<StaffAssignmentHistory> getStaffHistory() {
+        return this.staffHistory;
+    }
+	
 }

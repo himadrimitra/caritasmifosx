@@ -39,6 +39,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.organisation.office.exception.CannotUpdateOfficeWithParentOfficeSameAsSelf;
 import org.apache.fineract.organisation.office.exception.RootOfficeParentCannotBeUpdated;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -47,7 +49,8 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
         @UniqueConstraint(columnNames = { "external_id" }, name = "externalid_org") })
 public class Office extends AbstractPersistable<Long> {
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @LazyCollection(LazyCollectionOption.TRUE)
+    @OneToMany
     @JoinColumn(name = "parent_id")
     private final List<Office> children = new LinkedList<>();
 
@@ -205,14 +208,6 @@ public class Office extends AbstractPersistable<Long> {
         return this.hierarchy;
     }
 
-    public boolean hasParentOf(final Office office) {
-        boolean isParent = false;
-        if (this.parent != null) {
-            isParent = this.parent.equals(office);
-        }
-        return isParent;
-    }
-
     public boolean doesNotHaveAnOfficeInHierarchyWithId(final Long officeId) {
         return !hasAnOfficeInHierarchyWithId(officeId);
     }
@@ -238,4 +233,15 @@ public class Office extends AbstractPersistable<Long> {
 
         return match;
     }
+
+    
+    public List<Office> getChildren() {
+        return this.children;
+    }
+
+    
+    public Office getParent() {
+        return this.parent;
+    }
+    
 }
