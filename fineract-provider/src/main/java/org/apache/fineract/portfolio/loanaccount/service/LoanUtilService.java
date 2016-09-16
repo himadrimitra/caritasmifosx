@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
@@ -34,8 +35,10 @@ import org.apache.fineract.organisation.holiday.domain.HolidayStatusType;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
@@ -75,13 +78,15 @@ public class LoanUtilService {
     private final FloatingRatesReadPlatformService floatingRatesReadPlatformService;
     private final FromJsonHelper fromApiJsonHelper;
     private final CalendarReadPlatformService calendarReadPlatformService;
+    private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
 
     @Autowired
     public LoanUtilService(final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
             final HolidayRepository holidayRepository, final WorkingDaysRepositoryWrapper workingDaysRepository,
             final LoanScheduleGeneratorFactory loanScheduleFactory, final FloatingRatesReadPlatformService floatingRatesReadPlatformService,
-            final FromJsonHelper fromApiJsonHelper, final CalendarReadPlatformService calendarReadPlatformService) {
+            final FromJsonHelper fromApiJsonHelper, final CalendarReadPlatformService calendarReadPlatformService,
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
         this.applicationCurrencyRepository = applicationCurrencyRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.configurationDomainService = configurationDomainService;
@@ -91,6 +96,7 @@ public class LoanUtilService {
         this.floatingRatesReadPlatformService = floatingRatesReadPlatformService;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.calendarReadPlatformService = calendarReadPlatformService;
+        this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
     }
 
     public ScheduleGeneratorDTO buildScheduleGeneratorDTO(final Loan loan, final LocalDate recalculateFrom) {
@@ -184,9 +190,10 @@ public class LoanUtilService {
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
         final boolean allowTransactionsOnNonWorkingDay = this.configurationDomainService.allowTransactionsOnNonWorkingDayEnabled();
-
+        final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+        
         HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, allowTransactionsOnHoliday,
-                allowTransactionsOnNonWorkingDay);
+                allowTransactionsOnNonWorkingDay, workingDayExemptions);
         return holidayDetailDTO;
     }
 

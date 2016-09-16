@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -35,7 +36,7 @@ public interface ScheduledDateGenerator {
     LocalDate generateNextRepaymentDate(LocalDate lastRepaymentDate, LoanApplicationTerms loanApplicationTerms, boolean isFirstRepayment,
             final HolidayDetailDTO holidayDetailDTO);
 
-    LocalDate adjustRepaymentDate(LocalDate dueRepaymentPeriodDate, LoanApplicationTerms loanApplicationTerms,
+    AdjustedDateDetailsDTO adjustRepaymentDate(LocalDate dueRepaymentPeriodDate, LoanApplicationTerms loanApplicationTerms,
             final HolidayDetailDTO holidayDetailDTO);
 
     LocalDate getRepaymentPeriodDate(PeriodFrequencyType frequency, int repaidEvery, LocalDate startDate, Integer nthDay,
@@ -45,4 +46,8 @@ public interface ScheduledDateGenerator {
 
     LocalDate generateNextScheduleDateStartingFromDisburseDate(LocalDate lastRepaymentDate, LoanApplicationTerms loanApplicationTerms,
             final HolidayDetailDTO holidayDetailDTO);
+
+    AdjustedDateDetailsDTO adjustNextRepaymentDateBasedOnWorkingDaysExemption(LocalDate dueRepaymentPeriodDate,
+			HolidayDetailDTO holidayDetailDTO, String reccuringString, LocalDate seedDate,
+			LoanApplicationTerms loanApplicationTerms);
 }

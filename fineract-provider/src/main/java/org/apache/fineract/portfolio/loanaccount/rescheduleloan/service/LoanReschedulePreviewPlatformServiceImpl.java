@@ -23,6 +23,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepository;
@@ -31,8 +32,10 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
@@ -68,6 +71,7 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
     private final CalendarInstanceRepository calendarInstanceRepository;
     private final FloatingRatesReadPlatformService floatingRatesReadPlatformService;
     private final LoanUtilService loanUtilService;
+    private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
 
     @Autowired
     public LoanReschedulePreviewPlatformServiceImpl(final LoanRescheduleRequestRepository loanRescheduleRequestRepository,
@@ -76,7 +80,8 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
             final WorkingDaysRepositoryWrapper workingDaysRepository,
             final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService,
             final CalendarInstanceRepository calendarInstanceRepository,
-            final FloatingRatesReadPlatformService floatingRatesReadPlatformService, final LoanUtilService loanUtilService) {
+            final FloatingRatesReadPlatformService floatingRatesReadPlatformService, final LoanUtilService loanUtilService,
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
         this.loanRescheduleRequestRepository = loanRescheduleRequestRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
         this.configurationDomainService = configurationDomainService;
@@ -86,6 +91,7 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.floatingRatesReadPlatformService = floatingRatesReadPlatformService;
         this.loanUtilService = loanUtilService;
+        this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
     }
 
     @Override
@@ -109,7 +115,8 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         final MathContext mathContext = new MathContext(8, roundingMode);
         List<LoanRepaymentScheduleHistory> oldPeriods = this.loanScheduleHistoryWritePlatformService.createLoanScheduleArchive(
                 loan.getRepaymentScheduleInstallments(), loan, loanRescheduleRequest);
-        HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays);
+        final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+        HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         CalendarInstance restCalendarInstance = null;
         CalendarInstance compoundingCalendarInstance = null;
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
