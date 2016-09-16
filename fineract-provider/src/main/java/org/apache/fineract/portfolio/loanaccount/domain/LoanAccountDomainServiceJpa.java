@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
+import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -46,8 +47,10 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
 import org.apache.fineract.portfolio.account.domain.AccountTransferRepository;
 import org.apache.fineract.portfolio.account.domain.AccountTransferTransaction;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -94,6 +97,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     private final PlatformSecurityContext context;
     private final BusinessEventNotifierService businessEventNotifierService;
     private final LoanUtilService loanUtilService;
+    private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
 
     @Autowired
     public LoanAccountDomainServiceJpa(final LoanAssembler loanAccountAssembler, final LoanRepository loanRepository,
@@ -106,7 +110,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
             final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
             final LoanAccrualPlatformService loanAccrualPlatformService, final PlatformSecurityContext context,
-            final BusinessEventNotifierService businessEventNotifierService, final LoanUtilService loanUtilService) {
+            final BusinessEventNotifierService businessEventNotifierService, final LoanUtilService loanUtilService,
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
         this.loanAccountAssembler = loanAccountAssembler;
         this.loanRepository = loanRepository;
         this.loanTransactionRepository = loanTransactionRepository;
@@ -123,6 +128,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.context = context;
         this.businessEventNotifierService = businessEventNotifierService;
         this.loanUtilService = loanUtilService;
+        this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
     }
 
     @Transactional
@@ -393,8 +399,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final WorkingDays workingDays = this.workingDaysRepository.findOne();
             final boolean allowTransactionsOnNonWorkingDay = this.configurationDomainService.allowTransactionsOnNonWorkingDayEnabled();
             final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+            final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
             HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, allowTransactionsOnHoliday,
-                    allowTransactionsOnNonWorkingDay);
+                    allowTransactionsOnNonWorkingDay, workingDayExemptions);
 
             loan.makeChargePayment(chargeId, defaultLoanLifecycleStateMachine(), existingTransactionIds, existingReversedTransactionIds,
                     holidayDetailDTO, newPaymentTransaction, installmentNumber);

@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -49,8 +50,10 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepos
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
 import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
@@ -147,6 +150,7 @@ public class LoanScheduleAssembler {
     private final PlatformSecurityContext context;
     private final LoanUtilService loanUtilService;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
+    private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
 
     @Autowired
     public LoanScheduleAssembler(final FromJsonHelper fromApiJsonHelper, final LoanProductRepository loanProductRepository,
@@ -159,7 +163,8 @@ public class LoanScheduleAssembler {
             final FloatingRatesReadPlatformService floatingRatesReadPlatformService,
             final VariableLoanScheduleFromApiJsonValidator variableLoanScheduleFromApiJsonValidator,
             final CalendarInstanceRepository calendarInstanceRepository, final PlatformSecurityContext context,
-            final LoanUtilService loanUtilService, final LoanRepositoryWrapper loanRepositoryWrapper) {
+            final LoanUtilService loanUtilService, final LoanRepositoryWrapper loanRepositoryWrapper,
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanProductRepository = loanProductRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -178,6 +183,7 @@ public class LoanScheduleAssembler {
         this.context = context;
         this.loanUtilService = loanUtilService;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
+        this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
     }
 
     public LoanApplicationTerms assembleLoanTerms(final JsonElement element) {
@@ -465,7 +471,8 @@ public class LoanScheduleAssembler {
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, expectedDisbursementDate.toDate(),
                 HolidayStatusType.ACTIVE.getValue());
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
-        HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays);
+        final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+        HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
         return LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
@@ -661,8 +668,9 @@ public class LoanScheduleAssembler {
 
         final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
         final MathContext mc = new MathContext(8, roundingMode);
-
-        HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays);
+        
+        final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+        HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         
         if (loanApplicationTerms.adjustFirstEMIAmount()) {
             BigDecimal firstEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms, loanCharges,
@@ -687,7 +695,8 @@ public class LoanScheduleAssembler {
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
 
         final LoanScheduleGenerator loanScheduleGenerator = this.loanScheduleFactory.create(loanApplicationTerms.getInterestMethod());
-        HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays);
+        final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+        HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         return loanScheduleGenerator.rescheduleNextInstallments(mc, loanApplicationTerms, loanCharges, detailDTO, transactions,
                 loanRepaymentScheduleTransactionProcessor, repaymentScheduleInstallments, rescheduleFrom).getLoanScheduleModel();
     }
@@ -705,7 +714,8 @@ public class LoanScheduleAssembler {
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, loanApplicationTerms
                 .getExpectedDisbursementDate().toDate(), HolidayStatusType.ACTIVE.getValue());
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
-        HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays);
+        final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+        HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
 
         return loanScheduleGenerator.calculatePrepaymentAmount(currency, onDate, loanApplicationTerms, mc, loanCharges, holidayDetailDTO,
                 loanTransactions, loanRepaymentScheduleTransactionProcessor, repaymentScheduleInstallments);
