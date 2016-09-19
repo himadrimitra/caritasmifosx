@@ -2343,7 +2343,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     private void validateTrancheDisbursalDateMustBeUniqueAndNotBeforeLastTransactionDate(final LocalDate actualDisbursementDate) {
-        
+        if (this.isOpen()) {
         if (!this.loanTransactions.isEmpty() && actualDisbursementDate.isBefore(getLastUserTransactionDate())) {
             final String errorMessage = "The disbursement date cannot be before last transaction date.";
             throw new InvalidLoanStateTransitionException("transaction", "cannot.be.before.last.transaction.date", errorMessage, actualDisbursementDate);
@@ -2358,8 +2358,9 @@ public class Loan extends AbstractPersistable<Long> {
                 }
             }
         }
+     }
         
-    }
+ }
 
     public void regenerateScheduleOnDisbursement(final ScheduleGeneratorDTO scheduleGeneratorDTO, final boolean recalculateSchedule,
             final LocalDate actualDisbursementDate, BigDecimal emiAmount, final AppUser currentUser, LocalDate nextPossibleRepaymentDate,
