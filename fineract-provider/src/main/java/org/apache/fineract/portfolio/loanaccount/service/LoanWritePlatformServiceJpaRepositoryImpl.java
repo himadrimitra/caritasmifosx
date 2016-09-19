@@ -149,6 +149,7 @@ import org.apache.fineract.portfolio.loanaccount.exception.DateMismatchException
 import org.apache.fineract.portfolio.loanaccount.exception.ExceedingTrancheCountException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidPaidInAdvanceAmountException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursalException;
+import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursementDateException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanMultiDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignmentException;
@@ -2810,6 +2811,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
+        checkOtherDisbursementDetailsWithDate(loan, disbursementId,
+                command.DateValueOfParameterNamed(LoanApiConstants.updatedDisbursementDateParameterName));
         LoanDisbursementDetails loanDisbursementDetails = loan.fetchLoanDisbursementsById(disbursementId);
         this.loanEventApiJsonValidator.validateUpdateDisbursementDateAndAmount(command.json(), loanDisbursementDetails);
         LocalDate recalculateFromDate = null;
@@ -3158,4 +3161,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 		}
 
 	}
+	
+    private void checkOtherDisbursementDetailsWithDate(final Loan loan, final Long disbursementId, final Date updatedDisbursementDate) {
+        for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
+            if (loanDisbursementDetails.expectedDisbursementDate().equals(updatedDisbursementDate)
+                    && loanDisbursementDetails.getId() != disbursementId) { throw new LoanDisbursementDateException(
+                    "Loan disbursement details with date - " + updatedDisbursementDate + " for loan - " + loan.getId() + " already exists.",
+                    loan.getId(), updatedDisbursementDate.toString()); }
+        }
+    }
 }
