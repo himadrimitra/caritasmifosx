@@ -49,4 +49,6 @@ public interface CenterReadPlatformService {
     Collection<StaffCenterData> retriveAllCentersByMeetingDate(Long officeId, Date meetingDate, Long staffId);
     
     Collection<CenterData> retrieveAssociatedCenters(Long villageId);
+
+    CenterData retrieveCenterAndMembersDetailsTemplate(Long centerId);
 }

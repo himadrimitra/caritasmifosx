@@ -266,6 +266,10 @@ public class GroupGeneralData {
     public Collection<ClientData> clientMembers() {
         return this.clientMembers;
     }
+    
+    public void update(Collection<ClientData> activeClientMembers1) {
+        this.activeClientMembers = activeClientMembers1;
+    }
 
     public void addActiveClientMember(final ClientData clientData) {
 

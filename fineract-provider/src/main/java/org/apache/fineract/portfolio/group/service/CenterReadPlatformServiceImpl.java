@@ -764,4 +764,28 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
                 "Validation errors exist.", dataValidationErrors); }
 
     }
+
+    @Override
+    public CenterData retrieveCenterAndMembersDetailsTemplate(final Long centerId) {
+        Collection<GroupGeneralData> groups = null;
+        CenterData centerAccount = this.retrieveOne(centerId);
+        // get group associations
+        groups = this.retrieveAssociatedGroups(centerId);
+        /* attach group members in group */
+        ArrayList<GroupGeneralData> groupsToAssociateClient = (ArrayList<GroupGeneralData>) groups;
+        for (GroupGeneralData groupGeneralData : groupsToAssociateClient) {
+            ArrayList<ClientData> membersOfGroup = (ArrayList<ClientData>) clientReadPlatformService
+                    .retrieveActiveClientMembersOfGroup(groupGeneralData.getId());
+            groupGeneralData.update(membersOfGroup);
+            if (!CollectionUtils.isEmpty(membersOfGroup)) {
+                membersOfGroup = null;
+                final CalendarData collectionMeetingCalendar = null;
+                centerAccount = CenterData.withAssociations(centerAccount, groups, collectionMeetingCalendar);
+
+            }
+
+        }
+
+        return centerAccount;
+    }
 }

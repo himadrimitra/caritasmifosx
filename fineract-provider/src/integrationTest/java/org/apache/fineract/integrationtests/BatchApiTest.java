@@ -18,7 +18,9 @@
  */
 package org.apache.fineract.integrationtests;
 
+import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.fineract.batch.domain.BatchRequest;
@@ -32,6 +34,9 @@ import org.apache.fineract.integrationtests.common.savings.SavingsProductHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.apache.fineract.integrationtests.common.ClientHelper;
+import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
+import org.apache.fineract.integrationtests.common.savings.SavingsStatusChecker;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -242,6 +247,153 @@ public class BatchApiTest {
         final JsonElement clientId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("clientId");
 
         Assert.assertEquals("Verify Status Code 200" + clientId.getAsString(), 200L, (long) response.get(1).getStatusCode());
+    }
+    
+    @Test
+    public void creatingSavingsAccount() {
+        final SavingsProductHelper savingsProductHelper = new SavingsProductHelper();
+        final String savingsProductJSON = savingsProductHelper //
+                .withInterestCompoundingPeriodTypeAsDaily() //
+                .withInterestPostingPeriodTypeAsMonthly() //
+                .withInterestCalculationPeriodTypeAsDailyBalance() //
+                .build();
+
+        final Integer productId = SavingsProductHelper.createSavingsProduct(savingsProductJSON, this.requestSpec, this.responseSpec);
+        Integer fieldOfficerId = StaffHelper.createStaff(this.requestSpec, this.responseSpec);
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        boolean isactive = false;
+        final BatchRequest br1 = BatchHelper.createOrActivateSavingsAccountRequest(0L, new Long(productId), new Long(fieldOfficerId),
+                new Long(clientID), isactive);
+
+        final List<BatchRequest> batchRequests = new ArrayList<>();
+
+        batchRequests.add(br1);
+
+        final String jsonifiedRequest = BatchHelper.toJsonString(batchRequests);
+
+        final List<BatchResponse> response = BatchHelper.postBatchRequestsWithoutEnclosingTransaction(this.requestSpec, this.responseSpec,
+                jsonifiedRequest);
+        final JsonElement clientId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("clientId");
+        if (clientId.toString().equals(clientID.toString())) {
+            final JsonElement savingsId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("savingsId");
+            System.out.println("Savings Id is successfully created whose id is " + savingsId);
+            HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec,
+                    Integer.parseInt(savingsId.toString()));
+            System.out.println(savingsStatusHashMap);
+            Boolean status = (Boolean) savingsStatusHashMap.get("active");
+            assertEquals(status, isactive);
+        }
+    }
+
+    @Test
+    public void creatingSavingsAccountWithOpeningBalance() {
+        final SavingsProductHelper savingsProductHelper = new SavingsProductHelper();
+        final String savingsProductJSON = savingsProductHelper //
+                .withInterestCompoundingPeriodTypeAsDaily() //
+                .withInterestPostingPeriodTypeAsMonthly() //
+                .withInterestCalculationPeriodTypeAsDailyBalance() //
+                .withMinimumOpenningBalance("5000").build();
+
+        final Integer productId = SavingsProductHelper.createSavingsProduct(savingsProductJSON, this.requestSpec, this.responseSpec);
+        Integer fieldOfficerId = StaffHelper.createStaff(this.requestSpec, this.responseSpec);
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        boolean isactive = false;
+        final BatchRequest br1 = BatchHelper.createOrActivateSavingsAccountRequest(0L, new Long(productId), new Long(fieldOfficerId),
+                new Long(clientID), isactive);
+
+        final List<BatchRequest> batchRequests = new ArrayList<>();
+
+        batchRequests.add(br1);
+
+        final String jsonifiedRequest = BatchHelper.toJsonString(batchRequests);
+
+        final List<BatchResponse> response = BatchHelper.postBatchRequestsWithoutEnclosingTransaction(this.requestSpec, this.responseSpec,
+                jsonifiedRequest);
+        final JsonElement clientId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("clientId");
+        if (clientId.toString().equals(clientID.toString())) {
+            final JsonElement savingsId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("savingsId");
+            System.out.println("Savings Id is successfully created whose id is " + savingsId);
+            HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec,
+                    Integer.parseInt(savingsId.toString()));
+            System.out.println(savingsStatusHashMap);
+            Boolean status = (Boolean) savingsStatusHashMap.get("active");
+            assertEquals(status, isactive);
+
+        }
+    }
+
+    @Test
+    public void activatingSavingsAccount() {
+        final SavingsProductHelper savingsProductHelper = new SavingsProductHelper();
+        final String savingsProductJSON = savingsProductHelper //
+                .withInterestCompoundingPeriodTypeAsDaily() //
+                .withInterestPostingPeriodTypeAsMonthly() //
+                .withInterestCalculationPeriodTypeAsDailyBalance() //
+                .build();
+
+        final Integer productId = SavingsProductHelper.createSavingsProduct(savingsProductJSON, this.requestSpec, this.responseSpec);
+        Integer fieldOfficerId = StaffHelper.createStaff(this.requestSpec, this.responseSpec);
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        boolean isactive = true;
+        final BatchRequest br1 = BatchHelper.createOrActivateSavingsAccountRequest(0L, new Long(productId), new Long(fieldOfficerId),
+                new Long(clientID), isactive);
+
+        final List<BatchRequest> batchRequests = new ArrayList<>();
+
+        batchRequests.add(br1);
+
+        final String jsonifiedRequest = BatchHelper.toJsonString(batchRequests);
+
+        final List<BatchResponse> response = BatchHelper.postBatchRequestsWithoutEnclosingTransaction(this.requestSpec, this.responseSpec,
+                jsonifiedRequest);
+        final JsonElement clientId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("clientId");
+        if (clientId.toString().equals(clientID.toString())) {
+            final JsonElement savingsId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("savingsId");
+            System.out.println("Savings Id is successfully created whose id is " + savingsId);
+            HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec,
+                    Integer.parseInt(savingsId.toString()));
+            System.out.println(savingsStatusHashMap);
+            Boolean status = (Boolean) savingsStatusHashMap.get("active");
+            assertEquals(status, isactive);
+
+        }
+    }
+
+    @Test
+    public void savingsAccountWithoutFieldOfficer() {
+        final SavingsProductHelper savingsProductHelper = new SavingsProductHelper();
+        final String savingsProductJSON = savingsProductHelper //
+                .withInterestCompoundingPeriodTypeAsDaily() //
+                .withInterestPostingPeriodTypeAsMonthly() //
+                .withInterestCalculationPeriodTypeAsDailyBalance() //
+                .build();
+
+        final Integer productId = SavingsProductHelper.createSavingsProduct(savingsProductJSON, this.requestSpec, this.responseSpec);
+        Long fieldOfficerId = null;
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        boolean isactive = true;
+        final BatchRequest br1 = BatchHelper.createOrActivateSavingsAccountRequest(0L, new Long(productId), fieldOfficerId, new Long(
+                clientID), isactive);
+
+        final List<BatchRequest> batchRequests = new ArrayList<>();
+
+        batchRequests.add(br1);
+
+        final String jsonifiedRequest = BatchHelper.toJsonString(batchRequests);
+
+        final List<BatchResponse> response = BatchHelper.postBatchRequestsWithoutEnclosingTransaction(this.requestSpec, this.responseSpec,
+                jsonifiedRequest);
+        final JsonElement clientId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("clientId");
+        if (clientId.toString().equals(clientID.toString())) {
+            final JsonElement savingsId = new FromJsonHelper().parse(response.get(0).getBody()).getAsJsonObject().get("savingsId");
+            System.out.println("Savings Id is successfully created whose id is " + savingsId);
+            HashMap savingsStatusHashMap = SavingsStatusChecker.getStatusOfSavings(this.requestSpec, this.responseSpec,
+                    Integer.parseInt(savingsId.toString()));
+            System.out.println(savingsStatusHashMap);
+            Boolean status = (Boolean) savingsStatusHashMap.get("active");
+            assertEquals(status, isactive);
+
+        }
     }
 
     /**

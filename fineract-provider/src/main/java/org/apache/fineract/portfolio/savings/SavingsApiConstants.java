@@ -222,6 +222,10 @@ public class SavingsApiConstants {
             overdraftLimitParamName, minRequiredBalanceParamName, enforceMinRequiredBalanceParamName,
             nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, withHoldTaxParamName));
 
+    public static final Set<String> SAVINGS_ACCOUNT_CREATE_OR_ACTIVATE_DATA_PARAMETER = new HashSet<>(Arrays.asList(localeParamName,
+            dateFormatParamName, monthDayFormatParamName, staffIdParamName, accountNoParamName, clientIdParamName, productIdParamName,
+            fieldOfficerIdParamName, dateParamName, activeParamName));
+
     /**
      * These parameters will match the class level parameters of
      * {@link SavingsAccountData}. Where possible, we try to get response

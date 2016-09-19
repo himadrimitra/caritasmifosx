@@ -281,6 +281,22 @@ public class CentersApiResource {
         return this.toApiJsonSerializer.serialize(result);
     }
 
+    @GET
+    @Path("{centerId}/clientdetails")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String template(@PathParam("centerId") final Long centerId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
+
+        final CenterData clientDetailsForParticularcenter = this.centerReadPlatformService
+                .retrieveCenterAndMembersDetailsTemplate(centerId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, clientDetailsForParticularcenter,
+                GroupingTypesApiConstants.CENTER_RESPONSE_DATA_PARAMETERS);
+    }
+
     @POST
     @Path("{centerId}")
     @Consumes({ MediaType.APPLICATION_JSON })
