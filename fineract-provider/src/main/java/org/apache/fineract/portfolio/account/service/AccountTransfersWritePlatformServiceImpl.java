@@ -42,6 +42,7 @@ import org.apache.fineract.portfolio.account.domain.AccountTransferDetails;
 import org.apache.fineract.portfolio.account.domain.AccountTransferRepository;
 import org.apache.fineract.portfolio.account.domain.AccountTransferTransaction;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
+import org.apache.fineract.portfolio.account.exception.AccountClosedException;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
@@ -63,6 +64,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 
 @Service
 public class AccountTransfersWritePlatformServiceImpl implements AccountTransfersWritePlatformService {
@@ -268,6 +270,33 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             accountTransfer.reverse();
             this.accountTransferRepository.save(accountTransfer);
         }
+    }
+
+    private AdjustedLoanTransactionDetails undoTransactions(AccountTransferDTO accountTransferDTO,
+            AccountTransferTransaction accountTransfer) {
+        AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
+        if (accountTransfer.getFromLoanTransaction() != null) {
+            changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
+                    accountTransfer.getToLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
+                    accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
+                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail());
+        } else if (accountTransfer.getToLoanTransaction() != null) {
+            changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
+                    accountTransfer.getToLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
+                    accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
+                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail());
+        }
+        if (accountTransfer.getFromTransaction() != null) {
+            this.savingsAccountWritePlatformService.undoTransaction(accountTransfer.accountTransferDetails().fromSavingsAccount().getId(),
+                    accountTransfer.getFromTransaction().getId(), true);
+        }
+        if (accountTransfer.getToSavingsTransaction() != null) {
+            this.savingsAccountWritePlatformService.undoTransaction(accountTransfer.accountTransferDetails().toSavingsAccount().getId(),
+                    accountTransfer.getToSavingsTransaction().getId(), true);
+        }
+        accountTransfer.reverse();
+        this.accountTransferRepository.save(accountTransfer);
+        return changedLoanTransactionDetails;
     }
 
     @Override
@@ -484,5 +513,34 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
         // }
 
         return builder.build();
+    }
+    
+    @Override
+    public AdjustedLoanTransactionDetails reverseTransaction(AccountTransferDTO accountTransferDTO, Long transactionId,
+            final PortfolioAccountType accountType) {
+        AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
+        if (accountType.isLoanAccount()) {
+            final AccountTransferTransaction transferTransaction = this.accountTransferRepository.findByToLoanTransactionId(transactionId);
+            if (transferTransaction != null) {
+                if (!transferTransaction.accountTransferDetails().fromSavingsAccount().isClosed()) {
+                    changedLoanTransactionDetails = undoTransactions(accountTransferDTO, transferTransaction);
+                    this.reverseTransfersWithFromAccountType(accountTransferDTO.getToAccountId(), PortfolioAccountType.LOAN);
+                } else {
+                    throw new AccountClosedException();
+                }
+            }
+        }
+        if (accountType.isSavingsAccount()) {
+            final AccountTransferTransaction transferFromLoan = this.accountTransferRepository.findByToSavingsTransactionId(transactionId);
+            if (transferFromLoan != null) {
+                if (!transferFromLoan.accountTransferDetails().fromLoanAccount().isClosed()) {
+                    undoTransactions(accountTransferDTO, transferFromLoan);
+                    this.reverseTransfersWithFromAccountType(accountTransferDTO.getToAccountId(), PortfolioAccountType.LOAN);
+                } else {
+                    throw new AccountClosedException();
+                }
+            }
+        }
+        return changedLoanTransactionDetails;
     }
 }

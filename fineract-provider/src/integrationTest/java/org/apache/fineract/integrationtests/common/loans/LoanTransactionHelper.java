@@ -55,6 +55,7 @@ public class LoanTransactionHelper {
     private static final String MAKE_REFUND_BY_CASH_COMMAND = "refundByCash";
     private static final String ADD_SUBSIDY_COMMAND = "addsubsidy";
     private static final String REVOKE_SUBSIDY_COMMAND = "revokesubsidy";
+    private static final String UNDO_REPAYMENT = "undo";
 
     public LoanTransactionHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         this.requestSpec = requestSpec;
@@ -212,6 +213,30 @@ public class LoanTransactionHelper {
         final String url = createLoanOperationURL(UNDO_LAST_DISBURSE_LOAN_COMMAND, loanID);
         System.out.println("IN UNDO LAST DISBURSE LOAN URL " + url);
         return performUndoLastLoanDisbursementTransaction(createLoanOperationURL(UNDO_LAST_DISBURSE_LOAN_COMMAND, loanID), undoLastDisburseJson);
+    }
+	
+    public HashMap undoRepayment(final Integer loanID, final String transactionId) {
+        final String url = createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId);
+        System.out.println("UNDO LOAN REPAYMENT URL " + url);
+        return performLoanTransaction(createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId), undoRepaymentJson());
+    }
+
+    public Object undoRepaymentError(final Integer loanID, final String transactionId, String jsonAttributeToGetBack) {
+        final String url = createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId);
+        System.out.println("UNDO LOAN REPAYMENT URL " + url);
+        return performLoanTransaction(createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId), undoRepaymentJson(),
+                jsonAttributeToGetBack);
+    }
+
+    private String undoRepaymentJson() {
+        final HashMap<String, String> map = new HashMap<>();
+        map.put("dateFormat", CommonConstants.dateFormat);
+        map.put("locale", CommonConstants.locale);
+        map.put("transactionAmount", "0");
+        map.put("transactionDate", "16 August 2016");
+        String accountTransferJson = new Gson().toJson(map);
+        System.out.println(accountTransferJson);
+        return accountTransferJson;
     }
 
     public void recoverFromGuarantor(final Integer loanID) {
@@ -502,6 +527,11 @@ public class LoanTransactionHelper {
 
     private String createLoanTransactionURL(final String command, final Integer loanID) {
         return "/fineract-provider/api/v1/loans/" + loanID + "/transactions?command=" + command + "&" + Utils.TENANT_IDENTIFIER;
+    }
+
+    private String createAccountTransferTransactionURL(final String command, final Integer loanID, final String transactionId) {
+        return "/fineract-provider/api/v1/loans/" + loanID + "/transactions/" + transactionId + "?command=" + command + "&"
+                + Utils.TENANT_IDENTIFIER;
     }
 
     private HashMap performLoanTransaction(final String postURLForLoanTransaction, final String jsonToBeSent) {

@@ -24,11 +24,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
@@ -37,6 +40,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
@@ -63,13 +67,16 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
+import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
+import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,6 +105,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     private final BusinessEventNotifierService businessEventNotifierService;
     private final LoanUtilService loanUtilService;
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
+    private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
 
     @Autowired
     public LoanAccountDomainServiceJpa(final LoanAssembler loanAccountAssembler, final LoanRepository loanRepository,
@@ -111,7 +119,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
             final LoanAccrualPlatformService loanAccrualPlatformService, final PlatformSecurityContext context,
             final BusinessEventNotifierService businessEventNotifierService, final LoanUtilService loanUtilService,
-            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
+            final PaymentDetailWritePlatformService paymentDetailWritePlatformService) {
         this.loanAccountAssembler = loanAccountAssembler;
         this.loanRepository = loanRepository;
         this.loanTransactionRepository = loanTransactionRepository;
@@ -129,6 +138,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.businessEventNotifierService = businessEventNotifierService;
         this.loanUtilService = loanUtilService;
         this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
+        this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
     }
 
     @Transactional
@@ -673,4 +683,104 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         map.put(entityEvent, entity);
         return map;
     }
+
+    @Override
+    public AdjustedLoanTransactionDetails reverseLoanTransactions(final Loan loan, final Long transactionId,
+            final LocalDate transactionDate, final BigDecimal transactionAmount, final String txnExternalId, final Locale locale,
+            final DateTimeFormatter dateFormat, final String noteText, final PaymentDetail paymentDetail) {
+
+        AppUser currentUser = getAppUserIfPresent();
+        final Map<String, Object> changes = new LinkedHashMap<>();
+        checkClientOrGroupActive(loan);
+        final LoanTransaction transactionToAdjust = this.loanTransactionRepository.findOne(transactionId);
+        if (transactionToAdjust == null) { throw new LoanTransactionNotFoundException(transactionId); }
+
+        if (loan.isClosedWrittenOff()) { throw new PlatformServiceUnavailableException("error.msg.loan.written.off.update.not.allowed",
+                "Loan transaction:" + transactionId + " update not allowed as loan status is written off", transactionId); }
+
+        changes.put("transactionDate", transactionDate);
+        changes.put("transactionAmount", transactionAmount);
+        changes.put("locale", locale);
+        changes.put("dateFormat", dateFormat);
+        if (paymentDetail != null) changes.put("paymentTypeId", paymentDetail.getId());
+
+        final List<Long> existingTransactionIds = new ArrayList<>();
+        final List<Long> existingReversedTransactionIds = new ArrayList<>();
+
+        final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
+        LoanTransaction newTransactionDetail = LoanTransaction.repayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
+                transactionDate, txnExternalId);
+        if (transactionToAdjust.isInterestWaiver()) {
+            Money unrecognizedIncome = transactionAmountAsMoney.zero();
+            Money interestComponent = transactionAmountAsMoney;
+            if (loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
+                Money receivableInterest = loan.getReceivableInterest(transactionDate);
+                if (transactionAmountAsMoney.isGreaterThan(receivableInterest)) {
+                    interestComponent = receivableInterest;
+                    unrecognizedIncome = transactionAmountAsMoney.minus(receivableInterest);
+                }
+            }
+            newTransactionDetail = LoanTransaction.waiver(loan.getOffice(), loan, transactionAmountAsMoney, transactionDate,
+                    interestComponent, unrecognizedIncome);
+        }
+        LocalDate recalculateFrom = null;
+
+        if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            recalculateFrom = transactionToAdjust.getTransactionDate().isAfter(transactionDate) ? transactionDate : transactionToAdjust
+                    .getTransactionDate();
+        }
+
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+
+        final ChangedTransactionDetail changedTransactionDetail = loan.adjustExistingTransaction(newTransactionDetail,
+                defaultLoanLifecycleStateMachine(), transactionToAdjust, existingTransactionIds, existingReversedTransactionIds,
+                scheduleGeneratorDTO, currentUser);
+
+        if (newTransactionDetail.isGreaterThanZero(loan.getPrincpal().getCurrency())) {
+            if (paymentDetail != null) {
+                this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
+            }
+            this.loanTransactionRepository.save(newTransactionDetail);
+        }
+
+        /***
+         * TODO Vishwas Batch save is giving me a
+         * HibernateOptimisticLockingFailureException, looping and saving for
+         * the time being, not a major issue for now as this loop is entered
+         * only in edge cases (when a adjustment is made before the latest
+         * payment recorded against the loan)
+         ***/
+        saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
+        if (changedTransactionDetail != null) {
+            for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
+                this.loanTransactionRepository.save(mapEntry.getValue());
+                // update loan with references to the newly created transactions
+                loan.getLoanTransactions().add(mapEntry.getValue());
+                this.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
+            }
+        }
+
+        if (StringUtils.isNotBlank(noteText)) {
+            changes.put("note", noteText);
+            Note note = null;
+            /**
+             * If a new transaction is not created, associate note with the
+             * transaction to be adjusted
+             **/
+            if (newTransactionDetail.isGreaterThanZero(loan.getPrincpal().getCurrency())) {
+                note = Note.loanTransactionNote(loan, newTransactionDetail, noteText);
+            } else {
+                note = Note.loanTransactionNote(loan, transactionToAdjust, noteText);
+            }
+            this.noteRepository.save(note);
+        }
+
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, true);
+
+        recalculateAccruals(loan);
+
+        return new AdjustedLoanTransactionDetails(changes, transactionToAdjust, newTransactionDetail);
+
+    }
+
 }

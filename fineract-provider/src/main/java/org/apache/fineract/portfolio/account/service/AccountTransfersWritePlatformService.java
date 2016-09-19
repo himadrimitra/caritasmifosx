@@ -25,6 +25,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.AccountTransferDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
+import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 
 public interface AccountTransfersWritePlatformService {
 
@@ -41,4 +42,7 @@ public interface AccountTransfersWritePlatformService {
     CommandProcessingResult refundByTransfer(JsonCommand command);
 
     void reverseTransfersWithFromAccountTransactions(Collection<Long> fromTransactionIds, PortfolioAccountType accountTypeId);
+
+    AdjustedLoanTransactionDetails reverseTransaction(AccountTransferDTO accountTransferDTO, Long transactionId,
+            PortfolioAccountType accountType);
 }
