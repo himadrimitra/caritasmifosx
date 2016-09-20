@@ -11,7 +11,6 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.provisioning.domain.ProvisioningAmountType;
-import org.apache.fineract.portfolio.client.domain.LegalForm;
 
 public class ProvisioningEnumerations {
 
@@ -26,10 +25,6 @@ public class ProvisioningEnumerations {
 		case TotalPrincipalOutstanding:
 			optionData = new EnumOptionData(ProvisioningAmountType.TotalPrincipalOutstanding.getValue().longValue(),
 					codePrefix + ProvisioningAmountType.TotalPrincipalOutstanding.getCode(), "TotalPrincipalOutstanding");
-			break;
-		case TotalOutstanding:
-			optionData = new EnumOptionData(ProvisioningAmountType.TotalOutstanding.getValue().longValue(),
-					codePrefix + ProvisioningAmountType.TotalOutstanding.getCode(), "TotalOutstanding");
 			break;
 		}
 		return optionData;
