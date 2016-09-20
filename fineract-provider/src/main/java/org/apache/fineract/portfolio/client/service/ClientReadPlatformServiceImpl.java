@@ -701,6 +701,61 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.lookup(id, displayName, officeId, officeName);
         }
     }
+    
+    private static final class ClientTaskLookupMapper implements RowMapper<ClientData> {
+        @Override
+        public ClientData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final String displayName = rs.getString("displayName");
+            final String accountNo = rs.getString("accountNo");
+            final Long officeId = rs.getLong("officeId");
+            final String officeName = rs.getString("officeName");
+            final Long staffId = rs.getLong("staffId");
+            final String staffName = rs.getString("staffName");
+
+            return ClientData.lookup(id, displayName, accountNo,officeId, officeName,staffId,staffName);
+        }
+    }
+    @Override
+    public Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
+        
+        final StringBuilder builder = new StringBuilder(400);
+       final ClientTaskLookupMapper mapper= new ClientTaskLookupMapper();
+        List<Object> params = new ArrayList<>();
+        String sqlSearch = searchParameters.getSqlSearch();
+        builder.append("select ");
+        builder.append("c.id as id, c.account_no as accountNo,c.status_enum as statusEnum,c.office_id as officeId, o.name as officeName,");
+        builder.append("c.fullname as fullname, c.display_name as displayName, ");
+        builder.append("c.staff_id as staffId, s.display_name as staffName ");
+        builder.append("from m_client c ");
+        builder.append("join m_office o on o.id = c.office_id ");
+        builder.append("left join m_staff s on s.id = c.staff_id ");
+        if((searchParameters.getGroupId() != null) || (searchParameters.getCenterId() != null)){
+            builder.append("JOIN m_group_client gc ON c.id = gc.client_id ");
+            builder.append("join m_group g on g.id = gc.group_id ");
+        } 
+        builder.append("where o.id = ?");
+        params.add(searchParameters.getOfficeId());
+        if(searchParameters.getStaffId() != null){
+            builder.append(" and s.id = ?");
+            params.add(searchParameters.getStaffId());
+        }
+        if(searchParameters.getGroupId() != null){
+            builder.append(" and g.id = ?");
+            params.add(searchParameters.getGroupId());
+        }
+        if(searchParameters.getCenterId() != null){
+            builder.append(" and g.parent_id = ?" );
+            params.add(searchParameters.getCenterId());
+        }
+        if (sqlSearch != null) {
+            builder.append(" and (" + sqlSearch + ")");
+        }
+        
+        return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
+    }
+
 
     @Override
     public ClientData retrieveClientByIdentifier(final Long identifierTypeId, final String identifierKey) {

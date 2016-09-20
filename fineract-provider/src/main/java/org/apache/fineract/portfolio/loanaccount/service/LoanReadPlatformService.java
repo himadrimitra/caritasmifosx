@@ -130,6 +130,8 @@ public interface LoanReadPlatformService {
 
     Collection<Long> retrieveLoanIdsWithPendingIncomePostingTransactions();
     
-    Collection<Long> retrieveAllActiveSubmittedAprrovedGroupLoanIds(Long groupId); 
+    Collection<Long> retrieveAllActiveSubmittedAprrovedGroupLoanIds(Long groupId);
+    
+    Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
 	
 }

@@ -944,7 +944,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + "LEFT JOIN m_group g ON g.id = l.group_id " + "LEFT JOIN m_staff s ON s.id = l.loan_officer_id ";
 
         }
-
         @Override
         public LoanAccountData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
@@ -966,7 +965,81 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     principal, timeline);
         }
     }
+    @Override
+    public Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
+    
+        final StringBuilder builder = new StringBuilder(400);
+        final LoanTaskLookupMapper mapper= new LoanTaskLookupMapper();
+         List<Object> params = new ArrayList<>();
+         String sqlSearch = searchParameters.getSqlSearch();
+         builder.append("select ");
+         builder.append("ml.id as id, ml.account_no AS accountNo,ml.loan_status_id AS lifeCycleStatusId, ");
+         builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
+         builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loanpurpose_cv_id as loanPurposeId, cv.code_value as loanPurposeName, ");
+         builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
+         builder.append("ml.principal_amount as principal, dd.principal as firstTrancheAmount, ml.loan_type_enum as loanType ");
 
+         builder.append("from m_loan ml ");
+         builder.append("join m_product_loan mp on mp.id = ml.product_id ");
+         builder.append("LEFT JOIN m_staff s ON s.id = ml.loan_officer_id ");
+         builder.append(" left join m_loan_disbursement_detail dd on dd.loan_id = ml.id and dd.expected_disburse_date = ml.expected_disbursedon_date ");
+         builder.append(" left join m_code_value cv on cv.id = ml.loanpurpose_cv_id  ");
+         builder.append(" left join m_client c on ml.client_id = c.id ");
+         builder.append(" left JOIN m_office o ON o.id = c.office_id ");
+         builder.append(" left JOIN m_group g ON g.id = ml.group_id ");
+         builder.append(" left JOIN m_office og ON og.id = g.office_id ");
+         
+         builder.append(" WHERE (o.id = ? or og.id =? ) ");
+         params.add(searchParameters.getOfficeId());
+         params.add(searchParameters.getOfficeId());
+         if(searchParameters.getStaffId() != null){
+             builder.append(" and s.id = ?");
+             params.add(searchParameters.getStaffId());
+         }
+         if(searchParameters.getGroupId() != null){
+             builder.append(" and g.id = ?");
+             params.add(searchParameters.getGroupId());
+         }
+         if(searchParameters.getCenterId() != null){
+             builder.append(" and g.parent_id = ?" );
+             params.add(searchParameters.getCenterId());
+         }
+         if (sqlSearch != null) {
+             builder.append(" and (" + sqlSearch + ")");
+         }
+         
+         return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
+    }
+    private static final class LoanTaskLookupMapper implements RowMapper<LoanAccountData> {
+        @Override
+        public LoanAccountData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+           
+            final Long id = rs.getLong("id");
+            final String accountNo = rs.getString("accountNo");
+            final Integer lifeCycleStatusId = JdbcSupport.getInteger(rs, "lifeCycleStatusId");
+            final LoanStatusEnumData status = LoanEnumerations.status(lifeCycleStatusId);
+            final Long clientId = JdbcSupport.getLong(rs, "clientId");
+            final String clientAccountNo = rs.getString("clientAccountNo");
+            final String clientName = rs.getString("clientName");
+            final Long loanProductId = JdbcSupport.getLong(rs, "loanProductId");
+            final String loanProductName = rs.getString("loanProductName");
+            final Long loanPurposeId = JdbcSupport.getLong(rs, "loanPurposeId");
+            final String loanPurposeName = rs.getString("loanPurposeName");
+            final Long loanOfficerId = JdbcSupport.getLong(rs, "loanOfficerId");
+            final String loanOfficerName = rs.getString("loanOfficerName");
+            final Integer loanTypeId = JdbcSupport.getInteger(rs, "loanType");
+            final EnumOptionData loanType = AccountEnumerations.loanType(loanTypeId);
+            BigDecimal principal = rs.getBigDecimal("principal");
+            final BigDecimal firstTrancheAmount = rs.getBigDecimal("firstTrancheAmount");
+            if(firstTrancheAmount !=null && LoanStatus.fromInt(lifeCycleStatusId).isApproved()){
+                principal = firstTrancheAmount;
+            }
+
+            return LoanAccountData.loanDetailsForTaskLookup(id,accountNo,status,clientId, clientAccountNo, clientName, loanProductId,
+                    loanProductName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, loanType,
+                     principal);
+        }
+    }
     private static final class MusoniOverdueLoanScheduleMapper implements RowMapper<OverdueLoanScheduleData> {
 
         public String schema() {
