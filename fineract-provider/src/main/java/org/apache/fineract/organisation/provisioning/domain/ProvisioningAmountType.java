@@ -7,9 +7,7 @@
 package org.apache.fineract.organisation.provisioning.domain;
 
 public enum ProvisioningAmountType {
-	TotalPrincipalOutstanding(1, "provisioningAmountType.TotalPrincipalOutstanding"), //
-	TotalOutstanding(2, "provisioningAmountType.TotalOutstanding");
-
+	TotalPrincipalOutstanding(1, "provisioningAmountType.TotalPrincipalOutstanding");
 	private final Integer value;
 	private final String code;
 
@@ -27,14 +25,11 @@ public enum ProvisioningAmountType {
 	}
 
 	public static ProvisioningAmountType fromInt(final Integer frequency) {
-		ProvisioningAmountType provisioningAmountType = ProvisioningAmountType.TotalOutstanding;
+		ProvisioningAmountType provisioningAmountType = null;
 		if (frequency != null) {
 			switch (frequency) {
 			case 1:
 				provisioningAmountType = ProvisioningAmountType.TotalPrincipalOutstanding;
-				break;
-			case 2:
-				provisioningAmountType = ProvisioningAmountType.TotalOutstanding;
 				break;
 			}
 		}
