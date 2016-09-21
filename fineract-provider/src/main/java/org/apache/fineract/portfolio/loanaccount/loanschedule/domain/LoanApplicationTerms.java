@@ -786,6 +786,10 @@ public final class LoanApplicationTerms {
             case INVALID:
             break;
         }
+        
+        if (this.totalInterestDue != null) {
+            totalInterestDue = this.totalInterestDue;
+        }
 
         return totalInterestDue;
     }
