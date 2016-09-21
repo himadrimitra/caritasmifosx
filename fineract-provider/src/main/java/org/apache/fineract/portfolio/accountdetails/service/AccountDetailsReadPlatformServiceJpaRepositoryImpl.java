@@ -305,7 +305,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
             accountsSummary.append("left join m_appuser rbu on rbu.id = sa.rejectedon_userid ");
             accountsSummary.append("left join m_appuser wbu on wbu.id = sa.withdrawnon_userid ");
             accountsSummary.append("left join m_appuser abu on abu.id = sa.approvedon_userid ");
-            accountsSummary.append("left join m_appuser avbu on rbu.id = sa.activatedon_userid ");
+            accountsSummary.append("left join m_appuser avbu on avbu.id = sa.activatedon_userid ");
             accountsSummary.append("left join m_appuser cbu on cbu.id = sa.closedon_userid ");
 
             this.schemaSql = accountsSummary.toString();
