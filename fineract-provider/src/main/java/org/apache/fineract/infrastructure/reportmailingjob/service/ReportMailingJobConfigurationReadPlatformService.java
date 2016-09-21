@@ -35,5 +35,5 @@ public interface ReportMailingJobConfigurationReadPlatformService {
      * 
      * @return ReportMailingJobConfigurationData object
      **/
-    ReportMailingJobConfigurationData retrieveReportMailingJobConfiguration(String name);
+    ReportMailingJobConfigurationData retrieveReportMailingJobConfiguration(final String name);
 }

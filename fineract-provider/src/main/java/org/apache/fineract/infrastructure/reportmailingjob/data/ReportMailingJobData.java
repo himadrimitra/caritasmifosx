@@ -20,9 +20,9 @@ package org.apache.fineract.infrastructure.reportmailingjob.data;
 
 import java.util.List;
 
-import org.joda.time.DateTime;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportData;
+import org.joda.time.DateTime;
 
 /** 
  * Immutable data object representing report mailing job data. 
@@ -84,7 +84,7 @@ public class ReportMailingJobData {
     /** 
      * @return an instance of the ReportMailingJobData class 
      **/
-    public static ReportMailingJobData instance(final Long id, final String name, final String description, final DateTime startDateTime, 
+    public static ReportMailingJobData newInstance(final Long id, final String name, final String description, final DateTime startDateTime, 
             final String recurrence, final ReportMailingJobTimelineData timeline, final String emailRecipients, final String emailSubject, 
             final String emailMessage, final EnumOptionData emailAttachmentFileFormat, final ReportData stretchyReport, final String stretchyReportParamMap, 
             final DateTime previousRunDateTime, final DateTime nextRunDateTime, final String previousRunStatus, final String previousRunErrorLog, 
@@ -97,7 +97,7 @@ public class ReportMailingJobData {
     /** 
      * @return an instance of the ReportMailingJobData class 
      **/
-    public static ReportMailingJobData instance(final List<EnumOptionData> emailAttachmentFileFormatOptions, 
+    public static ReportMailingJobData newInstance(final List<EnumOptionData> emailAttachmentFileFormatOptions, 
             final List<EnumOptionData> stretchyReportParamDateOptions) {
         return new ReportMailingJobData(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 
                 null, false, emailAttachmentFileFormatOptions, stretchyReportParamDateOptions, null);
@@ -106,7 +106,7 @@ public class ReportMailingJobData {
     /** 
      * @return an instance of the ReportMailingJobData class 
      **/
-    public static ReportMailingJobData instance(final ReportMailingJobData dataWithoutEnumOptions, final ReportMailingJobData dataWithEnumOptions) {
+    public static ReportMailingJobData newInstance(final ReportMailingJobData dataWithoutEnumOptions, final ReportMailingJobData dataWithEnumOptions) {
         return new ReportMailingJobData(dataWithoutEnumOptions.id, dataWithoutEnumOptions.name, dataWithoutEnumOptions.description, dataWithoutEnumOptions.startDateTime, 
                 dataWithoutEnumOptions.recurrence, dataWithoutEnumOptions.timeline, dataWithoutEnumOptions.emailRecipients, dataWithoutEnumOptions.emailSubject, 
                 dataWithoutEnumOptions.emailMessage, dataWithoutEnumOptions.emailAttachmentFileFormat, dataWithoutEnumOptions.stretchyReport, 
@@ -268,23 +268,5 @@ public class ReportMailingJobData {
      */
     public Long getRunAsUserId() {
         return runAsUserId;
-    }
-    
-    /* (non-Javadoc)
-     * @see java.lang.Object#toString()
-     */
-    @Override
-    public String toString() {
-        return "ReportMailingJobData [id=" + id + ", name=" + name + ", description=" + description
-                + ", startDateTime=" + startDateTime + ", recurrence=" + recurrence + ", timeline=" + timeline
-                + ", emailRecipients=" + emailRecipients + ", emailSubject=" + emailSubject + ", emailMessage="
-                + emailMessage + ", emailAttachmentFileFormat=" + emailAttachmentFileFormat + ", stretchyReport="
-                + stretchyReport + ", stretchyReportParamMap=" + stretchyReportParamMap + ", previousRunDateTime="
-                + previousRunDateTime + ", nextRunDateTime=" + nextRunDateTime + ", previousRunStatus="
-                + previousRunStatus + ", previousRunErrorLog=" + previousRunErrorLog + ", previousRunErrorMessage="
-                + previousRunErrorMessage + ", numberOfRuns=" + numberOfRuns + ", isActive=" + isActive
-                + ", emailAttachmentFileFormatOptions=" + emailAttachmentFileFormatOptions
-                + ", stretchyReportParamDateOptions=" + stretchyReportParamDateOptions + ", runAsUserId=" + runAsUserId
-                + "]";
     }
 }

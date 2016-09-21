@@ -345,6 +345,12 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.obligationsMet = false;
         this.obligationsMetOnDate = null;
     }
+    
+    public void resetAccrualComponents() {
+        this.interestAccrued = null;
+        this.feeAccrued = null;
+        this.penaltyAccrued = null;
+    }
 
     public Money payPenaltyChargesComponent(final LocalDate transactionDate, final Money transactionAmountRemaining) {
 
@@ -783,5 +789,16 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     }
     public List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails() {
         return this.loanCompoundingDetails;
+    }
+
+    public Money getAccruedInterestOutstanding(final MonetaryCurrency currency) {
+        final Money interestAccountedFor = getInterestPaid(currency).plus(getInterestWaived(currency))
+                .plus(getInterestWrittenOff(currency));
+        return getInterestAccrued(currency).minus(interestAccountedFor);
+    }
+    
+    public Money getTotalPaid(final MonetaryCurrency currency) {
+        return getPenaltyChargesPaid(currency).plus(getFeeChargesPaid(currency)).plus(getInterestPaid(currency))
+                .plus(getPrincipalCompleted(currency));
     }
 }

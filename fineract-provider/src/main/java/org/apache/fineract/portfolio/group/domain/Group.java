@@ -153,6 +153,10 @@ public final class Group extends AbstractPersistable<Long> {
     @Transient
     private boolean accountNumberRequiresAutoGeneration = false;
 
+    @OneToMany(mappedBy="group",cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    private Set<GroupRole> groupRoles;
+
+
     // JPA default constructor for entity
     protected Group() {
         this.name = null;
@@ -762,6 +766,11 @@ public final class Group extends AbstractPersistable<Long> {
     
     public Set<StaffAssignmentHistory> getStaffHistory() {
         return this.staffHistory;
+    }
+
+    
+    public Set<GroupRole> getGroupRoles() {
+        return this.groupRoles;
     }
 	
 }

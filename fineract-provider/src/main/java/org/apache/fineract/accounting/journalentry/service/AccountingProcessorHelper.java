@@ -168,6 +168,12 @@ public class AccountingProcessorHelper {
                     transactionDate, transactionType, amount, principal, interest, fees, penalties, overPayments, reversed,
                     feePaymentDetails, penaltyPaymentDetails, isAccountTransfer, taxPayments, transactionSubType);
 
+            Boolean isLoanToLoanTransfer = (Boolean) accountingBridgeData.get("isLoanToLoanTransfer");
+            if(isLoanToLoanTransfer != null && isLoanToLoanTransfer){
+                transaction.setIsLoanToLoanTransfer(true);
+            } else {
+                transaction.setIsLoanToLoanTransfer(false);
+            }
             newLoanTransactions.add(transaction);
 
         }

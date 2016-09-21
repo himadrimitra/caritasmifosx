@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.infrastructure.reportmailingjob.data;
+package org.apache.fineract.infrastructure.reportmailingjob.validation;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -29,11 +29,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -41,9 +36,14 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.reportmailingjob.ReportMailingJobConstants;
+import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobEmailAttachmentFileFormat;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.apache.fineract.infrastructure.reportmailingjob.domain.ReportMailingJobEmailAttachmentFileFormat;
 
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
@@ -79,7 +79,7 @@ public class ReportMailingJobValidator {
         
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder dataValidatorBuilder = new DataValidatorBuilder(dataValidationErrors).
-                resource(StringUtils.lowerCase(ReportMailingJobConstants.REPORT_MAILING_JOB_ENTITY_NAME));
+                resource(StringUtils.lowerCase(ReportMailingJobConstants.REPORT_MAILING_JOB_RESOURCE_NAME));
         
         final String name = this.fromJsonHelper.extractStringNamed(ReportMailingJobConstants.NAME_PARAM_NAME, jsonElement);
         dataValidatorBuilder.reset().parameter(ReportMailingJobConstants.NAME_PARAM_NAME).value(name).notBlank().notExceedingLengthOf(100);
@@ -115,7 +115,7 @@ public class ReportMailingJobValidator {
 
         if (emailAttachmentFileFormatId != null) {
             dataValidatorBuilder.reset().parameter(ReportMailingJobConstants.EMAIL_ATTACHMENT_FILE_FORMAT_ID_PARAM_NAME).value(emailAttachmentFileFormatId).
-                    isOneOfTheseValues(ReportMailingJobEmailAttachmentFileFormat.validValues());
+                    isOneOfTheseValues(ReportMailingJobEmailAttachmentFileFormat.validIds());
         }
         
         final String dateFormat = jsonCommand.dateFormat();
@@ -158,7 +158,7 @@ public class ReportMailingJobValidator {
         
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder dataValidatorBuilder = new DataValidatorBuilder(dataValidationErrors).
-                resource(StringUtils.lowerCase(ReportMailingJobConstants.REPORT_MAILING_JOB_ENTITY_NAME));
+                resource(StringUtils.lowerCase(ReportMailingJobConstants.REPORT_MAILING_JOB_RESOURCE_NAME));
         
         if (this.fromJsonHelper.parameterExists(ReportMailingJobConstants.NAME_PARAM_NAME, jsonElement)) {
             final String name = this.fromJsonHelper.extractStringNamed(ReportMailingJobConstants.NAME_PARAM_NAME, jsonElement);
@@ -201,7 +201,7 @@ public class ReportMailingJobValidator {
             
             if (emailAttachmentFileFormatId != null) {
                 dataValidatorBuilder.reset().parameter(ReportMailingJobConstants.EMAIL_ATTACHMENT_FILE_FORMAT_ID_PARAM_NAME).value(emailAttachmentFileFormatId).
-                        isOneOfTheseValues(ReportMailingJobEmailAttachmentFileFormat.validValues());
+                        isOneOfTheseValues(ReportMailingJobEmailAttachmentFileFormat.validIds());
             }
         }
         

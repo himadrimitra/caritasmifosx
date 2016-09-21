@@ -25,10 +25,11 @@ import javax.persistence.UniqueConstraint;
 
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
-@SuppressWarnings("serial")
 @Entity
 @Table(name = "m_report_mailing_job_configuration", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "unique_name") })
 public class ReportMailingJobConfiguration extends AbstractPersistable<Integer> {
+    private static final long serialVersionUID = 3099279770861263184L;
+
     @Column(name = "name", nullable = false)
     private String name;
     
@@ -53,7 +54,7 @@ public class ReportMailingJobConfiguration extends AbstractPersistable<Integer> 
      * 
      * @return ReportMailingJobConfiguration object
      **/
-    public static ReportMailingJobConfiguration instance(final String name, final String value) {
+    public static ReportMailingJobConfiguration newInstance(final String name, final String value) {
         return new ReportMailingJobConfiguration(name, value);
     }
 

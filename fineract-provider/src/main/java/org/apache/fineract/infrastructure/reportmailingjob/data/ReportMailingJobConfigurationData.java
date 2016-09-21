@@ -40,7 +40,7 @@ public class ReportMailingJobConfigurationData {
      * 
      * @return ReportMailingJobConfigurationData object
      **/
-    public static ReportMailingJobConfigurationData instance(final int id, final String name, final String value) {
+    public static ReportMailingJobConfigurationData newInstance(final int id, final String name, final String value) {
         return new ReportMailingJobConfigurationData(id, name, value);
     }
 
@@ -63,10 +63,5 @@ public class ReportMailingJobConfigurationData {
      */
     public String getValue() {
         return value;
-    }
-    
-    @Override
-    public String toString() {
-        return "ReportMailingJobConfigurationData [id=" + id + ", name=" + name + ", value=" + value + "]";
     }
 }

@@ -2021,9 +2021,9 @@ public class ClientLoanIntegrationTest {
         loanCharges = this.loanTransactionHelper.getLoanCharges(loanID);
         validateCharge(flatInstallmentFee, loanCharges, "50", "100.00", "50.0", "50.0");
 
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, "20 September 2011", new JournalEntry(Float.valueOf("50.0"),
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, "20 November 2011", new JournalEntry(Float.valueOf("50.0"),
                 JournalEntry.TransactionType.CREDIT));
-        this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 September 2011",
+        this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 November 2011",
                 new JournalEntry(Float.valueOf("50.0"), JournalEntry.TransactionType.DEBIT));
 
         System.out.println("----------Make repayment 2------------");
@@ -2210,9 +2210,9 @@ public class ClientLoanIntegrationTest {
         loanCharges = this.loanTransactionHelper.getLoanCharges(loanID);
         validateCharge(percentageInstallmentFee, loanCharges, "1", "61.19", "29.11", "29.70");
 
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, "20 September 2011", new JournalEntry(Float.valueOf("29.7"),
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, "20 November 2011", new JournalEntry(Float.valueOf("29.7"),
                 JournalEntry.TransactionType.CREDIT));
-        this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 September 2011",
+        this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 November 2011",
                 new JournalEntry(Float.valueOf("29.7"), JournalEntry.TransactionType.DEBIT));
 
         System.out.println("----------Make repayment 2------------");
@@ -2411,9 +2411,9 @@ public class ClientLoanIntegrationTest {
         loanCharges = this.loanTransactionHelper.getLoanCharges(loanID);
         validateCharge(amountPlusInterestPercentageInstallmentFee, loanCharges, "1", "63.02", "31.51", "31.51");
 
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, "20 September 2011", new JournalEntry(
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, "20 November 2011", new JournalEntry(
                 Float.valueOf("31.51"), JournalEntry.TransactionType.CREDIT));
-        this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 September 2011",
+        this.journalEntryHelper.checkJournalEntryForExpenseAccount(expenseAccount, "20 November 2011",
                 new JournalEntry(Float.valueOf("31.51"), JournalEntry.TransactionType.DEBIT));
 
         System.out.println("----------Make repayment 2------------");
@@ -5085,6 +5085,59 @@ public class ClientLoanIntegrationTest {
         loanID = applyForLoanApplicationWithProductConfigurationAsFalse(clientID, loanProductID, proposedAmount);
         System.out.println("--------------------------LOAN CREATED WITH ID-------------------------" + loanID);
         this.validateIfValuesAreNotOverridden(loanID, loanProductID);
+    }
+
+    /**
+     * Test case to verify Loan Foreclosure.
+     */
+    @Test
+    public void testLoanForeclosure() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        final Integer loanProductID = createLoanProduct(false, NONE);
+
+        List<HashMap> charges = new ArrayList<>();
+
+        Integer flatAmountChargeOne = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+        addCharges(charges, flatAmountChargeOne, "50", "01 October 2011");
+        Integer flatAmountChargeTwo = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", true));
+        addCharges(charges, flatAmountChargeTwo, "100", "15 December 2011");
+
+        final Integer loanID = applyForLoanApplication(clientID, loanProductID, charges, null, "10,000.00");
+        Assert.assertNotNull(loanID);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        System.out.println("----------------------------------- APPROVE LOAN -----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan("20 September 2011", loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        System.out.println("----------------------------------- DISBURSE LOAN ----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan("20 September 2011", loanID, "10,000.00");
+        System.out.println("DISBURSE " + loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        System.out.println("---------------------------------- Make repayment 1 --------------------------------------");
+        this.loanTransactionHelper.makeRepayment("20 October 2011", Float.valueOf("2676.24"), loanID);
+
+        System.out.println("---------------------------------- FORECLOSE LOAN ----------------------------------------");
+        this.loanTransactionHelper.forecloseLoan("08 November 2011", loanID);
+
+        // retrieving the loan status
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        // verifying the loan status is closed
+        LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
+        // retrieving the loan sub-status
+        loanStatusHashMap = LoanStatusChecker.getSubStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        // verifying the loan sub-status is foreclosed
+        LoanStatusChecker.verifyLoanAccountForeclosed(loanStatusHashMap);
+
     }
 
     private void validateIfValuesAreNotOverridden(Integer loanID, Integer loanProductID) {

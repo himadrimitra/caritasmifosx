@@ -564,6 +564,22 @@ public class CommandWrapperBuilder {
         this.json = json;
         return this;
     }
+    public CommandWrapperBuilder undoRejection(final Long clientId) {
+        this.actionName = "UNDOREJECT";
+        this.entityName = "CLIENT";
+        this.entityId = clientId;
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "?command=undoRejection";
+        return this;
+    }
+    public CommandWrapperBuilder undoWithdrawal(final Long clientId) {
+        this.actionName = "UNDOWITHDRAWAL";
+        this.entityName = "CLIENT";
+        this.entityId = clientId;
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "?command=undoWithdrawal";
+        return this;
+    }
 
     public CommandWrapperBuilder createDatatable(final String datatable, final Long apptableId, final Long datatableId) {
         this.actionName = "CREATE";
@@ -739,6 +755,15 @@ public class CommandWrapperBuilder {
         this.entityId = null;
         this.loanId = loanId;
         this.href = "/loans/" + loanId + "/transactions/template?command=refundbycash";
+        return this;
+    }
+
+    public CommandWrapperBuilder loanForeclosure(final Long loanId) {
+        this.actionName = "FORECLOSURE";
+        this.entityName = "LOAN";
+        this.entityId = null;
+        this.loanId = loanId;
+        this.href = "/loans/" + loanId + "/transactions?command=foreclosure";
         return this;
     }
 
@@ -3030,30 +3055,6 @@ public class CommandWrapperBuilder {
         return this;
     }
 	
-	public CommandWrapperBuilder createReportMailingJob(final String entityName) {
-        this.actionName = "CREATE";
-        this.entityName = entityName;
-        this.entityId = null;
-        this.href = "/reportmailingjobs";
-        return this;
-    }
-    
-    public CommandWrapperBuilder updateReportMailingJob(final String entityName, final Long entityId) {
-        this.actionName = "UPDATE";
-        this.entityName = entityName;
-        this.entityId = entityId;
-        this.href = "/reportmailingjobs/" + entityId;
-        return this;
-    }
-    
-    public CommandWrapperBuilder deleteReportMailingJob(final String entityName, final Long entityId) {
-        this.actionName = "DELETE";
-        this.entityName = entityName;
-        this.entityId = entityId;
-        this.href = "/reportmailingjobs/" + entityId;
-        return this;
-    }
-
     /**
      * Create Address 
      * @param entityTypeId : This parameter is setting to entityId
@@ -3183,4 +3184,27 @@ public class CommandWrapperBuilder {
 
     }
 
+	public CommandWrapperBuilder createReportMailingJob(final String entityName) {
+        this.actionName = "CREATE";
+        this.entityName = entityName;
+        this.entityId = null;
+        this.href = "/reportmailingjobs";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateReportMailingJob(final String entityName, final Long entityId) {
+        this.actionName = "UPDATE";
+        this.entityName = entityName;
+        this.entityId = entityId;
+        this.href = "/reportmailingjobs/" + entityId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder deleteReportMailingJob(final String entityName, final Long entityId) {
+        this.actionName = "DELETE";
+        this.entityName = entityName;
+        this.entityId = entityId;
+        this.href = "/reportmailingjobs/" + entityId;
+        return this;
+    }
 }

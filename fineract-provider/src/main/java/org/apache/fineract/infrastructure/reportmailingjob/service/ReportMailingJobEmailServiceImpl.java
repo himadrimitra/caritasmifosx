@@ -17,21 +17,21 @@
  * under the License.
  */
 package org.apache.fineract.infrastructure.reportmailingjob.service;
+
 import java.util.Collection;
 import java.util.Properties;
+
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.reportmailingjob.ReportMailingJobConstants;
 import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobConfigurationData;
 import org.apache.fineract.infrastructure.reportmailingjob.data.ReportMailingJobEmailData;
-import org.apache.fineract.infrastructure.reportmailingjob.service.ReportMailingJobConfigurationReadPlatformService;
-import org.apache.fineract.infrastructure.reportmailingjob.service.ReportMailingJobEmailService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ReportMailingJobEmailServiceImpl implements ReportMailingJobEmailService {

@@ -56,6 +56,7 @@ public class LoanTransactionHelper {
     private static final String ADD_SUBSIDY_COMMAND = "addsubsidy";
     private static final String REVOKE_SUBSIDY_COMMAND = "revokesubsidy";
     private static final String UNDO_REPAYMENT = "undo";
+    private static final String FORECLOSURE_COMMAND = "foreclosure";
 
     public LoanTransactionHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         this.requestSpec = requestSpec;
@@ -271,6 +272,11 @@ public class LoanTransactionHelper {
         return (HashMap) performLoanTransaction(createLoanTransactionURL(REVOKE_SUBSIDY_COMMAND, loanID), getAddRevokeBodyAsJSON(date), "");
     }
 
+    public HashMap forecloseLoan(final String transactionDate, final Integer loanID) {
+        return (HashMap) performLoanTransaction(createLoanTransactionURL(FORECLOSURE_COMMAND, loanID),
+                getForeclosureBodyAsJSON(transactionDate, loanID), "");
+    }
+
     public HashMap withdrawLoanApplicationByClient(final String date, final Integer loanID) {
         return performLoanTransaction(createLoanOperationURL(WITHDRAW_LOAN_APPLICATION_COMMAND, loanID),
                 getWithdrawLoanApplicationBodyAsJSON(date));
@@ -397,6 +403,17 @@ public class LoanTransactionHelper {
         return new Gson().toJson(map);
     }
     
+    private String getForeclosureBodyAsJSON(final String transactionDate, final Integer loanId) {
+        final HashMap<String, Object> map = new HashMap<>();
+        map.put("locale", "en");
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("transactionDate", transactionDate);
+        map.put("note", "Foreclosure Made!!!");
+        String json = new Gson().toJson(map);
+        System.out.println(json);
+        return json;
+    }
+
     private String getWriteOffBodyAsJSON(final String transactionDate) {
         final HashMap<String, String> map = new HashMap<>();
         map.put("dateFormat", "dd MMMM yyyy");

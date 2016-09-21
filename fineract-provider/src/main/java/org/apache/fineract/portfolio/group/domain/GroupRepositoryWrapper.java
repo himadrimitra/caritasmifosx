@@ -53,6 +53,7 @@ public class GroupRepositoryWrapper {
             Hibernate.initialize(entity.getGroupMembers());
             Hibernate.initialize(entity.getStaffHistory());
             Hibernate.initialize(entity.getParent());
+            Hibernate.initialize(entity.getGroupRoles());
         }
         return entity;
     }

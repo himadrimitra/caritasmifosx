@@ -98,7 +98,7 @@ public interface LoanWritePlatformService {
 
     CommandProcessingResult makeLoanRefund(Long loanId, JsonCommand command);
 
-	CommandProcessingResult addAndDeleteLoanDisburseDetails(Long loanId, JsonCommand command);
+    CommandProcessingResult addAndDeleteLoanDisburseDetails(Long loanId, JsonCommand command);
 
     void applyOverdueChargesForLoan(Long loanId, Collection<OverdueLoanScheduleData> overdueLoanScheduleDatas);
 
@@ -109,5 +109,7 @@ public interface LoanWritePlatformService {
 	CommandProcessingResult addLoanSubsidy(Long loanId, JsonCommand command);
 	
 	CommandProcessingResult revokeLoanSubsidy(Long loanId, JsonCommand command);
+
+    CommandProcessingResult forecloseLoan(final Long loanId, JsonCommand command);
 
 }

@@ -511,4 +511,36 @@ public final class SearchParameters {
         return this.groupId;
     }
 
+    /** 
+     * creates an instance of the SearchParameters from a request for the report mailing job run history
+     * 
+     * @return SearchParameters object
+     **/
+    public static SearchParameters fromReportMailingJobRunHistory(final Integer offset, 
+            final Integer limit, final String orderBy, final String sortOrder) {
+        final Integer maxLimitAllowed = getCheckedLimit(limit);
+        final Long centerId = null;
+        final Long groupId = null;
+        
+        return new SearchParameters(null, null, null, null, null, null, null, offset, maxLimitAllowed, orderBy,
+                sortOrder, null, null, null, null, null, false,centerId,groupId);
+    }
+    
+    /**
+     * creates an instance of the {@link SearchParameters} from a request for the report mailing job
+     * 
+     * @param offset
+     * @param limit
+     * @param orderBy
+     * @param sortOrder
+     * @return {@link SearchParameters} object
+     */
+    public static SearchParameters fromReportMailingJob(final Integer offset, 
+            final Integer limit, final String orderBy, final String sortOrder) {
+        final Integer maxLimitAllowed = getCheckedLimit(limit);
+        final Long centerId = null;
+        final Long groupId = null;
+        return new SearchParameters(null, null, null, null, null, null, null, offset, maxLimitAllowed, orderBy,
+                sortOrder, null, null, null, null, null, false,centerId,groupId);
+    }
 }

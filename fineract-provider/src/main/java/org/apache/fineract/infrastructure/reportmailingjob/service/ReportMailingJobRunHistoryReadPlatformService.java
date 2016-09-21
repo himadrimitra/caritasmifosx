@@ -26,8 +26,14 @@ public interface ReportMailingJobRunHistoryReadPlatformService {
     /** 
      * Retrieve all report mailing run history with similar job id to the one passed
      * 
+<<<<<<< HEAD
      * @param ReportMailingJobId -- ReportMailingJob identifier
      * @return collection of ReportMailingJobRunHistoryData objects
+=======
+     * @param reportMailingJobId ReportMailingJob identifier
+     * @param searchParameters {@link SearchParameters} object
+     * @return collection of {@link ReportMailingJobRunHistoryData} objects
+>>>>>>> b30976b... commit for FINERACT-65 (Implement ability to schedule & e-mail reports)
      **/
     Page<ReportMailingJobRunHistoryData> retrieveRunHistoryByJobId(Long reportMailingJobId, SearchParameters searchParameters);
 }

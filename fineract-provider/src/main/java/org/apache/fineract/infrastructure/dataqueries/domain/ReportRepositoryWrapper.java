@@ -35,6 +35,13 @@ public class ReportRepositoryWrapper {
         this.reportRepository = reportRepository;
     }
     
+    /**
+     * Retrieves an entity by its id
+     * 
+     * @param id must not be null
+     * @throws ReportNotFoundException if entity not found
+     * @return {@link Report} object
+     */
     public Report findOneThrowExceptionIfNotFound(final Long id) {
         final Report report = this.reportRepository.findOne(id);
         

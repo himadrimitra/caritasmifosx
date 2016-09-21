@@ -20,6 +20,8 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.math.BigDecimal;
 import java.util.Locale;
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
@@ -36,6 +38,9 @@ public interface LoanAccountDomainService {
 
     LoanTransaction makeRefund(Long accountId, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
             BigDecimal transactionAmount, PaymentDetail paymentDetail, String noteText, String txnExternalId);
+
+    LoanTransaction makeDisburseTransaction(Long loanId, LocalDate transactionDate, BigDecimal transactionAmount,
+            PaymentDetail paymentDetail, String noteText, String txnExternalId, boolean isLoanToLoanTransfer);
 
     void reverseTransfer(LoanTransaction loanTransaction);
 
@@ -61,10 +66,24 @@ public interface LoanAccountDomainService {
      */
     void recalculateAccruals(Loan loan);
 
+    LoanTransaction makeRepayment(Loan loan, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
+            BigDecimal transactionAmount, PaymentDetail paymentDetail, String noteText, String txnExternalId, boolean isRecoveryRepayment,
+            boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto, Boolean isHolidayValidationDone, boolean isLoanToLoanTransfer);
+
     void saveLoanWithDataIntegrityViolationChecks(Loan loan);
 
     AdjustedLoanTransactionDetails reverseLoanTransactions(Loan loan, Long transactionId, LocalDate transactionDate,
             BigDecimal transactionAmount, String txnExternalId, Locale locale, DateTimeFormatter dateFormat, String noteText,
             PaymentDetail paymentDetail);
 
+    Map<String, Object> foreCloseLoan(final Loan loan, final LocalDate foreClourseDate, String noteText);
+    
+    /**
+     * Disables all standing instructions linked to a closed loan
+     * 
+     * @param loan {@link Loan} object
+     */
+    void disableStandingInstructionsLinkedToClosedLoan(Loan loan);
+
+    void recalculateAccruals(Loan loan, boolean isInterestCalcualtionHappened);
 }

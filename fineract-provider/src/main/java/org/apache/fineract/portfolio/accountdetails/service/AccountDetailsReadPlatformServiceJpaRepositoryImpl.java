@@ -133,6 +133,11 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         return retrieveLoanAccountDetails(loanWhereClause, new Object[] { groupId, loanOfficerId });
     }
 
+    @Override public Collection<LoanAccountSummaryData> retrieveClientActiveLoanAccountSummary(final Long clientId) {
+        final String loanWhereClause = " where l.client_id = ? and l.loan_status_id = 300 ";
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId });
+    }
+
     private List<LoanAccountSummaryData> retrieveLoanAccountDetails(final String loanwhereClause, final Object[] inputs) {
         final LoanAccountSummaryDataMapper rm = new LoanAccountSummaryDataMapper();
         final String sql = "select " + rm.loanAccountSummarySchema() + loanwhereClause;
@@ -185,7 +190,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
     		.append("left join m_appuser sbu on sbu.id = sa.submitted_userid ")
     		.append("left join m_appuser rbu on rbu.id = sa.rejected_userid ")
     		.append("left join m_appuser abu on abu.id = sa.approved_userid ")
-    		.append("left join m_appuser avbu on rbu.id = sa.activated_userid ")
+    		.append("left join m_appuser avbu on avbu.id = sa.activated_userid ")
     		.append("left join m_appuser cbu on cbu.id = sa.closed_userid ") ;
     		schema = buff.toString() ;
 		}
@@ -305,7 +310,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
             accountsSummary.append("left join m_appuser rbu on rbu.id = sa.rejectedon_userid ");
             accountsSummary.append("left join m_appuser wbu on wbu.id = sa.withdrawnon_userid ");
             accountsSummary.append("left join m_appuser abu on abu.id = sa.approvedon_userid ");
-            accountsSummary.append("left join m_appuser avbu on rbu.id = sa.activatedon_userid ");
+            accountsSummary.append("left join m_appuser avbu on avbu.id = sa.activatedon_userid ");
             accountsSummary.append("left join m_appuser cbu on cbu.id = sa.closedon_userid ");
 
             this.schemaSql = accountsSummary.toString();
