@@ -75,9 +75,9 @@ and mr.duedate < SUBDATE(curdate(),INTERVAL  ifnull(ml.grace_on_arrears_ageing,0
 group by ml.id;
 
 insert into arrears_maxid
-select h.loan_id,max(h.version) from m_loan_repayment_schedule_history h
-inner join arrears_loans al on al.loan_id = h.loan_id
-group by h.loan_id;
+select h.id,h.repayment_history_version from m_loan h
+inner join arrears_loans al on al.loan_id = h.id
+group by h.id;
 
 insert into arrears_amounts
 select a.al,ifnull(b.bp,0),ifnull(b.bi,0),ifnull(b.bf,0),ifnull(b.bpe,0),
@@ -127,9 +127,9 @@ and mr.duedate < SUBDATE(curdate(),INTERVAL  ifnull(ml.grace_on_arrears_ageing,0
 group by ml.id
 limit l,1000;
 insert into arrears_maxid
-select h.loan_id,max(h.version) from m_loan_repayment_schedule_history h
-inner join arrears_loans al on al.loan_id = h.loan_id
-group by h.loan_id;
+select h.id,h.repayment_history_version from m_loan h
+inner join arrears_loans al on al.loan_id = h.id
+group by h.id;
 
 
 insert into arrears_paid
