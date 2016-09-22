@@ -36,9 +36,14 @@ public class SearchData {
     private final String parentType;
     private final BigDecimal systemValue;
     private final BigDecimal userValue;
+    private final String groupName;
+    private final String centerName;
+    private final String officeName;
 
     public SearchData(final Long entityId, final String entityAccountNo, final String entityExternalId, final String entityName,
-            final String entityType, final Long parentId, final String parentName, final String parentType, final String entityMobileNo, final EnumOptionData entityStatus, final BigDecimal systemValue, final BigDecimal userValue) {
+            final String entityType, final Long parentId, final String parentName, final String parentType, final String entityMobileNo,
+            final EnumOptionData entityStatus, final BigDecimal systemValue, final BigDecimal userValue, final String groupName,
+            final String centerName, final String officeName) {
 
         this.entityId = entityId;
         this.entityAccountNo = entityAccountNo;
@@ -52,6 +57,9 @@ public class SearchData {
         this.entityStatus = entityStatus;
         this.systemValue = systemValue;
         this.userValue = userValue;
+        this.groupName = groupName;
+        this.centerName = centerName;
+        this.officeName = officeName;
     }
 
     public Long getEntityId() {
@@ -102,5 +110,5 @@ public class SearchData {
 		return this.systemValue;
 	}
 	
-
+	
 }

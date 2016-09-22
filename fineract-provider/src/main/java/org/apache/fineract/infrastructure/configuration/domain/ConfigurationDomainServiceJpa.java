@@ -357,4 +357,9 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
 	public boolean isWithDrawForSavingsIncludedInCollectionSheet() {
 		return getGlobalConfigurationPropertyData("savings_withdraw_included_in_collection_sheet").isEnabled();
 	}
+
+    @Override
+    public boolean isSearchIncludeGroupInfo() {
+        return getGlobalConfigurationPropertyData("show-hierarchy-details-on-search").isEnabled();
+    }
 }
