@@ -74,7 +74,6 @@ import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformServic
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
-import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.service.CollateralReadPlatformService;
@@ -358,7 +357,7 @@ public class LoansApiResource {
     }
     
     @GET
-    @Path("taskLookup")
+    @Path("tasklookup")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
