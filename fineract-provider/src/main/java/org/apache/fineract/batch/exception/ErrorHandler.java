@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.batch.exception;
 
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleExceptionMapper;
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformResourceNotFoundException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
@@ -115,6 +117,18 @@ public class ErrorHandler extends RuntimeException {
             return new ErrorInfo(400, 4001, "{\"Exception\": " + exception.getMessage()+"}");
 
         } else if (exception instanceof PlatformInternalServerException) {
+
+            final PlatformInternalServerExceptionMapper mapper = new PlatformInternalServerExceptionMapper();
+            final String errorBody = jsonHelper.toJson(mapper.toResponse((PlatformInternalServerException) exception).getEntity());
+
+            return new ErrorInfo(500, 5001, errorBody);
+        }
+        else if (exception instanceof AbstractPlatformDomainRuleException) {
+            final AbstractPlatformDomainRuleExceptionMapper mapper = new AbstractPlatformDomainRuleExceptionMapper();
+            final String errorBody = jsonHelper.toJson(mapper.toResponse((AbstractPlatformDomainRuleException) exception).getEntity());
+
+            return new ErrorInfo(403, 3003, errorBody);
+        }else if (exception instanceof PlatformInternalServerException) {
 
             final PlatformInternalServerExceptionMapper mapper = new PlatformInternalServerExceptionMapper();
             final String errorBody = jsonHelper.toJson(mapper.toResponse((PlatformInternalServerException) exception).getEntity());
