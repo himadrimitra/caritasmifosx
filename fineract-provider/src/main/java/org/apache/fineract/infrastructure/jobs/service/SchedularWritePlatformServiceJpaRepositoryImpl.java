@@ -152,11 +152,14 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 			String[] dependentJobList = dependentJobs.split(":");
 
 			for (String job : dependentJobList) {
+                Boolean isActive = this.schedulerJobRunnerReadService.isActive(job);
+                if (isActive) {
 				Date lastRunDate = this.schedulerJobRunnerReadService.getLastRunDate(job);
-				if (lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate())) {
+				if ((lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate()))) {
 					isStopExecution = true;
 					break;
 				}
+                            }
 			}
 		}
 		

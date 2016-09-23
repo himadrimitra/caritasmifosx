@@ -200,4 +200,9 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
 				Date.class);
 	}
 
+    @Override
+    public boolean isActive(String jobName) {
+        return this.jdbcTemplate.queryForObject("select j.is_active from job j where j.name='" + jobName + "'", Boolean.class);
+    }
+
 }
