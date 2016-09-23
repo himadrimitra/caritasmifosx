@@ -84,13 +84,15 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
         String sql = "select " + rm.schema() + " and glClosure.is_deleted = 0";
         final Object[] objectArray = new Object[1];
         int arrayPos = 0;
+        String sqlForSingleClosure = "";
         if (officeId != null && officeId != 0) {
             sql += " and glClosure.office_id = ?";
             objectArray[arrayPos] = officeId;
             arrayPos = arrayPos + 1;
+            sqlForSingleClosure = "limit 1";
         }
 
-        sql = sql + " order by glClosure.closing_date desc";
+        sql = sql + " order by glClosure.closing_date desc "+sqlForSingleClosure;
 
         final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
         return this.jdbcTemplate.query(sql, rm, finalObjectArray);
