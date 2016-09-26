@@ -277,16 +277,17 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
     private AdjustedLoanTransactionDetails undoTransactions(AccountTransferDTO accountTransferDTO,
             AccountTransferTransaction accountTransfer) {
         AdjustedLoanTransactionDetails changedLoanTransactionDetails = null;
+        boolean isAccountTransfer = true;
         if (accountTransfer.getFromLoanTransaction() != null) {
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
                     accountTransfer.getToLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
                     accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
-                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail());
+                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail(), isAccountTransfer);
         } else if (accountTransfer.getToLoanTransaction() != null) {
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(accountTransferDTO.getLoan(),
                     accountTransfer.getToLoanTransaction().getId(), accountTransferDTO.getTransactionDate(),
                     accountTransferDTO.getTransactionAmount(), accountTransferDTO.getTxnExternalId(), accountTransferDTO.getLocale(),
-                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail());
+                    accountTransferDTO.getFmt(), accountTransferDTO.getNoteText(), accountTransferDTO.getPaymentDetail(), isAccountTransfer);
         }
         if (accountTransfer.getFromTransaction() != null) {
             this.savingsAccountWritePlatformService.undoTransaction(accountTransfer.accountTransferDetails().fromSavingsAccount().getId(),
