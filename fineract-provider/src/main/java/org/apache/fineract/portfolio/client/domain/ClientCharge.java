@@ -96,6 +96,10 @@ public class ClientCharge extends AbstractPersistable<Long> {
 
     @Transient
     private OrganisationCurrency currency;
+    
+    @ManyToOne
+	@JoinColumn(name = "client_recurring_charge_id", referencedColumnName = "id")
+	private ClientRecurringCharge clientRecurringCharge;
 
     protected ClientCharge() {
         //
@@ -311,5 +315,9 @@ public class ClientCharge extends AbstractPersistable<Long> {
     public Money getAmountOutstanding() {
         return Money.of(getCurrency(), this.amountOutstanding);
     }
+    
+    public ClientRecurringCharge getClientRecurringCharge() {
+		return this.clientRecurringCharge;
+	}
 
 }

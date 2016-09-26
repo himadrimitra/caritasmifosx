@@ -626,4 +626,8 @@ public class Charge extends AbstractPersistable<Long> {
     public void setTaxGroup(TaxGroup taxGroup) {
         this.taxGroup = taxGroup;
     }
+    
+    public boolean isWeeklyFee() {
+		return ChargeTimeType.fromInt(this.chargeTimeType).isWeeklyFee();
+	}
 }

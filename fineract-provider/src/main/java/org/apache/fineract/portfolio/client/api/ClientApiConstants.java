@@ -32,6 +32,7 @@ public class ClientApiConstants {
 
     public static final String CLIENT_RESOURCE_NAME = "client";
     public static final String CLIENT_CHARGES_RESOURCE_NAME = "CLIENTCHARGE";
+    public static final String CLIENT_RECURRING_CHARGES_RESOURCE_NAME = "CLIENTRECURRINGCHARGE";
 
     // Client Charge Action Names
     public static final String CLIENT_CHARGE_ACTION_CREATE = "CREATE";
@@ -65,6 +66,7 @@ public class ClientApiConstants {
     public static final String GENDER = "Gender";
     public static final String CLIENT_TYPE = "ClientType";
     public static final String CLIENT_CLASSIFICATION = "ClientClassification";
+    public static final String chargesynchmeetingParamName = "synchMeeting";
     
     public static final String CLIENT_NON_PERSON_CONSTITUTION = "Constitution";
     public static final String CLIENT_NON_PERSON_MAIN_BUSINESS_LINE = "Main Business Line";
@@ -164,6 +166,24 @@ public class ClientApiConstants {
     public static final String amountPaidParamName = "amountPaid";
     public static final String chargeOptionsParamName = "chargeOptions";
     public static final String transactionsParamName = "transactions";
+    
+  //client recurring charges responce parameters
+  	public static final String recurringChargeIdParamName="recurringChargeId";
+  	public static final String chargeDueDateParamName = "chargeDueDate";
+  	public static final String chargeAppliesToParamName = "chargeAppliesTo";
+  	public static final String chargePaymentModeParamName = "chargePaymentMode";
+  	public static final String feeOnDayParamName = "feeOnDay";
+  	public static final String feeIntervalParamName = "feeInterval"; 
+  	public static final String feeOnMonthParamName = "feeOnMonth";
+  	public static final String deletedParamName = "deleted";
+  	public static final String syncWithMeetingParamName = "synchMeeting";
+  	public static final String mincapParamName = "mincap";
+  	public static final String maxcapParamName = "maxcap";
+  	public static final String feeFrequencyParamName = "feeFrequency";
+  	public static final String inactivatedOnDateParamName = "inactivatedOnDate";
+  	
+  //client Recurring Charge Action Names
+  	public static final String CLIENT_RECURRING_CHARGE_ACTION_INACTIVATE = "INACTIVATE";
 
     // client transactions response parameters
     public static final String transactionAmountParamName = "transactionAmount";
@@ -202,6 +222,17 @@ public class ClientApiConstants {
     public static final Set<String> CLIENT_NON_PERSON_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 
     		constitutionIdParamName, mainBusinessLineIdParamName));
+    
+    public static final Set<String> CLIENT_RECURRING_CHARGES_RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(recurringChargeIdParamName,clientIdParamName,chargeIdParamName,
+                            chargeNameParamName,chargeDueDateParamName,
+                            currencyParamName,chargeAppliesToParamName,
+                            chargeTimeTypeParamName,chargeCalculationTypeParamName,
+                            chargePaymentModeParamName,amountParamName,
+                            feeOnDayParamName,feeIntervalParamName,feeOnMonthParamName,
+                            penaltyParamName,activeParamName,deletedParamName,
+                            syncWithMeetingParamName,mincapParamName,maxcapParamName,
+                            feeFrequencyParamName,inactivatedOnDateParamName));
 
     /**
      * These parameters will match the class level parameters of
@@ -241,8 +272,9 @@ public class ClientApiConstants {
             chargeCalculationTypeParamName, currencyParamName, amountWaivedParamName, amountWrittenOffParamName, amountOutstandingParamName,
             amountOrPercentageParamName, amountParamName, amountPaidParamName, chargeOptionsParamName, transactionsParamName));
 
-    public static final Set<String> CLIENT_CHARGES_ADD_REQUEST_DATA_PARAMETERS = new HashSet<>(
-            Arrays.asList(chargeIdParamName, amountParamName, dueAsOfDateParamName, dateFormatParamName, localeParamName));
+	public static final Set<String> CLIENT_CHARGES_ADD_REQUEST_DATA_PARAMETERS = new HashSet<>(
+			Arrays.asList(chargeIdParamName, amountParamName, dueAsOfDateParamName, dateFormatParamName,
+					localeParamName, chargesynchmeetingParamName));
 
     public static final Set<String> CLIENT_CHARGES_PAY_CHARGE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(amountParamName,
             transactionDateParamName, dateFormatParamName, localeParamName, paymentTypeIdParamName, transactionAccountNumberParamName,

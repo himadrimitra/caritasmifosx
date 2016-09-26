@@ -139,6 +139,38 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
                 clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, feeFrequencyOptions, accountData,
                 incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions);
     }
+    
+    public static ChargeData instance(final Long id, final String name, final BigDecimal amount, final CurrencyData currency,
+            final EnumOptionData chargeTimeType, final EnumOptionData chargeAppliesTo, final EnumOptionData chargeCalculationType,
+            final EnumOptionData chargePaymentMode, final MonthDay feeOnMonthDay, final Integer feeInterval, final boolean penalty,
+            final boolean active, final BigDecimal minCap, final BigDecimal maxCap, final EnumOptionData feeFrequency,
+            final GLAccountData accountData) {
+
+        final Collection<CurrencyData> currencyOptions = null;
+        final List<EnumOptionData> chargeCalculationTypeOptions = null;
+        final List<EnumOptionData> chargeAppliesToOptions = null;
+        final List<EnumOptionData> chargeTimeTypeOptions = null;
+        final List<EnumOptionData> chargePaymentModeOptions = null;
+        final List<EnumOptionData> loansChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> loansChargeTimeTypeOptions = null;
+        final List<EnumOptionData> savingsChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> savingsChargeTimeTypeOptions = null;
+        final List<EnumOptionData> feeFrequencyOptions = null;
+        final List<EnumOptionData> clientChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> clientChargeTimeTypeOptions = null;
+        final Map<String, List<GLAccountData>> incomeOrLiabilityAccountOptions = null;
+        final Collection<TaxGroupData> taxGroupOptions = null;
+        final TaxGroupData taxGroupData = null;
+        final List<EnumOptionData> shareChargeCalculationTypeOptions = null;
+        final List<EnumOptionData> shareChargeTimeTypeOptions = null;
+
+        return new ChargeData(id, name, amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType, chargePaymentMode,
+                penalty, active, taxGroupData, currencyOptions, chargeCalculationTypeOptions, chargeAppliesToOptions, chargeTimeTypeOptions,
+                chargePaymentModeOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
+                savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
+                clientChargeTimeTypeOptions, feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, feeFrequencyOptions, accountData,
+                incomeOrLiabilityAccountOptions, taxGroupOptions, shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions);
+    }
 
     public static ChargeData lookup(final Long id, final String name, final boolean isPenalty) {
         final BigDecimal amount = null;
