@@ -59,6 +59,8 @@ import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.hibernate.annotations.LazyToOne;
+import org.hibernate.annotations.LazyToOneOption;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -75,11 +77,12 @@ public final class Client extends AbstractPersistable<Long> {
     @JoinColumn(name = "office_id", nullable = false)
     private Office office;
 
-    @ManyToOne
-    @JoinColumn(name = "transfer_to_office_id", nullable = true)
-    private Office transferToOffice;
+    
+    @Column(name = "transfer_to_office_id", nullable = true)
+    private Long transferToOfficeId;
 
     @OneToOne(optional = true)
+    @LazyToOne(value = LazyToOneOption.PROXY)
     @JoinColumn(name = "image_id", nullable = true)
     private Image image;
 
@@ -134,7 +137,7 @@ public final class Client extends AbstractPersistable<Long> {
     @JoinColumn(name = "staff_id")
     private Staff staff;
 
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(LazyCollectionOption.TRUE)
     @ManyToMany
     @JoinTable(name = "m_group_client", joinColumns = @JoinColumn(name = "client_id"), inverseJoinColumns = @JoinColumn(name = "group_id"))
     private Set<Group> groups;
@@ -779,8 +782,8 @@ public final class Client extends AbstractPersistable<Long> {
         return this.office;
     }
 
-    public Office getTransferToOffice() {
-        return this.transferToOffice;
+    public Long getTransferToOfficeId() {
+        return this.transferToOfficeId;
     }
 
     public void updateOffice(final Office office) {
@@ -788,7 +791,11 @@ public final class Client extends AbstractPersistable<Long> {
     }
 
     public void updateTransferToOffice(final Office office) {
-        this.transferToOffice = office;
+        if (office == null) {
+            this.transferToOfficeId = null;
+        } else {
+            this.transferToOfficeId = office.getId();
+        }
     }
 
     public void updateOfficeJoiningDate(final Date date) {

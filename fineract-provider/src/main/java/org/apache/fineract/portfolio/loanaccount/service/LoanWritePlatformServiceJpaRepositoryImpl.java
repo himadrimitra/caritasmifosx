@@ -337,7 +337,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         this.loanEventApiJsonValidator.validateDisbursement(command.json(), isAccountTransfer);
 
-        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
         
         // validate ActualDisbursement Date Against Expected Disbursement Date
@@ -663,7 +663,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         for (int i = 0; i < disbursalCommand.length; i++) {
             final SingleDisbursalCommand singleLoanDisbursalCommand = disbursalCommand[i];
 
-            final Loan loan = this.loanAssembler.assembleFrom(singleLoanDisbursalCommand.getLoanId());
+            final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(singleLoanDisbursalCommand.getLoanId());
             final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
             
             // validate ActualDisbursement Date Against Expected Disbursement Date
@@ -778,7 +778,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final AppUser currentUser = getAppUserIfPresent();
 
-        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
@@ -1934,7 +1934,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final Staff loanOfficer) {
 
 
-        final Loan loan = this.loanAssembler.assembleFrom(accountId);
+        final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(accountId);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ACCEPT_TRANSFER,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
         final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
@@ -2009,7 +2009,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Staff toLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(toLoanOfficerId);
         final LocalDate dateOfLoanOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
 
-        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_REASSIGN_OFFICER,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
@@ -2048,7 +2048,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         for (final String loanIdString : loanIds) {
             final Long loanId = Long.valueOf(loanIdString);
-            final Loan loan = this.loanAssembler.assembleFrom(loanId);
+            final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_REASSIGN_OFFICER,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
             checkClientOrGroupActive(loan);
@@ -2077,7 +2077,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final LocalDate dateOfLoanOfficerunAssigned = command.localDateValueOfParameterNamed("unassignedDate");
 
-        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         checkClientOrGroupActive(loan);
 
         if (loan.getLoanOfficer() == null) { throw new LoanOfficerUnassignmentException(loanId); }

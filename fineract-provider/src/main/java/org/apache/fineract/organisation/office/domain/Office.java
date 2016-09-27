@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -39,12 +40,16 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.organisation.office.exception.CannotUpdateOfficeWithParentOfficeSameAsSelf;
 import org.apache.fineract.organisation.office.exception.RootOfficeParentCannotBeUpdated;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "Office")
 @Table(name = "m_office", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "name_org"),
         @UniqueConstraint(columnNames = { "external_id" }, name = "externalid_org") })
 public class Office extends AbstractPersistable<Long> {

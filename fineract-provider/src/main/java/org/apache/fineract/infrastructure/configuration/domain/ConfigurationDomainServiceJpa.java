@@ -337,7 +337,8 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         configurations.remove(key);
     }
     
-    private GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(final String propertyName) {
+    @Override
+    public GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(final String propertyName) {
         String identifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
         String key = identifier + "_" + propertyName;
         if (!configurations.containsKey(key)) {

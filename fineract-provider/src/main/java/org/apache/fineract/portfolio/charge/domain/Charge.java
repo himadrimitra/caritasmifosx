@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -51,10 +52,14 @@ import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.joda.time.MonthDay;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="Charge")
 @Table(name = "m_charge", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "name") })
 public class Charge extends AbstractPersistable<Long> {
 

@@ -18,16 +18,12 @@
  */
 package org.apache.fineract.infrastructure.entityaccess.service;
 
-import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
 
-import org.apache.fineract.infrastructure.codes.data.CodeValueData;
-import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
-import org.apache.fineract.infrastructure.configuration.domain.GlobalConfigurationProperty;
-import org.apache.fineract.infrastructure.configuration.domain.GlobalConfigurationRepositoryWrapper;
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.entityaccess.FineractEntityAccessConstants;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityRelation;
@@ -37,8 +33,6 @@ import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityToEn
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.domain.AppUser;
-
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FineractEntityAccessUtil {
     
     private final PlatformSecurityContext context;
-    private final GlobalConfigurationRepositoryWrapper globalConfigurationRepository;
+    private final ConfigurationDomainService configurationDomainService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final FineractEntityAccessWriteService fineractEntityAccessWriteService;
@@ -58,7 +52,7 @@ public class FineractEntityAccessUtil {
     @Autowired
     public FineractEntityAccessUtil (
     		final PlatformSecurityContext context,
-    		final GlobalConfigurationRepositoryWrapper globalConfigurationRepository,
+    		final ConfigurationDomainService configurationDomainService,
             final FineractEntityAccessWriteService fineractEntityAccessWriteService,
             final CodeValueReadPlatformService codeValueReadPlatformService,
             final CodeValueRepositoryWrapper codeValueRepository,
@@ -66,7 +60,7 @@ public class FineractEntityAccessUtil {
             final FineractEntityRelationRepositoryWrapper fineractEntityRelationRepositoryWrapper,
             final FineractEntityToEntityMappingRepository fineractEntityToEntityMappingRepository) {
     	this.context = context;
-        this.globalConfigurationRepository = globalConfigurationRepository;
+        this.configurationDomainService = configurationDomainService;
         this.fineractEntityAccessWriteService = fineractEntityAccessWriteService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.codeValueRepository = codeValueRepository;
@@ -86,13 +80,13 @@ public class FineractEntityAccessUtil {
 		// check if the office specific products are enabled. If yes, then save this product or charge against a specific office
         // i.e. this product or charge is specific for this office.
 		
-        final GlobalConfigurationProperty property = this.globalConfigurationRepository
-        		.findOneByNameWithNotFoundDetection(
+        final GlobalConfigurationPropertyData property = this.configurationDomainService
+        		.getGlobalConfigurationPropertyData(
         				FineractEntityAccessConstants.GLOBAL_CONFIG_FOR_OFFICE_SPECIFIC_PRODUCTS);
         if (property.isEnabled() ) {
         	// If this property is enabled, then Fineract need to restrict access to this loan product to only the office of the current user            	
-            final GlobalConfigurationProperty restrictToUserOfficeProperty = this.globalConfigurationRepository
-            		.findOneByNameWithNotFoundDetection(
+            final GlobalConfigurationPropertyData restrictToUserOfficeProperty = this.configurationDomainService
+            		.getGlobalConfigurationPropertyData(
             				FineractEntityAccessConstants.GLOBAL_CONFIG_FOR_RESTRICT_PRODUCTS_TO_USER_OFFICE);
             
             if (restrictToUserOfficeProperty.isEnabled() ) {
@@ -116,8 +110,8 @@ public class FineractEntityAccessUtil {
 			FineractEntityType fineractEntityType) {
 		String inClause = "";
 		
-		final GlobalConfigurationProperty property = this.globalConfigurationRepository
-        		.findOneByNameWithNotFoundDetection(
+		final GlobalConfigurationPropertyData property = this.configurationDomainService
+        		.getGlobalConfigurationPropertyData(
         				FineractEntityAccessConstants.GLOBAL_CONFIG_FOR_OFFICE_SPECIFIC_PRODUCTS);
 		
         if (property.isEnabled() ) {

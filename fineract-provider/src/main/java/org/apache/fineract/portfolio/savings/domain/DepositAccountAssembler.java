@@ -177,7 +177,7 @@ public class DepositAccountAssembler {
         AccountType accountType = AccountType.INVALID;
         final Long clientId = this.fromApiJsonHelper.extractLongNamed(clientIdParamName, element);
         if (clientId != null) {
-            client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+            client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
         }

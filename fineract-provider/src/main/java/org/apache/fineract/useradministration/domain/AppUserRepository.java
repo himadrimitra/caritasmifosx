@@ -18,14 +18,18 @@
  */
 package org.apache.fineract.useradministration.domain;
 
+import javax.persistence.QueryHint;
+
 import org.apache.fineract.infrastructure.security.domain.PlatformUserRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long>, JpaSpecificationExecutor<AppUser>, PlatformUserRepository {
 
     @Query("Select appUser from AppUser appUser where appUser.username = :username")
+    @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     AppUser findAppUserByName(@Param("username") String username);
 }

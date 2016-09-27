@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -53,12 +54,16 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.organisation.holiday.api.HolidayApiConstants;
 import org.apache.fineract.organisation.office.domain.Office;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.google.gson.JsonArray;
 
 @Entity
+@Cacheable
+@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="Holiday")
 @Table(name = "m_holiday", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "holiday_name") })
 public class Holiday extends AbstractPersistable<Long> {
 

@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -35,9 +36,13 @@ import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.useradministration.data.RoleData;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
+@Cacheable
+@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE , region = "Role")
 @Table(name = "m_role", uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }, name = "unq_name") })
 public class Role extends AbstractPersistable<Long> {
 
@@ -51,6 +56,7 @@ public class Role extends AbstractPersistable<Long> {
     private Boolean disabled;
 
     @ManyToMany(fetch = FetchType.EAGER)
+    @Cache(usage=CacheConcurrencyStrategy.READ_ONLY, region = "Permission")
     @JoinTable(name = "m_role_permission", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private final Set<Permission> permissions = new HashSet<>();
 

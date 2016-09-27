@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import com.finflux.infrastructure.core.service.CustomDataSourceBasedMultiTenantConnectionProviderImpl;
 import com.googlecode.flyway.core.Flyway;
 import com.googlecode.flyway.core.api.FlywayException;
 import com.googlecode.flyway.core.util.jdbc.DriverDataSource;
@@ -48,6 +49,9 @@ public class TenantDatabaseUpgradeService {
     protected final TenantDataSourcePortFixService tenantDataSourcePortFixService;
     
     @Autowired private JDBCDriverConfig driverConfig ;
+    
+    @Autowired
+    private CustomDataSourceBasedMultiTenantConnectionProviderImpl customDataSourceBasedMultiTenantConnectionProviderImpl;
     
     @Autowired
     public TenantDatabaseUpgradeService(final TenantDetailsService detailsService,

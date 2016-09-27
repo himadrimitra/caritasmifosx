@@ -70,7 +70,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.MultiDisbursementData
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleAssembler;
-import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
@@ -140,6 +139,14 @@ public class LoanAssembler {
 
     public Loan assembleFrom(final Long accountId) {
         final Loan loanAccount = this.loanRepository.findOneWithNotFoundDetection(accountId);
+        loanAccount.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,
+                this.loanRepaymentScheduleTransactionProcessorFactory);
+
+        return loanAccount;
+    }
+    
+    public Loan assembleFromWithInitializeLazy(final Long accountId) {
+        final Loan loanAccount = this.loanRepository.findOneWithNotFoundDetectionAndLazyInitialize(accountId);
         loanAccount.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,
                 this.loanRepaymentScheduleTransactionProcessorFactory);
 
