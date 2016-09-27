@@ -96,7 +96,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         updateSqlBuilder.append("update m_loan ");
         updateSqlBuilder.append("join (");
         updateSqlBuilder.append("SELECT ml.id AS loanId,");
-        updateSqlBuilder.append("SUM(mr.principal_amount) as principal_disbursed_derived, ");
+        updateSqlBuilder.append("ml.principal_amount as principal_disbursed_derived, ");
         updateSqlBuilder.append("SUM(IFNULL(mr.principal_completed_derived,0)) as principal_repaid_derived, ");
         updateSqlBuilder.append("SUM(IFNULL(mr.principal_writtenoff_derived,0)) as principal_writtenoff_derived,");
         updateSqlBuilder.append("SUM(IFNULL(mr.interest_amount,0)) as interest_charged_derived,");

@@ -39,5 +39,7 @@ public interface SchedulerJobRunnerReadService {
     public String getDependentJobs(String jobName);
     
     public Date getLastRunDate(String jobName);
+    
+    public boolean isActive(String jobName);
 
 }
