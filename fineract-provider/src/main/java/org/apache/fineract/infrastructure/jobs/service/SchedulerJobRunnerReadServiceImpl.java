@@ -125,7 +125,8 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
 
         private final StringBuilder sqlBuilder = new StringBuilder("select")
                 .append(" job.id,job.display_name as displayName,job.next_run_time as nextRunTime,job.initializing_errorlog as initializingError,job.cron_expression as cronExpression,job.is_active as active,job.currently_running as currentlyRunning,")
-                .append(" runHistory.version,runHistory.start_time as lastRunStartTime,runHistory.end_time as lastRunEndTime,runHistory.`status`,runHistory.error_message as jobRunErrorMessage,runHistory.trigger_type as triggerType,runHistory.error_log as jobRunErrorLog ")
+                .append(" runHistory.version,runHistory.start_time as lastRunStartTime,runHistory.end_time as lastRunEndTime,runHistory.`status`,runHistory.error_message as jobRunErrorMessage,runHistory.trigger_type as triggerType,runHistory.error_log as jobRunErrorLog,")
+                .append(" job.depands_on_job_name as dependentJobNames ")
                 .append(" from job job  left join job_run_history runHistory ON job.id=runHistory.job_id and job.previous_run_start_time=runHistory.start_time ");
 
         public String schema() {
@@ -149,6 +150,7 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
             final String jobRunErrorMessage = rs.getString("jobRunErrorMessage");
             final String triggerType = rs.getString("triggerType");
             final String jobRunErrorLog = rs.getString("jobRunErrorLog");
+            final String dependentJobNames = rs.getString("dependentJobNames");
 
             JobDetailHistoryData lastRunHistory = null;
             if (version > 0) {
@@ -156,7 +158,7 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
                         jobRunErrorLog);
             }
             final JobDetailData jobDetail = new JobDetailData(id, displayName, nextRunTime, initializingError, cronExpression, active,
-                    currentlyRunning, lastRunHistory);
+                    currentlyRunning, lastRunHistory, dependentJobNames);
             return jobDetail;
         }
 
