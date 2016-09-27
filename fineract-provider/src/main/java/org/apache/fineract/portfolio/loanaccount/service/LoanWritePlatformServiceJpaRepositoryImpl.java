@@ -1024,8 +1024,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             changedLoanTransactionDetails = this.accountTransfersWritePlatformService.reverseTransaction(accountTransferDTO, transactionId,
                     PortfolioAccountType.LOAN);
         } else {
+            boolean isAccountTransfer = false;
             changedLoanTransactionDetails = this.loanAccountDomainService.reverseLoanTransactions(loan, transactionId, transactionDate,
-                    transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail);
+                    transactionAmount, txnExternalId, locale, fmt, noteText, paymentDetail, isAccountTransfer);
             this.accountTransfersWritePlatformService.reverseTransfersWithFromAccountType(loanId, PortfolioAccountType.LOAN);
         }
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADJUST_TRANSACTION,

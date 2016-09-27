@@ -839,7 +839,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public AdjustedLoanTransactionDetails reverseLoanTransactions(final Loan loan, final Long transactionId,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final String txnExternalId, final Locale locale,
-            final DateTimeFormatter dateFormat, final String noteText, final PaymentDetail paymentDetail) {
+            final DateTimeFormatter dateFormat, final String noteText, final PaymentDetail paymentDetail, final boolean isAccountTransfer) {
 
         AppUser currentUser = getAppUserIfPresent();
         final Map<String, Object> changes = new LinkedHashMap<>();
@@ -932,7 +932,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             this.noteRepository.save(note);
         }
 
-        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, true);
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
 
         recalculateAccruals(loan);
 

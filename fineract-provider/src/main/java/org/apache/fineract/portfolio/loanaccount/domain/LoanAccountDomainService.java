@@ -74,7 +74,7 @@ public interface LoanAccountDomainService {
 
     AdjustedLoanTransactionDetails reverseLoanTransactions(Loan loan, Long transactionId, LocalDate transactionDate,
             BigDecimal transactionAmount, String txnExternalId, Locale locale, DateTimeFormatter dateFormat, String noteText,
-            PaymentDetail paymentDetail);
+            PaymentDetail paymentDetail, boolean isAccountTransfer);
 
     Map<String, Object> foreCloseLoan(final Loan loan, final LocalDate foreClourseDate, String noteText);
     
