@@ -44,6 +44,7 @@ public class SchedulerJobApiConstants {
     public static final String jobRunErrorLogParamName = "jobRunErrorLog";
     public static final String cronExpressionParamName = "cronExpression";
     public static final String schedulerStatusParamName = "active";
+    public static final String dependentJobNamesParamName = "dependentJobNames";
 
     public static final Set<String> JOB_DETAIL_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(jobIdentifierParamName,
             displayNameParamName, nextRunTimeParamName, initializingErrorParamName, cronExpressionParamName, jobActiveStatusParamName,
