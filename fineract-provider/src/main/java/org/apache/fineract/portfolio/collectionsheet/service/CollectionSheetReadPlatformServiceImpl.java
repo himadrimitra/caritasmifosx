@@ -61,6 +61,7 @@ import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.meeting.attendance.AttendanceType;
 import org.apache.fineract.portfolio.meeting.attendance.service.AttendanceDropdownReadPlatformService;
 import org.apache.fineract.portfolio.meeting.attendance.service.AttendanceEnumerations;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
@@ -535,7 +536,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
             sql.append("and (gp.status_enum = 300 or (gp.status_enum = 600 and gp.closedon_date >= :dueDate)) ")
                     .append("and (cl.status_enum = 300 or (cl.status_enum = 600 and cl.closedon_date >= :dueDate)) ")
-                    .append("GROUP BY gp.id ,cl.id , sa.id ORDER BY gp.id , cl.id , sa.id ");
+                    .append("GROUP BY gp.id ,cl.id , sa.id ORDER BY gp.id , cl.id ,  sp.id ,sa.id ");
 
             return sql.toString();
         }
@@ -641,7 +642,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
             // final Integer attendanceTypeId = rs.getInt("attendanceTypeId");
             // final EnumOptionData attendanceType =
             // AttendanceEnumerations.attendanceType(attendanceTypeId);
-            final EnumOptionData attendanceType = null;
+            final EnumOptionData attendanceType = AttendanceEnumerations.attendanceType(AttendanceType.INVALID);
 
             return JLGClientData.instance(clientId, clientName, attendanceType);
         }

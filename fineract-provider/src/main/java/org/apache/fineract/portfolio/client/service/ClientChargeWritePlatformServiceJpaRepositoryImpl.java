@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.client.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -39,18 +40,32 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.data.ClientChargeDataValidator;
+import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientCharge;
 import org.apache.fineract.portfolio.client.domain.ClientChargePaidBy;
 import org.apache.fineract.portfolio.client.domain.ClientChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.client.domain.ClientRecurringCharge;
+import org.apache.fineract.portfolio.client.domain.ClientRecurringChargeRepository;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientTransaction;
 import org.apache.fineract.portfolio.client.domain.ClientTransactionRepository;
+import org.apache.fineract.portfolio.client.exception.DuedateIsNotMeetingDateException;
+import org.apache.fineract.portfolio.client.exception.GroupAndClientChargeNotInSynWithMeeting;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
+import org.apache.fineract.portfolio.group.service.GroupReadPlatformServiceImpl;
+import org.apache.fineract.portfolio.meeting.exception.MeetingNotFoundException;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -79,6 +94,10 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     private final ClientTransactionRepository clientTransactionRepository;
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
     private final JournalEntryWritePlatformService journalEntryWritePlatformService;
+    private final CalendarInstanceRepository calendarInstanceRepository;
+    private final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl;
+    private final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl;
+    private final ClientRecurringChargeRepository clientRecurringChargeRepository;
 
     @Autowired
     public ClientChargeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -87,7 +106,11 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             final ConfigurationDomainService configurationDomainService, final ClientChargeRepositoryWrapper clientChargeRepository,
             final WorkingDaysRepositoryWrapper workingDaysRepository, final ClientTransactionRepository clientTransactionRepository,
             final PaymentDetailWritePlatformService paymentDetailWritePlatformService,
-            final JournalEntryWritePlatformService journalEntryWritePlatformService) {
+            final JournalEntryWritePlatformService journalEntryWritePlatformService,
+            final CalendarInstanceRepository calendarInstanceRepository,
+            final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl,
+            final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl,
+            final ClientRecurringChargeRepository clientRecurringChargeRepository) {
         this.context = context;
         this.chargeRepository = chargeRepository;
         this.clientChargeDataValidator = clientChargeDataValidator;
@@ -99,41 +122,120 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         this.clientTransactionRepository = clientTransactionRepository;
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
         this.journalEntryWritePlatformService = journalEntryWritePlatformService;
+        this.calendarInstanceRepository = calendarInstanceRepository;
+        this.clientReadPlatformServiceImpl = clientReadPlatformServiceImpl;
+        this.groupReadPlatformServiceImpl = groupReadPlatformServiceImpl;
+        this.clientRecurringChargeRepository = clientRecurringChargeRepository;
     }
 
     @Override
-    public CommandProcessingResult addCharge(Long clientId, JsonCommand command) {
-        try {
-            this.clientChargeDataValidator.validateAdd(command.json());
+	public CommandProcessingResult addCharge(Long clientId, JsonCommand command) {
+		try {
+			this.clientChargeDataValidator.validateAdd(command.json());
 
-            final Client client = clientRepository.getActiveClientInUserScope(clientId);
+			final Client client = clientRepository.getActiveClientInUserScope(clientId);
+			final Long chargeDefinitionId = command.longValueOfParameterNamed(ClientApiConstants.chargeIdParamName);
+			LocalDate dueDate = command.localDateValueOfParameterNamed(ClientApiConstants.dueAsOfDateParamName);
+			final Boolean isSynchMeeting = command
+					.booleanObjectValueOfParameterNamed(ClientApiConstants.chargesynchmeetingParamName);
 
-            final Long chargeDefinitionId = command.longValueOfParameterNamed(ClientApiConstants.chargeIdParamName);
-            final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
+			final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 
-            // validate for client charge
-            if (!charge.isClientCharge()) {
-                final String errorMessage = "Charge with identifier " + charge.getId() + " cannot be applied to a Client";
-                throw new ChargeCannotBeAppliedToException("client", errorMessage, charge.getId());
-            }
+			// validate for client charge
+			if (!charge.isClientCharge()) {
+				final String errorMessage = "Charge with identifier " + charge.getId()
+						+ " cannot be applied to a Client";
+				throw new ChargeCannotBeAppliedToException("client", errorMessage, charge.getId());
+			}
+			if (charge.isMonthlyFee() || charge.isAnnualFee() || charge.isWeeklyFee()) {
 
-            final ClientCharge clientCharge = ClientCharge.createNew(client, charge, command);
+				CalendarInstance calendarInstance = null;
+				Calendar calendar = null;
+				final ClientRecurringCharge clientRecurringCharge = ClientRecurringCharge.createNew(client, charge,
+						command);
 
-            final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat());
-            validateDueDateOnWorkingDay(clientCharge, fmt);
+				// if the charge synchronized with meeting validate the dueDate
+				// entered
+				if (isSynchMeeting != null && isSynchMeeting) {
+					ClientData clientData = this.clientReadPlatformServiceImpl.retrieveOne(clientId);
+					Collection<GroupGeneralData> groupData = clientData.getGroups();
+					for (GroupGeneralData group : groupData) {
+						Long groupId = group.getId();
+						if (groupId != null) {
+							calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(groupId,
+									CalendarEntityType.GROUPS.getValue());
 
-            this.clientChargeRepository.save(clientCharge);
+							if (calendarInstance == null) {
+								GroupGeneralData groupGeneralData = this.groupReadPlatformServiceImpl
+										.retrieveOne(groupId);
+								Long centreId = groupGeneralData.getParentId();
+								calendarInstance = this.calendarInstanceRepository
+										.findCalendarInstaneByEntityId(centreId, CalendarEntityType.CENTERS.getValue());
+								if (calendarInstance == null) {
+									throw new MeetingNotFoundException(groupId);
+								}
 
-            return new CommandProcessingResultBuilder() //
-                    .withEntityId(clientCharge.getId()) //
-                    .withOfficeId(clientCharge.getClient().getOffice().getId()) //
-                    .withClientId(clientCharge.getClient().getId()) //
-                    .build();
-        } catch (DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(clientId, null, dve);
-            return CommandProcessingResult.empty();
-        }
-    }
+							}
+
+							calendar = calendarInstance.getCalendar();
+							if (!calendar.getRecurrence().toLowerCase().contains(
+									ChargeTimeType.fromInt(charge.getChargeTimeType()).toString().split("_")[0].toLowerCase())) {
+								throw new GroupAndClientChargeNotInSynWithMeeting(groupId);
+							}
+							if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(),
+									new LocalDate(calendar.getStartDate()), dueDate)) {
+								throw new DuedateIsNotMeetingDateException(dueDate);
+							}
+						}
+					}
+					this.clientRecurringChargeRepository.save(clientRecurringCharge);
+					final CalendarInstance newCalendarInstance = CalendarInstance.from(calendar,
+							clientRecurringCharge.getId(), CalendarEntityType.CHARGES.getValue());
+					this.calendarInstanceRepository.save(newCalendarInstance);
+				}
+
+				final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat());
+				validateActivityDateFallOnAWorkingDay(clientRecurringCharge.getDueLocalDate(),
+						clientRecurringCharge.getClient().officeId(), ClientApiConstants.dueAsOfDateParamName,
+						"charge.due.date.is.on.holiday", "charge.due.date.is.a.non.workingday", fmt);
+
+				/*
+				 * System.out.println("calendarId:"+calendarId); if(calendarId
+				 * != null && calendarId != 0) saveCalendarInstance(calendarId,
+				 * clientRecurringCharge.getId());
+				 */
+
+				return new CommandProcessingResultBuilder() //
+						.withEntityId(clientRecurringCharge.getId()) //
+						.withOfficeId(clientRecurringCharge.getClient().getOffice().getId()) //
+						.withClientId(clientRecurringCharge.getClient().getId()) //
+						.build();
+			}
+			final ClientCharge clientCharge = ClientCharge.createNew(client, charge, command);
+
+			// final ClientCharge clientCharge = ClientCharge.createNew(client,
+			// charge, command);
+
+			// final DateTimeFormatter fmt =
+			// DateTimeFormat.forPattern(command.dateFormat());
+			// validateDueDateOnWorkingDay(clientCharge, fmt);
+
+			this.clientChargeRepository.save(clientCharge);
+			final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat());
+			validateActivityDateFallOnAWorkingDay(clientCharge.getDueLocalDate(), clientCharge.getOfficeId(),
+					ClientApiConstants.dueAsOfDateParamName, "charge.due.date.is.on.holiday",
+					"charge.due.date.is.a.non.workingday", fmt);
+
+			return new CommandProcessingResultBuilder() //
+					.withEntityId(clientCharge.getId()) //
+					.withOfficeId(clientCharge.getClient().getOffice().getId()) //
+					.withClientId(clientCharge.getClient().getId()) //
+					.build();
+		} catch (DataIntegrityViolationException dve) {
+			handleDataIntegrityIssues(clientId, null, dve);
+			return CommandProcessingResult.empty();
+		}
+	}
 
     @Override
     public CommandProcessingResult payCharge(Long clientId, Long clientChargeId, JsonCommand command) {
@@ -354,17 +456,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     public CommandProcessingResult inactivateCharge(Long clientId, Long clientChargeId) {
         // functionality not yet supported
         return null;
-    }
-
-    /**
-     * Ensures that the charge due date is not on a holiday or a non working day
-     * 
-     * @param clientCharge
-     * @param fmt
-     */
-    private void validateDueDateOnWorkingDay(final ClientCharge clientCharge, final DateTimeFormatter fmt) {
-        validateActivityDateFallOnAWorkingDay(clientCharge.getDueLocalDate(), clientCharge.getOfficeId(),
-                ClientApiConstants.dueAsOfDateParamName, "charge.due.date.is.on.holiday", "charge.due.date.is.a.non.workingday", fmt);
     }
 
     /**

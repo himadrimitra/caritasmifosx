@@ -45,7 +45,8 @@ public enum JobName {
     SEND_MESSAGES_TO_SMS_GATEWAY("Send messages to SMS gateway"), 
     GET_DELIVERY_REPORTS_FROM_SMS_GATEWAY("Get delivery reports from SMS gateway"),
     UPDATE_SMS_OUTBOUND_WITH_CAMPAIGN_MESSAGE("Update Sms Outbound with campaign message"),
-    EXECUTE_REPORT_MAILING_JOBS("Execute Report Mailing Jobs");
+    EXECUTE_REPORT_MAILING_JOBS("Execute Report Mailing Jobs"),
+    APPLY_RECURRING_CHARGE_ON_CLIENT("Apply Recurring Charge On Client");
 
     private final String name;
 

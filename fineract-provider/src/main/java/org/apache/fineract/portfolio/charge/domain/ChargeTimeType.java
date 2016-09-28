@@ -73,9 +73,10 @@ public enum ChargeTimeType {
                 ChargeTimeType.SAVINGS_NOACTIVITY_FEE.getValue()};
     }
 
-    public static Object[] validClientValues() {
-        return new Integer[] { ChargeTimeType.SPECIFIED_DUE_DATE.getValue() };
-    }
+	public static Object[] validClientValues() {
+		return new Integer[] { ChargeTimeType.SPECIFIED_DUE_DATE.getValue(), ChargeTimeType.ANNUAL_FEE.getValue(),
+				ChargeTimeType.MONTHLY_FEE.getValue(), ChargeTimeType.WEEKLY_FEE.getValue() };
+	}
 
     public static Object[] validShareValues() {
         return new Integer[] { ChargeTimeType.SHAREACCOUNT_ACTIVATION.getValue(), ChargeTimeType.SHARE_PURCHASE.getValue(), ChargeTimeType.SHARE_REDEEM.getValue() };

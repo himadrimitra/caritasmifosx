@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.integrationtests.common.system.CodeHelper;
 
 import com.google.gson.Gson;
@@ -535,20 +534,28 @@ public class ClientHelper {
 
     }
 
-    public static Object getClientCharge(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
-            final String clientId, final String clientChargeId) {
-        System.out.println("---------------------------------GET CLIENT CHARGE---------------------------------------------");
-        final String CHARGES_URL = "/fineract-provider/api/v1/clients/" + clientId + "/charges/" + clientChargeId + "?"
-                + Utils.TENANT_IDENTIFIER;
-        return Utils.performServerGet(requestSpec, responseSpec, CHARGES_URL, "amountOutstanding");
-    }
+	public static Object getClientCharge(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final String clientId, final String clientChargeId) {
+		System.out.println(
+				"---------------------------------GET CLIENT CHARGE---------------------------------------------");
+		final String CHARGES_URL = "/fineract-provider/api/v1/clients/" + clientId + "/charges/" + clientChargeId + "?"
+				+ Utils.TENANT_IDENTIFIER;
+		return Utils.performServerGet(requestSpec, responseSpec, CHARGES_URL, "amountOutstanding");
+	}
 
-    public static Boolean getClientTransactions(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
-            final String clientId, final String transactionId) {
-        System.out.println("---------------------------------GET CLIENT CHARGE TRANSACTIONS---------------------------------------------");
-        final String CHARGES_URL = "/fineract-provider/api/v1/clients/" + clientId + "/transactions/" + transactionId + "?"
-                + Utils.TENANT_IDENTIFIER;
-        return Utils.performServerGet(requestSpec, responseSpec, CHARGES_URL, "reversed");
-    }
+	public static Boolean getClientTransactions(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final String clientId, final String transactionId) {
+		System.out.println(
+				"---------------------------------GET CLIENT CHARGE TRANSACTIONS---------------------------------------------");
+		final String CHARGES_URL = "/fineract-provider/api/v1/clients/" + clientId + "/transactions/" + transactionId
+				+ "?" + Utils.TENANT_IDENTIFIER;
+		return Utils.performServerGet(requestSpec, responseSpec, CHARGES_URL, "reversed");
+	}
+
+	public static Object applyClientCharge(RequestSpecification requestSpec, ResponseSpecification responseSpec,
+			String clientId, String json) {
+		return Utils.performServerPost(requestSpec, responseSpec,
+				CLIENT_URL + "/" + clientId + "/charges?" + Utils.TENANT_IDENTIFIER, json, "resourceId");
+	}
 
 }

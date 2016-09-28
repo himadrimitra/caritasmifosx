@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.integrationtests.common;
 
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -33,15 +34,6 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
 
-/**
- * 
- * IntegrationTest for ClientCharges.
- * 
- */
-/**
- * @author lenovo
- * 
- */
 public class ClientChargesTest {
 
     private ResponseSpecification responseSpec;
@@ -155,6 +147,49 @@ public class ClientChargesTest {
                 (float) 100.0);
 
     }
+    
+    @Test
+	public void clientChargeMeetingSyncWithGroupTest() {
+
+		Integer officeId = new OfficeHelper(requestSpec, responseSpec).createOffice("01 July 2007");
+		String name = "CenterCreation" + new Timestamp(new java.util.Date().getTime());
+		
+		Integer centerId = CenterHelper.createCenter(name, officeId, "01 July 2007", requestSpec, responseSpec);
+		CenterDomain center = CenterHelper.retrieveByID(centerId, requestSpec, responseSpec);
+		Assert.assertNotNull(center);
+		Assert.assertTrue(center.getName().equals(name));
+		
+		Integer calanderId = CalendarHelper.createMeetingCalendarForCenter(requestSpec, responseSpec, centerId, "01 July 2007", "2", "1", "7");
+		Assert.assertNotNull(calanderId);
+
+		Integer groupID = GroupHelper.createGroup(requestSpec, responseSpec, false, "01 July 2007", officeId);
+		
+		GroupHelper.verifyGroupCreatedOnServer(this.requestSpec, this.responseSpec, groupID);
+		
+		int[] groupMembers = new int[1];
+		groupMembers[0] = groupID;
+		
+		CenterHelper.associateGroups(centerId, groupMembers, requestSpec, responseSpec);
+
+		groupID = GroupHelper.activateGroup(this.requestSpec, this.responseSpec, groupID.toString());
+		GroupHelper.verifyGroupActivatedOnServer(this.requestSpec, this.responseSpec, groupID, true);
+
+		final Integer clientID = ClientHelper.createClientAsPerson(requestSpec, responseSpec, "01 July 2007", officeId.toString());
+
+		groupID = GroupHelper.associateClient(this.requestSpec, this.responseSpec, groupID.toString(),
+				clientID.toString());
+		GroupHelper.verifyGroupMembers(this.requestSpec, this.responseSpec, groupID, clientID);
+
+		final Integer chargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+				ChargesHelper.populateClientCharge());
+		Assert.assertNotNull(chargeId);
+
+		Integer clientChargeId = (Integer) ClientHelper.applyClientCharge(this.requestSpec, this.responseSpec, String.valueOf(clientID),
+				ChargesHelper.getApplyClientChargeWithMeetingSyncJSON(chargeId));
+		
+		Assert.assertNotNull(clientChargeId);
+
+	}
 
     /**
      * It checks whether the client charge transaction is reversed or not.

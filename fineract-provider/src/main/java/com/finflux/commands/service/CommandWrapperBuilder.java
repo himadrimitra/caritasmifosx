@@ -1,6 +1,7 @@
 package com.finflux.commands.service;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
 
@@ -111,6 +112,15 @@ public class CommandWrapperBuilder {
         this.entityName = ReconciliationApiConstants.BANK_RESOURCE_NAME;
         this.entityId = bankId;
         this.href = "/bank/" + bankId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder inactivateClientRecurringCharge(final Long clientId, final Long recurringChargeId) {
+        this.actionName = ClientApiConstants.CLIENT_RECURRING_CHARGE_ACTION_INACTIVATE;
+        this.entityName = ClientApiConstants.CLIENT_RECURRING_CHARGES_RESOURCE_NAME;
+        this.clientId = clientId;
+        this.entityId = recurringChargeId;
+        this.href = "/clients/" + clientId + "/recurringcharges/" + recurringChargeId;
         return this;
     }
 }

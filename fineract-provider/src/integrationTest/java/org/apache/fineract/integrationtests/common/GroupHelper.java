@@ -49,7 +49,7 @@ public class GroupHelper {
     }
     
     public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
-            @SuppressWarnings("unused") final boolean active, final String activationDate, final String officeId) {
+            @SuppressWarnings("unused") final boolean active, final String activationDate, final int officeId) {
         System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(active, activationDate, officeId), "groupId");
     }
@@ -115,8 +115,8 @@ public class GroupHelper {
     }
 
 
-    public static String getTestGroupAsJSON(final boolean active, final String activationDate, final String officeId) {
-        final HashMap<String, String> map = new HashMap<>();
+    public static String getTestGroupAsJSON(final boolean active, final String activationDate, final Integer officeId) {
+        final HashMap<String, Object> map = new HashMap<>();
         if (officeId != null) {
             map.put("officeId", officeId);
         } else {
@@ -244,4 +244,23 @@ public class GroupHelper {
     private static String randomIDGenerator(final String prefix, final int lenOfRandomSuffix) {
         return Utils.randomStringGenerator(prefix, lenOfRandomSuffix, "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
+    
+	public static String associateGroupWithCenter(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final Integer staffId, final String centerId) {
+		System.out.println("------------------------------CHECK GROUP STATUS------------------------------------\n");
+		final HashMap<String, Object> map = new HashMap<>();
+		map.put("clientMembers", new int[] {});
+		map.put("officeId", "1");
+		map.put("staffId", staffId);
+		map.put("name", randomNameGenerator("Group_Name_", 5));
+		map.put("dateFormat", "dd MMMM yyyy");
+		map.put("locale", "en");
+		map.put("active", "true");
+		map.put("activationDate", "01 July 2007");
+		map.put("centerId", centerId);
+		map.put("submittedOnDate", "01 July 2007");
+
+		final String GROUP_URL = "/fineract-provider/api/v1/groups/" + "?" + Utils.TENANT_IDENTIFIER;
+		return Utils.performServerPost(requestSpec, responseSpec, GROUP_URL, new Gson().toJson(map), "active");
+	}
 }

@@ -483,4 +483,24 @@ public class ChargesHelper {
         return Utils.performServerPost(requestSpec, responseSpec, CHARGES_URL + "/" + chargeId + "?" + Utils.TENANT_IDENTIFIER, json,"status");
         
     }
+    
+	public static String populateClientCharge() {
+		final HashMap<String, Object> map = populateDefaultsClientCharge();
+		map.put("chargeTimeType", ChargesHelper.WEEKLY_FEE);
+		String json = new Gson().toJson(map);
+		return json;
+	}
+
+	public static String getApplyClientChargeWithMeetingSyncJSON(final int chargeId) {
+		final HashMap<String, Object> map = new HashMap<>();
+		map.put("chargeId", chargeId);
+		map.put("amount", 1000);
+		map.put("locale", "en");
+		map.put("dateFormat", "dd MMMM yyyy");
+		map.put("synchMeeting", true);
+		map.put("dueDate", "08 July 2007");
+		String json = new Gson().toJson(map);
+		System.out.println(json);
+		return json;
+	}
 }

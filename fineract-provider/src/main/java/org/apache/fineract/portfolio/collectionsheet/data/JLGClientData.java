@@ -21,6 +21,8 @@ package org.apache.fineract.portfolio.collectionsheet.data;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.portfolio.meeting.attendance.AttendanceType;
+import org.apache.fineract.portfolio.meeting.attendance.service.AttendanceEnumerations;
 
 /**
  * Immutable data object for clients with loans due for disbursement or
@@ -43,7 +45,7 @@ public class JLGClientData {
     
     public static JLGClientData withSavings(final JLGClientData client, final Collection<SavingsDueData> savings){
         final Collection<LoanDueData> loans = null;
-        final EnumOptionData attendanceType = null;
+        final EnumOptionData attendanceType = AttendanceEnumerations.attendanceType(AttendanceType.INVALID);
         
         return new JLGClientData(client.clientId, client.clientName, loans, savings, attendanceType);
     }
