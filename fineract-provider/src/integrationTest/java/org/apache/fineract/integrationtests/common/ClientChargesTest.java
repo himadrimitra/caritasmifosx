@@ -24,7 +24,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
 import org.apache.fineract.integrationtests.common.charges.ChargesHelper;
-import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,19 +34,9 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
 
-/**
- * 
- * IntegrationTest for ClientCharges.
- * 
- */
-/**
- * @author lenovo
- * 
- */
 public class ClientChargesTest {
 
     private ResponseSpecification responseSpec;
-    private ResponseSpecification errorResponseSpec;
     private RequestSpecification requestSpec;
 
     @Before
@@ -56,7 +45,6 @@ public class ClientChargesTest {
         this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
         this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
         this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
-        this.errorResponseSpec = new ResponseSpecBuilder().expectStatusCode(404).build();
     }
     @Test
     public void clientChargeTest() {
@@ -172,6 +160,7 @@ public class ClientChargesTest {
 		Assert.assertTrue(center.getName().equals(name));
 		
 		Integer calanderId = CalendarHelper.createMeetingCalendarForCenter(requestSpec, responseSpec, centerId, "01 July 2007", "2", "1", "7");
+		Assert.assertNotNull(calanderId);
 
 		Integer groupID = GroupHelper.createGroup(requestSpec, responseSpec, false, "01 July 2007", officeId);
 		
@@ -195,8 +184,10 @@ public class ClientChargesTest {
 				ChargesHelper.populateClientCharge());
 		Assert.assertNotNull(chargeId);
 
-		ClientHelper.applyClientCharge(this.requestSpec, this.errorResponseSpec, String.valueOf(clientID),
+		Integer clientChargeId = (Integer) ClientHelper.applyClientCharge(this.requestSpec, this.responseSpec, String.valueOf(clientID),
 				ChargesHelper.getApplyClientChargeWithMeetingSyncJSON(chargeId));
+		
+		Assert.assertNotNull(clientChargeId);
 
 	}
 

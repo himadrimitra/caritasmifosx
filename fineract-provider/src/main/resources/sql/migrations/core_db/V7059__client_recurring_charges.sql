@@ -34,12 +34,14 @@ CREATE TABLE `m_client_recurring_charge` (
 	`max_cap` DECIMAL(19,6) NULL DEFAULT NULL,
 	`fee_frequency` SMALLINT(5) NULL DEFAULT NULL,
 	`inactivated_on_date` DATE NULL DEFAULT NULL,
+	`createdby_id` BIGINT(20) NULL,
+	`created_date` DATETIME NULL,
+	`lastmodifiedby_id` BIGINT(20) NULL,
+	`lastmodified_date` DATETIME NULL,
 	PRIMARY KEY (`id`)
 )
 COLLATE='utf8_general_ci'
-ENGINE=InnoDB
-AUTO_INCREMENT=168
-;
+ENGINE=InnoDB;
 
 ALTER TABLE m_client_charge ADD COLUMN (client_recurring_charge_id BIGINT (20) );
 

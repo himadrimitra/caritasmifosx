@@ -144,6 +144,15 @@ public class CalendarUtils {
         return getRecurringDates(recurringRule, seedDate, periodStartDate, periodEndDate, maxCount, isSkipRepaymentOnFirstdayofMonth,
                 numberofDays);
     }
+    
+    public static Collection<LocalDate> getRecurringDatesWithNoLimit(final String recurringRule, final LocalDate seedDate,
+            final LocalDate periodStartDate, final LocalDate periodEndDate) {
+        final int maxCount = -1;// Default number of recurring dates
+        boolean isSkipRepaymentOnFirstdayofMonth = false;
+        final Integer numberofDays = 0;
+        return getRecurringDates(recurringRule, seedDate, periodStartDate, periodEndDate, maxCount, isSkipRepaymentOnFirstdayofMonth,
+                numberofDays);
+    }
 
     public static Collection<LocalDate> getRecurringDates(final String recurringRule, final LocalDate seedDate,
             final LocalDate periodStartDate, final LocalDate periodEndDate, final int maxCount, boolean isSkippMeetingOnFirstDay,

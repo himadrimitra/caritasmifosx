@@ -12,11 +12,10 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.office.domain.OrganisationCurrency;
@@ -26,14 +25,13 @@ import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_client_recurring_charge")
-public class ClientRecurringCharge extends AbstractPersistable<Long> {
+public class ClientRecurringCharge extends AbstractAuditableCustom<AppUser,Long> {
 	@Column(name = "name", length = 100)
 	private String name;
 
@@ -151,30 +149,6 @@ public class ClientRecurringCharge extends AbstractPersistable<Long> {
 		this.maxCap = charge.getMaxCap();
 		this.synchMeeting = synchMeeting;
 
-	}
-
-	@Override
-	public boolean equals(final Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (obj == this) {
-			return true;
-		}
-		if (obj.getClass() != getClass()) {
-			return false;
-		}
-		final LoanCharge rhs = (LoanCharge) obj;
-		return new EqualsBuilder().appendSuper(super.equals(obj)) //
-				.append(getId(), rhs.getId()) //
-				.isEquals();
-	}
-
-	@Override
-	public int hashCode() {
-		return new HashCodeBuilder(3, 5) //
-				.append(getId()) //
-				.toHashCode();
 	}
 
 	public String getName() {

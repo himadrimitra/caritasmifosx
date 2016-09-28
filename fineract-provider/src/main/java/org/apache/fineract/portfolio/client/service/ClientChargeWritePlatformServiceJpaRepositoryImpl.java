@@ -40,12 +40,11 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
-import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
-import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
@@ -98,7 +97,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     private final CalendarInstanceRepository calendarInstanceRepository;
     private final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl;
     private final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl;
-    private final CalendarReadPlatformService calendarReadPlatformService;
     private final ClientRecurringChargeRepository clientRecurringChargeRepository;
 
     @Autowired
@@ -112,7 +110,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             final CalendarInstanceRepository calendarInstanceRepository,
             final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl,
             final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl,
-            final CalendarReadPlatformService calendarReadPlatformService,
             final ClientRecurringChargeRepository clientRecurringChargeRepository) {
         this.context = context;
         this.chargeRepository = chargeRepository;
@@ -128,7 +125,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.clientReadPlatformServiceImpl = clientReadPlatformServiceImpl;
         this.groupReadPlatformServiceImpl = groupReadPlatformServiceImpl;
-        this.calendarReadPlatformService = calendarReadPlatformService;
         this.clientRecurringChargeRepository = clientRecurringChargeRepository;
     }
 
@@ -139,14 +135,14 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
 			final Client client = clientRepository.getActiveClientInUserScope(clientId);
 			final Long chargeDefinitionId = command.longValueOfParameterNamed(ClientApiConstants.chargeIdParamName);
-			final LocalDate dueDate = command.localDateValueOfParameterNamed(ClientApiConstants.dueAsOfDateParamName);
+			LocalDate dueDate = command.localDateValueOfParameterNamed(ClientApiConstants.dueAsOfDateParamName);
 			final Boolean isSynchMeeting = command
 					.booleanObjectValueOfParameterNamed(ClientApiConstants.chargesynchmeetingParamName);
 
 			final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 
 			// validate for client charge
-			if (!charge.isClientCharge()) {	
+			if (!charge.isClientCharge()) {
 				final String errorMessage = "Charge with identifier " + charge.getId()
 						+ " cannot be applied to a Client";
 				throw new ChargeCannotBeAppliedToException("client", errorMessage, charge.getId());
@@ -154,13 +150,13 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 			if (charge.isMonthlyFee() || charge.isAnnualFee() || charge.isWeeklyFee()) {
 
 				CalendarInstance calendarInstance = null;
+				Calendar calendar = null;
 				final ClientRecurringCharge clientRecurringCharge = ClientRecurringCharge.createNew(client, charge,
 						command);
 
 				// if the charge synchronized with meeting validate the dueDate
 				// entered
 				if (isSynchMeeting != null && isSynchMeeting) {
-					int count = 0;
 					ClientData clientData = this.clientReadPlatformServiceImpl.retrieveOne(clientId);
 					Collection<GroupGeneralData> groupData = clientData.getGroups();
 					for (GroupGeneralData group : groupData) {
@@ -181,37 +177,18 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
 							}
 
-							Long calendarId = calendarInstance.getCalendar().getId();
-							CalendarData calendarData = this.calendarReadPlatformService.retrieveCalendar(calendarId,
-									calendarInstance.getEntityId(), CalendarEntityType.CENTERS.getValue());
-							if (!ChargeTimeType.fromInt(charge.getChargeTimeType()).toString().toLowerCase()
-									.contains(calendarData.getHumanReadable()
-											.substring(0, calendarData.getHumanReadable().indexOf(" "))
-											.toLowerCase())) {
+							calendar = calendarInstance.getCalendar();
+							if (!calendar.getRecurrence().toLowerCase().contains(
+									ChargeTimeType.fromInt(charge.getChargeTimeType()).toString().split("_")[0].toLowerCase())) {
 								throw new GroupAndClientChargeNotInSynWithMeeting(groupId);
 							}
-							final boolean withHistory = false;
-							final LocalDate tillDate = null;
-							// get the next ten recurrence dates for this
-							// calendar
-							final Collection<LocalDate> recurringDates = this.calendarReadPlatformService
-									.generateRecurringDates(calendarData, withHistory, tillDate);
-							for (LocalDate recurringDate : recurringDates) {
-								if (dueDate.equals(recurringDate))
-									count++;
-							}
-							if (count == 0) {
+							if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(),
+									new LocalDate(calendar.getStartDate()), dueDate)) {
 								throw new DuedateIsNotMeetingDateException(dueDate);
 							}
 						}
 					}
-				}
-				this.clientRecurringChargeRepository.save(clientRecurringCharge);
-
-				// if it is synchronized with meeting and date entered is one of
-				// the meeting date save to calendar instance table
-				if (isSynchMeeting != null && isSynchMeeting) {
-					Calendar calendar = calendarInstance.getCalendar();
+					this.clientRecurringChargeRepository.save(clientRecurringCharge);
 					final CalendarInstance newCalendarInstance = CalendarInstance.from(calendar,
 							clientRecurringCharge.getId(), CalendarEntityType.CHARGES.getValue());
 					this.calendarInstanceRepository.save(newCalendarInstance);
@@ -479,17 +456,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     public CommandProcessingResult inactivateCharge(Long clientId, Long clientChargeId) {
         // functionality not yet supported
         return null;
-    }
-
-    /**
-     * Ensures that the charge due date is not on a holiday or a non working day
-     * 
-     * @param clientCharge
-     * @param fmt
-     */
-    private void validateDueDateOnWorkingDay(final ClientCharge clientCharge, final DateTimeFormatter fmt) {
-        validateActivityDateFallOnAWorkingDay(clientCharge.getDueLocalDate(), clientCharge.getOfficeId(),
-                ClientApiConstants.dueAsOfDateParamName, "charge.due.date.is.on.holiday", "charge.due.date.is.a.non.workingday", fmt);
     }
 
     /**

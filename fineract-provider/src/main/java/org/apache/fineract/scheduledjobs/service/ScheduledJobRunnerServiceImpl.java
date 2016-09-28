@@ -35,6 +35,7 @@ import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.service.ClientRecurringChargeReadPlatformService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -440,11 +441,6 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 				Long calendarId = jdbcTemplate.queryForObject(selectSqlBuilder.toString(), Long.class);
 				CalendarData calendarData = this.calanderReadPlatformService.retrieveCalendar(calendarId,
 						clientRecurringChargeId, CalendarEntityType.CHARGES.getValue());
-				final boolean withHistory = false;
-				final LocalDate tillDate = null;
-				// get the next ten recurrence dates for this calendar
-				final Collection<LocalDate> recurringDates = this.calanderReadPlatformService
-						.generateRecurringDates(calendarData, withHistory, tillDate);
 				Date dueChargeDate = null;
 				StringBuilder dateSqlBuilder = new StringBuilder(900);
 				dateSqlBuilder
@@ -453,8 +449,9 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 				try {
 					dueChargeDate = jdbcTemplate.queryForObject(dateSqlBuilder.toString(), Date.class);
 				} catch (Exception e) {
-
+					throw e;
 				}
+				final Collection<LocalDate> recurringDates =  CalendarUtils.getRecurringDatesWithNoLimit(calendarData.getRecurrence(), calendarData.getStartDate(), calendarData.getStartDate(), CalendarUtils.getNextRecurringDate(calendarData.getRecurrence(), calendarData.getStartDate(), currentDate));
 				if (dueChargeDate != null) {
 					int count = 0;
 					LocalDate duedate = new LocalDate(dueChargeDate);

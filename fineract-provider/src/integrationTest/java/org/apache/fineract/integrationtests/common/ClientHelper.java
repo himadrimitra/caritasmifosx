@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.integrationtests.common.system.CodeHelper;
 
 import com.google.gson.Gson;
@@ -556,7 +555,7 @@ public class ClientHelper {
 	public static Object applyClientCharge(RequestSpecification requestSpec, ResponseSpecification responseSpec,
 			String clientId, String json) {
 		return Utils.performServerPost(requestSpec, responseSpec,
-				CLIENT_URL + "/" + clientId + "/charges?" + Utils.TENANT_IDENTIFIER, json, "");
+				CLIENT_URL + "/" + clientId + "/charges?" + Utils.TENANT_IDENTIFIER, json, "resourceId");
 	}
 
 }
