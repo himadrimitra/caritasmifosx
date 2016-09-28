@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.client.domain;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +46,14 @@ public class ClientRepositoryWrapper {
     public Client findOneWithNotFoundDetection(final Long id) {
         final Client client = this.repository.findOne(id);
         if (client == null) { throw new ClientNotFoundException(id); }
+        return client;
+    }
+    
+    public Client findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
+        final Client client = this.repository.findOne(id);
+        if (client == null) { throw new ClientNotFoundException(id); }
+        Hibernate.initialize(client.getImage());
+        Hibernate.initialize(client.getGroups());
         return client;
     }
 

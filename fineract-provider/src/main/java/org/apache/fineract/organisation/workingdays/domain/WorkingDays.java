@@ -20,8 +20,11 @@ package org.apache.fineract.organisation.workingdays.domain;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.organisation.workingdays.api.WorkingDaysApiConstants;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -30,6 +33,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Entity
+@Cacheable
+@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="WorkingDays")
 @Table(name = "m_working_days")
 public class WorkingDays extends AbstractPersistable<Long> {
 

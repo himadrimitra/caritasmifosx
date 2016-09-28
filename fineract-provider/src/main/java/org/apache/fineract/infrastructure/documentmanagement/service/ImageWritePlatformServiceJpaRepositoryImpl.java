@@ -82,14 +82,14 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         Object owner = null;
         Image image = null;
         if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equals(entityName)) {
-            owner = this.clientRepositoryWrapper.findOneWithNotFoundDetection(clientId);
+            owner = this.clientRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             Client client = (Client) owner;
             image = client.getImage();
             client.setImage(null);
             this.clientRepositoryWrapper.save(client);
 
         } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equals(entityName)) {
-            owner = this.staffRepositoryWrapper.findOneWithNotFoundDetection(clientId);
+            owner = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             Staff staff = (Staff) owner;
             image = staff.getImage();
             staff.setImage(null);
@@ -116,11 +116,11 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         Object owner = null;
         Image image = null;
         if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equals(entityName)) {
-            Client client = this.clientRepositoryWrapper.findOneWithNotFoundDetection(entityId);
+            Client client = this.clientRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = client.getImage();
             owner = client;
         } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equals(entityName)) {
-            Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(entityId);
+            Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = staff.getImage();
             owner = staff;
         }

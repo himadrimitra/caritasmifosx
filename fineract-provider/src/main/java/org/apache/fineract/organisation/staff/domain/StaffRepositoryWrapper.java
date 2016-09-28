@@ -19,6 +19,7 @@
 package org.apache.fineract.organisation.staff.domain;
 
 import org.apache.fineract.organisation.staff.exception.StaffNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +42,13 @@ public class StaffRepositoryWrapper {
     public Staff findOneWithNotFoundDetection(final Long id) {
         final Staff staff = this.repository.findOne(id);
         if (staff == null) { throw new StaffNotFoundException(id); }
+        return staff;
+    }
+    
+    public Staff findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
+        final Staff staff = this.repository.findOne(id);
+        if (staff == null) { throw new StaffNotFoundException(id); }
+        Hibernate.initialize(staff.getImage());
         return staff;
     }
 

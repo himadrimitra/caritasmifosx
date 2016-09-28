@@ -46,6 +46,7 @@ import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
 import org.apache.fineract.portfolio.note.service.NoteWritePlatformService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -80,6 +81,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     private final TransfersDataValidator transfersDataValidator;
     private final NoteWritePlatformService noteWritePlatformService;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
+    private final LoanRepositoryWrapper loanRepositoryWrapper;
 
     @Autowired
     public TransferWritePlatformServiceJpaRepositoryImpl(final ClientRepositoryWrapper clientRepository,
@@ -88,7 +90,8 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
             final LoanRepository loanRepository, final TransfersDataValidator transfersDataValidator,
             final NoteWritePlatformService noteWritePlatformService, final StaffRepositoryWrapper staffRepositoryWrapper,
             final SavingsAccountRepository savingsAccountRepository,
-            final SavingsAccountWritePlatformService savingsAccountWritePlatformService) {
+            final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
+            final LoanRepositoryWrapper loanRepositoryWrapper) {
         this.clientRepository = clientRepository;
         this.officeRepository = officeRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
@@ -100,6 +103,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         this.staffRepositoryWrapper = staffRepositoryWrapper;
         this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
+        this.loanRepositoryWrapper = loanRepositoryWrapper;
     }
 
     @Override
@@ -241,7 +245,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         /**
          * Active JLG loans are now linked to the new Group and Loan officer
          **/
-        final List<Loan> allClientJLGLoans = this.loanRepository.findByClientIdAndGroupId(client.getId(), sourceGroup.getId());
+        final List<Loan> allClientJLGLoans = this.loanRepositoryWrapper.findByClientIdAndGroupId(client.getId(), sourceGroup.getId());
         for (final Loan loan : allClientJLGLoans) {
             if (loan.status().isActiveOrAwaitingApprovalOrDisbursal()) {
                 loan.updateGroup(destinationGroup);
@@ -282,10 +286,10 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
 
         final Long destinationOfficeId = jsonCommand.longValueOfParameterNamed(TransferApiConstants.destinationOfficeIdParamName);
         final Office office = this.officeRepository.findOneWithNotFoundDetection(destinationOfficeId);
-        final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+        final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
         handleClientTransferLifecycleEvent(client, office, TransferEventType.PROPOSAL, jsonCommand);
         this.clientRepository.saveAndFlush(client);
-        handleClientTransferLifecycleEvent(client, client.getTransferToOffice(), TransferEventType.ACCEPTANCE, jsonCommand);
+        handleClientTransferLifecycleEvent(client, office, TransferEventType.ACCEPTANCE, jsonCommand);
         this.clientRepository.save(client);
 
         return new CommandProcessingResultBuilder() //
@@ -314,7 +318,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
 
         final Long destinationOfficeId = jsonCommand.longValueOfParameterNamed(TransferApiConstants.destinationOfficeIdParamName);
         final Office office = this.officeRepository.findOneWithNotFoundDetection(destinationOfficeId);
-        final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+        final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
         handleClientTransferLifecycleEvent(client, office, TransferEventType.PROPOSAL, jsonCommand);
         this.clientRepository.save(client);
 
@@ -341,10 +345,10 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     public CommandProcessingResult acceptClientTransfer(final Long clientId, final JsonCommand jsonCommand) {
         // validation
         this.transfersDataValidator.validateForAcceptClientTransfer(jsonCommand.json());
-        final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+        final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
         validateClientAwaitingTransferAcceptance(client);
-
-        handleClientTransferLifecycleEvent(client, client.getTransferToOffice(), TransferEventType.ACCEPTANCE, jsonCommand);
+        Office office =this.officeRepository.findOneWithNotFoundDetection(client.getTransferToOfficeId());
+        handleClientTransferLifecycleEvent(client,office, TransferEventType.ACCEPTANCE, jsonCommand);
         this.clientRepository.save(client);
 
         return new CommandProcessingResultBuilder() //
@@ -358,7 +362,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     public CommandProcessingResult withdrawClientTransfer(final Long clientId, final JsonCommand jsonCommand) {
         // validation
         this.transfersDataValidator.validateForWithdrawClientTransfer(jsonCommand.json());
-        final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+        final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
         validateClientAwaitingTransferAcceptanceOnHold(client);
 
         handleClientTransferLifecycleEvent(client, client.getOffice(), TransferEventType.WITHDRAWAL, jsonCommand);
@@ -375,7 +379,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     public CommandProcessingResult rejectClientTransfer(final Long clientId, final JsonCommand jsonCommand) {
         // validation
         this.transfersDataValidator.validateForRejectClientTransfer(jsonCommand.json());
-        final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+        final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
         handleClientTransferLifecycleEvent(client, client.getOffice(), TransferEventType.REJECTION, jsonCommand);
         this.clientRepository.save(client);
 
@@ -502,7 +506,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
                     final JsonObject jsonObject = clientsArray.get(i).getAsJsonObject();
                     if (jsonObject.has(TransferApiConstants.idParamName)) {
                         final Long id = jsonObject.get(TransferApiConstants.idParamName).getAsLong();
-                        final Client client = this.clientRepository.findOneWithNotFoundDetection(id);
+                        final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(id);
                         clients.add(client);
                     }
                 }

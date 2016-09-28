@@ -79,6 +79,7 @@ dependencies {
                 [group: 'org.quartz-scheduler', name: 'quartz', version: '2.1.7'],
                 [group: 'com.amazonaws', name: 'aws-java-sdk', version: '1.2.1'],
                 [group: 'net.sf.ehcache', name: 'ehcache', version: '2.7.2'],
+                [group: 'org.hibernate', name: 'hibernate-ehcache', version: '4.3.6.Final'],
                 [group: 'com.github.spullara.mustache.java', name: 'compiler', version: '0.8.12'],
                 [group: 'com.jayway.jsonpath', name: 'json-path', version: '0.9.1'],
 

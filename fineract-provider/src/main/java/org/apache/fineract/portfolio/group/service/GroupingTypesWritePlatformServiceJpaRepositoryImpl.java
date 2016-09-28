@@ -523,7 +523,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 for (Client client : clients) {
                     client.updateStaff(staff);
                     if (this.loanRepository.doNonClosedLoanAccountsExistForClient(client.getId())) {
-                        for (final Loan loan : this.loanRepository.findLoanByClientId(client.getId())) {
+                        for (final Loan loan : this.loanRepositoryWrapper.findLoanByClientId(client.getId())) {
                             if (loan.isDisbursed() && !loan.isClosed()) {
                                 loan.reassignLoanOfficer(staff, loanOfficerReassignmentDate);
                             }

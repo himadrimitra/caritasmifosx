@@ -565,7 +565,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         try {
             this.fromApiJsonDeserializer.validateActivation(command);
 
-            final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+            final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             validateParentGroupRulesBeforeClientActivation(client);
 
             final Locale locale = command.extractLocale();

@@ -21,8 +21,10 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -47,6 +49,14 @@ public class LoanRepositoryWrapper {
         if (loan == null) { throw new LoanNotFoundException(id); }
         return loan;
     }
+    
+    public Loan findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
+        final Loan loan = this.repository.findOne(id);
+        if (loan == null) { throw new LoanNotFoundException(id); }
+        Hibernate.initialize(loan.getLoanPurpose());
+        Hibernate.initialize(loan.getLoanOfficerHistory());
+        return loan;
+    }
 
     public Collection<Loan> findActiveLoansByLoanIdAndGroupId(Long clientId, Long groupId) {
         final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
@@ -57,6 +67,24 @@ public class LoanRepositoryWrapper {
     
     public void save(final Loan loan) {
         this.repository.save(loan);
+    }
+    
+    public List<Loan> findLoanByClientId(final Long clientId){
+        final List<Loan> loans = this.repository.findLoanByClientId(clientId);
+        for(Loan loan : loans){
+            Hibernate.initialize(loan.getLoanPurpose());
+            Hibernate.initialize(loan.getLoanOfficerHistory());
+        }
+        return loans;
+    }
+    
+    public List<Loan> findByClientIdAndGroupId( Long clientId, Long groupId){
+        List<Loan> loans = this.repository.findByClientIdAndGroupId(clientId, groupId);
+        for(Loan loan : loans){
+            Hibernate.initialize(loan.getLoanPurpose());
+            Hibernate.initialize(loan.getLoanOfficerHistory());
+        }
+        return loans;
     }
 
 }

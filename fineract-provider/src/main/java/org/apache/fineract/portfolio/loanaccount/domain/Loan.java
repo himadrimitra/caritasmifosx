@@ -138,7 +138,7 @@ public class Loan extends AbstractPersistable<Long> {
     @JoinColumn(name = "loan_officer_id", nullable = true)
     private Staff loanOfficer;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "loanpurpose_cv_id", nullable = true)
     private CodeValue loanPurpose;
 
@@ -263,7 +263,7 @@ public class Loan extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     private Set<LoanCollateral> collateral = null;
 
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     private Set<LoanOfficerAssignmentHistory> loanOfficerHistory = new HashSet<>();
 
@@ -359,9 +359,7 @@ public class Loan extends AbstractPersistable<Long> {
     @Column(name = "is_topup", nullable = false)
     private boolean isTopup = false;
 
-//    @OneToOne(cascade = CascadeType.ALL,  orphanRemoval = true, fetch=FetchType.EAGER)
-//    @JoinColumn(name = "loan_id", referencedColumnName= "id" , nullable = true)
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "loan", optional = true, orphanRemoval = true, fetch=FetchType.EAGER)
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "loan", optional = true, orphanRemoval = true, fetch=FetchType.LAZY)
     private LoanTopupDetails loanTopupDetails;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
@@ -6590,5 +6588,15 @@ public class Loan extends AbstractPersistable<Long> {
     
     public Collection<LoanCharge> getLoanCharges() {
         return this.charges;
+    }
+
+    
+    public CodeValue getLoanPurpose() {
+        return this.loanPurpose;
+    }
+
+    
+    public Set<LoanOfficerAssignmentHistory> getLoanOfficerHistory() {
+        return this.loanOfficerHistory;
     }
 }

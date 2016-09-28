@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.configuration.domain;
 import java.util.Date;
 
 import org.apache.fineract.infrastructure.cache.domain.CacheType;
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 
 public interface ConfigurationDomainService {
 
@@ -101,4 +102,7 @@ public interface ConfigurationDomainService {
     boolean isWithDrawForSavingsIncludedInCollectionSheet();
     
     boolean isSearchIncludeGroupInfo();
+
+	GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(
+			String propertyName);
 }
