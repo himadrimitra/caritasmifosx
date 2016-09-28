@@ -296,7 +296,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             TalukaData talukaData = null;
             if (this.talukaDatas != null && this.talukaDatas.size() > 0) {
                 for (final TalukaData tt : this.talukaDatas) {
-                    if (tt.getTalukaId() == talukaId) {
+                    if (tt.getTalukaId().equals(talukaId)) {
                         talukaData = tt;
                         break;
                     }
@@ -307,7 +307,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             DistrictData districtData = null;
             if (this.districtDatas != null && this.districtDatas.size() > 0) {
                 for (final DistrictData dd : this.districtDatas) {
-                    if (dd.getDistrictId() == districtId) {
+                    if (dd.getDistrictId().equals(districtId)) {
                         districtData = dd;
                         break;
                     }
@@ -318,7 +318,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             StateData stateData = null;
             if (this.stateDatas != null && this.stateDatas.size() > 0) {
                 for (final StateData sd : this.stateDatas) {
-                    if (sd.getStateId() == stateId) {
+                    if (sd.getStateId().equals(stateId)) {
                         stateData = sd;
                         break;
                     }
@@ -329,7 +329,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             CountryData countryData = null;
             if (this.countryDatas != null && this.countryDatas.size() > 0) {
                 for (final CountryData cd : this.countryDatas) {
-                    if (cd.getCountryId() == countryId) {
+                    if (cd.getCountryId().equals(countryId)) {
                         countryData = cd;
                         break;
                     }
