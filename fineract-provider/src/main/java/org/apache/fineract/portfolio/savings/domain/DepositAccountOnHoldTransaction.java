@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.savings.domain;
 
+import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransaction;
@@ -34,6 +35,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -104,6 +106,10 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
         if (this.getTransactionType().isHold()) {
             this.savingsAccount.releaseFunds(this.amount);
         } else {
+            if (this.amount.compareTo(this.savingsAccount.getSummary().getAccountBalance()
+                    .subtract(this.savingsAccount.getOnHoldFunds())) > 0) { throw new PlatformServiceUnavailableException(
+                    "error.msg.loan.undo.transaction.not.allowed", "Loan transaction:" + this.amount
+                            + " undo transaction not allowed as account balance is insufficient", this.amount); }
             this.savingsAccount.holdFunds(this.amount);
         }
     }
