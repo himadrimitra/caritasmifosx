@@ -349,7 +349,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         checkClientOrGroupActive(loan);
 
         final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
-        final LocalDate nextPossibleRepaymentDate = loan.getNextPossibleRepaymentDateForRescheduling(!isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
+        final LocalDate nextPossibleRepaymentDate = loan.getNextPossibleRepaymentDateForRescheduling(isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
         final Date rescheduledRepaymentDate = command.DateValueOfParameterNamed("adjustRepaymentDate");
         
         // check for product mix validations
@@ -368,32 +368,28 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             this.loanEventApiJsonValidator.validateDisbursementDateWithMeetingDate(actualDisbursementDate, calendarInstance, 
                     scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), scheduleGeneratorDTO.getNumberOfdays());
         }
-		LocalDate expectedFirstRepaymentDate = null;
-		if (rescheduledRepaymentDate != null) {
-			expectedFirstRepaymentDate = new LocalDate(rescheduledRepaymentDate);
-		} else {
-			expectedFirstRepaymentDate = nextPossibleRepaymentDate;
-		}
-		this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(expectedFirstRepaymentDate,
-				loan, actualDisbursementDate);
-		
-		
-		//validate first repayment date with meeting date
-		if (rescheduledRepaymentDate != null) {
-			Calendar calendar = null;
-			if (calendarInstance != null) {
-				calendar = calendarInstance.getCalendar();
-			}
-			if (calendar != null) {
-				boolean isSkipRepaymentOnFirstDayOfMonth = configurationDomainService
-						.isSkippingMeetingOnFirstDayOfMonthEnabled();
-				final Integer numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate()
-						.intValue();
-				this.loanScheduleAssembler.validateRepaymentsStartDateWithMeetingDates(
-						new LocalDate(rescheduledRepaymentDate), calendar, isSkipRepaymentOnFirstDayOfMonth,
-						numberOfDays);
-			}
-		}
+        LocalDate expectedFirstRepaymentDate = null;
+        if (rescheduledRepaymentDate != null) {
+            expectedFirstRepaymentDate = new LocalDate(rescheduledRepaymentDate);
+        } else {
+            expectedFirstRepaymentDate = nextPossibleRepaymentDate;
+        }
+        this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(expectedFirstRepaymentDate, loan,
+                actualDisbursementDate);
+        
+        // validate first repayment date with meeting date
+        if (rescheduledRepaymentDate != null) {
+            Calendar calendar = null;
+            if (calendarInstance != null) {
+                calendar = calendarInstance.getCalendar();
+            }
+            if (calendar != null) {
+                boolean isSkipRepaymentOnFirstDayOfMonth = configurationDomainService.isSkippingMeetingOnFirstDayOfMonthEnabled();
+                final Integer numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue();
+                this.loanScheduleAssembler.validateRepaymentsStartDateWithMeetingDates(new LocalDate(rescheduledRepaymentDate), calendar,
+                        isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
+            }
+        }
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
 
