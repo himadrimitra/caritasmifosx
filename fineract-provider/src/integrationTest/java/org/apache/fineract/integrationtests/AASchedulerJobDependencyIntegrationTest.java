@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements. See the NOTICE file
@@ -20,7 +19,6 @@
 
 package org.apache.fineract.integrationtests;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -40,157 +38,132 @@ import com.jayway.restassured.specification.ResponseSpecification;
 @SuppressWarnings({ "rawtypes", "unchecked", "static-access" })
 public class AASchedulerJobDependencyIntegrationTest {
 
-	private ResponseSpecification responseSpec;
-	private RequestSpecification requestSpec;
-	private SchedulerJobHelper schedulerJobHelper;
+    private ResponseSpecification responseSpec;
+    private RequestSpecification requestSpec;
+    private SchedulerJobHelper schedulerJobHelper;
 
-	@Before
-	public void setup() {
-		Utils.initializeRESTAssured();
-		this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
-		this.requestSpec.header("Authorization",
-				"Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
-		this.requestSpec.header("Fineract-Platform-TenantId", "default");
-		this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
-	}
+    @Before
+    public void setup() {
+        Utils.initializeRESTAssured();
+        this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
+        this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
+        this.requestSpec.header("Fineract-Platform-TenantId", "default");
+        this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+    }
 
-	@Test
-	public void testDependencyOfSchedulerJob() throws InterruptedException {
-		ArrayList<HashMap> allSchedulerJobsData = this.schedulerJobHelper.getAllSchedulerJobs(this.requestSpec,
-				this.responseSpec);
-		Assert.assertNotNull(allSchedulerJobsData);
-		
-		boolean jobWillNotExecute = true;
+    @Test
+    public void testDependencyOfSchedulerJob() throws InterruptedException {
+        ArrayList<HashMap> allSchedulerJobsData = this.schedulerJobHelper.getAllSchedulerJobs(this.requestSpec, this.responseSpec);
+        Assert.assertNotNull(allSchedulerJobsData);
 
-		executeDepentJobs(allSchedulerJobsData,jobWillNotExecute);
+        activateAllTheJobs(allSchedulerJobsData);
 
-		executeJobById(getJobIdFromName(allSchedulerJobsData, "Update Loan Arrears Ageing"));
-		
-		executeJobById(getJobIdFromName(allSchedulerJobsData, "Update Non Performing Assets"));
-		
-		jobWillNotExecute = false;
-		
-		executeDepentJobs(allSchedulerJobsData, jobWillNotExecute);
-		
-	}
+        boolean jobWillNotExecute = true;
 
-	private void executeJobById(Integer jobId) throws InterruptedException {
+        executeDepentJobs(allSchedulerJobsData, jobWillNotExecute);
 
-				// Retrieving Scheduler Job by ID
-				HashMap schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec,
-						jobId.toString());
-				Assert.assertNotNull(schedulerJob);
+        executeJobById(getJobIdFromName(allSchedulerJobsData, "Update Loan Arrears Ageing"));
 
-				Boolean active = (Boolean) schedulerJob.get("active");
+        executeJobById(getJobIdFromName(allSchedulerJobsData, "Update Non Performing Assets"));
 
-				if (active == true) {
-					active = false;
-				} else {
-					active = true;
-				}
+        jobWillNotExecute = false;
 
-				// Updating Scheduler Job
-				HashMap changes = this.schedulerJobHelper.updateSchedulerJob(this.requestSpec, this.responseSpec,
-						jobId.toString(), active.toString());
-				// Verifying Scheduler Job updation
-				Assert.assertEquals("Verifying Scheduler Job Updation", active, changes.get("active"));
+        executeDepentJobs(allSchedulerJobsData, jobWillNotExecute);
 
-				// Executing Scheduler Job
-				this.schedulerJobHelper.runSchedulerJob(this.requestSpec, jobId.toString());
+    }
 
-				// Retrieving Scheduler Job by ID
-				schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec,
-						jobId.toString());
-				Assert.assertNotNull(schedulerJob);
+    private void executeJobById(Integer jobId) throws InterruptedException {
 
-				// Waiting for Job to complete
-				while ((Boolean) schedulerJob.get("currentlyRunning") == true) {
-					Thread.sleep(15000);
-					schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec,
-							jobId.toString());
-					Assert.assertNotNull(schedulerJob);
-					System.out.println("Job is Still Running");
-				}
-				ArrayList<HashMap> jobHistoryData = this.schedulerJobHelper.getSchedulerJobHistory(this.requestSpec,
-						this.responseSpec, jobId.toString());
+        // Retrieving Scheduler Job by ID
+        HashMap schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+        Assert.assertNotNull(schedulerJob);
 
-				// Verifying the Status of the Recently executed Scheduler Job
-				Assert.assertEquals("Verifying Last Scheduler Job Status", "success",
-	                    jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
-	}
+        // Executing Scheduler Job
+        this.schedulerJobHelper.runSchedulerJob(this.requestSpec, jobId.toString());
 
-	private void executeDepentJobs(ArrayList<HashMap> allSchedulerJobsData, boolean jobWillNotExecute) throws InterruptedException {
-		for (Integer jobIndex = 0; jobIndex < allSchedulerJobsData.size(); jobIndex++) {
+        // Retrieving Scheduler Job by ID
+        schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+        Assert.assertNotNull(schedulerJob);
 
-			String jobName = (String) allSchedulerJobsData.get(jobIndex).get("displayName");
+        // Waiting for Job to complete
+        while ((Boolean) schedulerJob.get("currentlyRunning") == true) {
+            Thread.sleep(15000);
+            schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+            Assert.assertNotNull(schedulerJob);
+            System.out.println("Job is Still Running");
+        }
+        ArrayList<HashMap> jobHistoryData = this.schedulerJobHelper.getSchedulerJobHistory(this.requestSpec, this.responseSpec,
+                jobId.toString());
 
-			if (jobName.equals("Update Non Performing Assets") || jobName.equals("Recalculate Interest For Loans")
-					|| jobName.equals("Apply penalty to overdue loans")
-					|| jobName.equals("Add Accrual Transactions For Loans With Income Posted As Transactions")
-					|| jobName.equals("Add Periodic Accrual Transactions")
-					|| jobName.equals("Add Accrual Transactions")) {
-				Integer jobId = (Integer) allSchedulerJobsData.get(jobIndex).get("jobId");
+        // Verifying the Status of the Recently executed Scheduler Job
+        Assert.assertEquals("Verifying Last Scheduler Job Status", "success", jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
+    }
 
-				// Retrieving Scheduler Job by ID
-				HashMap schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec,
-						jobId.toString());
-				Assert.assertNotNull(schedulerJob);
+    private void activateAllTheJobs(ArrayList<HashMap> allSchedulerJobsData) {
+        for (HashMap scheduleDetail : allSchedulerJobsData) {
+            Boolean active = (Boolean) scheduleDetail.get("active");
+            Integer jobId = (Integer) scheduleDetail.get("jobId");
+            if (!active) {
+                active = true;
+                HashMap changes = this.schedulerJobHelper.updateSchedulerJob(this.requestSpec, this.responseSpec, jobId.toString(),
+                        active.toString());
+                // Verifying Scheduler Job updation
+                Assert.assertEquals("Verifying Scheduler Job Updation", active, changes.get("active"));
 
-				Boolean active = (Boolean) schedulerJob.get("active");
+            }
+        }
+    }
 
-				if (active == true) {
-					active = false;
-				} else {
-					active = true;
-				}
+    private void executeDepentJobs(ArrayList<HashMap> allSchedulerJobsData, boolean jobWillNotExecute) throws InterruptedException {
+        for (HashMap scheduleDetail : allSchedulerJobsData) {
 
-				// Updating Scheduler Job
-				HashMap changes = this.schedulerJobHelper.updateSchedulerJob(this.requestSpec, this.responseSpec,
-						jobId.toString(), active.toString());
-				// Verifying Scheduler Job updation
-				Assert.assertEquals("Verifying Scheduler Job Updation", active, changes.get("active"));
+            String jobName = (String) scheduleDetail.get("displayName");
 
-				// Executing Scheduler Job
-				this.schedulerJobHelper.runSchedulerJob(this.requestSpec, jobId.toString());
+            if (jobName.equals("Update Non Performing Assets") || jobName.equals("Recalculate Interest For Loans")
+                    || jobName.equals("Apply penalty to overdue loans")
+                    || jobName.equals("Add Accrual Transactions For Loans With Income Posted As Transactions")
+                    || jobName.equals("Add Periodic Accrual Transactions") || jobName.equals("Add Accrual Transactions")) {
+                Integer jobId = (Integer) scheduleDetail.get("jobId");
 
-				// Retrieving Scheduler Job by ID
-				schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec,
-						jobId.toString());
-				Assert.assertNotNull(schedulerJob);
+                // Retrieving Scheduler Job by ID
+                HashMap schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+                Assert.assertNotNull(schedulerJob);
 
-				// Waiting for Job to complete
-				while ((Boolean) schedulerJob.get("currentlyRunning") == true) {
-					Thread.sleep(15000);
-					schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec,
-							jobId.toString());
-					Assert.assertNotNull(schedulerJob);
-					System.out.println("Job is Still Running");
-				}
-				ArrayList<HashMap> jobHistoryData = this.schedulerJobHelper.getSchedulerJobHistory(this.requestSpec,
-						this.responseSpec, jobId.toString());
+                // Executing Scheduler Job
+                this.schedulerJobHelper.runSchedulerJob(this.requestSpec, jobId.toString());
 
+                // Retrieving Scheduler Job by ID
+                schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+                Assert.assertNotNull(schedulerJob);
 
-				if(jobWillNotExecute){
-				Assert.assertTrue(jobHistoryData.isEmpty());
-				}
-				else{
-					Assert.assertEquals("Verifying Last Scheduler Job Status", "success",
-		                    jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
-				}
-			}
-		}
-	}
+                // Waiting for Job to complete
+                while ((Boolean) schedulerJob.get("currentlyRunning") == true) {
+                    Thread.sleep(15000);
+                    schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+                    Assert.assertNotNull(schedulerJob);
+                    System.out.println("Job is Still Running");
+                }
+                ArrayList<HashMap> jobHistoryData = this.schedulerJobHelper.getSchedulerJobHistory(this.requestSpec, this.responseSpec,
+                        jobId.toString());
 
-	private Integer getJobIdFromName(ArrayList<HashMap> allSchedulerJobsData, String name) {
+                if (jobWillNotExecute) {
+                    Assert.assertTrue(jobHistoryData.isEmpty());
+                } else {
+                    Assert.assertEquals("Verifying Last Scheduler Job Status", "success", jobHistoryData.get(jobHistoryData.size() - 1)
+                            .get("status"));
+                }
+            }
+        }
+    }
 
-		for (Integer jobIndex = 0; jobIndex < allSchedulerJobsData.size(); jobIndex++) {
+    private Integer getJobIdFromName(ArrayList<HashMap> allSchedulerJobsData, String name) {
 
-			String jobName = (String) allSchedulerJobsData.get(jobIndex).get("displayName");
+        for (HashMap scheduleDetail : allSchedulerJobsData) {
 
-			if (jobName.equals(name)) {
-				return (Integer) allSchedulerJobsData.get(jobIndex).get("jobId");
-			}
-		}
-		return null;
-	}
+            String jobName = (String) scheduleDetail.get("displayName");
+
+            if (jobName.equals(name)) { return (Integer) scheduleDetail.get("jobId"); }
+        }
+        return null;
+    }
 }
