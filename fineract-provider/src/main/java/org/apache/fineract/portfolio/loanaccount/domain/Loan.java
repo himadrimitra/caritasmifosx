@@ -2353,8 +2353,8 @@ public class Loan extends AbstractPersistable<Long> {
                 final boolean isSpecificToInstallment = false;
                 final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = scheduleGeneratorDTO.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
                 Date effectiveDateFrom = actualDisbursementDate.toDate();
-                if(!isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled && actualDisbursementDate.equals(nextPossibleRepaymentDate)){
-                    effectiveDateFrom = nextPossibleRepaymentDate.plusDays(1).toDate();
+                if (!isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled) {
+                    effectiveDateFrom = actualDisbursementDate.plusDays(1).toDate();
                 }
                 LoanTermVariations loanVariationTerms = new LoanTermVariations(LoanTermVariationType.EMI_AMOUNT.getValue(),
                         effectiveDateFrom, emiAmount, dateValue, isSpecificToInstallment, this, LoanStatus.ACTIVE.getValue());
@@ -6169,9 +6169,7 @@ public class Loan extends AbstractPersistable<Long> {
             for (LoanDisbursementDetails loanDisbursementDetail : loanDisbursementDetails) {
                 if (loanDisbursementDetail.actualDisbursementDate() == null) {
                     for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
-                        if ((isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled && installment.getDueDate().isEqual(loanDisbursementDetail.expectedDisbursementDateAsLocalDate()))
-                                || installment.getDueDate().isAfter(loanDisbursementDetail.expectedDisbursementDateAsLocalDate())
-                                && installment.isNotFullyPaidOff()) {
+                        if (installment.getDueDate().isAfter(loanDisbursementDetail.expectedDisbursementDateAsLocalDate())) {
                             nextRepaymentDate = installment.getDueDate();
                             break;
                         }
