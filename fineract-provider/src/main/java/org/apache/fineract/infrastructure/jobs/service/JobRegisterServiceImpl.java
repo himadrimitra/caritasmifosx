@@ -255,19 +255,19 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
     }
 
     private void scheduleJob(final ScheduledJobDetail scheduledJobDetails) {
-        if (!scheduledJobDetails.isActiveSchedular()) {
-            scheduledJobDetails.updateNextRunTime(null);
-            scheduledJobDetails.updateCurrentlyRunningStatus(false);
-            return;
-        }
         try {
             final JobDetail jobDetail = createJobDetail(scheduledJobDetails);
+            scheduledJobDetails.updateErrorLog(null);
+            scheduledJobDetails.updateJobKey(getJobKeyAsString(jobDetail.getKey()));
+            if (!scheduledJobDetails.isActiveSchedular()) {
+                scheduledJobDetails.updateNextRunTime(null);
+                scheduledJobDetails.updateCurrentlyRunningStatus(false);
+                return;
+            }
             final Trigger trigger = createTrigger(scheduledJobDetails, jobDetail);
             final Scheduler scheduler = getScheduler(scheduledJobDetails);
             scheduler.scheduleJob(jobDetail, trigger);
-            scheduledJobDetails.updateJobKey(getJobKeyAsString(jobDetail.getKey()));
             scheduledJobDetails.updateNextRunTime(trigger.getNextFireTime());
-            scheduledJobDetails.updateErrorLog(null);
         } catch (final Throwable throwable) {
             scheduledJobDetails.updateNextRunTime(null);
             final String stackTrace = getStackTraceAsString(throwable);
