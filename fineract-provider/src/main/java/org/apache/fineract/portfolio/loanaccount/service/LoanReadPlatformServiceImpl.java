@@ -454,28 +454,56 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public LoanTransactionData retrieveWaiveInterestDetails(final Long loanId) {
 
-        AppUser currentUser = this.context.authenticatedUser();
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ls.duedate AS duedate, ");
+        sb.append("IF((IFNULL(ls.interest_amount,0) - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) - IFNULL(ls.interest_waived_derived,0)) > 0,");
+        sb.append("(IFNULL(ls.interest_amount,0) - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) - IFNULL(ls.interest_waived_derived,0)),");
+        sb.append("ml.interest_outstanding_derived) AS waiveramount,");
+        sb.append(" ml.currency_code as currencyCode, ml.currency_digits as currencyDigits, ml.currency_multiplesof as inMultiplesOf, rc.`name` as currencyName, ");
+        sb.append(" rc.display_symbol as currencyDisplaySymbol, rc.internationalized_name_code as currencyNameCode ");
+        sb.append(" FROM m_loan ml");
+        sb.append(" LEFT JOIN (");
+        sb.append("SELECT mltemp.id AS loanId, MIN(lstemp.duedate) AS duedate");
+        sb.append(" FROM m_loan mltemp");
+        sb.append(" JOIN m_loan_repayment_schedule lstemp ON mltemp.id = lstemp.loan_id AND ((IFNULL(lstemp.interest_amount,0) - IFNULL(lstemp.interest_completed_derived,0) - IFNULL(lstemp.interest_writtenoff_derived,0) - IFNULL(lstemp.interest_waived_derived,0)) > 0)");
+        sb.append(" WHERE mltemp.id = ?");
+        sb.append(" GROUP BY mltemp.id) x ON x.loanId = ml.id");
+        sb.append(" LEFT JOIN m_loan_repayment_schedule ls ON ml.id = ls.loan_id AND x.duedate = ls.duedate");
+        sb.append(" join m_currency rc on rc.`code` = ml.currency_code ");
+        sb.append(" WHERE ml.id = ?");
 
-        // TODO - KW -OPTIMIZE - write simple sql query to fetch back overdue
-        // interest that can be waived along with the date of repayment period
-        // interest is overdue.
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
+        try {
 
-        final MonetaryCurrency currency = loan.getCurrency();
-        final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
-        final CurrencyData currencyData = applicationCurrency.toData();
+            Map<String, Object> data = this.jdbcTemplate.queryForMap(sb.toString(), loanId, loanId);
+            final BigDecimal amount = (BigDecimal) data.get("waiveramount");
+            LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+            if (data.get("duedate") != null) {
+                transactionDate = new LocalDate(data.get("duedate"));
+            }
 
-        final LoanTransaction waiveOfInterest = loan.deriveDefaultInterestWaiverTransaction(DateUtils.getLocalDateTimeOfTenant(),
-                currentUser);
+            final CurrencyData currencyData = fetchCurrencyData(data);
 
-        final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.WAIVE_INTEREST);
+            final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.WAIVE_INTEREST);
+            final BigDecimal outstandingLoanBalance = null;
+            final BigDecimal unrecognizedIncomePortion = null;
+            return new LoanTransactionData(null, null, null, transactionType, null, currencyData, transactionDate, amount, null, null,
+                    null, null, null, null, null, null, outstandingLoanBalance, unrecognizedIncomePortion, false);
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
 
-        final BigDecimal amount = waiveOfInterest.getAmount(currency).getAmount();
-        final BigDecimal outstandingLoanBalance = null;
-        final BigDecimal unrecognizedIncomePortion = null;
-        return new LoanTransactionData(null, null, null, transactionType, null, currencyData, waiveOfInterest.getTransactionDate(), amount,
-                null, null, null, null, null, null, null, null, outstandingLoanBalance, unrecognizedIncomePortion, false);
+    }
+
+    private CurrencyData fetchCurrencyData(Map<String, Object> data) {
+        final String currencyCode = (String) data.get("currencyCode");
+        final String currencyName = (String) data.get("currencyName");
+        final String currencyNameCode = (String) data.get("currencyNameCode");
+        final String currencyDisplaySymbol = (String) data.get("currencyDisplaySymbol");
+        final Integer currencyDigits = (Integer) data.get("currencyDigits");
+        final Integer inMultiplesOf = (Integer) data.get("inMultiplesOf");
+        final CurrencyData currencyData = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf,
+                currencyDisplaySymbol, currencyNameCode);
+        return currencyData;
     }
 
     @Override
@@ -493,26 +521,55 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public LoanApprovalData retrieveApprovalTemplate(final Long loanId) {
 
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
-
-        return new LoanApprovalData(loan.getProposedPrincipal(), DateUtils.getLocalDateOfTenant());
+        String sql = "select l.principal_amount_proposed from m_loan l where l.id = ?";
+        try {
+            final BigDecimal proposedPrincipal = this.jdbcTemplate.queryForObject(sql, BigDecimal.class, loanId);
+            return new LoanApprovalData(proposedPrincipal, DateUtils.getLocalDateOfTenant());
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
 
     }
 
     @Override
     public LoanTransactionData retrieveDisbursalTemplate(final Long loanId, boolean paymentDetailsRequired) {
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
-        final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.DISBURSEMENT);
-        Collection<PaymentTypeData> paymentOptions = null;
-        if (paymentDetailsRequired) {
-            paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-        }
-        final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
-        return LoanTransactionData.LoanTransactionDataForDisbursalTemplate(transactionType, loan.getExpectedDisbursedOnLocalDateForTemplate(), loan.getDisburseAmountForTemplate(), 
-        		paymentOptions, loan.retriveLastEmiAmount(), loan.getNextPossibleRepaymentDateForRescheduling(isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled));
 
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate ");
+        sql.append("FROM m_loan l");
+        sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
+        sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
+        sql.append(" left join (select ltemp.id loanId, Max(temptv.applicable_date) as maxemidate  from m_loan ltemp join m_loan_term_variations temptv on temptv.loan_id = ltemp.id and temptv.is_active = 1 and temptv.term_type = :termtype where ltemp.id = :loanId  group by ltemp.id) y on y.loanId = l.id");
+        sql.append(" left join m_loan_term_variations tv on tv.loan_id = l.id and tv.is_active = 1 and tv.term_type = :termtype and tv.applicable_date = y.maxemidate");
+        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date),DATE_ADD(IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date), INTERVAL 1 DAY))");
+        sql.append(" WHERE l.id = :loanId group by l.id");
+
+        final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService
+                .isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
+        Map<String, Object> paramMap = new HashMap<>(3);
+        paramMap.put("loanId", loanId);
+        paramMap.put("termtype", LoanTermVariationType.EMI_AMOUNT.getValue());
+        paramMap.put("changeEmi", isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
+        try {
+            Map<String, Object> data = this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap);
+
+            final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.DISBURSEMENT);
+            Collection<PaymentTypeData> paymentOptions = null;
+            if (paymentDetailsRequired) {
+                paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+            }
+            LocalDate expectedDisbursementDate = new LocalDate(data.get("expectedDisbursementDate"));
+            LocalDate nextDueDate = new LocalDate(data.get("nextDueDate"));
+            BigDecimal principal = (BigDecimal) data.get("principal");
+            BigDecimal fixedEmiAmount = null;
+            if (data.get("fixedEmiAmount") != null) {
+                fixedEmiAmount = (BigDecimal) data.get("fixedEmiAmount");
+            }
+            return LoanTransactionData.LoanTransactionDataForDisbursalTemplate(transactionType, expectedDisbursementDate, principal,
+                    paymentOptions, fixedEmiAmount, nextDueDate);
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
     }
 
     @Override
@@ -1877,33 +1934,56 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
     @Override
     public LoanTransactionData retrieveRecoveryPaymentTemplate(Long loanId) {
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
-        final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.RECOVERY_REPAYMENT);
-        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-        BigDecimal outstandingLoanBalance = null;
-        final BigDecimal unrecognizedIncomePortion = null;
-        return new LoanTransactionData(null, null, null, transactionType, null, null, null, loan.getTotalWrittenOff(), null, null, null,
-                null, null, unrecognizedIncomePortion, paymentOptions, null, null, null, outstandingLoanBalance, false);
-
+        try {
+            String sql = "select ml.total_writtenoff_derived from m_loan ml where ml.id = ?";
+            final BigDecimal writtenoffamount = this.jdbcTemplate.queryForObject(sql, BigDecimal.class, loanId);
+            final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.RECOVERY_REPAYMENT);
+            final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+            BigDecimal outstandingLoanBalance = null;
+            final BigDecimal unrecognizedIncomePortion = null;
+            return new LoanTransactionData(null, null, null, transactionType, null, null, null, writtenoffamount, null, null, null, null,
+                    null, unrecognizedIncomePortion, paymentOptions, null, null, null, outstandingLoanBalance, false);
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
     }
 
     @Override
     public LoanTransactionData retrieveLoanWriteoffTemplate(final Long loanId) {
 
-        final LoanAccountData loanAccountData = this.retrieveOne(loanId);
-        final Loan loan = loanRepository.findOne(loanId);
-        final BigDecimal outstandingLoanBalance = null;
-        final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.WRITEOFF);
-        final BigDecimal unrecognizedIncomePortion = null;
-        final List<CodeValueData> writeOffReasonOptions = new ArrayList<>(
-                this.codeValueReadPlatformService.retrieveCodeValuesByCode(LoanApiConstants.WRITEOFFREASONS));
-        LoanTransactionData loanTransactionData = new LoanTransactionData(null, null, null, transactionType, null,
-                loanAccountData.currency(), DateUtils.getLocalDateOfTenant(), loanAccountData.getTotalOutstandingAmount().subtract(
-                        loan.getTotalSubsidyAmount().getAmount()), null, null, null, null, null, null, null, null, outstandingLoanBalance,
-                unrecognizedIncomePortion, false);
-        loanTransactionData.setWriteOffReasonOptions(writeOffReasonOptions);
-        return loanTransactionData;
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ml.total_outstanding_derived- IFNULL(SUM(CASE lt.transaction_type_enum WHEN :addsubsidy THEN lt.amount WHEN :revokesubsidy THEN lt.amount * -1 END),0) AS outstanding, ");
+        sb.append("ml.currency_code AS currencyCode, ml.currency_digits AS currencyDigits, ml.currency_multiplesof AS inMultiplesOf, ");
+        sb.append("rc.`name` AS currencyName,rc.display_symbol AS currencyDisplaySymbol, rc.internationalized_name_code AS currencyNameCode");
+        sb.append(" FROM m_loan ml");
+        sb.append(" LEFT JOIN m_loan_transaction lt ON lt.loan_id = ml.id AND lt.is_reversed = 0 AND (lt.transaction_type_enum = :addsubsidy OR lt.transaction_type_enum = :revokesubsidy)");
+        sb.append(" JOIN m_currency rc ON rc.`code` = ml.currency_code");
+        sb.append(" WHERE ml.id = :loanId");
+        sb.append(" GROUP BY ml.id");
+
+        Map<String, Object> paramMap = new HashMap<>(3);
+        paramMap.put("loanId", loanId);
+        paramMap.put("addsubsidy", LoanTransactionType.ADD_SUBSIDY.getValue());
+        paramMap.put("revokesubsidy", LoanTransactionType.REVOKE_SUBSIDY.getValue());
+        try {
+            Map<String, Object> data = this.namedParameterJdbcTemplate.queryForMap(sb.toString(), paramMap);
+
+            BigDecimal principal = (BigDecimal) data.get("outstanding");
+            final CurrencyData currencyData = fetchCurrencyData(data);
+            final BigDecimal outstandingLoanBalance = null;
+            final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.WRITEOFF);
+            final BigDecimal unrecognizedIncomePortion = null;
+            final List<CodeValueData> writeOffReasonOptions = new ArrayList<>(
+                    this.codeValueReadPlatformService.retrieveCodeValuesByCode(LoanApiConstants.WRITEOFFREASONS));
+
+            LoanTransactionData loanTransactionData = new LoanTransactionData(null, null, null, transactionType, null, currencyData,
+                    DateUtils.getLocalDateOfTenant(), principal, null, null, null, null, null, null, null, null, outstandingLoanBalance,
+                    unrecognizedIncomePortion, false);
+            loanTransactionData.setWriteOffReasonOptions(writeOffReasonOptions);
+            return loanTransactionData;
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
     }
 
     @Override
@@ -2117,22 +2197,22 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         // TODO Auto-generated method stub
         this.context.authenticatedUser();
 
-        // TODO - KW - OPTIMIZE - write simple sql query to fetch back date of
-        // possible next transaction date.
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
-
-        final MonetaryCurrency currency = loan.getCurrency();
-        final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
-
-        final CurrencyData currencyData = applicationCurrency.toData();
-
+        CurrencyData currencyData = null;
+        try {
+            String sql = "SELECT ml.currency_code AS currencyCode, ml.currency_digits AS currencyDigits, ml.currency_multiplesof AS inMultiplesOf, "
+                    + "rc.`name` AS currencyName,rc.display_symbol AS currencyDisplaySymbol, rc.internationalized_name_code AS currencyNameCode "
+                    + "FROM m_loan ml JOIN m_currency rc ON rc.`code` = ml.currency_code WHERE ml.id = ?";
+            Map<String, Object> data = this.jdbcTemplate.queryForMap(sql, loanId);
+            currencyData = fetchCurrencyData(data);
+        }catch(EmptyResultDataAccessException e){
+            throw new LoanNotFoundException(loanId);
+        }
         final LocalDate earliestUnpaidInstallmentDate = new LocalDate();
 
         final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REFUND_FOR_ACTIVE_LOAN);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         return new LoanTransactionData(null, null, null, transactionType, null, currencyData, earliestUnpaidInstallmentDate,
-                retrieveTotalPaidInAdvance(loan.getId()).getPaidInAdvance(), null, null, null, null, null, null, paymentOptions, null,
+                retrieveTotalPaidInAdvance(loanId).getPaidInAdvance(), null, null, null, null, null, null, paymentOptions, null,
                 null, null, null, false);
     }
 
