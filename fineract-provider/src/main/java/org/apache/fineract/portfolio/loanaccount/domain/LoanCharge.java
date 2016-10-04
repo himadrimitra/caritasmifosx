@@ -1091,4 +1091,8 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public boolean isDueDateCharge() {
         return this.dueDate != null;
     }
+    
+    public boolean isUpfrontFee() {
+        return ChargeTimeType.fromInt(this.chargeTime).equals(ChargeTimeType.UPFRONT_FEE);
+    }
 }
