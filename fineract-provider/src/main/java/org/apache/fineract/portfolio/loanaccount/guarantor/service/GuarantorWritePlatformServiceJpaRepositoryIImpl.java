@@ -50,6 +50,7 @@ import org.apache.fineract.portfolio.loanaccount.guarantor.domain.GuarantorType;
 import org.apache.fineract.portfolio.loanaccount.guarantor.exception.DuplicateGuarantorException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.exception.GuarantorNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.exception.InvalidGuarantorException;
+import org.apache.fineract.portfolio.loanaccount.guarantor.exception.InvalidGuarantorSavingAccountException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.serialization.GuarantorCommandFromApiJsonDeserializer;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
@@ -111,6 +112,10 @@ public class GuarantorWritePlatformServiceJpaRepositoryIImpl implements Guaranto
             AccountAssociations accountAssociations = null;
             if (guarantorCommand.getSavingsId() != null) {
                 final SavingsAccount savingsAccount = this.savingsAccountAssembler.assembleFrom(guarantorCommand.getSavingsId());
+                if (savingsAccount.getActivationLocalDate().isAfter(loan.getDisbursementDate())) { 
+                    throw new InvalidGuarantorSavingAccountException("error.msg.loan.disbursement.date.before.account.activation.date",
+                        " loan disbursement date is before savings activation date ", savingsAccount.getActivationLocalDate(),
+                        loan.getDisbursementDate()); }
                 accountAssociations = AccountAssociations.associateSavingsAccount(loan, savingsAccount,
                         AccountAssociationType.GUARANTOR_ACCOUNT_ASSOCIATION.getValue(), true);
 
