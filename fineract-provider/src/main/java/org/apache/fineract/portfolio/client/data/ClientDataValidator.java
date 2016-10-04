@@ -19,15 +19,18 @@
 package org.apache.fineract.portfolio.client.data;
 
 import java.lang.reflect.Type;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -36,6 +39,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.deduplication.service.DeDuplicationService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -47,10 +52,16 @@ import com.google.gson.reflect.TypeToken;
 public final class ClientDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
-
+    private final ConfigurationDomainService configurationDomainService;
+    private final DeDuplicationService deDuplicationService;
+    
     @Autowired
-    public ClientDataValidator(final FromJsonHelper fromApiJsonHelper) {
+    public ClientDataValidator(final FromJsonHelper fromApiJsonHelper,
+    		final ConfigurationDomainService configurationDomainService,
+    		final DeDuplicationService deDuplicationService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.configurationDomainService =  configurationDomainService;
+        this.deDuplicationService = deDuplicationService;
     }
 
     public void validateForCreate(final String json) {
@@ -535,6 +546,7 @@ public final class ClientDataValidator {
                 .resource(ClientApiConstants.CLIENT_RESOURCE_NAME);
 
         final JsonElement element = command.parsedJson();
+        
 
         final LocalDate activationDate = this.fromApiJsonHelper.extractLocalDateNamed(ClientApiConstants.activationDateParamName, element);
         baseDataValidator.reset().parameter(ClientApiConstants.activationDateParamName).value(activationDate).notNull();
@@ -768,5 +780,24 @@ public final class ClientDataValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
 
     }
+    
+	public void validateForClientDuplication(Client client, boolean creation) {
+		if(configurationDomainService.isCustomerDeDuplicationEnabled()){
+		String table = "m_client";
+		Map<String, Object> clientDeDuplicationData = new LinkedHashMap<String, Object>();
+		clientDeDuplicationData.put("firstname", client.getFirstname());
+		clientDeDuplicationData.put("middlename", client.getMiddlename());
+		clientDeDuplicationData.put("lastname", client.getLastname());
+		clientDeDuplicationData.put("date_of_birth",  client.dateOfBirthLocalDate());
+		clientDeDuplicationData.put("mobile_no", client.getMobileNo());
+		clientDeDuplicationData.put("fullname", client.getFirstname());
+		clientDeDuplicationData.put("display_name", client.getDisplayName());
+		clientDeDuplicationData.put("external_id", client.getExternalId());
+		clientDeDuplicationData.put("name", client.getOfficeName());
+		clientDeDuplicationData.put("account_no", client.getAccountNumber());
+		
+		this.deDuplicationService.duplicationCheck(clientDeDuplicationData, table, creation);
+		}
+	}
     
 }

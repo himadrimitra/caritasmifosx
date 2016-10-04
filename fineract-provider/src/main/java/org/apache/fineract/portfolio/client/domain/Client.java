@@ -473,7 +473,59 @@ public final class Client extends AbstractPersistable<Long> {
         return ClientStatus.fromInt(this.status).isWithdrawn();
     }
     
-    public Map<String, Object> update(final JsonCommand command) {
+    public String getFirstname() {
+		return this.firstname;
+	}
+
+	public void setFirstname(String firstname) {
+		this.firstname = firstname;
+	}
+
+	public String getMiddlename() {
+		return this.middlename;
+	}
+
+	public void setMiddlename(String middlename) {
+		this.middlename = middlename;
+	}
+
+	public String getLastname() {
+		return this.lastname;
+	}
+
+	public void setLastname(String lastname) {
+		this.lastname = lastname;
+	}
+
+	public Date getDateOfBirth() {
+		return this.dateOfBirth;
+	}
+
+	public void setDateOfBirth(Date dateOfBirth) {
+		this.dateOfBirth = dateOfBirth;
+	}
+
+	public String getMobileNo() {
+		return this.mobileNo;
+	}
+	
+	public String getFullname() {
+		return this.fullname;
+	}
+
+	public String getExternalId() {
+		return this.externalId;
+	}
+	
+	public String getAccountNumber() {
+		return this.accountNumber;
+	}
+	
+	public String getOfficeName(){
+		return this.office.getName();
+	}
+
+	public Map<String, Object> update(final JsonCommand command) {
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(9);
 

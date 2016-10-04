@@ -287,7 +287,12 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 final CommandWrapper commandWrapper = new CommandWrapperBuilder().activateClient(null).build();
                 rollbackTransaction = this.commandProcessingService.validateCommand(commandWrapper, currentUser);
             }
-
+            
+            if(command.booleanPrimitiveValueOfParameterNamed(ClientApiConstants.activeParamName)){
+            	boolean creation = true;
+            this.fromApiJsonDeserializer.validateForClientDuplication(newClient, creation);
+            }
+            
             this.clientRepository.save(newClient);
 
             if (newClient.isAccountNumberRequiresAutoGeneration()) {
@@ -561,13 +566,16 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
 
     @Transactional
     @Override
-    public CommandProcessingResult activateClient(final Long clientId, final JsonCommand command) {
+    public CommandProcessingResult activateClient(final Long clientId, boolean forceActivate, final JsonCommand command) {
         try {
             this.fromApiJsonDeserializer.validateActivation(command);
 
             final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             validateParentGroupRulesBeforeClientActivation(client);
-
+            if(! forceActivate){
+            boolean creation = false;
+            this.fromApiJsonDeserializer.validateForClientDuplication(client, creation);
+            }
             final Locale locale = command.extractLocale();
             final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
             final LocalDate activationDate = command.localDateValueOfParameterNamed("activationDate");

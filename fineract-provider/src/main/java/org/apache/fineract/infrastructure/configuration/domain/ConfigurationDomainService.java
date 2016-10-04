@@ -105,4 +105,7 @@ public interface ConfigurationDomainService {
 
 	GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(
 			String propertyName);
+    
+    boolean isCustomerDeDuplicationEnabled();
+
 }

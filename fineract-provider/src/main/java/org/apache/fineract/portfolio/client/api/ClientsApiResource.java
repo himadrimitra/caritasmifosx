@@ -260,7 +260,10 @@ public class ClientsApiResource {
         if (is(commandParam, "activate")) {
             commandRequest = builder.activateClient(clientId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        } else if (is(commandParam, "assignStaff")) {
+		} else if (is(commandParam, "forceActivate")) {
+			commandRequest = builder.forceActivateClient(clientId).build();
+			result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else if (is(commandParam, "assignStaff")) {
             commandRequest = builder.assignClientStaff(clientId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
             return this.toApiJsonSerializer.serialize(result);

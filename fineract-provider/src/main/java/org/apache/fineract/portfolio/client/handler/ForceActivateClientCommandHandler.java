@@ -28,13 +28,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@CommandType(entity = "CLIENT", action = "ACTIVATE")
-public class ActivateClientCommandHandler implements NewCommandSourceHandler {
+@CommandType(entity = "CLIENT", action = "FORCE_ACTIVATE")
+public class ForceActivateClientCommandHandler implements NewCommandSourceHandler {
 
     private final ClientWritePlatformService clientWritePlatformService;
 
     @Autowired
-    public ActivateClientCommandHandler(final ClientWritePlatformService clientWritePlatformService) {
+    public ForceActivateClientCommandHandler(final ClientWritePlatformService clientWritePlatformService) {
         this.clientWritePlatformService = clientWritePlatformService;
     }
 
@@ -42,7 +42,7 @@ public class ActivateClientCommandHandler implements NewCommandSourceHandler {
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
     	
-    	boolean forceActivate = false;
+    	boolean forceActivate = true;
         return this.clientWritePlatformService.activateClient(command.entityId(), forceActivate, command);
     }
 }
