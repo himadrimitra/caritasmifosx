@@ -3,6 +3,8 @@ package com.finflux.commands.service;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 
+import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
+import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.finflux.reconcilation.ReconciliationApiConstants;
 
 public class CommandWrapperBuilder {
@@ -123,4 +125,37 @@ public class CommandWrapperBuilder {
         this.href = "/clients/" + clientId + "/recurringcharges/" + recurringChargeId;
         return this;
     }
+
+    public CommandWrapperBuilder updateSecondaryAuthenticationService(final Long authenticationServiceId) {
+		this.actionName = "UPDATE";
+		this.entityName = "AUTHENTICATIONSERVICE";
+		this.entityId = authenticationServiceId;
+		this.href = "/external/authentications/services/" + authenticationServiceId;
+		return this;
+	}
+    
+	public CommandWrapperBuilder createTransactionAuthenticationService() {
+		this.actionName = TransactionAuthenticationApiConstants.CREATE_ACTION;
+		this.entityName = TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_SERVICE;
+		this.entityId = null;
+		this.href = "/transaction/authentications";
+		return this;
+	}
+    
+	public CommandWrapperBuilder updateTransactionAuthenticationService(final Long transactionAuthenticationServiceId) {
+		this.actionName = TransactionAuthenticationApiConstants.UPDATE_ACTION;
+		this.entityName = TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_SERVICE;
+		this.entityId = transactionAuthenticationServiceId;
+		this.href = "/transaction/authentications/" + transactionAuthenticationServiceId;
+		return this;
+	}
+	
+	public CommandWrapperBuilder deleteTransactionAuthenticationService(final Long transactionAuthenticationServiceId) {
+		this.actionName = TransactionAuthenticationApiConstants.DELETE_ACTION;
+		this.entityName = TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_SERVICE;
+		this.entityId = transactionAuthenticationServiceId;
+		this.href = "/transaction/authentications/" + transactionAuthenticationServiceId;
+		return this;
+	}
+	
 }

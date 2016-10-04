@@ -9,3 +9,4 @@ repos
 *.log
 !gradle/wrapper/gradle-wrapper.jar
 /gradle
+!/libs/*.jar

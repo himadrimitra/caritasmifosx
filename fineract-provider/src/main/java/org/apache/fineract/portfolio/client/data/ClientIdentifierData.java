@@ -61,4 +61,12 @@ public class ClientIdentifierData {
         this.allowedDocumentTypes = allowedDocumentTypes;
         this.status = status;
     }
+
+	public CodeValueData getDocumentType() {
+		return documentType;
+	}
+
+	public String getDocumentKey() {
+		return documentKey;
+	}
 }

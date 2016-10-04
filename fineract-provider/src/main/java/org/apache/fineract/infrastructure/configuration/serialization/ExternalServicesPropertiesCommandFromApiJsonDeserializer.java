@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.configuration.exception.ExternalServiceConfigurationNotFoundException;
+import org.apache.fineract.infrastructure.configuration.service.ExternalServicesConstants.AADHAAR_JSON_INPUT_PARAMS;
 import org.apache.fineract.infrastructure.configuration.service.ExternalServicesConstants.S3_JSON_INPUT_PARAMS;
 import org.apache.fineract.infrastructure.configuration.service.ExternalServicesConstants.SMTP_JSON_INPUT_PARAMS;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
@@ -38,6 +39,7 @@ public class ExternalServicesPropertiesCommandFromApiJsonDeserializer {
 
     private final Set<String> S3SupportedParameters = S3_JSON_INPUT_PARAMS.getAllValues();
     private final Set<String> SMTPSupportedParameters = SMTP_JSON_INPUT_PARAMS.getAllValues();
+    private final Set<String> AadhaarSupportedParameters = AADHAAR_JSON_INPUT_PARAMS.getAllValues();
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
@@ -57,7 +59,11 @@ public class ExternalServicesPropertiesCommandFromApiJsonDeserializer {
             case "SMTP":
                 this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, this.SMTPSupportedParameters);
             break;
-
+            
+            case "Aadhaar":
+			this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, this.AadhaarSupportedParameters);
+			break;
+            
             default:
                 throw new ExternalServiceConfigurationNotFoundException(externalServiceName);
         }

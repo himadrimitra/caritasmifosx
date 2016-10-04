@@ -84,6 +84,7 @@
 	<jpa:repositories base-package="org.apache.fineract.template.domain" />
 	<jpa:repositories base-package="com.finflux.infrastructure.*.*.domain" />
 	<jpa:repositories base-package="com.finflux.*.domain" />
+	<jpa:repositories base-package="com.finflux.*.*.*.domain" />
 	<jpa:repositories base-package="com.finflux.*.*.domain" />
 	<import resource="infrastructure.xml" />
 

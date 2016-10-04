@@ -21,6 +21,7 @@ package org.apache.fineract.integrationtests.common.loans;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -558,10 +559,19 @@ public class LoanTransactionHelper {
         return (HashMap) response.get("status");
     }
     
-    private Object performLoanTransaction(final String postURLForLoanTransaction, final String jsonToBeSent, ResponseSpecification responseValidationError) {
-    	
-    	        return  Utils.performServerPost(this.requestSpec, responseValidationError, postURLForLoanTransaction, jsonToBeSent, CommonConstants.RESPONSE_ERROR);    	       
-    	   }
+    private HashMap performLoanTransactionAuthentication(final String postURLForLoanTransaction, final String jsonToBeSent) {
+
+		final HashMap response =  Utils.performServerPost(this.requestSpec, this.responseSpec, postURLForLoanTransaction,
+				jsonToBeSent, "changes");
+		return (HashMap) response.get("status");
+	}
+    
+	private Object performLoanTransaction(final String postURLForLoanTransaction, final String jsonToBeSent,
+			ResponseSpecification responseValidationError) {
+
+		return Utils.performServerPost(this.requestSpec, responseValidationError, postURLForLoanTransaction,
+				jsonToBeSent, CommonConstants.RESPONSE_ERROR);
+	}
     
     private Float performUndoLastLoanDisbursementTransaction(final String postURLForLoanTransaction, final String jsonToBeSent) {
 
@@ -743,4 +753,45 @@ public class LoanTransactionHelper {
         System.out.println(json);
         return json;
     }
+
+    public HashMap disburseLoan(final String date, final Integer loanID, final Integer paymentTypeid,
+			final Integer transactionAuthenticationId, final String authenticationType, final String clientAuthData,
+			final BigDecimal amount, final ResponseSpecification responseValidationError) {
+		final String jsonToBeSent = getDisburseBodyAsJSON( date, paymentTypeid, transactionAuthenticationId, authenticationType, clientAuthData, amount);
+		System.out.println("the json is "+jsonToBeSent +" loan id "+loanID);
+		return performLoanTransactionAuthentication(createLoanOperationURL(DISBURSE_LOAN_COMMAND, loanID),
+				jsonToBeSent);
+	}
+
+    
+	public Object disburseLoanOnClientAuthentication(final String date, final Integer loanID, final Integer paymentTypeid,
+			final Integer transactionAuthenticationId, final String authenticationType, final String clientAuthData,
+			final BigDecimal amount, final ResponseSpecification responseValidationError) {
+		final String jsonToBeSent = getDisburseBodyAsJSON( date, paymentTypeid, transactionAuthenticationId, authenticationType, clientAuthData, amount);
+		System.out.println("the json is "+jsonToBeSent +" loan id "+loanID);
+		return performLoanTransaction(createLoanOperationURL(DISBURSE_LOAN_COMMAND, loanID),
+				jsonToBeSent, responseValidationError);
+	}
+
+	public static String getDisburseBodyAsJSON(final String date, final Integer paymentTypeId,
+			final Integer transactionAuthenticationId,
+			final String authenticationType, final String clientAuthData, final BigDecimal amount) {
+		final HashMap map = new HashMap<>();
+		map.put("locale", "en");
+		map.put("dateFormat", "dd MMMM yyyy");
+		map.put("transactionAmount", amount);
+		map.put("actualDisbursementDate", date);
+		map.put("paymentTypeId", paymentTypeId);
+		map.put("authenticationRuleId", transactionAuthenticationId);
+		//specify otp or fingerprint in authentication type
+		map.put("authenticationType", authenticationType);
+		map.put("clientAuthData", clientAuthData);
+		HashMap locationMap = new HashMap<>();
+		locationMap.put("locationType", "pincode");
+		locationMap.put("pincode", "560010");
+		map.put("location", locationMap);
+		String json = new Gson().toJson(map);
+		System.out.println(json);
+		return json;
+	}
 }

@@ -1226,6 +1226,14 @@
 							</tr>
 							<tr>
 								<td></td>
+								<td>loans/{loanId}?command=disburse</td>
+								<td><a href="#loans_disburse_using_secondary_authentication">Disburse Loan Using Secondary Authenticationb</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
 								<td>loans/{loanId}?command=disburseToSavings</td>
 								<td><a href="#loans_disburse_to_savings">Disburse Loan To Savings Account</a></td>
 								<td></td>
@@ -2791,6 +2799,16 @@
 										external service Configuration</a></td>
 								<td></td>
 							</tr>
+                            <tr>
+								<td><a href="#external_authentication_services">External Authentication Services</a></td>
+								<td>/external/authentications/services</td>
+								<td></td>
+								<td><a href="#external_authentication_service_read">Retrieve
+										a external authentication services</a></td>
+								<td><a href="#external_authentication_service_update">Update
+										external authentication service</a></td>
+								<td></td>
+							</tr>
 						</table>
 					</div>
 				</div>
@@ -2980,6 +2998,14 @@
                                  <td></td>
                                  <td></td>
                                  <td></td>
+                             </tr>
+                            <tr>
+                                 <td><a href="#transaction_authentication">Transaction Authentication</a></td>
+                                 <td>/transactions/authentication</td>
+                                <td><a href="#create_transaction_authentication">Create Transaction Authentication</a> </td>
+                                 <td><a href="#retrieve_transaction_authentication">List transaction authentication</a></td>
+                                 <td><a href="#transaction_authentication_update"> Update transaction authentication</a></td>
+                                 <td><td><a href="#transaction_authentication_delete"> Delete transaction authentication</a></td>
                              </tr>
 						</table>
 					</div>
@@ -10060,6 +10086,124 @@ Request Body:
   }
 }
 					</code>
+				</div>
+			</div>
+
+            <a id="loans_disburse_using_secondary_authentication" name="loans_disburse_using_secondary_authentication" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Disburse Loan</h4>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Mandatory Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>actualDisbursementDate</td>
+						</tr>
+                        <tr class=alt>
+							<td>Payment Type</td>
+						</tr>
+                        <tr class=alt>
+							<td>authenticationRuleId</td>
+						</tr>
+                        <tr class="alt">
+                            <td>transactionAmount</td>
+                        </tr>
+                        <tr class="alt">
+                            <td>clientAuthData (fingerprint data/ otp data) <a href="#generate_otp_for_loan_disbursement">Generate OTP for loan disbursement.</a></td>
+                        </tr>
+                        <tr class="alt">
+                            <td>authenticationType (fingerprint/otp)</td>
+                        </tr>
+					</table>
+					<br/>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Optional Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>fixedEmiAmount</td>
+						</tr>
+					</table>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/loans/{loanId}?command=disburse
+					</code>
+					<code class="method-request">
+POST loans/1?command=disburse
+Content-Type: application/json
+Request Body:
+{
+	"paymentTypeId": 39,
+	"dateFormat": "dd MMMM yyyy",
+	"transactionAmount": 11000,
+	"clientAuthData": "712578",
+	"location": {
+		"pincode": "560010",
+		"locationType": "pincode"
+	},
+	"authenticationType": "otp",
+	"locale": "en",
+	"actualDisbursementDate": "20 September 2011",
+	"authenticationRuleId": 20
+}
+</code>
+					<code class="method-response">
+{
+  "officeId": 1,
+  "clientId": 1,
+  "loanId": 1,
+  "resourceId": 1,
+  "changes": {
+    "accountNumber": "accno123",
+    "checkNumber": "chec123",
+    "routingCode": "rou123",
+    "receiptNumber": "rec123",
+    "bankNumber": "ban123",
+    "status": {
+      "id": 300,
+      "code": "loanStatusType.active",
+      "value": "Active",
+      "pendingApproval": false,
+      "waitingForDisbursal": false,
+      "active": true,
+      "closedObligationsMet": false,
+      "closedWrittenOff": false,
+      "closedRescheduled": false,
+      "closed": false,
+      "overpaid": false
+    },
+    "locale": "en",
+    "dateFormat": "dd MMMM yyyy",
+    "actualDisbursementDate": "14 May 2013",
+    "transactionAmount":10000
+  }
+}
+					</code>
+				</div>
+			</div>
+
+
+<a id="generate_otp_for_loan_disbursement" name="generate_otp_for_loan_disbursement" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Generate OTP for loan disbursement </h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/transactions/authentication/generate/otp
+					</code>
+					<code class="method-request">
+POST /transactions/authentication/generate/otp
+Content-Type: application/json
+Request Body:
+{
+"loanId":9,
+"authenticationRuleId":4
+}
+</code>
+					
 				</div>
 			</div>
 
@@ -18290,6 +18434,73 @@ Content-Type: application/json
 	"username" : "test@mifos.org"
 	"password" : "XXXX"
 }
+				</code>
+				</div>
+			</div>
+
+            <a id="external_authentication_services" name="external_authentication_services" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h3>External Authentication Services</h3>
+					<p>External Authentication Services related to authenticating server/ an internal mechanism to authenticate the user / customer. At present we are supporting only Aadhaar Service to Authentication </p>
+					<ol>
+						<li><b>Authenticate user using Aadhaar OTP</b></li>
+						<li><b>Authenticate user using Aadhaar Fingerprint</b> - </li>
+					</ol>
+				</div>
+			</div>
+
+            <a id="external_authentication_service_read" name="external_authentication_service_read"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve a external authentication services</h4>
+					<p>Retrive all available authentication services.</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+                        GET https://DomainName/api/v1//external/authentications/services
+					</code>
+					<code class="method-request">
+                    {
+                        "totalFilteredRecords": 2,
+                        "pageItems": [{
+                            "id": 1,
+                            "name": "Aadhaar OTP",
+                            "description": "Aadhar OTP service",
+                            "authServiceClassName": "SecondLevelAuthenticationService",
+                            "isActive": true
+                        },
+                        {
+                            "id": 2,
+                            "name": "Aadhaar fingerprint",
+                            "description": "Aadhaar fingerprint serveice",
+                            "authServiceClassName": "SecondLevelAuthenticationService",
+                            "isActive": true
+                        }]
+                    }
+				</code>
+				</div>
+			</div>
+
+            <a id="external_authentication_service_update" name="external_authentication_service_update"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Update a external authentication services</h4>
+					<p>Acitvate or Deactivate authentication services.</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+                        PUT https://DomainName/api/v1//external/authentications/services/{seriviceId}
+					</code>
+					<code class="method-request">
+                    {
+	                   "resourceId": 2,
+	                   "changes": {
+		               "isActive": false
+	                   }
+                    }
 				</code>
 				</div>
 			</div>
@@ -32805,6 +33016,133 @@ Request Body:
 
 
              <!-- end of Survey api docs -->
+
+            <!--start transaction authentication api docs -->
+                
+            <a id="transaction_authentication" name="survey_retrieve"
+                class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Transaction Authentication</h4>
+                     <p>Transaction authentication rule that defines the rule that has to be applied to a transaction. if the transaction type matches portfolio type, transaction type, payment type and amount grater or equal to then the authentication type is choosen to authenticate the user.
+                         
+                         portfolio type : Loans, savings
+                         transaction type : disbursement, repayment, withdrawal, deposit
+                         payment type : cash/ online payment/ neft etc..
+                         amount : transaction amount grater or equal to which the rule has to be applied.
+                         authentication type : otp/ fingerprint
+                     </p>
+                 </div>
+                </div>
+
+                <a id="create_transaction_authentication" name="create_transaction_authentication"
+                class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Create Transaction Authentication </h4>
+                 </div>
+                 <div class="method-example">
+                     <code class="method-declaration">
+                         POST https://DomainName/api/v1/transactions/authentication
+                     </code>
+                     <code class="method-request">
+                        {
+                            "portfolioTypeId": 1,
+                            "transactionTypeId": 1,
+                            "amount": 12000,
+                            "paymentTypeId": 1,
+                            "authenticationTypeId": 1,
+                            "locale": "en"
+                        }
+                     </code>
+                 </div>
+            </div>
+                 
+                 
+                 
+                  <a id="retrieve_transaction_authentication" name="retrieve_transaction_authentication"
+                class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Retrive all Transaction Authentication </h4>
+                 </div>
+                 <div class="method-example">
+                     <code class="method-declaration">
+                         GET https://DomainName/api/v1/transactions/authentication
+                     </code>
+                     <code class="method-request">
+                        [{
+                            "authenticationRuleId": 4,
+                            "amount": 10000.000000,
+                            "isSecondAppUserEnabled": false,
+                            "authenticationType": "Aadhaar OTP",
+                            "paymentType": {
+                                "id": 1,
+                                "name": "P_THL6TJ",
+                                "description": "PT_DescMHRTTGURNI11L50",
+                                "isCashPayment": true,
+                                "position": 1
+                            },
+                            "portfolioType": "Loans",
+                            "transactionType": "Disbursement"
+                        },
+                        {
+                            "authenticationRuleId": 5,
+                            "amount": 12000.000000,
+                            "isSecondAppUserEnabled": false,
+                            "authenticationType": "Aadhaar OTP",
+                            "paymentType": {
+                                "id": 1,
+                                "name": "P_THL6TJ",
+                                "description": "PT_DescMHRTTGURNI11L50",
+                                "isCashPayment": true,
+                                "position": 1
+                            },
+                            "portfolioType": "Loans",
+                            "transactionType": "Disbursement"
+                        }]
+                     </code>
+                 </div>
+                </div>
+
+<a id="transaction_authentication_update" name="transaction_authentication_update"
+                class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>UPDATE Transaction Authentication </h4>
+                 </div>
+                 <div class="method-example">
+                     <code class="method-declaration">
+                         PUT https://DomainName/api/v1/transactions/authentication/{authenticationRuleId}
+                     </code>
+                     <code class="method-request">
+                        {
+                            "portfolioTypeId": 1,
+                            "transactionTypeId": 1,
+                            "amount": 12000,
+                            "paymentTypeId": 1,
+                            "authenticationTypeId": 1,
+                            "locale": "en"
+                        }
+                     </code>
+                 </div>
+                </div>
+
+<a id="transaction_authentication_delete" name="transaction_authentication_delete"
+                class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Delete Transaction Authentication </h4>
+                 </div>
+                 <div class="method-example">
+                     <code class="method-declaration">
+                         DELETE https://DomainName/api/v1/transactions/authentication/{authenticationRuleId}
+                     </code>
+                 </div>
+                </div>
+
+
+            <!--end transaction authentication api docs-->
 
 			<!-- start of Notes api docs -->
 			<a id="notes" name="notes" class="old-syle-anchor">&nbsp;</a>

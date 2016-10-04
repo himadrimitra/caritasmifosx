@@ -28,6 +28,8 @@ import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.joda.time.LocalDate;
 
+import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
+
 /**
  * Immutable data object representing a loan transaction.
  */
@@ -66,6 +68,7 @@ public class LoanTransactionData {
     private String groupExternalId = null;
     private String loanAccountNumber = null;
     private  Collection<CodeValueData> writeOffReasonOptions = null;
+    private final Collection<TransactionAuthenticationData> transactionAuthenticationOptions;
 
     public static LoanTransactionData templateOnTop(final LoanTransactionData loanTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
@@ -165,6 +168,7 @@ public class LoanTransactionData {
         this.submittedOnDate = submittedOnDate;
         this.manuallyReversed = manuallyReversed;
         this.possibleNextRepaymentDate = null;
+        this.transactionAuthenticationOptions = null;
     }
 
     public LoanTransactionData(Long id, LoanTransactionEnumData transactionType, LocalDate date, BigDecimal totalAmount,
@@ -177,7 +181,8 @@ public class LoanTransactionData {
     
     public static LoanTransactionData LoanTransactionDataForDisbursalTemplate(final LoanTransactionEnumData transactionType, final LocalDate expectedDisbursedOnLocalDateForTemplate, 
 			final BigDecimal disburseAmountForTemplate,	final Collection<PaymentTypeData> paymentOptions,
-			final BigDecimal retriveLastEmiAmount, final LocalDate possibleNextRepaymentDate) {
+			final BigDecimal retriveLastEmiAmount, final LocalDate possibleNextRepaymentDate,
+			final Collection<TransactionAuthenticationData> transactionAuthenticationOptions) {
 		    final Long id = null;
 		    final Long officeId = null;
 		    final String officeName = null;
@@ -196,7 +201,7 @@ public class LoanTransactionData {
 		    final boolean manuallyReversed = false;
 			return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currency, expectedDisbursedOnLocalDateForTemplate,
 					disburseAmountForTemplate, principalPortion, interestPortion, feeChargesPortion, penaltyChargesPortion, overpaymentPortion,	unrecognizedIncomePortion, 
-					paymentOptions, transfer, externalId, retriveLastEmiAmount, outstandingLoanBalance, submittedOnDate, manuallyReversed, possibleNextRepaymentDate);
+					paymentOptions, transfer, externalId, retriveLastEmiAmount, outstandingLoanBalance, submittedOnDate, manuallyReversed, possibleNextRepaymentDate, transactionAuthenticationOptions);
 		
 	}
 
@@ -204,7 +209,9 @@ public class LoanTransactionData {
     		final CurrencyData currency, final LocalDate date,	BigDecimal amount, final BigDecimal principalPortion, final BigDecimal interestPortion, 
     		final BigDecimal feeChargesPortion, final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, BigDecimal unrecognizedIncomePortion,	Collection<PaymentTypeData> paymentOptions,
     		final AccountTransferData transfer, final String externalId, final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, 
-    		final LocalDate submittedOnDate, final boolean manuallyReversed, final LocalDate possibleNextRepaymentDate) {
+    		final LocalDate submittedOnDate, final boolean manuallyReversed,
+			final LocalDate possibleNextRepaymentDate,
+			final Collection<TransactionAuthenticationData> transactionAuthenticationOptions) {
     	 this.id = id;
          this.officeId = officeId;
          this.officeName = officeName;
@@ -227,6 +234,7 @@ public class LoanTransactionData {
          this.submittedOnDate = submittedOnDate;
          this.manuallyReversed = manuallyReversed;
          this.possibleNextRepaymentDate = possibleNextRepaymentDate;
+         this.transactionAuthenticationOptions = transactionAuthenticationOptions;
 	}
 
     private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -255,6 +263,7 @@ public class LoanTransactionData {
         this.fixedEmiAmount = null;
         this.feeChargesPortion = null;
         this.currency = null;
+        this.transactionAuthenticationOptions = null;
         this.groupExternalId = groupExternalId;
         this.loanAccountNumber = loanAccountNumber;
     }
