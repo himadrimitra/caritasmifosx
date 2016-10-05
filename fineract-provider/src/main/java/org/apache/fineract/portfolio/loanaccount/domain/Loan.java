@@ -5910,8 +5910,12 @@ public class Loan extends AbstractPersistable<Long> {
     private void validateRefundDateIsAfterLastRepayment(final LocalDate refundTransactionDate) {
         final LocalDate possibleNextRefundDate = possibleNextRefundDate();
 
-        if (possibleNextRefundDate == null || refundTransactionDate.isBefore(possibleNextRefundDate)) { throw new InvalidRefundDateException(
-                refundTransactionDate.toString()); }
+		if (possibleNextRefundDate == null || refundTransactionDate.isBefore(possibleNextRefundDate)) {
+			final String defaultUserMessage = "The refund date`" + refundTransactionDate + "`"
+					+ "` cannot be before the smallest repayment transaction date";
+			final String errorMsg = "error.msg.loan.refund.failed";
+			throw new InvalidRefundDateException(errorMsg, refundTransactionDate.toString(), defaultUserMessage);
+		}
 
     }
 
