@@ -558,4 +558,26 @@ public class ClientHelper {
 				CLIENT_URL + "/" + clientId + "/charges?" + Utils.TENANT_IDENTIFIER, json, "resourceId");
 	}
 
+    
+	public static Object addClientIdentifier(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final Integer clientId, final Integer documentTypeId,
+			final String documentKey, final String status) {
+		System.out.println("-----------------------------ADD CLIENT IDENTIFIER---------------------------");
+		final String ADD_CLIENT_IDENTIFIER_URL = "/fineract-provider/api/v1/clients/" + clientId + "/identifiers?" + Utils.TENANT_IDENTIFIER;
+		return Utils.performServerPost(requestSpec, responseSpec, ADD_CLIENT_IDENTIFIER_URL,
+				getJsonToAddClientIdentifier(documentTypeId, documentKey, status), "resourceId");
+	}
+
+	public static String getJsonToAddClientIdentifier(final Integer documentTypeId, final String documentKey,
+			final String status) {
+		HashMap hm = new HashMap();
+		hm.put("documentTypeId", documentTypeId);
+		hm.put("status", status);
+		hm.put("documentKey", documentKey);
+		System.out.println("the json is " + new Gson().toJson(hm));
+		System.out.println(
+				"------------------------Add client identifier TYPE-------------------------");
+
+		return new Gson().toJson(hm);
+	}
 }

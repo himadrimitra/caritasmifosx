@@ -131,6 +131,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
+import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticationPortfolioTypes;
+import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticaionTransactionTypes;
+import com.finflux.organisation.transaction.authentication.domain.SupportedTransactionTypeEnumerations;
+import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationReadPlatformService;
+
 @Service
 public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 	
@@ -157,8 +163,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final LoanUtilService loanUtilService;
     private final PledgeReadPlatformService pledgeReadPlatformService;
     private final ConfigurationDomainService configurationDomainService;
+
     private final static Logger logger = LoggerFactory.getLogger(LoanReadPlatformServiceImpl.class);
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
+    private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
+
 
     @Autowired
     public LoanReadPlatformServiceImpl(final PlatformSecurityContext context, final LoanRepository loanRepository,
@@ -173,7 +182,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final PledgeReadPlatformService pledgeReadPlatformService,
             final FloatingRatesReadPlatformService floatingRatesReadPlatformService, final LoanUtilService loanUtilService,
             final ConfigurationDomainService configurationDomainService,
-            final AccountDetailsReadPlatformService accountDetailsReadPlatformService) {
+            final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
+    		final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService) {
         this.context = context;
         this.loanRepository = loanRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -195,6 +205,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         this.loanUtilService = loanUtilService;
         this.configurationDomainService = configurationDomainService;
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
+        this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
     }
 
     @Override
@@ -535,7 +546,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public LoanTransactionData retrieveDisbursalTemplate(final Long loanId, boolean paymentDetailsRequired) {
 
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate ");
+        sql.append("SELECT IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -565,8 +576,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             if (data.get("fixedEmiAmount") != null) {
                 fixedEmiAmount = (BigDecimal) data.get("fixedEmiAmount");
             }
+            BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedPrincipal");
+            Collection<TransactionAuthenticationData> transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
+    				.retiveTransactionAuthenticationDetailsForTemplate(
+    						SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+    						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal);
             return LoanTransactionData.LoanTransactionDataForDisbursalTemplate(transactionType, expectedDisbursementDate, principal,
-                    paymentOptions, fixedEmiAmount, nextDueDate);
+                    paymentOptions, fixedEmiAmount, nextDueDate, transactionAuthenticationOptions);
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanNotFoundException(loanId);
         }

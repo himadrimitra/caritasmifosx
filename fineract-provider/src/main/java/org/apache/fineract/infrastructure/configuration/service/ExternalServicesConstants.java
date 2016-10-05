@@ -34,6 +34,11 @@ public class ExternalServicesConstants {
     public static final String SMTP_HOST = "host";
     public static final String SMTP_PORT = "port";
     public static final String SMTP_USE_TLS = "useTLS";
+    
+    public static final String AADHAAR_SERVICE_NAME = "Aadhaar_Service";
+    public static final String AADHAAR_HOST = "host";
+    public static final String PORT = "port";
+    public static final String CERTIFICATE = "certificate_type";
 
     public static enum EXTERNALSERVICEPROPERTIES_JSON_INPUT_PARAMS {
         EXTERNAL_SERVICE_ID("external_service_id"), NAME("name"), VALUE("value");
@@ -110,6 +115,37 @@ public class ExternalServicesConstants {
 
         static {
             for (final S3_JSON_INPUT_PARAMS type : S3_JSON_INPUT_PARAMS.values()) {
+                values.add(type.value);
+            }
+        }
+
+        public static Set<String> getAllValues() {
+            return values;
+        }
+
+        @Override
+        public String toString() {
+            return name().toString().replaceAll("_", " ");
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
+    
+    public static enum AADHAAR_JSON_INPUT_PARAMS {
+        HOST("host"), PORT("port"), CERTIFICATE("certificate_type");
+
+        private final String value;
+
+        private AADHAAR_JSON_INPUT_PARAMS(final String value) {
+            this.value = value;
+        }
+
+        private static final Set<String> values = new HashSet<>();
+
+        static {
+            for (final AADHAAR_JSON_INPUT_PARAMS type : AADHAAR_JSON_INPUT_PARAMS.values()) {
                 values.add(type.value);
             }
         }

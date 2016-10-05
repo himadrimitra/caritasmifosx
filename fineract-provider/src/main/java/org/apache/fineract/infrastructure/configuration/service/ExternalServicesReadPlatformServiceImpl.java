@@ -53,6 +53,10 @@ public class ExternalServicesReadPlatformServiceImpl implements ExternalServices
             case "SMTP":
                 serviceNameToUse = ExternalServicesConstants.SMTP_SERVICE_NAME;
             break;
+            
+            case "Aadhaar":
+            	serviceNameToUse = ExternalServicesConstants.AADHAAR_SERVICE_NAME;
+			break;
 
             default:
                 throw new ExternalServiceConfigurationNotFoundException(serviceName);
