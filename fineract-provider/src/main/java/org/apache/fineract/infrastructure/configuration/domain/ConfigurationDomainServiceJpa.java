@@ -363,4 +363,10 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public boolean isSearchIncludeGroupInfo() {
         return getGlobalConfigurationPropertyData("show-hierarchy-details-on-search").isEnabled();
     }
+    
+    @Override
+    public boolean isCustomerDeDuplicationEnabled() {
+        return getGlobalConfigurationPropertyData("customer-deduplication").isEnabled();
+    }
+    
 }

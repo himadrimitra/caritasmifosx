@@ -437,6 +437,15 @@ public class CommandWrapperBuilder {
         this.href = "/clients/" + clientId + "?command=activate&template=true";
         return this;
     }
+    
+    public CommandWrapperBuilder forceActivateClient(final Long clientId) {
+        this.actionName = "FORCE_ACTIVATE";
+        this.entityName = "CLIENT";
+        this.entityId = clientId;
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "?command=forceActivate&template=true";
+        return this;
+    }
 
     public CommandWrapperBuilder closeClient(final Long clientId) {
         this.actionName = "CLOSE";
