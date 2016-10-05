@@ -58,14 +58,14 @@ public class ExistingLoanData {
     private final Collection<CodeValueData> externalLoanPurposeOptions;
     private final Collection<EnumOptionData> loanTenaureOptions;
     private final Collection<EnumOptionData> termPeriodFrequencyType;
-    //added
-    private final Collection<LoanStatusEnumData>loanStatusOptions;
+    // added
+    private final Collection<LoanStatusEnumData> loanStatusOptions;
 
     public static ExistingLoanData ExistingLoanDataTemplate(final Collection<CodeValueData> sourceCvOptions,
             final Collection<CodeValueData> bureauCvOptions, final Collection<CodeValueData> lenderCvOptions,
             final Collection<CodeValueData> loanTypeCvOptions, final Collection<CodeValueData> externalLoanPurposeOptions,
             final Collection<EnumOptionData> loanTenaureOptions, final Collection<EnumOptionData> termPeriodFrequencyType,
-             final Collection<LoanStatusEnumData>loanStatusOptions) {
+            final Collection<LoanStatusEnumData> loanStatusOptions) {
         final Long id = null;
         final Long clientId = null;
         final Long loanApplicationId = null;
@@ -104,7 +104,7 @@ public class ExistingLoanData {
                 amountOverdue, writtenOffAmount, loanTenurePeriodType, loanTenaure, repaymentFrequencyMultipleOf, repaymentFrequency,
                 installmentAmount, externalLoanPurposeCvId, externalLoanPurposeCvName, gt0Dpd3Mths, dpd30Mths12, dpd30Mths24, dpd60Mths24,
                 remark, archive, timeline, sourceCvOptions, bureauCvOptions, lenderCvOptions, loanTypeCvOptions,
-                externalLoanPurposeOptions, loanTenaureOptions, termPeriodFrequencyType,loanStatusOptions);
+                externalLoanPurposeOptions, loanTenaureOptions, termPeriodFrequencyType, loanStatusOptions);
     }
 
     public static ExistingLoanData ExistingLoanDataDetails(Long id, Long clientId, Long loanApplicationId, Long loanId,
@@ -121,14 +121,14 @@ public class ExistingLoanData {
         Collection<CodeValueData> externalLoanPurposeOptions = null;
         Collection<EnumOptionData> loanTenaureOptions = null;
         Collection<EnumOptionData> termPeriodFrequencyType = null;
-        final Collection<LoanStatusEnumData>loanStatusOptions=null;
+        final Collection<LoanStatusEnumData> loanStatusOptions = null;
 
         return new ExistingLoanData(id, clientId, loanApplicationId, loanId, status, sourceCvId, sourceCvName, bureauCvId, bureauCvName,
                 bureauEnqRefId, lenderCvId, lenderCvName, lenderNotListed, loanType, loanTypeName, amountBorrowed, currentOutstanding,
                 amountOverdue, writtenOffAmount, loanTenurePeriodType, loanTenaure, repaymentFrequencyMultipleOf, repaymentFrequency,
                 installmentAmount, externalLoanPurposeCvId, externalLoanPurposeCvName, gt0Dpd3Mths, dpd30Mths12, dpd30Mths24, dpd60Mths24,
                 remark, archive, timeline, sourceCvOptions, bureauCvOptions, lenderCvOptions, loanTypeCvOptions,
-                externalLoanPurposeOptions, loanTenaureOptions, termPeriodFrequencyType,loanStatusOptions);
+                externalLoanPurposeOptions, loanTenaureOptions, termPeriodFrequencyType, loanStatusOptions);
     }
 
     public ExistingLoanData(Long id, Long clientId, Long loanApplicationId, Long loanId, LoanStatusEnumData status, Long sourceCvId,
@@ -141,7 +141,7 @@ public class ExistingLoanData {
             Collection<CodeValueData> sourceCvOptions, Collection<CodeValueData> bureauCvOptions,
             Collection<CodeValueData> lenderCvOptions, Collection<CodeValueData> loanTypeCvOptions,
             Collection<CodeValueData> externalLoanPurposeOptions, Collection<EnumOptionData> loanTenaureOptions,
-            Collection<EnumOptionData> termPeriodFrequencyType,final Collection<LoanStatusEnumData>loanStatusOptions) {
+            Collection<EnumOptionData> termPeriodFrequencyType, final Collection<LoanStatusEnumData> loanStatusOptions) {
         this.id = id;
         this.clientId = clientId;
         this.loanApplicationId = loanApplicationId;
@@ -182,6 +182,6 @@ public class ExistingLoanData {
         this.externalLoanPurposeOptions = externalLoanPurposeOptions;
         this.loanTenaureOptions = loanTenaureOptions;
         this.termPeriodFrequencyType = termPeriodFrequencyType;
-        this.loanStatusOptions=loanStatusOptions;
+        this.loanStatusOptions = loanStatusOptions;
     }
 }

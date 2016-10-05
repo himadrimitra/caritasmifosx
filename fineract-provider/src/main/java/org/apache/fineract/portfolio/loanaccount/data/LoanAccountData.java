@@ -2139,4 +2139,7 @@ public class LoanAccountData {
 
         return LoanAccountData.collateralTemplate(loanCollateralOptions);
     }
+    public Long getLoanProductId() {
+        return loanProductId;
+    }
 }

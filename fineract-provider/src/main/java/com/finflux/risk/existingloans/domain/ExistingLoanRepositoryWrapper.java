@@ -2,6 +2,7 @@ package com.finflux.risk.existingloans.domain;
 
 import java.util.List;
 
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,5 +38,13 @@ public class ExistingLoanRepositoryWrapper {
 
     public void delete(final ExistingLoan existingLoan) {
         this.repository.delete(existingLoan);
+    }
+
+    public void delete(final List<ExistingLoan> existingLoans) {
+        this.repository.delete(existingLoans);
+    }
+    
+    public List<ExistingLoan> findByLoanApplicationIdAndSourceCvId(final Long loanApplicationId, final CodeValue sourceCvId) {
+        return this.repository.findByLoanApplicationIdAndSourceCvId(loanApplicationId, sourceCvId);
     }
 }

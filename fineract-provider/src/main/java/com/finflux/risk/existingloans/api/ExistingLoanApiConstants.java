@@ -23,10 +23,10 @@ public class ExistingLoanApiConstants {
     public static final String loanApplicationIdParamName = "loanApplicationId";
     public static final String loanIdParamName = "loanId";
     public static final String sourceCvIdParamName = "sourceCvId";
-    public static final String bureauCvIdParamName = "bureauCvId";
-    public static final String bureauEnqRefIdParamName = "bureauEnqRefId";
+    public static final String loanEnquiryIdParamName = "loanEnquiryId";
+    public static final String creditBureauProductIdParamName = "creditBureauProductId";
     public static final String lenderCvIdParamName = "lenderCvId";
-    public static final String lendernotlistedParamName = "lenderNotListed";
+    public static final String lenderNameParamName = "lenderName";
     public static final String loanTypeCvIdParamName = "loanTypeCvId";
     public static final String amountBorrowedParamName = "amountBorrowed";
     public static final String currentOutstandingIdParamName = "currentOutstanding";
@@ -35,7 +35,7 @@ public class ExistingLoanApiConstants {
     public static final String loanTenureParamName = "loanTenure";
     public static final String loanTenurePeriodTypeParamName = "loanTenurePeriodType";
     public static final String repaymentFrequencyParamName = "repaymentFrequency";
-    public static final String loanStatusOptionsParamName="loanStatusOptions";
+    public static final String loanStatusOptionsParamName = "loanStatusOptions";
     public static final String repaymentFrequencyMultipleOfParamName = "repaymentFrequencyMultipleOf";
     public static final String installmentAmountParamName = "installmentAmount";
     public static final String externalLoanPurposeCvIdParamName = "externalLoanPurposeCvId";
@@ -54,28 +54,29 @@ public class ExistingLoanApiConstants {
     public static final String lastmodifiedDate = "lastmodifiedDate";
 
     public static final Set<String> EXISTING_LOAN_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, clientIdParamName, loanApplicationIdParamName, loanIdParamName, sourceCvIdParamName, bureauCvIdParamName,
-            bureauEnqRefIdParamName, lenderCvIdParamName, lendernotlistedParamName, loanTypeCvIdParamName, amountBorrowedParamName,
-            currentOutstandingIdParamName, writtenoffamountParamName,amtOverdueParamName, loanTenureParamName, loanTenurePeriodTypeParamName,
-            repaymentFrequencyParamName, repaymentFrequencyMultipleOfParamName, installmentAmountParamName,
+            dateFormatParamName, clientIdParamName, loanApplicationIdParamName, loanIdParamName, sourceCvIdParamName,
+            loanEnquiryIdParamName, creditBureauProductIdParamName, lenderCvIdParamName, lenderNameParamName, loanTypeCvIdParamName,
+            amountBorrowedParamName, currentOutstandingIdParamName, writtenoffamountParamName, amtOverdueParamName, loanTenureParamName,
+            loanTenurePeriodTypeParamName, repaymentFrequencyParamName, repaymentFrequencyMultipleOfParamName, installmentAmountParamName,
             externalLoanPurposeCvIdParamName, loanStatusIdParamName, disbursedDateParamName, maturityDateParamName, gt0dpd3mthsParamName,
             dpd30mths12ParamName, dpd30mths24ParamName, dpd60mths24ParamName, remarkParamName, archiveParamName));
 
     public static final Set<String> EXISTING_LOAN_UPDATE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, clientIdParamName, loanApplicationIdParamName, loanIdParamName, sourceCvIdParamName, bureauCvIdParamName,
-            bureauEnqRefIdParamName, lenderCvIdParamName, lendernotlistedParamName, loanTypeCvIdParamName, amountBorrowedParamName,
-            currentOutstandingIdParamName, amtOverdueParamName,writtenoffamountParamName, loanTenureParamName, loanTenurePeriodTypeParamName,
-            repaymentFrequencyParamName, repaymentFrequencyMultipleOfParamName, installmentAmountParamName,
+            dateFormatParamName, clientIdParamName, loanApplicationIdParamName, loanIdParamName, sourceCvIdParamName,
+            loanEnquiryIdParamName, creditBureauProductIdParamName, lenderCvIdParamName, lenderNameParamName, loanTypeCvIdParamName,
+            amountBorrowedParamName, currentOutstandingIdParamName, amtOverdueParamName, writtenoffamountParamName, loanTenureParamName,
+            loanTenurePeriodTypeParamName, repaymentFrequencyParamName, repaymentFrequencyMultipleOfParamName, installmentAmountParamName,
             externalLoanPurposeCvIdParamName, loanStatusIdParamName, disbursedDateParamName, maturityDateParamName, gt0dpd3mthsParamName,
             dpd30mths12ParamName, dpd30mths24ParamName, dpd60mths24ParamName, remarkParamName, archiveParamName));
 
-    public static final Set<String> EXISTING_LOAN_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, clientIdParamName, loanApplicationIdParamName, loanIdParamName, sourceCvIdParamName, bureauCvIdParamName,
-            bureauEnqRefIdParamName, lenderCvIdParamName, lendernotlistedParamName, loanTypeCvIdParamName, amountBorrowedParamName,
-            currentOutstandingIdParamName, amtOverdueParamName,writtenoffamountParamName, loanTenureParamName, loanTenurePeriodTypeParamName,
-            repaymentFrequencyParamName, repaymentFrequencyMultipleOfParamName, installmentAmountParamName,
-            externalLoanPurposeCvIdParamName, loanStatusIdParamName, disbursedDateParamName, maturityDateParamName, gt0dpd3mthsParamName,
-            dpd30mths12ParamName, dpd30mths24ParamName, dpd60mths24ParamName, remarkParamName, archiveParamName,loanStatusOptionsParamName));
+    public static final Set<String> EXISTING_LOAN_RESPONSE_DATA_PARAMETERS = new HashSet<>(
+            Arrays.asList(localeParamName, dateFormatParamName, clientIdParamName, loanApplicationIdParamName, loanIdParamName,
+                    sourceCvIdParamName, loanEnquiryIdParamName, creditBureauProductIdParamName, lenderCvIdParamName, lenderNameParamName,
+                    loanTypeCvIdParamName, amountBorrowedParamName, currentOutstandingIdParamName, amtOverdueParamName,
+                    writtenoffamountParamName, loanTenureParamName, loanTenurePeriodTypeParamName, repaymentFrequencyParamName,
+                    repaymentFrequencyMultipleOfParamName, installmentAmountParamName, externalLoanPurposeCvIdParamName,
+                    loanStatusIdParamName, disbursedDateParamName, maturityDateParamName, gt0dpd3mthsParamName, dpd30mths12ParamName,
+                    dpd30mths24ParamName, dpd60mths24ParamName, remarkParamName, archiveParamName, loanStatusOptionsParamName));
 
     public static final String existingLoansParamName = "existingLoans";
 

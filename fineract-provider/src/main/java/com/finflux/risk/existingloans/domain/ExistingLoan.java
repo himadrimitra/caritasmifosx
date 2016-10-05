@@ -41,22 +41,21 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
     private Long loanApplicationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_cv_id", nullable = true)
+    @JoinColumn(name = "source_id", nullable = true)
     private CodeValue sourceCvId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bureau_cv_id", nullable = true)
-    private CodeValue bureauCvId;
+    @Column(name = "creditbureau_product_id", nullable = true)
+    private Long creditBureauProductId;
 
-    @Column(name = "bureau_enq_ref_id", nullable = true)
-    private Long bureauEnqRefId;
+    @Column(name = "loan_creditbureau_enquiry_id", nullable = true)
+    private Long loanEnquiryId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lender_cv_id", nullable = true)
     private CodeValue lenderCvId;
 
-    @Column(name = "lender_not_listed", nullable = true)
-    private String lenderNotListed;
+    @Column(name = "lender_name", nullable = true)
+    private String lenderName;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "loanType_cv_id", nullable = true)
@@ -123,32 +122,29 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
     private Integer archive;
 
     public static ExistingLoan saveExistingLoan(final Client client, final Long loanApplicationId, final Long loanId,
-            final CodeValue sourceCvId, final CodeValue bureauCvId, final Long bureauEnqRefId, final CodeValue lenderCvId,
-            final String lenderNotListed, final CodeValue loanType, final BigDecimal amountBorrowed, final BigDecimal currentOutstanding,
+            final CodeValue sourceCvId, final Long creditBureauProductId, final Long loanEnquiryId, final CodeValue lenderCvId,
+            final String lenderName, final CodeValue loanType, final BigDecimal amountBorrowed, final BigDecimal currentOutstanding,
             final BigDecimal amtOverdue, final BigDecimal writtenoffamount, final Integer loanTenure, final Integer loanTenurePeriodType,
             final Integer repaymentFrequency, final Integer repaymentFrequencyMultipleOf, final BigDecimal installmentAmount,
             final CodeValue externalLoanPurpose, final Integer status, final LocalDate disbursedDate, final LocalDate maturityDate,
             final Integer gt0dpd3mths, final Integer dpd30mths12, final Integer dpd30mths24, final Integer dpd60mths24,
             final String remark, final Integer archive) {
 
-        return new ExistingLoan(client, loanId, loanApplicationId, sourceCvId, bureauCvId, bureauEnqRefId, lenderCvId, lenderNotListed,
-                loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure, loanTenurePeriodType,
+        return new ExistingLoan(client, loanId, loanApplicationId, sourceCvId, creditBureauProductId, loanEnquiryId, lenderCvId,
+                lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure, loanTenurePeriodType,
                 repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, disbursedDate,
                 maturityDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
-
         final Map<String, Object> actualChanges = new LinkedHashMap<>(9);
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
-
         if (command.isChangeInIntegerParameterNamed(ExistingLoanApiConstants.loanStatusIdParamName, this.loanStatusId)) {
             final Integer newValue = command.integerValueOfParameterNamed(ExistingLoanApiConstants.loanStatusIdParamName);
             actualChanges.put(ExistingLoanApiConstants.loanStatusIdParamName, LoanStatus.fromInt(newValue));
             this.loanStatusId = LoanStatus.fromInt(newValue).getValue();
         }
-
         if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.loanApplicationIdParamName, this.loanApplicationId)) {
             final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.loanApplicationIdParamName);
             actualChanges.put(ExistingLoanApiConstants.loanApplicationIdParamName, newValue);
@@ -159,19 +155,18 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(ExistingLoanApiConstants.loanIdParamName, newValue);
             this.loanId = newValue;
         }
-
-        if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.bureauEnqRefIdParamName, this.bureauEnqRefId)) {
-            final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.bureauEnqRefIdParamName);
-            actualChanges.put(ExistingLoanApiConstants.bureauEnqRefIdParamName, newValue);
-            this.bureauEnqRefId = newValue;
+        if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.creditBureauProductIdParamName, this.creditBureauProductId)) {
+            final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.creditBureauProductIdParamName);
+            actualChanges.put(ExistingLoanApiConstants.creditBureauProductIdParamName, newValue);
+            this.creditBureauProductId = newValue;
         }
         if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.sourceCvIdParamName, sourceId())) {
             final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.sourceCvIdParamName);
             actualChanges.put(ExistingLoanApiConstants.sourceCvIdParamName, newValue);
         }
-        if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.bureauCvIdParamName, bureauId())) {
-            final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.bureauCvIdParamName);
-            actualChanges.put(ExistingLoanApiConstants.bureauCvIdParamName, newValue);
+        if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.loanEnquiryIdParamName, this.loanEnquiryId)) {
+            final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.loanEnquiryIdParamName);
+            this.loanEnquiryId = newValue;
         }
         if (command.isChangeInLongParameterNamed(ExistingLoanApiConstants.lenderCvIdParamName, lenderId())) {
             final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.lenderCvIdParamName);
@@ -213,7 +208,6 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(ExistingLoanApiConstants.installmentAmountParamName, newValue);
             this.installmentAmount = newValue;
         }
-
         if (command.isChangeInIntegerParameterNamed(ExistingLoanApiConstants.repaymentFrequencyParamName, this.repaymentFrequency)) {
             final Integer newValue = command.integerValueOfParameterNamed(ExistingLoanApiConstants.repaymentFrequencyParamName);
             final PeriodFrequencyType newTermPeriodFrequencyType = PeriodFrequencyType.fromInt(newValue);
@@ -257,7 +251,7 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             this.disbursedDate = newValue.toDate();
 
         }
-        
+
         if (command.isChangeInIntegerParameterNamed(ExistingLoanApiConstants.dpd30mths12ParamName, this.dpd30mths12)) {
             final Integer newValue = command.integerValueOfParameterNamed(ExistingLoanApiConstants.dpd30mths12ParamName);
             actualChanges.put(ExistingLoanApiConstants.dpd30mths12ParamName, newValue);
@@ -289,7 +283,6 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(ExistingLoanApiConstants.remarkParamName, newValue);
             this.remark = newValue;
         }
-
         return actualChanges;
     }
 
@@ -299,14 +292,6 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             sourceId = this.sourceCvId.getId();
         }
         return sourceId;
-    }
-
-    public Long bureauId() {
-        Long bureauId = null;
-        if (this.bureauCvId != null) {
-            bureauId = this.bureauCvId.getId();
-        }
-        return bureauId;
     }
 
     public Long lenderId() {
@@ -353,10 +338,6 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
         this.sourceCvId = sourcecvId;
     }
 
-    public void updatebureauCvId(CodeValue bureaucuId) {
-        this.bureauCvId = bureaucuId;
-    }
-
     public void updateExternalLoanPurpose(CodeValue externalLoanPurpose) {
         this.externalLoanPurposeCvId = externalLoanPurpose;
     }
@@ -381,8 +362,8 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
 
     }
 
-    public ExistingLoan(Client client, Long loanId, Long loanApplicationId, CodeValue sourceCvId, CodeValue bureauCvId,
-            Long bureauEnqRefId, CodeValue lenderCvId, String lenderNotListed, CodeValue loanTypeCvId, BigDecimal amountBorrowed,
+    public ExistingLoan(Client client, Long loanId, Long loanApplicationId, CodeValue sourceCvId, Long creditBureauProductId,
+            Long loanEnquiryId, CodeValue lenderCvId, String lenderName, CodeValue loanTypeCvId, BigDecimal amountBorrowed,
             BigDecimal currentOutstanding, BigDecimal amtOverdue, BigDecimal writtenOffAmount, Integer loanTenure,
             Integer loanTenurePeriodType, Integer repaymentFrequency, Integer repaymentFrequencyMultipleOf, BigDecimal installmentAmount,
             CodeValue externalLoanPurposeCvId, Integer loanStatusId, LocalDate disbursedDate, LocalDate maturityDate, Integer gt0dpd3mths,
@@ -392,10 +373,10 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
         this.loanId = loanId;
         this.loanApplicationId = loanApplicationId;
         this.sourceCvId = sourceCvId;
-        this.bureauCvId = bureauCvId;
-        this.bureauEnqRefId = bureauEnqRefId;
+        this.creditBureauProductId = creditBureauProductId;
+        this.loanEnquiryId = loanEnquiryId;
         this.lenderCvId = lenderCvId;
-        this.lenderNotListed = lenderNotListed;
+        this.lenderName = lenderName;
         this.loanTypeCvId = loanTypeCvId;
         this.amountBorrowed = amountBorrowed;
         this.currentOutstanding = currentOutstanding;
@@ -420,6 +401,6 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
         this.dpd60mths24 = dpd60mths24;
         this.remark = remark;
         this.archive = archive;
-            }
+    }
 
 }

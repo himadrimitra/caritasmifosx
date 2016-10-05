@@ -583,6 +583,10 @@ final public class ClientData implements Comparable<ClientData> {
     }
     
     public Collection<GroupGeneralData> getGroups() {
-		return this.groups;
-	}
+        return this.groups;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
 }
