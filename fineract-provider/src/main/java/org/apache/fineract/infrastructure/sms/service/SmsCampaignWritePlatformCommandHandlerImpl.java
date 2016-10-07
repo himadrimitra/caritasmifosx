@@ -224,8 +224,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
                     Object mobileNo = entry.get("mobileNo");
 
                     Client client =  this.clientRepository.findOne(clientId.longValue());
-                    if(mobileNo !=null) {
-                        SmsMessage smsMessage = SmsMessage.pendingSms(null,null,client,null,textMessage,null,mobileNo.toString(),campaignName);
+                    if (mobileNo != null) {
+                        SmsMessage smsMessage = SmsMessage.pendingSms(null, null, null, null, client, null, textMessage, null,
+                                mobileNo.toString(), campaignName);
                         this.smsMessageRepository.save(smsMessage);
                     }
                 }

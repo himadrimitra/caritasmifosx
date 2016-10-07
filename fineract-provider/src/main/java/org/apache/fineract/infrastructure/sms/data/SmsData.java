@@ -36,16 +36,17 @@ public class SmsData {
     private final String mobileNo;
     private final String message;
     private final String campaignName;
-	private final LocalDate sentDate;
+    private final LocalDate sentDate;
 
-
-	public static SmsData instance(final Long id, Long externalId, final Long groupId, final Long clientId, final Long staffId, final EnumOptionData status,
-    		final String sourceAddress, final String mobileNo, final String message,final String campaignName,final LocalDate sentDate) {
-        return new SmsData(id, externalId, groupId, clientId, staffId, status, sourceAddress, mobileNo, message, campaignName,sentDate);
+    public static SmsData instance(final Long id, Long externalId, final Long groupId, final Long clientId, final Long staffId,
+            final EnumOptionData status, final String sourceAddress, final String mobileNo, final String message,
+            final String campaignName, final LocalDate sentDate) {
+        return new SmsData(id, externalId, groupId, clientId, staffId, status, sourceAddress, mobileNo, message, campaignName, sentDate);
     }
 
-    private SmsData(final Long id, Long externalId, final Long groupId, final Long clientId, final Long staffId, final EnumOptionData status,
-            final String sourceAddress, final String mobileNo, final String message, final String campaignName,final LocalDate sentDate) {
+    private SmsData(final Long id, Long externalId, final Long groupId, final Long clientId, final Long staffId,
+            final EnumOptionData status, final String sourceAddress, final String mobileNo, final String message,
+            final String campaignName, final LocalDate sentDate) {
         this.id = id;
         this.externalId = externalId;
         this.groupId = groupId;
@@ -56,73 +57,77 @@ public class SmsData {
         this.mobileNo = mobileNo;
         this.message = message;
         this.campaignName = campaignName;
-		this.sentDate = sentDate;
+        this.sentDate = sentDate;
     }
 
-	/**
-	 * @return the id
-	 */
-	public Long getId() {
-		return id;
-	}
+    /**
+     * @return the id
+     */
+    public Long getId() {
+        return id;
+    }
 
-	/**
-	 * @return the externalId
-	 */
-	public Long getExternalId() {
-		return externalId;
-	}
+    /**
+     * @return the externalId
+     */
+    public Long getExternalId() {
+        return externalId;
+    }
 
-	/**
-	 * @return the groupId
-	 */
-	public Long getGroupId() {
-		return groupId;
-	}
+    /**
+     * @return the groupId
+     */
+    public Long getGroupId() {
+        return groupId;
+    }
 
-	/**
-	 * @return the clientId
-	 */
-	public Long getClientId() {
-		return clientId;
-	}
+    /**
+     * @return the clientId
+     */
+    public Long getClientId() {
+        return clientId;
+    }
 
-	/**
-	 * @return the staffId
-	 */
-	public Long getStaffId() {
-		return staffId;
-	}
+    /**
+     * @return the staffId
+     */
+    public Long getStaffId() {
+        return staffId;
+    }
 
-	/**
-	 * @return the status
-	 */
-	public EnumOptionData getStatus() {
-		return status;
-	}
+    /**
+     * @return the status
+     */
+    public EnumOptionData getStatus() {
+        return status;
+    }
 
-	/**
-	 * @return the sourceAddress
-	 */
-	public String getSourceAddress() {
-		return sourceAddress;
-	}
+    /**
+     * @return the sourceAddress
+     */
+    public String getSourceAddress() {
+        return sourceAddress;
+    }
 
-	/**
-	 * @return the mobileNo
-	 */
-	public String getMobileNo() {
-		return mobileNo;
-	}
+    /**
+     * @return the mobileNo
+     */
+    public String getMobileNo() {
+        return mobileNo;
+    }
 
-	/**
-	 * @return the message
-	 */
-	public String getMessage() {
-		return message;
-	}
+    /**
+     * @return the message
+     */
+    public String getMessage() {
+        return message;
+    }
 
-	public String getCampaignName() {return this.campaignName;}
+    public String getCampaignName() {
+        return this.campaignName;
+    }
 
-	public LocalDate getSentDate() { return this.sentDate; }
+    public LocalDate getSentDate() {
+        return this.sentDate;
+    }
 }
