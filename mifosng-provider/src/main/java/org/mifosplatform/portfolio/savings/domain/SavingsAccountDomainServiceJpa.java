@@ -243,7 +243,8 @@ public class SavingsAccountDomainServiceJpa implements
 
 			final Loan loan = this.loanAssembler.assembleFrom(loanId);
 			
-			if(loan.isDisbursed() == true){
+            if (loan.isDisbursed() == true
+                    && (transactionDate.isAfter(loan.getDisbursementDate()) || transactionDate.isEqual(loan.getDisbursementDate()))) {
 			
 			final List<Guarantor> existGuarantorList = this.guarantorRepository
 					.findByLoan(loan);
