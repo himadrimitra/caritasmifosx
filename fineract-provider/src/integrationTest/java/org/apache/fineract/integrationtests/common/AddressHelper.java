@@ -52,6 +52,15 @@ public class AddressHelper {
         return addressId;
     }
 
+    public Object createDuplicateAddressType(final String entityType,final String entityId,final ResponseSpecification responseSpec){
+    	System.out.println("--------------------------------- Create Address " + entityType + " -------------------------------");
+        System.out.println(createAddressOperationURL(entityType, entityId));
+        final Object addressError = Utils.performServerPost(this.requestSpec,responseSpec,
+                createAddressOperationURL(entityType, entityId), getTestDuplicateAddressAsJSON(entityId), CommonConstants.RESPONSE_ERROR);
+        System.out.println("AddressType is already present : " + addressError);
+        return addressError;
+    }
+    
     private String getAddressTemplateURL(final String entityType) {
         return API_URL + "/" + entityType + "/addresses" + "/template?" + Utils.TENANT_IDENTIFIER;
     }
@@ -82,6 +91,23 @@ public class AddressHelper {
         System.out.println("map : " + map);
         return new Gson().toJson(map);
     }
+    public String getTestDuplicateAddressAsJSON(final String entityId) {
+		final HashMap<String, Object> map = new HashMap<>();
+		map.put("entityTypeEnum", "1");
+		map.put("entityId", entityId);
+		map.put("addressTypes", new Integer[] { 14 });
+		map.put("houseNo", "143");
+		map.put("addressLineOne", "addressLineOne");
+		map.put("talukaId", talukaId.toString());
+		map.put("districtId", districtId.toString());
+		map.put("stateId", stateId.toString());
+		map.put("countryId", countryId.toString());
+		map.put("postalCode", "560080");
+		map.put("locale", "en");
+		map.put("dateFormat", DATE_FORMAT);
+		System.out.println("map : " + map);
+		return new Gson().toJson(map);
+	}
 
     public Object updateAddress(final String entityType, final String entityId, final String addressId) {
         System.out.println("--------------------------------- update Address " + entityType + " -------------------------------");
@@ -148,7 +174,7 @@ public class AddressHelper {
     public String createTalukaJson() {
         final HashMap<String, Object> map = new HashMap<>();
 
-        map.put("isoTalukaCode", "BW");
+        map.put("isoTalukaCode", "BM");
         map.put("talukaName", "BengaluruWest");
 
         return new Gson().toJson(map);

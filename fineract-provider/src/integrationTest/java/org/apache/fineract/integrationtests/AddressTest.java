@@ -43,6 +43,9 @@ public class AddressTest {
         final Integer addressId = this.helper.createAddress("clients", clientId.toString());
         Assert.assertNotNull(addressId);
         
+        List<HashMap> errorMsg = (List<HashMap>)this.helper.createDuplicateAddressType("clients", clientId.toString(),this.responseCode); 
+        Assert.assertEquals("error.msg.Residential Address.address.with.addresstype.already.exists", errorMsg.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+        
         HashMap actualChanges = (HashMap)this.helper.updateAddress("clients",clientId.toString(),addressId.toString());
         Assert.assertNotNull(actualChanges);
         Assert.assertEquals("560080", ((HashMap) (actualChanges.get("changes"))).get("postalCode"));
