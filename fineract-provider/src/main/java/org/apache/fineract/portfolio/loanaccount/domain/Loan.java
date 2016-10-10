@@ -361,7 +361,11 @@ public class Loan extends AbstractPersistable<Long> {
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "loan", optional = true, orphanRemoval = true, fetch=FetchType.LAZY)
     private LoanTopupDetails loanTopupDetails;
-
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "last_repayment_date")
+    private Date lastRepaymentDate;
+    
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final CodeValue loanPurpose,
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
@@ -2773,6 +2777,7 @@ public class Loan extends AbstractPersistable<Long> {
             final boolean isScheduleRegenerateRequired = isRepaymentScheduleRegenerationRequiredForDisbursement(actualDisbursementDate);
             this.actualDisbursementDate = null;
             this.disbursedBy = null;
+            this.lastRepaymentDate = null;
             boolean isDisbursedAmountChanged = !this.approvedPrincipal.equals(this.loanRepaymentScheduleDetail.getPrincipal());
             this.loanRepaymentScheduleDetail.setPrincipal(this.approvedPrincipal);
             if (this.loanProduct.isMultiDisburseLoan()) {
@@ -3100,6 +3105,9 @@ public class Loan extends AbstractPersistable<Long> {
         updateLoanSummaryDerivedFields();
         
         updateLoanStatusBasedOnProductConfig(loanTransactionDate);
+        
+        this.lastRepaymentDate = getLastRepaymentDate().toDate();
+      
         /**
          * FIXME: Vishwas, skipping post loan transaction checks for Loan
          * recoveries
@@ -6597,7 +6605,6 @@ public class Loan extends AbstractPersistable<Long> {
         return this.loanPurpose;
     }
 
-    
     public Set<LoanOfficerAssignmentHistory> getLoanOfficerHistory() {
         return this.loanOfficerHistory;
     }
