@@ -1,0 +1,978 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+ <xs:element name="INDV-REPORT-FILE">
+  <xs:complexType>
+   <xs:sequence>
+    <xs:element minOccurs="0" maxOccurs="1" ref="INQUIRY-STATUS"/>
+    <xs:element minOccurs="0" maxOccurs="1" ref="INDV-REPORTS"/>
+   </xs:sequence>
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="INQUIRY-STATUS">
+  <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="INQUIRY" minOccurs="1" maxOccurs="1"/>
+</xs:sequence>	
+  </xs:complexType>
+ </xs:element>
+  
+<xs:element name="INQUIRY" >
+	<xs:complexType>
+	<xs:all>
+		<xs:element name="INQUIRY-UNIQUE-REF-NO" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="REQUEST-DT-TM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="RESPONSE-DT-TM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="RESPONSE-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DESCRIPTION" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	</xs:all>	
+	 </xs:complexType>
+</xs:element>
+		
+ <xs:element name="INDV-REPORTS">
+  <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="INDV-REPORT" minOccurs="1" maxOccurs="1"/>
+   </xs:sequence>
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="INDV-REPORT">
+  <xs:complexType>
+  <xs:all>
+    <xs:element ref="HEADER" minOccurs="1" maxOccurs="1"/>
+	<xs:element ref="STATUS-DETAILS" minOccurs="1" maxOccurs="1"/>
+    <xs:element ref="REQUEST" minOccurs="1" maxOccurs="1"/>
+    <xs:element ref="PERSONAL-INFO-VARIATION" minOccurs="0" maxOccurs="1"/>
+    <xs:element ref="SECONDARY-MATCHES" minOccurs="0" maxOccurs="1"/>
+    <xs:element ref="ACCOUNTS-SUMMARY" minOccurs="0" maxOccurs="1"/>
+    <xs:element ref="RESPONSES" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="INDV-RESPONSES" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="GRP-RESPONSES" minOccurs="0" maxOccurs="1"/>
+    <xs:element ref="INQUIRY-HISTORY" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="COMMENTS" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="ALERTS" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="SCORES" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="PRINTABLE-REPORT" minOccurs="0" maxOccurs="1"/>
+	<xs:element ref="DERIVED-ATTRIBUTES" minOccurs="0" maxOccurs="1"/>
+   </xs:all>
+   </xs:complexType>
+ </xs:element>
+ 
+ 
+ <xs:element name="DERIVED-ATTRIBUTES" >
+	   <xs:complexType>
+		<xs:sequence>
+	    <xs:element name="DERIVED-ATTRIBUTE" minOccurs="0" maxOccurs="unbounded" >
+	   <xs:complexType>
+		<xs:sequence>
+	   <xs:element name="Name" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	   <xs:element name="Value" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	   <xs:element name="Remark" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+	   </xs:sequence>
+    </xs:complexType>
+	   </xs:element>
+	   </xs:sequence>
+    </xs:complexType>
+	   </xs:element>
+ 
+ 
+ <xs:element name="HEADER">
+  <xs:complexType>
+  <xs:all>
+	<xs:element name="DATE-OF-REQUEST" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	<xs:element name="PREPARED-FOR" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	<xs:element name="PREPARED-FOR-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	<xs:element name="DATE-OF-ISSUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	<xs:element name="REPORT-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	<xs:element name="BATCH-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	<!--
+	<xs:element name="STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	<xs:element name="ERROR" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	-->
+</xs:all>	
+  </xs:complexType>
+ </xs:element>
+ <xs:element name="STATUS-DETAILS">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element name="STATUS" minOccurs="1" maxOccurs="unbounded">
+		  <xs:complexType>
+		  <xs:all>
+			<xs:element name="OPTION" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="OPTION-STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="ERRORS" minOccurs="0" maxOccurs="1" >
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ERROR" minOccurs="1" maxOccurs="unbounded" >
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element type="xs:string" name="ERROR-DESCRIPTION"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+		 </xs:all>		
+		  </xs:complexType>
+		</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+
+ <xs:element name="IDS">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element name="ID" minOccurs="1" maxOccurs="unbounded">
+		  <xs:complexType>
+		  <xs:all>
+			<xs:element name="TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="VALUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			
+		  </xs:all>		
+		  </xs:complexType>
+		</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+
+ 
+ <xs:element name="ADDRESSES"  >
+		<xs:complexType>
+		<xs:sequence>
+		<xs:element name="ADDRESS" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		</xs:complexType>
+		</xs:element>
+	<xs:element name="PHONES"  >
+		<xs:complexType>
+		<xs:sequence>
+		<xs:element name="PHONE" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		</xs:complexType>
+		</xs:element>	
+		
+		<xs:element name="EMAILS"  >
+		<xs:complexType>
+		<xs:sequence>
+		<xs:element name="EMAIL" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		</xs:complexType>
+		</xs:element>
+		
+		<xs:element name="RELATIONS" >
+	         <xs:complexType>
+	          <xs:sequence>
+		       <xs:element name="RELATION" minOccurs="0" maxOccurs="unbounded">
+		       <xs:complexType>
+		        <xs:all>
+			     <xs:element name="TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			     <xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			      </xs:all>		
+		    </xs:complexType>
+		   </xs:element>
+	       </xs:sequence>
+	       </xs:complexType>
+        </xs:element>
+ <xs:element name="REQUEST">
+  <xs:complexType>
+  <xs:all>
+  
+		<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="AKA" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="SPOUSE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="FATHER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="MOTHER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="DOB" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="AGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="AGE-AS-ON" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element ref="IDS" minOccurs="1" maxOccurs="1"/>
+		<!--
+		<xs:element name="RATION-CARD" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="PASSPORT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="VOTERS-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="DRIVING-LICENCE-NO" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="PAN" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->
+		<xs:element name="GENDER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="OWNERSHIP" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element ref="ADDRESSES" minOccurs="1" maxOccurs="1"/>
+		<!--<xs:element name="ADDRESS-1" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ADDRESS-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="ADDRESS-3" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->
+		<xs:element ref="PHONES" minOccurs="1" maxOccurs="1"/>
+		<!--
+		<xs:element name="PHONE-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="PHONE-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="PHONE-3" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->
+		<xs:element ref="EMAILS" minOccurs="1" maxOccurs="1"/>
+		<!--
+		<xs:element name="EMAIL-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="EMAIL-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->
+		<xs:element name="BRANCH" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="KENDRA" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="MBR-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="LOS-APP-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CREDIT-INQ-PURPS-TYP" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CREDIT-INQ-PURPS-TYP-DESC" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CREDIT-INQUIRY-STAGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CREDIT-RPT-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CREDIT-REQ-TYP" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CREDIT-RPT-TRN-DT-TM" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="AC-OPEN-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="LOAN-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="ENTITY-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+</xs:all>		
+  
+  </xs:complexType>
+ </xs:element>
+ 
+   <xs:complexType name="VARIATION">
+  <xs:all>
+   <xs:element name="VALUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+   <xs:element name="REPORTED-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+   </xs:all>
+ </xs:complexType>
+ 
+ <xs:element name="PERSONAL-INFO-VARIATION">
+  <xs:complexType>
+  <xs:all>
+	 <xs:element name="NAME-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+	 <xs:element name="ADDRESS-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+	 <xs:element name="PAN-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+	 <xs:element name="DRIVING-LICENSE-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+     <xs:element name="DATE-OF-BIRTH-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+     <xs:element name="VOTER-ID-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+     <xs:element name="PASSPORT-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+     <xs:element name="PHONE-NUMBER-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+     <xs:element name="RATION-CARD-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+	 <xs:element name="EMAIL-VARIATIONS" minOccurs="0" maxOccurs="1">
+	 <xs:complexType>
+			<xs:sequence>
+				<xs:element name="VARIATION" type="VARIATION" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>	
+	 </xs:complexType>
+	 </xs:element>
+</xs:all>	 
+  </xs:complexType>
+ </xs:element>
+ 
+
+ 
+ <xs:element name="SECONDARY-MATCHES">
+ <xs:complexType>
+	<xs:sequence>
+ <xs:element name="SECONDARY-MATCH" minOccurs="1" maxOccurs="unbounded">
+	<xs:complexType>
+	<xs:all>
+		<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DOB" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element ref="ADDRESSES" minOccurs="1" maxOccurs="1"/>
+		
+		<!--
+		<xs:element name="ADDRESS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		-->
+		<xs:element ref="IDS" minOccurs="1" maxOccurs="1"/>
+		
+		<!--
+			<xs:element name="PAN" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="PASSPORT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="DRIVING-LICENSE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="VOTER-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="RATION-CARD" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+	-->
+	<xs:element ref="PHONES" minOccurs="1" maxOccurs="1"/>
+	
+	   <!-- <xs:element name="PHONE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	   -->
+	   
+	   <xs:element ref="EMAILS" minOccurs="1" maxOccurs="1"/>
+	   
+		
+		
+		 <!--
+		<xs:element name="E-MAIL" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->
+		
+		 <xs:element ref="RELATIONS" minOccurs="1" maxOccurs="1"/>
+			
+		
+		<xs:element ref="LOAN-DETAILS" minOccurs="0" maxOccurs="1"/>
+	</xs:all>	
+	</xs:complexType>
+	</xs:element>
+	</xs:sequence>	
+	</xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="ACCOUNTS-SUMMARY">
+  <xs:complexType>
+  <xs:all>
+     <xs:element ref="PRIMARY-ACCOUNTS-SUMMARY" minOccurs="0" maxOccurs="1"/>
+	 <xs:element ref="SECONDARY-ACCOUNTS-SUMMARY" minOccurs="0" maxOccurs="1"/>
+	 <xs:element ref="ACC-DERIVED-ATTRIBUTES" minOccurs="0" maxOccurs="1"/>
+</xs:all>	 
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="PRIMARY-ACCOUNTS-SUMMARY">
+  <xs:complexType>
+  <xs:all>
+     <xs:element name="PRIMARY-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-ACTIVE-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-OVERDUE-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-SANCTIONED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-SECURED-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-UNSECURED-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="PRIMARY-UNTAGGED-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+</xs:all>	 
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="SECONDARY-ACCOUNTS-SUMMARY">
+  <xs:complexType>
+  <xs:all>
+     <xs:element name="SECONDARY-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-ACTIVE-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-OVERDUE-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-SECURED-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-UNSECURED-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-UNTAGGED-NUMBER-OF-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-SANCTIONED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	 <xs:element name="SECONDARY-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+  </xs:all>	 
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="ACC-DERIVED-ATTRIBUTES">
+  <xs:complexType>
+  <xs:all>
+     <xs:element name="INQUIRIES-IN-LAST-SIX-MONTHS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	 <xs:element name="LENGTH-OF-CREDIT-HISTORY-YEAR" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	 <xs:element name="LENGTH-OF-CREDIT-HISTORY-MONTH" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	 <xs:element name="AVERAGE-ACCOUNT-AGE-YEAR" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	 <xs:element name="AVERAGE-ACCOUNT-AGE-MONTH" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	 <xs:element name="NEW-ACCOUNTS-IN-LAST-SIX-MONTHS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	 <xs:element name="NEW-DELINQ-ACCOUNT-IN-LAST-SIX-MONTHS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+</xs:all>	 
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="RESPONSES">
+  <xs:complexType>
+  <xs:sequence>
+   <xs:element ref="RESPONSE" minOccurs="1" maxOccurs="unbounded"/>
+ </xs:sequence>
+  </xs:complexType>
+ </xs:element>
+ 
+  <xs:element name="RESPONSE">
+  <xs:complexType>
+  <xs:sequence>
+    <xs:element ref="LOAN-DETAILS" minOccurs="1" maxOccurs="1"/>
+  </xs:sequence>
+  </xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="LOAN-DETAILS">
+	  <xs:complexType>
+	  <xs:all>
+	    <xs:element name="ACCT-NUMBER" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="CREDIT-GUARANTOR" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ACCT-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DATE-REPORTED" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="OWNERSHIP-IND" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ACCOUNT-STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DISBURSED-AMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DISBURSED-DATE" type="xs:string" minOccurs="1" maxOccurs="1"/><!-- EDITED By R@jeev R@njan 09-09-2016-->
+		<xs:element name="LAST-PAYMENT-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CLOSED-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="OVERDUE-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="WRITE-OFF-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CURRENT-BAL" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="CREDIT-LIMIT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="ACCOUNT-REMARKS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="SECURITY-STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="FREQUENCY" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ORIGINAL-TERM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="TERM-TO-MATURITY" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ACCT-IN-DISPUTE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="SETTLEMENT-AMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="COMBINED-PAYMENT-HISTORY" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="MATCHED-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="REPAYMENT-TENURE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="SUIT-FILED_WILFUL-DEFAULT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="WRITTEN-OFF_SETTLED-STATUS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CASH-LIMIT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="ACTUAL-PAYMENT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="INSTALLMENT-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element ref="SECURITY-DETAILS" minOccurs="0" maxOccurs="1"/>
+		<xs:element ref="LINKED-ACCOUNTS" minOccurs="0" maxOccurs="1"/>
+	  </xs:all>
+	  </xs:complexType>
+	 </xs:element>
+	<xs:element name="LINKED-ACCOUNTS">
+	<xs:complexType>
+    <xs:sequence>
+    <xs:element name="ACCOUNT-DETAILS">
+	  <xs:complexType>
+	  <xs:all>
+	    <xs:element name="ACCT-NUMBER" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="CREDIT-GUARANTOR" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ACCT-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DATE-REPORTED" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="OWNERSHIP-IND" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ACCOUNT-STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DISBURSED-AMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="DISBURSED-DATE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="LAST-PAYMENT-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CLOSE-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/><!-- EDITED By R@jeev R@njan 09-09-2016-->
+		<xs:element name="INSTALLMENT-AMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="OVERDUE-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="WRITE-OFF-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="CURRENT-BAL" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="CREDIT-LIMIT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="ACCOUNT-REMARKS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="SECURITY-STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="FREQUENCY" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ORIGINAL-TERM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="TERM-TO-MATURITY" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="ACCT-IN-DISPUTE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="SETTLEMENT-AMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="PRINCIPAL-WRITE-OFF-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element ref="SECURITY-DETAILS" minOccurs="0" maxOccurs="1"/>
+	  </xs:all>
+	  </xs:complexType>
+	   </xs:element>
+        </xs:sequence>
+        </xs:complexType>
+	 </xs:element>	 
+<xs:element name="SECURITY-DETAILS">
+<xs:complexType>
+	<xs:sequence>
+		<xs:element name="SECURITY-DETAIL" minOccurs="1" maxOccurs="unbounded">
+	<xs:complexType>
+		<xs:all>
+			<xs:element name="SECURITY-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="OWNER-NAME" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="SECURITY-VALUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="DATE-OF-VALUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="SECURITY-CHARGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="PROPERTY-ADDRESS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="AUTOMOBILE-TYPE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="YEAR-OF-MANUFACTURE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REGISTRATION-NUMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ENGINE-NUMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="CHASSIS-NUMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		</xs:all>
+	</xs:complexType>
+	</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+</xs:element>
+
+
+
+ <xs:element name="INDV-RESPONSES">
+    <xs:complexType>
+	<xs:sequence>
+	<xs:element name="SUMMARY">
+		<xs:complexType>
+		<xs:all>
+			<xs:element name="STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="TOTAL-RESPONSES" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-OTHER-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-DEFAULT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-CLOSED-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-ACTIVE-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-OWN-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="OWN-MFI-INDECATOR" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ERRORS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OWN-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OTHER-DISBURSED-AMOUNT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="TOTAL-OWN-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OTHER-CURRENT-BALANCE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="TOTAL-OWN-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OTHER-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="MAX-WORST-DELEQUENCY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		</xs:complexType>
+	  </xs:element>
+	  <xs:element name="PRIMARY-SUMMARY">
+		<xs:complexType>
+		  <xs:all>
+			 <xs:element name="NO-OF-DEFAULT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-RESPONSES" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-CLOSED-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-ACTIVE-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OTHER-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OWN-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="MAX-WORST-DELEQUENCY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		</xs:complexType>
+	  </xs:element>
+	  <xs:element name="SECONDARY-SUMMARY">
+		<xs:complexType>
+		  <xs:all>
+			 <xs:element name="NO-OF-DEFAULT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-RESPONSES" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-CLOSED-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-ACTIVE-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OTHER-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OWN-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="MAX-WORST-DELEQUENCY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		</xs:complexType>
+	  </xs:element>
+	   <xs:element name="INDV-RESPONSE-LIST">
+	   <xs:complexType>
+		<xs:sequence>
+	   <xs:element name="INDV-RESPONSE" minOccurs="0" maxOccurs="unbounded">
+    <xs:complexType>
+		<xs:all>
+			<xs:element name="MATCHED-TYPE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="MFI" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="MFI-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="BRANCH" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="KENDRA" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="DOB" type="xs:string" minOccurs="0" maxOccurs="1" />
+			<xs:element name="AGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="AGE-AS-ON" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element ref="RELATIONS" minOccurs="1" maxOccurs="1"/>
+			
+			<!--
+			<xs:element name="SPOUSE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="FATHER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-TYP-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-NM-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-TYP-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-NM-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			-->
+			<xs:element ref="PHONES" minOccurs="1" maxOccurs="1"/>
+			
+		
+		<!--
+			<xs:element name="PHONE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+			-->
+			<xs:element ref="ADDRESSES" minOccurs="1" maxOccurs="1"/>
+					<!--
+			<xs:element name="ADDRESS-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ADDRESS-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->	
+		<xs:element ref="IDS" minOccurs="1" maxOccurs="1"/>
+		
+		<!-- ADDED EMAIL MAY BE FOR FUTURE USE -->
+		<xs:element ref="EMAILS" minOccurs="1" maxOccurs="1"/>
+		  		
+		<!--
+			<xs:element name="ID-TYP-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ID-VALUE-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ID-TYP-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ID-VALUE-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->	
+			<xs:element name="CNSMRMBRID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ENTITY-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="GROUP-CREATION-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+			<xs:element name="INSERT-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+			<xs:element name="GROUP-DETAILS" minOccurs="0" maxOccurs="1" >
+				<xs:complexType>
+					<xs:all>
+					   <xs:element name="GROUP-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DISBURSED-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-CURRENT-BAL" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-INSTALLMENT-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-OVERDUE-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-MEMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DELINQ-MBR" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DPD-30" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DPD-60" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DPD-90" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-WRITE-OFFS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                    </xs:all>
+				</xs:complexType>
+			</xs:element>			
+			<xs:element name="LOAN-DETAIL" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:all>
+					  <xs:element name="ACCT-TYPE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="FREQ" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="STATUS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="ACCT-NUMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="DISBURSED-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="CURRENT-BAL" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="INSTALLMENT-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="OVERDUE-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="WRITE-OFF-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="WRITE-OFF-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="LOAN-CYCLE-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   
+					  <xs:element name="DISBURSED-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="CLOSED-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="RECENT-DELINQ-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  
+					<xs:element name="DPD" type="xs:string" minOccurs="0" maxOccurs="1"/> 
+					<xs:element name="PAYMENT-HISTORY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					 
+					<xs:element name="COMBINED-PAYMENT-HISTORY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="INQ-CNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="INFO-AS-ON" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="WORST-DELEQUENCY-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="ACTIVE-BORROWERS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="NO-OF-BORROWERS" type="xs:string" minOccurs="0" maxOccurs="1"/>	
+					  <xs:element name="COMMENT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					</xs:all>
+				</xs:complexType>
+			</xs:element>
+			
+			
+		</xs:all>
+	</xs:complexType>
+  </xs:element>
+  
+  
+
+	   </xs:sequence>
+    </xs:complexType>
+	   </xs:element>
+	  </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  
+   <xs:element name="GRP-RESPONSES">
+    <xs:complexType>
+	<xs:sequence>
+	<xs:element name="SUMMARY">
+		<xs:complexType>
+		<xs:all>
+			<xs:element name="STATUS" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="TOTAL-RESPONSES" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-OTHER-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-DEFAULT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-CLOSED-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-ACTIVE-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NO-OF-OWN-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="OWN-MFI-INDECATOR" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ERRORS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OWN-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OTHER-DISBURSED-AMOUNT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="TOTAL-OWN-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OTHER-CURRENT-BALANCE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="TOTAL-OWN-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="TOTAL-OTHER-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="MAX-WORST-DELEQUENCY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		</xs:complexType>
+	  </xs:element>
+	 <xs:element name="PRIMARY-SUMMARY">
+		<xs:complexType>
+		  <xs:all>
+			 <xs:element name="NO-OF-DEFAULT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-RESPONSES" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-CLOSED-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-ACTIVE-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OTHER-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OWN-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="MAX-WORST-DELEQUENCY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		</xs:complexType>
+	  </xs:element>
+	  <xs:element name="SECONDARY-SUMMARY">
+		<xs:complexType>
+		  <xs:all>
+			 <xs:element name="NO-OF-DEFAULT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-RESPONSES" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-CLOSED-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-ACTIVE-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OTHER-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="NO-OF-OWN-MFIS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OTHER-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-DISBURSED-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-CURRENT-BALANCE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="TOTAL-OWN-INSTALLMENT-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			 <xs:element name="MAX-WORST-DELEQUENCY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		</xs:complexType>
+	  </xs:element>
+	   <xs:element name="GRP-RESPONSE-LIST">
+	   <xs:complexType>
+		<xs:sequence>
+	 <xs:element name="GRP-RESPONSE" minOccurs="0" maxOccurs="unbounded">
+    <xs:complexType>
+		<xs:all>
+			<xs:element name="MATCHED-TYPE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="MFI" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="MFI-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="BRANCH" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="KENDRA" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="DOB" type="xs:string" minOccurs="0" maxOccurs="1" />
+			<xs:element name="AGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="AGE-AS-ON" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element ref="RELATIONS" minOccurs="1" maxOccurs="1"/>
+			
+			<!--
+			<xs:element name="SPOUSE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="FATHER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-TYP-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-NM-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-TYP-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="REL-NM-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			-->
+			<xs:element ref="PHONES" minOccurs="1" maxOccurs="1"/>
+			
+		<!--
+			<xs:element name="PHONE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+			-->
+			<xs:element ref="ADDRESSES" minOccurs="1" maxOccurs="1"/>
+			
+		<!--
+			<xs:element name="ADDRESS-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ADDRESS-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->	
+		<xs:element ref="IDS" minOccurs="1" maxOccurs="1"/>
+		
+		<!-- ADDED EMAIL MAY BE FOR FUTURE USE -->
+		
+		<xs:element ref="EMAILS" minOccurs="1" maxOccurs="1"/>
+		 
+		
+		<!--
+			<xs:element name="ID-TYP-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ID-VALUE-1" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ID-TYP-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ID-VALUE-2" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		-->	
+			<xs:element name="CNSMRMBRID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="ENTITY-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="GROUP-CREATION-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+			<xs:element name="INSERT-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			
+			<xs:element name="GROUP-DETAILS" minOccurs="0" maxOccurs="1" >
+				<xs:complexType>
+					<xs:all>
+					   <xs:element name="GROUP-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DISBURSED-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-CURRENT-BAL" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-INSTALLMENT-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-OVERDUE-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-ACCOUNTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-MEMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DELINQ-MBR" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DPD-30" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DPD-60" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-DPD-90" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="TOT-WRITE-OFFS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+                    </xs:all>
+				</xs:complexType>
+			</xs:element>			
+			<xs:element name="LOAN-DETAIL" minOccurs="0" maxOccurs="1">
+				<xs:complexType>
+					<xs:all>
+					  <xs:element name="ACCT-TYPE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="FREQ" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="STATUS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="ACCT-NUMBER" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="DISBURSED-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="CURRENT-BAL" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="INSTALLMENT-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="OVERDUE-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="WRITE-OFF-AMT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="WRITE-OFF-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					   <xs:element name="LOAN-CYCLE-ID" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="DISBURSED-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="CLOSED-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="RECENT-DELINQ-DT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					<xs:element name="DPD" type="xs:string" minOccurs="0" maxOccurs="1"/> 
+					<xs:element name="PAYMENT-HISTORY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					<xs:element name="COMBINED-PAYMENT-HISTORY" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="INQ-CNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="INFO-AS-ON" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="WORST-DELEQUENCY-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="ACTIVE-BORROWERS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					  <xs:element name="NO-OF-BORROWERS" type="xs:string" minOccurs="0" maxOccurs="1"/>	
+					  <xs:element name="COMMENT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+					</xs:all>
+				</xs:complexType>
+			</xs:element>
+			
+			
+		</xs:all>
+	</xs:complexType>
+  </xs:element>
+  
+  
+
+	   </xs:sequence>
+    </xs:complexType>
+	   </xs:element>
+	  </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  
+ 
+	 
+<xs:element name="INQUIRY-HISTORY">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element ref="HISTORY" minOccurs="1" maxOccurs="unbounded"/>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+ 
+ <xs:element name="HISTORY">
+	<xs:complexType>
+	<xs:all>
+		<xs:element name="MEMBER-NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="INQUIRY-DATE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="PURPOSE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="OWNERSHIP-TYPE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		<xs:element name="REMARK" type="xs:string" minOccurs="0" maxOccurs="1"/>
+	</xs:all>
+	</xs:complexType>
+ </xs:element>
+ 
+  <xs:element name="COMMENTS">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element name="COMMENT" minOccurs="1" maxOccurs="unbounded">
+		  <xs:complexType>
+		  <xs:all>
+			<xs:element name="COMMENT-TEXT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="COMMENT-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>
+		  </xs:complexType>
+		</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+ <xs:element name="PRINTABLE-REPORT">
+    <xs:complexType>
+	<xs:sequence>
+	  <xs:element type="xs:string" name="TYPE"/>
+	  <xs:element type="xs:string" name="FILE-NAME"/>
+	  <xs:element type="xs:string" name="CONTENT"/>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+  <xs:element name="ALERTS">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element name="ALERT" minOccurs="1" maxOccurs="unbounded">
+		  <xs:complexType>
+		  <xs:all>
+			<xs:element name="ALERT-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="ALERT-DESC" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			</xs:all>
+		  </xs:complexType>
+		</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+ <xs:element name="SCORES">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element name="SCORE" minOccurs="1" maxOccurs="unbounded">
+		  <xs:complexType>
+		  <xs:all>
+			<xs:element name="SCORE-TYPE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="SCORE-VALUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="SCORE-VERSION" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="SCORE-FACTORS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="SCORE-COMMENTS" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		  </xs:all>		
+		  </xs:complexType>
+		</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+ </xs:element>
+</xs:schema>

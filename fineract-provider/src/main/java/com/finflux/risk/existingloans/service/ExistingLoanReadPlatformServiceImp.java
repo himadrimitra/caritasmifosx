@@ -12,8 +12,6 @@ import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformSer
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
@@ -33,31 +31,24 @@ import com.finflux.risk.existingloans.domain.ExistingLoanRepositoryWrapper;
 public class ExistingLoanReadPlatformServiceImp implements ExistingLoanReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final PlatformSecurityContext context;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
     private final LoanDropdownReadPlatformService loanDropdownReadPlatformService;
     private final ExistingLoanStatusDropDownReadPlatformService existingLoanStatusDropDownReadPlatformService;
     private final ClientRepositoryWrapper clientRepository;
     private final ExistingLoanRepositoryWrapper existingLoanRepository;
 
-
-
     @Autowired
-    public ExistingLoanReadPlatformServiceImp(final PlatformSecurityContext context, final RoutingDataSource dataSource,
+    public ExistingLoanReadPlatformServiceImp(final RoutingDataSource dataSource,
             final CodeValueReadPlatformService codeValueReadPlatformService,
             final LoanDropdownReadPlatformService loanDropdownReadPlatformService,
             final ExistingLoanStatusDropDownReadPlatformService existingLoanStatusDropDownReadPlatformService,
-            final ClientRepositoryWrapper clientRepository,
-            final ExistingLoanRepositoryWrapper existingLoanRepository
-
-) {
-        this.context = context;
+            final ClientRepositoryWrapper clientRepository, final ExistingLoanRepositoryWrapper existingLoanRepository) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.loanDropdownReadPlatformService = loanDropdownReadPlatformService;
-        this.existingLoanStatusDropDownReadPlatformService=existingLoanStatusDropDownReadPlatformService;
-        this.clientRepository=clientRepository;
-        this.existingLoanRepository=existingLoanRepository;
+        this.existingLoanStatusDropDownReadPlatformService = existingLoanStatusDropDownReadPlatformService;
+        this.clientRepository = clientRepository;
+        this.existingLoanRepository = existingLoanRepository;
     }
 
     @Override
@@ -82,26 +73,22 @@ public class ExistingLoanReadPlatformServiceImp implements ExistingLoanReadPlatf
 
         final Collection<EnumOptionData> repaymentFrequency = this.loanDropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
 
-        final Collection<LoanStatusEnumData> loanStatusOption=this.existingLoanStatusDropDownReadPlatformService.statusTypeOptions();
+        final Collection<LoanStatusEnumData> loanStatusOption = this.existingLoanStatusDropDownReadPlatformService.statusTypeOptions();
         return ExistingLoanData.ExistingLoanDataTemplate(sourceCvOption, BureauCvOption, LenderCvOption, LoanTypeCvOption,
-                externalLoanPurposeOption, loanTenaureType, repaymentFrequency,loanStatusOption);
+                externalLoanPurposeOption, loanTenaureType, repaymentFrequency, loanStatusOption);
     }
 
     @Override
-    public ExistingLoanData retrieveOne(Long clientId,Long existingloanId) {
+    public ExistingLoanData retrieveOne(Long clientId, Long existingloanId) {
         this.clientRepository.findOneWithNotFoundDetection(clientId);
-
         this.existingLoanRepository.findOneWithNotFoundDetection(existingloanId);
-
         final ExistingLoanMapper rm = new ExistingLoanMapper();
-
         final StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("select ");
         sqlBuilder.append(rm.schema());
         sqlBuilder.append("where el.client_id= ?");
         sqlBuilder.append(" and  el.id= ?");
-
-        return this.jdbcTemplate.queryForObject(sqlBuilder.toString(), rm, new Object[] { clientId, existingloanId});
+        return this.jdbcTemplate.queryForObject(sqlBuilder.toString(), rm, new Object[] { clientId, existingloanId });
 
     }
 
@@ -109,13 +96,11 @@ public class ExistingLoanReadPlatformServiceImp implements ExistingLoanReadPlatf
     public List<ExistingLoanData> retriveAll(Long clientId) {
         this.clientRepository.findOneWithNotFoundDetection(clientId);
         final ExistingLoanMapper rm = new ExistingLoanMapper();
-
         final StringBuilder sqlBuilder = new StringBuilder();
         sqlBuilder.append("select ");
         sqlBuilder.append(rm.schema());
         sqlBuilder.append("where el.client_id= ?");
-        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] {clientId});
-
+        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { clientId });
     }
 
     private static final class ExistingLoanMapper implements RowMapper<ExistingLoanData> {

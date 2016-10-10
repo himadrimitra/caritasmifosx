@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="REQUEST-REQUEST-FILE">
+    <xs:complexType>
+	<xs:sequence>
+        <xs:element minOccurs="1" maxOccurs="1" ref="HEADER-SEGMENT"/>
+        <xs:element minOccurs="1" maxOccurs="1" ref="INQUIRY"/>
+    </xs:sequence>
+	</xs:complexType>
+  </xs:element>
+  
+  <xs:element name="HEADER-SEGMENT">
+	<xs:complexType>
+	<xs:sequence>
+			<xs:element name="PRODUCT-TYP" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="HMOVRCRDINQ"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="PRODUCT-VER" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="REQ-MBR" minOccurs="1" maxOccurs="1">
+				<xs:simpleType >
+						<xs:restriction base="xs:string">
+							<xs:minLength value="5"/>
+							<xs:maxLength value="20"/>
+						</xs:restriction>
+					</xs:simpleType>
+			</xs:element>
+			<xs:element name="SUB-MBR-ID" minOccurs="1" maxOccurs="1">
+				<xs:simpleType >
+					<xs:restriction base="xs:string">
+						<xs:minLength value="5"/>
+						<xs:maxLength value="20"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="INQ-DT-TM" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="REQ-VOL-TYP" minOccurs="1" maxOccurs="1" >
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="SINGLE"/>
+						<xs:enumeration value="C01"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="REQ-ACTN-TYP" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="SUBMIT"/>
+						<xs:enumeration value="AT01"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+									
+			<xs:element name="TEST-FLG" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="USER-ID" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="PWD" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="AUTH-FLG" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="AUTH-TITLE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="RES-FRMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="MEMBER-PRE-OVERRIDE" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="RES-FRMT-EMBD" type="xs:string" minOccurs="1" maxOccurs="1" />
+			<xs:element name="LOS-NAME" type="xs:string" minOccurs="0" maxOccurs="1" />
+			<xs:element name="LOS-VENDER" type="xs:string" minOccurs="0" maxOccurs="1" />
+			<xs:element name="LOS-VERSION" type="xs:string" minOccurs="0" maxOccurs="1" />
+			<xs:element name="MFI" >
+			<xs:complexType>
+			<xs:all>
+			<xs:element name="INDV" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="SCORE" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+			<xs:element name="GROUP" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+			</xs:all>
+			</xs:complexType>
+			</xs:element>
+			<xs:element name="CONSUMER" >
+			<xs:complexType>
+			<xs:all>
+			<xs:element name="INDV" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+			<xs:element name="SCORE" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+			</xs:all>
+			</xs:complexType>
+			</xs:element>
+			<xs:element name="IOI" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>	
+		</xs:complexType>
+	</xs:element>
+	
+	<xs:element name="INQUIRY">
+		<xs:complexType>
+		<xs:sequence>
+			<xs:element minOccurs="1" maxOccurs="1" ref="APPLICANT-SEGMENT"/>
+			<xs:element minOccurs="1" maxOccurs="1" ref="ADDRESS-SEGMENT"/>
+			<xs:element minOccurs="1" maxOccurs="1" ref="APPLICATION-SEGMENT"/>
+		</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+  
+  <xs:element name="APPLICANT-SEGMENT">
+	<xs:complexType>
+	<xs:sequence>
+		<xs:element name="APPLICANT-NAME" minOccurs="1" maxOccurs="1" >
+			<xs:complexType>
+			<xs:sequence>
+				<xs:element name="NAME1" type="xs:string" />
+				<xs:element name="NAME2" type="xs:string" />
+				<xs:element name="NAME3" type="xs:string" />
+				<xs:element name="NAME4" type="xs:string" />
+				<xs:element name="NAME5" type="xs:string" />
+			</xs:sequence>	
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="DOB" minOccurs="1" maxOccurs="1">
+			<xs:complexType>
+			<xs:sequence>
+				<xs:element name="DOB-DATE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+				<xs:element name="AGE" type="xs:string" minOccurs="0" maxOccurs="1"/>
+				<xs:element name="AGE-AS-ON" type="xs:string" minOccurs="0" maxOccurs="1"/>
+			</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="IDS" minOccurs="1" maxOccurs="1">
+			<xs:complexType>
+			<xs:sequence>
+				<xs:element name="ID" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+					<xs:sequence>
+						<xs:element name="TYPE" minOccurs="1" maxOccurs="1">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="ID01"/>
+									<xs:enumeration value="ID02"/>
+									<xs:enumeration value="ID03"/>
+									<xs:enumeration value="ID04"/>
+									<xs:enumeration value="ID05"/>
+									<xs:enumeration value="ID06"/>
+									<xs:enumeration value="ID07"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="VALUE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>	
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="RELATIONS" minOccurs="0" maxOccurs="1">
+			<xs:complexType>
+			<xs:sequence>
+				<xs:element name="RELATION" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+					<xs:sequence>
+						<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="TYPE" minOccurs="1" maxOccurs="1">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="K01"/>
+									<xs:enumeration value="K02"/>
+									<xs:enumeration value="K03"/>
+									<xs:enumeration value="K04"/>
+									<xs:enumeration value="K05"/>
+									<xs:enumeration value="K06"/>
+									<xs:enumeration value="K07"/>
+									<xs:enumeration value="K08"/>
+									<xs:enumeration value="K09"/>
+									<xs:enumeration value="K10"/>
+									<xs:enumeration value="K11"/>
+									<xs:enumeration value="K12"/>
+									<xs:enumeration value="K13"/>
+									<xs:enumeration value="K15"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+					</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>	
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="KEY-PERSON" minOccurs="0" maxOccurs="1">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					<xs:element name="TYPE" minOccurs="1" maxOccurs="1">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="K01"/>
+									<xs:enumeration value="K02"/>
+									<xs:enumeration value="K03"/>
+									<xs:enumeration value="K04"/>
+									<xs:enumeration value="K05"/>
+									<xs:enumeration value="K06"/>
+									<xs:enumeration value="K07"/>
+									<xs:enumeration value="K08"/>
+									<xs:enumeration value="K09"/>
+									<xs:enumeration value="K10"/>
+									<xs:enumeration value="K11"/>
+									<xs:enumeration value="K12"/>
+									<xs:enumeration value="K13"/>
+									<xs:enumeration value="K15"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="NOMINEE" minOccurs="0" maxOccurs="1">
+			<xs:complexType>
+				<xs:sequence>
+					<xs:element name="NAME" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					<xs:element name="TYPE" minOccurs="1" maxOccurs="1">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="K01"/>
+									<xs:enumeration value="K02"/>
+									<xs:enumeration value="K03"/>
+									<xs:enumeration value="K04"/>
+									<xs:enumeration value="K05"/>
+									<xs:enumeration value="K06"/>
+									<xs:enumeration value="K07"/>
+									<xs:enumeration value="K08"/>
+									<xs:enumeration value="K09"/>
+									<xs:enumeration value="K10"/>
+									<xs:enumeration value="K11"/>
+									<xs:enumeration value="K12"/>
+									<xs:enumeration value="K13"/>
+									<xs:enumeration value="K15"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+				</xs:sequence>
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="PHONES" minOccurs="0" maxOccurs="1">
+			<xs:complexType>
+			<xs:sequence>
+				<xs:element name="PHONE" minOccurs="1" maxOccurs="unbounded">
+					<xs:complexType>
+					<xs:sequence>
+						<xs:element name="TELE-NO" type="xs:unsignedLong" minOccurs="1" maxOccurs="1"/>
+						<xs:element name="TELE-NO-TYPE" minOccurs="1" maxOccurs="1">
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="P01"/>
+									<xs:enumeration value="P02"/>
+									<xs:enumeration value="P03"/>
+									<xs:enumeration value="P04"/>
+									<xs:enumeration value="P05"/>
+									<xs:enumeration value="P06"/>
+									<xs:enumeration value="P07"/>
+									<xs:enumeration value="P08"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+					</xs:sequence>	
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>	
+			</xs:complexType>
+		</xs:element>
+		<xs:element name="GENDER" minOccurs="0" maxOccurs="1">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="G01"/>
+					<xs:enumeration value="G02"/>
+					<xs:enumeration value="G03"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:element>
+	</xs:sequence>
+	</xs:complexType>
+   </xs:element>
+	
+	<xs:element name="ADDRESS-SEGMENT">
+		<xs:complexType>
+		<xs:sequence>
+			<xs:element name="ADDRESS" minOccurs="1" maxOccurs="unbounded">
+				<xs:complexType>
+				<xs:sequence>
+					<xs:element name="TYPE" minOccurs="1" maxOccurs="1">
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="D01"/>
+								<xs:enumeration value="D02"/>
+								<xs:enumeration value="D03"/>
+								<xs:enumeration value="D04"/>
+								<xs:enumeration value="D05"/>
+								<xs:enumeration value="D06"/>
+								<xs:enumeration value="D07"/>
+								<xs:enumeration value="D08"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:element>
+					<xs:element name="ADDRESS-1" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					<xs:element name="CITY" type="xs:string" minOccurs="1" maxOccurs="1"/>
+					<xs:element name="STATE" minOccurs="1" maxOccurs="1">
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:enumeration value="AP"/>
+								<xs:enumeration value="AR"/>
+								<xs:enumeration value="AS"/>
+								<xs:enumeration value="BR"/>
+								<xs:enumeration value="CG"/>
+								<xs:enumeration value="GA"/>
+								<xs:enumeration value="GJ"/>
+								<xs:enumeration value="HR"/>
+								<xs:enumeration value="HP"/>
+								<xs:enumeration value="JK"/>
+								<xs:enumeration value="JH"/>
+								<xs:enumeration value="KA"/>
+								<xs:enumeration value="KL"/>
+								<xs:enumeration value="MP"/>
+								<xs:enumeration value="MH"/>
+								<xs:enumeration value="MN"/>
+								<xs:enumeration value="ML"/>
+								<xs:enumeration value="MZ"/>
+								<xs:enumeration value="NL"/>
+								<xs:enumeration value="OR"/>
+								<xs:enumeration value="PB"/>
+								<xs:enumeration value="RJ"/>
+								<xs:enumeration value="SK"/>
+								<xs:enumeration value="TN"/>
+								<xs:enumeration value="TR"/>
+								<xs:enumeration value="UK"/>
+								<xs:enumeration value="UP"/>
+								<xs:enumeration value="WB"/>
+								<xs:enumeration value="AN"/>
+								<xs:enumeration value="CH"/>
+								<xs:enumeration value="DN"/>
+								<xs:enumeration value="DD"/>
+								<xs:enumeration value="DL"/>
+								<xs:enumeration value="LD"/>
+								<xs:enumeration value="PY"/>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:element>
+					<xs:element name="PIN" type="xs:unsignedInt" minOccurs="1" maxOccurs="1"/>
+				</xs:sequence>	
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>	
+		</xs:complexType>
+	</xs:element>	
+	
+	<xs:element name="APPLICATION-SEGMENT">
+		<xs:complexType>
+		<xs:sequence>
+			<xs:element name="INQUIRY-UNIQUE-REF-NO" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="CREDT-INQ-PURPS-TYP" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="ACCT-ORIG"/>
+						<xs:enumeration value="ACCT-MAINT"/>
+						<xs:enumeration value="OTHER"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="CREDT-INQ-PURPS-TYP-DESC" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="CREDIT-INQUIRY-STAGE" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="PRE-SCREEN"/>
+						<xs:enumeration value="PRE-DISB"/>
+						<xs:enumeration value="UW-REVIEW"/>
+						<xs:enumeration value="COLLECTION"/>
+						<xs:enumeration value="RENEWAL"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="CREDT-RPT-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="CREDT-REQ-TYP" minOccurs="1" maxOccurs="1">
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="INDV"/>
+						<xs:enumeration value="JOIN"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="CREDT-RPT-TRN-DT-TM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="MBR-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="KENDRA-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="BRANCH-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="LOS-APP-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+			<xs:element name="LOAN-AMOUNT" type="xs:string" minOccurs="0" maxOccurs="1"/>
+		</xs:sequence>	
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

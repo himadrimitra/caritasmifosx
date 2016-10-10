@@ -3,3 +3,6 @@
 *.war
 *.ear
 *.DS*
+*.iml
+*.ipr
+*.iws

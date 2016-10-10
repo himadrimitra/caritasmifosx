@@ -74,6 +74,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.loanproduct.creditbureau.data.CreditBureauLoanProductMappingData;
+import com.finflux.portfolio.loanproduct.creditbureau.service.CreditBureauLoanProductMappingReadPlatformService;
+
 @Path("/loanproducts")
 @Component
 @Scope("singleton")
@@ -116,6 +119,9 @@ public class LoanProductsApiResource {
     private final DropdownReadPlatformService commonDropdownReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final FloatingRatesReadPlatformService floatingRateReadPlatformService;
+    private final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer;
+    private final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService;
+    
 
     @Autowired
     public LoanProductsApiResource(final PlatformSecurityContext context, final LoanProductReadPlatformService readPlatformService,
@@ -130,7 +136,9 @@ public class LoanProductsApiResource {
             final ProductMixReadPlatformService productMixReadPlatformService,
             final DropdownReadPlatformService commonDropdownReadPlatformService,
             PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-            final FloatingRatesReadPlatformService floatingRateReadPlatformService) {
+            final FloatingRatesReadPlatformService floatingRateReadPlatformService,
+            final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer,
+            final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService) {
         this.context = context;
         this.loanProductReadPlatformService = readPlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
@@ -147,6 +155,8 @@ public class LoanProductsApiResource {
         this.commonDropdownReadPlatformService = commonDropdownReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
         this.floatingRateReadPlatformService = floatingRateReadPlatformService;
+        this.creditbureauLoanproductDataApiJsonSerializer = creditbureauLoanproductDataApiJsonSerializer;
+        this.creditBureauLoanProductMappingReadPlatformService = creditBureauLoanProductMappingReadPlatformService;
     }
 
     @POST
@@ -175,6 +185,9 @@ public class LoanProductsApiResource {
                 this.context.authenticatedUser().validateHasReadPermission("PRODUCTMIX");
                 final Collection<ProductMixData> productMixes = this.productMixReadPlatformService.retrieveAllProductMixes();
                 return this.productMixDataApiJsonSerializer.serialize(settings, productMixes, this.PRODUCT_MIX_DATA_PARAMETERS);
+            }else if (associationParameters.contains("creditBureaus")) {
+                final Collection<CreditBureauLoanProductMappingData> creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService.retrieveAllCreditbureauLoanproductMappingData();
+                return this.creditbureauLoanproductDataApiJsonSerializer.serialize(settings, creditBureauLoanProductMappingData);
             }
         }
 
@@ -213,9 +226,12 @@ public class LoanProductsApiResource {
     public String retrieveLoanProductDetails(@PathParam("productId") final Long productId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
+        final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
+        if (associationParameters.contains("creditBureaus")) {
+            final CreditBureauLoanProductMappingData creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService.retrieveCreditbureauLoanproductMappingData(productId);
+            return this.creditbureauLoanproductDataApiJsonSerializer.serialize(settings, creditBureauLoanProductMappingData);
+        }
         LoanProductData loanProduct = this.loanProductReadPlatformService.retrieveLoanProduct(productId);
 
         Map<String, Object> accountingMappings = null;

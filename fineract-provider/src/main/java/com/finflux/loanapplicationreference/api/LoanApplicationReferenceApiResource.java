@@ -33,6 +33,9 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
 import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
+import com.finflux.risk.creditbureau.provider.data.CreditBureauFileContentData;
+import com.finflux.risk.creditbureau.provider.data.OtherInstituteLoansSummaryData;
+import com.finflux.risk.creditbureau.provider.service.CreditBureauCheckService;
 
 @Path("/loanapplicationreferences")
 @Component
@@ -45,18 +48,21 @@ public class LoanApplicationReferenceApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
+    private final CreditBureauCheckService creditBureauCheckService;
 
     @SuppressWarnings("rawtypes")
     @Autowired
     public LoanApplicationReferenceApiResource(final PlatformSecurityContext context, final DefaultToApiJsonSerializer toApiJsonSerializer,
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService) {
+            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
+            final CreditBureauCheckService creditBureauCheckService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
+        this.creditBureauCheckService = creditBureauCheckService;
     }
 
     @SuppressWarnings("unchecked")
@@ -125,7 +131,6 @@ public class LoanApplicationReferenceApiResource {
         final LoanApplicationReferenceData loanApplicationReferenceData = this.loanApplicationReferenceReadPlatformService
                 .retrieveOne(loanApplicationReferenceId);
         return this.toApiJsonSerializer.serialize(settings, loanApplicationReferenceData);
-
     }
 
     @PUT
@@ -159,6 +164,51 @@ public class LoanApplicationReferenceApiResource {
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
         return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{loanApplicationReferenceId}/creditbureaureport")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String creditBureauReport(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(
+                LoanApplicationReferenceApiConstants.LOANAPPLICATIONREFERENCE_RESOURCE_NAME);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final OtherInstituteLoansSummaryData otherInstituteLoansSummaryData = this.creditBureauCheckService
+                .getCreditBureauDataForLoanApplication(loanApplicationReferenceId);
+        return this.toApiJsonSerializer.serialize(settings, otherInstituteLoansSummaryData);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{loanApplicationReferenceId}/otherinstituteloanssummary")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String creditBureauReportFileContant(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @PathParam("sourceId") final Long sourceId, @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(
+                LoanApplicationReferenceApiConstants.LOANAPPLICATIONREFERENCE_RESOURCE_NAME);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final OtherInstituteLoansSummaryData otherInstituteLoansSummaryData = this.creditBureauCheckService.getOtherInstituteLoansSummary(
+                loanApplicationReferenceId, sourceId);
+        return this.toApiJsonSerializer.serialize(settings, otherInstituteLoansSummaryData);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{loanApplicationReferenceId}/creditbureaureportfile")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getCreditBureauReportFileContent(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(
+                LoanApplicationReferenceApiConstants.LOANAPPLICATIONREFERENCE_RESOURCE_NAME);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final CreditBureauFileContentData creditBureauFileContentData = this.creditBureauCheckService
+                .getCreditBureauReportFileContent(loanApplicationReferenceId);
+        return this.toApiJsonSerializer.serialize(settings, creditBureauFileContentData);
     }
 
     private boolean is(final String commandParam, final String commandValue) {

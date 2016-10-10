@@ -80,20 +80,19 @@ public class ExistingLoanDataValidator {
                     element);
             baseDataValidator.reset().parameter(ExistingLoanApiConstants.sourceCvIdParamName).value(sourceId).integerGreaterThanZero();
         }
-        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.bureauCvIdParamName, element)) {
-            final Integer bureauId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ExistingLoanApiConstants.bureauCvIdParamName,
+        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.loanEnquiryIdParamName, element)) {
+            final Integer bureauId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ExistingLoanApiConstants.loanEnquiryIdParamName,
                     element);
-            baseDataValidator.reset().parameter(ExistingLoanApiConstants.bureauCvIdParamName).value(bureauId).integerGreaterThanZero();
+            baseDataValidator.reset().parameter(ExistingLoanApiConstants.loanEnquiryIdParamName).value(bureauId).integerGreaterThanZero();
         }
         if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.lenderCvIdParamName, element)) {
             final Integer lenderId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ExistingLoanApiConstants.lenderCvIdParamName,
                     element);
             baseDataValidator.reset().parameter(ExistingLoanApiConstants.lenderCvIdParamName).value(lenderId).integerGreaterThanZero();
         }
-        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.lendernotlistedParamName, element)) {
-            final String lenderNotListed = this.fromApiJsonHelper.extractStringNamed(ExistingLoanApiConstants.lendernotlistedParamName,
-                    element);
-            baseDataValidator.reset().parameter(ExistingLoanApiConstants.lendernotlistedParamName).value(lenderNotListed).ignoreIfNull()
+        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.lenderNameParamName, element)) {
+            final String lenderNotListed = this.fromApiJsonHelper.extractStringNamed(ExistingLoanApiConstants.lenderNameParamName, element);
+            baseDataValidator.reset().parameter(ExistingLoanApiConstants.lenderNameParamName).value(lenderNotListed).ignoreIfNull()
                     .notExceedingLengthOf(500);
         }
         if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.loanTypeCvIdParamName, element)) {
@@ -229,10 +228,10 @@ public class ExistingLoanDataValidator {
     }
 
     private void validateEachObjectForUpdate(final JsonObject element, final DataValidatorBuilder baseDataValidator) {
-        
+
         final Long id = this.fromApiJsonHelper.extractLongNamed(ExistingLoanApiConstants.idParamName, element);
         baseDataValidator.reset().parameter(ExistingLoanApiConstants.idParamName).value(id).notBlank().longGreaterThanZero();
-        
+
         boolean atLeastOneParameterPassedForUpdate = false;
         if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.loanApplicationIdParamName, element)) {
             atLeastOneParameterPassedForUpdate = true;
@@ -254,11 +253,11 @@ public class ExistingLoanDataValidator {
                     element);
             baseDataValidator.reset().parameter(ExistingLoanApiConstants.sourceCvIdParamName).value(sourceId).integerGreaterThanZero();
         }
-        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.bureauCvIdParamName, element)) {
+        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.loanEnquiryIdParamName, element)) {
             atLeastOneParameterPassedForUpdate = true;
-            final Integer bureauId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ExistingLoanApiConstants.bureauCvIdParamName,
+            final Integer bureauId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ExistingLoanApiConstants.loanEnquiryIdParamName,
                     element);
-            baseDataValidator.reset().parameter(ExistingLoanApiConstants.bureauCvIdParamName).value(bureauId).integerGreaterThanZero();
+            baseDataValidator.reset().parameter(ExistingLoanApiConstants.loanEnquiryIdParamName).value(bureauId).integerGreaterThanZero();
         }
         if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.lenderCvIdParamName, element)) {
             atLeastOneParameterPassedForUpdate = true;
@@ -272,11 +271,10 @@ public class ExistingLoanDataValidator {
         final BigDecimal installMentAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("installmentAmount", element);
         baseDataValidator.reset().parameter("installmentAmount").value(installMentAmount).notNull().positiveAmount();
 
-        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.lendernotlistedParamName, element)) {
+        if (this.fromApiJsonHelper.parameterExists(ExistingLoanApiConstants.lenderNameParamName, element)) {
             atLeastOneParameterPassedForUpdate = true;
-            final String lenderNotListed = this.fromApiJsonHelper.extractStringNamed(ExistingLoanApiConstants.lendernotlistedParamName,
-                    element);
-            baseDataValidator.reset().parameter(ExistingLoanApiConstants.lendernotlistedParamName).value(lenderNotListed).ignoreIfNull()
+            final String lenderName = this.fromApiJsonHelper.extractStringNamed(ExistingLoanApiConstants.lenderNameParamName, element);
+            baseDataValidator.reset().parameter(ExistingLoanApiConstants.lenderNameParamName).value(lenderName).ignoreIfNull()
                     .notExceedingLengthOf(500);
         }
 

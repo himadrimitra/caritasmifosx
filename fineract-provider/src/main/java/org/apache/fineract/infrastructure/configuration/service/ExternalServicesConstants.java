@@ -39,7 +39,35 @@ public class ExternalServicesConstants {
     public static final String AADHAAR_HOST = "host";
     public static final String PORT = "port";
     public static final String CERTIFICATE = "certificate_type";
-
+    /*
+     * Highmark related constants -begin
+     */
+    
+    public static final String HIGHMARK_SERVICE_NAME = "HIGHMARK";
+    public static final String HIGHMARK_PRODUCTTYP = "PRODUCTTYP";
+    public static final String HIGHMARK_PRODUCTVER = "PRODUCTVER";
+    public static final String HIGHMARK_REQMBR = "REQMBR";
+    public static final String HIGHMARK_SUBMBRID = "SUBMBRID";
+    public static final String HIGHMARK_REQVOLTYP = "REQVOLTYP";
+    public static final String HIGHMARK_TESTFLG = "TESTFLG";
+    public static final String HIGHMARK_USERID = "USERID";
+    public static final String HIGHMARK_PWD = "PWD";
+    public static final String HIGHMARK_AUTHFLG = "AUTHFLG";
+    public static final String HIGHMARK_AUTHTITLE = "AUTHTITLE";
+    public static final String HIGHMARK_RESFRMT = "RESFRMT";
+    public static final String HIGHMARK_MEMBERPREOVERRIDE = "MEMBERPREOVERRIDE";
+    public static final String HIGHMARK_RESFRMTEMBD = "RESFRMTEMBD";
+    public static final String HIGHMARK_LOSNAME = "LOSNAME";
+    public static final String HIGHMARK_URL = "URL";
+    public static final String HIGHMARK_CREDTRPTID = "CREDTRPTID";
+    public static final String HIGHMARK_CREDTREQTYP = "CREDTREQTYP";
+    public static final String HIGHMARK_CREDTINQPURPSTYP = "CREDTINQPURPSTYP";
+    public static final String HIGHMARK_CREDTINQPURPSTYPDESC = "CREDTINQPURPSTYPDESC";
+    public static final String HIGHMARK_CREDITINQUIRYSTAGE = "CREDITINQUIRYSTAGE";
+    public static final String HIGHMARK_CREDTRPTTRNDTTM = "CREDTRPTTRNDTTM";
+    public static final String HIGHMARK_ORDEROFREQUEST = "ORDEROFREQUEST";
+    public static final String HIGHMARK_HIGHMARKQUERY = "HIGHMARKQUERY";
+    
     public static enum EXTERNALSERVICEPROPERTIES_JSON_INPUT_PARAMS {
         EXTERNAL_SERVICE_ID("external_service_id"), NAME("name"), VALUE("value");
 

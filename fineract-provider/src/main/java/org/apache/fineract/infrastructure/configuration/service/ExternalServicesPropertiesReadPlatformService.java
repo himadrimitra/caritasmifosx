@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.configuration.service;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.configuration.data.ExternalServicesPropertiesData;
+import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
 import org.apache.fineract.infrastructure.configuration.data.S3CredentialsData;
 import org.apache.fineract.infrastructure.configuration.data.SMTPCredentialsData;
 
@@ -32,4 +33,6 @@ public interface ExternalServicesPropertiesReadPlatformService {
 
     Collection<ExternalServicesPropertiesData> retrieveOne(String serviceName);
 
+    HighmarkCredentialsData getHighmarkCredentials();
+    
 }

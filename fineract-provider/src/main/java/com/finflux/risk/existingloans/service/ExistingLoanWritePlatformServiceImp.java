@@ -97,14 +97,14 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
                 }
                 existingLoanForUpdate.updatesourceCvId(sourceCvId);
             }
-            if (changes.containsKey(ExistingLoanApiConstants.bureauCvIdParamName)) {
+            if (changes.containsKey(ExistingLoanApiConstants.loanEnquiryIdParamName)) {
                 final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.Bureau_Cv_Option);
                 CodeValue bureauCvId = null;
                 if (newValue != null) {
                     bureauCvId = this.codeValueRepository.findOneByCodeNameAndIdWithNotFoundDetection(
                             ExistingLoanApiConstants.Bureau_Cv_Option, newValue);
                 }
-                existingLoanForUpdate.updatebureauCvId(bureauCvId);
+                // existingLoanForUpdate.updatebureauCvId(bureauCvId);
             }
 
             if (changes.containsKey(ExistingLoanApiConstants.externalLoanPurposeCvIdParamName)) {

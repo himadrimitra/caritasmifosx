@@ -72,7 +72,7 @@ public class ExistingLoanAssembler {
         }
 
         CodeValue bureauCvId = null;
-        final Long bureaucvId = this.fromApiJsonHelper.extractLongNamed(ExistingLoanApiConstants.bureauCvIdParamName, element);
+        final Long bureaucvId = this.fromApiJsonHelper.extractLongNamed(ExistingLoanApiConstants.loanEnquiryIdParamName, element);
         if (bureaucvId != null) {
             bureauCvId = this.codeValueRepository.findOneByCodeNameAndIdWithNotFoundDetection(ExistingLoanApiConstants.Bureau_Cv_Option,
                     bureaucvId);
@@ -134,7 +134,7 @@ public class ExistingLoanAssembler {
         final String remark = this.fromApiJsonHelper.extractStringNamed("remark", element);
         final Integer archive = this.fromApiJsonHelper.extractIntegerNamed("archive", element, locale);
 
-        return ExistingLoan.saveExistingLoan(client, loanApplicationId, loanId, sourceCvId, bureauCvId, bureauEnqRefId, lenderCvId,
+        return ExistingLoan.saveExistingLoan(client, loanApplicationId, loanId, sourceCvId, null, bureauEnqRefId, lenderCvId,
                 lenderNotListed, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure,
                 loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, loanStatus,
                 disbursedDate, maturityDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);

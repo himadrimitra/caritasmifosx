@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="REQUEST-REQUEST-FILE">
+    <xs:complexType>
+     <xs:sequence>
+			<xs:element minOccurs="1" maxOccurs="1" ref="HEADER-SEGMENT"/>
+			<xs:element minOccurs="1" maxOccurs="unbounded" ref="INQUIRY"/>
+		</xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  
+  <xs:element name="HEADER-SEGMENT">
+    <xs:complexType>
+	<xs:sequence>
+      <xs:element name="PRODUCT-TYP" minOccurs="1" maxOccurs="1">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="BASE_PLUS_REPORT"/>
+				</xs:restriction>
+			</xs:simpleType>
+	   </xs:element>
+       <xs:element name="PRODUCT-VER" type="xs:string" minOccurs="1" maxOccurs="1"/>
+       <xs:element name="REQ-MBR" minOccurs="1" maxOccurs="1">
+			<xs:simpleType >
+					<xs:restriction base="xs:string">
+						<xs:minLength value="5"/>
+						<xs:maxLength value="20"/>
+					</xs:restriction>
+				</xs:simpleType>
+	   </xs:element>
+       <xs:element name="SUB-MBR-ID" minOccurs="1" maxOccurs="1">
+			<xs:simpleType >
+				<xs:restriction base="xs:string">
+					<xs:minLength value="5"/>
+					<xs:maxLength value="20"/>
+				</xs:restriction>
+			</xs:simpleType>
+	   </xs:element>
+	   <xs:element name="INQ-DT-TM" type="xs:string" minOccurs="1" maxOccurs="1" />
+	   <xs:element name="REQ-VOL-TYP" minOccurs="1" maxOccurs="1">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="INDV"/>
+					<xs:enumeration value="JOIN"/>
+					<xs:enumeration value="C01"/>
+					<xs:enumeration value="C03"/>
+				</xs:restriction>
+			</xs:simpleType>
+	    </xs:element>
+		<xs:element name="REQ-ACTN-TYP" minOccurs="1" maxOccurs="1">
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="ISSUE"/>
+					<xs:enumeration value="AT02"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:element>
+		<xs:element name="TEST-FLG" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="USER-ID" type="xs:string" minOccurs="1" maxOccurs="1" />
+		<xs:element name="PWD" type="xs:string" minOccurs="1" maxOccurs="1" />
+		<xs:element name="AUTH-FLG" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="AUTH-TITLE" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="RES-FRMT" type="xs:string" minOccurs="1" maxOccurs="1"/>
+		<xs:element name="MEMBER-PRE-OVERRIDE" type="xs:string" minOccurs="1" maxOccurs="1" />
+		<xs:element name="RES-FRMT-EMBD" type="xs:string" minOccurs="1" maxOccurs="1" />
+		<xs:element name="LOS-NAME" type="xs:string" minOccurs="1" maxOccurs="1" />
+		<xs:element name="LOS-VENDER" type="xs:string" minOccurs="0" maxOccurs="1" />
+		<xs:element name="LOS-VERSION" type="xs:string" minOccurs="0" maxOccurs="1" />
+		</xs:sequence>
+	</xs:complexType>
+  </xs:element>
+  
+  <xs:element name="INQUIRY">
+    <xs:complexType>
+	<xs:sequence>
+        <xs:element name="INQUIRY-UNIQUE-REF-NO" type="xs:string" minOccurs="1" maxOccurs="1"/>
+        <xs:element name="REQUEST-DT-TM" type="xs:string" minOccurs="1" maxOccurs="1"/>
+        <xs:element name="REPORT-ID" type="xs:string" minOccurs="1" maxOccurs="1"/>
+	</xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

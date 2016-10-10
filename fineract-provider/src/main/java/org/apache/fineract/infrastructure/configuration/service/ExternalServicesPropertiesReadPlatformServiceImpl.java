@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.configuration.data.ExternalServicesPropertiesData;
+import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
 import org.apache.fineract.infrastructure.configuration.data.S3CredentialsData;
 import org.apache.fineract.infrastructure.configuration.data.SMTPCredentialsData;
 import org.apache.fineract.infrastructure.configuration.exception.ExternalServiceConfigurationNotFoundException;
@@ -90,6 +91,113 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
             return new SMTPCredentialsData(username, password, host, port, useTLS);
         }
     }
+    
+    private static final class HighmarkCredentialsDataExtractor implements ResultSetExtractor<HighmarkCredentialsData> {
+
+        @Override
+        public HighmarkCredentialsData extractData(ResultSet rs) throws SQLException, DataAccessException {
+            String PRODUCTTYP = null;
+            String PRODUCTVER = null;
+            String REQMBR = null;
+            String SUBMBRID = null;
+            String REQVOLTYP = null;
+            String TESTFLG = null;
+            String USERID = null;
+            String PWD = null;
+            String AUTHFLG = null;
+            String AUTHTITLE = null;
+            String RESFRMT = null;
+            String MEMBERPREOVERRIDE = null;
+            String RESFRMTEMBD = null;
+            String LOSNAME = null;
+            String URL = null;
+            String CREDTRPTID = null;
+            String CREDTREQTYP = null;
+            String CREDTINQPURPSTYP = null;
+            String CREDTINQPURPSTYPDESC = null;
+            String CREDITINQUIRYSTAGE = null;
+            String CREDTRPTTRNDTTM = null;
+            String ORDEROFREQUEST = null;
+            String HIGHMARKQUERY = null;
+            while (rs.next()) {
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_AUTHFLG)) {
+                    AUTHFLG = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_AUTHTITLE)) {
+                    AUTHTITLE = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_LOSNAME)) {
+                    LOSNAME = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_MEMBERPREOVERRIDE)) {
+                    MEMBERPREOVERRIDE = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_PRODUCTTYP)) {
+                    PRODUCTTYP = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_PRODUCTVER)) {
+                    PRODUCTVER = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_PWD)) {
+                    PWD = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_REQMBR)) {
+                    REQMBR = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_REQVOLTYP)) {
+                    REQVOLTYP = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_RESFRMT)) {
+                    RESFRMT = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_RESFRMTEMBD)) {
+                    RESFRMTEMBD = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_SUBMBRID)) {
+                    SUBMBRID = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_TESTFLG)) {
+                    TESTFLG = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_USERID)) {
+                    USERID = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_URL)) {
+                    URL = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_CREDTRPTID)) {
+                    CREDTRPTID = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_CREDTREQTYP)) {
+                    CREDTREQTYP = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_CREDTINQPURPSTYP)) {
+                    CREDTINQPURPSTYP = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_CREDTINQPURPSTYPDESC)) {
+                    CREDTINQPURPSTYPDESC = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_CREDITINQUIRYSTAGE)) {
+                    CREDITINQUIRYSTAGE = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_CREDTRPTTRNDTTM)) {
+                    CREDTRPTTRNDTTM = rs.getString("value");
+                }
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_ORDEROFREQUEST)) {
+                    CREDTRPTTRNDTTM = rs.getString("value");
+                }
+                if(rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_HIGHMARKQUERY)){
+                    HIGHMARKQUERY = rs.getString("value");
+                }
+
+            }
+            return new HighmarkCredentialsData(PRODUCTTYP, PRODUCTVER, REQMBR, SUBMBRID, REQVOLTYP, TESTFLG, USERID, PWD, AUTHFLG,
+                    AUTHTITLE, RESFRMT, MEMBERPREOVERRIDE, RESFRMTEMBD, LOSNAME, URL, CREDTRPTID, CREDTREQTYP, CREDTINQPURPSTYP,
+                    CREDTINQPURPSTYPDESC, CREDITINQUIRYSTAGE, CREDTRPTTRNDTTM, ORDEROFREQUEST,HIGHMARKQUERY);
+        }
+
+    }
+
 
     private static final class ExternalServiceMapper implements RowMapper<ExternalServicesPropertiesData> {
 
@@ -151,4 +259,14 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
         return this.jdbcTemplate.query(sql, mapper, new Object[] {});
 
     }
+    
+    @Override
+    public HighmarkCredentialsData getHighmarkCredentials() {
+        final ResultSetExtractor<HighmarkCredentialsData> resultSetExtractor = new HighmarkCredentialsDataExtractor();
+        final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
+                + ExternalServicesConstants.HIGHMARK_SERVICE_NAME + "'";
+        final HighmarkCredentialsData highmarkCredentialsData = this.jdbcTemplate.query(sql, resultSetExtractor, new Object[] {});
+        return highmarkCredentialsData;
+    }
+    
 }
