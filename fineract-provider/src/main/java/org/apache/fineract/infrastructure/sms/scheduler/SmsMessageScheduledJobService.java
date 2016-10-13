@@ -18,18 +18,27 @@
  */
 package org.apache.fineract.infrastructure.sms.scheduler;
 
-/** 
- * Scheduled Job service interface for SMS message 
+import java.util.Collection;
+
+import org.apache.fineract.infrastructure.sms.data.SmsData;
+import org.apache.fineract.infrastructure.sms.data.TenantSmsConfiguration;
+
+/**
+ * Scheduled Job service interface for SMS message
  **/
 public interface SmsMessageScheduledJobService {
-	
-	/** 
-	 * sends a batch of SMS messages to the SMS gateway 
-	 **/
-	public void sendMessages();
-	
-	/** 
-	 * get delivery report from the SMS gateway 
-	 **/
-	public void getDeliveryReports();
+
+    /**
+     * sends a batch of SMS messages to the SMS gateway
+     **/
+    public void sendMessages();
+
+    /**
+     * get delivery report from the SMS gateway
+     **/
+    public void getDeliveryReports();
+
+    public TenantSmsConfiguration getTenantSmsConfiguration();
+    
+    public void sendMessagesProcess(final TenantSmsConfiguration tenantSmsConfiguration, final Collection<SmsData> pendingMessages);
 }

@@ -6608,4 +6608,8 @@ public class Loan extends AbstractPersistable<Long> {
     public Set<LoanOfficerAssignmentHistory> getLoanOfficerHistory() {
         return this.loanOfficerHistory;
     }
+    
+    public Staff loanOfficer(){
+        return this.loanOfficer;
+    }
 }

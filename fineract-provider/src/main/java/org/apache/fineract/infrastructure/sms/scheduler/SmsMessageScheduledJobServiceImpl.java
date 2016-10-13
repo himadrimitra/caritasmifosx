@@ -96,14 +96,16 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
      * 
      * @return {@link TenantSmsConfiguration} object
      **/
-    private TenantSmsConfiguration getTenantSmsConfiguration() {
-    	Collection<SmsConfigurationData> configurationDataCollection = configurationReadPlatformService.retrieveAll();
-    	return TenantSmsConfiguration.instance(configurationDataCollection);
+    @Override
+    public TenantSmsConfiguration getTenantSmsConfiguration() {
+        Collection<SmsConfigurationData> configurationDataCollection = configurationReadPlatformService.retrieveAll();
+        return TenantSmsConfiguration.instance(configurationDataCollection);
     }
 	
 	/** 
 	 * get a new HttpEntity with the provided body
 	 **/
+	@SuppressWarnings("unused")
 	private HttpEntity<String> getHttpEntity(String body, String apiAuthUsername, String apiAuthPassword) {
 		HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -119,44 +121,46 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
 	/** 
 	 * prevents the SSL security certificate check 
 	 **/
-	private void trustAllSSLCertificates() {
-		TrustManager[] trustAllCerts = new TrustManager[] {
-            new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
- 
-                public void checkClientTrusted(
-                    X509Certificate[] certs, String authType) {
-                }
- 
-                public void checkServerTrusted(
-                    X509Certificate[] certs, String authType) {
-                }
+    private void trustAllSSLCertificates() {
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
             }
-        };
+
+            @SuppressWarnings("unused")
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+
+            @SuppressWarnings("unused")
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+        } };
 		
-		try {
+        try {
             SSLContext sslContext = SSLContext.getInstance("SSL");
             sslContext.init(null, trustAllCerts, new SecureRandom());
             HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-            
-            // Create all-trusting host name verifier
-    		HostnameVerifier hostnameVerifier = new HostnameVerifier() {
-    			@Override
-    			public boolean verify(String hostname, SSLSession session) {
-    				return true;
-    			}
-    		};
 
-    		// Install the all-trusting host verifier
-    		HttpsURLConnection.setDefaultHostnameVerifier(hostnameVerifier);
-        } 
-		
-		catch (Exception e) { 
-			// do nothing
-		}
-	}
+            // Create all-trusting host name verifier
+            HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+
+                @SuppressWarnings("unused")
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+
+            // Install the all-trusting host verifier
+            HttpsURLConnection.setDefaultHostnameVerifier(hostnameVerifier);
+        }
+
+        catch (Exception e) {
+            // do nothing
+        }
+    }
 	
 	/** 
      * Format destination phone number so it is in international format without the leading
@@ -190,73 +194,15 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
 	@CronTarget(jobName = JobName.SEND_MESSAGES_TO_SMS_GATEWAY)
 	public void sendMessages() {
 		if (IPv4Helper.applicationIsNotRunningOnLocalMachine()) {
-	    	
 	        final TenantSmsConfiguration tenantSmsConfiguration = this.getTenantSmsConfiguration();
-	        final String apiAuthUsername = tenantSmsConfiguration.getApiAuthUsername();
-	        final String apiAuthPassword = tenantSmsConfiguration.getApiAuthPassword();
-	        final String apiBaseUrl = tenantSmsConfiguration.getApiBaseUrl();
-	        final String sourceAddress = tenantSmsConfiguration.getSourceAddress();
-	        final String countryCallingCode = tenantSmsConfiguration.getCountryCallingCode();
-	        final FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
-	        final int httpEntityLimit = 500;
-	        final int httpEntityLimitMinusOne = httpEntityLimit - 1;
 	        Integer smsCredits = tenantSmsConfiguration.getSmsCredits();
 	        Integer smsSqlLimit = 5000;
-	        
 	        if(smsCredits > 0) {
 	            try{
 	                smsSqlLimit = (smsSqlLimit > smsCredits) ? smsCredits : smsSqlLimit;
 	                final Collection<SmsData> pendingMessages = this.smsReadPlatformService.retrieveAllPending(smsSqlLimit);
-	                
-	                if(pendingMessages.size() > 0) {
-	                    Iterator<SmsData> pendingMessageIterator = pendingMessages.iterator();
-	                    int index = 0;
-	                    
-	                    // ====================== start point json string ======================================
-	                    StringBuilder httpEntity = new StringBuilder("[");
-	                    
-	                    while(pendingMessageIterator.hasNext()) {
-	                        SmsData smsData = pendingMessageIterator.next();
-	                        SmsMessageApiQueueResourceData apiQueueResourceData = 
-	                                SmsMessageApiQueueResourceData.instance(smsData.getId(), tenant.getTenantIdentifier(), 
-	                                        null, sourceAddress, formatDestinationPhoneNumber(smsData.getMobileNo(), countryCallingCode), 
-	                                        smsData.getMessage());
-	                        
-	                        httpEntity.append(apiQueueResourceData.toJsonString());
-	                        
-	                        index++;
-	                        
-	                        if (index == httpEntityLimitMinusOne) {
-	                            httpEntity.append("]");
-	                            
-	                            smsCredits = this.sendMessages(httpEntity, apiAuthUsername, apiAuthPassword, apiBaseUrl, smsCredits, 
-	                                    sourceAddress);
-	                            
-	                            index = 0;
-	                            httpEntity = new StringBuilder("[");
-	                        }
-	                        
-	                        // add comma separation if iterator has more elements
-	                        if(pendingMessageIterator.hasNext() && (index > 0)) {
-	                            httpEntity.append(", ");
-	                        }
-	                    }
-	                    
-	                    httpEntity.append("]");
-	                    // ====================== end point json string ====================================
-	                    
-	                    smsCredits = this.sendMessages(httpEntity, apiAuthUsername, apiAuthPassword, apiBaseUrl, smsCredits, sourceAddress);
-	                    
-	                    logger.info(pendingMessages.size() + " pending message(s) successfully sent to the intermediate gateway - mlite-sms");
-	                    
-	                    SmsConfiguration smsConfiguration = this.smsConfigurationRepository.findByName("SMS_CREDITS");
-	                    smsConfiguration.setValue(smsCredits.toString());
-	                    
-	                    // save the SmsConfiguration entity
-	                    this.smsConfigurationRepository.save(smsConfiguration);
-	                }
+	                sendMessagesProcess(tenantSmsConfiguration, pendingMessages);
 	            }
-	            
 	            catch(Exception e) {
 	                logger.error(e.getMessage(), e);
 	            }
@@ -264,6 +210,69 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
 	    }
 	}
 	
+    @Override
+    public void sendMessagesProcess(TenantSmsConfiguration tenantSmsConfiguration, final Collection<SmsData> pendingMessages) {
+        if(tenantSmsConfiguration == null){
+            tenantSmsConfiguration = this.getTenantSmsConfiguration();
+        }
+        final String apiAuthUsername = tenantSmsConfiguration.getApiAuthUsername();
+        final String apiAuthPassword = tenantSmsConfiguration.getApiAuthPassword();
+        final String apiBaseUrl = tenantSmsConfiguration.getApiBaseUrl();
+        final String sourceAddress = tenantSmsConfiguration.getSourceAddress();
+        final String countryCallingCode = tenantSmsConfiguration.getCountryCallingCode();
+        final FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        Integer smsCredits = tenantSmsConfiguration.getSmsCredits();
+        final int httpEntityLimit = 500;
+        final int httpEntityLimitMinusOne = httpEntityLimit - 1;
+        if (pendingMessages.size() > 0) {
+            Iterator<SmsData> pendingMessageIterator = pendingMessages.iterator();
+            int index = 0;
+
+            // ====================== start point json string
+            // ======================================
+            StringBuilder httpEntity = new StringBuilder("[");
+
+            while (pendingMessageIterator.hasNext()) {
+                SmsData smsData = pendingMessageIterator.next();
+                SmsMessageApiQueueResourceData apiQueueResourceData = SmsMessageApiQueueResourceData.instance(smsData.getId(),
+                        tenant.getTenantIdentifier(), null, sourceAddress,
+                        formatDestinationPhoneNumber(smsData.getMobileNo(), countryCallingCode), smsData.getMessage());
+
+                httpEntity.append(apiQueueResourceData.toJsonString());
+
+                index++;
+
+                if (index == httpEntityLimitMinusOne) {
+                    httpEntity.append("]");
+
+                    smsCredits = this.sendMessages(httpEntity, apiAuthUsername, apiAuthPassword, apiBaseUrl, smsCredits, sourceAddress);
+
+                    index = 0;
+                    httpEntity = new StringBuilder("[");
+                }
+
+                // add comma separation if iterator has more elements
+                if (pendingMessageIterator.hasNext() && (index > 0)) {
+                    httpEntity.append(", ");
+                }
+            }
+
+            httpEntity.append("]");
+            // ====================== end point json string
+            // ====================================
+
+            smsCredits = this.sendMessages(httpEntity, apiAuthUsername, apiAuthPassword, apiBaseUrl, smsCredits, sourceAddress);
+
+            logger.info(pendingMessages.size() + " pending message(s) successfully sent to the intermediate gateway - mlite-sms");
+
+            SmsConfiguration smsConfiguration = this.smsConfigurationRepository.findByName("SMS_CREDITS");
+            smsConfiguration.setValue(smsCredits.toString());
+
+            // save the SmsConfiguration entity
+            this.smsConfigurationRepository.save(smsConfiguration);
+        }
+    }
+
 	/**
 	 * handles the sending of messages to the intermediate gateway and updating of the external ID, status and sources address
 	 * of each message
@@ -283,10 +292,9 @@ public class SmsMessageScheduledJobServiceImpl implements SmsMessageScheduledJob
         
         // make request
         HttpEntity<String> s = getHttpEntity(httpEntity.toString(), apiAuthUsername, apiAuthPassword);
-        
-        final ResponseEntity<SmsMessageApiResponseData> entity = restTemplate.postForEntity(apiBaseUrl + "/queue",
-                s, 
-                SmsMessageApiResponseData.class);
+		final ResponseEntity<SmsMessageApiResponseData> entity = restTemplate
+				.postForEntity(apiBaseUrl + "/queue", s,
+						SmsMessageApiResponseData.class);
         
         final List<SmsMessageDeliveryReportData> smsMessageDeliveryReportDataList = entity.getBody().getData();
         final Iterator<SmsMessageDeliveryReportData> deliveryReportIterator = smsMessageDeliveryReportDataList.iterator();

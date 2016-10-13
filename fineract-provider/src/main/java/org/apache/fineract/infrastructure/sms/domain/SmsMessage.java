@@ -37,9 +37,15 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 @Entity
 @Table(name = "sms_messages_outbound")
 public class SmsMessage extends AbstractPersistable<Long> {
-	
-	@Column(name = "external_id", nullable = true)
-	private Long externalId;
+
+    @Column(name = "entity_type_enum", nullable = true)
+    private Integer entityTypeEnum;
+
+    @Column(name = "entity_id", nullable = true)
+    private Long entityId;
+
+    @Column(name = "external_id", nullable = true)
+    private Long externalId;
 
     @ManyToOne
     @JoinColumn(name = "group_id", nullable = true)
@@ -55,7 +61,7 @@ public class SmsMessage extends AbstractPersistable<Long> {
 
     @Column(name = "status_enum", nullable = false)
     private Integer statusType;
-    
+
     @Column(name = "source_address", nullable = true, length = 50)
     private String sourceAddress;
 
@@ -72,26 +78,33 @@ public class SmsMessage extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date submittedOnDate;
 
-    public static SmsMessage pendingSms(final Long externalId, final Group group, final Client client, final Staff staff, final String message,
-    		final String sourceAddress, final String mobileNo, final String campaignName) {
-    	
-    	return new SmsMessage(externalId, group, client, staff, SmsMessageStatusType.PENDING, message, sourceAddress, mobileNo,campaignName);
+    public static SmsMessage pendingSms(final Integer entityTypeEnum, final Long entityId, final Long externalId, final Group group,
+            final Client client, final Staff staff, final String message, final String sourceAddress, final String mobileNo,
+            final String campaignName) {
+
+        return new SmsMessage(entityTypeEnum, entityId, externalId, group, client, staff, SmsMessageStatusType.PENDING, message,
+                sourceAddress, mobileNo, campaignName);
     }
-    
-    public static SmsMessage instance(final Long externalId, final Group group, final Client client, final Staff staff, final SmsMessageStatusType statusType,
-            final String message, final String sourceAddress, final String mobileNo, final String campaignName) {
-    	
-    	return new SmsMessage(externalId, group, client, staff, statusType, message, sourceAddress, mobileNo, campaignName);
+
+    public static SmsMessage instance(final Integer entityTypeEnum, final Long entityId, final Long externalId, final Group group,
+            final Client client, final Staff staff, final SmsMessageStatusType statusType, final String message,
+            final String sourceAddress, final String mobileNo, final String campaignName) {
+
+        return new SmsMessage(entityTypeEnum, entityId, externalId, group, client, staff, statusType, message, sourceAddress, mobileNo,
+                campaignName);
     }
 
     protected SmsMessage() {
         //
     }
 
-    private SmsMessage(final Long externalId, final Group group, final Client client, final Staff staff, final SmsMessageStatusType statusType,
-            final String message, final String sourceAddress, final String mobileNo, final String campaignName) {
+    private SmsMessage(final Integer entityTypeEnum, final Long entityId, final Long externalId, final Group group, final Client client,
+            final Staff staff, final SmsMessageStatusType statusType, final String message, final String sourceAddress,
+            final String mobileNo, final String campaignName) {
+        this.entityTypeEnum = entityTypeEnum;
+        this.entityId = entityId;
         this.externalId = externalId;
-    	this.group = group;
+        this.group = group;
         this.client = client;
         this.staff = staff;
         this.statusType = statusType.getValue();
@@ -114,49 +127,49 @@ public class SmsMessage extends AbstractPersistable<Long> {
 
         return actualChanges;
     }
-    
+
     public Long getExternalId() {
-    	return externalId;
+        return externalId;
     }
-    
+
     public Group getGroup() {
-    	return group;
+        return group;
     }
-    
+
     public Client getClient() {
-    	return client;
+        return client;
     }
-    
+
     public Staff getStaff() {
-    	return staff;
+        return staff;
     }
-    
+
     public Integer getStatusType() {
-    	return statusType;
+        return statusType;
     }
-    
+
     public String getSourceAddress() {
-    	return sourceAddress;
+        return sourceAddress;
     }
-    
+
     public String getMobileNo() {
-    	return mobileNo;
+        return mobileNo;
     }
-    
+
     public String getMessage() {
-    	return message;
+        return message;
     }
-    
+
     public void setExternalId(final Long externalId) {
-    	this.externalId = externalId;
+        this.externalId = externalId;
     }
-    
+
     public void setStatusType(final Integer statusType) {
-    	this.statusType = statusType;
+        this.statusType = statusType;
     }
-    
+
     public void setSourceAddress(final String sourceAddress) {
-    	this.sourceAddress = sourceAddress;
+        this.sourceAddress = sourceAddress;
     }
 
     public String getCampaignName() {

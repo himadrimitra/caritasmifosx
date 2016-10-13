@@ -195,9 +195,8 @@ public class SmsReadPlatformServiceImpl implements SmsReadPlatformService {
         final String sqlCountRows = "SELECT FOUND_ROWS()";
         if(dateFrom !=null && dateTo !=null){
         	return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),new Object[]{status,fromDateString,toDateString},this.smsRowMapper);
-        }else{
-        	return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),new Object[]{status},this.smsRowMapper);
         }
+        return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),new Object[]{status},this.smsRowMapper);
         
     }
 }
