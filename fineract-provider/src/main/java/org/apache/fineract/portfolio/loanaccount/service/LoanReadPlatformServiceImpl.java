@@ -419,14 +419,18 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public LoanTransactionData retrieveLoanTransactionTemplate(final Long loanId) {
 
         this.context.authenticatedUser();
+		try {
+			RepaymentTransactionTemplateMapper mapper = new RepaymentTransactionTemplateMapper();
+			String sql = "select " + mapper.schema() + " where l.id =?";
+			LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, mapper,
+					LoanTransactionType.REPAYMENT.getValue(), loanId, loanId);
 
-        RepaymentTransactionTemplateMapper mapper = new RepaymentTransactionTemplateMapper();
-        String sql = "select " + mapper.schema() + " where l.id =?";
-        LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, mapper, LoanTransactionType.REPAYMENT.getValue(),
-                loanId, loanId);
-
-        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-        return LoanTransactionData.templateOnTop(loanTransactionData, paymentOptions);
+			final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
+					.retrieveAllPaymentTypes();
+			return LoanTransactionData.templateOnTop(loanTransactionData, paymentOptions);
+		} catch (EmptyResultDataAccessException e) {
+			throw new LoanNotFoundException(loanId);
+		}
     }
 
     @Override
@@ -615,7 +619,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " lp.allow_multiple_disbursals as multiDisburseLoan,"
                     + " lp.consider_future_disbursments_in_schedule as considerFutureDisbursmentsInSchedule,"
                     + " lp.can_define_fixed_emi_amount as canDefineInstallmentAmount,"
-                    + " c.id as clientId, c.account_no as clientAccountNo, c.display_name as clientName, c.office_id as clientOfficeId,"
+                    + " c.id as clientId, c.account_no as clientAccountNo, c.display_name as clientName, IFNULL(c.mobile_no,null) as mobileNo, c.office_id as clientOfficeId,"
                     + " g.id as groupId, g.account_no as groupAccountNo, g.display_name as groupName,"
                     + " g.office_id as groupOfficeId, g.staff_id As groupStaffId , g.parent_id as groupParentId, (select mg.display_name from m_group mg where mg.id = g.parent_id) as centerName, "
                     + " g.hierarchy As groupHierarchy , g.level_id as groupLevel, g.external_id As groupExternalId, "
@@ -738,6 +742,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final String clientAccountNo = rs.getString("clientAccountNo");
             final Long clientOfficeId = JdbcSupport.getLong(rs, "clientOfficeId");
             final String clientName = rs.getString("clientName");
+            final String mobileNo = rs.getString("mobileNo");
 
             final Long groupId = JdbcSupport.getLong(rs, "groupId");
             final String groupName = rs.getString("groupName");
@@ -1017,7 +1022,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final String closureLoanAccountNo = rs.getString("closureLoanAccountNo");
             final BigDecimal topupAmount = rs.getBigDecimal("topupAmount");
 
-            return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName,
+            return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
                     isLoanProductLinkedToFloatingRate, fundId, fundName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName,
                     currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid, inArrearsTolerance, termFrequency,
