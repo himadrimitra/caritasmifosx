@@ -67,16 +67,19 @@ public class SmsEventListenerServiceImpl implements SmsEventListenerService {
             // TODO Auto-generated method stub
         }
 
+        @SuppressWarnings("null")
         @Override
         public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
             Object loanTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
             if (loanTransactionEntity != null) {
                 final LoanTransaction loanTransaction = (LoanTransaction) loanTransactionEntity;
-                final Integer transactionType = SMSSupportedTransactionType.DISBURSEMENT.getValue();
-                final Integer productType = SMSSupportedProductType.LOANPRODUCT.getValue();
-                final Long productId = loanTransaction.getLoan().productId();
-                String messageTemplate = getSmsMessageTemplate(transactionType, productType, productId);
-                sendMessgeProcessForLoanTransaction(loanTransaction, messageTemplate);
+                if (loanTransaction != null && loanTransaction.getLoan() != null && loanTransaction.getLoan().productId() != null) {
+                    final Integer transactionType = SMSSupportedTransactionType.DISBURSEMENT.getValue();
+                    final Integer productType = SMSSupportedProductType.LOANPRODUCT.getValue();
+                    final Long productId = loanTransaction.getLoan().productId();
+                    String messageTemplate = getSmsMessageTemplate(transactionType, productType, productId);
+                    sendMessgeProcessForLoanTransaction(loanTransaction, messageTemplate);
+                }
             }
         }
     }
@@ -105,16 +108,19 @@ public class SmsEventListenerServiceImpl implements SmsEventListenerService {
             // TODO Auto-generated method stub
         }
 
+        @SuppressWarnings("null")
         @Override
         public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
             Object loanTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
             if (loanTransactionEntity != null) {
                 final LoanTransaction loanTransaction = (LoanTransaction) loanTransactionEntity;
-                final Integer transactionType = SMSSupportedTransactionType.REPAYMENT.getValue();
-                final Integer productType = SMSSupportedProductType.LOANPRODUCT.getValue();
-                final Long productId = loanTransaction.getLoan().productId();
-                String messageTemplate = getSmsMessageTemplate(transactionType, productType, productId);
-                sendMessgeProcessForLoanTransaction(loanTransaction, messageTemplate);
+                if(loanTransaction != null && loanTransaction.getLoan() != null && loanTransaction.getLoan().productId() != null){
+                    final Integer transactionType = SMSSupportedTransactionType.REPAYMENT.getValue();
+                    final Integer productType = SMSSupportedProductType.LOANPRODUCT.getValue();
+                    final Long productId = loanTransaction.getLoan().productId();
+                    String messageTemplate = getSmsMessageTemplate(transactionType, productType, productId);
+                    sendMessgeProcessForLoanTransaction(loanTransaction, messageTemplate);
+                }
             }
         }
 
@@ -122,25 +128,28 @@ public class SmsEventListenerServiceImpl implements SmsEventListenerService {
 
     @Override
     public void sendMessgeProcessForLoanTransaction(final LoanTransaction loanTransaction, String messageTemplate) {
-        final Loan loan = loanTransaction.getLoan();
-        if (loan.client().getMobileNo() != null) {
-            if (messageTemplate != null && !messageTemplate.equalsIgnoreCase("null") && messageTemplate.length() > 0) {
-                /*
-                 * Dear {{clientName}}, Your EMI amount {{transactionAmount}}
-                 * was paid successfully on {{transactionDate}}, Your loan
-                 * account number is {{accountNumber}}.
-                 * 
-                 * Regards Chaitanya Microfinance.
-                 */
-                final String clientName = loan.client().getDisplayName();
-                final Money transactionAmount = loanTransaction.getAmount(loan.getCurrency());
-                final LocalDate transactionDate = loanTransaction.getTransactionDate();
-                final String accountNumber = loan.getAccountNumber();
-                messageTemplate = messageTemplate.replace("{{clientName}}", clientName);
-                messageTemplate = messageTemplate.replace("{{transactionAmount}}", transactionAmount.toString());
-                messageTemplate = messageTemplate.replace("{{transactionDate}}", transactionDate.toString());
-                messageTemplate = messageTemplate.replace("{{accountNumber}}", accountNumber.toString());
-                sendMessge(messageTemplate, loan);
+        if (loanTransaction != null) {
+            final Loan loan = loanTransaction.getLoan();
+            if (loan != null && loan.client() != null && loan.client().getMobileNo() != null) {
+                if (messageTemplate != null && !messageTemplate.equalsIgnoreCase("null") && messageTemplate.length() > 0) {
+                    /*
+                     * Dear {{clientName}}, Your EMI amount
+                     * {{transactionAmount}} was paid successfully on
+                     * {{transactionDate}}, Your loan account number is
+                     * {{accountNumber}}.
+                     * 
+                     * Regards Chaitanya Microfinance.
+                     */
+                    final String clientName = loan.client().getDisplayName();
+                    final Money transactionAmount = loanTransaction.getAmount(loan.getCurrency());
+                    final LocalDate transactionDate = loanTransaction.getTransactionDate();
+                    final String accountNumber = loan.getAccountNumber();
+                    messageTemplate = messageTemplate.replace("{{clientName}}", clientName);
+                    messageTemplate = messageTemplate.replace("{{transactionAmount}}", transactionAmount.toString());
+                    messageTemplate = messageTemplate.replace("{{transactionDate}}", transactionDate.toString());
+                    messageTemplate = messageTemplate.replace("{{accountNumber}}", accountNumber.toString());
+                    sendMessge(messageTemplate, loan);
+                }
             }
         }
     }

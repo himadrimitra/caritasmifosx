@@ -520,7 +520,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         updateRecurringCalendarDatesForInterestRecalculation(loan);
         this.loanAccountDomainService.recalculateAccruals(loan);
         final Map<BUSINESS_ENTITY, Object> map = constructEntityMap(BUSINESS_ENTITY.LOAN, loan);
-        map.put(BUSINESS_ENTITY.LOAN_TRANSACTION, disbursementTransaction);
+        if(disbursementTransaction != null){
+            map.put(BUSINESS_ENTITY.LOAN_TRANSACTION, disbursementTransaction);
+        }
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, map);
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
@@ -691,21 +693,21 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             updateLoanCounters(loan, actualDisbursementDate);
             boolean canDisburse = loan.canDisburse(actualDisbursementDate);
             ChangedTransactionDetail changedTransactionDetail = null;
+            LoanTransaction disbursementTransaction = null;
             if (canDisburse) {
                 Money amountBeforeAdjust = loan.getPrincpal();
                 Money disburseAmount = loan.adjustDisburseAmount(command, actualDisbursementDate);
                 boolean recalculateSchedule = amountBeforeAdjust.isNotEqualTo(loan.getPrincpal());
                 final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
+                disbursementTransaction = LoanTransaction.disbursement(loan.getOffice(), disburseAmount, paymentDetail,
+                        actualDisbursementDate, txnExternalId);
                 if (isAccountTransfer) {
                     disburseLoanToSavings(loan, command, disburseAmount, paymentDetail);
                     existingTransactionIds.addAll(loan.findExistingTransactionIds());
                     existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
-
                 } else {
                     existingTransactionIds.addAll(loan.findExistingTransactionIds());
                     existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
-                    LoanTransaction disbursementTransaction = LoanTransaction.disbursement(loan.getOffice(), disburseAmount, paymentDetail,
-                            actualDisbursementDate, txnExternalId);
                     disbursementTransaction.updateLoan(loan);
                     loan.getLoanTransactions().add(disbursementTransaction);
                 }
@@ -765,10 +767,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             }
             updateRecurringCalendarDatesForInterestRecalculation(loan);
             this.loanAccountDomainService.recalculateAccruals(loan);
-            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+            final Map<BUSINESS_ENTITY, Object> map = constructEntityMap(BUSINESS_ENTITY.LOAN, loan);
+            if(disbursementTransaction != null){
+                map.put(BUSINESS_ENTITY.LOAN_TRANSACTION, disbursementTransaction);
+            }
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, map);
         }
-
         return changes;
     }
 
