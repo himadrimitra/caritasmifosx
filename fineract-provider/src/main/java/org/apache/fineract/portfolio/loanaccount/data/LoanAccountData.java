@@ -51,9 +51,11 @@ import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrat
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
 import org.apache.fineract.portfolio.note.data.NoteData;
-import org.hibernate.dialect.Sybase11Dialect;
 import org.joda.time.LocalDate;
 import org.springframework.util.CollectionUtils;
+
+import com.finflux.portfolio.loan.purpose.data.LoanPurposeData;
+
 
 /**
  * Immutable data object representing loan account data.
@@ -146,7 +148,7 @@ public class LoanAccountData {
     // template
     private final Collection<LoanProductData> productOptions;
     private final Collection<StaffData> loanOfficerOptions;
-    private final Collection<CodeValueData> loanPurposeOptions;
+    private final Collection<LoanPurposeData> loanPurposeOptions;
     private final Collection<FundData> fundOptions;
     private final Collection<EnumOptionData> termFrequencyTypeOptions;
     private final Collection<EnumOptionData> repaymentFrequencyTypeOptions;
@@ -303,7 +305,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final Boolean syncDisbursementWithMeeting = null;
         final Integer loancounter = null;
@@ -429,7 +431,7 @@ public class LoanAccountData {
         final LoanScheduleData originalSchedule = null;
         final Collection<LoanProductData> productOptions = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<FundData> fundOptions = null;
         final Collection<EnumOptionData> termFrequencyTypeOptions = null;
         final Collection<EnumOptionData> repaymentFrequencyTypeOptions = null;
@@ -603,7 +605,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CodeValueData> loanCollateralOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final Collection<PortfolioAccountData> accountLinkingOptions = null;
@@ -754,7 +756,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CodeValueData> loanCollateralOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final Collection<PortfolioAccountData> accountLinkingOptions = null;
@@ -900,7 +902,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CodeValueData> loanCollateralOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final Boolean syncDisbursementWithMeeting = null;
@@ -1077,7 +1079,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CodeValueData> loanCollateralOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final Boolean syncDisbursementWithMeeting = null;
@@ -1181,7 +1183,7 @@ public class LoanAccountData {
             final Collection<EnumOptionData> interestRateFrequencyTypeOptions, final Collection<EnumOptionData> amortizationTypeOptions,
             final Collection<EnumOptionData> interestTypeOptions, final Collection<EnumOptionData> interestCalculationPeriodTypeOptions,
             final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions,
-            final Collection<CodeValueData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions,
+            final Collection<LoanPurposeData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions,
             final Integer loanCycleNumber, final Collection<PledgeData> loanProductCollateralPledgesOptions,
             final Collection<LoanAccountSummaryData> clientActiveLoanOptions) {
 
@@ -1351,7 +1353,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CodeValueData> loanCollateralOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final PaidInAdvanceData paidInAdvance = null;
@@ -1447,7 +1449,7 @@ public class LoanAccountData {
         final Collection<ChargeData> chargeOptions = null;
         final ChargeData chargeTemplate = null;
         final Collection<StaffData> loanOfficerOptions = null;
-        final Collection<CodeValueData> loanPurposeOptions = null;
+        final Collection<LoanPurposeData> loanPurposeOptions = null;
         final Collection<CodeValueData> loanCollateralOptions = null;
         final Collection<CalendarData> calendarOptions = null;
         final Collection<PortfolioAccountData> accountLinkingOptions = null;
@@ -1502,7 +1504,7 @@ public class LoanAccountData {
             final Collection<EnumOptionData> interestRateFrequencyTypeOptions, final Collection<EnumOptionData> amortizationTypeOptions,
             final Collection<EnumOptionData> interestTypeOptions, final Collection<EnumOptionData> interestCalculationPeriodTypeOptions,
             final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions, final ChargeData chargeTemplate,
-            final Collection<StaffData> loanOfficerOptions, final Collection<CodeValueData> loanPurposeOptions,
+            final Collection<StaffData> loanOfficerOptions, final Collection<LoanPurposeData> loanPurposeOptions,
             final Collection<CodeValueData> loanCollateralOptions, final Collection<CalendarData> calendarOptions,
             final Collection<NoteData> notes, final Collection<PortfolioAccountData> accountLinkingOptions,
             final PortfolioAccountData linkedAccount, final Collection<DisbursementData> disbursementDetails,
@@ -1795,7 +1797,7 @@ public class LoanAccountData {
             final Collection<EnumOptionData> interestRateFrequencyTypeOptions, final Collection<EnumOptionData> amortizationTypeOptions,
             final Collection<EnumOptionData> interestTypeOptions, final Collection<EnumOptionData> interestCalculationPeriodTypeOptions,
             final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions, final ChargeData chargeTemplate,
-            final Collection<StaffData> loanOfficerOptions, final Collection<CodeValueData> loanPurposeOptions,
+            final Collection<StaffData> loanOfficerOptions, final Collection<LoanPurposeData> loanPurposeOptions,
             final Collection<CodeValueData> loanCollateralOptions, final Collection<CalendarData> calendarOptions,
             final Boolean syncDisbursementWithMeeting, final Integer loanCounter, final Integer loanProductCounter,
             final Collection<NoteData> notes, final Collection<PortfolioAccountData> accountLinkingOptions,

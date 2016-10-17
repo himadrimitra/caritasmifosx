@@ -82,6 +82,8 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.loan.purpose.domain.LoanPurpose;
+import com.finflux.portfolio.loan.purpose.domain.LoanPurposeRepositoryWrapper;
 import com.google.gson.JsonElement;
 
 @Service
@@ -105,6 +107,7 @@ public class LoanAssembler {
     private final ConfigurationDomainService configurationDomainService;
     private final WorkingDaysRepositoryWrapper workingDaysRepository;
     private final LoanUtilService loanUtilService;
+    private final LoanPurposeRepositoryWrapper loanPurposeRepository;
 
     @Autowired
     public LoanAssembler(final FromJsonHelper fromApiJsonHelper, final LoanRepositoryWrapper loanRepository,
@@ -116,7 +119,8 @@ public class LoanAssembler {
             final CollateralAssembler loanCollateralAssembler, final LoanSummaryWrapper loanSummaryWrapper,
             final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory,
             final HolidayRepository holidayRepository, final ConfigurationDomainService configurationDomainService,
-            final WorkingDaysRepositoryWrapper workingDaysRepository, final LoanUtilService loanUtilService) {
+            final WorkingDaysRepositoryWrapper workingDaysRepository, final LoanUtilService loanUtilService,
+            final LoanPurposeRepositoryWrapper loanPurposeRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanRepository = loanRepository;
         this.loanProductRepository = loanProductRepository;
@@ -135,6 +139,7 @@ public class LoanAssembler {
         this.configurationDomainService = configurationDomainService;
         this.workingDaysRepository = workingDaysRepository;
         this.loanUtilService = loanUtilService;
+        this.loanPurposeRepository =loanPurposeRepository;
     }
 
     public Loan assembleFrom(final Long accountId) {
@@ -185,9 +190,9 @@ public class LoanAssembler {
         final Fund fund = findFundByIdIfProvided(fundId);
         final Staff loanOfficer = findLoanOfficerByIdIfProvided(loanOfficerId);
         final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy = findStrategyByIdIfProvided(transactionProcessingStrategyId);
-        CodeValue loanPurpose = null;
+        LoanPurpose loanPurpose = null;
         if (loanPurposeId != null) {
-            loanPurpose = this.codeValueRepository.findOneWithNotFoundDetection(loanPurposeId);
+            loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanPurposeId);
         }
         Set<LoanDisbursementDetails> disbursementDetails = null;
         BigDecimal fixedEmiAmount = null;
@@ -357,5 +362,13 @@ public class LoanAssembler {
 
         loanApplication.validateExpectedDisbursementForHolidayAndNonWorkingDay(workingDays, allowTransactionsOnHoliday, holidays,
                 allowTransactionsOnNonWorkingDay);
+    }
+    
+    public LoanPurpose findLoanPurposeByIdIfProvided(final Long loanPurposeId) {
+        LoanPurpose loanPurpose = null;
+        if (loanPurposeId != null) {
+            loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanPurposeId);
+        }
+        return loanPurpose;
     }
 }

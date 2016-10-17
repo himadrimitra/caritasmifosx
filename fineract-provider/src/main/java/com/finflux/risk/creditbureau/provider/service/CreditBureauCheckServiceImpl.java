@@ -35,7 +35,7 @@ import com.finflux.risk.creditbureau.provider.data.OtherInstituteLoansSummaryDat
 import com.finflux.risk.creditbureau.provider.data.ReportFileType;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
-import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiryMapping;
+import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiry;
 
 @Service
 public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
@@ -175,7 +175,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         CreditBureauEnquiry creditBureauEnquiry = new CreditBureauEnquiry(creditBureauProduct, type,
                 CreditBureauEnquiryStatus.INITIATED.getValue(), null);
 
-        List<LoanCreditBureauEnquiryMapping> loanMappings = new ArrayList<>();
+        List<LoanCreditBureauEnquiry> loanMappings = new ArrayList<>();
         if (loanIds != null && !loanIds.isEmpty()) {
 
         }
@@ -185,19 +185,19 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
                         .getEnquiryRequestDataForLoanApplication(loanApplicationId);
                 String refNumber = generateRandomEnquiryNumberByLoanApplicationId(type, creditBureauProduct.getImplementationKey(),
                         loanApplicationId);
-                final LoanCreditBureauEnquiryMapping loanMapping = new LoanCreditBureauEnquiryMapping(null, refNumber,
+                final LoanCreditBureauEnquiry loanMapping = new LoanCreditBureauEnquiry(null, refNumber,
                         enquiryData.getClientId(), null, loanApplicationId, CreditBureauEnquiryStatus.INITIATED.getValue());
                 loanMapping.setCreditBureauEnquiry(creditBureauEnquiry);
                 loanMappings.add(loanMapping);
             }
         }
-        creditBureauEnquiry.setLoanCreditBureauEnquiryMapping(loanMappings);
+        creditBureauEnquiry.setLoanCreditBureauEnquiries(loanMappings);
         CreditBureauEnquiry newEnquiry = creditBureauEnquiryWritePlatformService.createNewEnquiry(creditBureauEnquiry);
 
         EnquiryReferenceData enquiryReferenceData = new EnquiryReferenceData(newEnquiry.getId(), null,
                 CreditBureauEnquiryStatus.fromInt(newEnquiry.getStatus()), newEnquiry.getType(), new Date(), creditBureauProduct.getId());
         List<LoanEnquiryReferenceData> loanEnquiryReferenceDataList = new ArrayList<>();
-        for (LoanCreditBureauEnquiryMapping loanEnquiryMap : newEnquiry.getLoanCreditBureauEnquiryMapping()) {
+        for (LoanCreditBureauEnquiry loanEnquiryMap : newEnquiry.getLoanCreditBureauEnquiryMapping()) {
             LoanEnquiryData loanEnquiryData = null;
             LoanEnquiryReferenceData loanEnquiryReferenceData = new LoanEnquiryReferenceData(loanEnquiryMap.getId(),
                     creditBureauEnquiry.getId(), loanEnquiryMap.getReferenceNum(), loanEnquiryMap.getClientId(),

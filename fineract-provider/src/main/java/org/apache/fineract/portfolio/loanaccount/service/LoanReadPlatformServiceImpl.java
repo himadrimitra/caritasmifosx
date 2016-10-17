@@ -98,7 +98,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSubStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
@@ -132,14 +131,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
-import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticationPortfolioTypes;
 import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticaionTransactionTypes;
-import com.finflux.organisation.transaction.authentication.domain.SupportedTransactionTypeEnumerations;
+import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticationPortfolioTypes;
 import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationReadPlatformService;
+import com.finflux.portfolio.loan.purpose.data.LoanPurposeData;
+import com.finflux.portfolio.loan.purpose.service.LoanPurposeGroupReadPlatformService;
 
 @Service
 public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 	
+    private final static Logger logger = LoggerFactory.getLogger(LoanReadPlatformServiceImpl.class);
+    
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
     private final LoanRepository loanRepository;
@@ -163,11 +165,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final LoanUtilService loanUtilService;
     private final PledgeReadPlatformService pledgeReadPlatformService;
     private final ConfigurationDomainService configurationDomainService;
-
-    private final static Logger logger = LoggerFactory.getLogger(LoanReadPlatformServiceImpl.class);
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
-
+    private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
 
     @Autowired
     public LoanReadPlatformServiceImpl(final PlatformSecurityContext context, final LoanRepository loanRepository,
@@ -178,12 +178,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final CodeValueReadPlatformService codeValueReadPlatformService, final RoutingDataSource dataSource,
             final CalendarReadPlatformService calendarReadPlatformService, final StaffReadPlatformService staffReadPlatformService,
             final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-            final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory, 
+            final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory,
             final PledgeReadPlatformService pledgeReadPlatformService,
             final FloatingRatesReadPlatformService floatingRatesReadPlatformService, final LoanUtilService loanUtilService,
             final ConfigurationDomainService configurationDomainService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-    		final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService) {
+            final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
+            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService) {
         this.context = context;
         this.loanRepository = loanRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -206,6 +207,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         this.configurationDomainService = configurationDomainService;
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
+        this.loanPurposeGroupReadPlatformService =loanPurposeGroupReadPlatformService;
     }
 
     @Override
@@ -606,7 +608,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         public String loanSchema() {
             return "l.id as id, l.account_no as accountNo, l.external_id as externalId, l.fund_id as fundId, f.name as fundName,"
-                    + " l.loan_type_enum as loanType, l.loanpurpose_cv_id as loanPurposeId, cv.code_value as loanPurposeName,"
+                    + " l.loan_type_enum as loanType, l.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName,"
                     + " lp.id as loanProductId, lp.name as loanProductName, lp.description as loanProductDescription,"
                     + " lp.is_linked_to_floating_interest_rates as isLoanProductLinkedToFloatingRate, "
                     + " lp.allow_variabe_installments as isvariableInstallmentsAllowed, "
@@ -715,13 +717,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " left join m_appuser abu on abu.id = l.approvedon_userid"
                     + " left join m_appuser dbu on dbu.id = l.disbursedon_userid"
                     + " left join m_appuser cbu on cbu.id = l.closedon_userid"
-                    + " left join m_code_value cv on cv.id = l.loanpurpose_cv_id"
                     + " left join m_code_value codev on codev.id = l.writeoff_reason_cv_id"
+                    + " left join f_loan_purpose flp on flp.id = l.loan_purpose_id"
                     + " left join ref_loan_transaction_processing_strategy lps on lps.id = l.loan_transaction_strategy_id"
                     + " left join m_product_loan_variable_installment_config lpvi on lpvi.loan_product_id = l.product_id"
                     + " left join m_loan_topup as topup on l.id = topup.loan_id"
                     + " left join m_loan as topuploan on topuploan.id = topup.closure_loan_id";
-
         }
 
         @Override
@@ -1546,7 +1547,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds();
         final Collection<TransactionProcessingStrategyData> repaymentStrategyOptions = this.loanDropdownReadPlatformService
                 .retreiveTransactionProcessingStrategies();
-        final Collection<CodeValueData> loanPurposeOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanPurpose");
+        final Collection<LoanPurposeData> loanPurposeOptions = this.loanPurposeGroupReadPlatformService.retrieveAllLoanPurposes(null, null,
+                true);
         final Collection<CodeValueData> loanCollateralOptions = this.codeValueReadPlatformService
                 .retrieveCodeValuesByCode("LoanCollateral");
         final Collection<PledgeData> loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(clientId, productId, null);

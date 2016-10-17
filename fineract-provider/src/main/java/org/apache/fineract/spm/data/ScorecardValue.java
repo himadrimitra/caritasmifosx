@@ -23,16 +23,37 @@ public class ScorecardValue {
     private Long questionId;
     private Long responseId;
     private Integer value;
+    private String questionName;
+    private String answerName;
+
+    public String getAnswerName() {
+        return this.answerName;
+    }
+    
+    public void setAnswerName(String answerName) {
+        this.answerName = answerName;
+    }
+
+    public String getQuestionName() {
+        return this.questionName;
+    }
+
+    public void setQuestionName(String questionName) {
+        this.questionName = questionName;
+    }
 
     public ScorecardValue() {
         super();
     }
 
-    public ScorecardValue(final Long questionId, final Long responseId, final Integer value) {
+    public ScorecardValue(final Long questionId, final Long responseId, final Integer value,
+            final String questionName, final String answerName) {
         super();
         this.questionId = questionId;
         this.responseId = responseId;
         this.value = value;
+        this.questionName = questionName;
+        this.answerName = answerName;
     }
 
     public Long getQuestionId() {

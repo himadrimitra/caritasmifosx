@@ -24,9 +24,6 @@ public class DeleteFamilyDetailsCommandHandler implements NewCommandSourceHandle
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-
-        return this.familyDetailWritePlatromService.deleteFamilyDeatails(command.entityId(), command.getClientId());
-
+        return this.familyDetailWritePlatromService.deleteFamilyDeatails(command.getClientId(), command.entityId());
     }
-
 }

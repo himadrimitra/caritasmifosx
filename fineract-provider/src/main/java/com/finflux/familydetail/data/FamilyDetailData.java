@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 
+import com.finflux.portfolio.cashflow.data.IncomeExpenseData;
+
 public class FamilyDetailData {
 
     private final Long id;
@@ -16,11 +18,14 @@ public class FamilyDetailData {
     private final CodeValueData relationship;
     private final CodeValueData gender;
     private final CodeValueData education;
-    private final CodeValueData occupation;
+    private final IncomeExpenseData occupation;
+    private final Boolean isDependent;
+    private final Boolean isSeriousIllness;
+    private final Boolean isDeceased;
 
     public FamilyDetailData(Long id, String firstname, String middlename, String lastname, CodeValueData salutation,
             CodeValueData relationship, CodeValueData gender, Date dateOfBirth, Integer age, CodeValueData education,
-            CodeValueData occupation) {
+            IncomeExpenseData occupation, final Boolean isDependent, final Boolean isSeriousIllness, final Boolean isDeceased) {
         this.id = id;
         this.firstname = firstname;
         this.middlename = middlename;
@@ -32,6 +37,9 @@ public class FamilyDetailData {
         this.age = age;
         this.education = education;
         this.occupation = occupation;
+        this.isDependent = isDependent;
+        this.isSeriousIllness = isSeriousIllness;
+        this.isDeceased = isDeceased;
     }
 
     public Long getId() {
@@ -74,8 +82,19 @@ public class FamilyDetailData {
         return education;
     }
 
-    public CodeValueData getOccupation() {
+    public IncomeExpenseData getOccupation() {
         return occupation;
     }
 
+    public Boolean getIsDependent() {
+        return this.isDependent;
+    }
+
+    public Boolean getIsSeriousIllness() {
+        return this.isSeriousIllness;
+    }
+
+    public Boolean getIsDeceased() {
+        return this.isDeceased;
+    }
 }

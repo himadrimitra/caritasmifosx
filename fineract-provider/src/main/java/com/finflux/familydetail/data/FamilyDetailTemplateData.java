@@ -4,6 +4,8 @@ import java.util.Collection;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 
+import com.finflux.portfolio.cashflow.data.CashFlowCategoryData;
+
 @SuppressWarnings("unused")
 public class FamilyDetailTemplateData {
 
@@ -11,11 +13,11 @@ public class FamilyDetailTemplateData {
     private final Collection<CodeValueData> relationshipOptions;
     private final Collection<CodeValueData> genderOptions;
     private final Collection<CodeValueData> educationOptions;
-    private final Collection<CodeValueData> occupationOptions;
+    private final Collection<CashFlowCategoryData> occupationOptions;
 
     private FamilyDetailTemplateData(Collection<CodeValueData> salutationOptions, Collection<CodeValueData> relationshipOptions,
             Collection<CodeValueData> genderOptions, Collection<CodeValueData> educationOptions,
-            Collection<CodeValueData> occupationOptions) {
+            Collection<CashFlowCategoryData> occupationOptions) {
         this.salutationOptions = salutationOptions;
         this.relationshipOptions = relationshipOptions;
         this.genderOptions = genderOptions;
@@ -25,8 +27,7 @@ public class FamilyDetailTemplateData {
 
     public static FamilyDetailTemplateData template(Collection<CodeValueData> salutationOptions,
             Collection<CodeValueData> relationshipOptions, Collection<CodeValueData> genderOptions,
-            Collection<CodeValueData> educationOptions, Collection<CodeValueData> occupationOptions) {
-
+            Collection<CodeValueData> educationOptions, Collection<CashFlowCategoryData> occupationOptions) {
         return new FamilyDetailTemplateData(salutationOptions, relationshipOptions, genderOptions, educationOptions, occupationOptions);
     }
 

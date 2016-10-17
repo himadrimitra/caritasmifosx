@@ -33,6 +33,7 @@ import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 
 import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConstants;
+import com.finflux.portfolio.loan.purpose.domain.LoanPurpose;
 
 @Entity
 @Table(name = "f_loan_application_reference")
@@ -74,8 +75,8 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     private LoanProduct loanProduct;
 
     @ManyToOne
-    @JoinColumn(name = "loan_purpose_cv_id", nullable = true)
-    private CodeValue loanPurpose;
+    @JoinColumn(name = "loan_purpose_id", nullable = true)
+    private LoanPurpose loanPurpose;
 
     @Column(name = "loan_amount_requested", scale = 6, precision = 19, nullable = false)
     private BigDecimal loanAmountRequested;
@@ -116,7 +117,7 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
 
     LoanApplicationReference(final String loanApplicationReferenceNo, final String externalIdOne, final String externalIdTwo,
             final Client client, final Staff loanOfficer, final Group group, final Integer statusEnum, final Integer accountTypeEnum,
-            final LoanProduct loanProduct, final CodeValue loanPurpose, final BigDecimal loanAmountRequested,
+            final LoanProduct loanProduct, final LoanPurpose loanPurpose, final BigDecimal loanAmountRequested,
             final Integer numberOfRepayments, final Integer repaymentPeriodFrequencyEnum, final Integer repayEvery,
             final Integer termPeriodFrequencyEnum, final Integer termFrequency, final BigDecimal fixedEmiAmount, final Integer noOfTranche,
             final Date submittedOnDate) {
@@ -143,7 +144,7 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
 
     public static LoanApplicationReference create(final String loanApplicationReferenceNo, final String externalIdOne,
             final String externalIdTwo, final Client client, final Staff loanOfficer, final Group group, final Integer statusEnum,
-            final Integer accountTypeEnum, final LoanProduct loanProduct, final CodeValue loanPurpose,
+            final Integer accountTypeEnum, final LoanProduct loanProduct, final LoanPurpose loanPurpose,
             final BigDecimal loanAmountRequested, final Integer numberOfRepayments, final Integer repaymentPeriodFrequencyEnum,
             final Integer repayEvery, final Integer termPeriodFrequencyEnum, final Integer termFrequency, final BigDecimal fixedEmiAmount,
             final Integer noOfTranche, final Date submittedOnDate) {
@@ -322,7 +323,7 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
         this.loanProduct = loanProduct;
     }
 
-    public void updateLoanPurpose(final CodeValue loanPurpose) {
+    public void updateLoanPurpose(final LoanPurpose loanPurpose) {
         this.loanPurpose = loanPurpose;
     }
 

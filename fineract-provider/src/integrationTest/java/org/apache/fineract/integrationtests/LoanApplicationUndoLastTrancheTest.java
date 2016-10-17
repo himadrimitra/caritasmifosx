@@ -18,13 +18,10 @@
  */
 package org.apache.fineract.integrationtests;
 
-import java.math.BigDecimal;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.fineract.integrationtests.LoanApplicationApprovalTest;
 import org.apache.fineract.integrationtests.common.ClientHelper;
 import org.apache.fineract.integrationtests.common.Utils;
 import org.apache.fineract.integrationtests.common.loans.LoanApplicationTestBuilder;
@@ -51,6 +48,19 @@ public class LoanApplicationUndoLastTrancheTest {
 
     @Before
     public void setup() {
+        initializeLoanApplicationUndoLastTrancheTest();
+    }
+
+    @Test
+    public void LoanApplicationUndoLastTranche() {
+        testProcessCallLoanApplicationUndoLastTranche();
+    }
+
+    public LoanApplicationUndoLastTrancheTest(){
+        initializeLoanApplicationUndoLastTrancheTest();
+    }
+    
+    private void initializeLoanApplicationUndoLastTrancheTest() {
         Utils.initializeRESTAssured();
         this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
         this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
@@ -59,9 +69,7 @@ public class LoanApplicationUndoLastTrancheTest {
         this.loanApplicationApprovalTest = new LoanApplicationApprovalTest();
     }
 
-    @Test
-    public void LoanApplicationUndoLastTranche() {
-
+    public Integer testProcessCallLoanApplicationUndoLastTranche() {
         final String proposedAmount = "5000";
         final String approvalAmount = "2000";
         final String approveDate = "1 March 2014";
@@ -125,6 +133,9 @@ public class LoanApplicationUndoLastTrancheTest {
         // UNDO LAST TRANCHE
         Float disbursedAmount = this.loanTransactionHelper.undoLastDisbursal(loanID);
         validateDisbursedAmount(disbursedAmount);
+        
+        return loanID;
+        
     }
 
     private void validateDisbursedAmount(Float disbursedAmount) {

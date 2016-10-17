@@ -24,9 +24,6 @@ public class UpdateFamilyDetailsCommandHandler implements NewCommandSourceHandle
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-
         return this.familyDetailWritePlatromService.updateFamilyDeatails(command.getClientId(), command.entityId(), command);
-
     }
-
 }

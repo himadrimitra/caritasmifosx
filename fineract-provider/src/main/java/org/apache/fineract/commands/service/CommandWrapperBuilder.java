@@ -3090,7 +3090,13 @@ public class CommandWrapperBuilder {
 
     /**
      * Create Address
+<<<<<<< 6740af46bc98df2b0ad4707849d48e48b9ebdb03
      * @param entityTypeId : This parameter is setting to entityId
+=======
+     * 
+     * @param entityTypeId
+     *            : This parameter is setting to entityId
+>>>>>>> Risk configuration module
      * @param entityType
      * @param entityId : This parameter is setting to subentityId
      * @return
@@ -3222,6 +3228,274 @@ public class CommandWrapperBuilder {
         this.entityName = "FINGERPRINT";
         this.clientId = clientId;
         this.href = entityType + "/" + clientId + "/fingerprint";
+        return this;
+    }
+
+    public CommandWrapperBuilder createLoanPurposeGroup() {
+        this.actionName = "CREATE";
+        this.entityName = "LOANPURPOSEGROUP";
+        this.href = "/loanpurposegroups";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateLoanPurposeGroup(final Long loanPurposeGroupId) {
+        this.actionName = "UPDATE";
+        this.entityName = "LOANPURPOSEGROUP";
+        this.entityId = loanPurposeGroupId;
+        this.href = "/loanpurposegroups/" + loanPurposeGroupId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateLoanPurposeGroup(final Long loanPurposeGroupId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "LOANPURPOSEGROUP";
+        this.entityId = loanPurposeGroupId;
+        this.href = "/loanpurposegroups/" + loanPurposeGroupId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder inActivateLoanPurposeGroup(final Long loanPurposeGroupId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "LOANPURPOSEGROUP";
+        this.entityId = loanPurposeGroupId;
+        this.href = "/loanpurposegroups/" + loanPurposeGroupId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createLoanPurpose() {
+        this.actionName = "CREATE";
+        this.entityName = "LOANPURPOSE";
+        this.href = "/loanpurposes";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateLoanPurpose(final Long loanPurposeId) {
+        this.actionName = "UPDATE";
+        this.entityName = "LOANPURPOSE";
+        this.entityId = loanPurposeId;
+        this.href = "/loanpurposes/" + loanPurposeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateLoanPurpose(final Long loanPurposeId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "LOANPURPOSE";
+        this.entityId = loanPurposeId;
+        this.href = "/loanpurposes/" + loanPurposeId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder inActivateLoanPurpose(final Long loanPurposeId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "LOANPURPOSE";
+        this.entityId = loanPurposeId;
+        this.href = "/loanpurposes/" + loanPurposeId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createLoanUtilizationCheck(final Long loanId) {
+        this.actionName = "CREATE";
+        this.entityName = "LOANUTILIZATIONCHECK";
+        this.entityId = loanId;
+        this.href = "/loans/" + loanId + "/utilizationchecks";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateLoanUtilizationCheck(final Long loanId, final Long utilizationCheckId) {
+        this.actionName = "UPDATE";
+        this.entityName = "LOANUTILIZATIONCHECK";
+        this.entityId = loanId;
+        this.subentityId = utilizationCheckId;
+        this.href = "/loans/" + loanId + "/utilizationchecks/" + utilizationCheckId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createCashFlow() {
+        this.actionName = "CREATE";
+        this.entityName = "CASHFLOW";
+        this.href = "/cashflowcategories";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateCashFlow(final Long cashFlowCategoryId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CASHFLOW";
+        this.entityId = cashFlowCategoryId;
+        this.href = "/cashflowcategories/" + cashFlowCategoryId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateCashFlow(final Long cashFlowCategoryId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "CASHFLOW";
+        this.entityId = cashFlowCategoryId;
+        this.href = "/cashflowcategories/" + cashFlowCategoryId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder inActivateCashFlow(final Long cashFlowCategoryId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "CASHFLOW";
+        this.entityId = cashFlowCategoryId;
+        this.href = "/cashflowcategories/" + cashFlowCategoryId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createIncomeExpense() {
+        this.actionName = "CREATE";
+        this.entityName = "INCOMEEXPENSE";
+        this.href = "/incomesorexpenses";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateIncomeExpense(final Long incomeExpenseId) {
+        this.actionName = "UPDATE";
+        this.entityName = "INCOMEEXPENSE";
+        this.entityId = incomeExpenseId;
+        this.href = "/incomesorexpenses/" + incomeExpenseId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateIncomeExpense(final Long incomeExpenseId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "INCOMEEXPENSE";
+        this.entityId = incomeExpenseId;
+        this.href = "/incomesorexpenses/" + incomeExpenseId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder inActivateIncomeExpense(final Long incomeExpenseId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "INCOMEEXPENSE";
+        this.entityId = incomeExpenseId;
+        this.href = "/incomesorexpenses/" + incomeExpenseId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createFamilyDetailsSummary(final Long clientId) {
+        this.actionName = "CREATE";
+        this.entityName = "FAMILYDETAILSSUMMARY";
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "/familydetailssummary";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateFamilyDetailsSummary(final Long clientId, final Long familyDetailsSummaryId) {
+        this.actionName = "UPDATE";
+        this.entityName = "FAMILYDETAILSSUMMARY";
+        this.clientId = clientId;
+        this.entityId = familyDetailsSummaryId;
+        this.href = "/clients/" + clientId + "/familydetailssummary/" + familyDetailsSummaryId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteFamilyDetailsSummary(final Long clientId, final Long familyDetailsSummaryId) {
+        this.actionName = "DELETE";
+        this.entityName = "FAMILYDETAILSSUMMARY";
+        this.clientId = clientId;
+        this.entityId = familyDetailsSummaryId;
+        this.href = "/clients/" + clientId + "/familydetailssummary/" + familyDetailsSummaryId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder createCenterLoanUtilizationCheck(final Long centerId) {
+        this.actionName = "CREATE";
+        this.entityName = "LOANUTILIZATIONCHECK";
+        this.entityId = centerId;
+        this.href = "/centers/" + centerId + "/utilizationchecks";
+        return this;
+    }
+
+    public CommandWrapperBuilder createGroupLoanUtilizationCheck(final Long groupId) {
+        this.actionName = "CREATE";
+        this.entityName = "LOANUTILIZATIONCHECK";
+        this.entityId = groupId;
+        this.href = "/groups/" + groupId + "/utilizationchecks";
+        return this;
+    }
+    
+    public CommandWrapperBuilder createClientIncomeExpense(final Long clientId) {
+        this.actionName = "CREATE";
+        this.entityName = "CLIENTINCOMEEXPENSE";
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "/incomesandexpenses";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateClientIncomeExpense(final Long clientId, final Long clientIncomeExpenseId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CLIENTINCOMEEXPENSE";
+        this.entityId = clientIncomeExpenseId;
+        this.href = "/clients/" + clientId + "/incomesandexpenses/" + clientIncomeExpenseId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteClientIncomeExpense(final Long clientId, final Long clientIncomeExpenseId) {
+        this.actionName = "DELETE";
+        this.entityName = "CLIENTINCOMEEXPENSE";
+        this.entityId = clientIncomeExpenseId;
+        this.href = "/clients/" + clientId + "/incomesandexpenses/" + clientIncomeExpenseId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createRiskFactor() {
+        this.actionName = "CREATE";
+        this.entityName = "RISKFACTOR";
+        this.href = "/risk/factor";
+        return this;
+    }
+
+    public CommandWrapperBuilder createRiskDimension() {
+        this.actionName = "CREATE";
+        this.entityName = "RISKDIMENSION";
+        this.href = "/risk/dimension";
+        return this;
+    }
+
+    public CommandWrapperBuilder createRiskCriteria() {
+        this.actionName = "CREATE";
+        this.entityName = "RISKCRITERIA";
+        this.href = "/risk/criteria";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateRiskFactor(final Long factorId) {
+        this.actionName = "UPDATE";
+        this.entityName = "RISKFACTOR";
+        this.entityId = factorId;
+        this.href = "/risk/factor/"+factorId;
+        return this;
+    }
+
+    public CommandWrapperBuilder updateRiskDimension(final Long dimensionId) {
+        this.actionName = "UPDATE";
+        this.entityName = "RISKDIMENSION";
+        this.entityId = dimensionId;
+        this.href = "/risk/dimension/"+dimensionId;
+        return this;
+    }
+
+    public CommandWrapperBuilder updateRiskCriteria(final Long criteriaId) {
+        this.actionName = "UPDATE";
+        this.entityName = "RISKCRITERIA";
+        this.entityId = criteriaId;
+        this.href = "/risk/criteria/"+criteriaId;
+        return this;
+    }
+
+    public CommandWrapperBuilder createLoanProductEligibility(final Long loanProductId) {
+        this.actionName = "CREATE";
+        this.entityName = "LOANPRODUCTELIGIBILITY";
+        this.productId = loanProductId;
+        this.href = "/loanproduct/"+loanProductId+"/eligibility";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateLoanProductEligibility(final Long loanProductId) {
+        this.actionName = "UPDATE";
+        this.entityName = "LOANPRODUCTELIGIBILITY";
+        this.productId = loanProductId;
+        this.href = "/loanproduct/"+loanProductId+"/eligibility";
         return this;
     }
 }

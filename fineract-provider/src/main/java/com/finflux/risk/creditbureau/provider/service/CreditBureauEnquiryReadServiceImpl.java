@@ -2,7 +2,7 @@ package com.finflux.risk.creditbureau.provider.service;
 
 import com.finflux.risk.creditbureau.provider.data.*;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
-import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiryMappingRepository;
+import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiryRepository;
 
 import org.apache.fineract.infrastructure.configuration.service.ExternalServicesPropertiesReadPlatformService;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -28,12 +28,12 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
     final LoanCreditBureauEnquiryDataExtractor loanCreditBureauEnquiryDataExtractor = new LoanCreditBureauEnquiryDataExtractor();
     final JdbcTemplate jdbcTemplate;
     final ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService;
-    final LoanCreditBureauEnquiryMappingRepository loanCreditBureauEnquiryMappingRepository;
+    final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryMappingRepository;
 
     @Autowired
     public CreditBureauEnquiryReadServiceImpl(final RoutingDataSource dataSource,
             final ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService,
-            final LoanCreditBureauEnquiryMappingRepository loanCreditBureauEnquiryMappingRepository) {
+            final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryMappingRepository) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.externalServicesPropertiesReadPlatformService = externalServicesPropertiesReadPlatformService;
         this.loanCreditBureauEnquiryMappingRepository = loanCreditBureauEnquiryMappingRepository;

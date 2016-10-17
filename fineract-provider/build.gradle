@@ -140,8 +140,8 @@ war {
 }
 
 license {
-    header rootProject.file('../LICENSE.md')
-    excludes(["**/*.html", "**/*.mustache", "**/*.sql", "**/package-info.java", "**/keystore.jks"])
+    header rootProject.file('../FINFLUXLICENSE.md')
+    excludes(["**/*.html", "**/*.mustache", "**/*.sql", "**/package-info.java", "**/keystore.jks", "**/*.xml", "**/*.properties", "org/**/*.java"])
     strictCheck true
 }
 

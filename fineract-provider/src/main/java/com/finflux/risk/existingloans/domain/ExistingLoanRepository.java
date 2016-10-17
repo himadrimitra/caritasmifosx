@@ -10,5 +10,5 @@ import org.springframework.stereotype.Service;
 @Service
 public interface ExistingLoanRepository extends JpaRepository<ExistingLoan, Long>, JpaSpecificationExecutor<ExistingLoan> {
 
-    List<ExistingLoan> findByLoanApplicationIdAndSourceCvId(Long loanApplicationId, CodeValue sourceCvId);
+    List<ExistingLoan> findByLoanApplicationIdAndSource(Long loanApplicationId, CodeValue source);
 }

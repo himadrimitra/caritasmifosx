@@ -119,6 +119,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.portfolio.loan.purpose.data.LoanPurposeData;
+import com.finflux.portfolio.loan.purpose.service.LoanPurposeGroupReadPlatformService;
 import com.google.gson.JsonElement;
 
 @Path("/loans")
@@ -172,6 +174,7 @@ public class LoansApiResource {
     private final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService;
     private final PledgeReadPlatformService pledgeReadPlatformService;
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
+    private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
 
     @Autowired
     public LoansApiResource(final PlatformSecurityContext context, final LoanReadPlatformService loanReadPlatformService,
@@ -191,7 +194,8 @@ public class LoansApiResource {
             final PortfolioAccountReadPlatformService portfolioAccountReadPlatformServiceImpl,
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
             final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService, final PledgeReadPlatformService pledgeReadPlatformService,
-            final AccountDetailsReadPlatformService accountDetailsReadPlatformService) {
+            final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
+            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService) {
         this.context = context;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
@@ -217,6 +221,7 @@ public class LoansApiResource {
         this.loanScheduleHistoryReadPlatformService = loanScheduleHistoryReadPlatformService;
         this.pledgeReadPlatformService = pledgeReadPlatformService;
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
+        this.loanPurposeGroupReadPlatformService = loanPurposeGroupReadPlatformService;
     }
 
     /*
@@ -420,7 +425,7 @@ public class LoansApiResource {
         Collection<StaffData> allowedLoanOfficers = null;
         Collection<ChargeData> chargeOptions = null;
         ChargeData chargeTemplate = null;
-        Collection<CodeValueData> loanPurposeOptions = null;
+        Collection<LoanPurposeData> loanPurposeOptions = null;
         Collection<CodeValueData> loanCollateralOptions = null;
         Collection<CalendarData> calendarOptions = null;
         Collection<PortfolioAccountData> accountLinkingOptions = null;
@@ -591,7 +596,7 @@ public class LoansApiResource {
                 allowedLoanOfficers = this.loanReadPlatformService.retrieveAllowedLoanOfficers(loanBasicDetails.officeId(),
                         staffInSelectedOfficeOnly);
 
-                loanPurposeOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanPurpose");
+                loanPurposeOptions = this.loanPurposeGroupReadPlatformService.retrieveAllLoanPurposes(null, null, true);
                 loanCollateralOptions = this.codeValueReadPlatformService.retrieveCodeValuesByCode("LoanCollateral");
                 final CurrencyData currencyData = loanBasicDetails.currency();
                 String currencyCode = null;

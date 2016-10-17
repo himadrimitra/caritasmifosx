@@ -51,6 +51,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
@@ -76,6 +77,8 @@ import org.springframework.stereotype.Component;
 
 import com.finflux.portfolio.loanproduct.creditbureau.data.CreditBureauLoanProductMappingData;
 import com.finflux.portfolio.loanproduct.creditbureau.service.CreditBureauLoanProductMappingReadPlatformService;
+import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityData;
+import com.finflux.ruleengine.eligibility.service.LoanProductEligibilityReadPlatformService;
 
 @Path("/loanproducts")
 @Component
@@ -101,6 +104,8 @@ public class LoanProductsApiResource {
     private final Set<String> PRODUCT_MIX_DATA_PARAMETERS = new HashSet<>(Arrays.asList("productId", "productName", "restrictedProducts",
             "allowedProducts", "productOptions"));
 
+    private final Set<String> ELIGIBILITY_DATA_PARAMETERS = new HashSet<>(Arrays.asList("loanProductId", "loanProductName","isActive"));
+
     private final String resourceNameForPermissions = "LOANPRODUCT";
 
     private final PlatformSecurityContext context;
@@ -115,13 +120,14 @@ public class LoanProductsApiResource {
     private final ProductToGLAccountMappingReadPlatformService accountMappingReadPlatformService;
     private final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService;
     private final DefaultToApiJsonSerializer<ProductMixData> productMixDataApiJsonSerializer;
+    private final ToApiJsonSerializer<LoanProductEligibilityData> productEligibilityDataToApiJsonSerializer;
     private final ProductMixReadPlatformService productMixReadPlatformService;
     private final DropdownReadPlatformService commonDropdownReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final FloatingRatesReadPlatformService floatingRateReadPlatformService;
     private final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer;
     private final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService;
-    
+    private final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService;
 
     @Autowired
     public LoanProductsApiResource(final PlatformSecurityContext context, final LoanProductReadPlatformService readPlatformService,
@@ -133,12 +139,13 @@ public class LoanProductsApiResource {
             final ProductToGLAccountMappingReadPlatformService accountMappingReadPlatformService,
             final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
             final DefaultToApiJsonSerializer<ProductMixData> productMixDataApiJsonSerializer,
+            final DefaultToApiJsonSerializer<LoanProductEligibilityData> productEligibilityDataToApiJsonSerializer,
             final ProductMixReadPlatformService productMixReadPlatformService,
             final DropdownReadPlatformService commonDropdownReadPlatformService,
             PaymentTypeReadPlatformService paymentTypeReadPlatformService,
             final FloatingRatesReadPlatformService floatingRateReadPlatformService,
             final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer,
-            final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService) {
+            final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService,final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService) {
         this.context = context;
         this.loanProductReadPlatformService = readPlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
@@ -157,6 +164,8 @@ public class LoanProductsApiResource {
         this.floatingRateReadPlatformService = floatingRateReadPlatformService;
         this.creditbureauLoanproductDataApiJsonSerializer = creditbureauLoanproductDataApiJsonSerializer;
         this.creditBureauLoanProductMappingReadPlatformService = creditBureauLoanProductMappingReadPlatformService;
+        this.productEligibilityDataToApiJsonSerializer = productEligibilityDataToApiJsonSerializer;
+        this.productEligibilityReadPlatformService = productEligibilityReadPlatformService;
     }
 
     @POST
@@ -188,6 +197,10 @@ public class LoanProductsApiResource {
             }else if (associationParameters.contains("creditBureaus")) {
                 final Collection<CreditBureauLoanProductMappingData> creditBureauLoanProductMappingData = this.creditBureauLoanProductMappingReadPlatformService.retrieveAllCreditbureauLoanproductMappingData();
                 return this.creditbureauLoanproductDataApiJsonSerializer.serialize(settings, creditBureauLoanProductMappingData);
+            }
+            if (associationParameters.contains("eligibility")) {
+                final Collection<LoanProductEligibilityData> eligibilityLoanProducts = this.productEligibilityReadPlatformService.getAllLoanProductEligibility();
+                return this.productEligibilityDataToApiJsonSerializer.serialize(settings, eligibilityLoanProducts, this.ELIGIBILITY_DATA_PARAMETERS);
             }
         }
 

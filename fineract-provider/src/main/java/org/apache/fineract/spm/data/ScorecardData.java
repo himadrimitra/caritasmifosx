@@ -27,6 +27,7 @@ public class ScorecardData {
     private Long clientId;
     private Date createdOn;
     private List<ScorecardValue> scorecardValues;
+    
 
     public ScorecardData() {
         super();

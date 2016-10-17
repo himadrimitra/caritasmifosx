@@ -2,33 +2,35 @@ package com.finflux.risk.creditbureau.configuration.data;
 
 public class CreditBureauProductData {
 
-    private final long credit_bureau_product_id;
+    private final Long id;
+    private final String name;
+    private final String implementationKey;
+    private final Boolean isActive;
 
-    private final String cb_product_name;
-
-    private final long cb_master_id;
-
-    private CreditBureauProductData(final long credit_bureau_product_id, final String cb_product_name, final long cb_master_id) {
-        this.credit_bureau_product_id = credit_bureau_product_id;
-        this.cb_product_name = cb_product_name;
-        this.cb_master_id = cb_master_id;
+    private CreditBureauProductData(final Long id, final String name, final String implementationKey, final Boolean isActive) {
+        this.id = id;
+        this.name = name;
+        this.implementationKey = implementationKey;
+        this.isActive = isActive;
     }
 
-    public static CreditBureauProductData instance(final long credit_bureau_product_id, final String cb_product_name,
-            final long cb_master_id) {
-        return new CreditBureauProductData(credit_bureau_product_id, cb_product_name, cb_master_id);
+    public static CreditBureauProductData instance(final Long id, final String name, final String implementationKey, final Boolean isActive) {
+        return new CreditBureauProductData(id, name, implementationKey, isActive);
     }
 
-    public long getCredit_bureau_product_id() {
-        return this.credit_bureau_product_id;
+    public Long getId() {
+        return this.id;
     }
 
-    public String getCb_product_name() {
-        return this.cb_product_name;
+    public String getName() {
+        return this.name;
     }
 
-    public long getCb_master_id() {
-        return this.cb_master_id;
+    public String getImplementationKey() {
+        return this.implementationKey;
     }
 
+    public Boolean getIsActive() {
+        return this.isActive;
+    }
 }

@@ -12,26 +12,25 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 
-import org.springframework.data.jpa.domain.AbstractPersistable;
-
 import com.finflux.familydetail.FamilyDetailsApiConstants;
+import com.finflux.portfolio.cashflow.domain.IncomeExpense;
 
 @SuppressWarnings("serial")
 @Entity
-@Table(name = "f_family_details", uniqueConstraints = { @UniqueConstraint(columnNames = { "id" }, name = "id"),
-        @UniqueConstraint(columnNames = { "client_id" }, name = "FK1_client_id") })
-public class FamilyDetail extends AbstractPersistable<Long> {
+@Table(name = "f_family_details")
+public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", unique = true, nullable = false)
+    @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -63,19 +62,28 @@ public class FamilyDetail extends AbstractPersistable<Long> {
     private Integer age;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "occupation_details_cv_id")
-    private CodeValue occupation;
+    @JoinColumn(name = "occupation_details_id", nullable = true)
+    private IncomeExpense occupation;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "education_cv_id")
+    @JoinColumn(name = "education_cv_id", nullable = true)
     private CodeValue education;
 
-    protected FamilyDetail() {
+    @Column(name = "is_dependent", length = 1, nullable = true)
+    private Boolean isDependent;
 
-    }
+    @Column(name = "is_serious_illness", length = 1, nullable = true)
+    private Boolean isSeriousIllness;
 
-    public FamilyDetail(Client client, CodeValue salutation, String firstname, String middlename, String lastname, CodeValue relationship,
-            CodeValue gender, LocalDate dateOfBirth, Integer age, CodeValue occupation, CodeValue education) {
+    @Column(name = "is_deceased", length = 1, nullable = true)
+    private Boolean isDeceased;
+
+    protected FamilyDetail() {}
+
+    public FamilyDetail(final Client client, final CodeValue salutation, final String firstname, final String middlename,
+            final String lastname, final CodeValue relationship, final CodeValue gender, final LocalDate dateOfBirth, final Integer age,
+            final IncomeExpense occupation, final CodeValue education, final Boolean isDependent, final Boolean isSeriousIllness,
+            final Boolean isDeceased) {
         this.client = client;
         this.salutation = salutation;
         this.firstname = firstname;
@@ -86,18 +94,20 @@ public class FamilyDetail extends AbstractPersistable<Long> {
         if (dateOfBirth != null) {
             this.dateOfBirth = dateOfBirth.toDate();
         }
-
         this.age = age;
         this.occupation = occupation;
         this.education = education;
+        this.isDependent = isDependent;
+        this.isSeriousIllness = isSeriousIllness;
+        this.isDeceased = isDeceased;
     }
 
     public static FamilyDetail create(final Client client, final CodeValue salutation, final String firstname, final String middlename,
             final String lastname, final CodeValue relationship, final CodeValue gender, final LocalDate dateOfBirth, final Integer age,
-            final CodeValue occupation, final CodeValue education) {
-
+            final IncomeExpense occupation, final CodeValue education, final Boolean isDependent, final Boolean isSeriousIllness,
+            final Boolean isDeceased) {
         return new FamilyDetail(client, salutation, firstname, middlename, lastname, relationship, gender, dateOfBirth, age, occupation,
-                education);
+                education, isDependent, isSeriousIllness, isDeceased);
     }
 
     public Client getClient() {
@@ -136,7 +146,7 @@ public class FamilyDetail extends AbstractPersistable<Long> {
         return age;
     }
 
-    public CodeValue getOccupation() {
+    public IncomeExpense getOccupation() {
         return occupation;
     }
 
@@ -147,9 +157,9 @@ public class FamilyDetail extends AbstractPersistable<Long> {
     public Map<String, Object> update(final JsonCommand command) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(7);
 
-        if (command.isChangeInLongParameterNamed("salutation", salutationId())) {
-            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.salutationParamName);
-            actualChanges.put(FamilyDetailsApiConstants.salutationParamName, newValue);
+        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.salutationIdParamName, salutationId())) {
+            final Long newValue = command.longValueOfParameterNamed(FamilyDetailsApiConstants.salutationIdParamName);
+            actualChanges.put(FamilyDetailsApiConstants.salutationIdParamName, newValue);
         }
 
         if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.firstnameParamName, this.firstname)) {
@@ -158,7 +168,7 @@ public class FamilyDetail extends AbstractPersistable<Long> {
             this.firstname = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.middlenameParamName, this.firstname)) {
+        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.middlenameParamName, this.middlename)) {
             final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.middlenameParamName);
             actualChanges.put(FamilyDetailsApiConstants.middlenameParamName, newValue);
             this.middlename = StringUtils.defaultIfEmpty(newValue, null);
@@ -170,26 +180,26 @@ public class FamilyDetail extends AbstractPersistable<Long> {
             this.lastname = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.relationshipParamName, relationshipId())) {
-            final String newValue = command.stringValueOfParameterNamed("relationship");
-            actualChanges.put(FamilyDetailsApiConstants.relationshipParamName, newValue);
+        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.relationshipIdParamName, relationshipId())) {
+            final Long newValue = command.longValueOfParameterNamed(FamilyDetailsApiConstants.relationshipIdParamName);
+            actualChanges.put(FamilyDetailsApiConstants.relationshipIdParamName, newValue);
         }
 
         if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.genderIdParamName, genderId())) {
-            final String newValue = command.stringValueOfParameterNamed("Gender");
+            final Long newValue = command.longValueOfParameterNamed(FamilyDetailsApiConstants.genderIdParamName);
             actualChanges.put(FamilyDetailsApiConstants.genderIdParamName, newValue);
         }
 
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
 
-        if (command.isChangeInLocalDateParameterNamed(FamilyDetailsApiConstants.dobParamName, dateOfBirthLocalDate())) {
-            final String valueAsInput = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.dobParamName);
-            actualChanges.put(FamilyDetailsApiConstants.dobParamName, valueAsInput);
-            actualChanges.put(FamilyDetailsApiConstants.dobParamName, dateFormatAsInput);
-            actualChanges.put(FamilyDetailsApiConstants.dobParamName, localeAsInput);
+        if (command.isChangeInLocalDateParameterNamed(FamilyDetailsApiConstants.dateOfBirthParamName, dateOfBirthLocalDate())) {
+            final String valueAsInput = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.dateOfBirthParamName);
+            actualChanges.put(FamilyDetailsApiConstants.dateOfBirthParamName, valueAsInput);
+            actualChanges.put(FamilyDetailsApiConstants.dateFormatParamName, dateFormatAsInput);
+            actualChanges.put(FamilyDetailsApiConstants.localeParamName, localeAsInput);
 
-            final LocalDate newValue = command.localDateValueOfParameterNamed(FamilyDetailsApiConstants.dobParamName);
+            final LocalDate newValue = command.localDateValueOfParameterNamed(FamilyDetailsApiConstants.dateOfBirthParamName);
             this.dateOfBirth = newValue.toDate();
         }
 
@@ -199,14 +209,32 @@ public class FamilyDetail extends AbstractPersistable<Long> {
             this.age = newValue;
         }
 
-        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.occupationalDetailsParamName, occupationalDetsilsId())) {
-            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.occupationalDetailsParamName);
-            actualChanges.put(FamilyDetailsApiConstants.occupationalDetailsParamName, newValue);
+        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.occupationDetailsIdParamName, occupationalDetsilsId())) {
+            final Long newValue = command.longValueOfParameterNamed(FamilyDetailsApiConstants.occupationDetailsIdParamName);
+            actualChanges.put(FamilyDetailsApiConstants.occupationDetailsIdParamName, newValue);
         }
 
-        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.educationParamName, educationId())) {
-            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.educationParamName);
-            actualChanges.put(FamilyDetailsApiConstants.educationParamName, newValue);
+        if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.educationIdParamName, educationId())) {
+            final Long newValue = command.longValueOfParameterNamed(FamilyDetailsApiConstants.educationIdParamName);
+            actualChanges.put(FamilyDetailsApiConstants.educationIdParamName, newValue);
+        }
+
+        if (command.isChangeInBooleanParameterNamed(FamilyDetailsApiConstants.isDependentParamName, this.isDependent)) {
+            final Boolean newValue = command.booleanObjectValueOfParameterNamed(FamilyDetailsApiConstants.isDependentParamName);
+            actualChanges.put(FamilyDetailsApiConstants.isDependentParamName, newValue);
+            this.isDependent = newValue;
+        }
+
+        if (command.isChangeInBooleanParameterNamed(FamilyDetailsApiConstants.isDeceasedParamName, this.isDeceased)) {
+            final Boolean newValue = command.booleanObjectValueOfParameterNamed(FamilyDetailsApiConstants.isDeceasedParamName);
+            actualChanges.put(FamilyDetailsApiConstants.isDeceasedParamName, newValue);
+            this.isDeceased = newValue;
+        }
+
+        if (command.isChangeInBooleanParameterNamed(FamilyDetailsApiConstants.isSeriousIllnessParamName, this.isSeriousIllness)) {
+            final Boolean newValue = command.booleanObjectValueOfParameterNamed(FamilyDetailsApiConstants.isSeriousIllnessParamName);
+            actualChanges.put(FamilyDetailsApiConstants.isSeriousIllnessParamName, newValue);
+            this.isSeriousIllness = newValue;
         }
         return actualChanges;
     }
@@ -230,7 +258,7 @@ public class FamilyDetail extends AbstractPersistable<Long> {
     public Long salutationId() {
         Long salutationId = null;
         if (this.salutation != null) {
-            salutationId = this.gender.getId();
+            salutationId = this.salutation.getId();
         }
         return salutationId;
     }
@@ -267,4 +295,23 @@ public class FamilyDetail extends AbstractPersistable<Long> {
         return occupationalDetsilsId;
     }
 
+    public void updateSalutaion(final CodeValue salutaion) {
+        this.salutation = salutaion;
+    }
+
+    public void updateRelationship(final CodeValue relationship) {
+        this.relationship = relationship;
+    }
+
+    public void updateGender(final CodeValue gender) {
+        this.gender = gender;
+    }
+
+    public void updateOccupation(final IncomeExpense occupation) {
+        this.occupation = occupation;
+    }
+
+    public void updateEducation(final CodeValue education) {
+        this.education = education;
+    }
 }

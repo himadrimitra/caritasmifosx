@@ -51,6 +51,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -77,6 +78,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
+import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckTemplateData;
+import com.finflux.portfolio.loan.utilization.service.LoanUtilizationCheckReadPlatformService;
 import com.google.gson.JsonElement;
 
 @Path("/centers")
@@ -99,7 +103,11 @@ public class CentersApiResource {
     private final CenterGroupMemberAccountReadPlatformService centerGroupMemberAccountReadPlatformService;
     private final ToApiJsonSerializer<Collection<GroupGeneralData>> centerGroupMemberToApiJsonSerializer;
     private final ToApiJsonSerializer<LoanAccountData> bulkUndoTransactionsToApiJsonSerializer;
+    private final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService;
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer defaultToApiJsonSerializer;
 
+    @SuppressWarnings("rawtypes")
     @Autowired
     public CentersApiResource(final PlatformSecurityContext context, final CenterReadPlatformService centerReadPlatformService,
             final ToApiJsonSerializer<CenterData> centerApiJsonSerializer, final ToApiJsonSerializer<Object> toApiJsonSerializer,
@@ -109,9 +117,9 @@ public class CentersApiResource {
             final CollectionSheetReadPlatformService collectionSheetReadPlatformService, final FromJsonHelper fromJsonHelper,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService, 
-            final CenterGroupMemberAccountReadPlatformService centerGroupMemberAccountReadPlatformService, 
-            final ToApiJsonSerializer<Collection<GroupGeneralData>> centerGroupMemberToApiJsonSerializer,
-            final ToApiJsonSerializer<LoanAccountData> bulkUndoTransactionsToApiJsonSerializer) {
+            final CenterGroupMemberAccountReadPlatformService centerGroupMemberAccountReadPlatformService,
+            final ToApiJsonSerializer<LoanAccountData> bulkUndoTransactionsToApiJsonSerializer,final ToApiJsonSerializer<Collection<GroupGeneralData>> centerGroupMemberToApiJsonSerializer,final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService,
+            final DefaultToApiJsonSerializer defaultToApiJsonSerializer) {
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
         this.centerApiJsonSerializer = centerApiJsonSerializer;
@@ -127,6 +135,8 @@ public class CentersApiResource {
         this.centerGroupMemberAccountReadPlatformService = centerGroupMemberAccountReadPlatformService;
         this.centerGroupMemberToApiJsonSerializer = centerGroupMemberToApiJsonSerializer;
         this.bulkUndoTransactionsToApiJsonSerializer = bulkUndoTransactionsToApiJsonSerializer;
+        this.loanUtilizationCheckReadPlatformService = loanUtilizationCheckReadPlatformService;
+        this.defaultToApiJsonSerializer = defaultToApiJsonSerializer;
     }
 
     @GET
@@ -205,7 +215,8 @@ public class CentersApiResource {
 
         final boolean template = ApiParameterHelper.template(uriInfo.getQueryParameters());
         if (template) {
-            final CenterData templateCenter = this.centerReadPlatformService.retrieveTemplate(center.officeId(),null, false, staffInSelectedOfficeOnly);
+            final CenterData templateCenter = this.centerReadPlatformService.retrieveTemplate(center.officeId(), null, false,
+                    staffInSelectedOfficeOnly);
             center = CenterData.withTemplate(templateCenter, center);
         }
 
@@ -397,4 +408,51 @@ public class CentersApiResource {
         return this.bulkUndoTransactionsToApiJsonSerializer.serialize(settings, bulkTransactionsForCenterId);
     }
     
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{centerId}/utilizationchecks/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveUtilizationchecksTemplate(@PathParam("centerId") final Long centerId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
+
+        final Collection<LoanUtilizationCheckTemplateData> loanUtilizationCheckTemplateDatas = this.loanUtilizationCheckReadPlatformService
+                .retrieveCenterUtilizationchecksTemplate(centerId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.defaultToApiJsonSerializer.serialize(settings, loanUtilizationCheckTemplateDatas);
+    }
+
+    @POST
+    @Path("{centerId}/utilizationchecks")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String createCenterLoanUtilizationCheck(@PathParam("centerId") final Long centerId, final String apiRequestBodyAsJson) {
+
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().createCenterLoanUtilizationCheck(centerId)
+                .withJson(apiRequestBodyAsJson).build();
+
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{centerId}/utilizationchecks")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveCenterLoanUtilizationchecks(@PathParam("centerId") final Long centerId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
+
+        final Collection<LoanUtilizationCheckData> loanUtilizationCheckDatas = this.loanUtilizationCheckReadPlatformService
+                .retrieveCenterLoanUtilizationchecks(centerId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.defaultToApiJsonSerializer.serialize(settings, loanUtilizationCheckDatas);
+    }
 }

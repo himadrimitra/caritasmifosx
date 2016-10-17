@@ -44,7 +44,7 @@ public class ExistingLoanRepositoryWrapper {
         this.repository.delete(existingLoans);
     }
     
-    public List<ExistingLoan> findByLoanApplicationIdAndSourceCvId(final Long loanApplicationId, final CodeValue sourceCvId) {
-        return this.repository.findByLoanApplicationIdAndSourceCvId(loanApplicationId, sourceCvId);
+    public List<ExistingLoan> findByLoanApplicationIdAndSource(final Long loanApplicationId, final CodeValue source) {
+        return this.repository.findByLoanApplicationIdAndSource(loanApplicationId, source);
     }
 }

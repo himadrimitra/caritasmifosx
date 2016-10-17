@@ -16,7 +16,7 @@ public class CreditBureauReportSummary extends AbstractPersistable<Long> {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "loan_creditbureau_enquiry_id", nullable = false)
-    LoanCreditBureauEnquiryMapping loanCreditBureauEnquiryMapping;
+    LoanCreditBureauEnquiry loanCreditBureauEnquiry;
 
     @Column(name = "comments")
     private String comments;
@@ -41,10 +41,10 @@ public class CreditBureauReportSummary extends AbstractPersistable<Long> {
 
     public CreditBureauReportSummary() {}
 
-    public CreditBureauReportSummary(LoanCreditBureauEnquiryMapping loanCreditBureauEnquiryMapping, String comments, Long activeLoanCount,
+    public CreditBureauReportSummary(LoanCreditBureauEnquiry loanCreditBureauEnquiry, String comments, Long activeLoanCount,
             Long closedLoanCount, Long delinquentLoanCount, BigDecimal totalOutstanding, BigDecimal totalOverDues,
             BigDecimal totalMonthlyDues) {
-        this.loanCreditBureauEnquiryMapping = loanCreditBureauEnquiryMapping;
+        this.loanCreditBureauEnquiry = loanCreditBureauEnquiry;
         this.comments = comments;
         this.activeLoanCount = activeLoanCount;
         this.closedLoanCount = closedLoanCount;

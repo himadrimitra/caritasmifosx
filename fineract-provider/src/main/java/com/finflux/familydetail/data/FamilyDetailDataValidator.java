@@ -31,7 +31,6 @@ public class FamilyDetailDataValidator {
 
     @Autowired
     public FamilyDetailDataValidator(FromJsonHelper fromApiJsonHelper) {
-        super();
         this.fromApiJsonHelper = fromApiJsonHelper;
     }
 
@@ -39,18 +38,14 @@ public class FamilyDetailDataValidator {
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
-                FamilyDetailsApiConstants.FAMILYDETAILS_REQUEST_DATA_PARAMETERS);
-
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(FamilyDetailsApiConstants.FAMILY_DETAIL_RESOURCE_NAME);
 
         final JsonElement parentElement = this.fromApiJsonHelper.parse(json);
-        final JsonObject parentElementObj = parentElement.getAsJsonObject();
 
+        final JsonObject parentElementObj = parentElement.getAsJsonObject();
         if (parentElement.isJsonObject()
                 && !this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.familyMembersParamName, parentElement)) {
             validateEachJsonObjectForCreate(parentElement.getAsJsonObject(), baseDataValidator);
@@ -68,12 +63,18 @@ public class FamilyDetailDataValidator {
 
     private void validateEachJsonObjectForCreate(final JsonObject element, DataValidatorBuilder baseDataValidator) {
 
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, element.toString(),
+                FamilyDetailsApiConstants.CREATE_FAMILYDETAILS_REQUEST_DATA_PARAMETERS);
+
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
 
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
 
-        final Long clientId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.clientParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.clientParamName).value(clientId).notBlank();
+        final Long salutationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.salutationIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.salutationIdParamName).value(salutationId).ignoreIfNull()
+                .longGreaterThanZero();
 
         final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstnameParamName, element);
         baseDataValidator.reset().parameter(FamilyDetailsApiConstants.firstnameParamName).value(firstname).notBlank()
@@ -86,54 +87,44 @@ public class FamilyDetailDataValidator {
         final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.middlenameParamName, element);
         baseDataValidator.reset().parameter(ClientApiConstants.middlenameParamName).value(lastname).ignoreIfNull().notExceedingLengthOf(50);
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.dobParamName, element)) {
-            final LocalDate dateOfBirth = this.fromApiJsonHelper.extractLocalDateNamed(FamilyDetailsApiConstants.dobParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.dobParamName).value(dateOfBirth).ignoreIfNull()
-                    .validateDateBefore(DateUtils.getLocalDateOfTenant());
-        }
+        final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipIdParamName).value(relationshipId).ignoreIfNull()
+                .longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.ageParamName, element)) {
-            final Integer age = this.fromApiJsonHelper.extractIntegerNamed(FamilyDetailsApiConstants.ageParamName, element, locale);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.ageParamName).value(age).ignoreIfNull().integerGreaterThanZero();
-        }
+        final Long genderId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.genderIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.genderIdParamName).value(genderId).ignoreIfNull()
+                .longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.genderIdParamName, element)) {
-            final Long genderId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.genderIdParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.genderIdParamName).value(genderId).longGreaterThanZero();
-        }
+        final LocalDate dateOfBirth = this.fromApiJsonHelper.extractLocalDateNamed(FamilyDetailsApiConstants.dateOfBirthParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.dateOfBirthParamName).value(dateOfBirth).ignoreIfNull()
+                .validateDateBefore(DateUtils.getLocalDateOfTenant());
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.relationshipParamName, element)) {
-            final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipParamName).value(relationshipId)
-                    .longGreaterThanZero();
-        }
+        final Integer age = this.fromApiJsonHelper.extractIntegerNamed(FamilyDetailsApiConstants.ageParamName, element, locale);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.ageParamName).value(age).ignoreIfNull().integerGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.salutationParamName, element)) {
-            final Long salutationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.salutationParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.salutationParamName).value(salutationId).longGreaterThanZero();
-        }
+        final Long occupationDetailsId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.occupationDetailsIdParamName,
+                element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.occupationDetailsIdParamName).value(occupationDetailsId)
+                .ignoreIfNull().longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.occupationalDetailsParamName, element)) {
-            final Long occupationalDetailsId = this.fromApiJsonHelper.extractLongNamed(
-                    FamilyDetailsApiConstants.occupationalDetailsParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.occupationalDetailsParamName).value(occupationalDetailsId)
-                    .longGreaterThanZero();
-        }
+        final Long educationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.educationIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.educationIdParamName).value(educationId).ignoreIfNull()
+                .longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.educationIdParamName, element)) {
-            final Long educationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.educationIdParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.educationIdParamName).value(educationId).longGreaterThanZero();
-        }
+        final Boolean isDependent = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isDependentParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.isDependentParamName).value(isDependent).ignoreIfNull();
+
+        final Boolean isSeriousIllness = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isSeriousIllnessParamName,
+                element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.isSeriousIllnessParamName).value(isSeriousIllness).ignoreIfNull();
+
+        final Boolean isDeceased = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isDeceasedParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.isDeceasedParamName).value(isDeceased).ignoreIfNull();
     }
 
     public void validateForUpdate(final String json) {
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
-
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
-                FamilyDetailsApiConstants.FAMILYDETAILS_REQUEST_DATA_PARAMETERS);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
@@ -160,11 +151,18 @@ public class FamilyDetailDataValidator {
 
     private void validateEachObjectForUpdate(final JsonObject element, final DataValidatorBuilder baseDataValidator) {
 
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, element.toString(),
+                FamilyDetailsApiConstants.UPDATE_FAMILYDETAILS_REQUEST_DATA_PARAMETERS);
+
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
+
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
 
-        final Long id = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.idParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.idParamName).value(id).notBlank().longGreaterThanZero();
+        final Long salutationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.salutationIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.salutationIdParamName).value(salutationId).ignoreIfNull()
+                .longGreaterThanZero();
 
         final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstnameParamName, element);
         baseDataValidator.reset().parameter(FamilyDetailsApiConstants.firstnameParamName).value(firstname).notBlank()
@@ -177,43 +175,39 @@ public class FamilyDetailDataValidator {
         final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.middlenameParamName, element);
         baseDataValidator.reset().parameter(ClientApiConstants.middlenameParamName).value(lastname).ignoreIfNull().notExceedingLengthOf(50);
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.dobParamName, element)) {
-            final LocalDate dateOfBirth = this.fromApiJsonHelper.extractLocalDateNamed(FamilyDetailsApiConstants.dobParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.dobParamName).value(dateOfBirth).ignoreIfNull()
-                    .validateDateBefore(DateUtils.getLocalDateOfTenant());
-        }
+        final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipIdParamName).value(relationshipId).ignoreIfNull()
+                .longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.ageParamName, element)) {
-            final Integer age = this.fromApiJsonHelper.extractIntegerNamed(FamilyDetailsApiConstants.ageParamName, element, locale);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.ageParamName).value(age).ignoreIfNull().longGreaterThanZero();
-        }
+        final Long genderId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.genderIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.genderIdParamName).value(genderId).ignoreIfNull()
+                .longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.genderIdParamName, element)) {
-            final Long genderId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.genderIdParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.genderIdParamName).value(genderId).longGreaterThanZero();
-        }
+        final LocalDate dateOfBirth = this.fromApiJsonHelper.extractLocalDateNamed(FamilyDetailsApiConstants.dateOfBirthParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.dateOfBirthParamName).value(dateOfBirth).ignoreIfNull()
+                .validateDateBefore(DateUtils.getLocalDateOfTenant());
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.relationshipParamName, element)) {
-            final Long relationship = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipParamName).value(relationship).longGreaterThanZero();
-        }
+        final Integer age = this.fromApiJsonHelper.extractIntegerNamed(FamilyDetailsApiConstants.ageParamName, element, locale);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.ageParamName).value(age).ignoreIfNull().integerGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.salutationParamName, element)) {
-            final Long salutation = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.salutationParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.salutationParamName).value(salutation).longGreaterThanZero();
-        }
+        final Long occupationDetailsId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.occupationDetailsIdParamName,
+                element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.occupationDetailsIdParamName).value(occupationDetailsId)
+                .ignoreIfNull().longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.occupationalDetailsParamName, element)) {
-            final Long occupationalDetails = this.fromApiJsonHelper.extractLongNamed(
-                    FamilyDetailsApiConstants.occupationalDetailsParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.occupationalDetailsParamName).value(occupationalDetails)
-                    .longZeroOrGreater();
-        }
+        final Long educationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.educationIdParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.educationIdParamName).value(educationId).ignoreIfNull()
+                .longGreaterThanZero();
 
-        if (this.fromApiJsonHelper.parameterExists(FamilyDetailsApiConstants.educationIdParamName, element)) {
-            final Long educationId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.educationIdParamName, element);
-            baseDataValidator.reset().parameter(FamilyDetailsApiConstants.educationIdParamName).value(educationId).longGreaterThanZero();
-        }
+        final Boolean isDependent = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isDependentParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.isDependentParamName).value(isDependent).ignoreIfNull();
+
+        final Boolean isSeriousIllness = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isSeriousIllnessParamName,
+                element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.isSeriousIllnessParamName).value(isSeriousIllness).ignoreIfNull();
+
+        final Boolean isDeceased = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isDeceasedParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.isDeceasedParamName).value(isDeceased).ignoreIfNull();
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {

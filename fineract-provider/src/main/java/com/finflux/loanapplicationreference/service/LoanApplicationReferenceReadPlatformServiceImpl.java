@@ -116,9 +116,9 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lar.status_enum AS statusEnum ");
             sqlBuilder.append(",lar.account_type_enum AS accountTypeEnum ");
             sqlBuilder.append(",lar.loan_product_id AS loanProductId ");
-            sqlBuilder.append(",lar.loan_purpose_cv_id AS loanPurposeId ");
+            sqlBuilder.append(",lar.loan_purpose_id AS loanPurposeId ");
             sqlBuilder.append(",lp.name AS loanProductName ");
-            sqlBuilder.append(",loanPurposeCv.code_value AS loanPurposeName ");
+            sqlBuilder.append(",loanPurpose.name AS loanPurposeName ");
             sqlBuilder.append(",lar.loan_amount_requested AS loanAmountRequested ");
             sqlBuilder.append(",lar.number_of_repayments AS numberOfRepayments ");
             sqlBuilder.append(",lar.repayment_period_frequency_enum AS repaymentPeriodFrequencyEnum ");
@@ -131,7 +131,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
             sqlBuilder.append("LEFT JOIN m_staff sf ON sf.id = lar.loan_officer_id ");
-            sqlBuilder.append("LEFT JOIN m_code_value loanPurposeCv ON loanPurposeCv.id = lar.loan_purpose_cv_id ");
+            sqlBuilder.append("LEFT JOIN f_loan_purpose loanPurpose ON loanPurpose.id = lar.loan_purpose_id ");
             this.schemaSql = sqlBuilder.toString();
         }
 

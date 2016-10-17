@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.finflux.risk.existingloans.data.ExistingLoanData;
+import com.finflux.risk.existingloans.data.ExistingLoanTemplateData;
 import com.finflux.risk.existingloans.service.ExistingLoanReadPlatformService;
 
 @Path("/clients/{clientId}/existingloans")
@@ -36,6 +37,7 @@ public class ExistingLoanApiResource {
 
     private final PlatformSecurityContext context;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+    private final ToApiJsonSerializer<ExistingLoanTemplateData> toApiJsonSerializerTemplate;
     private final ToApiJsonSerializer<ExistingLoanData> toApiJsonSerializer;
     private final ExistingLoanReadPlatformService existingLoanReadPlatformService;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
@@ -43,10 +45,12 @@ public class ExistingLoanApiResource {
     @Autowired
     public ExistingLoanApiResource(final PlatformSecurityContext context,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+            final ToApiJsonSerializer<ExistingLoanTemplateData> toApiJsonSerializerTemplate,
             final ToApiJsonSerializer<ExistingLoanData> toApiJsonSerializer,
             final ExistingLoanReadPlatformService existingLoanReadPlatformService, final ApiRequestParameterHelper apiRequestParameterHelper) {
         this.context = context;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.toApiJsonSerializerTemplate = toApiJsonSerializerTemplate;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.existingLoanReadPlatformService = existingLoanReadPlatformService;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
@@ -58,10 +62,9 @@ public class ExistingLoanApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retriveTemplate(@Context final UriInfo uriInfo) {
         this.context.authenticatedUser().validateHasReadPermission(ExistingLoanApiConstants.EXISTINGLOAN_RESOURCE_NAME);
-        final ExistingLoanData existingLoanData = this.existingLoanReadPlatformService.retriveTemplate();
+        final ExistingLoanTemplateData existingLoanTemplateData = this.existingLoanReadPlatformService.retriveTemplate();
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, existingLoanData,
-                ExistingLoanApiConstants.EXISTING_LOAN_RESPONSE_DATA_PARAMETERS);
+        return this.toApiJsonSerializerTemplate.serialize(settings, existingLoanTemplateData);
     }
 
     @GET

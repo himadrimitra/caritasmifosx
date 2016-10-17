@@ -39,7 +39,6 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
             final PlatformSecurityContext context, final FamilyDetailDataValidator validator,
             final ClientRepositoryWrapper clientRepository, final FromJsonHelper fromApiJsonHelper,
             final FamilyDetailDataAssembler assembler) {
-        super();
         this.familyDetailsRepository = familyDetailsRepository;
         this.context = context;
         this.validator = validator;
@@ -53,21 +52,15 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
     public CommandProcessingResult createFamilyDeatails(final Long clientId, final JsonCommand command) {
         try {
             this.context.authenticatedUser();
-
             final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
-
             this.validator.validateForCreate(command.json());
-
             final List<FamilyDetail> familyDetails = this.assembler.assembleCreateForm(client, command);
-
             this.familyDetailsRepository.save(familyDetails);
-
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withClientId(client.getId()) //
                     .withEntityId(familyDetails.get(0).getId()) //
                     .build();
-
         } catch (final DataIntegrityViolationException dve) {
             return CommandProcessingResult.empty();
         }
@@ -75,23 +68,16 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
 
     @Transactional
     @Override
-    public CommandProcessingResult updateFamilyDeatails(final Long clientId, final Long id, final JsonCommand command) {
+    public CommandProcessingResult updateFamilyDeatails(final Long clientId, final Long familyDetailsId, final JsonCommand command) {
         try {
-
             this.context.authenticatedUser();
-
             this.clientRepository.findOneWithNotFoundDetection(clientId);
-
+            final FamilyDetail familyDetail = this.familyDetailsRepository.findByIdAndClientId(familyDetailsId, clientId);
             this.validator.validateForUpdate(command.json());
-
-            final FamilyDetail familyDetail = this.familyDetailsRepository.findByIdAndClientId(id, clientId);
-
-            final Map<String, Object> changes = familyDetail.update(command);
-
+            final Map<String, Object> changes = this.assembler.assembleUpdateForm(familyDetail, command);
             if (!CollectionUtils.isEmpty(changes)) {
                 this.familyDetailsRepository.save(familyDetail);
             }
-
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(familyDetail.getId()) //
@@ -107,8 +93,9 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
 
     @Transactional
     @Override
-    public CommandProcessingResult deleteFamilyDeatails(final Long familyDetailId, final Long clientId) {
+    public CommandProcessingResult deleteFamilyDeatails(final Long clientId, final Long familyDetailId) {
         try {
+            this.clientRepository.findOneWithNotFoundDetection(clientId);
             final FamilyDetail familyDetailDelete = this.familyDetailsRepository.findOne(familyDetailId);
             this.familyDetailsRepository.delete(familyDetailDelete);
             return new CommandProcessingResultBuilder() //

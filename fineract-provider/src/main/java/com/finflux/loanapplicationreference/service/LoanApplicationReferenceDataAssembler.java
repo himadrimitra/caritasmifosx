@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.fineract.infrastructure.codes.domain.CodeValue;
-import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
@@ -39,6 +37,8 @@ import com.finflux.loanapplicationreference.domain.LoanApplicationChargeReposito
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationSanction;
 import com.finflux.loanapplicationreference.domain.LoanApplicationSanctionTranche;
+import com.finflux.portfolio.loan.purpose.domain.LoanPurpose;
+import com.finflux.portfolio.loan.purpose.domain.LoanPurposeRepositoryWrapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -48,30 +48,29 @@ public class LoanApplicationReferenceDataAssembler {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final JdbcTemplate jdbcTemplate;
-    private final CodeValueRepositoryWrapper codeValueRepository;
     private final LoanProductRepository loanProductRepository;
     private final ClientRepositoryWrapper clientRepository;
     private final StaffRepositoryWrapper staffRepository;
     private final ChargeRepositoryWrapper chargeRepository;
     private final LoanApplicationChargeRepositoryWrapper loanApplicationChargeRepository;
     private final GroupRepositoryWrapper groupRepository;
+    private final LoanPurposeRepositoryWrapper loanPurposeRepository;
 
     @Autowired
     public LoanApplicationReferenceDataAssembler(final FromJsonHelper fromApiJsonHelper, final RoutingDataSource dataSource,
-            final CodeValueRepositoryWrapper codeValueRepository, final LoanProductRepository loanProductRepository,
-            final ClientRepositoryWrapper clientRepository, final StaffRepositoryWrapper staffRepository,
-            final ChargeRepositoryWrapper chargeRepository, final LoanApplicationChargeRepositoryWrapper loanApplicationChargeRepository,
-            final GroupRepositoryWrapper groupRepository) {
-
+            final LoanProductRepository loanProductRepository, final ClientRepositoryWrapper clientRepository,
+            final StaffRepositoryWrapper staffRepository, final ChargeRepositoryWrapper chargeRepository,
+            final LoanApplicationChargeRepositoryWrapper loanApplicationChargeRepository, final GroupRepositoryWrapper groupRepository,
+            final LoanPurposeRepositoryWrapper loanPurposeRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.codeValueRepository = codeValueRepository;
         this.loanProductRepository = loanProductRepository;
         this.clientRepository = clientRepository;
         this.staffRepository = staffRepository;
         this.chargeRepository = chargeRepository;
         this.loanApplicationChargeRepository = loanApplicationChargeRepository;
         this.groupRepository = groupRepository;
+        this.loanPurposeRepository = loanPurposeRepository;
     }
 
     public LoanApplicationReference assembleCreateForm(final JsonCommand command) {
@@ -109,10 +108,10 @@ public class LoanApplicationReferenceDataAssembler {
         final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
         if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
 
-        CodeValue loanPurpose = null;
+        LoanPurpose loanPurpose = null;
         if (command.parameterExists(LoanApplicationReferenceApiConstants.loanPurposeIdParamName)) {
             final Long loanpurposeId = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanPurposeIdParamName);
-            loanPurpose = this.codeValueRepository.findOneWithNotFoundDetection(loanpurposeId);
+            loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanpurposeId);
         }
 
         final BigDecimal loanAmountRequested = command
@@ -231,7 +230,7 @@ public class LoanApplicationReferenceDataAssembler {
             }
             if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.loanPurposeIdParamName)) {
                 final Long loanPurposeId = (Long) actualChanges.get(LoanApplicationReferenceApiConstants.loanPurposeIdParamName);
-                final CodeValue loanPurpose = this.codeValueRepository.findOneWithNotFoundDetection(loanPurposeId);
+                final LoanPurpose loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanPurposeId);
                 loanApplicationReference.updateLoanPurpose(loanPurpose);
             }
         }
@@ -244,7 +243,7 @@ public class LoanApplicationReferenceDataAssembler {
         final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
                 command.json());
         loanApplicationReference.updateLoanApplicationCharges(loanApplicationCharges);
-        
+
         Map<String, Object> changes = new LinkedHashMap<>(10);
         final LoanProduct loanProduct = loanApplicationReference.getLoanProduct();
         final Integer statusEnum = LoanApplicationReferenceStatus.APPLICATION_APPROVED.getValue();

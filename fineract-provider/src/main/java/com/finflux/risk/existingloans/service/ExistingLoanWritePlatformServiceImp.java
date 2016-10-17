@@ -3,8 +3,6 @@ package com.finflux.risk.existingloans.service;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.fineract.infrastructure.codes.domain.CodeValue;
-import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -37,37 +35,28 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
     private final ExistingLoanAssembler existingLoanAssembler;
     private final ExistingLoanDataValidator existingLoanDataValidator;
     private final ExistingLoanRepositoryWrapper existingLoanRepository;
-    private final CodeValueRepositoryWrapper codeValueRepository;
     private final ClientRepositoryWrapper clientRepository;
     private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
     public ExistingLoanWritePlatformServiceImp(final PlatformSecurityContext context, final ExistingLoanAssembler existingLoanAssembler,
             final ExistingLoanDataValidator existingLoanDataValidator, final ExistingLoanRepositoryWrapper existingLoanRepository,
-            final CodeValueRepositoryWrapper codeValueRepository, final ClientRepositoryWrapper clientRepository,
-            final FromJsonHelper fromApiJsonHelper) {
+            final ClientRepositoryWrapper clientRepository, final FromJsonHelper fromApiJsonHelper) {
         this.context = context;
         this.existingLoanAssembler = existingLoanAssembler;
         this.existingLoanDataValidator = existingLoanDataValidator;
         this.existingLoanRepository = existingLoanRepository;
-        this.codeValueRepository = codeValueRepository;
         this.clientRepository = clientRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
     }
 
     @Override
     public CommandProcessingResult saveExistingLoan(final Long clientId, final JsonCommand command) {
-
         this.context.authenticatedUser();
-
         final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
-
         this.existingLoanDataValidator.validateForCreate(command.json());
-
         final List<ExistingLoan> existingLoans = this.existingLoanAssembler.assembleForSave(client, command);
-
         this.existingLoanRepository.save(existingLoans);
-
         return new CommandProcessingResultBuilder() //
                 .withEntityId(existingLoans.get(0).getId()) //
                 .withCommandId(command.commandId()).build();
@@ -76,67 +65,20 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
     @Transactional
     @Override
     public CommandProcessingResult updateExistingLoan(final Long clientId, final Long existingLoanId, final JsonCommand command) {
-
         try {
-
             this.clientRepository.findOneWithNotFoundDetection(clientId);
-
-            final ExistingLoan existingLoanForUpdate = this.existingLoanRepository.findOneWithNotFoundDetection(existingLoanId);
-
+            final ExistingLoan existingLoan = this.existingLoanRepository.findOneWithNotFoundDetection(existingLoanId);
             this.existingLoanDataValidator.validateForUpdate(command.json());
-
-            final Map<String, Object> changes = existingLoanForUpdate.update(command);
-
-            if (changes.containsKey(ExistingLoanApiConstants.sourceCvIdParamName)) {
-
-                final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.sourceCvIdParamName);
-                CodeValue sourceCvId = null;
-                if (newValue != null) {
-                    sourceCvId = this.codeValueRepository.findOneByCodeNameAndIdWithNotFoundDetection(
-                            ExistingLoanApiConstants.Source_Cv_Option, newValue);
-                }
-                existingLoanForUpdate.updatesourceCvId(sourceCvId);
-            }
-            if (changes.containsKey(ExistingLoanApiConstants.loanEnquiryIdParamName)) {
-                final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.Bureau_Cv_Option);
-                CodeValue bureauCvId = null;
-                if (newValue != null) {
-                    bureauCvId = this.codeValueRepository.findOneByCodeNameAndIdWithNotFoundDetection(
-                            ExistingLoanApiConstants.Bureau_Cv_Option, newValue);
-                }
-                // existingLoanForUpdate.updatebureauCvId(bureauCvId);
-            }
-
-            if (changes.containsKey(ExistingLoanApiConstants.externalLoanPurposeCvIdParamName)) {
-                CodeValue externalLoanPurposeCvId = null;
-                final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.ExternalLoan_Purpose_Option);
-                if (newValue != null) {
-                    externalLoanPurposeCvId = this.codeValueRepository.findOneByCodeNameAndIdWithNotFoundDetection(
-                            ExistingLoanApiConstants.ExternalLoan_Purpose_Option, newValue);
-                }
-                existingLoanForUpdate.updateExternalLoanPurpose(externalLoanPurposeCvId);
-            }
-            if (changes.containsKey(ExistingLoanApiConstants.loanTypeCvIdParamName)) {
-                CodeValue loanType = null;
-                final Long newValue = command.longValueOfParameterNamed(ExistingLoanApiConstants.LoanType_Cv_Option);
-                if (newValue != null) {
-                    loanType = this.codeValueRepository.findOneByCodeNameAndIdWithNotFoundDetection(
-                            ExistingLoanApiConstants.LoanType_Cv_Option, newValue);
-                }
-                existingLoanForUpdate.updateloanType(loanType);
-            }
-
+            final Map<String, Object> changes = this.existingLoanAssembler.assembleForUpdate(existingLoan, command);
             if (!changes.isEmpty()) {
-                this.existingLoanRepository.saveAndFlush(existingLoanForUpdate);
+                this.existingLoanRepository.save(existingLoan);
             }
-
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
-                    .withClientId(existingLoanForUpdate.getClientId()) //
-                    .withEntityId(existingLoanForUpdate.getId()) //
+                    .withClientId(existingLoan.getClientId()) //
+                    .withEntityId(existingLoan.getId()) //
                     .with(changes) //
                     .build();
-
         } catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
@@ -147,11 +89,8 @@ public class ExistingLoanWritePlatformServiceImp implements ExistingLoanWritePla
     @Transactional
     @Override
     public CommandProcessingResult deleteExistingLoan(final Long clientId, final Long existingLoanId) {
-
         final ExistingLoan existingLoan = this.existingLoanRepository.findOneWithNotFoundDetection(existingLoanId);
-
         this.existingLoanRepository.delete(existingLoan);
-
         return new CommandProcessingResultBuilder() //
                 .withEntityId(existingLoan.getId()) //
                 .build();

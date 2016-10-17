@@ -9,6 +9,5 @@ repos
 *.log
 !gradle/wrapper/gradle-wrapper.jar
 /gradle
-<<<<<<< 49773dcc7c0a59babc753df51901824d6847a66f
 !/libs/*.jar
 .idea/

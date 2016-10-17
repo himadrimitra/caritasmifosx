@@ -49,6 +49,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -77,6 +78,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
+import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckTemplateData;
+import com.finflux.portfolio.loan.utilization.service.LoanUtilizationCheckReadPlatformService;
 import com.google.gson.JsonElement;
 
 @Path("/groups")
@@ -99,7 +103,11 @@ public class GroupsApiResource {
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final MeetingReadPlatformService meetingReadPlatformService;
+    private final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService;
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer defaultToApiJsonSerializer;
 
+    @SuppressWarnings("rawtypes")
     @Autowired
     public GroupsApiResource(final PlatformSecurityContext context, final GroupReadPlatformService groupReadPlatformService,
             final CenterReadPlatformService centerReadPlatformService, final ClientReadPlatformService clientReadPlatformService,
@@ -111,8 +119,9 @@ public class GroupsApiResource {
             final CollectionSheetReadPlatformService collectionSheetReadPlatformService, final FromJsonHelper fromJsonHelper,
             final GroupRolesReadPlatformService groupRolesReadPlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService) {
-
+            final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
+            final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService,
+            final DefaultToApiJsonSerializer defaultToApiJsonSerializer) {
         this.context = context;
         this.groupReadPlatformService = groupReadPlatformService;
         this.centerReadPlatformService = centerReadPlatformService;
@@ -128,6 +137,8 @@ public class GroupsApiResource {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.meetingReadPlatformService = meetingReadPlatformService;
+        this.loanUtilizationCheckReadPlatformService = loanUtilizationCheckReadPlatformService;
+        this.defaultToApiJsonSerializer = defaultToApiJsonSerializer;
     }
 
     @GET
@@ -428,5 +439,53 @@ public class GroupsApiResource {
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.groupSummaryToApiJsonSerializer.serialize(settings, groupAccount, GROUP_ACCOUNTS_DATA_PARAMETERS);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{groupId}/utilizationchecks/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveUtilizationchecksTemplate(@PathParam("groupId") final Long groupId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission("GROUP");
+
+        final Collection<LoanUtilizationCheckTemplateData> loanUtilizationCheckTemplateDatas = this.loanUtilizationCheckReadPlatformService
+                .retrieveGroupUtilizationchecksTemplate(groupId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.defaultToApiJsonSerializer.serialize(settings, loanUtilizationCheckTemplateDatas);
+    }
+
+    @POST
+    @Path("{groupId}/utilizationchecks")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String createCenterLoanUtilizationCheck(@PathParam("groupId") final Long groupId, final String apiRequestBodyAsJson) {
+
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().createGroupLoanUtilizationCheck(groupId)
+                .withJson(apiRequestBodyAsJson).build();
+
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{groupId}/utilizationchecks")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveCenterLoanUtilizationchecks(@PathParam("groupId") final Long groupId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(GroupingTypesApiConstants.CENTER_RESOURCE_NAME);
+
+        final Collection<LoanUtilizationCheckData> loanUtilizationCheckDatas = this.loanUtilizationCheckReadPlatformService
+                .retrieveGroupLoanUtilizationchecks(groupId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.defaultToApiJsonSerializer.serialize(settings, loanUtilizationCheckDatas);
     }
 }

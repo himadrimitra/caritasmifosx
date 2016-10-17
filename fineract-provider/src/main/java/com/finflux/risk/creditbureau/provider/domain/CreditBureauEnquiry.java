@@ -40,18 +40,17 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
     private String acknowledgementNumber;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "creditBureauEnquiry")
-    List<LoanCreditBureauEnquiryMapping> loanCreditBureauEnquiryMapping = new ArrayList<>();
+    List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries = new ArrayList<>();
 
     public CreditBureauEnquiry() {}
 
     //
     public CreditBureauEnquiry(CreditBureauProduct creditBureauProduct, String type, Integer status,
-            List<LoanCreditBureauEnquiryMapping> loanCreditBureauEnquiryMapping) {
-
+            List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries) {
         this.creditBureauProduct = creditBureauProduct;
         this.type = type;
         this.status = status;
-        this.loanCreditBureauEnquiryMapping = loanCreditBureauEnquiryMapping;
+        this.loanCreditBureauEnquiries = loanCreditBureauEnquiries;
     }
 
     //
@@ -96,12 +95,12 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         this.status = status;
     }
 
-    public List<LoanCreditBureauEnquiryMapping> getLoanCreditBureauEnquiryMapping() {
-        return loanCreditBureauEnquiryMapping;
+    public List<LoanCreditBureauEnquiry> getLoanCreditBureauEnquiryMapping() {
+        return loanCreditBureauEnquiries;
     }
 
-    public void setLoanCreditBureauEnquiryMapping(List<LoanCreditBureauEnquiryMapping> loanCreditBureauEnquiryMapping) {
-        this.loanCreditBureauEnquiryMapping = loanCreditBureauEnquiryMapping;
+    public void setLoanCreditBureauEnquiries(List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries) {
+        this.loanCreditBureauEnquiries = loanCreditBureauEnquiries;
     }
 
     public CreditBureauProduct getCreditBureauProduct() {

@@ -39,7 +39,7 @@ public class ScorecardMapper {
     public static List<ScorecardData> map(final List<Scorecard> scorecards) {
         final Map<Date, ScorecardData> scorecardDataMap = new HashMap<>();
         ScorecardData scorecardData = null;
-        if (scorecards != null && scorecards.isEmpty()) {
+        if (scorecards != null) {
             for (Scorecard scorecard : scorecards) {
                 if ((scorecardData = scorecardDataMap.get(scorecard.getCreatedOn())) == null) {
                     scorecardData = new ScorecardData();
@@ -51,7 +51,7 @@ public class ScorecardMapper {
                 }
 
                 scorecardData.getScorecardValues().add(new ScorecardValue(scorecard.getQuestion().getId(), scorecard.getResponse().getId(),
-                        scorecard.getValue()));
+                        scorecard.getValue(), scorecard.getQuestion().getText(), scorecard.getResponse().getText()));
             }
 
             return new ArrayList<>(scorecardDataMap.values());

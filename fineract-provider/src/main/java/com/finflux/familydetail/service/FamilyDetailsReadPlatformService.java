@@ -7,8 +7,9 @@ import com.finflux.familydetail.data.FamilyDetailTemplateData;
 
 public interface FamilyDetailsReadPlatformService {
 
-    Collection<FamilyDetailData> retrieveAllFamilyDetails(Long clientId);
-
     FamilyDetailTemplateData retrieveTemplate();
 
+    Collection<FamilyDetailData> retrieveAllFamilyDetails(final Long clientId);
+
+    FamilyDetailData retrieveOneFamilyDetail(final Long familyDetailsId);
 }

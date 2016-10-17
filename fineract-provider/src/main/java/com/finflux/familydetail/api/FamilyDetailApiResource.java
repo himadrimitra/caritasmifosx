@@ -20,6 +20,7 @@ import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformS
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,51 +42,50 @@ public class FamilyDetailApiResource {
     private final FamilyDetailsReadPlatformService familyDetailsReadPlatformService;
     private final ToApiJsonSerializer<FamilyDetailData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer defaultToApiJsonSerializer;
 
+    @SuppressWarnings("rawtypes")
     @Autowired
     public FamilyDetailApiResource(final PlatformSecurityContext platformSecurityContext,
             final PortfolioCommandSourceWritePlatformService portfolioCommandSourceWritePlatformService,
             final FamilyDetailsReadPlatformService familyDetailsReadPlatformService,
-            final ToApiJsonSerializer<FamilyDetailData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper) {
+            final ToApiJsonSerializer<FamilyDetailData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
+            final DefaultToApiJsonSerializer defaultToApiJsonSerializer) {
         this.platformSecurityContext = platformSecurityContext;
         this.portfolioCommandSourceWritePlatformService = portfolioCommandSourceWritePlatformService;
         this.familyDetailsReadPlatformService = familyDetailsReadPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
+        this.defaultToApiJsonSerializer = defaultToApiJsonSerializer;
     }
 
+    @SuppressWarnings("unchecked")
     @GET
     @Path("template")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveFamilyDetailsTemplate(@Context final UriInfo uriInfo) {
-
         this.platformSecurityContext.authenticatedUser().validateHasReadPermission(FamilyDetailsApiConstants.FAMILY_DETAIL_RESOURCE_NAME);
-
         final FamilyDetailTemplateData familyDetailTemplateData = this.familyDetailsReadPlatformService.retrieveTemplate();
-
         ApiRequestJsonSerializationSettings settings = null;
         if (uriInfo != null) {
             settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-            return this.toApiJsonSerializer.serialize(settings);
+            return this.defaultToApiJsonSerializer.serialize(settings, familyDetailTemplateData);
         }
-        return this.toApiJsonSerializer.serialize(familyDetailTemplateData);
+        return this.defaultToApiJsonSerializer.serialize(familyDetailTemplateData);
     }
 
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String create(@PathParam("clientId") final Long clientId, final String apiRequestBodyAsJson) {
-
         final CommandWrapper commandRequest = new CommandWrapperBuilder() //
                 .createFamilyDetails(clientId) //
                 .withJson(apiRequestBodyAsJson) //
                 .build();
-
         final CommandProcessingResult result = this.portfolioCommandSourceWritePlatformService.logCommandSource(commandRequest);
-
         return this.toApiJsonSerializer.serialize(result);
-
     }
 
     @PUT
@@ -123,8 +123,7 @@ public class FamilyDetailApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAll(@Context final UriInfo uriInfo, @PathParam("clientId") final Long clientId,
-            @PathParam("familyDetailsId") final Long familyDetailsId) {
+    public String retrieveAll(@Context final UriInfo uriInfo, @PathParam("clientId") final Long clientId) {
 
         this.platformSecurityContext.authenticatedUser().validateHasReadPermission(FamilyDetailsApiConstants.FAMILY_DETAIL_RESOURCE_NAME);
 
@@ -138,4 +137,22 @@ public class FamilyDetailApiResource {
         return this.toApiJsonSerializer.serialize(familyDetailsData);
     }
 
+    @GET
+    @Path("{familyDetailsId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveOne(@PathParam("clientId") final Long clientId, @PathParam("familyDetailsId") final Long familyDetailsId,
+            @Context final UriInfo uriInfo) {
+
+        this.platformSecurityContext.authenticatedUser().validateHasReadPermission(FamilyDetailsApiConstants.FAMILY_DETAIL_RESOURCE_NAME);
+
+        final FamilyDetailData familyDetailsData = this.familyDetailsReadPlatformService.retrieveOneFamilyDetail(familyDetailsId);
+
+        ApiRequestJsonSerializationSettings settings = null;
+        if (uriInfo != null) {
+            settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+            return this.toApiJsonSerializer.serialize(settings, familyDetailsData);
+        }
+        return this.toApiJsonSerializer.serialize(familyDetailsData);
+    }
 }

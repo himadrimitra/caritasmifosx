@@ -15,7 +15,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
         @UniqueConstraint(columnNames = { "address_type", "entity_id", "entity_type_enum" }, name = "f_entity_address_UNIQUE") })
 public class AddressEntity extends AbstractPersistable<Long> {
 
-    @ManyToOne()
+    @ManyToOne
     @JoinColumn(name = "address_id", nullable = false)
     private Address address;
 
