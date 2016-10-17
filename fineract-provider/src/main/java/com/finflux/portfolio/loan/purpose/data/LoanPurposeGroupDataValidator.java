@@ -135,10 +135,10 @@ public class LoanPurposeGroupDataValidator {
         final String description = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.descriptionParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.descriptionParamName).value(description).ignoreIfNull();
 
-        if (this.fromApiJsonHelper.parameterExists(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element)) {
+        if (this.fromApiJsonHelper.parameterExists(LoanPurposeGroupApiConstants.loanPurposeGroupIdsParamName, element)) {
             final String[] loanPurposeGroupIds = this.fromApiJsonHelper.extractArrayNamed(
-                    LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element);
-            baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName).value(loanPurposeGroupIds)
+                    LoanPurposeGroupApiConstants.loanPurposeGroupIdsParamName, element);
+            baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.loanPurposeGroupIdsParamName).value(loanPurposeGroupIds)
                     .notBlank().arrayNotEmpty();
         }
 
