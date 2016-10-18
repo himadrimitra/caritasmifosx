@@ -166,9 +166,11 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
                         CalendarType.COLLECTION.getValue());
         if(sourceGroupCalendarInstance == null){
         Group sourceParentGroup = sourceGroup.getParent();
+        if(sourceParentGroup != null){
         sourceGroupCalendarInstance = this.calendarInstanceRepository
                 .findByEntityIdAndEntityTypeIdAndCalendarTypeId(sourceParentGroup.getId(), CalendarEntityType.CENTERS.getValue(),
                         CalendarType.COLLECTION.getValue());
+        }
         }
         // get all customer loans synced with this group calendar Instance
         final List<CalendarInstance> activeLoanCalendarInstances = this.calendarInstanceRepository
