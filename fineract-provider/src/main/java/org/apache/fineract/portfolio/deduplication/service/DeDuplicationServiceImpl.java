@@ -89,7 +89,7 @@ public class DeDuplicationServiceImpl implements DeDuplicationService {
 				}
 				builder.append(entity.get(coulnName));
 			}
-			String coulmnArray[] = builder.toString().split(",");
+			Object coulmnArray[] = builder.toString().split(",");
 			
 		throw new DuplicateEntityEntryException(errorMessage, null, coulmnArray);
 		
