@@ -1,3 +1,8 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.reconcilation.bankstatement.api;
 
 import java.io.IOException;
@@ -34,7 +39,6 @@ import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
 import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentReadPlatformService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -42,9 +46,7 @@ import org.springframework.stereotype.Component;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
 import com.finflux.reconcilation.bankstatement.data.BankStatementData;
-import com.finflux.reconcilation.bankstatement.domain.BankStatementDetails;
-import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailsRepository;
-import com.finflux.reconcilation.bankstatement.service.BankLoanTransactionsReadPlatformService;
+import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
 import com.finflux.reconcilation.bankstatement.service.BankStatementReadPlatformService;
 import com.finflux.reconcilation.bankstatement.service.BankStatementWritePlatformService;
 import com.sun.jersey.multipart.FormDataMultiPart;
@@ -58,7 +60,6 @@ public class BankStatementsApiResource {
             "fileName", "size", "type", "description"));
     private final String SystemEntityType = "DOCUMENT";
     private final ToApiJsonSerializer<DocumentData> toDocumentDataApiJsonSerializer;
-    private final ToApiJsonSerializer<LoanTransactionData> loanTransactionDataApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PlatformSecurityContext context;
     private final ToApiJsonSerializer<BankStatementData> toApiJsonSerializer;
@@ -66,8 +67,7 @@ public class BankStatementsApiResource {
     private final DocumentReadPlatformService documentReadPlatformService;
     private final BankStatementReadPlatformService bankStatementReadPlatformService;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
-    private final BankLoanTransactionsReadPlatformService bankLoanTransactionsReadPlatformService;
-    private final BankStatementDetailsRepository bankStatementDetailsRepository;
+    private final ToApiJsonSerializer<BankStatementDetailsData> toBankStatementDetailsApiJsonSerializer;
 
     @Autowired
     public BankStatementsApiResource(final ApiRequestParameterHelper apiRequestParameterHelper, final PlatformSecurityContext context,
@@ -77,9 +77,7 @@ public class BankStatementsApiResource {
             final BankStatementReadPlatformService bankStatementReadPlatformService,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final ToApiJsonSerializer<DocumentData> toDocumentDataApiJsonSerializer,
-            final BankLoanTransactionsReadPlatformService bankLoanTransactionsReadPlatformService,
-            final BankStatementDetailsRepository bankStatementDetailsRepository,
-            final ToApiJsonSerializer<LoanTransactionData> loanTransactionDataApiJsonSerializer) {
+            ToApiJsonSerializer<BankStatementDetailsData> toBankStatementDetailsApiJsonSerializer) {
 
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.context = context;
@@ -89,9 +87,7 @@ public class BankStatementsApiResource {
         this.bankStatementReadPlatformService = bankStatementReadPlatformService;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.toDocumentDataApiJsonSerializer = toDocumentDataApiJsonSerializer;
-        this.bankLoanTransactionsReadPlatformService = bankLoanTransactionsReadPlatformService;
-        this.bankStatementDetailsRepository = bankStatementDetailsRepository;
-        this.loanTransactionDataApiJsonSerializer = loanTransactionDataApiJsonSerializer;
+        this.toBankStatementDetailsApiJsonSerializer = toBankStatementDetailsApiJsonSerializer;
     }
 
     @POST
@@ -137,7 +133,7 @@ public class BankStatementsApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retreiveAllBankStatements(@Context final UriInfo uriInfo) {
 
-        this.context.authenticatedUser();
+    	this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME);
 
         final Collection<BankStatementData> bankStatementData = this.bankStatementReadPlatformService.retrieveAllBankStatements();
 
@@ -169,7 +165,7 @@ public class BankStatementsApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String getBankStatement(@PathParam("bankStatementId") final Long bankStatementId, @Context final UriInfo uriInfo) {
 
-        this.context.authenticatedUser();
+    	this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
@@ -200,53 +196,21 @@ public class BankStatementsApiResource {
         return response.build();
     }
 
-    @DELETE
-    @Path("{bankStatementId}")
+    @POST
+    @Path("{bankStatementId}/delete")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String deleteBankStatement(@PathParam("bankStatementId") final Long bankStatementId) {
-
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .deleteBankStatement(bankStatementId) //
+    public String deleteBankStatement(@PathParam("bankStatementId") final Long bankStatementId, final String apiRequestBodyAsJson, @QueryParam("command") final String command) {
+    	
+    	final CommandWrapper commandRequest = new CommandWrapperBuilder() //
+                .deleteBankStatement(bankStatementId)
+                .withJson(apiRequestBodyAsJson)//
                 .build(); //
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         return this.toApiJsonSerializer.serialize(result);
     }
-
-    @GET
-    @Path("{bankStatementId}/{bankStatementDetailId}/matchingloantransactions")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String getMatchingLoanTransactions(@PathParam("bankStatementId") final Long bankStatementId,
-            @PathParam("bankStatementDetailId") final Long bankStatementDetailId, @Context final UriInfo uriInfo) {
-
-        this.context.authenticatedUser();
-
-        BankStatementDetails bankStatementDetails = this.bankStatementDetailsRepository.findOne(bankStatementDetailId);
-
-        Collection<LoanTransactionData> LoanTransactionDataMatchForAmount = this.bankLoanTransactionsReadPlatformService
-                .retrieveLoanTransactionsForGroup(bankStatementDetails.getAmount(), bankStatementDetails.getGroupExternalId(),
-                        bankStatementDetails.getTransactionType());
-
-        return this.loanTransactionDataApiJsonSerializer.serialize(LoanTransactionDataMatchForAmount);
-    }
-
-    @GET
-    @Path("{loanId}/{bankStatementDetailId}/loantransactions")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String getLoanTransaction(@PathParam("loanId") final Long loanId,
-            @PathParam("bankStatementDetailId") final Long bankStatementDetailId, @Context final UriInfo uriInfo) {
-
-        this.context.authenticatedUser();
-
-        Collection<LoanTransactionData> loanTransactionForBankDetails = this.bankLoanTransactionsReadPlatformService
-                .retrieveLoanTransactionsForBankDetails(loanId);
-
-        return this.loanTransactionDataApiJsonSerializer.serialize(loanTransactionForBankDetails);
-    }
-
+    
     @POST
     @Path("{bankStatementId}/nonportfolio")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -254,6 +218,41 @@ public class BankStatementsApiResource {
     public String createJournalEntry(@PathParam("bankStatementId") final Long bankStatementId, final String apiRequestBodyAsJson) {
         String result = this.bankStatementWritePlatformService.createJournalEntries(bankStatementId, apiRequestBodyAsJson);
         return result;
+    }
+    
+    @GET
+    @Path("{bankStatementId}/summary")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getBankStatementSummary(@PathParam("bankStatementId") final Long bankStatementId, @Context final UriInfo uriInfo) {
+
+    	this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        final BankStatementData bankStatementData = this.bankStatementReadPlatformService.getBankStatementSummary(bankStatementId);
+
+        return this.toApiJsonSerializer.serialize(settings, bankStatementData,
+                ReconciliationApiConstants.BANK_STATEMENT_RESPONSE_DATA_PARAMETERS);
+
+    }
+    
+    @POST
+    @Path("{bankStatementId}/generatetransactions")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String generatePortfolioTransactions(@PathParam("bankStatementId") final Long bankStatementId, final String apiRequestBodyAsJson) {
+        
+        this.context.authenticatedUser();
+        
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+        
+        final CommandWrapper commandRequest = builder.generatePortfolioTransactions(bankStatementId).build();
+        
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+
+        return this.toBankStatementDetailsApiJsonSerializer.serialize(result);
+        
     }
 
 }

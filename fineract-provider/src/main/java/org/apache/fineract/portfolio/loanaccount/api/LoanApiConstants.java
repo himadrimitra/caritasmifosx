@@ -127,4 +127,21 @@ public interface LoanApiConstants {
     public static final String loanIdToClose = "loanIdToClose";
     public static final String topupAmount = "topupAmount";
 
+    
+    //glim constants
+    public static final String clientMembersParamName = "clientMembers";
+    public static final String loanPurposeIdParamName = "loanPurposeId";
+    public static final String proposedAmountParamName = "proposedAmount";
+    public static final String amountParamName = "amount";
+    public static final String idParamName = "id";
+    public static final String glimIdParamName = "glimId";
+    public static final String isClientSelectedParamName = "isClientSelected";
+
+    // glim repayment constants
+    public static final String principalPortionParamName = "principalPortion";
+    public static final String interestPortionParamName = "interestPortion";
+    public static final String chargePortionParamName = "chargePortion";
+    public static final String feePortionParamName = "feePortion";
+    public static final String penaltyPortionParamName = "penaltyPortion";
+    public static final String transactionAmountParamName = "transactionAmount";
 }

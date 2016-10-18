@@ -42,10 +42,12 @@ public class CommandWrapperBuilder {
     private String transactionId;
     private Long productId;
     private Long templateId;
+    private String option;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
-                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId, this.templateId);
+                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId, this.templateId,
+                this.option);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -3496,6 +3498,51 @@ public class CommandWrapperBuilder {
         this.entityName = "LOANPRODUCTELIGIBILITY";
         this.productId = loanProductId;
         this.href = "/loanproduct/"+loanProductId+"/eligibility";
+        return this;
+    }
+
+    public CommandWrapperBuilder createGlimRepaymentTransaction(final Long loanId) {
+        this.actionName = "REPAYMENT";
+        this.entityName = "LOAN";
+        this.href = "/glim/" + loanId + "/transactions?command=repayment";
+        this.option = "GLIM";
+        this.loanId = loanId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder waiveInterestTransactionForGlim(final Long loanId) {
+        this.actionName = "WAIVEINTERESTPORTION";
+        this.entityName = "LOAN";
+        this.href = "/glim/" + loanId + "/transactions?command=waiveinterest";
+        this.option = "GLIM";
+        this.loanId = loanId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder waiveChargeTransactionForGlim(final Long loanId) {
+        this.actionName = "WAIVE";
+        this.entityName = "LOANCHARGE";
+        this.href = "/glim/" + loanId + "/transactions?command=waivecharge";
+        this.option = "GLIM";
+        this.loanId = loanId;
+        return this;
+    }
+
+    public CommandWrapperBuilder writeOffTransactionForGlim(final Long loanId) {
+        this.actionName = "WRITEOFF";
+        this.entityName = "LOAN";
+        this.href = "/glim/" + loanId + "/transactions?command=writeoff";
+        this.option = "GLIM";
+        this.loanId = loanId;
+        return this;
+    }
+
+    public CommandWrapperBuilder recoveryPaymentForGlim(final Long loanId) {
+        this.actionName = "RECOVERYPAYMENT";
+        this.entityName = "LOAN";
+        this.href = "/glim/" + loanId + "/transactions?command=recoverypayment";
+        this.option = "GLIM";
+        this.loanId = loanId;
         return this;
     }
 }

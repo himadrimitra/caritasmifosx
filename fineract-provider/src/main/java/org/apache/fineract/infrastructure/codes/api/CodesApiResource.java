@@ -42,6 +42,7 @@ import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformS
 import org.apache.fineract.infrastructure.codes.data.CodeData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeReadPlatformService;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
@@ -67,19 +68,22 @@ public class CodesApiResource {
     private final DefaultToApiJsonSerializer<CodeData> toApiJsonSerializer;
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
-    private final DefaultToApiJsonSerializer<CodeValueData> toApiCodeValueJsonSerializer;
+    private final CodeValueReadPlatformService codeValuesReadPlatformService;
+    private final DefaultToApiJsonSerializer<CodeValueData> toCodeValuesApiJsonSerializer;
 
     @Autowired
     public CodesApiResource(final PlatformSecurityContext context, final CodeReadPlatformService readPlatformService,
             final DefaultToApiJsonSerializer<CodeData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService
-            ,final DefaultToApiJsonSerializer<CodeValueData> toApiCodeValueJsonSerializer) {
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService, 
+            final CodeValueReadPlatformService codeValuesReadPlatformService, 
+            DefaultToApiJsonSerializer<CodeValueData> toCodeValuesApiJsonSerializer) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
-        this.toApiCodeValueJsonSerializer = toApiCodeValueJsonSerializer;
+        this.codeValuesReadPlatformService = codeValuesReadPlatformService;
+        this.toCodeValuesApiJsonSerializer = toCodeValuesApiJsonSerializer;
     }
 
     @GET
@@ -118,18 +122,6 @@ public class CodesApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, code, this.RESPONSE_DATA_PARAMETERS);
     }
-    
-    @GET
-    @Path("/codeValues")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveCodeValuesForCode(@QueryParam ("codeName") final String codeName, @Context final UriInfo uriInfo) {
-
-        final Collection<CodeValueData> codeValues = this.readPlatformService.retrieveAllCodeValuesForCode(codeName);
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiCodeValueJsonSerializer.serialize(settings, codeValues, this.RESPONSE_DATA_PARAMETERS);
-    }
 
     @PUT
     @Path("{codeId}")
@@ -155,5 +147,18 @@ public class CodesApiResource {
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
+    }
+    
+    @GET
+    @Path("/codeValues")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveCodeValuesForCode(@QueryParam ("codeName") final String codeName, @QueryParam ("sqlSearch") final String sqlSearch, @Context final UriInfo uriInfo) {
+    	
+    	this.context.authenticatedUser().validateHasReadPermission("CODEVALUE");
+    	
+    	final Collection<CodeValueData> codeValues = this.codeValuesReadPlatformService.retrieveCodeValuesByCode(codeName, sqlSearch);
+
+        return this.toCodeValuesApiJsonSerializer.serialize(codeValues);
     }
 }

@@ -55,7 +55,7 @@ public class GroupGeneralData {
     private final String groupLevel;
 
     // associations
-    private final Collection<ClientData> clientMembers;
+    private Collection<ClientData> clientMembers;
     private Collection<ClientData> activeClientMembers;
     private final Collection<GroupRoleData> groupRoles;
     private final Collection<CalendarData> calendarsData;
@@ -296,5 +296,9 @@ public class GroupGeneralData {
         return new GroupGeneralData(generalData.id, generalData.accountNo, generalData.name, null, generalData.status, null, null, null,
                 null, null, null, null, null, null, clientMembers, null, null, null, null, null, groupRoles, null, null, null, null,
                 closureReasons, null, isShowLoanDetailsInCenterPageEnabled);
+    }
+    
+    public void updateClientMembers(Collection<ClientData> clientMembers) {
+    	this.clientMembers = clientMembers;
     }
 }

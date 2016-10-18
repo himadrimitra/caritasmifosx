@@ -54,4 +54,6 @@ public interface LoanScheduleModelPeriod {
     
     void addInterestAmount(Money interestDue);
     List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails();
+
+    void adjustInterestForCurrentPeriod(Money adjustedInterestForCurrentPeriod);
 }

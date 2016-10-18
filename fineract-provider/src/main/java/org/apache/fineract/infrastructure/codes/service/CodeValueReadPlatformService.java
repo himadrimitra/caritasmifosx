@@ -48,4 +48,6 @@ public interface CodeValueReadPlatformService {
     Collection<CodeValueData> retrieveAllCodeValues(final Long codeId);
 
     CodeValueData retrieveCodeValue(final Long codeValueId);
+    
+    Collection<CodeValueData> retrieveCodeValuesByCode(final String code, String sqlSearch);
 }

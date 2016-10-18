@@ -105,4 +105,20 @@ public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformSe
         }
 
     }
+
+	@Override
+	public Collection<CodeValueData> retrieveCodeValuesByCode(String code,
+			String sqlSearch) {
+		
+		this.context.authenticatedUser();
+
+        final CodeValueDataMapper rm = new CodeValueDataMapper();
+        String sql = "select " + rm.schema() + "where c.code_name like ?";
+        if(sqlSearch != null){
+        	sql = sql + " and "+sqlSearch;
+        }
+        sql =sql + " order by position";
+
+        return this.jdbcTemplate.query(sql, rm, new Object[] { code });
+	}
 }

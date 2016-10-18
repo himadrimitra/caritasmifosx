@@ -59,6 +59,8 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.joda.time.LocalDateTime;
+import org.springframework.data.jpa.domain.AbstractPersistable;
 
 /**
  * All monetary transactions against a loan are modelled through this entity.
@@ -140,6 +142,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     @Column(name = "is_reconciled")
     private boolean isReconciled;
+    
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "loanTransaction", orphanRemoval = true)
+    private Set<GroupLoanIndividualMonitoringTransaction> groupLoanIndividualMonitoringTransactions = new HashSet<>();
 
     protected LoanTransaction() {
         this.loan = null;
@@ -370,27 +376,6 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.submittedOnDate = DateUtils.getDateOfTenant();
     }
     
-//    private LoanTransaction(final Loan loan, final Office office, final Integer typeOf, final Integer loanTransactionSubType,final Date dateOf, final BigDecimal amount,
-//            final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
-//            final BigDecimal penaltyChargesPortion, final BigDecimal overPaymentPortion, final boolean reversed,
-//            final PaymentDetail paymentDetail, final String externalId) {
-//        this.loan = loan;
-//        this.typeOf = typeOf;
-//        this.subTypeOf = loanTransactionSubType;
-//        this.dateOf = dateOf;
-//        this.amount = amount;
-//        this.principalPortion = principalPortion;
-//        this.interestPortion = interestPortion;
-//        this.feeChargesPortion = feeChargesPortion;
-//        this.penaltyChargesPortion = penaltyChargesPortion;
-//        this.overPaymentPortion = overPaymentPortion;
-//        this.reversed = reversed;
-//        this.paymentDetail = paymentDetail;
-//        this.office = office;
-//        this.externalId = externalId;
-//        this.submittedOnDate = DateUtils.getDateOfTenant();
-//    }
-
     public static LoanTransaction waiveLoanCharge(final Loan loan, final Office office, final Money waived, final LocalDate waiveDate,
             final Money feeChargesWaived, final Money penaltyChargesWaived, final Money unrecognizedCharge) {
         final Integer loanTransactionSubType = null;
@@ -404,6 +389,17 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public static LoanTransaction writeoff(final Loan loan, final Office office, final LocalDate writeOffDate, final String externalId) {
         final Integer loanTransactionSubType = null;
         return new LoanTransaction(loan, office, LoanTransactionType.WRITEOFF, loanTransactionSubType,null, writeOffDate, externalId);
+    }
+    
+    public static LoanTransaction writeOffForGlimLoan(final Loan loan, final Office office, final LocalDate writeOffDate, final String externalId,final Integer subTypeOf) {
+    	final BigDecimal amount = null;
+    	return new LoanTransaction(loan, office, LoanTransactionType.WRITEOFF, subTypeOf, amount, writeOffDate, externalId);
+    }
+    
+    public static LoanTransaction waiveGlimCharge(final Loan loan, final Office office, final LocalDate writeOffDate, final String externalId) {
+        final BigDecimal amount = null;
+        final Integer subTypeOf = null;
+        return new LoanTransaction(loan, office, LoanTransactionType.WAIVE_CHARGES,subTypeOf, amount, writeOffDate, externalId);
     }
 
     private LoanTransaction(final Loan loan, final Office office, final LoanTransactionType type, final Integer transactionSubType,final BigDecimal amount,
@@ -504,6 +500,16 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         final MonetaryCurrency currency = principal.getCurrency();
         this.amount = getPrincipalPortion(currency).plus(getInterestPortion(currency)).plus(getFeeChargesPortion(currency))
                 .plus(getPenaltyChargesPortion(currency)).getAmount();
+    }
+    
+    public void updateComponentsAndTotalForGlim(final Money principal, final Money interest, final Money feeCharges, final Money penaltyCharges, 
+            BigDecimal loanPrincipalOutstandingBalance) {
+        updateComponents(principal, interest, feeCharges, penaltyCharges);
+
+        final MonetaryCurrency currency = principal.getCurrency();
+        this.amount = getPrincipalPortion(currency).plus(getInterestPortion(currency)).plus(getFeeChargesPortion(currency))
+                .plus(getPenaltyChargesPortion(currency)).getAmount();
+        this.outstandingLoanBalance = loanPrincipalOutstandingBalance;
     }
 
     public void updateOverPayments(final Money overPayment) {
@@ -742,7 +748,9 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 for (final LoanChargeTaxDetailsPaidBy taxDetail : taxDetails) {
                     final Map<String, Object> taxDetailsData = new HashMap<>();
                     taxDetailsData.put("amount", taxDetail.getAmount());
-                    taxDetailsData.put("creditAccountId", taxDetail.getTaxComponent().getCreditAcount().getId());
+                    if(taxDetail.getTaxComponent().getCreditAcount() != null) {
+                        taxDetailsData.put("creditAccountId", taxDetail.getTaxComponent().getCreditAcount().getId());
+                    }
                     taxData.add(taxDetailsData);
                 }
                 loanChargePaidData.put("taxDetails", taxData);
@@ -904,5 +912,17 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return this.isNotReversed()
                 && !(this.isDisbursement() || this.isAccrual() || this.isRepaymentAtDisbursement() || this.isNonMonetaryTransaction() || this
                         .isIncomePosting());
+    }
+    
+    public BigDecimal getInterestPortion() {
+        return this.interestPortion;
+    }
+    
+    public BigDecimal getFeeChargesPortion() {
+        return this.feeChargesPortion;
+    }
+    
+    public Set<GroupLoanIndividualMonitoringTransaction> getGlimTransaction() {
+        return this.groupLoanIndividualMonitoringTransactions;
     }
 }

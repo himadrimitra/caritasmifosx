@@ -31,8 +31,11 @@ import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
 import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeAddedException;
+import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanChargeRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
@@ -40,6 +43,8 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTrancheDisbursementC
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
+import org.apache.fineract.portfolio.tax.domain.TaxGroup;
+import org.apache.fineract.portfolio.tax.domain.TaxGroupMappings;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,17 +60,21 @@ public class LoanChargeAssembler {
     private final ChargeRepositoryWrapper chargeRepository;
     private final LoanChargeRepository loanChargeRepository;
     private final LoanProductRepository loanProductRepository;
+    private final ClientRepositoryWrapper clientRepository;
 
     @Autowired
     public LoanChargeAssembler(final FromJsonHelper fromApiJsonHelper, final ChargeRepositoryWrapper chargeRepository,
-            final LoanChargeRepository loanChargeRepository, final LoanProductRepository loanProductRepository) {
+            final LoanChargeRepository loanChargeRepository, final LoanProductRepository loanProductRepository,
+            final ClientRepositoryWrapper clientRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.chargeRepository = chargeRepository;
         this.loanChargeRepository = loanChargeRepository;
         this.loanProductRepository = loanProductRepository;
+        this.clientRepository = clientRepository;
     }
 
-    public Set<LoanCharge> fromParsedJson(final JsonElement element, Set<LoanDisbursementDetails> disbursementDetails) {
+    @SuppressWarnings("unused")
+	public Set<LoanCharge> fromParsedJson(final JsonElement element, Set<LoanDisbursementDetails> disbursementDetails) {
         JsonArray jsonDisbursement = this.fromApiJsonHelper.extractJsonArrayNamed("disbursementData", element);
         List<Long> disbursementChargeIds = new ArrayList<>();
 
@@ -97,11 +106,16 @@ public class LoanChargeAssembler {
         if (loanProduct == null) { throw new LoanProductNotFoundException(productId); }
         final boolean isMultiDisbursal = loanProduct.isMultiDisburseLoan();
         LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed("expectedDisbursementDate", element);
+        List<GroupLoanIndividualMonitoring> glimList = new ArrayList<>();
 
         if (element.isJsonObject()) {
             final JsonObject topLevelJsonElement = element.getAsJsonObject();
             final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(topLevelJsonElement);
             final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+            JsonArray clientMemberJsonArray = null;
+            if(topLevelJsonElement.has(LoanApiConstants.clientMembersParamName) && topLevelJsonElement.get(LoanApiConstants.clientMembersParamName).isJsonArray()){
+            	clientMemberJsonArray = topLevelJsonElement.get(LoanApiConstants.clientMembersParamName).getAsJsonArray();
+            }            
             if (topLevelJsonElement.has("charges") && topLevelJsonElement.get("charges").isJsonArray()) {
                 final JsonArray array = topLevelJsonElement.get("charges").getAsJsonArray();
                 for (int i = 0; i < array.size(); i++) {
@@ -141,11 +155,18 @@ public class LoanChargeAssembler {
                             chargePaymentModeEnum = ChargePaymentMode.fromInt(chargePaymentMode);
                         }
                         if (!isMultiDisbursal) {
-                            final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, amount, chargeTime,
-                                    chargeCalculation, dueDate, chargePaymentModeEnum, numberOfRepayments);
-                            loanCharges.add(loanCharge);
-                            if (loanCharge.getTaxGroup() != null) {
-                                loanCharge.createLoanChargeTaxDetails(expectedDisbursementDate, loanCharge.amount());
+                            if (clientMemberJsonArray != null && clientMemberJsonArray.size() > 0) {
+                                List<GroupLoanIndividualMonitoringCharge> glimCharges = new ArrayList<GroupLoanIndividualMonitoringCharge>();
+                                BigDecimal totalFee = BigDecimal.ZERO;
+                                totalFee = getTotalChargeAmountForGlim(clientMemberJsonArray, chargeId, amount, totalFee);
+                                final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, amount,
+                                        chargeTime, chargeCalculation, dueDate, chargePaymentModeEnum, numberOfRepayments, null,
+                                        glimCharges, totalFee);
+                                loanCharges.add(loanCharge);
+                            } else {
+                                final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, amount,
+                                        chargeTime, chargeCalculation, dueDate, chargePaymentModeEnum, numberOfRepayments);
+                                loanCharges.add(loanCharge);
                             }
                         } else {
                             if (topLevelJsonElement.has("disbursementData") && topLevelJsonElement.get("disbursementData").isJsonArray()) {
@@ -224,15 +245,51 @@ public class LoanChargeAssembler {
                             // LoanChargeNotFoundException(loanChargeId);
                         }
                         if (loanCharge != null) {
-                            loanCharge.update(amount, dueDate, numberOfRepayments);
+                            if (!isMultiDisbursal && loanCharge.isInstalmentFee()
+                                    && loanCharge.getCharge().isPercentageOfDisbursementAmount()) {
+                            	if(clientMemberJsonArray!=null && clientMemberJsonArray.size()>0){
+                                    BigDecimal totalFee = BigDecimal.ZERO;
+                                    totalFee = getTotalChargeAmountForGlim(clientMemberJsonArray, chargeId, amount, totalFee);
+                                    loanCharge.update(amount, dueDate, loanCharge.getLoan().getPrincpal().getAmount(), numberOfRepayments,
+                                            totalFee);
+                            	}
+                            } else {
+                                loanCharge.update(amount, dueDate, numberOfRepayments);
+                            }
                             loanCharges.add(loanCharge);
                         }
                     }
                 }
             }
         }
-
         return loanCharges;
+    }
+
+    private BigDecimal getTotalChargeAmountForGlim(JsonArray clientMemberJsonArray, final Long chargeId, final BigDecimal amount,
+            BigDecimal totalFee) {
+        for (JsonElement jsonElement : clientMemberJsonArray) {
+            JsonObject jsonCharge = jsonElement.getAsJsonObject();
+            if(jsonCharge.has(LoanApiConstants.isClientSelectedParamName) && jsonCharge.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean()){
+                Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
+                BigDecimal clientAmount = jsonCharge.get(LoanApiConstants.amountParamName).getAsBigDecimal();
+                BigDecimal feeCharge = GroupLoanIndividualMonitoringAssembler.percentageOf(clientAmount, amount);
+                BigDecimal totalChargeAmount = feeCharge;
+                TaxGroup taxGroup = charge.getTaxGroup();
+                BigDecimal totalTaxPercentage = BigDecimal.ZERO;
+                if (taxGroup != null) {
+                    List<TaxGroupMappings> taxGroupMappings = taxGroup.getTaxGroupMappings();
+                    for (TaxGroupMappings taxGroupMapping : taxGroupMappings) {
+                        totalTaxPercentage = totalTaxPercentage.add(taxGroupMapping.getTaxComponent().getPercentage());
+                    }
+                    totalChargeAmount = (feeCharge.add(GroupLoanIndividualMonitoringAssembler.percentageOf(feeCharge, totalTaxPercentage)));
+                    totalChargeAmount = BigDecimal.valueOf(Math.round(Double.valueOf("" + totalChargeAmount)));
+                }
+                totalFee = totalFee.add(totalChargeAmount);
+                
+            }
+            
+        }
+        return totalFee;
     }
 
     public Set<Charge> getNewLoanTrancheCharges(final JsonElement element) {

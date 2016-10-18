@@ -29,7 +29,8 @@ public enum AccountType {
     INVALID(0, "accountType.invalid"), //
     INDIVIDUAL(1, "accountType.individual"), //
     GROUP(2, "accountType.group"), //
-    JLG(3, "accountType.jlg");// JLG account given in group context
+    JLG(3, "accountType.jlg"),// JLG account given in group context
+    GLIM(4, "accountType.glim");
 
     private final Integer value;
     private final String code;
@@ -51,6 +52,9 @@ public enum AccountType {
             break;
             case 3:
                 enumeration = AccountType.JLG;
+            break;
+            case 4:
+                enumeration = AccountType.GLIM;
             break;
         }
         return enumeration;
@@ -101,5 +105,9 @@ public enum AccountType {
             codes.add(enumType.getName());
         }
         return codes.toArray();
+	}
+
+    public boolean isGLIMAccount() {
+        return this.value.equals(AccountType.GLIM.getValue());
     }
 }

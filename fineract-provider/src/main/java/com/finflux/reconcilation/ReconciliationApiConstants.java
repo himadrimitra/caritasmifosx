@@ -1,3 +1,8 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.reconcilation;
 
 import java.util.Arrays;
@@ -34,6 +39,7 @@ public class ReconciliationApiConstants {
     public static final String xlsFileExtension = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static final String xlsxFileExtension = "application/vnd.ms-excel";
     public static final String RECONCILE_ACTION = "RECONCILE";
+    public static final String UNDO_RECONCILE_ACTION = "UNDORECONCILE";
     public static final String bankIdParamName = "bankId";
     public static final String BANK_DEFAULT_GL_CODE = "000001";
     public static final String transactionDataParamName = "transactionData";
@@ -71,6 +77,31 @@ public class ReconciliationApiConstants {
     public static final String RESOURCE = "resource";
     public static final String BANK_STATEMENT_DETAIL_ID = "bankStatmentDetailsId";
     public static final String JOURNAL_ENTRY_RESPONSE = "journalEntryResponse";
+    public static final String optionsLengthParam = "optionsLength";
+    public static final String loanTransactionDataParam = "loanTransactionData";
+    public static final String loanTransactionOptionsParam = "loanTransactionOptions";
+
+    public static final String RECONCILED = "reconciled";
+    public static final String JOURNAL_ENTRY = "journalentry";
+    public static final String OTHER = "other";
+    public static final String ERROR = "error";
+    public static final String MISCELLANEOUS = "miscellaneous";
+    public static final String GENERATE_TRANSACTIONS = "generatetransactions";
+
+    public static final String portFolioReconciledInflowAmount = "portFolioReconciledInflowAmount";
+    public static final String portFolioReconciledOutflowAmount = "portFolioReconciledOutflowAmount";
+    public static final String portFolioUnReconciledInflowAmount = "portFolioUnReconciledInflowAmount";
+    public static final String portFolioUnReconciledOutflowAmount = "portFolioUnReconciledOutflowAmount";
+
+    public static final String nonPortFolioReconciledInflowAmount = "nonPortFolioReconciledInflowAmount";
+    public static final String nonPortFolioReconciledOutflowAmount = "nonPortFolioReconciledOutflowAmount";
+    public static final String nonPortFolioUnReconciledInflowAmount = "nonPortFolioUnReconciledInflowAmount";
+    public static final String nonPortFolioUnReconciledOutflowAmount = "nonPortFolioUnReconciledOutflowAmount";
+
+    public static final String miscellaneousReconciledInflowAmount = "miscellaneousReconciledInflowAmount";
+    public static final String miscellaneousUnReconciledInflowAmount = "miscellaneousUnReconciledInflowAmount";
+    public static final String miscellaneousReconciledOutflowAmount = "miscellaneousReconciledOutflowAmount";
+    public static final String miscellaneousUnReconciledOutflowAmount = "miscellaneousUnReconciledOutflowAmount";
 
     public static final List<String> EXCEL_FILE = Arrays.asList(xlsFileExtension, xlsxFileExtension);
 
@@ -79,13 +110,18 @@ public class ReconciliationApiConstants {
 
     public static final Set<String> BANK_STATEMENT_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
             descriptionParamName, createdByParamName, createdDateParamName, updatedByParamName, updatedDateParamName, cifKeyParamName,
-            originalStatementKeyParamName, bankIdParamName, glCodeParamName, bankNameParamName));
+            originalStatementKeyParamName, bankIdParamName, glCodeParamName, bankNameParamName, portFolioReconciledInflowAmount,
+            portFolioReconciledOutflowAmount, portFolioUnReconciledInflowAmount, portFolioUnReconciledOutflowAmount,
+            nonPortFolioReconciledInflowAmount, nonPortFolioReconciledOutflowAmount, nonPortFolioUnReconciledInflowAmount,
+            nonPortFolioUnReconciledOutflowAmount, miscellaneousReconciledInflowAmount, miscellaneousUnReconciledInflowAmount,
+            miscellaneousReconciledOutflowAmount, miscellaneousUnReconciledOutflowAmount));
 
     public static final Set<String> BANK_STATEMENT_DETAILS_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
             descriptionParamName, clientAccountNumberParamName, groupccountNumberParamName, loanAccountNumberParamName, amountParamName,
             mobileNumberParamName, transactionDateParamName, transactionIdParamName, bankStatementIdParamName, loanTransactionIdParamName,
             paymentDetailDataParamName, officeIdParamName, officeNameParamName, externalIdParamName, submittedOnDateParamName, type,
-            transactionAmountParamName, dateParamName, bankIdParamName));
+            transactionAmountParamName, dateParamName, bankIdParamName, optionsLengthParam, loanTransactionDataParam,
+            loanTransactionOptionsParam));
 
     public static final String[] HEADER_DATA = { "Transaction Id", "Transaction Date", "Description", "Amount", "Mobile Number",
             "Client Account No", "Loan Account No", "Group External ID", "Branch External ID", "GL Code", "Accounting Type",
@@ -108,5 +144,5 @@ public class ReconciliationApiConstants {
     public static final String AMOUNT_INVALID = "Amount is invalid.";
     public static final String TRANSACTION_DATE_CAN_NOT_BE_BLANK = "Transaction Date can not be blank.";
     public static final String INVALID_TRANSACTION_DATE = "Transaction Date format is invalid.";
-
+    public static final String PORTFOLIO_TRANSACTIONS = "PORTFOLIOTRANSACTIONS";
 }

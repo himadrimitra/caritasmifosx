@@ -51,6 +51,33 @@ public class MoneyHelper {
         return roundingMode;
     }
     
+    //Glim loan round off interest to floor
+    public static RoundingMode getRoundingModeForInterest() {
+        int floor = 3;
+        if (roundingMode != null) {
+            roundingMode = RoundingMode.valueOf(floor);
+        }
+        return roundingMode;
+    }
+    
+  //Glim loan round off fee charge to half up
+    public static RoundingMode getRoundingModeForFeeCharges() {
+        int halfUp = 4;
+        if (roundingMode != null) {
+            roundingMode = RoundingMode.valueOf(halfUp);
+        }
+        return roundingMode;
+    }
+    
+    //Glim loan round off Emi amount to ceiling
+    public static RoundingMode getRoundingModeForGlimEmiAmount() {
+        int ceiling = 2;
+        if (roundingMode != null) {
+            roundingMode = RoundingMode.valueOf(ceiling);
+        }
+        return roundingMode;
+    }
+    
     public static RoundingMode getRoundingModeForInternalCalculations() {
         return DEFAULT_INTERNAL_ROUNDING_MODE;
     }

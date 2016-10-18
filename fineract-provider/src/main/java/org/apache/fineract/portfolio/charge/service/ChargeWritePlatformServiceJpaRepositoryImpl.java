@@ -92,6 +92,9 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
         try {
             this.context.authenticatedUser();
             this.fromApiJsonDeserializer.validateForCreate(command.json());
+            
+            /*// validate charge for glim loan
+            this.fromApiJsonDeserializer.validateForGlim(command.json());*/
 
             // Retrieve linked GLAccount for Client charges (if present)
             final Long glAccountId = command.longValueOfParameterNamed(ChargesApiConstants.glAccountIdParamName);
@@ -137,7 +140,7 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             final Map<String, Object> changes = chargeForUpdate.update(command);
 
             this.fromApiJsonDeserializer.validateChargeTimeNCalculationType(chargeForUpdate.getChargeTimeType(),
-                    chargeForUpdate.getChargeCalculation());
+                    chargeForUpdate.getChargeCalculation(), chargeForUpdate.isGlimCharge());
 
             // MIFOSX-900: Check if the Charge has been active before and now is
             // deactivated:
@@ -177,6 +180,19 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
                 }
                 chargeForUpdate.setTaxGroup(taxGroup);
             }
+            
+			if (changes
+					.containsKey(ChargesApiConstants.emiRoundingGoalSeekParamName)) {
+				boolean emiRoundingGoalSeek = command
+						.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.emiRoundingGoalSeekParamName);
+				chargeForUpdate.setEmiRoundingGoalSeek(emiRoundingGoalSeek);
+			}
+			
+			if (changes
+					.containsKey(ChargesApiConstants.glimChargeCalculation)) {
+				Integer glimChargeCalculation = command.integerValueOfParameterNamed(ChargesApiConstants.glimChargeCalculation);
+				chargeForUpdate.setGlimChargeCalculation(glimChargeCalculation);;
+			}
 
             if (!changes.isEmpty()) {
                 this.chargeRepository.save(chargeForUpdate);

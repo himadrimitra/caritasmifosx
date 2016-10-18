@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +43,7 @@ import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsDataWrapper;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalculationDetails;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
@@ -147,7 +149,7 @@ public final class LoanApplicationTerms {
 
     private BigDecimal currentPeriodFixedPrincipalAmount;
 
-    private final BigDecimal actualFixedEmiAmount;
+    private BigDecimal actualFixedEmiAmount;
 
     private final BigDecimal maxOutstandingBalance;
 
@@ -197,6 +199,10 @@ public final class LoanApplicationTerms {
 
     private final HolidayDetailDTO holidayDetailDTO;
     
+    private Money totalInterestForGlim;
+    
+    private Set<GroupLoanIndividualMonitoring> glimMembers = new HashSet<GroupLoanIndividualMonitoring>();
+
     private BigDecimal firstEmiAmount;
     
     private final Integer adjustedInstallmentInMultiplesOf;
@@ -1719,6 +1725,34 @@ public final class LoanApplicationTerms {
                 && !isInterestPaymentGraceApplicableForThisPeriod(1);
     }
 
+    
+    public void setActualFixedEmiAmount(final BigDecimal actualFixedEmiAmount) {
+        this.actualFixedEmiAmount = actualFixedEmiAmount;
+    }
+
+    public void updateTotalInterestDueForGlim(final List<GroupLoanIndividualMonitoring> glimList) {
+        Money totalInterestDueForGlim = Money.zero(getCurrency());
+        updateGlimMembers(glimList);
+        for (GroupLoanIndividualMonitoring glim : glimList) {
+            if (glim.isClientSelected()) {
+                totalInterestDueForGlim = totalInterestDueForGlim.plus(glim.getInterestAmount());
+            }
+        }
+        this.totalInterestForGlim = totalInterestDueForGlim;
+    }
+    
+    public Money getTotalInterestForGlim() {
+        return this.totalInterestForGlim;
+    }
+    
+    public void updateGlimMembers(final List<GroupLoanIndividualMonitoring> glimList) {
+        this.glimMembers.addAll(glimList);
+    }
+    
+    public Set<GroupLoanIndividualMonitoring> getGroupLoanIndividualMonitoring() {
+        return this.glimMembers;
+    }
+
     public BigDecimal roundFirstEmiAmount(final BigDecimal installmentAmount) {
         BigDecimal roundedInstallmentAmount = installmentAmount;
         if (this.adjustedInstallmentInMultiplesOf != null) {
@@ -1820,6 +1854,7 @@ public final class LoanApplicationTerms {
     
     public void updateTotalInterestAccounted(Money totalInterestAccounted){
         this.totalInterestAccounted = totalInterestAccounted;
+
     }
     
 }

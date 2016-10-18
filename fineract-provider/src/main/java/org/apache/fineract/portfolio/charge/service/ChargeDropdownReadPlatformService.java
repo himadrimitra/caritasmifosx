@@ -46,4 +46,6 @@ public interface ChargeDropdownReadPlatformService {
     List<EnumOptionData> retrieveSharesCalculationTypes() ;
     List<EnumOptionData> retrieveSharesCollectionTimeTypes() ;
     
+    List<EnumOptionData> retrieveGlimChargeCalculationTypes() ;
+    
 }

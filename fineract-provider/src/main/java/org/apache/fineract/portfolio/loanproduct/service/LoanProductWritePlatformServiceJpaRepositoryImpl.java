@@ -47,6 +47,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.ProductLoanCharge;
 import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
+import org.apache.fineract.portfolio.loanproduct.exception.LinkedChargeGoalSeekException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductCannotBeModifiedDueToNonClosedLoansException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductDateException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
@@ -259,11 +260,16 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
         if (command.parameterExists("charges")) {
             final JsonArray chargesArray = command.arrayOfParameterNamed("charges");
             if (chargesArray != null) {
+            	int emiRoundingGoalSeekCount = 0;
                 for (int i = 0; i < chargesArray.size(); i++) {
                     final JsonObject jsonObject = chargesArray.get(i).getAsJsonObject();
                     if (jsonObject.has("id")) {
                         final Long id = jsonObject.get("id").getAsLong();
                         final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(id);
+                        if(charge.isEmiRoundingGoalSeek()){
+                        	emiRoundingGoalSeekCount++;
+                        }
+
                         if (!loanProductCurrencyCode.equals(charge.getCurrencyCode())) {
                             final String errorMessage = "Charge and Loan Product must have the same currency.";
                             throw new InvalidCurrencyException("charge", "attach.to.loan.product", errorMessage);
@@ -273,6 +279,13 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
                         productLoanCharges.add(productLoanCharge);
                     }
                 }
+				if (emiRoundingGoalSeekCount > 1) {
+					final String goalSeekErrorMessage = "Loan Product can not have more than 1 EMI Round seek Charges.";
+					throw new LinkedChargeGoalSeekException(
+							"charge",
+							"attach.to.loan.product.can.not.have.more.than.one.goal.seek.charges",
+							goalSeekErrorMessage);
+				}
             }
         }
 

@@ -1,3 +1,8 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.commands.service;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
@@ -22,10 +27,12 @@ public class CommandWrapperBuilder {
     private String transactionId;
     private Long productId;
     private Long templateId;
+    private String option;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
-                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId, this.templateId);
+                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
+                this.templateId, this.option);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -77,7 +84,15 @@ public class CommandWrapperBuilder {
     }
 
     public CommandWrapperBuilder reconcileBankStatementDetails(final Long bankStatementId) {
-        this.actionName = "RECONCILE";
+        this.actionName = ReconciliationApiConstants.RECONCILE_ACTION;
+        this.entityName = ReconciliationApiConstants.BANK_STATEMENT_DETAILS_RESOURCE_NAME;
+        this.entityId = bankStatementId;
+        this.href = "/bankstatements/" + bankStatementId + "/details";
+        return this;
+    }
+
+    public CommandWrapperBuilder undoReconcileBankStatementDetails(final Long bankStatementId) {
+        this.actionName = ReconciliationApiConstants.UNDO_RECONCILE_ACTION;
         this.entityName = ReconciliationApiConstants.BANK_STATEMENT_DETAILS_RESOURCE_NAME;
         this.entityId = bankStatementId;
         this.href = "/bankstatements/" + bankStatementId + "/details";
@@ -85,10 +100,18 @@ public class CommandWrapperBuilder {
     }
 
     public CommandWrapperBuilder reconcileBankStatement(final Long bankStatementId) {
-        this.actionName = "RECONCILE";
+        this.actionName = ReconciliationApiConstants.RECONCILE_ACTION;
         this.entityName = ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME;
         this.entityId = bankStatementId;
         this.href = "/bankstatements/" + bankStatementId + "?command=reconcile";
+        return this;
+    }
+    
+    public CommandWrapperBuilder generatePortfolioTransactions(final Long bankStatementId) {
+        this.actionName = ReconciliationApiConstants.CREATE_ACTION;
+        this.entityName = ReconciliationApiConstants.PORTFOLIO_TRANSACTIONS;
+        this.entityId = bankStatementId;
+        this.href = "/bankstatements/"+ bankStatementId+"/generatetransactions";
         return this;
     }
 

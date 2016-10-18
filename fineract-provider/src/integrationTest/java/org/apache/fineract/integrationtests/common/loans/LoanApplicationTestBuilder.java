@@ -66,10 +66,10 @@ public class LoanApplicationTestBuilder {
 
     private String calendarId;
     private boolean syncDisbursementWithMeeting = false;
-    
     private Boolean isSubsidyApplicable = null;
     private Boolean canDefineInstallmentAmount = false;
     private Boolean considerFutureDisbursmentsInSchedule = true;
+    private List<HashMap> clientMembers = null;
 
     public String build(final String clientID, final String groupID, final String loanProductId, final String savingsID) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -146,6 +146,10 @@ public class LoanApplicationTestBuilder {
         
         if(isSubsidyApplicable != null){
             map.put("isSubsidyApplicable", isSubsidyApplicable);
+        }
+        
+        if (clientMembers != null) {
+        	map.put("clientMembers", clientMembers);
         }
 
        
@@ -345,5 +349,10 @@ public class LoanApplicationTestBuilder {
     public LoanApplicationTestBuilder withCanDefineInstallmentAmount(final Boolean canDefineInstallmentAmount) {
         this.canDefineInstallmentAmount = canDefineInstallmentAmount;
         return this;
+	}  
+    
+    public LoanApplicationTestBuilder withClientMembers(final List<HashMap> clientMembers) {
+    	this.clientMembers = clientMembers;
+    	return this;
     }
 }

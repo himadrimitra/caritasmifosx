@@ -84,6 +84,7 @@ import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
@@ -104,6 +105,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.serialization.VariableLoanScheduleFromApiJsonValidator;
+import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanChargeAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
@@ -151,6 +153,7 @@ public class LoanScheduleAssembler {
     private final LoanUtilService loanUtilService;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
+    private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
 
     @Autowired
     public LoanScheduleAssembler(final FromJsonHelper fromApiJsonHelper, final LoanProductRepository loanProductRepository,
@@ -164,7 +167,8 @@ public class LoanScheduleAssembler {
             final VariableLoanScheduleFromApiJsonValidator variableLoanScheduleFromApiJsonValidator,
             final CalendarInstanceRepository calendarInstanceRepository, final PlatformSecurityContext context,
             final LoanUtilService loanUtilService, final LoanRepositoryWrapper loanRepositoryWrapper,
-            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
+            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanProductRepository = loanProductRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -184,6 +188,7 @@ public class LoanScheduleAssembler {
         this.loanUtilService = loanUtilService;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
+        this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
     }
 
     public LoanApplicationTerms assembleLoanTerms(final JsonElement element) {
@@ -644,6 +649,11 @@ public class LoanScheduleAssembler {
             group = this.groupRepository.findOneWithNotFoundDetection(groupId);
             officeId = group.getOffice().getId();
         }
+        
+        //modify glim data
+        final BigDecimal interestRate = loanApplicationTerms.getAnnualNominalInterestRate();
+        final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
+        final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(null, element, interestRate, numberOfRepayments);
 
         final LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed("expectedDisbursementDate", element);
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, expectedDisbursementDate.toDate(),
@@ -654,16 +664,20 @@ public class LoanScheduleAssembler {
         validateDisbursementDateIsOnHoliday(loanApplicationTerms.getExpectedDisbursementDate(), isHolidayEnabled, holidays);
 
         Set<LoanDisbursementDetails> loanDisbursementDetails = this.loanUtilService.fetchDisbursementData(element.getAsJsonObject());
-
-        return assembleLoanScheduleFrom(loanApplicationTerms, isHolidayEnabled, holidays, workingDays, element, loanDisbursementDetails);
+        return assembleLoanScheduleFrom(loanApplicationTerms, isHolidayEnabled, holidays, workingDays, element, loanDisbursementDetails, glimList);
     }
 
     public LoanScheduleModel assembleLoanScheduleFrom(final LoanApplicationTerms loanApplicationTerms, final boolean isHolidayEnabled,
             final List<Holiday> holidays, final WorkingDays workingDays, final JsonElement element,
-            Set<LoanDisbursementDetails> disbursementDetails) {
+            Set<LoanDisbursementDetails> disbursementDetails, List<GroupLoanIndividualMonitoring> glimList) {
 
         final Set<LoanCharge> loanCharges = this.loanChargeAssembler.fromParsedJson(element, disbursementDetails);
-
+        if(glimList != null && !glimList.isEmpty()) {
+            this.groupLoanIndividualMonitoringAssembler.adjustRoundOffValuesToApplicableCharges(loanCharges, loanApplicationTerms.getNumberOfRepayments(),
+                    glimList);
+            this.groupLoanIndividualMonitoringAssembler.updateInstallmentAmountForGlim(glimList, loanApplicationTerms, loanCharges);
+            loanApplicationTerms.updateTotalInterestDueForGlim(glimList);
+        }
         final LoanScheduleGenerator loanScheduleGenerator = this.loanScheduleFactory.create(loanApplicationTerms.getInterestMethod());
 
         final RoundingMode roundingMode = MoneyHelper.getRoundingMode();

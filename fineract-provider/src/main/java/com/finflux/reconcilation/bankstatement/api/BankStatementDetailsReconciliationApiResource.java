@@ -1,3 +1,8 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.reconcilation.bankstatement.api;
 
 import java.util.List;
@@ -29,7 +34,7 @@ import org.springframework.stereotype.Component;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
 import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
-import com.finflux.reconcilation.bankstatement.service.BankStatementReadPlatformService;
+import com.finflux.reconcilation.bankstatement.service.BankStatementDetailsReadPlatformService;
 
 @Path("/bankstatements/{bankStatementId}/details")
 @Component
@@ -39,24 +44,25 @@ public class BankStatementDetailsReconciliationApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PlatformSecurityContext context;
     private final ToApiJsonSerializer<BankStatementDetailsData> bankStatementDetailsApiJsonSerializer;
-    private final BankStatementReadPlatformService bankStatementReadPlatformService;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     @SuppressWarnings("rawtypes")
     private final ToApiJsonSerializer apiJsonSerializer;
+    private final BankStatementDetailsReadPlatformService bankStatementDetailsReadPlatformService;
 
     @Autowired
     public BankStatementDetailsReconciliationApiResource(final ApiRequestParameterHelper apiRequestParameterHelper,
-            final PlatformSecurityContext context, final BankStatementReadPlatformService bankStatementReadPlatformService,
+            final PlatformSecurityContext context,
             final ToApiJsonSerializer<BankStatementDetailsData> bankStatementDetailsApiJsonSerializer,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            @SuppressWarnings("rawtypes") final ToApiJsonSerializer apiJsonSerializer) {
+            @SuppressWarnings("rawtypes") final ToApiJsonSerializer apiJsonSerializer,
+            final BankStatementDetailsReadPlatformService bankStatementDetailsReadPlatformService) {
 
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.context = context;
-        this.bankStatementReadPlatformService = bankStatementReadPlatformService;
         this.bankStatementDetailsApiJsonSerializer = bankStatementDetailsApiJsonSerializer;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.apiJsonSerializer = apiJsonSerializer;
+        this.bankStatementDetailsReadPlatformService = bankStatementDetailsReadPlatformService;
     }
 
     @GET
@@ -65,12 +71,24 @@ public class BankStatementDetailsReconciliationApiResource {
     public String getBankStatementDetails(@PathParam("bankStatementId") final Long bankStatementId, @Context final UriInfo uriInfo,
             @QueryParam("command") final String command) {
 
-        this.context.authenticatedUser();
+        this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_DETAILS_RESOURCE_NAME);
 
         List<BankStatementDetailsData> bankStatementDetailsData = null;
 
-        bankStatementDetailsData = this.bankStatementReadPlatformService.retrieveBankStatementDetailsData(bankStatementId, command);
-
+        if (command.equalsIgnoreCase(ReconciliationApiConstants.RECONCILED)) {
+            bankStatementDetailsData = this.bankStatementDetailsReadPlatformService
+                    .retrieveBankStatementDetailsReconciledData(bankStatementId);
+        } else if (command.equalsIgnoreCase(ReconciliationApiConstants.JOURNAL_ENTRY)) {
+            bankStatementDetailsData = this.bankStatementDetailsReadPlatformService.retrieveBankStatementNonPortfolioData(bankStatementId);
+        } else if (command.equalsIgnoreCase(ReconciliationApiConstants.MISCELLANEOUS)) {
+            bankStatementDetailsData = this.bankStatementDetailsReadPlatformService.retrieveBankStatementMiscellaneousData(bankStatementId);
+        } else if (command.equalsIgnoreCase(ReconciliationApiConstants.GENERATE_TRANSACTIONS)) {
+            bankStatementDetailsData = this.bankStatementDetailsReadPlatformService.retrieveGeneratePortfolioData(bankStatementId, "");
+        } else {
+            bankStatementDetailsData = this.bankStatementDetailsReadPlatformService
+                    .retrieveBankStatementDetailsDataForReconcile(bankStatementId);
+        }
+        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
         return this.bankStatementDetailsApiJsonSerializer.serialize(settings, bankStatementDetailsData,
@@ -80,11 +98,17 @@ public class BankStatementDetailsReconciliationApiResource {
     @PUT
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String makeReconcile(@PathParam("bankStatementId") final Long bankStatementId, final String apiRequestBodyAsJson,
-            @Context final UriInfo uriInfo) {
-
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().reconcileBankStatementDetails(bankStatementId)
-                .withJson(apiRequestBodyAsJson).build();
+    public String reconcileUpdate(@PathParam("bankStatementId") final Long bankStatementId, final String apiRequestBodyAsJson,
+            @Context final UriInfo uriInfo, @QueryParam("command") String command) {
+    	
+    	CommandWrapper commandRequest = null;
+        if(command.equalsIgnoreCase(ReconciliationApiConstants.RECONCILE_ACTION)){
+        	commandRequest = new CommandWrapperBuilder().reconcileBankStatementDetails(bankStatementId)
+                    .withJson(apiRequestBodyAsJson).build();
+        }else{
+        	commandRequest = new CommandWrapperBuilder().undoReconcileBankStatementDetails(bankStatementId)
+                    .withJson(apiRequestBodyAsJson).build();
+        }
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
