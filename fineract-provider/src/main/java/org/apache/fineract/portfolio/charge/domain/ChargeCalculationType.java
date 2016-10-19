@@ -68,6 +68,10 @@ public enum ChargeCalculationType {
     public static Object[] validValuesForTrancheDisbursement(){
     	return new Integer[] { ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue()};
     }
+    
+    public static Object[] validValuesForGlimLoan() {
+        return new Integer[] { ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue() };
+    }
 
     public static ChargeCalculationType fromInt(final Integer chargeCalculation) {
         ChargeCalculationType chargeCalculationType = ChargeCalculationType.INVALID;

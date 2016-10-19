@@ -28,7 +28,9 @@ import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.producttoaccountmapping.data.ChargeToGLAccountMapper;
+import org.apache.fineract.accounting.producttoaccountmapping.data.CodeValueToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.data.PaymentTypeToGLAccountMapper;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
@@ -134,6 +136,7 @@ public class LoanProductData {
     private Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings;
     private Collection<ChargeToGLAccountMapper> feeToIncomeAccountMappings;
     private Collection<ChargeToGLAccountMapper> penaltyToIncomeAccountMappings;
+    private Collection<CodeValueToGLAccountMapper> codeValueToGLAccountMappings;
 
     // template related
     private final Collection<FundData> fundOptions;
@@ -191,6 +194,7 @@ public class LoanProductData {
     private final Integer maxLoanTerm;
     private final EnumOptionData loanTenureFrequencyType;
     private final boolean considerFutureDisbursmentsInSchedule;
+    private final List<CodeValueData> codeValueOptions;
 
     /**
      * Used when returning lookup information about loan product for dropdowns.
@@ -518,11 +522,13 @@ public class LoanProductData {
     public static LoanProductData withAccountingDetails(final LoanProductData productData, final Map<String, Object> accountingMappings,
             final Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings,
             final Collection<ChargeToGLAccountMapper> feeToGLAccountMappings,
-            final Collection<ChargeToGLAccountMapper> penaltyToGLAccountMappings) {
+            final Collection<ChargeToGLAccountMapper> penaltyToGLAccountMappings, 
+            final Collection<CodeValueToGLAccountMapper> codeValueToGLAccountMappings) {
         productData.accountingMappings = accountingMappings;
         productData.paymentChannelToFundSourceMappings = paymentChannelToFundSourceMappings;
         productData.feeToIncomeAccountMappings = feeToGLAccountMappings;
         productData.penaltyToIncomeAccountMappings = penaltyToGLAccountMappings;
+        productData.codeValueToGLAccountMappings = codeValueToGLAccountMappings;
         return productData;
     }
 
@@ -625,6 +631,7 @@ public class LoanProductData {
         this.accountingMappings = null;
         this.paymentChannelToFundSourceMappings = null;
         this.feeToIncomeAccountMappings = null;
+        this.codeValueToGLAccountMappings = null;
         this.penaltyToIncomeAccountMappings = null;
         this.valueConditionTypeOptions = null;
         this.principalVariationsForBorrowerCycle = principalVariations;
@@ -666,6 +673,7 @@ public class LoanProductData {
         this.loanTenureFrequencyType = loanTenureFrequencyType;
         this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
         this.canUseForTopup = canUseForTopup;
+        this.codeValueOptions = null;
 
         this.minimumPeriodsBetweenDisbursalAndFirstRepayment = minimumPeriodsBetweenDisbursalAndFirstRepayment;
     }
@@ -682,7 +690,7 @@ public class LoanProductData {
             final List<EnumOptionData> rescheduleStrategyTypeOptions, final List<EnumOptionData> interestRecalculationFrequencyTypeOptions,
             final List<EnumOptionData> preCloseInterestCalculationStrategyOptions, final List<FloatingRateData> floatingRateOptions,
             final List<EnumOptionData> interestRecalculationNthDayTypeOptions,
-            final List<EnumOptionData> interestRecalculationDayOfWeekTypeOptions, final boolean closeLoanOnOverpayment) {
+            final List<EnumOptionData> interestRecalculationDayOfWeekTypeOptions, final boolean closeLoanOnOverpayment, List<CodeValueData> codeValueOptions) {
         this.id = productData.id;
         this.name = productData.name;
         this.shortName = productData.shortName;
@@ -732,6 +740,7 @@ public class LoanProductData {
         this.accountingMappings = productData.accountingMappings;
         this.paymentChannelToFundSourceMappings = productData.paymentChannelToFundSourceMappings;
         this.feeToIncomeAccountMappings = productData.feeToIncomeAccountMappings;
+        this.codeValueToGLAccountMappings = productData.codeValueToGLAccountMappings;
         this.penaltyToIncomeAccountMappings = productData.penaltyToIncomeAccountMappings;
 
         this.chargeOptions = chargeOptions;
@@ -811,6 +820,7 @@ public class LoanProductData {
         this.loanTenureFrequencyType = productData.loanTenureFrequencyType;
         this.considerFutureDisbursmentsInSchedule = productData.isConsiderFutureDisbursmentsInSchedule();
         this.canUseForTopup = productData.canUseForTopup;
+        this.codeValueOptions = codeValueOptions;
     }
     
     public static LoanProductData loanProductWithFloatingRates(final Long id, final String name,
@@ -916,7 +926,6 @@ public class LoanProductData {
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
                 considerFutureDisbursmentsInSchedule,canUseForTopup);
-
     }
 
 

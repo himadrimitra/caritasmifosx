@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 

@@ -238,19 +238,19 @@ public class LoanTransactionData {
 	}
 
     private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
-            final PaymentDetailData paymentDetailData, final LocalDate date, final BigDecimal amount,
-            Collection<PaymentTypeData> paymentOptions, final String externalId, final LocalDate submittedOnDate,
-            final String groupExternalId, final String loanAccountNumber) {
+            final LocalDate date, final BigDecimal amount,final String groupExternalId, final String loanAccountNumber) {
         this.id = id;
         this.officeId = officeId;
         this.officeName = officeName;
         this.type = transactionType;
-        this.paymentDetailData = paymentDetailData;
+        this.groupExternalId = groupExternalId;
+        this.loanAccountNumber = loanAccountNumber;
         this.date = date;
         this.amount = amount;
-        this.paymentTypeOptions = paymentOptions;
-        this.externalId = externalId;
-        this.submittedOnDate = submittedOnDate;
+        this.paymentDetailData = null;
+        this.paymentTypeOptions = null;
+        this.externalId = null;
+        this.submittedOnDate = null;
         this.unrecognizedIncomePortion = null;
         this.transfer = null;
         this.principalPortion = null;
@@ -268,12 +268,9 @@ public class LoanTransactionData {
         this.loanAccountNumber = loanAccountNumber;
     }
 
-    public static LoanTransactionData LoanTransactionDataTemplate(Long id, final Long officeId, final String officeName,
-            LoanTransactionEnumData transactionType, final PaymentDetailData paymentDetailData, final LocalDate date,
-            final BigDecimal amount, Collection<PaymentTypeData> paymentOptions, final String externalId, final LocalDate submittedOnDate,
-            final String groupExternalId, final String loanAccountNumber) {
-        return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, date, amount, paymentOptions,
-                externalId, submittedOnDate, groupExternalId, loanAccountNumber);
+    public static LoanTransactionData LoanTransactionDataForReconciliationLoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
+            final LocalDate date, final BigDecimal amount,final String groupExternalId, final String loanAccountNumber) {
+        return new LoanTransactionData(id, officeId, officeName, transactionType, date, amount,groupExternalId, loanAccountNumber);
 
     }
 
@@ -298,9 +295,34 @@ public class LoanTransactionData {
     
     public BigDecimal getInterestPortion() {
         return this.interestPortion;
-    }
+    }    
     
-    public void setWriteOffReasonOptions(Collection<CodeValueData> writeOffReasonOptions){
+    public LoanTransactionEnumData getType() {
+		return this.type;
+	}
+
+	public LocalDate getDate() {
+		return this.date;
+	}
+
+	public CurrencyData getCurrency() {
+		return this.currency;
+	}
+
+	public BigDecimal getPrincipalPortion() {
+		return this.principalPortion;
+	}
+
+	public BigDecimal getFeeChargesPortion() {
+		return this.feeChargesPortion;
+	}
+
+	public void setWriteOffReasonOptions(Collection<CodeValueData> writeOffReasonOptions){
     	this.writeOffReasonOptions =writeOffReasonOptions;
     }
+
+	public Long getId() {
+		return this.id;
+	}
+	
 }

@@ -216,7 +216,7 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
                 throw new UnsupportedCommandException(wrapper.commandName());
             }
         } else {
-            handler = this.commandHandlerProvider.getHandler(wrapper.entityName(), wrapper.actionName());
+            handler = this.commandHandlerProvider.getHandler(wrapper.entityName(), wrapper.actionName(), wrapper.getOption());
         }
 
         return handler;
@@ -232,6 +232,7 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
     private void publishEvent(final CommandWrapper wrapper, final CommandProcessingResult result) {
     	final String entityName = wrapper.entityName();
     	final String actionName = wrapper.actionName();
+    	final String option  = wrapper.getOption();
         final String authToken = ThreadLocalContextUtil.getAuthToken();
         final String tenantIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
         final AppUser appUser = this.context.authenticatedUser(wrapper);

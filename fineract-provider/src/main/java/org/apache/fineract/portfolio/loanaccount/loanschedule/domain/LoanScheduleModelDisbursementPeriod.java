@@ -128,4 +128,9 @@ public final class LoanScheduleModelDisbursementPeriod implements LoanScheduleMo
     public List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails() {
         return null;
     }
+
+    @Override
+    public void adjustInterestForCurrentPeriod(Money adjustedInterestForCurrentPeriod) {
+        return;
+    }
 }

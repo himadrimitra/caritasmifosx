@@ -306,7 +306,7 @@ public class LoansApiResource {
                     calendarOptions = this.loanReadPlatformService.retrieveCalendars(groupId);
                 }
 
-            } else if (templateType.equals("group")) {
+            } else if (templateType.equals("group") || templateType.equals("glim")) {
 
                 final LoanAccountData loanAccountGroupData = this.loanReadPlatformService.retrieveGroupDetailsTemplate(groupId);
                 officeId = loanAccountGroupData.groupOfficeId();

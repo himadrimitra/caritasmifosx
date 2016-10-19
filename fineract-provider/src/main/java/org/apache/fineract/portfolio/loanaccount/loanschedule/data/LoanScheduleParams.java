@@ -478,4 +478,8 @@ public class LoanScheduleParams {
     public void setUnCompoundedAmount(Money unCompoundedAmount) {
         this.unCompoundedAmount = unCompoundedAmount;
     }
+    
+    public void substractTotalCumulativeInterest(final Money adjustedInterestAmount) {
+        this.totalCumulativeInterest = this.totalCumulativeInterest.minus(adjustedInterestAmount);
+    }
 }

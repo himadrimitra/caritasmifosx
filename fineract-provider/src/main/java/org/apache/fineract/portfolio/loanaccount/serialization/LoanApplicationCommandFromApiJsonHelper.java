@@ -97,7 +97,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanApiConstants.emiAmountParameterName, LoanApiConstants.maxOutstandingBalanceParameterName,
             LoanProductConstants.graceOnArrearsAgeingParameterName, LoanApiConstants.createStandingInstructionAtDisbursementParameterName, "pledgeId", "collateralUserValue",
             LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName,
-            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose));
+            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
@@ -128,7 +128,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
         if (!StringUtils.isBlank(loanTypeStr)) {
             final AccountType loanType = AccountType.fromName(loanTypeStr);
-            baseDataValidator.reset().parameter(loanTypeParameterName).value(loanType.getValue()).inMinMaxRange(1, 3);
+            baseDataValidator.reset().parameter(loanTypeParameterName).value(loanType.getValue()).inMinMaxRange(1, 4);
 
             final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", element);
             final Long groupId = this.fromApiJsonHelper.extractLongNamed("groupId", element);
@@ -137,7 +137,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                 baseDataValidator.reset().parameter("groupId").value(groupId).mustBeBlankWhenParameterProvided("clientId", clientId);
             }
 
-            if (loanType.isGroupAccount()) {
+            if (loanType.isGroupAccount() || loanType.isGLIMAccount()) {
                 baseDataValidator.reset().parameter("groupId").value(groupId).notNull().longGreaterThanZero();
                 baseDataValidator.reset().parameter("clientId").value(clientId).mustBeBlankWhenParameterProvided("groupId", groupId);
             }

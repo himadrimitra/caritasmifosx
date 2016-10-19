@@ -23,5 +23,9 @@ public class ChargesApiConstants {
     public static final String glAccountIdParamName = "incomeAccountId";
     public static final String taxGroupIdParamName = "taxGroupId";
     public static final int applyUpfrontFeeOnFirstInstallment = 1;
+    public static final String emiRoundingGoalSeekParamName = "emiRoundingGoalSeek";
+    public static final String isGlimChargeParamName = "isGlimCharge";
+    public static final String glimChargeCalculation = "glimChargeCalculation";
+    
 
 }

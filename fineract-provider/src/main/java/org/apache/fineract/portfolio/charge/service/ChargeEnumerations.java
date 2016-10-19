@@ -23,6 +23,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
 
 public class ChargeEnumerations {
 
@@ -187,5 +188,32 @@ public class ChargeEnumerations {
         }
         return optionData;
     }
+    
+    public static EnumOptionData glimChargeCalculationType(final int id) {
+        return glimChargeCalculationType(GlimChargeCalculationType.fromInt(id));
+    }
+    
+    public static EnumOptionData glimChargeCalculationType(final GlimChargeCalculationType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case INVALID:
+                optionData = new EnumOptionData(GlimChargeCalculationType.INVALID.getValue().longValue(), GlimChargeCalculationType.INVALID.getCode(),
+                        "Invalid");
+            break;
+            case ROUND:
+                optionData = new EnumOptionData(GlimChargeCalculationType.ROUND.getValue().longValue(),
+                		GlimChargeCalculationType.ROUND.getCode(), "round");
+            break;
+            case ROUND_WITH_MAX_CHARGE:
+                optionData = new EnumOptionData(GlimChargeCalculationType.ROUND_WITH_MAX_CHARGE.getValue().longValue(), GlimChargeCalculationType.ROUND_WITH_MAX_CHARGE.getCode(),
+                        "round with max charge");
+            break;
+            case ROUND_WITHOUT_MAX_CHARGE:
+                optionData = new EnumOptionData(GlimChargeCalculationType.ROUND_WITHOUT_MAX_CHARGE.getValue().longValue(),
+                		GlimChargeCalculationType.ROUND_WITHOUT_MAX_CHARGE.getCode(), "round without max charge");
+            break;
+        }
+		return optionData;
+ }
     
 }

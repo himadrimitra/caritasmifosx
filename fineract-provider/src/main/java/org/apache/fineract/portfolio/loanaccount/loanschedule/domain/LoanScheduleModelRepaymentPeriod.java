@@ -162,4 +162,10 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     public List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails() {
         return this.loanCompoundingDetails;
     }
+
+    @Override
+    public void adjustInterestForCurrentPeriod(Money adjustedInterestForCurrentPeriod) {
+        this.interestDue = adjustedInterestForCurrentPeriod;
+        
+    }
 }

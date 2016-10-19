@@ -31,17 +31,17 @@ import org.springframework.transaction.annotation.Transactional;
 @CommandType(entity = "CHARGE", action = "CREATE")
 public class CreateChargeDefinitionCommandHandler implements NewCommandSourceHandler {
 
-    private final ChargeWritePlatformService clientWritePlatformService;
+    private final ChargeWritePlatformService chargeWritePlatformService;
 
     @Autowired
-    public CreateChargeDefinitionCommandHandler(final ChargeWritePlatformService clientWritePlatformService) {
-        this.clientWritePlatformService = clientWritePlatformService;
+    public CreateChargeDefinitionCommandHandler(final ChargeWritePlatformService chargeWritePlatformService) {
+        this.chargeWritePlatformService = chargeWritePlatformService;
     }
 
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
 
-        return this.clientWritePlatformService.createCharge(command);
+        return this.chargeWritePlatformService.createCharge(command);
     }
 }

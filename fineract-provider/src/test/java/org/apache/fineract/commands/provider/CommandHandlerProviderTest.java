@@ -52,7 +52,7 @@ public class CommandHandlerProviderTest {
         try {
             final Long testCommandId = 815L;
 
-            final NewCommandSourceHandler registeredHandler = this.commandHandlerProvider.getHandler("HUMAN", "UPDATE");
+            final NewCommandSourceHandler registeredHandler = this.commandHandlerProvider.getHandler("HUMAN", "UPDATE", null);
 
             final CommandProcessingResult result =
                     registeredHandler.processCommand(
@@ -65,6 +65,6 @@ public class CommandHandlerProviderTest {
 
     @Test(expected = UnsupportedCommandException.class)
     public void shouldThrowUnsupportedCommandException() {
-        this.commandHandlerProvider.getHandler("WHATEVER", "DOSOMETHING");
+        this.commandHandlerProvider.getHandler("WHATEVER", "DOSOMETHING", null);
     }
 }

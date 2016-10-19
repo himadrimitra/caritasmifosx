@@ -1,3 +1,8 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.reconcilation.bankstatement.service;
 
 import java.io.File;
@@ -13,11 +18,7 @@ import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentReadPlatformService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData;
-import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
-import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
-import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
-import org.joda.time.LocalDate;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -35,13 +36,16 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
     private final DocumentReadPlatformService documentReadPlatformService;
+    private final BankStatementDetailsReadPlatformService bankStatementDetailsReadPlatformService;
 
     @Autowired
     public BankStatementReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final DocumentReadPlatformService documentReadPlatformService) {
+            final DocumentReadPlatformService documentReadPlatformService, 
+            final BankStatementDetailsReadPlatformService bankStatementDetailsReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.documentReadPlatformService = documentReadPlatformService;
+        this.bankStatementDetailsReadPlatformService = bankStatementDetailsReadPlatformService;
     }
 
     private static final class BankStatementMapper implements RowMapper<BankStatementData> {
@@ -100,104 +104,6 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
         }
     }
 
-    private static final class BankStatementDetailsMapper implements RowMapper<BankStatementDetailsData> {
-
-        public String schema() {
-            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, bsd.description as "
-                    + " description,bsd.transaction_type as bankStatementTransactionType, bsd.transaction_id as transactionId, bsd.mobile_number as mobileNumber,"
-                    + " bsd.amount as amount, bsd.transaction_date as transactionDate, bsd.client_account_number as "
-                    + " clientAccountNumber, bsd.loan_transaction as loanTransaction, bsd.loan_account_number as loanAccountNumber,"
-                    + " bsd.group_external_id as groupExternalId, bsd.is_reconciled as isReconciled, "
-                    + " bankStatementDetailoffice.id as branch, gl.name as glAccount, bsd.gl_code as glCode, bankStatementDetailoffice.name as branchName, bankStatementDetailoffice.external_id as branchExternalId, "
-                    + " bsd.accounting_type as accountingType, bsd.is_journal_entry as isJournalEntry, "
-                    + " tr.id as loanTransactionId, tr.transaction_type_enum as transactionType, "
-                    + " tr.transaction_date as `date`, tr.amount as transactionAmount, tr.office_id as "
-                    + " officeId, tr.external_id as externalId, l.submittedon_date as submittedOnDate"
-                    + " ,pt.value as paymentTypeName, pd.payment_type_id as paymentType, pd.account_number "
-                    + " as accountNumber,pd.check_number as checkNumber,  pd.receipt_number as receiptNumber, "
-                    + " b.id as bank, b.name as bankName, gl.gl_code as bankGLCode , bankGLCode.id as bankGLAccount, "
-                    + " pd.bank_number as bankNumber,office.name as officeName,pd.routing_code as routingCode, l.account_no as loanAccountNo "
-                    + " from f_bank_statement_details bsd " + " left join m_loan_transaction tr on tr.id = bsd.loan_transaction "
-                    + " left join m_loan l on tr.loan_id = l.id " + " left JOIN m_payment_detail pd ON  tr.payment_detail_id = pd.id "
-                    + " left join m_payment_type pt on pd.payment_type_id = pt.id "
-                    + " left join m_office office on office.id=tr.office_id "
-                    + " left join m_office bankStatementDetailoffice on bankStatementDetailoffice.external_id=bsd.branch_external_id "
-                    + " left join f_bank_statement bs on bs.id=bsd.bank_statement_id " + " left join f_bank b on b.id=bs.bank "
-                    + " left join acc_gl_account gl on gl.gl_code=bsd.gl_code "
-                    + " left join acc_gl_account bankGLCode on bankGLCode.id = b.gl_account ";
-
-        }
-
-        @Override
-        public BankStatementDetailsData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
-
-            final Long id = JdbcSupport.getLong(rs, "id");
-            final String clientAccountNumber = rs.getString("clientAccountNumber");
-            final String description = rs.getString("description");
-            final String loanAccountNumber = rs.getString("loanAccountNumber");
-            final String transactionId = rs.getString("transactionId");
-            final String bankStatementTransactionType = rs.getString("bankStatementTransactionType");
-            final String mobileNumber = rs.getString("mobileNumber");
-            final Long bankStatementId = rs.getLong("bankStatementId");
-            final BigDecimal amount = rs.getBigDecimal("amount");
-            final Date transactionDate = rs.getDate("transactionDate");
-            final boolean isReconciled = rs.getBoolean("isReconciled");
-            final Long loanTransaction = rs.getLong("loanTransaction");
-
-            final Long loanTransactionId = rs.getLong("loanTransactionId");
-            final Long officeId = rs.getLong("officeId");
-            final String officeName = rs.getString("officeName");
-            int transactionTypeInt = 0;
-            LoanTransactionEnumData transactionType = null;
-            PaymentDetailData paymentDetailData = null;
-
-            if (JdbcSupport.getInteger(rs, "transactionType") != null) {
-                transactionTypeInt = JdbcSupport.getInteger(rs, "transactionType");
-                transactionType = LoanEnumerations.transactionType(transactionTypeInt);
-                if (transactionType.isPaymentOrReceipt()) {
-                    final Long paymentTypeId = JdbcSupport.getLong(rs, "paymentType");
-                    if (paymentTypeId != null) {
-                        final String typeName = rs.getString("paymentTypeName");
-                        final PaymentTypeData paymentType = PaymentTypeData.instance(paymentTypeId, typeName);
-                        final String accountNumber = rs.getString("accountNumber");
-                        final String checkNumber = rs.getString("checkNumber");
-                        final String routingCode = rs.getString("routingCode");
-                        final String receiptNumber = rs.getString("receiptNumber");
-                        final String bankNumber = rs.getString("bankNumber");
-                        paymentDetailData = new PaymentDetailData(id, paymentType, accountNumber, checkNumber, routingCode, receiptNumber,
-                                bankNumber);
-                    }
-                }
-            }
-            final LocalDate date = JdbcSupport.getLocalDate(rs, "date");
-            final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
-            final BigDecimal transactionAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "transactionAmount");
-            final String externalId = rs.getString("externalId");
-            final String loanAccountNo = rs.getString("loanAccountNo");
-            final Long branch = JdbcSupport.getLong(rs, "branch");
-            final String glAccount = rs.getString("glAccount");
-            final String accountingType = rs.getString("accountingType");
-            final String glCode = rs.getString("glCode");
-            final Boolean isJournalEntry = rs.getBoolean("isJournalEntry");
-
-            final Long bank = JdbcSupport.getLong(rs, "bank");
-            final String bankName = rs.getString("bankName");
-            final String bankGLCode = rs.getString("bankGLCode");
-            final String branchName = rs.getString("branchName");
-            final String branchExternalId = rs.getString("branchExternalId");
-            final String groupExternalId = rs.getString("groupExternalId");
-            final Long bankGLAccount = JdbcSupport.getLong(rs, "bankGLAccount");
-            BankData bankData = BankData.instance(bank, bankName, bankGLAccount, bankGLCode);
-
-            return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate, description, amount, mobileNumber,
-                    clientAccountNumber, loanAccountNumber, isReconciled, loanTransaction, loanTransactionId, officeId, officeName,
-                    transactionType, date, paymentDetailData, transactionAmount, externalId, submittedOnDate, loanAccountNo, branch,
-                    glAccount, accountingType, glCode, isJournalEntry, bankData, branchName, bankStatementTransactionType,
-                    branchExternalId, groupExternalId);
-
-        }
-    }
-
     @Override
     public List<BankStatementData> retrieveAllBankStatements() {
 
@@ -211,26 +117,6 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
     }
 
     @Override
-    public List<BankStatementDetailsData> retrieveBankStatementDetailsData(final Long bankStatementId, String command) {
-
-        this.context.authenticatedUser();
-
-        final BankStatementDetailsMapper rm = new BankStatementDetailsMapper();
-
-        String appendedConditionString = "";
-
-        if (!command.equalsIgnoreCase(ReconciliationApiConstants.JOURNAL_COMMAND_PARAMETER)) {
-            appendedConditionString = " and bsd.is_journal_entry = false ORDER BY bsd.is_reconciled, bsd.transaction_date DESC ";
-        } else {
-            appendedConditionString = "and bsd.is_journal_entry = true  ORDER BY bsd.transaction_date DESC";
-        }
-
-        final String sql = "SELECT " + rm.schema() + " WHERE bsd.bank_statement_id = ? " + appendedConditionString;
-
-        return this.jdbcTemplate.query(sql, rm, new Object[] { bankStatementId });
-    }
-
-    @Override
     public BankStatementData getBankStatement(final Long bankStatementId) {
         this.context.authenticatedUser();
 
@@ -240,22 +126,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
 
         return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { bankStatementId });
     }
-
-    @Override
-    public List<BankStatementDetailsData> changedBankStatementDetailsData(Long bankStatementId) {
-
-        this.context.authenticatedUser();
-
-        final BankStatementDetailsMapper rm = new BankStatementDetailsMapper();
-
-        final String sql = "SELECT "
-                + rm.schema()
-                + " WHERE bsd.bank_statement_id = ? and (bsd.is_reconciled = true or (bsd.is_journal_entry = true and bsd.transaction_id IS NOT NULL)) "
-                + " ORDER BY bsd.transaction_date DESC ";
-
-        return this.jdbcTemplate.query(sql, rm, new Object[] { bankStatementId });
-    }
-
+    
     @Override
     public List<BankStatementData> retrieveBankStatementsByAssociatedBank(final Long bankId) {
 
@@ -267,5 +138,91 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { bankId });
     }
+
+	@Override
+	public BankStatementData getBankStatementSummary(Long bankStatementId) {
+		
+		final BankStatementData bankStatementData = getBankStatement(bankStatementId);
+		List<BankStatementDetailsData> bankStatementDetailsDataList = this.bankStatementDetailsReadPlatformService.retrieveAllBankStatementData(bankStatementId);
+		
+		BigDecimal portFolioReconciledInflowAmount = BigDecimal.ZERO;
+	    BigDecimal portFolioReconciledOutflowAmount = BigDecimal.ZERO;
+	    BigDecimal portFolioUnReconciledInflowAmount = BigDecimal.ZERO;
+	    BigDecimal portFolioUnReconciledOutflowAmount = BigDecimal.ZERO;
+	    
+	    BigDecimal nonPortFolioReconciledInflowAmount = BigDecimal.ZERO;
+	    BigDecimal nonPortFolioReconciledOutflowAmount = BigDecimal.ZERO;
+	    BigDecimal nonPortFolioUnReconciledInflowAmount = BigDecimal.ZERO;
+	    BigDecimal nonPortFolioUnReconciledOutflowAmount = BigDecimal.ZERO;
+	    
+	    BigDecimal miscellaneousReconciledInflowAmount = BigDecimal.ZERO;
+	    BigDecimal miscellaneousUnReconciledInflowAmount = BigDecimal.ZERO;
+	    BigDecimal miscellaneousReconciledOutflowAmount = BigDecimal.ZERO;
+	    BigDecimal miscellaneousUnReconciledOutflowAmount = BigDecimal.ZERO;
+	    
+		for (BankStatementDetailsData bankStatementDetailsData : bankStatementDetailsDataList) {
+			Boolean isReconciled = bankStatementDetailsData.getIsReconciled();
+			String transactionType = bankStatementDetailsData.getTransactionType();
+			String accountingType = bankStatementDetailsData.getAccountingType();
+			BigDecimal amount = bankStatementDetailsData.getAmount();
+			
+			if(isReconciled){
+				if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.OTHER)){
+					if(accountingType.equalsIgnoreCase(ReconciliationApiConstants.DEBIT)){
+						nonPortFolioReconciledOutflowAmount = nonPortFolioReconciledOutflowAmount.add(amount);											
+					}else{
+						nonPortFolioReconciledInflowAmount = nonPortFolioReconciledInflowAmount.add(amount);
+					}
+				}else if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.ERROR)){
+					if(MathUtility.isGreater(amount, BigDecimal.ZERO)){
+						miscellaneousReconciledInflowAmount = miscellaneousReconciledInflowAmount.add(amount);
+					}else{
+						miscellaneousReconciledOutflowAmount = miscellaneousReconciledOutflowAmount.add(amount);
+					}
+				}else{
+					if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.DISBURSAL)){
+						portFolioReconciledOutflowAmount = portFolioReconciledOutflowAmount.add(amount);
+					}else{
+						portFolioReconciledInflowAmount = portFolioReconciledInflowAmount.add(amount);
+					}
+				}
+			}else{
+				if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.OTHER)){
+					if(accountingType.equalsIgnoreCase(ReconciliationApiConstants.DEBIT)){
+						nonPortFolioUnReconciledOutflowAmount = nonPortFolioUnReconciledOutflowAmount.add(amount);
+					}else{						
+						nonPortFolioUnReconciledInflowAmount = nonPortFolioUnReconciledInflowAmount.add(amount);
+					}
+				}else if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.ERROR)){
+					if(MathUtility.isGreater(amount, BigDecimal.ZERO)){
+						miscellaneousUnReconciledInflowAmount = miscellaneousUnReconciledInflowAmount.add(amount);
+					}else{
+						miscellaneousUnReconciledOutflowAmount = miscellaneousUnReconciledOutflowAmount.add(amount);
+					}
+				}else{
+					if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.DISBURSAL)){
+						portFolioUnReconciledOutflowAmount = portFolioUnReconciledOutflowAmount.add(amount);
+					}else{
+						portFolioUnReconciledInflowAmount = portFolioUnReconciledInflowAmount.add(amount);
+					}
+				}
+			}
+		}
+		bankStatementData.setPortFolioReconciledInflowAmount(portFolioReconciledInflowAmount);
+		bankStatementData.setPortFolioReconciledOutflowAmount(portFolioReconciledOutflowAmount);
+		bankStatementData.setPortFolioUnReconciledInflowAmount(portFolioUnReconciledInflowAmount);
+		bankStatementData.setPortFolioUnReconciledOutflowAmount(portFolioUnReconciledOutflowAmount);
+		
+		bankStatementData.setNonPortFolioReconciledInflowAmount(nonPortFolioReconciledInflowAmount);
+		bankStatementData.setNonPortFolioReconciledOutflowAmount(nonPortFolioReconciledOutflowAmount);
+		bankStatementData.setNonPortFolioUnReconciledInflowAmount(nonPortFolioUnReconciledInflowAmount);
+		bankStatementData.setNonPortFolioUnReconciledOutflowAmount(nonPortFolioUnReconciledOutflowAmount);
+		
+		bankStatementData.setMiscellaneousReconciledInflowAmount(miscellaneousReconciledInflowAmount);
+		bankStatementData.setMiscellaneousReconciledOutflowAmount(miscellaneousReconciledOutflowAmount);
+		bankStatementData.setMiscellaneousUnReconciledInflowAmount(miscellaneousUnReconciledInflowAmount);
+		bankStatementData.setMiscellaneousUnReconciledOutflowAmount(miscellaneousUnReconciledOutflowAmount);
+		return bankStatementData;
+	}
 
 }

@@ -1,6 +1,12 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.reconcilation.bankstatement.domain;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -13,6 +19,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
+import org.joda.time.DateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @SuppressWarnings("serial")
@@ -56,9 +63,6 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     @JoinColumn(name = "loan_transaction", nullable = true)
     private LoanTransaction loanTransaction;
 
-    @Column(name = "is_journal_entry")
-    private Boolean isJournalEntry;
-
     @Column(name = "accounting_type")
     private String accountingType;
 
@@ -70,12 +74,20 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
 
     @Column(name = "transaction_type")
     private String transactionType;
+    
+    @Column(name = "bank_statement_detail_type", nullable = false)
+    private Integer bankStatementDetailType;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "updated_date", nullable = true)
+    private Date updatedDate = null;
+    
 
     public BankStatementDetails(final BankStatement bankStatement, final String transactionId, final Date transactionDate,
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final Boolean isJournalEntry, final String transactionType) {
+            final String transactionType, final Integer bankStatementDetailType) {
         this.bankStatement = bankStatement;
         this.transactionId = transactionId;
         this.transactionDate = transactionDate;
@@ -90,8 +102,9 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.branchExternalId = branchExternalId;
         this.accountingType = accountingType;
         this.glCode = glCode;
-        this.isJournalEntry = isJournalEntry;
         this.transactionType = transactionType;
+        this.bankStatementDetailType = bankStatementDetailType;
+        this.updatedDate = null;
     }
 
     public BankStatementDetails() {
@@ -102,11 +115,11 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final Boolean isJournalEntry, final String transactionType) {
+            final String transactionType, final Integer bankStatementDetailType) {
 
         return new BankStatementDetails(bankStatement, transactionId, transactionDate, description, amount, mobileNumber,
                 clientAccountNumber, loanAccountNumber, groupExternalId, isReconciled, loanTransaction, branchExternalId, accountingType, glCode,
-                isJournalEntry, transactionType);
+                transactionType, bankStatementDetailType);
     }
 
     public void setBankStatement(BankStatement bankStatement) {
@@ -137,4 +150,45 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         return transactionType;
     }
 
+	public Integer getBankStatementDetailType() {
+		return this.bankStatementDetailType;
+	}
+
+	public void setBankStatementDetailType(Integer bankStatementDetailType) {
+		this.bankStatementDetailType = bankStatementDetailType;
+	}
+
+	public Date getUpdatedDate() {
+		return this.updatedDate;
+	}
+
+	public void setUpdatedDate(Date updatedDate) {
+		this.updatedDate = updatedDate;
+	}
+
+	public LoanTransaction getLoanTransaction() {
+		return this.loanTransaction;
+	}
+
+    
+    public Date getTransactionDate() {
+        return this.transactionDate;
+    }
+
+    
+    public void setTransactionDate(Date transactionDate) {
+        this.transactionDate = transactionDate;
+    }
+
+    
+    public String getLoanAccountNumber() {
+        return this.loanAccountNumber;
+    }
+
+    
+    public void setLoanAccountNumber(String loanAccountNumber) {
+        this.loanAccountNumber = loanAccountNumber;
+    }	
+	
+	
 }

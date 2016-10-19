@@ -34,15 +34,23 @@ public interface ProductToGLAccountMappingRepository extends JpaRepository<Produ
 	@QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     ProductToGLAccountMapping findByProductIdAndProductTypeAndFinancialAccountTypeAndPaymentTypeId(Long productId, int productType,
             int financialAccountType, Long paymentType);
+    
+    ProductToGLAccountMapping findByProductIdAndProductTypeAndFinancialAccountTypeAndCodeValueId(Long productId, int productType,
+            int financialAccountType, Long codeValue);
 
     @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     ProductToGLAccountMapping findByProductIdAndProductTypeAndFinancialAccountTypeAndChargeId(Long productId, int productType,
             int financialAccountType, Long chargeId);
 
-    @Query("from ProductToGLAccountMapping mapping where mapping.productId =:productId and mapping.productType =:productType and mapping.financialAccountType=:financialAccountType and mapping.paymentType is NULL and mapping.charge is NULL")
+    @Query("from ProductToGLAccountMapping mapping where mapping.productId =:productId and mapping.productType =:productType and mapping.financialAccountType=:financialAccountType and mapping.paymentType is NULL and mapping.charge is NULL and mapping.codeValue is NULL")
     @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     ProductToGLAccountMapping findCoreProductToFinAccountMapping(@Param("productId") Long productId, @Param("productType") int productType,
             @Param("financialAccountType") int financialAccountType);
+    
+    /*** The financial Account Type for a loss write off will always be an expense (1) ***/
+    @Query("from ProductToGLAccountMapping mapping where mapping.productId =:productId and mapping.productType =:productType and mapping.financialAccountType=6 and mapping.codeValue is NOT NULL ")
+    List<ProductToGLAccountMapping> findAllCodeValueToExpenseMappings(@Param("productId") Long productId,
+            @Param("productType") int productType);
 
     /*** The financial Account Type for a fund source will always be an asset (1) ***/
     @Query("from ProductToGLAccountMapping mapping where mapping.productId =:productId and mapping.productType =:productType and mapping.financialAccountType=1 and mapping.paymentType is not NULL")

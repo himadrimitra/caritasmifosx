@@ -116,7 +116,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
             LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
             LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.considerFutureDisbursmentsInSchedule,
-            LoanProductConstants.canUseForTopup));
+            LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue()));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -666,6 +666,7 @@ public final class LoanProductDataValidator {
 
             validatePaymentChannelFundSourceMappings(baseDataValidator, element);
             validateChargeToIncomeAccountMappings(baseDataValidator, element);
+            validateCodeValueAccountMappings(baseDataValidator, element);
 
         }
 
@@ -1643,7 +1644,7 @@ public final class LoanProductDataValidator {
 
         validatePaymentChannelFundSourceMappings(baseDataValidator, element);
         validateChargeToIncomeAccountMappings(baseDataValidator, element);
-
+        validateCodeValueAccountMappings(baseDataValidator, element);
         validateMinMaxConstraints(element, baseDataValidator, loanProduct);
 
         if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.useBorrowerCycleParameterName, element)) {
@@ -1696,40 +1697,39 @@ public final class LoanProductDataValidator {
      * Validation for advanced accounting options
      */
     private void validatePaymentChannelFundSourceMappings(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
-        if (this.fromApiJsonHelper.parameterExists(LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue(), element)) {
-            final JsonArray paymentChannelMappingArray = this.fromApiJsonHelper.extractJsonArrayNamed(
-                    LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue(), element);
-            if (paymentChannelMappingArray != null && paymentChannelMappingArray.size() > 0) {
-                int i = 0;
-                do {
-                    final JsonObject jsonObject = paymentChannelMappingArray.get(i).getAsJsonObject();
-                    final Long paymentTypeId = this.fromApiJsonHelper.extractLongNamed(
-                            LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_TYPE.getValue(), jsonObject);
-                    final Long paymentSpecificFundAccountId = this.fromApiJsonHelper.extractLongNamed(
-                            LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(), jsonObject);
-
-                    baseDataValidator
-                            .reset()
-                            .parameter(
-                                    LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue() + "[" + i + "]."
-                                            + LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_TYPE.getValue()).value(paymentTypeId).notNull()
-                            .integerGreaterThanZero();
-                    baseDataValidator
-                            .reset()
-                            .parameter(
-                                    LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue() + "[" + i + "]."
-                                            + LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue()).value(paymentSpecificFundAccountId)
-                            .notNull().integerGreaterThanZero();
-                    i++;
-                } while (i < paymentChannelMappingArray.size());
-            }
-        }
+    	validateAdvancedAccountingMapping(baseDataValidator, element, LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_CHANNEL_FUND_SOURCE_MAPPING.getValue(),
+        		LOAN_PRODUCT_ACCOUNTING_PARAMS.PAYMENT_TYPE.getValue(),LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue());
+       
     }
 
     private void validateChargeToIncomeAccountMappings(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
         // validate for both fee and penalty charges
+        validateChargeToIncomeAccountMappings(baseDataValidator, element, false);
         validateChargeToIncomeAccountMappings(baseDataValidator, element, true);
-        validateChargeToIncomeAccountMappings(baseDataValidator, element, true);
+    }
+    
+    public void validateAdvancedAccountingMapping(final DataValidatorBuilder baseDataValidator, final JsonElement element, String arrayParamName, 
+    		String propertyIdParamName, String accountIdParamName){
+    	if (this.fromApiJsonHelper.parameterExists(arrayParamName, element)) {
+            final JsonArray accountMappingArray = this.fromApiJsonHelper.extractJsonArrayNamed(arrayParamName, element);
+            if (accountMappingArray != null && accountMappingArray.size() > 0) {
+                int i = 0;
+                do {
+                    final JsonObject jsonObject = accountMappingArray.get(i).getAsJsonObject();
+                    final Long propertyId = this.fromApiJsonHelper.extractLongNamed(propertyIdParamName,
+                            jsonObject);
+                    final Long accountId = this.fromApiJsonHelper.extractLongNamed(
+                    		accountIdParamName, jsonObject);
+                    baseDataValidator.reset()
+                            .parameter(arrayParamName + "[" + i + "]." + propertyIdParamName)
+                            .value(propertyId).notNull().integerGreaterThanZero();
+                    baseDataValidator.reset()
+                            .parameter(arrayParamName + "[" + i + "]." + accountIdParamName)
+                            .value(accountId).notNull().integerGreaterThanZero();
+                    i++;
+                } while (i < accountMappingArray.size());
+            }
+        }
     }
 
     private void validateChargeToIncomeAccountMappings(final DataValidatorBuilder baseDataValidator, final JsonElement element,
@@ -1740,27 +1740,14 @@ public final class LoanProductDataValidator {
         } else {
             parameterName = LOAN_PRODUCT_ACCOUNTING_PARAMS.FEE_INCOME_ACCOUNT_MAPPING.getValue();
         }
+        validateAdvancedAccountingMapping(baseDataValidator, element, parameterName, LOAN_PRODUCT_ACCOUNTING_PARAMS.CHARGE_ID.getValue(),
+        		LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_ACCOUNT_ID.getValue());
+    }
 
-        if (this.fromApiJsonHelper.parameterExists(parameterName, element)) {
-            final JsonArray chargeToIncomeAccountMappingArray = this.fromApiJsonHelper.extractJsonArrayNamed(parameterName, element);
-            if (chargeToIncomeAccountMappingArray != null && chargeToIncomeAccountMappingArray.size() > 0) {
-                int i = 0;
-                do {
-                    final JsonObject jsonObject = chargeToIncomeAccountMappingArray.get(i).getAsJsonObject();
-                    final Long chargeId = this.fromApiJsonHelper.extractLongNamed(LOAN_PRODUCT_ACCOUNTING_PARAMS.CHARGE_ID.getValue(),
-                            jsonObject);
-                    final Long incomeAccountId = this.fromApiJsonHelper.extractLongNamed(
-                            LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_ACCOUNT_ID.getValue(), jsonObject);
-                    baseDataValidator.reset()
-                            .parameter(parameterName + "[" + i + "]." + LOAN_PRODUCT_ACCOUNTING_PARAMS.CHARGE_ID.getValue())
-                            .value(chargeId).notNull().integerGreaterThanZero();
-                    baseDataValidator.reset()
-                            .parameter(parameterName + "[" + i + "]." + LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_ACCOUNT_ID.getValue())
-                            .value(incomeAccountId).notNull().integerGreaterThanZero();
-                    i++;
-                } while (i < chargeToIncomeAccountMappingArray.size());
-            }
-        }
+    private void validateCodeValueAccountMappings(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+    	String parameterName = LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue();
+    	validateAdvancedAccountingMapping(baseDataValidator, element, parameterName, LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ID.getValue(),
+    			LOAN_PRODUCT_ACCOUNTING_PARAMS.EXPENSE_ACCOUNT_ID.getValue());
     }
 
     public void validateMinMaxConstraints(final JsonElement element, final DataValidatorBuilder baseDataValidator,

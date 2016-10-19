@@ -40,6 +40,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
+import org.apache.fineract.portfolio.charge.domain.GlimChargeCalculationType;
 import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -56,7 +57,8 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
     private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("name", "amount", "locale", "currencyCode",
             "currencyOptions", "chargeAppliesTo", "chargeTimeType", "chargeCalculationType", "chargeCalculationTypeOptions", "penalty",
             "active", "chargePaymentMode", "feeOnMonthDay", "feeInterval", "monthDayFormat", "minCap", "maxCap", "feeFrequency",
-            ChargesApiConstants.glAccountIdParamName, ChargesApiConstants.taxGroupIdParamName));
+            ChargesApiConstants.glAccountIdParamName, ChargesApiConstants.taxGroupIdParamName, ChargesApiConstants.emiRoundingGoalSeekParamName,
+            ChargesApiConstants.isGlimChargeParamName, ChargesApiConstants.glimChargeCalculation));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -97,9 +99,30 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
 
         final ChargeAppliesTo appliesTo = ChargeAppliesTo.fromInt(chargeAppliesTo);
         if (appliesTo.isLoanCharge()) {
+            
             // loan applicable validation
             final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
             baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType).notNull();
+            
+            // glim loan
+            Boolean isGlimCharge = false;
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.isGlimChargeParamName, element)) {
+	            isGlimCharge = this.fromApiJsonHelper.extractBooleanNamed(
+	                    ChargesApiConstants.isGlimChargeParamName, element);
+	            baseDataValidator.reset().parameter(ChargesApiConstants.isGlimChargeParamName).value(isGlimCharge)
+	                    .isOneOfTheseValues(true, false);
+	            if (isGlimCharge) {
+	                if (!chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE)) {
+	                    baseDataValidator.reset().parameter("ChargeTimeType").value(chargeTimeType)
+	                            .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue());
+	                }
+	                if (!chargeCalculationType.equals(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT)) {
+	                    baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+	                            .isOneOfTheseValues(ChargeCalculationType.validValuesForGlimLoan());
+	                }
+	            }
+            }
+            
             if (chargeTimeType != null) {
                 baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType)
                         .isOneOfTheseValues(ChargeTimeType.validLoanValues());
@@ -119,9 +142,15 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             }
 
             if (chargeTimeType != null && chargeCalculationType != null) {
-                performChargeTimeNCalculationTypeValidation(baseDataValidator, chargeTimeType, chargeCalculationType);
+                performChargeTimeNCalculationTypeValidation(baseDataValidator, chargeTimeType, chargeCalculationType, isGlimCharge);
             }
-
+            
+            if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.glimChargeCalculation, element)) {
+                final Integer glimChargeCalculation = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ChargesApiConstants.glimChargeCalculation, element);
+                baseDataValidator.reset().parameter(ChargesApiConstants.glimChargeCalculation).value(glimChargeCalculation).notNull()
+                        .isOneOfTheseValues(GlimChargeCalculationType.validValues());
+            }
+            
         } else if (appliesTo.isSavingsCharge()) {
             // savings applicable validation
             final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
@@ -210,7 +239,14 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Boolean penalty = this.fromApiJsonHelper.extractBooleanNamed("penalty", element);
             baseDataValidator.reset().parameter("penalty").value(penalty).notNull();
         }
-
+        
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.emiRoundingGoalSeekParamName, element)) {
+            final Boolean emiRoundingGoalSeek = this.fromApiJsonHelper.extractBooleanNamed(
+                    ChargesApiConstants.emiRoundingGoalSeekParamName, element);
+            baseDataValidator.reset().parameter(ChargesApiConstants.emiRoundingGoalSeekParamName).value(emiRoundingGoalSeek).notNull();
+        }
+        
+        
         if (this.fromApiJsonHelper.parameterExists("active", element)) {
             final Boolean active = this.fromApiJsonHelper.extractBooleanNamed("active", element);
             baseDataValidator.reset().parameter("active").value(active).notNull();
@@ -229,7 +265,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Long taxGroupId = this.fromApiJsonHelper.extractLongNamed(ChargesApiConstants.taxGroupIdParamName, element);
             baseDataValidator.reset().parameter(ChargesApiConstants.taxGroupIdParamName).value(taxGroupId).notNull().longGreaterThanZero();
         }
-
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
@@ -261,12 +297,18 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
 
         if (this.fromApiJsonHelper.parameterExists("minCap", element)) {
             final BigDecimal minCap = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("minCap", element.getAsJsonObject());
-            baseDataValidator.reset().parameter("minCap").value(minCap).notNull().positiveAmount();
+            baseDataValidator.reset().parameter("minCap").value(minCap).ignoreIfNull().positiveAmount();
+        }      
+
+
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.emiRoundingGoalSeekParamName, element)) {
+            final Boolean emiRoundingGoalSeek = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.emiRoundingGoalSeekParamName, element);
+            baseDataValidator.reset().parameter(ChargesApiConstants.emiRoundingGoalSeekParamName).value(emiRoundingGoalSeek).notNull();
         }
 
         if (this.fromApiJsonHelper.parameterExists("maxCap", element)) {
             final BigDecimal maxCap = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("maxCap", element.getAsJsonObject());
-            baseDataValidator.reset().parameter("maxCap").value(maxCap).notNull().positiveAmount();
+            baseDataValidator.reset().parameter("maxCap").value(maxCap).ignoreIfNull().positiveAmount();
         }
 
         if (this.fromApiJsonHelper.parameterExists("chargeAppliesTo", element)) {
@@ -323,11 +365,11 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         }
         if (this.fromApiJsonHelper.parameterExists("minCap", element)) {
             final BigDecimal minCap = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("minCap", element.getAsJsonObject());
-            baseDataValidator.reset().parameter("minCap").value(minCap).notNull().positiveAmount();
+            baseDataValidator.reset().parameter("minCap").value(minCap).ignoreIfNull().positiveAmount();
         }
         if (this.fromApiJsonHelper.parameterExists("maxCap", element)) {
             final BigDecimal maxCap = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("maxCap", element.getAsJsonObject());
-            baseDataValidator.reset().parameter("maxCap").value(maxCap).notNull().positiveAmount();
+            baseDataValidator.reset().parameter("maxCap").value(maxCap).ignoreIfNull().positiveAmount();
         }
         if (this.fromApiJsonHelper.parameterExists("feeFrequency", element)) {
             final Integer feeFrequency = this.fromApiJsonHelper.extractIntegerNamed("feeFrequency", element, Locale.getDefault());
@@ -344,19 +386,25 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Long taxGroupId = this.fromApiJsonHelper.extractLongNamed(ChargesApiConstants.taxGroupIdParamName, element);
             baseDataValidator.reset().parameter(ChargesApiConstants.taxGroupIdParamName).value(taxGroupId).notNull().longGreaterThanZero();
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.glimChargeCalculation, element)) {
+            final Integer glimChargeCalculation = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ChargesApiConstants.glimChargeCalculation, element);
+            baseDataValidator.reset().parameter(ChargesApiConstants.glimChargeCalculation).value(glimChargeCalculation).notNull()
+                    .isOneOfTheseValues(GlimChargeCalculationType.validValues());
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    public void validateChargeTimeNCalculationType(Integer chargeTimeType, Integer ChargeCalculationType) {
+    public void validateChargeTimeNCalculationType(Integer chargeTimeType, Integer ChargeCalculationType, boolean isGlimCharge) {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("charge");
-        performChargeTimeNCalculationTypeValidation(baseDataValidator, chargeTimeType, ChargeCalculationType);
+        performChargeTimeNCalculationTypeValidation(baseDataValidator, chargeTimeType, ChargeCalculationType, isGlimCharge);
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
     private void performChargeTimeNCalculationTypeValidation(DataValidatorBuilder baseDataValidator, final Integer chargeTimeType,
-            final Integer chargeCalculationType) {
+            final Integer chargeCalculationType, final boolean isGlimCharge) {
         if(chargeTimeType.equals(ChargeTimeType.SHAREACCOUNT_ACTIVATION.getValue())){
             baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
             .isOneOfTheseValues(ChargeCalculationType.validValuesForShareAccountActivation());
@@ -365,7 +413,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         if (chargeTimeType.equals(ChargeTimeType.TRANCHE_DISBURSEMENT.getValue())) {
             baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
                     .isOneOfTheseValues(ChargeCalculationType.validValuesForTrancheDisbursement());
-        } else {
+        } else if (!isGlimCharge) {
             baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
                     .isNotOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
         }
@@ -374,4 +422,20 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
+
+    /*public void validateForGlim(String json) {
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.individualClientChargeParamName, element)) {
+            final Boolean individualClientCharge = this.fromApiJsonHelper.extractBooleanNamed(
+                    ChargesApiConstants.individualClientChargeParamName, element);
+            final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
+            final Integer chargeCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeCalculationType", element);
+            if (individualClientCharge) {
+                if (!(chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE) && chargeCalculationType
+                        .equals(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT))) {
+
+                }
+            }
+        }
+    }*/
 }

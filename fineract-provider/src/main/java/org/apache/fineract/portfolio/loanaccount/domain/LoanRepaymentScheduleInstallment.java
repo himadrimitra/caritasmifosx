@@ -36,6 +36,7 @@ import javax.persistence.TemporalType;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
@@ -800,5 +801,69 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     public Money getTotalPaid(final MonetaryCurrency currency) {
         return getPenaltyChargesPaid(currency).plus(getFeeChargesPaid(currency)).plus(getInterestPaid(currency))
                 .plus(getPrincipalCompleted(currency));
+    }
+    
+    public Money writeOffOutstandingPrincipalForGlim(final LocalDate transactionDate, final MonetaryCurrency currency,
+            final Money principalDue) {
+        
+        this.principalWrittenOff = getPrincipalWrittenOff(currency).getAmount().add(principalDue.getAmount());
+
+        if (getPrincipalOutstanding(currency).getAmount().compareTo(BigDecimal.ZERO)==0) {
+            checkIfRepaymentPeriodObligationsAreMet(transactionDate, currency);
+        }
+
+        return principalDue;
+    }
+    
+    public Money writeOffOutstandingInterestForGlim(final LocalDate transactionDate, final MonetaryCurrency currency,
+            final Money interestDue) {
+
+        this.interestWrittenOff = getInterestWrittenOff(currency).getAmount().add(interestDue.getAmount());
+
+        if (getInterestOutstanding(currency).getAmount().compareTo(BigDecimal.ZERO)==0) {
+            checkIfRepaymentPeriodObligationsAreMet(transactionDate, currency);
+        }
+
+        return interestDue;
+    }
+    
+    public Money writeOffOutstandingFeeChargeForGlim(final LocalDate transactionDate, final MonetaryCurrency currency,
+            final Money feeChargeDue) {
+        this.feeChargesWrittenOff = getFeeChargesWrittenOff(currency).getAmount().add(feeChargeDue.getAmount());
+        if (getFeeChargesOutstanding(currency).getAmount().compareTo(BigDecimal.ZERO) == 0) {
+            checkIfRepaymentPeriodObligationsAreMet(transactionDate, currency);
+        }
+        return feeChargeDue;
+    }
+    
+    public void updateInterestPaid(BigDecimal interestPortion) {
+        this.interestPaid = MathUtility.zeroIfNull(this.interestPaid).subtract(interestPortion);
+        if (this.interestPaid.compareTo(BigDecimal.ZERO) == 0) {
+            this.interestPaid = null;
+        }
+    }
+
+    public void updateFeeChargesPaid(BigDecimal feePortion) {
+        this.feeChargesPaid = MathUtility.zeroIfNull(this.feeChargesPaid).subtract(feePortion);
+        if (this.feeChargesPaid.compareTo(BigDecimal.ZERO) == 0) {
+            this.feeChargesPaid = null;
+        }
+    }
+
+    public void updatePrincipalCompleted(BigDecimal principalPortion) {
+        this.principalCompleted = MathUtility.zeroIfNull(this.principalCompleted).subtract(principalPortion);
+        if (this.principalCompleted.compareTo(BigDecimal.ZERO) == 0) {
+            this.principalCompleted = null;
+        }
+    }
+
+    public void markAsIncomplete() {
+        this.obligationsMet = false;
+        this.obligationsMetOnDate = null;
+    }
+
+    public void resetTotalPaidAmount() {
+        this.totalPaidInAdvance = null;
+        this.totalPaidLate = null;
     }
 }

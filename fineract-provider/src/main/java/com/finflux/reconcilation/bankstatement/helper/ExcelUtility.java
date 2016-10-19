@@ -1,3 +1,8 @@
+/* Copyright (C) Conflux Technologies Pvt Ltd - All Rights Reserved
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ * This code is proprietary and confidential software; you can't redistribute it and/or modify it unless agreed to in writing.
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ */
 package com.finflux.reconcilation.bankstatement.helper;
 
 import org.apache.commons.lang.StringUtils;
@@ -71,13 +76,17 @@ public class ExcelUtility {
 
     public static boolean isValidExcelHeader(File file, String[] headerArray) {
         Row header = getHeader(file);
-        if (header.getPhysicalNumberOfCells() != headerArray.length) { return false; }
+        if (header.getPhysicalNumberOfCells() < headerArray.length) { return false; }
+        int i = 0;
         for (Cell cell : header) {
-            String excelHeaderCellData = cell.getStringCellValue();
-            excelHeaderCellData = excelHeaderCellData.replaceAll("(\\s|\\n)", "");
-            String headerCellData = (headerArray[cell.getColumnIndex()]);
-            headerCellData = headerCellData.replaceAll("(\\s|\\n)", "");
-            if (!excelHeaderCellData.equalsIgnoreCase(headerCellData)) { return false; }
+        	i++;
+        	if(i<=headerArray.length){
+                String excelHeaderCellData = cell.getStringCellValue();
+                excelHeaderCellData = excelHeaderCellData.replaceAll("(\\s|\\n)", "");
+                String headerCellData = (headerArray[cell.getColumnIndex()]);
+                headerCellData = headerCellData.replaceAll("(\\s|\\n)", "");
+                if (!excelHeaderCellData.equalsIgnoreCase(headerCellData)) { return false; }
+        	}
         }
         return true;
     }

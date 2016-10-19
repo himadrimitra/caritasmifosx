@@ -151,11 +151,13 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                 .retrieveSharesCalculationTypes();
         final List<EnumOptionData> shareChargeTimeTypeOptions = this.chargeDropdownReadPlatformService.retrieveSharesCollectionTimeTypes();
         final Collection<TaxGroupData> taxGroupOptions = this.taxReadPlatformService.retrieveTaxGroupsForLookUp();
+        final List<EnumOptionData> glimChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
+                .retrieveGlimChargeCalculationTypes();
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
                 clientChargeTimeTypeOptions, feeFrequencyOptions, incomeOrLiabilityAccountOptions, taxGroupOptions,
-                shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions);
+                shareChargeCalculationTypeOptions, shareChargeTimeTypeOptions, glimChargeCalculationTypeOptions);
     }
 
     @Override
@@ -275,8 +277,8 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         public String chargeSchema() {
             return "c.id as id, c.name as name, c.amount as amount, c.currency_code as currencyCode, "
                     + "c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, "
-                    + "c.charge_payment_mode_enum as chargePaymentMode, "
-                    + "c.charge_calculation_enum as chargeCalculation, c.is_penalty as penalty, "
+                    + "c.charge_payment_mode_enum as chargePaymentMode, c.emi_rounding_goalseek as emiRoundingGoalSeek, c.glim_charge_calculation_enum as glimChargeCalculation, "
+                    + "c.is_glim_charge as isGlimCharge, c.charge_calculation_enum as chargeCalculation, c.is_penalty as penalty, "
                     + "c.is_active as active, oc.name as currencyName, oc.decimal_places as currencyDecimalPlaces, "
                     + "oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
@@ -361,10 +363,14 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             if (taxGroupId != null) {
                 taxGroupData = TaxGroupData.lookup(taxGroupId, taxGroupName);
             }
+            final boolean emiRoundingGoalSeek = rs.getBoolean("emiRoundingGoalSeek");
+            final boolean isGlimCharge = rs.getBoolean("isGlimCharge");
+            final int glimCalculation = rs.getInt("glimChargeCalculation");
+            final EnumOptionData glimChargeCalculation = ChargeEnumerations.glimChargeCalculationType(glimCalculation);
 
             return ChargeData.instance(id, name, amount, currency, chargeTimeType, chargeAppliesToType, chargeCalculationType,
                     chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType, glAccountData,
-                    taxGroupData);
+                    taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation);
         }
     }
 

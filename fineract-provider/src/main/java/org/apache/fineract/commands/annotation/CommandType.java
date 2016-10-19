@@ -18,7 +18,11 @@
  */
 package org.apache.fineract.commands.annotation;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * Specifies the command type for the annotated class.<br/>
@@ -43,4 +47,9 @@ public @interface CommandType {
      * Return the name of the action for this {@link CommandType}.
      */
     String action();
+    
+    /**
+     * Return the name of the sub action for this {@link CommandType}.
+     */
+    String option() default "";
 }

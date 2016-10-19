@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.loanproduct.api;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -40,11 +41,14 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.fineract.accounting.common.AccountingDropdownReadPlatformService;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.producttoaccountmapping.data.ChargeToGLAccountMapper;
+import org.apache.fineract.accounting.producttoaccountmapping.data.CodeValueToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.data.PaymentTypeToGLAccountMapper;
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingReadPlatformService;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -62,6 +66,7 @@ import org.apache.fineract.portfolio.floatingrates.data.FloatingRateData;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
 import org.apache.fineract.portfolio.fund.data.FundData;
 import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
@@ -99,7 +104,7 @@ public class LoanProductsApiResource {
             "floatingRatesId", "interestRateDifferential", "minDifferentialLendingRate", "defaultDifferentialLendingRate",
             "maxDifferentialLendingRate", "isFloatingInterestRateCalculationAllowed", LoanProductConstants.minLoanTerm, 
             LoanProductConstants.maxLoanTerm, LoanProductConstants.loanTenureFrequencyType,
-            LoanProductConstants.considerFutureDisbursmentsInSchedule, LoanProductConstants.canUseForTopup));
+            LoanProductConstants.considerFutureDisbursmentsInSchedule, LoanProductConstants.canUseForTopup ,"writeOffToExpenseAccountMapping"));
 
     private final Set<String> PRODUCT_MIX_DATA_PARAMETERS = new HashSet<>(Arrays.asList("productId", "productName", "restrictedProducts",
             "allowedProducts", "productOptions"));
@@ -128,6 +133,7 @@ public class LoanProductsApiResource {
     private final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer;
     private final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService;
     private final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
     public LoanProductsApiResource(final PlatformSecurityContext context, final LoanProductReadPlatformService readPlatformService,
@@ -145,7 +151,8 @@ public class LoanProductsApiResource {
             PaymentTypeReadPlatformService paymentTypeReadPlatformService,
             final FloatingRatesReadPlatformService floatingRateReadPlatformService,
             final DefaultToApiJsonSerializer<CreditBureauLoanProductMappingData> creditbureauLoanproductDataApiJsonSerializer,
-            final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService,final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService) {
+            final CreditBureauLoanProductMappingReadPlatformService creditBureauLoanProductMappingReadPlatformService,final LoanProductEligibilityReadPlatformService productEligibilityReadPlatformService,
+            final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.context = context;
         this.loanProductReadPlatformService = readPlatformService;
         this.chargeReadPlatformService = chargeReadPlatformService;
@@ -166,6 +173,7 @@ public class LoanProductsApiResource {
         this.creditBureauLoanProductMappingReadPlatformService = creditBureauLoanProductMappingReadPlatformService;
         this.productEligibilityDataToApiJsonSerializer = productEligibilityDataToApiJsonSerializer;
         this.productEligibilityReadPlatformService = productEligibilityReadPlatformService;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     @POST
@@ -250,6 +258,7 @@ public class LoanProductsApiResource {
         Map<String, Object> accountingMappings = null;
         Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
         Collection<ChargeToGLAccountMapper> feeToGLAccountMappings = null;
+        Collection<CodeValueToGLAccountMapper> codeValueToGLAccountMappings = null;
         Collection<ChargeToGLAccountMapper> penaltyToGLAccountMappings = null;
         if (loanProduct.hasAccountingEnabled()) {
             accountingMappings = this.accountMappingReadPlatformService.fetchAccountMappingDetailsForLoanProduct(productId, loanProduct
@@ -257,11 +266,12 @@ public class LoanProductsApiResource {
             paymentChannelToFundSourceMappings = this.accountMappingReadPlatformService
                     .fetchPaymentTypeToFundSourceMappingsForLoanProduct(productId);
             feeToGLAccountMappings = this.accountMappingReadPlatformService
-                    .fetchFeeToIncomeOrLiabilityAccountMappingsForLoanProduct(productId);
+                    .fetchFeeToIncomeOrLiabilityAccountMappingsForLoanProduct(productId);            
             penaltyToGLAccountMappings = this.accountMappingReadPlatformService
                     .fetchPenaltyToIncomeAccountMappingsForLoanProduct(productId);
+            codeValueToGLAccountMappings = this.accountMappingReadPlatformService.fetchCodeValueToExpenseAccountMappingsForLoanProduct(productId);
             loanProduct = LoanProductData.withAccountingDetails(loanProduct, accountingMappings, paymentChannelToFundSourceMappings,
-                    feeToGLAccountMappings, penaltyToGLAccountMappings);
+                    feeToGLAccountMappings, penaltyToGLAccountMappings, codeValueToGLAccountMappings);
         }
 
         if (settings.isTemplate()) {
@@ -337,6 +347,9 @@ public class LoanProductsApiResource {
                 .retrivePreCloseInterestCalculationStrategyOptions();
         final List<FloatingRateData> floatingRateOptions = this.floatingRateReadPlatformService.retrieveLookupActive();
         final boolean closeLoanOnOverpayment = productData.closeLoanOnOverpayment();
+
+        final List<CodeValueData> codeValueOptions = new ArrayList<>(
+                this.codeValueReadPlatformService.retrieveCodeValuesByCode(LoanApiConstants.WRITEOFFREASONS));
         
         return new LoanProductData(productData, chargeOptions, penaltyOptions, paymentTypeOptions, currencyOptions,
                 amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions, repaymentFrequencyTypeOptions,
@@ -344,7 +357,7 @@ public class LoanProductsApiResource {
                 accountingRuleTypeOptions, loanCycleValueConditionTypeOptions, daysInMonthTypeOptions, daysInYearTypeOptions,
                 interestRecalculationCompoundingTypeOptions, rescheduleStrategyTypeOptions, interestRecalculationFrequencyTypeOptions,
                 preCloseInterestCalculationStrategyOptions, floatingRateOptions, interestRecalculationNthDayTypeOptions,
-                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment);
+                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment, codeValueOptions);
     }
 
 }

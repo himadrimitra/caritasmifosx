@@ -115,6 +115,7 @@ public class ProductToGLAccountMappingWritePlatformServiceImpl implements Produc
                 // advanced accounting mappings
                 this.loanProductToGLAccountMappingHelper.savePaymentChannelToFundSourceMappings(command, element, loanProductId, null);
                 this.loanProductToGLAccountMappingHelper.saveChargesToIncomeAccountMappings(command, element, loanProductId, null);
+                this.loanProductToGLAccountMappingHelper.saveCodeValueToExpenseAccountMappings(command, element, loanProductId, null);
                 
                 // subsidy
                 this.createSubsidyProductToGLAccountMapping(loanProductId, element);
@@ -334,6 +335,7 @@ public class ProductToGLAccountMappingWritePlatformServiceImpl implements Produc
                     accountingRuleType);
             this.loanProductToGLAccountMappingHelper.updatePaymentChannelToFundSourceMappings(command, element, loanProductId, changes);
             this.loanProductToGLAccountMappingHelper.updateChargesToIncomeAccountMappings(command, element, loanProductId, changes);
+            this.loanProductToGLAccountMappingHelper.updateCodeValueToAccountMappings(command, element, loanProductId, changes);
         }
         return changes;
     }

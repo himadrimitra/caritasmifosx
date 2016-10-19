@@ -36,6 +36,7 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
+import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
@@ -363,4 +364,8 @@ public class LoanUtilService {
         return disbursementDatas;
     }
 
+    public static Money deductGivenComponent(final Money transactionAmountRemaining, final Money portionOfTransaction) {
+        if (transactionAmountRemaining.isGreaterThanOrEqualTo(portionOfTransaction)) { return portionOfTransaction; }
+        return transactionAmountRemaining;
+    }
 }

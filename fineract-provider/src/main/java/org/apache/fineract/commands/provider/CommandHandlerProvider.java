@@ -19,6 +19,7 @@
 package org.apache.fineract.commands.provider;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.fineract.commands.annotation.CommandType;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nonnull;
+
 import java.util.HashMap;
 
 /**
@@ -67,13 +69,17 @@ public class CommandHandlerProvider implements ApplicationContextAware {
      * for the given entity, action combination can be found.
      * @param entity the entity to lookup the handler, must be given.
      * @param action the action to lookup the handler, must be given.
+     * @param string 
      */
     @Nonnull
-    public NewCommandSourceHandler getHandler (@Nonnull final String entity, @Nonnull final String action) {
+    public NewCommandSourceHandler getHandler (@Nonnull final String entity, @Nonnull final String action, final String option) {
         Preconditions.checkArgument(StringUtils.isNoneEmpty(entity), "An entity must be given!");
         Preconditions.checkArgument(StringUtils.isNoneEmpty(action), "An action must be given!");
 
-        final String key =  entity + "|" + action;
+        String key =  entity + "|" + action;
+        if(option != null && !option.isEmpty()) {
+            key = key + "|" + option;
+        }
         if (!this.registeredHandlers.containsKey(key)) {
             throw new UnsupportedCommandException(key);
         }
@@ -90,7 +96,11 @@ public class CommandHandlerProvider implements ApplicationContextAware {
                     LOGGER.info("Register command handler '" + commandHandlerName + "' ...");
                     final CommandType commandType = this.applicationContext.findAnnotationOnBean(commandHandlerName, CommandType.class);
                     try {
-                        this.registeredHandlers.put(commandType.entity() + "|" + commandType.action(), commandHandlerName);
+                        String commandTypeKey = commandType.entity() + "|" + commandType.action();
+                        if(commandType.option() != null && !commandType.option().isEmpty()) {
+                            commandTypeKey = commandTypeKey + "|" + commandType.option();
+                        }
+                        this.registeredHandlers.put(commandTypeKey, commandHandlerName);
                     } catch (final Throwable th) {
                         LOGGER.error("Unable to register command handler '" + commandHandlerName + "'!", th);
                     }

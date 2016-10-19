@@ -22,7 +22,8 @@ public enum LoanTransactionSubType {
 
     INVALID(0, "loanTransactionType.invalid"),
     UNACCOUTABLE(1, "loanTransactionSubType.unaccountable"),
-    REALIZATION_SUBSIDY(50, "loanTransactionType.realizationSubsidy");
+    REALIZATION_SUBSIDY(50, "loanTransactionType.realizationSubsidy"),
+    PARTIAL_WRITEOFF(51, "loanTransactionType.partialWriteOff");
 
     private final Integer value;
     private final String code;
@@ -51,6 +52,9 @@ public enum LoanTransactionSubType {
             break;
             case 1:
                 transactionSubType = LoanTransactionSubType.UNACCOUTABLE;
+            break;
+            case 51:
+                transactionSubType = LoanTransactionSubType.PARTIAL_WRITEOFF;
             break;
             default:
                 transactionSubType = LoanTransactionSubType.INVALID;

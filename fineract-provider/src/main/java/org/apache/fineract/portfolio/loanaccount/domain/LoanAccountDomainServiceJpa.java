@@ -35,6 +35,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -74,6 +75,7 @@ import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDet
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanForeclosureException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionNotFoundException;
+import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanStateTransitionException;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
@@ -835,7 +837,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         map.put(entityEvent, entity);
         return map;
     }
-
+    
     @Override
     public AdjustedLoanTransactionDetails reverseLoanTransactions(final Loan loan, final Long transactionId,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final String txnExternalId, final Locale locale,
@@ -955,5 +957,131 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 }
             }
         }
+    }
+    
+    @Override
+    public LoanTransaction waiveInterest(Loan loan, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
+            BigDecimal transactionAmount, String noteText, Map<String, Object> changes, List<Long> existingTransactionIds,
+            List<Long> existingReversedTransactionIds) {
+        
+        AppUser currentUser = getAppUserIfPresent();
+        
+        final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
+        Money unrecognizedIncome = transactionAmountAsMoney.zero();
+        Money interestComponent = transactionAmountAsMoney;
+        if (loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
+            Money receivableInterest = loan.getReceivableInterest(transactionDate);
+            if (transactionAmountAsMoney.isGreaterThan(receivableInterest)) {
+                interestComponent = receivableInterest;
+                unrecognizedIncome = transactionAmountAsMoney.minus(receivableInterest);
+            }
+        }
+        
+        final LoanTransaction waiveInterestTransaction = LoanTransaction.waiver(loan.getOffice(), loan, transactionAmountAsMoney,
+                transactionDate, interestComponent, unrecognizedIncome);
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_WAIVE_INTEREST,
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, waiveInterestTransaction));
+        LocalDate recalculateFrom = null;
+        if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            recalculateFrom = transactionDate;
+        }
+
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        final ChangedTransactionDetail changedTransactionDetail = loan.waiveInterest(waiveInterestTransaction,
+                defaultLoanLifecycleStateMachine(), existingTransactionIds, existingReversedTransactionIds, scheduleGeneratorDTO,
+                currentUser);
+
+        this.loanTransactionRepository.save(waiveInterestTransaction);
+
+        /***
+         * TODO Vishwas Batch save is giving me a
+         * HibernateOptimisticLockingFailureException, looping and saving for
+         * the time being, not a major issue for now as this loop is entered
+         * only in edge cases (when a adjustment is made before the latest
+         * payment recorded against the loan)
+         ***/
+        saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
+        if (changedTransactionDetail != null) {
+            for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
+                this.loanTransactionRepository.save(mapEntry.getValue());
+                // update loan with references to the newly created transactions
+                loan.getLoanTransactions().add(mapEntry.getValue());
+                this.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
+            }
+        }
+
+        if (StringUtils.isNotBlank(noteText)) {
+            changes.put("note", noteText);
+            final Note note = Note.loanTransactionNote(loan, waiveInterestTransaction, noteText);
+            this.noteRepository.save(note);
+        }
+        final boolean isAccountTransfer = false;
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
+        recalculateAccruals(loan);
+        this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WAIVE_INTEREST,
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, waiveInterestTransaction));
+        
+        builderResult.withEntityId(waiveInterestTransaction.getId()).withOfficeId(loan.getOfficeId()) //
+                .withClientId(loan.getClientId()) //
+                .withGroupId(loan.getGroupId());
+        
+        return waiveInterestTransaction;
+    }
+
+    @Override
+    public LoanTransaction writeOffForGlimLoan(JsonCommand command, Loan loan, CommandProcessingResultBuilder builderResult,
+            String noteText, Map<String, Object> changes, List<Long> existingTransactionIds, List<Long> existingReversedTransactionIds) {
+
+        AppUser currentUser = getAppUserIfPresent();
+
+        checkClientOrGroupActive(loan);
+
+        LocalDate recalculateFrom = null;
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+
+        final LocalDate writtenOffOnLocalDate = command.localDateValueOfParameterNamed("transactionDate");
+        final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
+        final BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
+
+        LoanTransaction writeoffTransaction = LoanTransaction.writeOffForGlimLoan(loan, loan.getOffice(), writtenOffOnLocalDate,
+                txnExternalId,LoanTransactionSubType.PARTIAL_WRITEOFF.getValue());
+        
+        if (transactionAmount.compareTo(BigDecimal.ZERO) == 0) {
+            final String errorMessage = "The transaction amount must be greater then zero";
+            throw new InvalidLoanStateTransitionException("writeoff", "transaction.amount.must.be.greater.than.zero", errorMessage, writtenOffOnLocalDate);
+        }
+
+        final ChangedTransactionDetail changedTransactionDetail = loan.GlimLoanCloseAsWrittenOff(command, writtenOffOnLocalDate,
+                writeoffTransaction, defaultLoanLifecycleStateMachine(), changes, existingTransactionIds, existingReversedTransactionIds,
+                currentUser, scheduleGeneratorDTO);
+        
+        
+
+        saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
+        if (changedTransactionDetail != null) {
+            for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
+                this.loanTransactionRepository.save(mapEntry.getValue());
+                // update loan with references to the newly created transactions
+                loan.getLoanTransactions().add(mapEntry.getValue());
+                updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
+            }
+        }
+
+        if (StringUtils.isNotBlank(noteText)) {
+            changes.put("note", noteText);
+            final Note note = Note.loanTransactionNote(loan, writeoffTransaction, noteText);
+            this.noteRepository.save(note);
+        }
+        final boolean isAccountTransfer = false;
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
+        recalculateAccruals(loan);
+        this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WRITTEN_OFF,
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, writeoffTransaction));
+
+        builderResult.withEntityId(writeoffTransaction.getId()).withOfficeId(loan.getOfficeId()) //
+                .withClientId(loan.getClientId()) //
+                .withGroupId(loan.getGroupId());
+
+        return writeoffTransaction;
     }
 }

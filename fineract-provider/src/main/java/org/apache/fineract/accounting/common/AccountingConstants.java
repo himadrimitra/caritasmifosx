@@ -107,7 +107,9 @@ public class AccountingConstants {
                 "transfersInSuspenseAccountId"), PAYMENT_CHANNEL_FUND_SOURCE_MAPPING("paymentChannelToFundSourceMappings"), PAYMENT_TYPE(
                 "paymentTypeId"), FEE_INCOME_ACCOUNT_MAPPING("feeToIncomeAccountMappings"), PENALTY_INCOME_ACCOUNT_MAPPING(
                 "penaltyToIncomeAccountMappings"), CHARGE_ID("chargeId"), INCOME_ACCOUNT_ID("incomeAccountId"), INCOME_FROM_RECOVERY(
-                "incomeFromRecoveryAccountId"), SUBSIDY_FUND_SOURCE("subsidyFundSourceId"), SUBSIDY_ACCOUNT("subsidyAccountId");
+                "incomeFromRecoveryAccountId"), SUBSIDY_FUND_SOURCE("subsidyFundSourceId"), 
+                EXPENSE_ACCOUNT_ID("expenseAccountId"), SUBSIDY_ACCOUNT("subsidyAccountId"),
+                CODE_VALUE_ID("codeValueId"), CODE_VALUE_ACCOUNTING_MAPPING("codeValueSpecificAccountMapping");
 
         private final String value;
 

@@ -120,6 +120,7 @@ import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.command.LoanUpdateCommand;
 import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataValidator;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidByData;
@@ -127,12 +128,16 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanInstallmentChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanChargeRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanEvent;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallment;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallmentRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInstallmentCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanLifecycleStateMachine;
@@ -247,6 +252,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final StandingInstructionWritePlatformService standingInstructionWritePlatformService;
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
+    private final GroupLoanIndividualMonitoringRepository glimRepository;
+    private final GroupLoanIndividualMonitoringAssembler glimAssembler;
+    private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
 
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -278,7 +286,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanScheduleAssembler loanScheduleAssembler,
             final CodeValueRepositoryWrapper codeValueRepository,final StandingInstructionWritePlatformService standingInstructionWritePlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
-            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService) {
+            final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
+            final GroupLoanIndividualMonitoringRepository glimRepository,
+            final GroupLoanIndividualMonitoringAssembler glimAssembler,
+            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository) {
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
         this.loanAssembler = loanAssembler;
@@ -320,6 +331,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.standingInstructionWritePlatformService = standingInstructionWritePlatformService;
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
         this.workingDayExcumptionsReadPlatformService  = workingDayExcumptionsReadPlatformService;
+        this.glimRepository = glimRepository;
+        this.glimAssembler = glimAssembler;
+        this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -352,6 +366,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         
         // check for product mix validations
         checkForProductMixRestrictions(loan);
+        
+        // validate for glim application
+        if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
+        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoring(command, LoanApiConstants.principalDisbursedParameterName);
+        }
         
         LocalDate recalculateFrom = null;
         if (loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
@@ -457,7 +476,17 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 disbursementTransaction.updateLoan(loan);
                 loan.getLoanTransactions().add(disbursementTransaction);
             }
-
+            
+            //update disbursed amount for each client in glim
+            if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
+            	List<GroupLoanIndividualMonitoring> glimList = this.glimAssembler.updateFromJson(command.parsedJson(), "disbursedAmount", 
+                        loan, loan.fetchNumberOfInstallmensAfterExceptions(), loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate());
+                loan.updateGlim(glimList);
+                loan.updateDefautGlimMembers(glimList);
+                this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(), loan.fetchNumberOfInstallmensAfterExceptions(),
+                        glimList);
+            }
+            
             regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate, rescheduledRepaymentDate);
             if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             	createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
@@ -796,7 +825,31 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final LocalDate recalculateFrom = null;
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        if(loan.isGLIMLoan()){
+            List<GroupLoanIndividualMonitoring> glimList = this.glimRepository.findByLoanId(loanId);
+            List<Long> glimIds = new ArrayList<Long>();
+            List<GroupLoanIndividualMonitoring> approvedGlimMembers = new ArrayList<>();
+            HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
+            for (GroupLoanIndividualMonitoring glim : glimList) {
+                final BigDecimal approvedAmount = glim.getApprovedAmount();
+                if (approvedAmount != null) {
+                    glimIds.add(glim.getId());
+                    approvedGlimMembers.add(glim);
+                    glim.setIsClientSelected(true);
+                    glim.undoGlimTransaction();
+                    glim.resetDerievedComponents();
+                    this.glimAssembler.recalculateTotalFeeCharges(loan, chargesMap, approvedAmount,
+                            glim.getGroupLoanIndividualMonitoringCharges());
+                }
+            }
+            List<LoanGlimRepaymentScheduleInstallment> loanGlimRepaymentScheduleInstallments = this.loanGlimRepaymentScheduleInstallmentRepository.getLoanGlimRepaymentScheduleInstallmentByGlimIds(glimIds);
+            this.loanGlimRepaymentScheduleInstallmentRepository.deleteInBatch(loanGlimRepaymentScheduleInstallments);
+            this.glimAssembler.updateLoanChargesForGlim(loan, chargesMap);
+            loan.updateGlim(approvedGlimMembers);
+            this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(),
+                    loan.fetchNumberOfInstallmensAfterExceptions(), approvedGlimMembers);
 
+        }        
         final Map<String, Object> changes = loan.undoDisbursal(scheduleGeneratorDTO, existingTransactionIds,
                 existingReversedTransactionIds, currentUser);
 
@@ -837,7 +890,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     public CommandProcessingResult makeLoanRepayment(final Long loanId, final JsonCommand command, final boolean isRecoveryRepayment) {
 
         this.loanEventApiJsonValidator.validateNewRepaymentTransaction(command.json());
-
+        
         final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
         final BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
@@ -1015,6 +1068,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
         final Locale locale = command.extractLocale();
         final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
+        if (loan.isGLIMLoan()) {
+            List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
+            loan.updateDefautGlimMembers(defaultGlimMembers);
+        }
         final String noteText = command.stringValueOfParameterNamed("note");
         final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createPaymentDetail(command, changes);
         Long fromAccountId = null;
@@ -1067,8 +1124,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     @Override
     public CommandProcessingResult waiveInterestOnLoan(final Long loanId, final JsonCommand command) {
 
-        AppUser currentUser = getAppUserIfPresent();
-
         this.loanEventApiJsonValidator.validateTransaction(command.json());
 
         final Map<String, Object> changes = new LinkedHashMap<>();
@@ -1085,7 +1140,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
 
-        final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
+        /*final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
         Money unrecognizedIncome = transactionAmountAsMoney.zero();
         Money interestComponent = transactionAmountAsMoney;
         if (loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
@@ -1094,9 +1149,15 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 interestComponent = receivableInterest;
                 unrecognizedIncome = transactionAmountAsMoney.minus(receivableInterest);
             }
+<<<<<<< HEAD
         }
         final LoanTransaction waiveInterestTransaction = LoanTransaction.waiver(loan.getOffice(), loan, transactionAmountAsMoney,
                 transactionDate, interestComponent, unrecognizedIncome);
+=======
+        }*/
+        /*final LoanTransaction waiveInterestTransaction = LoanTransaction.waiver(loan.getOffice(), loan, transactionAmountAsMoney,
+                transactionDate, interestComponent, unrecognizedIncome, DateUtils.getLocalDateTimeOfTenant(), currentUser);
+>>>>>>> upstream/Phakamani_pre_release
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_WAIVE_INTEREST,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, waiveInterestTransaction));
         LocalDate recalculateFrom = null;
@@ -1111,13 +1172,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         this.loanTransactionRepository.save(waiveInterestTransaction);
 
-        /***
+        *//***
          * TODO Vishwas Batch save is giving me a
          * HibernateOptimisticLockingFailureException, looping and saving for
          * the time being, not a major issue for now as this loop is entered
          * only in edge cases (when a waiver is made before the latest payment
          * recorded against the loan)
-         ***/
+         ***//*
         saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
         if (changedTransactionDetail != null) {
             for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
@@ -1126,10 +1187,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 loan.getLoanTransactions().add(mapEntry.getValue());
                 this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
             }
-        }
+        }*/
 
         final String noteText = command.stringValueOfParameterNamed("note");
-        if (StringUtils.isNotBlank(noteText)) {
+        final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
+        /*if (StringUtils.isNotBlank(noteText)) {
             changes.put("note", noteText);
             final Note note = Note.loanTransactionNote(loan, waiveInterestTransaction, noteText);
             this.noteRepository.save(note);
@@ -1138,13 +1200,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
         this.loanAccountDomainService.recalculateAccruals(loan);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WAIVE_INTEREST,
-                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, waiveInterestTransaction));
-        return new CommandProcessingResultBuilder() //
-                .withCommandId(command.commandId()) //
-                .withEntityId(waiveInterestTransaction.getId()) //
-                .withOfficeId(loan.getOfficeId()) //
-                .withClientId(loan.getClientId()) //
-                .withGroupId(loan.getGroupId()) //
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, waiveInterestTransaction));*/
+        this.loanAccountDomainService.waiveInterest(loan, commandProcessingResultBuilder, transactionDate, transactionAmount, noteText, 
+                changes, existingTransactionIds, existingReversedTransactionIds);
+        return commandProcessingResultBuilder.withCommandId(command.commandId()) //
                 .withLoanId(loanId) //
                 .with(changes) //
                 .build();
@@ -1183,7 +1242,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             recalculateFrom = command.localDateValueOfParameterNamed("transactionDate");
         }
-
+        
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.closeAsWrittenOff(command, defaultLoanLifecycleStateMachine(),
@@ -1704,6 +1763,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(productId,
                 isPenalty);
         this.loanProductBusinessRuleValidator.validateLoanProductChargeMandatoryOrNot(chargeIdList, loanCharge.getCharge().getId());
+        
+        if (loan.isGLIMLoan()) {
+            throw new LoanChargeCannotBeDeletedException(LOAN_CHARGE_CANNOT_BE_DELETED_REASON.GLIM_LOAN_CHARGE, loanCharge.getId()); 
+        }
 
         // Charges may be deleted only when the loan associated with them are
         // yet to be approved (are in submitted and pending status)
