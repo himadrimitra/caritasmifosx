@@ -79,6 +79,7 @@ public class LoanAccountData {
     private final String clientAccountNo;
     private final Long pledgeId;
     private final String clientName;
+    private final String mobileNo;
     private final Long clientOfficeId;
     private final GroupGeneralData group;
     private final Long loanProductId;
@@ -1402,7 +1403,7 @@ public class LoanAccountData {
      * query.
      */
     public static LoanAccountData basicLoanDetails(final Long id, final String accountNo, final LoanStatusEnumData status,
-            final String externalId, final Long clientId, final String clientAccountNo, final String clientName, final Long clientOfficeId,
+            final String externalId, final Long clientId, final String clientAccountNo, final String clientName, final String mobileNo, final Long clientOfficeId,
             final GroupGeneralData group, final EnumOptionData loanType, final Long loanProductId, final String loanProductName,
             final String loanProductDescription, final boolean isLoanProductLinkedToFloatingRate, final Long fundId, final String fundName,
             final Long loanPurposeId, final String loanPurposeName, final Long loanOfficerId, final String loanOfficerName,
@@ -1466,7 +1467,7 @@ public class LoanAccountData {
         final Collection<InterestRatePeriodData> interestRatesPeriods = null;
         final Collection<LoanAccountSummaryData> clientActiveLoanOptions = null;
 
-        return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
+        return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal,
                 approvedPrincipal, totalOverpaid, inArrearsTolerance, termFrequency, termPeriodFrequencyType, numberOfRepayments,
@@ -1823,6 +1824,263 @@ public class LoanAccountData {
         this.clientId = clientId;
         this.clientAccountNo = clientAccountNo;
         this.clientName = clientName;
+        this.mobileNo = null;
+        this.clientOfficeId = clientOfficeId;
+        this.group = group;
+        this.loanType = loanType;
+        this.loanProductId = loanProductId;
+        this.loanProductName = loanProductName;
+        this.loanProductDescription = loanProductDescription;
+        this.isLoanProductLinkedToFloatingRate = isLoanProductLinkedToFloatingRate;
+        this.fundId = fundId;
+        this.fundName = fundName;
+        this.loanPurposeId = loanPurposeId;
+        this.pledgeId = pledgeId;
+        this.loanPurposeName = loanPurposeName;
+        this.loanOfficerId = loanOfficerId;
+        this.loanOfficerName = loanOfficerName;
+        this.currency = currency;
+        this.proposedPrincipal = proposedPrincipal;
+        this.principal = principal;
+        this.approvedPrincipal = approvedPrincipal;
+        this.totalOverpaid = totalOverpaid;
+        this.inArrearsTolerance = inArrearsTolerance;
+        this.termFrequency = termFrequency;
+        this.termPeriodFrequencyType = termPeriodFrequencyType;
+        this.numberOfRepayments = numberOfRepayments;
+        this.repaymentEvery = repaymentEvery;
+        this.repaymentFrequencyType = repaymentFrequencyType;
+        this.repaymentFrequencyNthDayType = repaymentFrequencyNthDayType;
+        this.repaymentFrequencyDayOfWeekType = repaymentFrequencyDayOfWeekType;
+        this.transactionProcessingStrategyId = transactionProcessingStrategyId;
+        this.transactionProcessingStrategyName = transactionProcessingStrategyName;
+        this.amortizationType = amortizationType;
+        this.interestRatePerPeriod = interestRatePerPeriod;
+        this.interestRateFrequencyType = interestRateFrequencyType;
+        this.annualInterestRate = annualInterestRate;
+        this.interestType = interestType;
+        this.isFloatingInterestRate = isFloatingInterestRate;
+        this.interestRateDifferential = interestRateDifferential;
+        this.interestCalculationPeriodType = interestCalculationPeriodType;
+        this.allowPartialPeriodInterestCalcualtion = allowPartialPeriodInterestCalcualtion;
+        this.expectedFirstRepaymentOnDate = expectedFirstRepaymentOnDate;
+        this.graceOnPrincipalPayment = graceOnPrincipalPayment;
+        this.recurringMoratoriumOnPrincipalPeriods = recurringMoratoriumOnPrincipalPeriods;
+
+        this.graceOnInterestPayment = graceOnInterestPayment;
+        this.graceOnInterestCharged = graceOnInterestCharged;
+        this.interestChargedFromDate = interestChargedFromDate;
+        this.timeline = timeline;
+        this.feeChargesAtDisbursementCharged = feeChargesDueAtDisbursementCharged;
+        this.syncDisbursementWithMeeting = syncDisbursementWithMeeting;
+
+        // totals
+        this.summary = summary;
+
+        // associations
+        this.repaymentSchedule = repaymentSchedule;
+        this.transactions = transactions;
+        this.charges = charges;
+        this.collateral = collateral;
+        this.guarantors = guarantors;
+        this.meeting = meeting;
+        this.notes = notes;
+
+        // template
+        this.productOptions = productOptions;
+        this.termFrequencyTypeOptions = termFrequencyTypeOptions;
+        this.repaymentFrequencyTypeOptions = repaymentFrequencyTypeOptions;
+        this.repaymentFrequencyNthDayTypeOptions = repaymentFrequencyNthDayTypeOptions;
+        this.repaymentFrequencyDaysOfWeekTypeOptions = repaymentFrequencyDaysOfWeekTypeOptions;
+        this.interestRateFrequencyTypeOptions = interestRateFrequencyTypeOptions;
+        this.amortizationTypeOptions = amortizationTypeOptions;
+        this.interestTypeOptions = interestTypeOptions;
+        this.interestCalculationPeriodTypeOptions = interestCalculationPeriodTypeOptions;
+
+        if (CollectionUtils.isEmpty(transactionProcessingStrategyOptions)) {
+            this.transactionProcessingStrategyOptions = null;
+        } else {
+            this.transactionProcessingStrategyOptions = transactionProcessingStrategyOptions;
+        }
+
+        if (CollectionUtils.isEmpty(fundOptions)) {
+            this.fundOptions = null;
+        } else {
+            this.fundOptions = fundOptions;
+        }
+
+        if (CollectionUtils.isEmpty(chargeOptions)) {
+            this.chargeOptions = null;
+        } else {
+            this.chargeOptions = chargeOptions;
+        }
+
+        if (CollectionUtils.isEmpty(loanOfficerOptions)) {
+            this.loanOfficerOptions = null;
+        } else {
+            this.loanOfficerOptions = loanOfficerOptions;
+        }
+
+        if (CollectionUtils.isEmpty(loanPurposeOptions)) {
+            this.loanPurposeOptions = null;
+        } else {
+            this.loanPurposeOptions = loanPurposeOptions;
+        }
+
+        if (CollectionUtils.isEmpty(loanCollateralOptions)) {
+            this.loanCollateralOptions = null;
+        } else {
+            this.loanCollateralOptions = loanCollateralOptions;
+        }
+
+        if (CollectionUtils.isEmpty(calendarOptions)) {
+            this.calendarOptions = null;
+        } else {
+            this.calendarOptions = calendarOptions;
+        }
+
+        if (CollectionUtils.isEmpty(loanProductCollateralPledgesOptions)) {
+            this.loanProductCollateralPledgesOptions = null;
+        } else {
+            this.loanProductCollateralPledgesOptions = loanProductCollateralPledgesOptions;
+        }
+
+        this.loanCounter = loanCounter;
+        this.loanProductCounter = loanProductCounter;
+
+        this.linkedAccount = linkedAccount;
+        this.accountLinkingOptions = accountLinkingOptions;
+        this.disbursementDetails = disbursementDetails;
+        this.multiDisburseLoan = multiDisburseLoan;
+
+        this.canDefineInstallmentAmount = canDefineInstallmentAmount;
+        this.fixedEmiAmount = fixedEmiAmount;
+        this.maxOutstandingLoanBalance = maxOutstandingLoanBalance;
+
+        if (this.status != null && LoanStatus.fromInt(this.status.id().intValue()).isApproved()) {
+            this.canDisburse = true;
+        } else {
+            boolean canDisburse = false;
+            if (this.multiDisburseLoan != null && this.multiDisburseLoan && this.disbursementDetails != null) {
+                for (DisbursementData disbursementData : this.disbursementDetails) {
+                    if (!disbursementData.isDisbursed()) {
+                        canDisburse = true;
+                    }
+                }
+            }
+            this.canDisburse = canDisburse;
+        }
+        this.emiAmountVariations = emiAmountVariations;
+        this.memberVariations = memberVariations;
+        this.product = product;
+        this.inArrears = inArrears;
+        this.graceOnArrearsAgeing = graceOnArrearsAgeing;
+        this.overdueCharges = overdueCharges;
+        this.isNPA = isNPA;
+
+        this.daysInMonthType = daysInMonthType;
+        this.daysInYearType = daysInYearType;
+        this.isInterestRecalculationEnabled = isInterestRecalculationEnabled;
+        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
+        this.interestRecalculationData = interestRecalculationData;
+        this.originalSchedule = originalSchedule;
+        this.createStandingInstructionAtDisbursement = createStandingInstructionAtDisbursement;
+        this.paidInAdvance = paidInAdvance;
+        if (this.product != null) {
+            this.product.setloanProductConfigurableAttributes(product.getloanProductConfigurableAttributes());
+        }
+        this.interestRatesPeriods = interestRatesPeriods;
+        this.isVariableInstallmentsAllowed = isVariableInstallmentsAllowed;
+        this.minimumGap = minimumGap;
+        this.maximumGap = maximumGap;
+        this.canUseForTopup = canUseForTopup;
+        this.clientActiveLoanOptions = clientActiveLoanOptions;
+        this.isTopup = isTopup;
+        this.closureLoanId = closureLoanId;
+        this.closureLoanAccountNo = closureLoanAccountNo;
+        this.topupAmount = topupAmount;
+
+    }
+    
+    private LoanAccountData(
+            final Long id, //
+            final String accountNo, //
+            final LoanStatusEnumData status, //
+            final String externalId, //
+            final Long clientId,
+            final String clientAccountNo,
+            final String clientName,
+            final String mobileNo,
+            final Long clientOfficeId, //
+            final GroupGeneralData group,
+            final EnumOptionData loanType,
+            final Long loanProductId,
+            final String loanProductName,
+            final String loanProductDescription, //
+            final boolean isLoanProductLinkedToFloatingRate,
+            final Long fundId,
+            final String fundName,
+            final Long loanPurposeId,
+            final String loanPurposeName, //
+            final Long loanOfficerId,
+            final String loanOfficerName, //
+            final CurrencyData currency,
+            BigDecimal proposedPrincipal,
+            final BigDecimal principal,
+            final BigDecimal approvedPrincipal,
+            final BigDecimal totalOverpaid, //
+            final BigDecimal inArrearsTolerance,
+            final Integer termFrequency, //
+            final EnumOptionData termPeriodFrequencyType,
+            final Integer numberOfRepayments,
+            final Integer repaymentEvery,
+            final EnumOptionData repaymentFrequencyType, //
+            final EnumOptionData repaymentFrequencyNthDayType, final EnumOptionData repaymentFrequencyDayOfWeekType,
+            final Long transactionProcessingStrategyId, final String transactionProcessingStrategyName,
+            final EnumOptionData amortizationType, final BigDecimal interestRatePerPeriod, final EnumOptionData interestRateFrequencyType,
+            final BigDecimal annualInterestRate, final EnumOptionData interestType, final boolean isFloatingInterestRate,
+            final BigDecimal interestRateDifferential, final EnumOptionData interestCalculationPeriodType,
+            final Boolean allowPartialPeriodInterestCalcualtion, final LocalDate expectedFirstRepaymentOnDate,
+            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
+            final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final LocalDate interestChargedFromDate,
+            final LoanApplicationTimelineData timeline, final LoanSummaryData summary, final BigDecimal feeChargesDueAtDisbursementCharged,
+            final LoanScheduleData repaymentSchedule, final Collection<LoanTransactionData> transactions,
+            final Collection<LoanChargeData> charges, final Collection<CollateralData> collateral,
+            final Collection<GuarantorData> guarantors, final CalendarData meeting, final Collection<LoanProductData> productOptions,
+            final Collection<EnumOptionData> termFrequencyTypeOptions, final Collection<EnumOptionData> repaymentFrequencyTypeOptions,
+            final Collection<EnumOptionData> repaymentFrequencyNthDayTypeOptions,
+            final Collection<EnumOptionData> repaymentFrequencyDaysOfWeekTypeOptions,
+            final Collection<TransactionProcessingStrategyData> transactionProcessingStrategyOptions,
+            final Collection<EnumOptionData> interestRateFrequencyTypeOptions, final Collection<EnumOptionData> amortizationTypeOptions,
+            final Collection<EnumOptionData> interestTypeOptions, final Collection<EnumOptionData> interestCalculationPeriodTypeOptions,
+            final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions, final ChargeData chargeTemplate,
+            final Collection<StaffData> loanOfficerOptions, final Collection<LoanPurposeData> loanPurposeOptions,
+            final Collection<CodeValueData> loanCollateralOptions, final Collection<CalendarData> calendarOptions,
+            final Boolean syncDisbursementWithMeeting, final Integer loanCounter, final Integer loanProductCounter,
+            final Collection<NoteData> notes, final Collection<PortfolioAccountData> accountLinkingOptions,
+            final PortfolioAccountData linkedAccount, final Collection<DisbursementData> disbursementDetails,
+            final Boolean multiDisburseLoan, final Boolean canDefineInstallmentAmount, BigDecimal fixedEmiAmount,
+            final BigDecimal maxOutstandingLoanBalance, final Collection<LoanTermVariationsData> emiAmountVariations,
+            final Map<Long, LoanBorrowerCycleData> memberVariations, final LoanProductData product, final Boolean inArrears,
+            final Integer graceOnArrearsAgeing, final Collection<ChargeData> overdueCharges, final Boolean isNPA,
+            final EnumOptionData daysInMonthType, final EnumOptionData daysInYearType, final boolean isInterestRecalculationEnabled,
+            final LoanInterestRecalculationData interestRecalculationData, final LoanScheduleData originalSchedule,
+            final Boolean createStandingInstructionAtDisbursement, final PaidInAdvanceData paidInAdvance,
+            final Collection<PledgeData> loanProductCollateralPledgesOptions, final Long pledgeId,
+            final Collection<InterestRatePeriodData> interestRatesPeriods, final Boolean isVariableInstallmentsAllowed,
+            final Integer minimumGap, final Integer maximumGap, final boolean considerFutureDisbursmentsInSchedule,
+            final EnumOptionData subStatus, final Boolean canUseForTopup, final Collection<LoanAccountSummaryData> clientActiveLoanOptions,
+            final boolean isTopup, final Long closureLoanId, final String closureLoanAccountNo, final BigDecimal topupAmount) {
+
+        this.id = id;
+        this.accountNo = accountNo;
+        this.status = status;
+        this.subStatus = subStatus;
+        this.externalId = externalId;
+        this.clientId = clientId;
+        this.clientAccountNo = clientAccountNo;
+        this.clientName = clientName;
+        this.mobileNo = mobileNo;
         this.clientOfficeId = clientOfficeId;
         this.group = group;
         this.loanType = loanType;

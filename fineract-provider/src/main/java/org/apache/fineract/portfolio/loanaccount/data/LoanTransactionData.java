@@ -69,6 +69,7 @@ public class LoanTransactionData {
     private String loanAccountNumber = null;
     private  Collection<CodeValueData> writeOffReasonOptions = null;
     private final Collection<TransactionAuthenticationData> transactionAuthenticationOptions;
+    private final LoanAccountData loanAccountData;
 
     public static LoanTransactionData templateOnTop(final LoanTransactionData loanTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
@@ -169,6 +170,7 @@ public class LoanTransactionData {
         this.manuallyReversed = manuallyReversed;
         this.possibleNextRepaymentDate = null;
         this.transactionAuthenticationOptions = null;
+        this.loanAccountData = null;
     }
 
     public LoanTransactionData(Long id, LoanTransactionEnumData transactionType, LocalDate date, BigDecimal totalAmount,
@@ -235,6 +237,7 @@ public class LoanTransactionData {
          this.manuallyReversed = manuallyReversed;
          this.possibleNextRepaymentDate = possibleNextRepaymentDate;
          this.transactionAuthenticationOptions = transactionAuthenticationOptions;
+         this.loanAccountData = null;
 	}
 
     private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -266,12 +269,44 @@ public class LoanTransactionData {
         this.transactionAuthenticationOptions = null;
         this.groupExternalId = groupExternalId;
         this.loanAccountNumber = loanAccountNumber;
+        this.loanAccountData = null;
     }
 
     public static LoanTransactionData LoanTransactionDataForReconciliationLoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
             final LocalDate date, final BigDecimal amount,final String groupExternalId, final String loanAccountNumber) {
         return new LoanTransactionData(id, officeId, officeName, transactionType, date, amount,groupExternalId, loanAccountNumber);
 
+    }
+    
+    public LoanTransactionData(final LoanTransactionData loanTransactionData, final LoanAccountData loanAccountData){
+    	this.id = loanTransactionData.id;
+        this.officeId = loanTransactionData.officeId;
+        this.officeName = loanTransactionData.officeName;
+        this.type = loanTransactionData.type;
+        this.paymentDetailData = loanTransactionData.paymentDetailData;
+        this.currency = loanTransactionData.currency;
+        this.date = loanTransactionData.date;
+        this.amount = loanTransactionData.amount;
+        this.principalPortion = loanTransactionData.principalPortion;
+        this.interestPortion = loanTransactionData.interestPortion;
+        this.feeChargesPortion = loanTransactionData.feeChargesPortion;
+        this.penaltyChargesPortion = loanTransactionData.penaltyChargesPortion;
+        this.unrecognizedIncomePortion = loanTransactionData.unrecognizedIncomePortion;
+        this.paymentTypeOptions = loanTransactionData.paymentTypeOptions;
+        this.externalId = loanTransactionData.externalId;
+        this.transfer = loanTransactionData.transfer;
+        this.overpaymentPortion = loanTransactionData.overpaymentPortion;
+        this.fixedEmiAmount = loanTransactionData.fixedEmiAmount;
+        this.outstandingLoanBalance = loanTransactionData.outstandingLoanBalance;
+        this.submittedOnDate = loanTransactionData.submittedOnDate;
+        this.manuallyReversed = loanTransactionData.manuallyReversed;
+        this.possibleNextRepaymentDate = loanTransactionData.possibleNextRepaymentDate;
+        this.transactionAuthenticationOptions = loanTransactionData.transactionAuthenticationOptions;
+        this.loanAccountData = loanAccountData;
+    }
+    
+    public static LoanTransactionData LoanTransactionRepaymentTemplate(final LoanTransactionData loanTransactionData, final LoanAccountData loanAccountData){
+    	return new LoanTransactionData(loanTransactionData, loanAccountData);
     }
 
     public LocalDate dateOf() {
