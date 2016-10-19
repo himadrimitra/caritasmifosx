@@ -339,6 +339,7 @@ public class AccountTransferTest {
                 this.responseSpec, toLoanID, "transactions");
         HashMap transaction = transactionschedule.get(2);
         String transactionId = String.valueOf(transaction.get("id"));
+        
 
         this.journalEntryHelper.checkJournalEntryForLiabilityAccount(liabilityAccount, "1 March 2013", new JournalEntry(3000.0f,
                 JournalEntry.TransactionType.DEBIT));
@@ -348,8 +349,9 @@ public class AccountTransferTest {
 
         this.journalEntryHelper.checkJournalEntryForAssetAccount(loanAssetAccount, "1 March 2013", new JournalEntry(2718.82f,
                 JournalEntry.TransactionType.CREDIT));
+        
 
-        toLoanStatusHashMap = this.loanTransactionHelper.undoRepayment(toLoanID, transactionId);
+        toLoanStatusHashMap = this.loanTransactionHelper.undoRepayment(toLoanID, transactionId, "16 August 2016");
 
         this.journalEntryHelper.checkJournalEntryForLiabilityAccount(liabilityAccount, "1 March 2013", new JournalEntry(3000.0f,
                 JournalEntry.TransactionType.CREDIT));
@@ -429,7 +431,7 @@ public class AccountTransferTest {
         this.journalEntryHelper.checkJournalEntryForAssetAccount(loanAssetAccount, "11 March 2013", new JournalEntry(2100.99f,
                 JournalEntry.TransactionType.DEBIT));
 
-        toLoanStatusHashMap = this.loanTransactionHelper.undoRepayment(toLoanID, transactionId);
+        toLoanStatusHashMap = this.loanTransactionHelper.undoRepayment(toLoanID, transactionId, "16 August 2016");
 
         this.journalEntryHelper.checkJournalEntryForAssetAccount(loanAssetAccount, "11 March 2013", new JournalEntry(1940.99f,
                 JournalEntry.TransactionType.CREDIT));
@@ -566,7 +568,7 @@ public class AccountTransferTest {
         String transactionId = String.valueOf(transaction.get("id"));
         @SuppressWarnings("unchecked")
         ArrayList<HashMap> accountTransferError = (ArrayList<HashMap>) validationErrorLoanHelper.undoRepaymentError(toLoanID,
-                transactionId, CommonConstants.RESPONSE_ERROR);
+                transactionId, CommonConstants.RESPONSE_ERROR, "16 August 2016");
         assertEquals("error.msg.account.closed.exception",
                 accountTransferError.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
     }

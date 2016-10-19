@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -677,14 +678,16 @@ public class LoanCharge extends AbstractPersistable<Long> {
 
     private void updateInstallmentCharges() {
         final Collection<LoanInstallmentCharge> remove = new HashSet<>();
-        final Set<LoanInstallmentCharge> chargePerInstallments = this.loan.generateInstallmentLoanCharges(this);
+        final List<LoanInstallmentCharge> chargePerInstallments = this.loan.generateInstallmentLoanCharges(this);
+        Collections.sort(chargePerInstallments);
         if (this.loanInstallmentCharge.isEmpty()) {
             this.loanInstallmentCharge.addAll(chargePerInstallments);
         } else {
             int index = 0;
             final LoanInstallmentCharge[] loanChargePerInstallments = new LoanInstallmentCharge[chargePerInstallments.size()];
             final LoanInstallmentCharge[] loanChargePerInstallmentArray = chargePerInstallments.toArray(loanChargePerInstallments);
-            for (final LoanInstallmentCharge chargePerInstallment : this.loanInstallmentCharge) {
+            List<LoanInstallmentCharge> loanInstallmentCharge = installmentCharges();
+            for (final LoanInstallmentCharge chargePerInstallment : loanInstallmentCharge) {
                 if (index == loanChargePerInstallmentArray.length) {
                     remove.add(chargePerInstallment);
                     chargePerInstallment.updateInstallment(null);
@@ -693,7 +696,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 }
             }
             this.loanInstallmentCharge.removeAll(remove);
-            while (index < loanChargePerInstallmentArray.length - 1) {
+            while (index < loanChargePerInstallmentArray.length) {
                 this.loanInstallmentCharge.add(loanChargePerInstallmentArray[index++]);
             }
         }
@@ -857,6 +860,10 @@ public class LoanCharge extends AbstractPersistable<Long> {
 
     public boolean isWaived() {
         return this.waived;
+    }
+    
+    public void undoWaive() {
+         this.waived = false;
     }
 
     public BigDecimal getMinCap() {
@@ -1027,8 +1034,10 @@ public class LoanCharge extends AbstractPersistable<Long> {
         return this.loanInstallmentCharge.isEmpty();
     }
 
-    public Set<LoanInstallmentCharge> installmentCharges() {
-        return this.loanInstallmentCharge;
+    public List<LoanInstallmentCharge> installmentCharges() {
+    	List<LoanInstallmentCharge> installmentCharges = new ArrayList<>(this.loanInstallmentCharge);
+    	Collections.sort(installmentCharges);
+        return installmentCharges;
     }
 
     public List<LoanChargePaidDetail> fetchRepaymentInstallment(final MonetaryCurrency currency) {
@@ -1087,6 +1096,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public void updateWaivedAmount(MonetaryCurrency currency) {
         if (isInstalmentFee()) {
             this.amountWaived = BigDecimal.ZERO;
+            this.amountOutstanding = calculateOutstanding();
             for (final LoanInstallmentCharge chargePerInstallment : this.loanInstallmentCharge) {
                 final Money amountWaived = chargePerInstallment.updateWaivedAndAmountPaidThroughChargePaymentAmount(currency);
                 this.amountWaived = MathUtility.add(this.amountWaived ,amountWaived.getAmount());

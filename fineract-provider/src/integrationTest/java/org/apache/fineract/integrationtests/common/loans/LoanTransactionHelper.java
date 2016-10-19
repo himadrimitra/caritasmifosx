@@ -217,25 +217,25 @@ public class LoanTransactionHelper {
         return performUndoLastLoanDisbursementTransaction(createLoanOperationURL(UNDO_LAST_DISBURSE_LOAN_COMMAND, loanID), undoLastDisburseJson);
     }
 	
-    public HashMap undoRepayment(final Integer loanID, final String transactionId) {
+    public HashMap undoRepayment(final Integer loanID, final String transactionId, final String transactionDate) {
         final String url = createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId);
         System.out.println("UNDO LOAN REPAYMENT URL " + url);
-        return performLoanTransaction(createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId), undoRepaymentJson());
+        return performLoanTransaction(createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId), undoRepaymentJson(transactionDate));
     }
 
-    public Object undoRepaymentError(final Integer loanID, final String transactionId, String jsonAttributeToGetBack) {
+    public Object undoRepaymentError(final Integer loanID, final String transactionId, String jsonAttributeToGetBack, String transactionDate) {
         final String url = createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId);
         System.out.println("UNDO LOAN REPAYMENT URL " + url);
-        return performLoanTransaction(createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId), undoRepaymentJson(),
+        return performLoanTransaction(createAccountTransferTransactionURL(UNDO_REPAYMENT, loanID, transactionId), undoRepaymentJson(transactionDate),
                 jsonAttributeToGetBack);
     }
 
-    private String undoRepaymentJson() {
+    private String undoRepaymentJson(String transactionDate) {
         final HashMap<String, String> map = new HashMap<>();
         map.put("dateFormat", CommonConstants.dateFormat);
         map.put("locale", CommonConstants.locale);
         map.put("transactionAmount", "0");
-        map.put("transactionDate", "16 August 2016");
+        map.put("transactionDate",transactionDate);
         String accountTransferJson = new Gson().toJson(map);
         System.out.println(accountTransferJson);
         return accountTransferJson;
@@ -626,6 +626,16 @@ public class LoanTransactionHelper {
     public HashMap getPrepayAmount(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final Integer loanID) {
         final String URL = "/fineract-provider/api/v1/loans/" + loanID + "/transactions/template?command=prepayLoan&"
                 + Utils.TENANT_IDENTIFIER;
+        final HashMap response = Utils.performServerGet(requestSpec, responseSpec, URL, "");
+        return response;
+    }
+    
+    public HashMap getPrepayAmount(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final Integer loanID,final String date) {
+        final String URL = "/fineract-provider/api/v1/loans/" + loanID + "/transactions/template?command=prepayLoan&"
+                + Utils.TENANT_IDENTIFIER;
+        requestSpec.queryParameter("transactionDate", date);
+        requestSpec.queryParameter("locale", "en_GB");
+        requestSpec.queryParameter("dateFormat", "dd MMMM yyyy");
         final HashMap response = Utils.performServerGet(requestSpec, responseSpec, URL, "");
         return response;
     }
