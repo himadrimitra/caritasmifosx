@@ -22,9 +22,6 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.*;
-
-import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -85,6 +82,7 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarWeekDaysType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
@@ -108,6 +106,7 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
+import org.apache.fineract.portfolio.loanaccount.exception.ClientAlreadyWriteOffException;
 import org.apache.fineract.portfolio.loanaccount.exception.ExceedingTrancheCountException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanStateTransitionException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanTransactionTypeException;
@@ -121,27 +120,12 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignme
 import org.apache.fineract.portfolio.loanaccount.exception.MultiDisbursementDataRequiredException;
 import org.apache.fineract.portfolio.loanaccount.exception.UndoLastTrancheDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleDTO;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.*;
-import org.apache.fineract.portfolio.loanproduct.domain.*;
-import org.apache.fineract.portfolio.loanaccount.exception.ClientAlreadyWriteOffException;
-import org.apache.fineract.portfolio.loanaccount.exception.ExceedingTrancheCountException;
-import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanStateTransitionException;
-import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanTransactionTypeException;
-import org.apache.fineract.portfolio.loanaccount.exception.InvalidRefundDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursalException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignmentDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.MultiDisbursementDataRequiredException;
-import org.apache.fineract.portfolio.loanaccount.exception.UndoLastTrancheDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
-import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -441,11 +425,11 @@ public class Loan extends AbstractPersistable<Long> {
     private Date lastRepaymentDate;
 
     @Transient
-    List<GroupLoanIndividualMonitoring> glimList = new ArrayList<GroupLoanIndividualMonitoring>();
+    List<GroupLoanIndividualMonitoring> glimList = new ArrayList<>();
     
     @Transient
-    List<GroupLoanIndividualMonitoring> defaultGlimMembers = new ArrayList<GroupLoanIndividualMonitoring>();
-    
+    List<GroupLoanIndividualMonitoring> defaultGlimMembers = new ArrayList<>();
+
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
@@ -3287,18 +3271,18 @@ public class Loan extends AbstractPersistable<Long> {
 
                     Money transactionAmountPerClient = Money.of(getCurrency(), glimTransaction.getTotalAmount());
 
-                    Map<String, BigDecimal> processedTransactionMap = new HashMap<String, BigDecimal>();
+                    Map<String, BigDecimal> processedTransactionMap = new HashMap<>();
                     processedTransactionMap.put("processedCharge", BigDecimal.ZERO);
                     processedTransactionMap.put("processedInterest", BigDecimal.ZERO);
                     processedTransactionMap.put("processedPrincipal", BigDecimal.ZERO);
                     processedTransactionMap.put("processedinstallmentTransactionAmount", BigDecimal.ZERO);
 
-                    Map<String, BigDecimal> installmentPaidMap = new HashMap<String, BigDecimal>();
+                    Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
                     installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
                     installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
                     installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
                     installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
-                    Map<Long, BigDecimal> glimChargeAmountMap = new HashMap<Long, BigDecimal>();
+                    Map<Long, BigDecimal> glimChargeAmountMap = new HashMap<>();
                     for (GroupLoanIndividualMonitoringCharge glimloanCharge : glimMember.getGroupLoanIndividualMonitoringCharges()) {
                         glimChargeAmountMap.put(glimloanCharge.getCharge().getId(), BigDecimal.ZERO);
                     }
@@ -3307,10 +3291,9 @@ public class Loan extends AbstractPersistable<Long> {
 
                         if (transactionAmountPerClient.isGreaterThanZero()) {
 
-                            Map<String, BigDecimal> paidInstallmentMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(
-                                    glimMember, transactionAmountPerClient.getAmount(), this,
-                                    updatePartlyPaidOrPaidInstallment.getInstallmentNumber(), installmentPaidMap, adjustedTransaction,
-                                    glimTransaction);
+                        Map<String, BigDecimal> paidInstallmentMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
+                                transactionAmountPerClient.getAmount(), this, updatePartlyPaidOrPaidInstallment.getInstallmentNumber(),
+                                installmentPaidMap, adjustedTransaction, glimTransaction);
 
                             if (!(MathUtility.isZero(paidInstallmentMap.get("installmentTransactionAmount")))) {
                                 Map<String, BigDecimal> splitMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
@@ -3361,15 +3344,22 @@ public class Loan extends AbstractPersistable<Long> {
                                                         this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(),
                                                         currentInstallmentNumber);
                                                 BigDecimal amountToBePaidInCurrentInstallment = BigDecimal.ZERO;
-                                                if (currentInstallmentNumber != this.fetchNumberOfInstallmensAfterExceptions()) {
-                                                    amountToBePaidInCurrentInstallment = installmentAmount;
+                                                if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue())
+                                                        .isUpfrontFee()
+                                                        && currentInstallmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
+                                                    amountToBePaidInCurrentInstallment = amount;
                                                 } else {
-                                                    BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
-                                                            this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(), 1);
-                                                    amountToBePaidInCurrentInstallment = MathUtility.subtract(amount,
-                                                            MathUtility.multiply(defaultInstallmentAmount, currentInstallmentNumber - 1));
+                                                    if (currentInstallmentNumber != this.fetchNumberOfInstallmensAfterExceptions()) {
+                                                        amountToBePaidInCurrentInstallment = installmentAmount;
+                                                    } else {
+                                                        BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
+                                                                this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(), 1);
+                                                        amountToBePaidInCurrentInstallment = MathUtility.subtract(amount, MathUtility
+                                                                .multiply(defaultInstallmentAmount, currentInstallmentNumber - 1));
 
+                                                    }
                                                 }
+
                                                 if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
                                                     if (MathUtility.isGreater(feePortion.getAmount(), amountToBePaidInCurrentInstallment)) {
                                                         glimCharge.setPaidCharge(glimCharge.getPaidCharge().subtract(
@@ -6697,9 +6687,11 @@ public class Loan extends AbstractPersistable<Long> {
                     totalInstallmentAmount = totalInstallmentAmount.add(glim.getInstallmentAmount());
                     Set<GroupLoanIndividualMonitoringCharge> glimmCharges = glim.getGroupLoanIndividualMonitoringCharges();
                     for (GroupLoanIndividualMonitoringCharge glimCharge : glimmCharges) {
-                        BigDecimal chargeAmount = MathUtility.isNull(glimCharge.getRevisedFeeAmount()) ? glimCharge.getFeeAmount()
-                                : glimCharge.getRevisedFeeAmount();
-                        feeAmount = MathUtility.add(feeAmount, MathUtility.divide(chargeAmount, numberOfInstallments, currency));
+                        if(!ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()){
+                            BigDecimal chargeAmount = MathUtility.isNull(glimCharge.getRevisedFeeAmount()) ? glimCharge.getFeeAmount()
+                                    : glimCharge.getRevisedFeeAmount();
+                            feeAmount = MathUtility.add(feeAmount, MathUtility.divide(chargeAmount, numberOfInstallments, currency));
+                        }
                     }
                 }
             }
@@ -7281,9 +7273,15 @@ public class Loan extends AbstractPersistable<Long> {
                         .getRevisedFeeAmount();
                 for (LoanCharge loanCharge : charges()) {
                     if (loanCharge.getCharge().getId().equals(chargeId)) {
-                        BigDecimal writeOffAmount = MathUtility.getInstallmentAmount(chargeAmount,
-                                this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(),
-                                currentInstallment.getInstallmentNumber());
+                        BigDecimal writeOffAmount = BigDecimal.ZERO;
+                        if (ChargeTimeType.fromInt(loanCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
+                            if (currentInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
+                                writeOffAmount = amount;
+                            }
+                        } else {
+                            writeOffAmount = MathUtility.getInstallmentAmount(chargeAmount, this.fetchNumberOfInstallmensAfterExceptions(),
+                                    this.getCurrency(), currentInstallment.getInstallmentNumber());
+                        }
                         loanCharge.updateWriteOffAmount(getCurrency(), Money.of(getCurrency(), writeOffAmount),
                                 currentInstallment.getInstallmentNumber());
 
@@ -7308,10 +7306,19 @@ public class Loan extends AbstractPersistable<Long> {
                     BigDecimal chargeAmount = MathUtility.isNull(glimCharge.getRevisedFeeAmount()) ? glimCharge.getFeeAmount() : glimCharge
                             .getRevisedFeeAmount();
                     if (loanCharge.getCharge().getId().equals(chargeId)) {
+                        
+                        BigDecimal chargeAmountToBeWaived = BigDecimal.ZERO;
+                        if (ChargeTimeType.fromInt(loanCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
+                            if (currentInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
+                                chargeAmountToBeWaived = amount;
+                            }
+                        } else {
+                            chargeAmountToBeWaived = MathUtility.getInstallmentAmount(chargeAmount,
+                                    this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(),
+                                    currentInstallment.getInstallmentNumber());
+                        }
 
-                        BigDecimal chargeAmountToBeWaived = MathUtility.getInstallmentAmount(chargeAmount,
-                                this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(),
-                                currentInstallment.getInstallmentNumber());
+                         
 
                         waiveGlimLoanCharge(loanCharge, null, changes, existingTransactionIds, existingReversedTransactionIds,
                                 currentInstallment.getInstallmentNumber(), scheduleGeneratorDTO, accruedCharge, currentUser,

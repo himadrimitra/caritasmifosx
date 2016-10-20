@@ -30,8 +30,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatRepositoryWrapper;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
-import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
@@ -40,7 +40,6 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
-import org.apache.fineract.infrastructure.entityaccess.exception.NotOfficeSpecificProductException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
@@ -74,6 +73,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringChargeRepository;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotSupportedException;
 import org.apache.fineract.portfolio.charge.exception.GlimLoanCannotHaveMoreThanOneGoalRoundSeekCharge;
+import org.apache.fineract.portfolio.charge.exception.UpfrontChargeNotFoundException;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -92,6 +92,7 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataValidator;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
@@ -497,25 +498,43 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         final String loanTypeParameterName = "loanType";
         final String chargesParameterName = "charges";
         final String loanTypeStr = command.stringValueOfParameterNamed(loanTypeParameterName);
+        BigDecimal totalUpfrontFeeAmount = BigDecimal.ZERO;
+        boolean isUpfrontFee = false;
         if (command.hasParameter(chargesParameterName)) {
             JsonArray charges = command.arrayOfParameterNamed(LoanApiConstants.chargesParameterName);
             if (AccountType.fromName(loanTypeStr).isGLIMAccount()) {
             	int numberOfEmiRoundingGoalSeek = 0;
+            	BigDecimal upfrontFeeAmount = BigDecimal.ZERO;
                 for (JsonElement glimCharge : charges) {
                     JsonObject jsonObject = glimCharge.getAsJsonObject();
                     Long chargeId = jsonObject.get("chargeId").getAsLong();
+                    BigDecimal chargeAmount = jsonObject.get("amount").getAsBigDecimal();
                     Charge charge = this.chargeRepositoryWrapper.findOneWithNotFoundDetection(chargeId);
-                    if(charge.isEmiRoundingGoalSeek()){
-                    	numberOfEmiRoundingGoalSeek ++;
+                    if (charge.isEmiRoundingGoalSeek()) {
+                        numberOfEmiRoundingGoalSeek++;
                     }
+                    JsonArray upfrontCharges = this.fromJsonHelper.extractJsonArrayNamed(LoanApiConstants.upfrontChargesAmountParamName, glimCharge);
+                    if (upfrontCharges != null && ChargeTimeType.fromInt(charge.getChargeTimeType().intValue()).isUpfrontFee()) {
+                        isUpfrontFee = true;
+                        upfrontFeeAmount = upfrontFeeAmount.add(chargeAmount);
+                        for(JsonElement upfrontCharge : upfrontCharges) {
+                            JsonObject jsonObj = upfrontCharge.getAsJsonObject();
+                            totalUpfrontFeeAmount = totalUpfrontFeeAmount.add(jsonObj.get("upfrontChargeAmount").getAsBigDecimal());
+                        }
+                    }
+                    
                     if (!charge.isGlimCharge()) {
                         final String entityName = " GLIM Loan";
                         final String userErrorMessage = "Charge can not be applied to GLIM Loan";
                         throw new ChargeNotSupportedException(entityName, charge.getId(), userErrorMessage);
                     }
                 }
-                if(numberOfEmiRoundingGoalSeek>1){
-                	throw new GlimLoanCannotHaveMoreThanOneGoalRoundSeekCharge();
+                if (numberOfEmiRoundingGoalSeek > 1) { throw new GlimLoanCannotHaveMoreThanOneGoalRoundSeekCharge(); }
+                if (!(totalUpfrontFeeAmount.compareTo(upfrontFeeAmount) == 0) && isUpfrontFee) {
+                    String entity = "GLIM Charge";
+                    String errorMessage = "upfront.charges.is.not.equal.to.individual.glim.charges";
+                    String defaultUserMessage = "Upfront Charges is not equal to individual glim charges";
+                    throw new UpfrontChargeNotFoundException(entity, errorMessage, defaultUserMessage);
                 }
             } else {
                 for (JsonElement element : charges) {
@@ -525,6 +544,13 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     performChargeTimeNCalculationTypeValidation(chargeId, charge.getChargeTimeType(), charge.getChargeCalculation());
                 }
             }
+            
+        } 
+        if (MathUtility.isGreaterThanZero(totalUpfrontFeeAmount) && !isUpfrontFee) {
+            String entity = "GLIM Charge";
+            String errorMessage = "upfront.charges.not.found.for.glim.loan";
+            String defaultUserMessage = "Upfront Charges not found for glim loan";
+            throw new UpfrontChargeNotFoundException(entity, errorMessage, defaultUserMessage);
         }
     }
 

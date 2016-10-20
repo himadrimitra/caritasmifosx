@@ -93,9 +93,6 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             this.context.authenticatedUser();
             this.fromApiJsonDeserializer.validateForCreate(command.json());
             
-            /*// validate charge for glim loan
-            this.fromApiJsonDeserializer.validateForGlim(command.json());*/
-
             // Retrieve linked GLAccount for Client charges (if present)
             final Long glAccountId = command.longValueOfParameterNamed(ChargesApiConstants.glAccountIdParamName);
 

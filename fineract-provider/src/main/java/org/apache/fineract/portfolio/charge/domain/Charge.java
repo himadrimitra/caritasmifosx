@@ -693,12 +693,30 @@ public class Charge extends AbstractPersistable<Long> {
         return this.isGlimCharge;
     }
 
-	public Integer getGlimChargeCalculation() {
-		return this.glimChargeCalculation;
-	}
+    public Integer getGlimChargeCalculation() {
+        return this.glimChargeCalculation;
+    }
 
-	public void setGlimChargeCalculation(Integer glimChargeCalculation) {
-		this.glimChargeCalculation = glimChargeCalculation;
-	}    
+    public void setGlimChargeCalculation(Integer glimChargeCalculation) {
+        this.glimChargeCalculation = glimChargeCalculation;
+    }   
+    
+    public boolean isPercentageBased() {
+        return isPercentageOfAmount() || isPercentageOfDisbursementAmount() || isPercentageOfInterest()
+                || isPercentageOfAmountAndInterest();
+    }
+
+    public boolean isPercentageOfAmount() {
+        return ChargeCalculationType.fromInt(this.chargeCalculation).isPercentageOfAmount();
+    }
+
+    public boolean isPercentageOfInterest() {
+        return ChargeCalculationType.fromInt(this.chargeCalculation).isPercentageOfInterest();
+    }
+
+    public boolean isPercentageOfAmountAndInterest() {
+        return ChargeCalculationType.fromInt(this.chargeCalculation).isPercentageOfAmountAndInterest();
+    }
+   
     
 }

@@ -20,7 +20,10 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
+import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringChargeRepository;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringData;
@@ -58,19 +61,21 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
     private final GroupLoanIndividualMonitoringRepository glimRepository;
     private final GroupLoanIndividualMonitoringAssembler glimAssembler;
     private final LoanRepository loanRepository;
+    private final GroupLoanIndividualMonitoringChargeRepository glimChargeRepository;
 
     @Autowired
     public GroupLoanIndividualMonitoringTransactionAssembler(final FromJsonHelper fromApiJsonHelper,
             final GroupLoanIndividualMonitoringRepositoryWrapper groupLoanIndividualMonitoringRepositoryWrapper,
             final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessorFactory,
             final GroupLoanIndividualMonitoringRepository glimRepository, final GroupLoanIndividualMonitoringAssembler glimAssembler,
-            final LoanRepository loanRepository) {
+            final LoanRepository loanRepository, final GroupLoanIndividualMonitoringChargeRepository glimChargeRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.groupLoanIndividualMonitoringRepositoryWrapper = groupLoanIndividualMonitoringRepositoryWrapper;
         this.transactionProcessorFactory = transactionProcessorFactory;
         this.glimRepository = glimRepository;
         this.glimAssembler = glimAssembler;
         this.loanRepository = loanRepository;
+        this.glimChargeRepository = glimChargeRepository;
     }
 
     public Collection<GroupLoanIndividualMonitoringTransaction> assembleGLIMTransactions(final JsonCommand command,
@@ -181,6 +186,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             BigDecimal defaultInstallmentAmount = glimIndividualData.getInstallmentAmount();
             Boolean isChargeWaived = MathUtility.isGreaterThanZero(glimIndividualData.getWaivedChargeAmount());
             Boolean isInterestWaived = MathUtility.isGreaterThanZero(glimIndividualData.getWaivedInterestAmount());
+            List<GroupLoanIndividualMonitoringCharge> glimCharges = this.glimChargeRepository.findByGlimId(glimIndividualData.getId());
 
             for (int i = 0; i < loanRepaymentScheduleInstallment.size(); i++) {
                 LoanRepaymentScheduleInstallment scheduleInstallment = loanRepaymentScheduleInstallment.get(i);
@@ -193,7 +199,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                         installmentCharge = glimIndividualData.getChargeAmount().subtract(chargeAmount);
                         installmentInterest = glimIndividualData.getInterestAmount().subtract(interestAmount);
                     } else {
-                        installmentCharge = getDefaultChargeSharePerInstallment(loan, glimIndividualData.getId());
+                        installmentCharge = getDefaultChargeSharePerInstallment(loan, glimIndividualData.getId(), scheduleInstallment.getInstallmentNumber());
 
                         installmentInterest = getDefaultInterestSharePerInstallment(loan, glimIndividualData.getId(),
                                 glimIndividualData.getInterestAmount(), scheduleInstallment.getInterestCharged(currency).getAmount(), loan
@@ -201,6 +207,13 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                     }
 
                     installmentAmount = installmentAmount.add(defaultInstallmentAmount);
+                    for (GroupLoanIndividualMonitoringCharge glimCharge : glimCharges) {
+                        if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()
+                                && scheduleInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
+                            installmentAmount = installmentAmount.add(glimCharge.getFeeAmount() );
+                        }
+                    }
+                    
                     chargeAmount = chargeAmount.add(installmentCharge);
                     interestAmount = interestAmount.add(installmentInterest);
                 } else {
@@ -241,7 +254,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
 
     }
 
-    public static BigDecimal getDefaultChargeSharePerInstallment(Loan loan, Long glimId) {
+    public static BigDecimal getDefaultChargeSharePerInstallment(Loan loan, Long glimId, Integer installmentNumber) {
         MonetaryCurrency currency = loan.getCurrency();
         List<GroupLoanIndividualMonitoring> listForAdujustment = loan.getDefautGlimMembers();
         BigDecimal installmentChargePerClient = BigDecimal.ZERO;
@@ -250,10 +263,16 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             if (groupLoanIndividualMonitoring.getId().toString().equals(glimId.toString())) {
                 Set<GroupLoanIndividualMonitoringCharge> charges = groupLoanIndividualMonitoring.getGroupLoanIndividualMonitoringCharges();
                 for (GroupLoanIndividualMonitoringCharge glimCharge : charges) {
-                    BigDecimal chargeAmount = glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount() : glimCharge
-                            .getRevisedFeeAmount();
-                    installmentChargePerClient = MathUtility.add(installmentChargePerClient,
-                            MathUtility.divide(chargeAmount, loan.fetchNumberOfInstallmensAfterExceptions(), currency));
+                    if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
+                        if (installmentNumber.equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
+                            installmentChargePerClient = installmentChargePerClient.add(glimCharge.getFeeAmount());
+                        }
+                    } else {
+                        BigDecimal chargeAmount = glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount() : glimCharge
+                                .getRevisedFeeAmount();
+                        installmentChargePerClient = MathUtility.add(installmentChargePerClient,
+                                MathUtility.divide(chargeAmount, loan.fetchNumberOfInstallmensAfterExceptions(), currency));
+                    }
                 }
             }
         }
@@ -298,7 +317,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         Boolean isInterestWaived = MathUtility.isGreaterThanZero(glim.getWaivedInterestAmount());
         for (int i = 0; i < scheduleList.size(); i++) {
             LoanRepaymentScheduleInstallment schedule = scheduleList.get(i);
-            BigDecimal installmentCharge = getDefaultChargeSharePerInstallment(loan, glim.getId());
+            BigDecimal installmentCharge = getDefaultChargeSharePerInstallment(loan, glim.getId(), schedule.getInstallmentNumber());
             BigDecimal installmentInterest = getDefaultInterestSharePerInstallment(loan, glim.getId(), glim.getInterestAmount(), schedule
                     .getInterestCharged(currency).getAmount(), loan.getSummary().getTotalInterestCharged());
             if (i + 1 == numberOfInstallments && installmentNumber == numberOfInstallments) {
@@ -308,7 +327,17 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                 adjustedPaidInterest = MathUtility.add(adjustedPaidInterest, installmentInterest);
                 adjustedPaidCharge = MathUtility.add(adjustedPaidCharge, installmentCharge);
             }
-            BigDecimal installmentPrincipal = installmentAmount.subtract(installmentInterest).subtract(installmentCharge);
+            BigDecimal installmentPrincipal = BigDecimal.ZERO;
+            if (installmentCharge.compareTo(glim.getChargeAmount()) == 0 && schedule.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
+                installmentAmount = installmentAmount.add(installmentCharge);
+            } else if(installmentCharge.compareTo(BigDecimal.ZERO) == 0 ) {
+                installmentAmount = glim.getInstallmentAmount();
+                if (i + 1 == numberOfInstallments && installmentNumber == numberOfInstallments) {
+                    BigDecimal adjustLastInstallmentAmount = MathUtility.multiply(glim.getInstallmentAmount(), numberOfInstallments - 1);
+                    installmentAmount = MathUtility.subtract(glim.getTotalPaybleAmount(), MathUtility.add(glim.getChargeAmount(), adjustLastInstallmentAmount));
+                }
+            }
+            installmentPrincipal = installmentAmount.subtract(installmentInterest).subtract(installmentCharge);
             if (loanTransaction != null && loanTransaction.isInterestWaiver()) {
                 installmentCharge = BigDecimal.ZERO;
                 installmentPrincipal = BigDecimal.ZERO;
@@ -422,7 +451,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
 
         }
 
-        Map<String, BigDecimal> splitMap = new HashMap<String, BigDecimal>();
+        Map<String, BigDecimal> splitMap = new HashMap<>();
         splitMap.put("unpaidCharge", paidCharge);
         splitMap.put("unpaidInterest", paidInterest);
         splitMap.put("unpaidPrincipal", paidPrincipal);
