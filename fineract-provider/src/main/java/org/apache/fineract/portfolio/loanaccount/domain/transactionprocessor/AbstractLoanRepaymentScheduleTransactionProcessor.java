@@ -30,6 +30,8 @@ import java.util.Set;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
+import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidDetail;
@@ -366,25 +368,32 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                                                     int currentInstallmentNumber = currentInstallment.getInstallmentNumber();
                                                     BigDecimal amount = glimCharge.getCharge().isEmiRoundingGoalSeek() ? glimCharge
                                                             .getRevisedFeeAmount() : glimCharge.getFeeAmount();
-                                                    BigDecimal installmentAmount = MathUtility.getInstallmentAmount(amount,
-                                                            loan.fetchNumberOfInstallmensAfterExceptions(), currency,
-                                                            currentInstallmentNumber);
                                                     BigDecimal amountToBePaidInCurrentInstallment = BigDecimal.ZERO;
-                                                    if (currentInstallmentNumber != loan.fetchNumberOfInstallmensAfterExceptions()) {
-                                                        BigDecimal perChargeamount = glimChargeAmountMap
-                                                                .get(glimCharge.getCharge().getId());
-                                                        amountToBePaidInCurrentInstallment = MathUtility.subtract(
-                                                                MathUtility.multiply(installmentAmount, currentInstallmentNumber),
-                                                                perChargeamount);
+                                                    if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue())
+                                                            .isUpfrontFee()
+                                                            && currentInstallmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
+                                                        amountToBePaidInCurrentInstallment = amount;
                                                     } else {
-                                                        BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
-                                                                loan.fetchNumberOfInstallmensAfterExceptions(), currency, 1);
-                                                        amountToBePaidInCurrentInstallment = MathUtility.subtract(
-                                                                MathUtility
-                                                                        .multiply(defaultInstallmentAmount, currentInstallmentNumber - 1)
-                                                                        .add(installmentAmount), glimChargeAmountMap.get(glimCharge
-                                                                        .getCharge().getId()));
+                                                        BigDecimal installmentAmount = MathUtility.getInstallmentAmount(amount,
+                                                                loan.fetchNumberOfInstallmensAfterExceptions(), currency,
+                                                                currentInstallmentNumber);
+
+                                                        if (currentInstallmentNumber != loan.fetchNumberOfInstallmensAfterExceptions()) {
+                                                            BigDecimal perChargeamount = glimChargeAmountMap.get(glimCharge.getCharge()
+                                                                    .getId());
+                                                            amountToBePaidInCurrentInstallment = MathUtility.subtract(
+                                                                    MathUtility.multiply(installmentAmount, currentInstallmentNumber),
+                                                                    perChargeamount);
+                                                        } else {
+                                                            BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
+                                                                    loan.fetchNumberOfInstallmensAfterExceptions(), currency, 1);
+                                                            amountToBePaidInCurrentInstallment = MathUtility.subtract(
+                                                                    MathUtility.multiply(defaultInstallmentAmount,
+                                                                            currentInstallmentNumber - 1).add(installmentAmount),
+                                                                    glimChargeAmountMap.get(glimCharge.getCharge().getId()));
+                                                        }
                                                     }
+                                                    
                                                     if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
                                                         if (MathUtility
                                                                 .isGreater(currentInstallmentFee, amountToBePaidInCurrentInstallment)) {

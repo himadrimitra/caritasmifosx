@@ -70,7 +70,7 @@ public enum ChargeCalculationType {
     }
     
     public static Object[] validValuesForGlimLoan() {
-        return new Integer[] { ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue() };
+        return new Integer[] { ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue(), ChargeCalculationType.FLAT.getValue()   };
     }
 
     public static ChargeCalculationType fromInt(final Integer chargeCalculation) {

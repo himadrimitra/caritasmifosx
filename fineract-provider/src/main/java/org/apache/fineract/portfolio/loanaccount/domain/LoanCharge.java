@@ -1281,19 +1281,26 @@ public class LoanCharge extends AbstractPersistable<Long> {
     
     public Money waiveForGlim(MonetaryCurrency loanCurrency, Money chargeAmountToBeWaived, Integer loanInstallmentNumber) {
         final LoanInstallmentCharge chargePerInstallment = getInstallmentLoanCharge(loanInstallmentNumber);
-        final Money amountWaived = chargePerInstallment.waiveGlimLoanCharge(loanCurrency, chargeAmountToBeWaived);
+        Money amountWaived = chargeAmountToBeWaived;
+        if (this.isInstalmentFee() && chargePerInstallment != null) {
+            amountWaived = chargePerInstallment.waiveGlimLoanCharge(loanCurrency, chargeAmountToBeWaived);
+        }
         this.amountWaived = MathUtility.add(this.amountWaived, amountWaived.getAmount());
         this.amountOutstanding = MathUtility.subtract(this.amountOutstanding ,amountWaived.getAmount());
         if (determineIfFullyPaid()) {
             this.paid = false;
             this.waived = true;
         }
+        
         return amountWaived;
     }
 
     public BigDecimal updateWriteOffAmount(MonetaryCurrency loanCurrency, Money writeOffAmount, Integer loanInstallmentNumber) {
         final LoanInstallmentCharge chargePerInstallment = getInstallmentLoanCharge(loanInstallmentNumber);
-        final Money amountWrittenOff = chargePerInstallment.writeOffGlimLoanCharge(writeOffAmount);
+        Money amountWrittenOff = writeOffAmount;
+        if (this.isInstalmentFee() && chargePerInstallment != null) {
+            amountWrittenOff = chargePerInstallment.writeOffGlimLoanCharge(writeOffAmount);
+        }
         this.amountWrittenOff = MathUtility.add(this.amountWrittenOff,amountWrittenOff.getAmount());
         this.amountOutstanding = MathUtility.subtract(this.amountOutstanding ,amountWrittenOff.getAmount());
         return amountWrittenOff.getAmount();

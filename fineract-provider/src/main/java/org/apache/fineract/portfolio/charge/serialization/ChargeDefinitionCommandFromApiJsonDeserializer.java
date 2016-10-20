@@ -107,20 +107,21 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             // glim loan
             Boolean isGlimCharge = false;
             if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.isGlimChargeParamName, element)) {
-	            isGlimCharge = this.fromApiJsonHelper.extractBooleanNamed(
-	                    ChargesApiConstants.isGlimChargeParamName, element);
-	            baseDataValidator.reset().parameter(ChargesApiConstants.isGlimChargeParamName).value(isGlimCharge)
-	                    .isOneOfTheseValues(true, false);
-	            if (isGlimCharge) {
-	                if (!chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE)) {
-	                    baseDataValidator.reset().parameter("ChargeTimeType").value(chargeTimeType)
-	                            .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue());
-	                }
-	                if (!chargeCalculationType.equals(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT)) {
-	                    baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
-	                            .isOneOfTheseValues(ChargeCalculationType.validValuesForGlimLoan());
-	                }
-	            }
+                isGlimCharge = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isGlimChargeParamName, element);
+                baseDataValidator.reset().parameter(ChargesApiConstants.isGlimChargeParamName).value(isGlimCharge)
+                        .isOneOfTheseValues(true, false);
+                if (isGlimCharge) {
+                    if (chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE.getValue())) {
+                        baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+                                .isOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
+                    } else if (chargeTimeType.equals(ChargeTimeType.UPFRONT_FEE.getValue())) {
+                        baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+                                .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue());
+                    } else {
+                        baseDataValidator.reset().parameter("ChargeTimeType").value(chargeTimeType)
+                                .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.UPFRONT_FEE.getValue());
+                    }
+                }
             }
             
             if (chargeTimeType != null) {
@@ -392,6 +393,30 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             baseDataValidator.reset().parameter(ChargesApiConstants.glimChargeCalculation).value(glimChargeCalculation).notNull()
                     .isOneOfTheseValues(GlimChargeCalculationType.validValues());
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.isGlimChargeParamName, element) && 
+        		this.fromApiJsonHelper.parameterExists("chargeCalculationType", element) && 
+        		this.fromApiJsonHelper.parameterExists("chargeTimeType", element)) {
+        	boolean isGlimCharge = this.fromApiJsonHelper.extractBooleanNamed(
+                    ChargesApiConstants.isGlimChargeParamName, element);
+            baseDataValidator.reset().parameter(ChargesApiConstants.isGlimChargeParamName).value(isGlimCharge)
+                    .isOneOfTheseValues(true, false);
+            final Integer chargeCalculationType = this.fromApiJsonHelper.extractIntegerNamed("chargeCalculationType", element,
+                    Locale.getDefault());
+            final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
+            if (isGlimCharge) {
+                if (chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE.getValue())) {
+                    baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+                            .isOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
+                } else if (chargeTimeType.equals(ChargeTimeType.UPFRONT_FEE.getValue())) {
+                    baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+                            .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue());
+                } else {
+                    baseDataValidator.reset().parameter("ChargeTimeType").value(chargeTimeType)
+                            .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.UPFRONT_FEE.getValue());
+                }
+            }
+        }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -422,20 +447,4 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
-
-    /*public void validateForGlim(String json) {
-        final JsonElement element = this.fromApiJsonHelper.parse(json);
-        if (this.fromApiJsonHelper.parameterExists(ChargesApiConstants.individualClientChargeParamName, element)) {
-            final Boolean individualClientCharge = this.fromApiJsonHelper.extractBooleanNamed(
-                    ChargesApiConstants.individualClientChargeParamName, element);
-            final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
-            final Integer chargeCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeCalculationType", element);
-            if (individualClientCharge) {
-                if (!(chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE) && chargeCalculationType
-                        .equals(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT))) {
-
-                }
-            }
-        }
-    }*/
 }
