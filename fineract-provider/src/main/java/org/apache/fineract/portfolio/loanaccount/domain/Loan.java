@@ -3431,6 +3431,13 @@ public class Loan extends AbstractPersistable<Long> {
             reprocess = false;
         }
         if (reprocess) {
+        	if(adjustedTransaction != null){
+        		for(LoanChargePaidBy chargesPaidBy : adjustedTransaction.getLoanChargesPaid()){
+					if (chargesPaidBy.getLoanCharge().isInstalmentFee() && chargesPaidBy.getLoanCharge().isWaived()) {
+						chargesPaidBy.getLoanCharge().undoWaive();
+					}
+        		}
+        	}
             if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
                 regenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
             }
@@ -5271,10 +5278,13 @@ public class Loan extends AbstractPersistable<Long> {
         return loanCharges;
     }
 
-    public Set<LoanInstallmentCharge> generateInstallmentLoanCharges(final LoanCharge loanCharge) {
-        final Set<LoanInstallmentCharge> loanChargePerInstallments = new HashSet<>();
+    public List<LoanInstallmentCharge> generateInstallmentLoanCharges(final LoanCharge loanCharge) {
+        final List<LoanInstallmentCharge> loanChargePerInstallments = new ArrayList<>();
         if (loanCharge.isInstalmentFee()) {
             for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
+            	if(installment.isRecalculatedInterestComponent()){
+            		continue;
+            	}
                 BigDecimal amount = BigDecimal.ZERO;
                 if (loanCharge.getChargeCalculation().isFlat()) {
                     amount = loanCharge.amountOrPercentage();

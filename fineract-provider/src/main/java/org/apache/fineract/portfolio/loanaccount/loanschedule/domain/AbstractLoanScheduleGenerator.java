@@ -240,7 +240,11 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             // this block is to generate the schedule till the specified
             // date(used for calculating preclosure)
+            boolean isCompletePeriod = true;
             if (scheduleParams.getScheduleTillDate() != null && !scheduledDueDate.isBefore(scheduleParams.getScheduleTillDate())) {
+            	if(!scheduledDueDate.isEqual(scheduleParams.getScheduleTillDate())){
+            		isCompletePeriod = false;
+            	}
                 scheduledDueDate = scheduleParams.getScheduleTillDate();
                 isNextRepaymentAvailable = false;
             }
@@ -347,7 +351,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     scheduleParams.getPeriodStartDate(), scheduledDueDate, currentPeriodParams.getPrincipalForThisPeriod(),
                     scheduleParams.getOutstandingBalance(), currentPeriodParams.getInterestForThisPeriod(),
                     currentPeriodParams.getFeeChargesForInstallment(), currentPeriodParams.getPenaltyChargesForInstallment(),
-                    totalInstallmentDue, false);
+                    totalInstallmentDue, !isCompletePeriod);
             emiDetails.setEmiAmount(loanApplicationTerms.getFixedEmiAmount());
             emiDetails.setLastEmiAmount(currentPeriodParams.getPrincipalForThisPeriod().plus(currentPeriodParams.getInterestForThisPeriod()).getAmount());
             adjustInterestForRoundingEMIAmount(loanApplicationTerms, emiDetails,scheduleParams, installment);
@@ -365,8 +369,11 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             // Updates principal paid map with efective date for reducing
             // the amount from outstanding balance(interest calculation)
-            updateAmountsWithEffectiveDate(loanApplicationTerms, holidayDetailDTO, scheduleParams, scheduledDueDate, currentPeriodParams,
-                    installment, lastRestDate);
+			if (!installment.isRecalculatedInterestComponent()) {
+				updateAmountsWithEffectiveDate(loanApplicationTerms,
+						holidayDetailDTO, scheduleParams, scheduledDueDate,
+						currentPeriodParams, installment, lastRestDate);
+			}
 
             // handle cumulative fields
 

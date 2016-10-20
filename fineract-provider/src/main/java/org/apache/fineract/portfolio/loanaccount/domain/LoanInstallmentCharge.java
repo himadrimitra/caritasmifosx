@@ -33,7 +33,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_loan_installment_charge")
-public class LoanInstallmentCharge extends AbstractPersistable<Long> {
+public class LoanInstallmentCharge extends AbstractPersistable<Long> implements Comparable<LoanInstallmentCharge> {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "loan_charge_id", referencedColumnName = "id", nullable = false)
@@ -346,4 +346,10 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> {
         this.amountOutstanding = MathUtility.subtract(this.amountOutstanding, amount);
         return writeOffAmount;
     }
+    
+	@Override
+	public int compareTo(LoanInstallmentCharge o) {
+		return this.installment.getInstallmentNumber().compareTo(
+				o.installment.getInstallmentNumber());
+	}
 }

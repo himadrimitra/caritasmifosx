@@ -3286,11 +3286,11 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", null,
-                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, null, null);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                null, null, null);
 
-        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, null,
-                LoanApplicationTestBuilder.DEFAULT_STRATEGY, new ArrayList<HashMap>(0));
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY,
+                new ArrayList<HashMap>(0));
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -3362,6 +3362,122 @@ public class ClientLoanIntegrationTest {
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
     }
+    
+    @Test
+    public void testLoanScheduleWithInterestRecalculation_WITH_REST_DAILY_INTEREST_COMPOUND_NONE_STRATEGY_REDUCE_EMI_WITH_INSTALLMENT_FEE() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+
+        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy");
+        dateFormat.setTimeZone(Utils.getTimeZoneOfTenant());
+
+        Calendar todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -14);
+        final String LOAN_DISBURSEMENT_DATE = dateFormat.format(todaysDate.getTime());
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        
+
+        // Add charges with payment mode regular
+        List<HashMap> charges = new ArrayList<>();
+        Integer flatInstallmentFee = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+        addCharges(charges, flatInstallmentFee, "100", null);
+        
+        final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.RBI_INDIA_STRATEGY,
+                LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
+                LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                null, null, null);
+        final String graceOnInterestPayment = null;
+        final String graceOnPrincipalPayment= null;
+        final boolean isDailyInterestCalculation = true;
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.RBI_INDIA_STRATEGY,
+                charges,graceOnInterestPayment,graceOnPrincipalPayment,isDailyInterestCalculation);
+
+        Assert.assertNotNull(loanID);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        List<Map<String, Object>> expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -1, false, "2482.8", "46.03", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2494.23", "34.6", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2505.71", "23.12", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2517.26", "11.59", "100.0", "0.0");
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        System.out.println("-------------------------------DISBURSE LOAN-------------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -1, false, "2482.8", "46.03", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2482.8", "46.03", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2505.66", "23.17", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2528.74", "11.64", "100.0", "0.0");
+
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -9);
+        final String LOAN_FIRST_REPAYMENT_DATE = dateFormat.format(todaysDate.getTime());
+        Float totalDueForCurrentPeriod = (Float) loanSchedule.get(1).get("totalDueForPeriod");
+        this.loanTransactionHelper.makeRepayment(LOAN_FIRST_REPAYMENT_DATE, totalDueForCurrentPeriod, loanID);
+
+        loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -9, true, "2595.95", "32.88", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 2, true, "1862.62", "9.74", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "1838.28", "34.08", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "1855.32", "17.04", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "1847.83", "8.51", "100.0", "0.0");
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        HashMap prepayDetail = this.loanTransactionHelper.getPrepayAmount(this.requestSpec, this.responseSpec, loanID);
+        String prepayAmount = String.valueOf(prepayDetail.get("amount"));
+        validateNumberForEqualWithMsg("verify pre-close amount", "7647.87", prepayAmount);
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        String LOAN_REPAYMENT_DATE = dateFormat.format(todaysDate.getTime());
+        HashMap map = this.loanTransactionHelper.makeRepayment(LOAN_REPAYMENT_DATE, new Float(prepayAmount), loanID);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
+        
+        String transactionId =String.valueOf(map.get("resourceId"));
+        this.loanTransactionHelper.undoRepayment(loanID, transactionId, LOAN_REPAYMENT_DATE);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+        loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -9, true, "2595.95", "32.88", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 2, true, "1862.62", "9.74", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "1838.28", "34.08", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "1855.32", "17.04", "100.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "1847.83", "8.51", "100.0", "0.0");
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+        
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -1);
+        String LOAN_PREPAY_DATE = dateFormat.format(todaysDate.getTime());
+        RequestSpecification requestSpecPrePay = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
+        requestSpecPrePay.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
+        prepayDetail = this.loanTransactionHelper.getPrepayAmount(requestSpecPrePay, this.responseSpec, loanID,LOAN_PREPAY_DATE);
+        prepayAmount = String.valueOf(prepayDetail.get("amount"));
+        validateNumberForEqualWithMsg("verify pre-close amount", "7543.0", prepayAmount);
+        this.loanTransactionHelper.makeRepayment(LOAN_PREPAY_DATE, new Float(prepayAmount), loanID);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
+    }
 
     @Test
     public void testLoanScheduleWithInterestRecalculation_WITH_REST_SAME_AS_REPAYMENT_INTEREST_COMPOUND_NONE_STRATEGY_REDUCE_EMI_PRE_CLOSE_INTEREST_PRE_CLOSE_DATE() {
@@ -3394,11 +3510,11 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", null, preCloseInterestStrategy, null,
-                null, null);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", preCloseInterestStrategy, null, null,
+                null);
 
-        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, null,
-                LoanApplicationTestBuilder.DEFAULT_STRATEGY, new ArrayList<HashMap>(0));
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY,
+                new ArrayList<HashMap>(0));
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -3473,15 +3589,15 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", null,
-                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, null, null);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                null, null, null);
 
         List<HashMap> charges = new ArrayList<>();
         Integer installmentCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
                 ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST, "10", false));
         addCharges(charges, installmentCharge, "10", null);
-        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, null,
-                LoanApplicationTestBuilder.DEFAULT_STRATEGY, charges);
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY,
+                charges);
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -3563,7 +3679,6 @@ public class ClientLoanIntegrationTest {
         Calendar todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
         todaysDate.add(Calendar.DAY_OF_MONTH, -14);
         final String LOAN_DISBURSEMENT_DATE = dateFormat.format(todaysDate.getTime());
-        Integer dayOfMonth = getDayOfMonth(todaysDate);
         Integer dayOfWeek = getDayOfWeek(todaysDate);
 
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
@@ -3571,9 +3686,9 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculationAndCompoundingDetails(
                 LoanProductTestBuilder.RBI_INDIA_STRATEGY, LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_NUMBER_OF_INSTALLMENTS,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LOAN_DISBURSEMENT_DATE,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY, "1", LOAN_DISBURSEMENT_DATE,
-                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, null, dayOfWeek, null, dayOfWeek);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY,
+                "1", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null,
+                null, dayOfWeek, null, dayOfWeek);
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
                 LoanApplicationTestBuilder.RBI_INDIA_STRATEGY, new ArrayList<HashMap>(0));
@@ -3681,7 +3796,6 @@ public class ClientLoanIntegrationTest {
         todaysDate.add(Calendar.DAY_OF_MONTH, -2);
         Integer restDayOfMonth = getDayOfMonth(todaysDate);
         Integer restDayOfWeek = getDayOfWeek(todaysDate);
-        final String REST_START_DATE = dateFormat.format(todaysDate.getTime());
 
         todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
         todaysDate.add(Calendar.DAY_OF_MONTH, -14);
@@ -3703,13 +3817,12 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculationAndCompoundingDetails(
                 LoanProductTestBuilder.DEFAULT_STRATEGY, LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST_AND_FEE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_RESCHEDULE_NEXT_REPAYMENTS,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY, "1", REST_START_DATE,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY, "1", LOAN_DISBURSEMENT_DATE,
-                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, compoundingDayOfMonth, compoundingDayOfWeek,
-                restDayOfMonth, restDayOfWeek);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY,
+                "1", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null,
+                compoundingDayOfMonth, compoundingDayOfWeek, restDayOfMonth, restDayOfWeek);
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
-                LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY, charges);
+                LoanApplicationTestBuilder.DEFAULT_STRATEGY, charges);
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -3814,7 +3927,6 @@ public class ClientLoanIntegrationTest {
         todaysDate.add(Calendar.DAY_OF_MONTH, -4);
         Integer restDateOfMonth = getDayOfMonth(todaysDate);
         Integer restDateOfWeek = getDayOfWeek(todaysDate);
-        final String REST_START_DATE = null;
 
         todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
         todaysDate.add(Calendar.DAY_OF_MONTH, -16);
@@ -3836,12 +3948,12 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculationAndCompoundingDetails(
                 LoanProductTestBuilder.DEFAULT_STRATEGY, LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST_AND_FEE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_RESCHEDULE_NEXT_REPAYMENTS,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY, "1", REST_START_DATE,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, null, null, preCloseInterestStrategy, null,
-                null, null, restDateOfMonth, restDateOfWeek);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_WEEKLY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD,
+                null, preCloseInterestStrategy, null, null, null,
+                restDateOfMonth, restDateOfWeek);
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
-                REST_START_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY, charges);
+                LoanApplicationTestBuilder.DEFAULT_STRATEGY, charges);
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -3913,7 +4025,6 @@ public class ClientLoanIntegrationTest {
         todaysDate.add(Calendar.DAY_OF_MONTH, -7 * 3);
         final String LOAN_DISBURSEMENT_DATE = dateFormat.format(todaysDate.getTime());
         todaysDate.add(Calendar.DAY_OF_MONTH, -2);
-        final String REST_START_DATE = dateFormat.format(todaysDate.getTime());
 
         todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
 
@@ -3924,17 +4035,16 @@ public class ClientLoanIntegrationTest {
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
         final String recalculationCompoundingFrequencyInterval = null;
-        final String recalculationCompoundingFrequencyDate = null;
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST_AND_FEE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_RESCHEDULE_NEXT_REPAYMENTS,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", REST_START_DATE,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, recalculationCompoundingFrequencyInterval,
-                recalculationCompoundingFrequencyDate, LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null,
-                overdueFeeChargeId.toString(), false, null, null, null, null);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD,
+                recalculationCompoundingFrequencyInterval, LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                null, overdueFeeChargeId.toString(), false,
+                null, null, null, null);
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
-                REST_START_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY, null);
+                LoanApplicationTestBuilder.DEFAULT_STRATEGY, null);
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -4039,11 +4149,11 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", null,
-                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, accounts, null, null);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                accounts, null, null);
 
-        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, null,
-                LoanApplicationTestBuilder.DEFAULT_STRATEGY, new ArrayList<HashMap>(0));
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY,
+                new ArrayList<HashMap>(0));
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -4136,13 +4246,13 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculationAndCompoundingDetails(
                 LoanProductTestBuilder.RBI_INDIA_STRATEGY, LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_RESCHEDULE_NEXT_REPAYMENTS,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LOAN_DISBURSEMENT_DATE,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "1", LOAN_DISBURSEMENT_DATE,
-                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, getDayOfMonth(todaysDate),
-                getDayOfWeek(todaysDate), getDayOfMonth(todaysDate), getDayOfWeek(todaysDate));
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD,
+                "1", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null,
+                getDayOfMonth(todaysDate), getDayOfWeek(todaysDate), getDayOfMonth(todaysDate),
+                getDayOfWeek(todaysDate));
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
-                LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.RBI_INDIA_STRATEGY, new ArrayList<HashMap>(0));
+                LoanApplicationTestBuilder.RBI_INDIA_STRATEGY, new ArrayList<HashMap>(0));
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -4215,17 +4325,16 @@ public class ClientLoanIntegrationTest {
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
         final String recalculationCompoundingFrequencyInterval = null;
-        final String recalculationCompoundingFrequencyDate = null;
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.RBI_INDIA_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_RESCHEDULE_NEXT_REPAYMENTS,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LOAN_DISBURSEMENT_DATE,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, recalculationCompoundingFrequencyInterval,
-                recalculationCompoundingFrequencyDate, LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, null,
-                true, null, null, getDayOfMonth(todaysDate), getDayOfWeek(todaysDate));
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD,
+                recalculationCompoundingFrequencyInterval, LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                null, null, true, null,
+                null, getDayOfMonth(todaysDate), getDayOfWeek(todaysDate));
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
-                LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.RBI_INDIA_STRATEGY, new ArrayList<HashMap>(0));
+                LoanApplicationTestBuilder.RBI_INDIA_STRATEGY, new ArrayList<HashMap>(0));
 
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -4309,7 +4418,7 @@ public class ClientLoanIntegrationTest {
         final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
                 LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
                 LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
-                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", null, preCloseStrategy, null, null, null);
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", preCloseStrategy, null, null, null);
 
         final Integer loanID = applyForLoanApplicationForInterestRecalculationWithMoratorium(clientID, loanProductID,
                 LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY, new ArrayList<HashMap>(0), "1", null);
@@ -4387,44 +4496,39 @@ public class ClientLoanIntegrationTest {
     private Integer createLoanProductWithInterestRecalculation(final String repaymentStrategy,
             final String interestRecalculationCompoundingMethod, final String rescheduleStrategyMethod,
             final String recalculationRestFrequencyType, final String recalculationRestFrequencyInterval,
-            final String recalculationRestFrequencyDate, final String preCloseInterestCalculationStrategy, final Account[] accounts,
-            final Integer recalculationRestFrequencyOnDayType, final Integer recalculationRestFrequencyDayOfWeekType) {
+            final String preCloseInterestCalculationStrategy, final Account[] accounts, final Integer recalculationRestFrequencyOnDayType,
+            final Integer recalculationRestFrequencyDayOfWeekType) {
         final String recalculationCompoundingFrequencyType = null;
         final String recalculationCompoundingFrequencyInterval = null;
-        final String recalculationCompoundingFrequencyDate = null;
         final Integer recalculationCompoundingFrequencyOnDayType = null;
         final Integer recalculationCompoundingFrequencyDayOfWeekType = null;
         return createLoanProductWithInterestRecalculation(repaymentStrategy, interestRecalculationCompoundingMethod,
                 rescheduleStrategyMethod, recalculationRestFrequencyType, recalculationRestFrequencyInterval,
-                recalculationRestFrequencyDate, recalculationCompoundingFrequencyType, recalculationCompoundingFrequencyInterval,
-                recalculationCompoundingFrequencyDate, preCloseInterestCalculationStrategy, accounts, null, false,
-                recalculationCompoundingFrequencyOnDayType, recalculationCompoundingFrequencyDayOfWeekType,
+                recalculationCompoundingFrequencyType, recalculationCompoundingFrequencyInterval, preCloseInterestCalculationStrategy,
+                accounts, null, false, recalculationCompoundingFrequencyOnDayType, recalculationCompoundingFrequencyDayOfWeekType,
                 recalculationRestFrequencyOnDayType, recalculationRestFrequencyDayOfWeekType);
     }
 
     private Integer createLoanProductWithInterestRecalculationAndCompoundingDetails(final String repaymentStrategy,
             final String interestRecalculationCompoundingMethod, final String rescheduleStrategyMethod,
             final String recalculationRestFrequencyType, final String recalculationRestFrequencyInterval,
-            final String recalculationRestFrequencyDate, final String recalculationCompoundingFrequencyType,
-            final String recalculationCompoundingFrequencyInterval, final String recalculationCompoundingFrequencyDate,
+            final String recalculationCompoundingFrequencyType, final String recalculationCompoundingFrequencyInterval,
             final String preCloseInterestCalculationStrategy, final Account[] accounts,
             final Integer recalculationCompoundingFrequencyOnDayType, final Integer recalculationCompoundingFrequencyDayOfWeekType,
             final Integer recalculationRestFrequencyOnDayType, final Integer recalculationRestFrequencyDayOfWeekType) {
         return createLoanProductWithInterestRecalculation(repaymentStrategy, interestRecalculationCompoundingMethod,
                 rescheduleStrategyMethod, recalculationRestFrequencyType, recalculationRestFrequencyInterval,
-                recalculationRestFrequencyDate, recalculationCompoundingFrequencyType, recalculationCompoundingFrequencyInterval,
-                recalculationCompoundingFrequencyDate, preCloseInterestCalculationStrategy, accounts, null, false,
-                recalculationCompoundingFrequencyOnDayType, recalculationCompoundingFrequencyDayOfWeekType,
+                recalculationCompoundingFrequencyType, recalculationCompoundingFrequencyInterval, preCloseInterestCalculationStrategy,
+                accounts, null, false, recalculationCompoundingFrequencyOnDayType, recalculationCompoundingFrequencyDayOfWeekType,
                 recalculationRestFrequencyOnDayType, recalculationRestFrequencyDayOfWeekType);
     }
 
     private Integer createLoanProductWithInterestRecalculation(final String repaymentStrategy,
             final String interestRecalculationCompoundingMethod, final String rescheduleStrategyMethod,
             final String recalculationRestFrequencyType, final String recalculationRestFrequencyInterval,
-            final String recalculationRestFrequencyDate, final String recalculationCompoundingFrequencyType,
-            final String recalculationCompoundingFrequencyInterval, final String recalculationCompoundingFrequencyDate,
-            final String preCloseInterestCalculationStrategy, final Account[] accounts, final String chargeId,
-            boolean isArrearsBasedOnOriginalSchedule, final Integer recalculationCompoundingFrequencyOnDayType,
+            final String recalculationCompoundingFrequencyType, final String recalculationCompoundingFrequencyInterval,
+            final String preCloseInterestCalculationStrategy, final Account[] accounts,
+            final String chargeId, boolean isArrearsBasedOnOriginalSchedule, final Integer recalculationCompoundingFrequencyOnDayType,
             final Integer recalculationCompoundingFrequencyDayOfWeekType, final Integer recalculationRestFrequencyOnDayType,
             final Integer recalculationRestFrequencyDayOfWeekType) {
         System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
@@ -4470,16 +4574,19 @@ public class ClientLoanIntegrationTest {
     }
 
     private Integer applyForLoanApplicationForInterestRecalculation(final Integer clientID, final Integer loanProductID,
-            final String disbursementDate, final String compoundingStartDate, final String repaymentStrategy, final List<HashMap> charges) {
-        return applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, disbursementDate, repaymentStrategy, charges, null,
-                null);
-    }
-
-    private Integer applyForLoanApplicationForInterestRecalculation(final Integer clientID, final Integer loanProductID,
             final String disbursementDate, final String repaymentStrategy, final List<HashMap> charges,
             final String graceOnInterestPayment, final String graceOnPrincipalPayment) {
         System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
-        final String loanApplicationJSON = new LoanApplicationTestBuilder() //
+        final boolean isDailyInterestCalculation = false;
+        return applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, disbursementDate, repaymentStrategy, charges,
+                graceOnInterestPayment, graceOnPrincipalPayment, isDailyInterestCalculation);
+    }
+    
+    private Integer applyForLoanApplicationForInterestRecalculation(final Integer clientID, final Integer loanProductID,
+            final String disbursementDate, final String repaymentStrategy, final List<HashMap> charges,
+            final String graceOnInterestPayment, final String graceOnPrincipalPayment, final boolean isDailyInterestCalculation) {
+        System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
+        LoanApplicationTestBuilder builder = new LoanApplicationTestBuilder() //
                 .withPrincipal("10000.00") //
                 .withLoanTermFrequency("4") //
                 .withLoanTermFrequencyAsWeeks() //
@@ -4495,8 +4602,12 @@ public class ClientLoanIntegrationTest {
                 .withwithRepaymentStrategy(repaymentStrategy) //
                 .withPrincipalGrace(graceOnPrincipalPayment) //
                 .withInterestGrace(graceOnInterestPayment)//
-                .withCharges(charges)//
-                .build(clientID.toString(), loanProductID.toString(), null);
+                .withCharges(charges);
+        if (isDailyInterestCalculation) {
+            builder.withInterestCalculationPeriodTypeAsDays();
+        }
+
+        final String loanApplicationJSON = builder.build(clientID.toString(), loanProductID.toString(), null);
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }
 
