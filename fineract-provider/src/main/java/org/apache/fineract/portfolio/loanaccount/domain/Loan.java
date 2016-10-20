@@ -6490,7 +6490,11 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void addTrancheLoanCharge(Charge charge) {
-        if (!trancheCharges.contains(charge)) {
+        List<Charge> appliedCharges = new ArrayList<>(); 
+        for(LoanTrancheCharge loanTrancheCharge: trancheCharges){
+            appliedCharges.add(loanTrancheCharge.getCharge());
+        }
+        if (!appliedCharges.contains(charge)) {
             trancheCharges.add(new LoanTrancheCharge(charge, this));
         }
     }

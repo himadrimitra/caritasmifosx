@@ -49,7 +49,6 @@ import org.apache.fineract.portfolio.charge.exception.ChargeDueAtDisbursementCan
 import org.apache.fineract.portfolio.charge.exception.ChargeMustBePenaltyException;
 import org.apache.fineract.portfolio.charge.exception.ChargeParameterUpdateNotSupportedException;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.hibernate.annotations.Cache;
@@ -240,7 +239,7 @@ public class Charge extends AbstractPersistable<Long> {
         if (obj == null) { return false; }
         if (obj == this) { return true; }
         if (obj.getClass() != getClass()) { return false; }
-        final LoanCharge rhs = (LoanCharge) obj;
+        final Charge rhs = (Charge) obj;
         return new EqualsBuilder().appendSuper(super.equals(obj)) //
                 .append(getId(), rhs.getId()) //
                 .isEquals();
