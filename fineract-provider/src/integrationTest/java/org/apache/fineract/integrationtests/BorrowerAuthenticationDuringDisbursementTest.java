@@ -232,6 +232,63 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 			Assert.assertNotNull(deletedId);
 		}
 	}
+	//internal finger print authentication during loan disbursement
+	@Test
+	public void loadDisbursementWithInternalFingerPrintAuthentication(){
+		ArrayList<HashMap> listOfTransactionAuthenticationRules = TransactionAuthenticationHelper
+				.getTransactionAuthenticationRules(requestSpec, responseSpec);
+		deleteAllExistingTransactionAuthenticationRules(listOfTransactionAuthenticationRules);
+		System.out.println(listOfTransactionAuthenticationRules);
+		String name = PaymentTypeHelper.randomNameGenerator("P_T", 5);
+		String description = PaymentTypeHelper.randomNameGenerator("PT_Desc", 15);
+		Boolean isCashPayment = true;
+		Integer position = 1;
+		System.out.println("----------------CREATE PAYMENT TYPE-----------------");
+		Integer paymentTypeId = PaymentTypeHelper.createPaymentType(requestSpec, responseSpec, name, description,
+				isCashPayment, position);
+		Assert.assertNotNull(paymentTypeId);
+		PaymentTypeHelper.verifyPaymentTypeCreatedOnServer(requestSpec, responseSpec, paymentTypeId);
+		
+		System.out.println("------------------CREATE TRANSACTION AUTHENTICATION-----------------");
+		String locale = "en";
+		Integer portfolioTypeId = 1;
+		Integer transactionTypeId = 1;
+		BigDecimal amountGreaterThan = new BigDecimal(10000);
+		Long authenticationTypeId = new Long(3);
+		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
+				requestSpec, responseSpec, locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
+				authenticationTypeId);
+		Assert.assertNotNull(transactionAuthenticationId);
+
+		System.out.println(
+				"---------------------CREATE CLIENT--------------------------------------------------------------------");
+
+		final Integer clientId = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+		ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientId);
+		final Integer loanProductID = createLoanProduct(false, NONE);
+		System.out.println("-------------------------------Apply for loan-----------------------------");
+		Integer loanId = applyForLoanApplication(clientId, loanProductID, null, null, "12,000.00");
+		ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
+				this.responseSpec, loanId);
+		verifyLoanRepaymentSchedule(loanSchedule);
+		System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+		HashMap loanStatusHashMap = this.loanTransactionHelper.approveLoan("20 September 2011", loanId);
+		LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+		LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+		loanStatusHashMap.clear();
+		System.out.println("-------------------------------DISBURSE LOAN -------------------------------------------");
+		loanStatusHashMap = this.loanTransactionHelper.disburseLoan("20 September 2011", loanId, paymentTypeId, transactionAuthenticationId,
+				"Fingerprint Auth", "45678", new BigDecimal(11000), this.responseSpec);
+		System.out.println("the loan disbursement response " + loanStatusHashMap);
+		this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+		
+		System.out.println(
+				"------------------------------------Delete the Transaction Authentication Rule----------------------------------");
+		Integer deletedId = (Integer) TransactionAuthenticationHelper.deleteTransactionAuthentication(requestSpec,
+				responseSpec, transactionAuthenticationId);
+		Assert.assertNotNull(deletedId);
+	}
 
 	// select different payment type for which the authentication rule is not
 	// present

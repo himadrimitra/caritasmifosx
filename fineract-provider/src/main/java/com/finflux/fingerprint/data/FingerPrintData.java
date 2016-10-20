@@ -15,19 +15,17 @@ public class FingerPrintData {
     private final Long clientId;
     private final Integer fingerId;
     private final String fingerData;
-    private final Collection<EnumOptionData> fingerOptions;
     
 
-    private FingerPrintData(final Long clientId,final Integer fingerId, final String fingerData,final Collection<EnumOptionData> fingerOptions) {
+    private FingerPrintData(final Long clientId,final Integer fingerId, final String fingerData) {
         this.fingerId = fingerId;
         this.fingerData = fingerData;
         this.clientId = clientId;
-        this.fingerOptions = fingerOptions;
     }
 
-    public static FingerPrintData instance(final Long clientId,final Integer fingerId, final String fingerData,final Collection<EnumOptionData> fingerOptions) {
+    public static FingerPrintData instance(final Long clientId,final Integer fingerId, final String fingerData) {
 
-        return new FingerPrintData(clientId,fingerId, fingerData,fingerOptions);
+        return new FingerPrintData(clientId,fingerId, fingerData);
     }
 
     public Long getClientId(){
@@ -41,8 +39,4 @@ public class FingerPrintData {
         return this.fingerData;
     }
     
-    public Collection<EnumOptionData> getFingerOptions() {
-        return this.fingerOptions;
-    }
-
 }

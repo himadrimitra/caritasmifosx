@@ -39,7 +39,6 @@ import com.finflux.organisation.transaction.authentication.domain.TransactionAut
 import com.finflux.organisation.transaction.authentication.domain.TransactionAuthenticationRepositoryWrapper;
 import com.finflux.organisation.transaction.authentication.exception.InAcitiveExternalServiceexception;
 import com.finflux.organisation.transaction.authentication.exception.OtpTypeNotSupported;
-import com.finflux.organisation.transaction.authentication.exception.SecondaryAuthenticationFailedException;
 import com.finflux.organisation.transaction.authentication.exception.TransactionAuthenticationMismatchException;
 import com.google.gson.JsonElement;
 
@@ -160,38 +159,29 @@ public class TransactionAuthenticationService {
 
 				if (authenticationRuleId != transactionAuthentication.getId()) {
 					throw new TransactionAuthenticationMismatchException(authenticationRuleId);
+				}
+				final SecondaryAuthenticationService secondaryAuthenticationService = this.repository
+						.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
+
+				if (secondaryAuthenticationService.isActive()) {
+					final ClientDataForAuthentication clientDataForAuthentication = clientData
+							.validateAndAssembleClientDataForAuthentication(command,
+									SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+									SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(),
+									secondaryAuthenticationService);
+
+					final String aadhaarNumber = clientDataForAuthentication.getClientAadhaarNumber();
+					final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory
+							.getSecondLevelAuthenticationService(
+									secondaryAuthenticationService.getAuthServiceClassName());
+					Location location = getLocationDetails(clientDataForAuthentication);
+					final String otp = clientDataForAuthentication.getClientAuthdata();
+					Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, otp,
+							location);
+					secondLevelAuthenticationService.responseValidation(response);
 				} else {
-
-					final SecondaryAuthenticationService secondaryAuthenticationService = this.repository
-							.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
-
-					if (secondaryAuthenticationService.isActive()) {
-						final ClientDataForAuthentication clientDataForAuthentication = clientData
-								.validateAndAssembleClientDataForAuthentication(command,
-										SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
-										SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue());
-
-						AuthResponse authResponse = null;
-						final String aadhaarNumber = clientDataForAuthentication.getClientAadhaarNumber();
-						final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory
-								.getSecondLevelAuthenticationService(
-										secondaryAuthenticationService.getAuthServiceClassName());
-						Location location = getLocationDetails(clientDataForAuthentication);
-						final String otp = clientDataForAuthentication.getClientAuthdata();
-						Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, otp,
-								location);
-						if (response instanceof AuthResponse) {
-							authResponse = (AuthResponse) response;
-							if (authResponse != null) {
-								if (!authResponse.isSuccess()) {
-									throw new SecondaryAuthenticationFailedException(authResponse);
-								}
-							}
-						}
-					} else {
-						throw new InAcitiveExternalServiceexception(secondaryAuthenticationService.getName(),
-								secondaryAuthenticationService.getId());
-					}
+					throw new InAcitiveExternalServiceexception(secondaryAuthenticationService.getName(),
+							secondaryAuthenticationService.getId());
 				}
 			}
 		}

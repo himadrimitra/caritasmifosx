@@ -11,5 +11,5 @@ public interface SecondLevelAuthenticationService {
 	public Object authenticateUser(final String aadhaarNumber, final String authData,
 			final Location location);
 
-
+	public void responseValidation(final Object response);
 }

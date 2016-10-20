@@ -130,6 +130,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.fingerprint.data.FingerPrintData;
+import com.finflux.fingerprint.services.FingerPrintReadPlatformServices;
+import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
+import com.finflux.infrastructure.external.authentication.service.ExternalAuthenticationServicesReadPlatformService;
 import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
 import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticaionTransactionTypes;
 import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticationPortfolioTypes;
@@ -165,6 +169,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final LoanUtilService loanUtilService;
     private final PledgeReadPlatformService pledgeReadPlatformService;
     private final ConfigurationDomainService configurationDomainService;
+    private final FingerPrintReadPlatformServices fingerPrintReadPlatformServices;
+    private final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService;
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
     private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
@@ -184,7 +190,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final ConfigurationDomainService configurationDomainService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
-            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService) {
+            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService,
+    		final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
+    		final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService) {
         this.context = context;
         this.loanRepository = loanRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -208,6 +216,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
         this.loanPurposeGroupReadPlatformService =loanPurposeGroupReadPlatformService;
+        this.fingerPrintReadPlatformServices = fingerPrintReadPlatformServices;
+        this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
+       
     }
 
     @Override
@@ -582,13 +593,28 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             if (data.get("fixedEmiAmount") != null) {
                 fixedEmiAmount = (BigDecimal) data.get("fixedEmiAmount");
             }
+            Collection<FingerPrintData> fingerPrintData = null;
+            final Loan loan = this.loanRepository.findOne(loanId);
+    		if (loan == null) {
+    			throw new LoanNotFoundException(loanId);
+    		}
             BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedPrincipal");
             Collection<TransactionAuthenticationData> transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
     				.retiveTransactionAuthenticationDetailsForTemplate(
     						SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
     						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal);
+            final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService.getOnlyActiveExternalAuthenticationServices();
+    		if (externalServices.size() > 0 && !externalServices.isEmpty()) {
+    			for(ExternalAuthenticationServiceData services :externalServices){
+    				if(services.getName().contains("Fingerprint Auth")){
+    					if(services.isActive()){
+    						fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(loan.getClientId());
+    					}
+    				}
+    			}
+    		}
             return LoanTransactionData.LoanTransactionDataForDisbursalTemplate(transactionType, expectedDisbursementDate, principal,
-                    paymentOptions, fixedEmiAmount, nextDueDate, transactionAuthenticationOptions);
+                    paymentOptions, fixedEmiAmount, nextDueDate, transactionAuthenticationOptions,fingerPrintData);
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanNotFoundException(loanId);
         }
