@@ -48,7 +48,7 @@ public class AadhaarDataValidator {
 		final String aadhaarNumber = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AADHAAR_NUMBER,
 				element);
 		dataValidatorBuilder.reset().parameter(AadhaarApiConstants.AADHAAR_NUMBER).value(aadhaarNumber).notNull()
-				.notExceedingLengthOf(12).notLessThanMin(12);
+				.notExceedingLengthOf(12);
 
 		throwExceptionIfValidationWarningsExist(dataValidationErrors);
 	}

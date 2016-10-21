@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
+import com.finflux.infrastructure.external.authentication.domain.SecondaryAuthenticationService;
 import com.finflux.infrastructure.external.authentication.service.ExternalAuthenticationServicesReadPlatformService;
 import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.finflux.organisation.transaction.authentication.exception.TransactionAuthenticationMismatchException;
@@ -53,7 +54,7 @@ public class ClientDataForAuthenticationAssembler {
 	}
 
 	public ClientDataForAuthentication validateAndAssembleClientDataForAuthentication(JsonCommand command,
-			final Integer productType, final Integer transactionType) {
+			final Integer productType, final Integer transactionType, final SecondaryAuthenticationService secondaryAuthenticationService) {
 
 		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 		final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
@@ -130,7 +131,10 @@ public class ClientDataForAuthenticationAssembler {
 				.retrieveOneActiveExternalAuthenticationService(
 						transactionAuthenticationData.getAuthenticationTypeId());
 
-		String aadhaarNumber = getAadhaarNumberOfClient(command.getLoanId());
+		String aadhaarNumber = null;
+		if(secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar OTP") || secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar fingerprint")){
+		 aadhaarNumber = getAadhaarNumberOfClient(command.getLoanId());
+	}
 
 		if (locationType.equals(TransactionAuthenticationApiConstants.PINCODE)) {
 			return ClientDataForAuthentication.newInsatance(externalAuthenticationServiceData, aadhaarNumber,

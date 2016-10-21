@@ -9,6 +9,7 @@ import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.aadhaarconnect.bridge.gateway.model.KycResponse;
 import com.aadhaarconnect.bridge.gateway.model.OtpResponse;
 import com.finflux.infrastructure.external.authentication.aadhar.service.AadhaarBridgeProvidedService;
+import com.finflux.organisation.transaction.authentication.exception.SecondaryAuthenticationFailedException;
 
 @Service
 public class SecondLevelAuthenticationServiceUsingAadhaarOtpImpl implements SecondLevelAuthenticationService {
@@ -29,6 +30,18 @@ public class SecondLevelAuthenticationServiceUsingAadhaarOtpImpl implements Seco
 	@Override
 	public Object authenticateUser(final String aadhaarNumber, final String otp, final Location location) {
 		return this.aadharReadPlatformService.authenticateUserByOtp(aadhaarNumber, otp, location);
+	}
+
+	@Override
+	public void responseValidation(final Object response) {
+		if (response instanceof AuthResponse) {
+			AuthResponse authResponse = (AuthResponse) response;
+			if (authResponse != null) {
+				if (!authResponse.isSuccess()) {
+					throw new SecondaryAuthenticationFailedException(authResponse);
+				}
+			}
+		}
 	}
 
 }

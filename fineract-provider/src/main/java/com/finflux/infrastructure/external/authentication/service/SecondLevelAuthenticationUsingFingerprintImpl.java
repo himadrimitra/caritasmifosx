@@ -4,7 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.aadhaarconnect.bridge.capture.model.common.Location;
+import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.finflux.infrastructure.external.authentication.aadhar.service.AadhaarBridgeProvidedService;
+import com.finflux.organisation.transaction.authentication.exception.SecondaryAuthenticationFailedException;
 
 @Service
 public class SecondLevelAuthenticationUsingFingerprintImpl implements SecondLevelAuthenticationService{
@@ -25,6 +27,19 @@ public class SecondLevelAuthenticationUsingFingerprintImpl implements SecondLeve
 	@Override
 	public Object authenticateUser(final  String aadhaarNumber, final String authData, final Location location) {
 		return this.aadharReadPlatformService.authenticateUserByFingerPrintUsingAadhaarService(aadhaarNumber, authData, location);
+	}
+
+	@Override
+	public void responseValidation(final Object response) {
+		if (response instanceof AuthResponse) {
+			AuthResponse authResponse = (AuthResponse) response;
+			if (authResponse != null) {
+				if (!authResponse.isSuccess()) {
+					throw new SecondaryAuthenticationFailedException(authResponse);
+				}
+			}
+		}
+		
 	}
 
 }

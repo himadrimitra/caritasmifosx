@@ -8,10 +8,14 @@ package com.finflux.fingerprint.services;
 
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 import com.finflux.fingerprint.data.FingerPrintData;
 
 public interface FingerPrintReadPlatformServices {
 
     Collection<FingerPrintData> retriveFingerPrintData(final Long clientId);
+
+	Collection<EnumOptionData> retriveFingerPrintTemplate();
 
 }

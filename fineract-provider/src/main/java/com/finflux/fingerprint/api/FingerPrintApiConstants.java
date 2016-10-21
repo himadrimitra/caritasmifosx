@@ -14,6 +14,7 @@ public class FingerPrintApiConstants {
     
     public static final String FINGER_PRINT_RESOURCE_NAME = "fingerPrint";
     
+    public static final String FINGER_PRINT_AUTH_KEY = "45678";
     /**
      * Finger print Entity Types Enumerations
      */

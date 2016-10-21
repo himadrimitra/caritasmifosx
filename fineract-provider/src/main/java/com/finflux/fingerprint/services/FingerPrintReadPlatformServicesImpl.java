@@ -79,10 +79,16 @@ public class FingerPrintReadPlatformServicesImpl implements FingerPrintReadPlatf
             final Long clientId = rs.getLong("clientId");
             final Integer fingerId = rs.getInt("fingerId");
             final String fingerPrint = rs.getString("fingerprint");
-            final Collection<EnumOptionData> fingerOptions = FingerPrintEntityTypeEnums.entityTypeOptions();
-            return FingerPrintData.instance(clientId, fingerId, fingerPrint, fingerOptions);
+            return FingerPrintData.instance(clientId, fingerId, fingerPrint);
         }
 
     }
+
+	@Override
+	public Collection<EnumOptionData> retriveFingerPrintTemplate() {
+		final Collection<EnumOptionData> fingerOptions = FingerPrintEntityTypeEnums.entityTypeOptions();
+		return fingerOptions;
+	
+	}
 
 }
