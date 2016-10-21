@@ -119,6 +119,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductVariableInstallmentConfig;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -449,7 +450,6 @@ public class LoanScheduleAssembler {
          *  get the EMI amounts from LoanTermVariation table
          */
         final Long loanId = this.fromApiJsonHelper.extractLongNamed("id", element);
-        
         if(loanId != null){
             Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
             List<LoanTermVariations> loanEmiTermVariations = loan.getLoanTermVariations();
@@ -492,7 +492,7 @@ public class LoanScheduleAssembler {
                 loanTermVariations, isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfDays, isSkipMeetingOnFirstDay, detailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount,
                 loanProduct.getAdjustedInstallmentInMultiplesOf(), loanProduct.adjustFirstEMIAmount(), 
-                loanProduct.getLoanProductRelatedDetail().getConsiderFutureDisbursmentsInSchedule());
+                loanProduct.getLoanProductRelatedDetail().getConsiderFutureDisbursmentsInSchedule(),loanProduct.getWeeksInYearType());
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,

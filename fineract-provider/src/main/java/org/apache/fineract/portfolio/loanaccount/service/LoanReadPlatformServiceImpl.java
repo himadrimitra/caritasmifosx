@@ -107,6 +107,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanSc
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
@@ -638,7 +639,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         public String loanSchema() {
             return "l.id as id, l.account_no as accountNo, l.external_id as externalId, l.fund_id as fundId, f.name as fundName,"
-                    + " l.loan_type_enum as loanType, l.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName,"
+                    + " l.loan_type_enum as loanType, l.loan_purpose_id as loanPurposeId, l.weeks_in_year_enum as weeksInYearType, flp.name as loanPurposeName,"
                     + " lp.id as loanProductId, lp.name as loanProductName, lp.description as loanProductDescription,"
                     + " lp.is_linked_to_floating_interest_rates as isLoanProductLinkedToFloatingRate, "
                     + " lp.allow_variabe_installments as isvariableInstallmentsAllowed, "
@@ -792,6 +793,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             final Long loanPurposeId = JdbcSupport.getLong(rs, "loanPurposeId");
             final String loanPurposeName = rs.getString("loanPurposeName");
+            
+            final Integer weeksInYearTypeInteger = JdbcSupport.getInteger(rs, "weeksInYearType");
+            final EnumOptionData weeksInYearType = LoanEnumerations.weeksInYearType(WeeksInYearType.fromInt(weeksInYearTypeInteger));
 
             final Long loanProductId = JdbcSupport.getLong(rs, "loanProductId");
             final String loanProductName = rs.getString("loanProductName");
@@ -1061,7 +1065,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance, inArrears,
                     graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
                     interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed, minimumGap,
-                    maximumGap,considerFutureDisbursmentsInSchedule,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo, topupAmount);
+                    maximumGap,considerFutureDisbursmentsInSchedule,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
+                    topupAmount, weeksInYearType);
         }
     }
     
