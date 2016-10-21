@@ -113,6 +113,7 @@ import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatform
 import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
+import org.apache.fineract.useradministration.data.AppUserData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -1457,6 +1458,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " tr.overpayment_portion_derived as overpayment, tr.outstanding_loan_balance_derived as outstandingLoanBalance, "
                     + " tr.unrecognized_income_portion as unrecognizedIncome,"
                     + " tr.submitted_on_date as submittedOnDate, "
+                    + " tr.created_date as createdDate, crb.username as createdByUserName, crb.id as createdById, crb.firstname as createdByFirstName, crb.lastname as createdByLastName, "
+					+ " tr.lastmodified_date as updatedDate, lmb.username as updatedByUserName, lmb.id as updatedById, lmb.firstname as updatedByFirstName, lmb.lastname as updatedByLastName, "
                     + " tr.manually_adjusted_or_reversed as manuallyReversed, "
                     + " pd.payment_type_id as paymentType,pd.account_number as accountNumber,pd.check_number as checkNumber, "
                     + " pd.receipt_number as receiptNumber, pd.bank_number as bankNumber,pd.routing_code as routingCode, "
@@ -1473,7 +1476,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " left JOIN m_payment_detail pd ON tr.payment_detail_id = pd.id"
                     + " left join m_payment_type pt on pd.payment_type_id = pt.id" + " left join m_office office on office.id=tr.office_id"
                     + " left join m_account_transfer_transaction fromtran on fromtran.from_loan_transaction_id = tr.id "
-                    + " left join m_account_transfer_transaction totran on totran.to_loan_transaction_id = tr.id ";
+                    + " left join m_account_transfer_transaction totran on totran.to_loan_transaction_id = tr.id "
+                    + " left join m_appuser crb on crb.id = tr.createdby_id"
+					+ " left join m_appuser lmb on lmb.id = tr.lastmodifiedby_id";
         }
 
         @Override
@@ -1511,6 +1516,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                             bankNumber);
                 }
             }
+            final LocalDate createdDate = JdbcSupport.getLocalDate(rs, "createdDate");
+			final LocalDate updatedDate = JdbcSupport.getLocalDate(rs, "updatedDate");
             final LocalDate date = JdbcSupport.getLocalDate(rs, "date");
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
             final BigDecimal totalAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "total");
@@ -1522,6 +1529,15 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final BigDecimal unrecognizedIncomePortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "unrecognizedIncome");
             final BigDecimal outstandingLoanBalance = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "outstandingLoanBalance");
             final String externalId = rs.getString("externalId");
+			final String createdByUserName = rs.getString("createdByUserName");
+			final String updatedByUserName = rs.getString("updatedByUserName");
+			final String createdByFirstName = rs.getString("createdByFirstName");
+			final String createdByLastName = rs.getString("createdByLastName");
+			final String updatedByFirstName = rs.getString("updatedByFirstName");
+			final String updatedByLastName = rs.getString("updatedByLastName");
+			final long createdById = rs.getLong("createdById");
+			final long updatedById = rs.getLong("updatedById");
+
 
             AccountTransferData transfer = null;
             final Long fromTransferId = JdbcSupport.getLong(rs, "fromTransferId");
@@ -1543,9 +1559,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 transfer = AccountTransferData.transferBasicDetails(toTransferId, currencyData, toTransferAmount, toTransferDate,
                         toTransferDescription, toTransferReversed);
             }
-            return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currencyData, date, totalAmount,
-                    principalPortion, interestPortion, feeChargesPortion, penaltyChargesPortion, overPaymentPortion,
-                    unrecognizedIncomePortion, externalId, transfer, null, outstandingLoanBalance, submittedOnDate, manuallyReversed);
+            final AppUserData createdBy = AppUserData.auditdetails(createdById, createdByUserName, createdByFirstName, createdByLastName);
+			final AppUserData updatedBy = AppUserData.auditdetails(updatedById, updatedByUserName, updatedByFirstName, updatedByLastName);
+            return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currencyData, date, totalAmount, principalPortion, interestPortion,
+                    feeChargesPortion, penaltyChargesPortion, overPaymentPortion, unrecognizedIncomePortion, null, externalId, transfer,
+                    null, outstandingLoanBalance, submittedOnDate, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy);
         }
     }
 
