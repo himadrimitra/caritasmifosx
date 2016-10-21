@@ -26,6 +26,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.account.data.AccountTransferData;
 import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
+import org.apache.fineract.useradministration.data.AppUserData;
 import org.joda.time.LocalDate;
 
 import com.finflux.fingerprint.data.FingerPrintData;
@@ -43,6 +44,10 @@ public class LoanTransactionData {
     private final LoanTransactionEnumData type;
 
     private final LocalDate date;
+    private final LocalDate createdDate;
+    private final LocalDate updatedDate;
+    private final AppUserData createdBy;
+    private final AppUserData updatedBy;
 
     private final CurrencyData currency;
     private final PaymentDetailData paymentDetailData;
@@ -81,7 +86,8 @@ public class LoanTransactionData {
                 loanTransactionData.feeChargesPortion, loanTransactionData.penaltyChargesPortion, loanTransactionData.overpaymentPortion,
                 loanTransactionData.unrecognizedIncomePortion, paymentTypeOptions, loanTransactionData.externalId,
                 loanTransactionData.transfer, loanTransactionData.fixedEmiAmount, loanTransactionData.outstandingLoanBalance,
-                loanTransactionData.manuallyReversed);
+                loanTransactionData.manuallyReversed, loanTransactionData.createdDate, loanTransactionData.updatedDate, 
+                loanTransactionData.createdBy, loanTransactionData.updatedBy);
 
     }
 
@@ -118,6 +124,18 @@ public class LoanTransactionData {
                 fixedEmiAmount, outstandingLoanBalance, submittedOnDate,manuallyReversed);
     }
     
+    public LoanTransactionData(final Long id, final Long officeId, final String officeName, final LoanTransactionEnumData transactionType,
+            final PaymentDetailData paymentDetailData, final CurrencyData currency, final LocalDate date, final BigDecimal amount,
+            final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
+            final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, BigDecimal unrecognizedIncomePortion,
+            final Collection<PaymentTypeData> paymentTypeOptions, final String externalId, final AccountTransferData transfer,
+            final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, boolean manuallyReversed, final LocalDate createdDate, 
+            final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy) {
+        this(id, officeId, officeName, transactionType, paymentDetailData, currency, date, amount, principalPortion, interestPortion,
+                feeChargesPortion, penaltyChargesPortion, overpaymentPortion, unrecognizedIncomePortion, paymentTypeOptions, externalId,
+                transfer, fixedEmiAmount, outstandingLoanBalance, null, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy);
+    }
+
     public static LoanTransactionData populateLoanTransactionData(final Long id, final BigDecimal amount) {
         final Long officeId = null;
         final String officeName = null;
@@ -174,6 +192,49 @@ public class LoanTransactionData {
         this.transactionAuthenticationOptions = null;
         this.loanAccountData = null;
         this.fingerPrintData = null;
+        this.createdDate = null;
+        this.updatedDate = null;
+        this.createdBy = null;
+        this.updatedBy = null;
+    }
+    
+    public LoanTransactionData(final Long id, final Long officeId, final String officeName, final LoanTransactionEnumData transactionType,
+            final PaymentDetailData paymentDetailData, final CurrencyData currency, final LocalDate date, final BigDecimal amount,
+            final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
+            final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, final BigDecimal unrecognizedIncomePortion,
+            final Collection<PaymentTypeData> paymentTypeOptions, final String externalId, final AccountTransferData transfer,
+            final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, final LocalDate submittedOnDate, final boolean manuallyReversed, 
+            final LocalDate createdDate, final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy) {
+        this.id = id;
+        this.officeId = officeId;
+        this.officeName = officeName;
+        this.type = transactionType;
+        this.paymentDetailData = paymentDetailData;
+        this.currency = currency;
+        this.date = date;
+        this.amount = amount;
+        this.principalPortion = principalPortion;
+        this.interestPortion = interestPortion;
+        this.feeChargesPortion = feeChargesPortion;
+        this.penaltyChargesPortion = penaltyChargesPortion;
+        this.unrecognizedIncomePortion = unrecognizedIncomePortion;
+        this.paymentTypeOptions = paymentTypeOptions;
+        this.externalId = externalId;
+        this.transfer = transfer;
+        this.overpaymentPortion = overpaymentPortion;
+        this.fixedEmiAmount = fixedEmiAmount;
+        this.outstandingLoanBalance = outstandingLoanBalance;
+        this.submittedOnDate = submittedOnDate;
+        this.manuallyReversed = manuallyReversed;
+        this.possibleNextRepaymentDate = null;
+        this.transactionAuthenticationOptions = null;
+        this.createdDate = createdDate;
+        this.updatedDate = updatedDate;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+        this.loanAccountData = null;
+        this.fingerPrintData = null;
+
     }
 
     public LoanTransactionData(Long id, LoanTransactionEnumData transactionType, LocalDate date, BigDecimal totalAmount,
@@ -244,6 +305,10 @@ public class LoanTransactionData {
          this.transactionAuthenticationOptions = transactionAuthenticationOptions;
          this.loanAccountData = null;
          this.fingerPrintData = fingerPrintData;
+         this.createdDate = null;
+         this.updatedDate = null;
+         this.createdBy = null;
+         this.updatedBy = null;
 	}
 
     private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -277,6 +342,10 @@ public class LoanTransactionData {
         this.loanAccountNumber = loanAccountNumber;
         this.loanAccountData = null;
         this.fingerPrintData = null;
+        this.createdDate = null;
+        this.updatedDate = null;
+        this.createdBy = null;
+        this.updatedBy = null;
     }
 
     public static LoanTransactionData LoanTransactionDataForReconciliationLoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -311,6 +380,10 @@ public class LoanTransactionData {
         this.transactionAuthenticationOptions = loanTransactionData.transactionAuthenticationOptions;
         this.loanAccountData = loanAccountData;
         this.fingerPrintData = loanTransactionData.fingerPrintData;
+        this.createdDate = loanTransactionData.createdDate;
+        this.updatedDate = loanTransactionData.updatedDate;
+        this.createdBy = loanTransactionData.createdBy;
+        this.updatedBy = loanTransactionData.updatedBy;
     }
     
     public static LoanTransactionData LoanTransactionRepaymentTemplate(final LoanTransactionData loanTransactionData, final LoanAccountData loanAccountData){

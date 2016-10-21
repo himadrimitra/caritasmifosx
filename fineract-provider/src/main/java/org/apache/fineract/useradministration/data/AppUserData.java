@@ -61,6 +61,10 @@ public class AppUserData {
     public static AppUserData dropdown(final Long id, final String username) {
         return new AppUserData(id, username, null, null, null, null, null, null, null, null, null, null, null);
     }
+    
+    public static AppUserData auditdetails(final Long id, final String username, final String firstname, final String lastname) {
+        return new AppUserData(id, username, null, null, null, firstname, lastname, null, null, null, null, null, null);
+    }
 
     public static AppUserData instance(final Long id, final String username, final String email, final Long officeId,
             final String officeName, final String firstname, final String lastname, final Collection<RoleData> availableRoles,
