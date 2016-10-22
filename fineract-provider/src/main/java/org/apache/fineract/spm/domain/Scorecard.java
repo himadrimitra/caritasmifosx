@@ -29,6 +29,9 @@ import java.util.Date;
 @Table(name = "m_survey_scorecards")
 public class Scorecard extends AbstractPersistable<Long> {
 
+    @Column(name = "entity_id")
+    private Long entityId;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "survey_id")
     private Survey survey;
@@ -115,5 +118,13 @@ public class Scorecard extends AbstractPersistable<Long> {
 
     public void setValue(Integer value) {
         this.value = value;
+    }
+
+    public Long getEntityId() {
+        return this.entityId;
+    }
+
+    public void setEntityId(Long entityId) {
+        this.entityId = entityId;
     }
 }

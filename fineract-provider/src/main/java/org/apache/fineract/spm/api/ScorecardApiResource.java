@@ -87,13 +87,9 @@ public class ScorecardApiResource {
 
         final Survey survey = findSurvey(surveyId);
 
-        final Client client = this.clientRepository.findOne(scorecardData.getClientId());
+        
 
-        if (client == null) {
-            throw new ClientNotFoundException(scorecardData.getClientId());
-        }
-
-        this.scorecardService.createScorecard(ScorecardMapper.map(scorecardData, survey, appUser, client));
+        this.scorecardService.createScorecard(ScorecardMapper.map(scorecardData, survey, appUser, null));
     }
 
     @Path("/clients/{clientId}")

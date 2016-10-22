@@ -18,16 +18,19 @@
  */
 package org.apache.fineract.spm.service;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.spm.data.SurveyData;
 import org.apache.fineract.spm.domain.Survey;
+import org.apache.fineract.spm.domain.SurveyEntityType;
 import org.apache.fineract.spm.repository.SurveyRepository;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Date;
-import java.util.List;
 
 @Service
 public class SpmService {
@@ -107,5 +110,21 @@ public class SpmService {
 
             this.surveyRepository.save(survey);
         }
+    }
+
+    public SurveyData retrieveTemplate() {
+        final Collection<EnumOptionData> surveyEntityTypes = SurveyEntityType.entityTypeOptions();
+        final SurveyData surveyData = new SurveyData();
+        surveyData.setSurveyEntityTypes(surveyEntityTypes);
+        return surveyData;
+    }
+
+    public void saveSurvey(final Survey survey) {
+        this.surveyRepository.save(survey);
+    }
+
+    public List<Survey> fetchAllSurveys(final Boolean isActive) {
+        this.securityContext.authenticatedUser();
+        return this.surveyRepository.fetchAllSurveys();
     }
 }

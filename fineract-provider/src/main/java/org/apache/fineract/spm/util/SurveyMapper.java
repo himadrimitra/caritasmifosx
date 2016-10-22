@@ -18,6 +18,10 @@
  */
 package org.apache.fineract.spm.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.spm.data.ComponentData;
 import org.apache.fineract.spm.data.QuestionData;
 import org.apache.fineract.spm.data.ResponseData;
@@ -26,9 +30,7 @@ import org.apache.fineract.spm.domain.Component;
 import org.apache.fineract.spm.domain.Question;
 import org.apache.fineract.spm.domain.Response;
 import org.apache.fineract.spm.domain.Survey;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.fineract.spm.domain.SurveyEntityType;
 
 public class SurveyMapper {
 
@@ -37,16 +39,30 @@ public class SurveyMapper {
     }
 
     public static SurveyData map(final Survey survey) {
-        final SurveyData surveyData = new SurveyData(
-                survey.getId(), SurveyMapper.mapComponents(survey.getComponents()),
-                SurveyMapper.mapQuestions(survey.getQuestions()), survey.getKey(), survey.getName(),
-                survey.getDescription(), survey.getCountryCode(), survey.getValidFrom(), survey.getValidTo()
-        );
-        return surveyData;
+        final Integer entityTypeId = survey.getEntityType();
+        EnumOptionData entityType = null;
+        if (entityTypeId != null) {
+            entityType = SurveyEntityType.surveyEntityType(entityTypeId);
+        }
+        return new SurveyData(survey.getId(), SurveyMapper.mapComponents(survey.getComponents()), SurveyMapper.mapQuestions(survey
+                .getQuestions()), entityType, survey.getKey(), survey.getName(), survey.getDescription(), survey.getCountryCode(),
+                survey.getValidFrom(), survey.getValidTo(), survey.isActive());
     }
 
     public static Survey map(final SurveyData surveyData) {
         final Survey survey = new Survey();
+        survey.setEntityType(surveyData.getEntityTypeId());
+        survey.setComponents(SurveyMapper.mapComponentDatas(surveyData.getComponentDatas(), survey));
+        survey.setQuestions(SurveyMapper.mapQuestionDatas(surveyData.getQuestionDatas(), survey));
+        survey.setKey(surveyData.getKey());
+        survey.setName(surveyData.getName());
+        survey.setDescription(surveyData.getDescription());
+        survey.setCountryCode(surveyData.getCountryCode());
+        return survey;
+    }
+
+    public static Survey mapUpdate(final Survey survey, final SurveyData surveyData) {
+        survey.setEntityType(surveyData.getEntityTypeId());
         survey.setComponents(SurveyMapper.mapComponentDatas(surveyData.getComponentDatas(), survey));
         survey.setQuestions(SurveyMapper.mapQuestionDatas(surveyData.getQuestionDatas(), survey));
         survey.setKey(surveyData.getKey());
@@ -60,20 +76,28 @@ public class SurveyMapper {
         final List<ComponentData> componentDatas = new ArrayList<>();
         if (components != null) {
             for (final Component component : components) {
-                componentDatas.add(new ComponentData(
-                        component.getId(), component.getKey(), component.getText(), component.getDescription(),
-                        component.getSequenceNo()
-                ));
+                componentDatas.add(new ComponentData(component.getId(), component.getKey(), component.getText(),
+                        component.getDescription(), component.getSequenceNo()));
             }
         }
         return componentDatas;
     }
 
-    private static List<Component> mapComponentDatas(final List<ComponentData> componentDatas, final Survey survey) {
+    public static List<Component> mapComponentDatas(final List<ComponentData> componentDatas, final Survey survey) {
         final List<Component> components = new ArrayList<>();
         if (componentDatas != null) {
+            final List<Component> extComponents = survey.getComponents();
             for (final ComponentData componentData : componentDatas) {
-                final Component component = new Component();
+                Component component = new Component();
+                if (extComponents != null && !extComponents.isEmpty() && componentData.getId() != null) {
+                    for (final Component c : extComponents) {
+                        if (c.getId() == componentData.getId()) {
+                            component = c;
+                            extComponents.remove(c);
+                            break;
+                        }
+                    }
+                }
                 component.setSurvey(survey);
                 component.setKey(componentData.getKey());
                 component.setText(componentData.getText());
@@ -89,20 +113,28 @@ public class SurveyMapper {
         final List<QuestionData> questionDatas = new ArrayList<>();
         if (questions != null) {
             for (final Question question : questions) {
-                questionDatas.add(new QuestionData(question.getId(),
-                        SurveyMapper.mapResponses(question.getResponses()), question.getComponentKey(), question.getKey(),
-                        question.getText(), question.getDescription(), question.getSequenceNo()
-                ));
+                questionDatas.add(new QuestionData(question.getId(), SurveyMapper.mapResponses(question.getResponses()), question
+                        .getComponentKey(), question.getKey(), question.getText(), question.getDescription(), question.getSequenceNo()));
             }
         }
         return questionDatas;
     }
 
-    private static List<Question> mapQuestionDatas(final List<QuestionData> questionDatas, final Survey survey) {
+    public static List<Question> mapQuestionDatas(final List<QuestionData> questionDatas, final Survey survey) {
         final List<Question> questions = new ArrayList<>();
         if (questionDatas != null) {
+            final List<Question> extQuestions = survey.getQuestions();
             for (final QuestionData questionData : questionDatas) {
-                final Question question = new Question();
+                Question question = new Question();
+                if (extQuestions != null && !extQuestions.isEmpty() && questionData.getId() != null) {
+                    for (final Question q : extQuestions) {
+                        if (questionData.getId() == q.getId()) {
+                            question = q;
+                            extQuestions.remove(q);
+                            break;
+                        }
+                    }
+                }
                 question.setSurvey(survey);
                 question.setComponentKey(questionData.getComponentKey());
                 question.setResponses(SurveyMapper.mapResponseDatas(questionData.getResponseDatas(), question));
@@ -120,9 +152,7 @@ public class SurveyMapper {
         final List<ResponseData> responseDatas = new ArrayList<>();
         if (responses != null) {
             for (final Response response : responses) {
-                responseDatas.add(new ResponseData(
-                    response.getId(), response.getText(), response.getValue(), response.getSequenceNo()
-                ));
+                responseDatas.add(new ResponseData(response.getId(), response.getText(), response.getValue(), response.getSequenceNo()));
             }
         }
         return responseDatas;
@@ -131,8 +161,18 @@ public class SurveyMapper {
     private static List<Response> mapResponseDatas(final List<ResponseData> responseDatas, final Question question) {
         final List<Response> responses = new ArrayList<>();
         if (responseDatas != null) {
+            final List<Response> extResponses = question.getResponses();
             for (final ResponseData responseData : responseDatas) {
-                final Response response = new Response();
+                Response response = new Response();
+                if (extResponses != null && !extResponses.isEmpty() && responseData.getId() != null) {
+                    for (final Response r : extResponses) {
+                        if (r.getId() == responseData.getId()) {
+                            response = r;
+                            extResponses.remove(r);
+                            break;
+                        }
+                    }
+                }
                 response.setQuestion(question);
                 response.setText(responseData.getText());
                 response.setValue(responseData.getValue());

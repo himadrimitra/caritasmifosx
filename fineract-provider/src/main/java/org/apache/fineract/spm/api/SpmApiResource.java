@@ -18,8 +18,30 @@
  */
 package org.apache.fineract.spm.api;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
+
+import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.spm.data.ComponentData;
+import org.apache.fineract.spm.data.QuestionData;
 import org.apache.fineract.spm.data.SurveyData;
+import org.apache.fineract.spm.domain.Question;
 import org.apache.fineract.spm.domain.Survey;
 import org.apache.fineract.spm.exception.SurveyNotFoundException;
 import org.apache.fineract.spm.service.SpmService;
@@ -29,48 +51,56 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.List;
-
 @Path("/surveys")
 @Component
 @Scope("singleton")
 public class SpmApiResource {
 
+    @SuppressWarnings("rawtypes")
+    private final DefaultToApiJsonSerializer toApiJsonSerializer;
+    private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PlatformSecurityContext securityContext;
     private final SpmService spmService;
 
+    @SuppressWarnings("rawtypes")
     @Autowired
-    public SpmApiResource(final PlatformSecurityContext securityContext,
-                          final SpmService spmService) {
+    public SpmApiResource(final DefaultToApiJsonSerializer toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
+            final PlatformSecurityContext securityContext, final SpmService spmService) {
+        this.toApiJsonSerializer = toApiJsonSerializer;
+        this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.securityContext = securityContext;
         this.spmService = spmService;
     }
 
     @GET
+    @Path("template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public SurveyData retrieveTemplate() {
+        return this.spmService.retrieveTemplate();
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public List<SurveyData> fetchActiveSurveys() {
+    public String fetchActiveSurveys(@QueryParam("isActive") final Boolean isActive, @Context final UriInfo uriInfo) {
         this.securityContext.authenticatedUser();
-
         final List<SurveyData> result = new ArrayList<>();
-
-        final List<Survey> surveys = this.spmService.fetchValidSurveys();
-
+        List<Survey> surveys = null;
+        surveys = this.spmService.fetchAllSurveys(isActive);
         if (surveys != null) {
             for (final Survey survey : surveys) {
                 result.add(SurveyMapper.map(survey));
             }
         }
-
-        return result;
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, result);
     }
 
     @GET
-    @Path("/{id}")
+    @Path("{id}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
@@ -79,9 +109,7 @@ public class SpmApiResource {
 
         final Survey survey = this.spmService.findById(id);
 
-        if (survey == null) {
-            throw new SurveyNotFoundException(id);
-        }
+        if (survey == null) { throw new SurveyNotFoundException(id); }
 
         return SurveyMapper.map(survey);
     }
@@ -90,22 +118,58 @@ public class SpmApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public void createSurvey(final SurveyData surveyData) {
+    public Long createSurvey(final SurveyData surveyData) {
         this.securityContext.authenticatedUser();
-
         final Survey survey = SurveyMapper.map(surveyData);
-
         this.spmService.createSurvey(survey);
+        return survey.getId();
     }
 
-    @DELETE
-    @Path("/{id}")
+    @PUT
+    @Path("{surveyId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public void deactivateSurvey(@PathParam("id") final Long id) {
+    public void updateSurveyQuestions(@PathParam("surveyId") Long surveyId, final SurveyData surveyData) {
         this.securityContext.authenticatedUser();
+        final Survey survey = this.spmService.findById(surveyId);
+        SurveyMapper.mapUpdate(survey, surveyData);
+        this.spmService.saveSurvey(survey);
+    }
 
-        this.spmService.deactivateSurvey(id);
+    @POST
+    @Path("{surveyId}/components")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public void createSurveyComponent(@PathParam("surveyId") Long surveyId, final List<ComponentData> componentDatas) {
+        this.securityContext.authenticatedUser();
+        final Survey survey = this.spmService.findById(surveyId);
+        final List<org.apache.fineract.spm.domain.Component> components = SurveyMapper.mapComponentDatas(componentDatas, survey);
+        survey.setComponents(components);
+        this.spmService.saveSurvey(survey);
+    }
+
+    @POST
+    @Path("{surveyId}/questions")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public void createSurveyQuestions(@PathParam("surveyId") Long surveyId, final List<QuestionData> questionDatas) {
+        this.securityContext.authenticatedUser();
+        final Survey survey = this.spmService.findById(surveyId);
+        final List<Question> questions = SurveyMapper.mapQuestionDatas(questionDatas, survey);
+        survey.setQuestions(questions);
+        this.spmService.saveSurvey(survey);
+    }
+
+    @DELETE
+    @Path("/{surveyId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public void deactivateSurvey(@PathParam("surveyId") final Long surveyId) {
+        this.securityContext.authenticatedUser();
+        this.spmService.deactivateSurvey(surveyId);
     }
 }

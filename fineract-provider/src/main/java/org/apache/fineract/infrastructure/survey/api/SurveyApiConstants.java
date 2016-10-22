@@ -23,6 +23,10 @@ package org.apache.fineract.infrastructure.survey.api;
  */
 public class SurveyApiConstants {
 
-
-    final static String SURVEY_RESOURCE_NAME ="Survey";
+    final static String SURVEY_RESOURCE_NAME = "Survey";
+    
+    public static final String enumTypeClients = "CLIENTS";
+    public static final String enumTypeGroups = "GROUPS";
+    public static final String enumTypeCenters = "CENTERS";
+    public static final String enumTypeOffices = "OFFICES";
 }

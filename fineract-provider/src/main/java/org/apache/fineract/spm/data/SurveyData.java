@@ -18,42 +18,59 @@
  */
 package org.apache.fineract.spm.data;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class SurveyData {
 
     private Long id;
     private List<ComponentData> componentDatas;
     private List<QuestionData> questionDatas;
+    private Integer entityTypeId;
+    private String entityTypeCode;
+    private String entityTypeValue;
     private String key;
     private String name;
     private String description;
     private String countryCode;
     private Date validFrom;
     private Date validTo;
+    private boolean isActive;
+
+    // Template Data
+    private Collection<EnumOptionData> surveyEntityTypes;
 
     public SurveyData() {
         super();
     }
 
     public SurveyData(final Long id, final List<ComponentData> componentDatas, final List<QuestionData> questionDatas,
-                      final String key, final String name, final String description, final String countryCode,
-                      final Date validFrom, final Date validTo) {
+            final EnumOptionData entityType, final String key, final String name, final String description, final String countryCode,
+            final Date validFrom, final Date validTo, final boolean isActive) {
         super();
         this.id = id;
         this.componentDatas = componentDatas;
         this.questionDatas = questionDatas;
+        if (entityType != null) {
+            this.entityTypeId = entityType.getId().intValue();
+            this.entityTypeCode = entityType.getCode();
+            this.entityTypeValue = entityType.getValue();
+        }
+
         this.key = key;
         this.name = name;
         this.description = description;
         this.countryCode = countryCode;
         this.validFrom = validFrom;
         this.validTo = validTo;
+        this.isActive = isActive;
     }
 
     public Long getId() {
-        return id;
+        return this.id;
     }
 
     public void setId(Long id) {
@@ -61,7 +78,7 @@ public class SurveyData {
     }
 
     public List<ComponentData> getComponentDatas() {
-        return componentDatas;
+        return this.componentDatas;
     }
 
     public void setComponentDatas(List<ComponentData> componentDatas) {
@@ -69,15 +86,39 @@ public class SurveyData {
     }
 
     public List<QuestionData> getQuestionDatas() {
-        return questionDatas;
+        return this.questionDatas;
     }
 
     public void setQuestionDatas(List<QuestionData> questionDatas) {
         this.questionDatas = questionDatas;
     }
 
+    public Integer getEntityTypeId() {
+        return this.entityTypeId;
+    }
+
+    public void setEntityTypeId(Integer entityTypeId) {
+        this.entityTypeId = entityTypeId;
+    }
+
+    public String getEntityTypeCode() {
+        return this.entityTypeCode;
+    }
+
+    public void setEntityTypeCode(String entityTypeCode) {
+        this.entityTypeCode = entityTypeCode;
+    }
+
+    public String getEntityTypeValue() {
+        return this.entityTypeValue;
+    }
+
+    public void setEntityTypeValue(String entityTypeValue) {
+        this.entityTypeValue = entityTypeValue;
+    }
+
     public String getKey() {
-        return key;
+        return this.key;
     }
 
     public void setKey(String key) {
@@ -85,7 +126,7 @@ public class SurveyData {
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
     public void setName(String name) {
@@ -93,7 +134,7 @@ public class SurveyData {
     }
 
     public String getDescription() {
-        return description;
+        return this.description;
     }
 
     public void setDescription(String description) {
@@ -101,7 +142,7 @@ public class SurveyData {
     }
 
     public String getCountryCode() {
-        return countryCode;
+        return this.countryCode;
     }
 
     public void setCountryCode(String countryCode) {
@@ -109,7 +150,7 @@ public class SurveyData {
     }
 
     public Date getValidFrom() {
-        return validFrom;
+        return this.validFrom;
     }
 
     public void setValidFrom(Date validFrom) {
@@ -117,10 +158,26 @@ public class SurveyData {
     }
 
     public Date getValidTo() {
-        return validTo;
+        return this.validTo;
     }
 
     public void setValidTo(Date validTo) {
         this.validTo = validTo;
+    }
+
+    public boolean isActive() {
+        return this.isActive;
+    }
+
+    public void setActive(boolean isActive) {
+        this.isActive = isActive;
+    }
+
+    public Collection<EnumOptionData> getSurveyEntityTypes() {
+        return this.surveyEntityTypes;
+    }
+
+    public void setSurveyEntityTypes(Collection<EnumOptionData> surveyEntityTypes) {
+        this.surveyEntityTypes = surveyEntityTypes;
     }
 }

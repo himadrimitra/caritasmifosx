@@ -3545,4 +3545,11 @@ public class CommandWrapperBuilder {
         this.loanId = loanId;
         return this;
     }
+    
+    public CommandWrapperBuilder createSurvey() {
+        this.actionName = "CREATE";
+        this.entityName = "SURVEY";
+        this.href = "/surveys";
+        return this;
+    }
 }

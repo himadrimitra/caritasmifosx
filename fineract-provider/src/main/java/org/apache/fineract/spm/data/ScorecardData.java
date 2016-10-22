@@ -23,6 +23,7 @@ import java.util.List;
 
 public class ScorecardData {
 
+    private Long entityId;
     private Long userId;
     private Long clientId;
     private Date createdOn;
@@ -33,9 +34,10 @@ public class ScorecardData {
         super();
     }
 
-    public ScorecardData(final Long userId, final Long clientId, final Date createdOn,
+    public ScorecardData(final Long entityId, final Long userId, final Long clientId, final Date createdOn,
                          final List<ScorecardValue> scorecardValues) {
         super();
+        this.entityId = entityId;
         this.userId = userId;
         this.clientId = clientId;
         this.createdOn = createdOn;
@@ -72,5 +74,13 @@ public class ScorecardData {
 
     public void setScorecardValues(List<ScorecardValue> scorecardValues) {
         this.scorecardValues = scorecardValues;
+    }
+    
+    public Long getEntityId() {
+        return this.entityId;
+    }
+
+    public void setEntityId(Long entityId) {
+        this.entityId = entityId;
     }
 }

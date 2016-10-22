@@ -18,7 +18,13 @@
  */
 package org.apache.fineract.spm.util;
 
-import org.apache.fineract.organisation.staff.domain.Staff;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.spm.data.ScorecardData;
 import org.apache.fineract.spm.data.ScorecardValue;
@@ -28,14 +34,13 @@ import org.apache.fineract.spm.domain.Scorecard;
 import org.apache.fineract.spm.domain.Survey;
 import org.apache.fineract.useradministration.domain.AppUser;
 
-import java.util.*;
-
 public class ScorecardMapper {
 
     private ScorecardMapper() {
         super();
     }
 
+    @SuppressWarnings("unchecked")
     public static List<ScorecardData> map(final List<Scorecard> scorecards) {
         final Map<Date, ScorecardData> scorecardDataMap = new HashMap<>();
         ScorecardData scorecardData = null;
@@ -43,6 +48,7 @@ public class ScorecardMapper {
             for (Scorecard scorecard : scorecards) {
                 if ((scorecardData = scorecardDataMap.get(scorecard.getCreatedOn())) == null) {
                     scorecardData = new ScorecardData();
+                    scorecardData.setEntityId(scorecard.getEntityId());
                     scorecardDataMap.put(scorecard.getCreatedOn(), scorecardData);
                     scorecardData.setUserId(scorecard.getAppUser().getId());
                     scorecardData.setClientId(scorecard.getClient().getId());
@@ -69,6 +75,7 @@ public class ScorecardMapper {
         if (scorecardValues != null) {
            for (ScorecardValue scorecardValue : scorecardValues) {
                final Scorecard scorecard = new Scorecard();
+               scorecard.setEntityId(scorecardData.getEntityId());
                scorecards.add(scorecard);
                scorecard.setSurvey(survey);
                ScorecardMapper.setQuestionAndResponse(scorecardValue, scorecard, survey);

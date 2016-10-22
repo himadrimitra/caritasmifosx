@@ -18,11 +18,20 @@
  */
 package org.apache.fineract.spm.domain;
 
-import org.springframework.data.jpa.domain.AbstractPersistable;
-
-import javax.persistence.*;
 import java.util.Date;
 import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_surveys")
@@ -35,6 +44,9 @@ public class Survey extends AbstractPersistable<Long> {
     @OneToMany(mappedBy = "survey", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @OrderBy("sequenceNo")
     private List<Question> questions;
+
+    @Column(name = "entity_type", length = 3)
+    private Integer entityType;
 
     @Column(name = "a_key", length = 32)
     private String key;
@@ -55,6 +67,9 @@ public class Survey extends AbstractPersistable<Long> {
     @Column(name = "valid_to")
     @Temporal(value = TemporalType.TIMESTAMP)
     private Date validTo;
+
+    @Column(name = "is_active")
+    private boolean isActive = true;
 
     public Survey() {
         super();
@@ -122,5 +137,21 @@ public class Survey extends AbstractPersistable<Long> {
 
     public void setValidTo(Date validTo) {
         this.validTo = validTo;
+    }
+
+    public Integer getEntityType() {
+        return this.entityType;
+    }
+
+    public void setEntityType(final Integer entityType) {
+        this.entityType = entityType;
+    }
+
+    public boolean isActive() {
+        return this.isActive;
+    }
+
+    public void setActive(final boolean isActive) {
+        this.isActive = isActive;
     }
 }
