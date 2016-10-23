@@ -162,6 +162,10 @@ public class ChargeEnumerations {
             	optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue().longValue(),
             	        ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getCode(), "% Disbursement Amount");
             break;
+            case SLAB_BASED:
+            	optionData = new EnumOptionData(ChargeCalculationType.SLAB_BASED.getValue().longValue(),
+            	        ChargeCalculationType.SLAB_BASED.getCode(), "Slab Based");
+            break;
             default:
                 optionData = new EnumOptionData(ChargeCalculationType.INVALID.getValue().longValue(),
                         ChargeCalculationType.INVALID.getCode(), "Invalid");

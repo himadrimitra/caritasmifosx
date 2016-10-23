@@ -26,6 +26,10 @@ public class ChargesApiConstants {
     public static final String emiRoundingGoalSeekParamName = "emiRoundingGoalSeek";
     public static final String isGlimChargeParamName = "isGlimCharge";
     public static final String glimChargeCalculation = "glimChargeCalculation";
-    
+    public static final String slabsParamName = "slabs";
+    public static final String fromLoanAmountParamName = "fromLoanAmount";
+    public static final String toLoanAmountParamName = "toLoanAmount";
+    public static final String amountParamName = "amount";
+    public static final String isCapitalizedParamName = "isCapitalized";
 
 }

@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.charge.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAcc
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.ChargeAppliesTo;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
@@ -46,8 +48,10 @@ import org.apache.fineract.portfolio.tax.service.TaxReadPlatformService;
 import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -87,17 +91,47 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
     @Override
     @Cacheable(value = "charges", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('ch')")
     public Collection<ChargeData> retrieveAllCharges() {
-        final ChargeMapper rm = new ChargeMapper();
-
-        String sql = "select " + rm.chargeSchema() + " where c.is_deleted=0 ";
-
+        final ChargeMapperDataExtractor rm = new ChargeMapperDataExtractor();
+        String sql = "select " + rm.schema() + " where c.is_deleted=0 ";
         sql += addInClauseToSQL_toLimitChargesMappedToOffice_ifOfficeSpecificProductsEnabled();
-
         sql += " order by c.name ";
-
         return this.jdbcTemplate.query(sql, rm, new Object[] {});
     }
 
+    private static final class ChargeMapperDataExtractor implements ResultSetExtractor<Collection<ChargeData>> {
+
+        final ChargeMapper pm = new ChargeMapper();
+        final ChargeSlabMapper cm = new ChargeSlabMapper();
+
+        public String schema() {
+            return this.pm.chargeSchema();
+        }
+
+        @Override
+        public Collection<ChargeData> extractData(ResultSet rs) throws SQLException, DataAccessException {
+            List<ChargeData> chargeDataList = new ArrayList<>();
+            ChargeData chargeData = null;
+            Long chargeDataId = null;
+            int cId = 0;// Charge Id index
+            int csId = 0;// Charge Slab id index
+            while (rs.next()) {
+                final Long tempcId = rs.getLong("id");
+                if (chargeData == null || (chargeDataId != null && !chargeDataId.equals(tempcId))) {
+                    chargeDataId = tempcId;
+                    chargeData = this.pm.mapRow(rs, cId++);
+                    chargeDataList.add(chargeData);
+                }
+                if(rs.getLong("csid") > 0){
+                    final ChargeSlabData chargeSlabData = this.cm.mapRow(rs, csId++);
+                    if (chargeSlabData != null) {
+                        chargeData.addChargeSlabData(chargeSlabData);
+                    }
+                }
+            }
+            return chargeDataList;
+        }
+    }
+    
     @Override
     public Collection<ChargeData> retrieveAllChargesForCurrency(String currencyCode) {
         final ChargeMapper rm = new ChargeMapper();
@@ -114,13 +148,12 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
     @Override
     public ChargeData retrieveCharge(final Long chargeId) {
         try {
-            final ChargeMapper rm = new ChargeMapper();
-
-            String sql = "select " + rm.chargeSchema() + " where c.id = ? and c.is_deleted=0 ";
-
+            final ChargeMapperDataExtractor rm = new ChargeMapperDataExtractor();
+            String sql = "select " + rm.schema() + " where c.id = ? and c.is_deleted=0 ";
             sql += addInClauseToSQL_toLimitChargesMappedToOffice_ifOfficeSpecificProductsEnabled();
-
-            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { chargeId });
+            final Collection<ChargeData> chargeDataList = this.jdbcTemplate.query(sql, rm, new Object[] { chargeId });
+            if (!chargeDataList.isEmpty()) { return chargeDataList.iterator().next(); }
+            throw new ChargeNotFoundException(chargeId);
         } catch (final EmptyResultDataAccessException e) {
             throw new ChargeNotFoundException(chargeId);
         }
@@ -279,6 +312,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, "
                     + "c.charge_payment_mode_enum as chargePaymentMode, c.emi_rounding_goalseek as emiRoundingGoalSeek, c.glim_charge_calculation_enum as glimChargeCalculation, "
                     + "c.is_glim_charge as isGlimCharge, c.charge_calculation_enum as chargeCalculation, c.is_penalty as penalty, "
+                    + "cs.id as csid, cs.from_loan_amount as fromLoanAmount, cs.to_loan_amount as toLoanAmount, cs.amount as chargeAmount, c.is_capitalized as isCapitalized, "
                     + "c.is_active as active, oc.name as currencyName, oc.decimal_places as currencyDecimalPlaces, "
                     + "oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
                     + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
@@ -287,7 +321,8 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code "
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
-                    + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id ";
+                    + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id "
+                    + " LEFT JOIN f_charge_slab cs on cs.charge_id = c.id ";
         }
 
         public String loanProductChargeSchema() {
@@ -326,7 +361,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
             final int chargeCalculation = rs.getInt("chargeCalculation");
             final EnumOptionData chargeCalculationType = ChargeEnumerations.chargeCalculationType(chargeCalculation);
-
+            
             final int paymentMode = rs.getInt("chargePaymentMode");
             final EnumOptionData chargePaymentMode = ChargeEnumerations.chargePaymentMode(paymentMode);
 
@@ -367,10 +402,29 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             final boolean isGlimCharge = rs.getBoolean("isGlimCharge");
             final int glimCalculation = rs.getInt("glimChargeCalculation");
             final EnumOptionData glimChargeCalculation = ChargeEnumerations.glimChargeCalculationType(glimCalculation);
+            final boolean isCapitalized = rs.getBoolean("isCapitalized");
 
             return ChargeData.instance(id, name, amount, currency, chargeTimeType, chargeAppliesToType, chargeCalculationType,
                     chargePaymentMode, feeOnMonthDay, feeInterval, penalty, active, minCap, maxCap, feeFrequencyType, glAccountData,
-                    taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation);
+                    taxGroupData, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation, isCapitalized);
+        }
+    }
+    
+    
+    private static final class ChargeSlabMapper implements RowMapper<ChargeSlabData> {
+
+        public String chargeSlabSchema() {
+            return "cs.id as csid, cs.from_loan_amount as fromLoanAmount, cs.to_loan_amount as toLoanAmount, cs.amount as chargeAmount, "
+                    + "c.is_capitalize as isCapitalized from f_charge_slab cs " + " LEFT JOIN m_charge c on cs.charge_id = c.id ";
+        }
+
+        @Override
+        public ChargeSlabData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Long id = rs.getLong("csid");
+            final BigDecimal fromLoanAmount = rs.getBigDecimal("fromLoanAmount");
+            final BigDecimal toLoanAmount = rs.getBigDecimal("toLoanAmount");
+            final BigDecimal amount = rs.getBigDecimal("chargeAmount");
+            return ChargeSlabData.createChargeSlabData(id, fromLoanAmount, toLoanAmount, amount);
         }
     }
 

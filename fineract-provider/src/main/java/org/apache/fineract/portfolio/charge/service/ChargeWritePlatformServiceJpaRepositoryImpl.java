@@ -18,7 +18,10 @@
  */
 package org.apache.fineract.portfolio.charge.service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -31,12 +34,13 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepository;
+import org.apache.fineract.portfolio.charge.domain.ChargeSlab;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeDeletedException;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeUpdatedException;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
@@ -53,6 +57,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWritePlatformService {
@@ -168,6 +176,12 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
                 }
                 chargeForUpdate.setAccount(newIncomeAccount);
             }
+            
+            if (ChargeCalculationType.fromInt(chargeForUpdate.getChargeCalculation().intValue()).isSlabBased()) {
+                final List<ChargeSlab> slabList = assembleSetOfChargeSlabs(command);
+                changes.put("isSlabChanged", true);
+                chargeForUpdate.updateSlabCharges(slabList);    
+            }
 
             if (changes.containsKey(ChargesApiConstants.taxGroupIdParamName)) {
                 final Long newValue = command.longValueOfParameterNamed(ChargesApiConstants.taxGroupIdParamName);
@@ -178,18 +192,16 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
                 chargeForUpdate.setTaxGroup(taxGroup);
             }
             
-			if (changes
-					.containsKey(ChargesApiConstants.emiRoundingGoalSeekParamName)) {
-				boolean emiRoundingGoalSeek = command
-						.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.emiRoundingGoalSeekParamName);
-				chargeForUpdate.setEmiRoundingGoalSeek(emiRoundingGoalSeek);
-			}
-			
-			if (changes
-					.containsKey(ChargesApiConstants.glimChargeCalculation)) {
-				Integer glimChargeCalculation = command.integerValueOfParameterNamed(ChargesApiConstants.glimChargeCalculation);
-				chargeForUpdate.setGlimChargeCalculation(glimChargeCalculation);;
-			}
+            if (changes.containsKey(ChargesApiConstants.emiRoundingGoalSeekParamName)) {
+                boolean emiRoundingGoalSeek = command
+                        .booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.emiRoundingGoalSeekParamName);
+                chargeForUpdate.setEmiRoundingGoalSeek(emiRoundingGoalSeek);
+            }
+
+            if (changes.containsKey(ChargesApiConstants.glimChargeCalculation)) {
+                Integer glimChargeCalculation = command.integerValueOfParameterNamed(ChargesApiConstants.glimChargeCalculation);
+                chargeForUpdate.setGlimChargeCalculation(glimChargeCalculation);
+            }
 
             if (!changes.isEmpty()) {
                 this.chargeRepository.save(chargeForUpdate);
@@ -200,6 +212,21 @@ public class ChargeWritePlatformServiceJpaRepositoryImpl implements ChargeWriteP
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
+    }
+
+    private List<ChargeSlab> assembleSetOfChargeSlabs(JsonCommand command) {
+        List<ChargeSlab> slabList = new ArrayList<>();
+        if (command.hasParameter(ChargesApiConstants.slabsParamName)) {
+            JsonArray slabArray = command.arrayOfParameterNamed(ChargesApiConstants.slabsParamName);
+            for (JsonElement element : slabArray) {
+                JsonObject slabObject = element.getAsJsonObject();
+                BigDecimal fromLoanAmount = slabObject.get(ChargesApiConstants.fromLoanAmountParamName).getAsBigDecimal();
+                BigDecimal toLoanAmount = slabObject.get(ChargesApiConstants.toLoanAmountParamName).getAsBigDecimal();
+                BigDecimal amount = slabObject.get(ChargesApiConstants.amountParamName).getAsBigDecimal();
+                slabList.add(new ChargeSlab(fromLoanAmount, toLoanAmount, amount));
+            }
+        }
+        return slabList;
     }
 
     @Transactional
