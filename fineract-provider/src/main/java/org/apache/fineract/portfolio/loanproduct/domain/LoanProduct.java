@@ -318,6 +318,12 @@ public class LoanProduct extends AbstractPersistable<Long> {
 
         final DaysInYearType daysInYearType = DaysInYearType.fromInt(command
                 .integerValueOfParameterNamed(LoanProductConstants.daysInYearTypeParameterName));
+        
+        WeeksInYearType weeksInYearType = WeeksInYearType.fromInt(WeeksInYearType.Week_52.getValue());
+        if(command.parameterExists(LoanProductConstants.weeksInYearType)){
+            weeksInYearType = WeeksInYearType.fromInt(command
+                    .integerValueOfParameterNamed(LoanProductConstants.weeksInYearType));
+        }
 
         LoanProductInterestRecalculationDetails interestRecalculationSettings = null;
 
@@ -386,7 +392,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
                 maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
-                loanTenureFrequencyType, considerFutureDisbursmentsInSchedule, canUseForTopup);
+                loanTenureFrequencyType, considerFutureDisbursmentsInSchedule, canUseForTopup, weeksInYearType);
 
     }
 
@@ -621,7 +627,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment, 
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
-            final Boolean considerFutureDisbursmentsInSchedule, final boolean canUseForTopup) {
+            final Boolean considerFutureDisbursmentsInSchedule, final boolean canUseForTopup, final WeeksInYearType weeksInYearType) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -653,7 +659,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 interestPeriodFrequencyType, defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod,
                 considerPartialPeriodInterest, repayEvery, repaymentFrequencyType, defaultNumberOfInstallments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods,
                 graceOnInterestPayment, graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing,
-                daysInMonthType.getValue(), daysInYearType.getValue(), isInterestRecalculationEnabled, considerFutureDisbursmentsInSchedule);
+                daysInMonthType.getValue(), daysInYearType.getValue(), isInterestRecalculationEnabled, considerFutureDisbursmentsInSchedule, weeksInYearType.getValue());
 
         this.loanProductRelatedDetail.validateRepaymentPeriodWithGraceSettings();
 
@@ -1495,6 +1501,10 @@ public class LoanProduct extends AbstractPersistable<Long> {
     }
     public boolean canUseForTopup(){
         return this.canUseForTopup;
+    }
+    
+    public Integer getWeeksInYearType() {
+        return this.loanProductRelatedDetail.getWeeksInYearType();
     }
 
 }

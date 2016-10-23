@@ -20,13 +20,14 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 
 import org.apache.fineract.infrastructure.core.domain.LocalDateInterval;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 public class DefaultPaymentPeriodsInOneYearCalculator implements PaymentPeriodsInOneYearCalculator {
 
     @Override
-    public Integer calculate(final PeriodFrequencyType repaymentFrequencyType) {
+    public Integer calculate(final PeriodFrequencyType repaymentFrequencyType, final Integer weeksInYear) {
 
         Integer paymentPeriodsInOneYear = Integer.valueOf(0);
         switch (repaymentFrequencyType) {
@@ -34,7 +35,7 @@ public class DefaultPaymentPeriodsInOneYearCalculator implements PaymentPeriodsI
                 paymentPeriodsInOneYear = Integer.valueOf(365);
             break;
             case WEEKS:
-                paymentPeriodsInOneYear = Integer.valueOf(52);
+                paymentPeriodsInOneYear = Integer.valueOf(WeeksInYearType.getWeeksInYear(weeksInYear));
             break;
             case MONTHS:
                 paymentPeriodsInOneYear = Integer.valueOf(12);

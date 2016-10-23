@@ -48,6 +48,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -116,7 +117,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
             LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
             LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.considerFutureDisbursmentsInSchedule,
-            LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue()));
+            LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -724,6 +725,11 @@ public final class LoanProductDataValidator {
             final Boolean canUseForTopup = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.canUseForTopup,
                     element);
             baseDataValidator.reset().parameter(LoanProductConstants.canUseForTopup).value(canUseForTopup).validateForBooleanValue();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.weeksInYearType, element)) {
+            final Integer weeksInYearType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(LoanProductConstants.weeksInYearType, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.weeksInYearType).value(weeksInYearType).ignoreIfNull().integerGreaterThanZero();
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -1688,6 +1694,13 @@ public final class LoanProductDataValidator {
             final Boolean canUseForTopup = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.canUseForTopup,
                     element);
             baseDataValidator.reset().parameter(LoanProductConstants.canUseForTopup).value(canUseForTopup).validateForBooleanValue();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.weeksInYearType, element)) {
+            final Integer weeksInYearType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(LoanProductConstants.weeksInYearType,
+                    element);
+            baseDataValidator.reset().parameter(LoanProductConstants.weeksInYearType).value(weeksInYearType).ignoreIfNull()
+                    .integerGreaterThanZero().isOneOfTheseValues(WeeksInYearType.Week_52.getValue(), WeeksInYearType.Week_48.getValue());
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
