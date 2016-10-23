@@ -29,6 +29,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 
 /**
  * This class is used to keep in one place configurations for setting up
@@ -153,10 +154,11 @@ public class LoanProductRelatedDetailTestHelper {
         final Integer daysInYearType = DaysInYearType.ACTUAL.getValue();
         final boolean isInterestRecalculationEnabled = false;
         final boolean considerPartialPeriodInterest = false;
-        final boolean considerFutureDisbursmentsInSchedule = false;        
+        final boolean considerFutureDisbursmentsInSchedule = false;   
+        final Integer weeksInMonthType = WeeksInYearType.Week_52.getValue();
         return new LoanProductRelatedDetail(currency, defaultPrincipal, defaultNominalInterestRatePerPeriod, interestPeriodFrequencyType,
                 defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod, considerPartialPeriodInterest, repayEvery,
                 repaymentFrequencyType, defaultNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
-                amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType, isInterestRecalculationEnabled, considerFutureDisbursmentsInSchedule);
+                amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType, isInterestRecalculationEnabled, considerFutureDisbursmentsInSchedule, weeksInMonthType);
     }
 }

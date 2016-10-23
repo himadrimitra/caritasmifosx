@@ -46,6 +46,7 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductInterestRecalcu
 import org.apache.fineract.portfolio.loanproduct.data.ProductLoanChargeData;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductParamType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -196,7 +197,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lp.amortization_method_enum as amortizationMethod, lp.arrearstolerance_amount as tolerance, "
                     + "lp.accounting_type as accountingType, lp.include_in_borrower_cycle as includeInBorrowerCycle,lp.use_borrower_cycle as useBorrowerCycle, lp.start_date as startDate, lp.close_date as closeDate,  "
                     + "lp.allow_multiple_disbursals as multiDisburseLoan, lp.max_disbursals as maxTrancheCount, lp.max_outstanding_loan_balance as outstandingLoanBalance, "
-                    + "lp.days_in_month_enum as daysInMonth, lp.days_in_year_enum as daysInYear, lp.interest_recalculation_enabled as isInterestRecalculationEnabled, "
+                    + "lp.days_in_month_enum as daysInMonth,lp.weeks_in_year_enum as weeksInYearType , lp.days_in_year_enum as daysInYear, lp.interest_recalculation_enabled as isInterestRecalculationEnabled, "
                     + "lp.can_define_fixed_emi_amount as canDefineInstallmentAmount, lp.instalment_amount_in_multiples_of as installmentAmountInMultiplesOf, "
                     + "lpr.pre_close_interest_calculation_strategy as preCloseInterestCalculationStrategy, "
                     + "lpr.id as lprId, lpr.product_id as productId, lpr.compound_type_enum as compoundType, lpr.reschedule_strategy_enum as rescheduleStrategy, "
@@ -369,7 +370,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final Integer installmentAmountInMultiplesOf = JdbcSupport.getInteger(rs, "installmentAmountInMultiplesOf");
             final boolean canDefineInstallmentAmount = rs.getBoolean("canDefineInstallmentAmount");
             final boolean isInterestRecalculationEnabled = rs.getBoolean("isInterestRecalculationEnabled");
-
+            
             LoanProductInterestRecalculationData interestRecalculationData = null;
             if (isInterestRecalculationEnabled) {
 
@@ -472,7 +473,9 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             }
             
             final boolean canUseForTopup = rs.getBoolean("canUseForTopup");
-
+            final Integer weeksInYearTypeInteger = JdbcSupport.getInteger(rs, "weeksInYearType");
+            final EnumOptionData weeksInYearType = LoanEnumerations.weeksInYearType(WeeksInYearType.fromInt(weeksInYearTypeInteger));
+            
             return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                     numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                     minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType,
@@ -490,7 +493,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, considerFutureDisbursmentsInSchedule,
-                    canUseForTopup);
+                    canUseForTopup, weeksInYearType);
         }
     }
 

@@ -42,6 +42,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductParamType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanRescheduleStrategyMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 
 public class LoanEnumerations {
 
@@ -775,6 +776,22 @@ public class LoanEnumerations {
             optionDatas.add(status(loanStatus));
         }
         return optionDatas;
+    }   
+    
+    public static EnumOptionData weeksInYearType(final WeeksInYearType type) {
+        EnumOptionData optionData = new EnumOptionData(WeeksInYearType.Week_52.getValue().longValue(),
+                WeeksInYearType.Week_52.getCode(), "52");
+        switch (type) {
+            case Week_52:
+                optionData = new EnumOptionData(WeeksInYearType.Week_52.getValue().longValue(),
+                        WeeksInYearType.Week_52.getCode(), "52");
+            break;
+            case Week_48:
+                optionData = new EnumOptionData(WeeksInYearType.Week_48.getValue().longValue(),
+                        WeeksInYearType.Week_48.getCode(), "48");
+            break;
+        }
+        return optionData;
     }
 
 }

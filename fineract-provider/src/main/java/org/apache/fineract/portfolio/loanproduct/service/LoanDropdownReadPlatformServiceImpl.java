@@ -56,6 +56,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditio
 import org.apache.fineract.portfolio.loanproduct.domain.LoanRescheduleStrategyMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
+import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -222,5 +223,12 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
                 preCloseInterestCalculationStrategy(LoanPreClosureInterestCalculationStrategy.TILL_PRE_CLOSURE_DATE),
                 preCloseInterestCalculationStrategy(LoanPreClosureInterestCalculationStrategy.TILL_REST_FREQUENCY_DATE));
         return preCloseInterestCalculationStrategyOptions;
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveWeeksInYearTypeOptions() {
+        final List<EnumOptionData> weeksInYearTypeOptions = Arrays.asList(
+                LoanEnumerations.weeksInYearType(WeeksInYearType.Week_52),LoanEnumerations.weeksInYearType(WeeksInYearType.Week_48));
+        return weeksInYearTypeOptions;
     }
 }
