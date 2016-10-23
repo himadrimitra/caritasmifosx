@@ -5,54 +5,42 @@
  */
 package org.apache.fineract.portfolio.loanproduct.domain;
 
-
 public enum WeeksInYearType {
-    Week_52(1, "52"), //
-    Week_48(2, "48"); //
+	Week_52(1, "52"), //
+	Week_48(2, "48"); //
 
-    private final Integer value;
-    private final String code;
+	private final Integer value;
+	private final String code;
 
-    private WeeksInYearType(final Integer value, final String code) {
-        this.value = value;
-        this.code = code;
-    }
+	private WeeksInYearType(final Integer value, final String code) {
+		this.value = value;
+		this.code = code;
+	}
 
-    public Integer getValue() {
-        return this.value;
-    }
+	public Integer getValue() {
+		return this.value;
+	}
 
-    public String getCode() {
-        return this.code;
-    }    
-    
-    public static WeeksInYearType fromInt(final Integer weeks) {
-        WeeksInYearType weeksInYearType = WeeksInYearType.Week_52;
-        if (weeks != null) {
-            switch (weeks) {
-                case 1:
-                    weeksInYearType = Week_52;
-                break;
-                case 2:
-                    weeksInYearType = Week_48;
-                break;
-            }
-        }
-        return weeksInYearType;
-    }    
-    
-    public static Integer getYearFrom(final Integer weeks) {
-        Integer weeksInYearType = Integer.parseInt(WeeksInYearType.Week_52.getCode());
-        if (weeks != null) {
-            switch (weeks) {
-                case 1:
-                    weeksInYearType = Integer.parseInt(WeeksInYearType.Week_52.getCode());
-                break;
-                case 2:
-                    weeksInYearType = Integer.parseInt(WeeksInYearType.Week_48.getCode());
-                break;
-            }
-        }
-        return weeksInYearType;
-    }
+	public String getCode() {
+		return this.code;
+	}
+
+	public static WeeksInYearType fromInt(final Integer weeks) {
+		WeeksInYearType weeksInYearType = WeeksInYearType.Week_52;
+		if (weeks != null) {
+			switch (weeks) {
+			case 1:
+				weeksInYearType = Week_52;
+				break;
+			case 2:
+				weeksInYearType = Week_48;
+				break;
+			}
+		}
+		return weeksInYearType;
+	}
+
+	public static Integer getWeeksInYear(final Integer code) {
+		return Integer.parseInt(fromInt(code).getCode());
+	}
 }

@@ -361,7 +361,7 @@ public final class LoanApplicationTerms {
                 loanPreClosureInterestCalculationStrategy, loanCalendar, approvedAmount, loanTermVariations, calendarHistoryDataWrapper,
                 isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfdays, isSkipRepaymentOnFirstDayofMonth, holidayDetailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, 
-                futureDisbursmentsInSchedule, WeeksInYearType.getYearFrom(loanProductRelatedDetail.getWeeksInYearType()));
+                futureDisbursmentsInSchedule, WeeksInYearType.getWeeksInYear(loanProductRelatedDetail.getWeeksInYearType()));
     }
 
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency applicationCurrency, final Integer loanTermFrequency,

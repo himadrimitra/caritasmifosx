@@ -35,7 +35,7 @@ public class DefaultPaymentPeriodsInOneYearCalculator implements PaymentPeriodsI
                 paymentPeriodsInOneYear = Integer.valueOf(365);
             break;
             case WEEKS:
-                paymentPeriodsInOneYear = Integer.valueOf(WeeksInYearType.getYearFrom(weeksInYear));
+                paymentPeriodsInOneYear = Integer.valueOf(WeeksInYearType.getWeeksInYear(weeksInYear));
             break;
             case MONTHS:
                 paymentPeriodsInOneYear = Integer.valueOf(12);
