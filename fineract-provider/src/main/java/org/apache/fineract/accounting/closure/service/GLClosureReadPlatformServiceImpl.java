@@ -23,10 +23,16 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
+
 import org.apache.fineract.accounting.closure.data.GLClosureData;
 import org.apache.fineract.accounting.closure.exception.GLClosureNotFoundException;
+import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -38,6 +44,8 @@ import org.springframework.stereotype.Service;
 public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final PaginationHelper<GLClosureData> paginationHelper = new PaginationHelper<>();
+    final GLClosureMapper rm = new GLClosureMapper();
 
     @Autowired
     public GLClosureReadPlatformServiceImpl(final RoutingDataSource dataSource) {
@@ -47,7 +55,35 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
     private static final class GLClosureMapper implements RowMapper<GLClosureData> {
 
         public String schema() {
-            return " glClosure.id as id, glClosure.office_id as officeId,office.name as officeName ,glClosure.closing_date as closingDate,"
+            return " glClosure.id as id, ounder.id as officeId,ounder.name as officeName ,glClosure.closing_date as closingDate,"
+                    + " glClosure.is_deleted as isDeleted, creatingUser.id as creatingUserId,creatingUser.username as creatingUserName,"
+                    + " updatingUser.id as updatingUserId,updatingUser.username as updatingUserName, glClosure.created_date as createdDate,"
+                    + " glClosure.lastmodified_date as updatedDate, glClosure.comments as comments "
+                    + " from m_office office "
+                    + " join m_office ounder on ounder.hierarchy like "
+                    + " concat(office.hierarchy, '%') and ounder.hierarchy like concat('.', '%')" 
+                    + " join acc_gl_closure glClosure on glClosure.office_id=ounder.id"
+                    + " join m_appuser creatingUser on glClosure.createdby_id=creatingUser.id"
+                    + " join m_appuser updatingUser on glClosure.lastmodifiedby_id=updatingUser.id"
+                    + " where ";
+        }
+        
+        public String latestGLClosureOfOfficeSchema() {
+            return " glClosure.id as id, ounder.id as officeId,ounder.name as officeName ,max(glClosure.closing_date) as closingDate,"
+                    + " glClosure.is_deleted as isDeleted, creatingUser.id as creatingUserId,creatingUser.username as creatingUserName,"
+                    + " updatingUser.id as updatingUserId,updatingUser.username as updatingUserName, max(glClosure.created_date) as createdDate,"
+                    + " max(glClosure.lastmodified_date) as updatedDate, glClosure.comments as comments "
+                    + " from m_office office "
+                    + " join m_office ounder on ounder.hierarchy like "
+                    + " concat(office.hierarchy, '%') and ounder.hierarchy like concat('.', '%')" 
+                    + " join acc_gl_closure glClosure on glClosure.office_id=ounder.id"
+                    + " join m_appuser creatingUser on glClosure.createdby_id=creatingUser.id"
+                    + " join m_appuser updatingUser on glClosure.lastmodifiedby_id=updatingUser.id"
+                    + " where ";
+        }
+        
+        public String glClosureByIdSchema() {
+        	return " glClosure.id as id, glClosure.office_id as officeId,office.name as officeName ,glClosure.closing_date as closingDate,"
                     + " glClosure.is_deleted as isDeleted, creatingUser.id as creatingUserId,creatingUser.username as creatingUserName,"
                     + " updatingUser.id as updatingUserId,updatingUser.username as updatingUserName, glClosure.created_date as createdDate,"
                     + " glClosure.lastmodified_date as updatedDate, glClosure.comments as comments "
@@ -78,32 +114,69 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
     }
 
     @Override
-    public List<GLClosureData> retrieveAllGLClosures(final Long officeId) {
-        final GLClosureMapper rm = new GLClosureMapper();
-
-        String sql = "select " + rm.schema() + " and glClosure.is_deleted = 0";
+    public Page<GLClosureData> retrieveAllGLClosures(final Long officeId, boolean limitToOne, PaginationParameters parameters,
+    		final SearchParameters searchParameters) {
+    	String sql = "select SQL_CALC_FOUND_ROWS";
+    	if(limitToOne){
+    		 sql += rm.latestGLClosureOfOfficeSchema() + "glClosure.is_deleted = 0";
+    	}else{
+    		 sql += rm.schema() + "glClosure.is_deleted = 0";
+    	}
         final Object[] objectArray = new Object[1];
         int arrayPos = 0;
         String sqlForSingleClosure = "";
         if (officeId != null && officeId != 0) {
-            sql += " and glClosure.office_id = ?";
+            sql += " and office.id = ?";
             objectArray[arrayPos] = officeId;
             arrayPos = arrayPos + 1;
-            sqlForSingleClosure = "limit 1";
+            if(limitToOne){
+            sqlForSingleClosure = " group by ounder.name ";
+            }
         }
 
-        sql = sql + " order by glClosure.closing_date desc "+sqlForSingleClosure;
-
-        final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
-        return this.jdbcTemplate.query(sql, rm, finalObjectArray);
+        sql = sql+sqlForSingleClosure + " order by glClosure.closing_date desc ";
+        final StringBuilder sqlBuilder = new StringBuilder(200);
+       
+        if (parameters.isLimited()) {
+            sqlBuilder.append(" limit ").append(searchParameters.getLimit());
+            if (searchParameters.isOffset()) {
+                sqlBuilder.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+        sql = sql+sqlBuilder.toString();
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
+         Page<GLClosureData> retrieveAllGLClosures = this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sql,
+                new Object[] {officeId}, this.rm);
+         return retrieveAllGLClosures;
     }
+    
+    @Override
+	public List<GLClosureData> retrieveAllGLClosures(final Long officeId, boolean limitToOne) {
+
+        String sql = "select " + rm.schema() + " glClosure.is_deleted = 0";
+		final Object[] objectArray = new Object[1];
+		int arrayPos = 0;
+		String sqlForSingleClosure = "";
+		if (officeId != null && officeId != 0) {
+			sql += " and office.id = ?";
+			objectArray[arrayPos] = officeId;
+			arrayPos = arrayPos + 1;
+			if (limitToOne) {
+				sqlForSingleClosure = "limit 1";
+			}
+		}
+
+		sql = sql + " order by glClosure.closing_date desc " + sqlForSingleClosure;
+		final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
+		return this.jdbcTemplate.query(sql, rm, finalObjectArray);
+
+	}
 
     @Override
     public GLClosureData retrieveGLClosureById(final long glClosureId) {
         try {
 
-            final GLClosureMapper rm = new GLClosureMapper();
-            final String sql = "select " + rm.schema() + " and glClosure.id = ?";
+            final String sql = "select " + rm.glClosureByIdSchema() + " and glClosure.id = ?";
 
             final GLClosureData glAccountData = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { glClosureId });
 
