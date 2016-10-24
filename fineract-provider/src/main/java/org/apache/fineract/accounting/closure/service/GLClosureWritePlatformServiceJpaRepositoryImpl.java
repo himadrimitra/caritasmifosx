@@ -134,7 +134,7 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
         if (latestGLClosure.getClosingDate().after(closureDate)) { throw new GLClosureInvalidDeleteException(latestGLClosure.getOffice()
                 .getId(), latestGLClosure.getOffice().getName(), latestGLClosure.getClosingDate()); }
 
-        this.glClosureRepository.delete(glClosure);
+        this.glClosureRepository.deleteGLClosure(glClosure.getId());
 
         return new CommandProcessingResultBuilder().withOfficeId(glClosure.getOffice().getId()).withEntityId(glClosure.getId()).build();
     }

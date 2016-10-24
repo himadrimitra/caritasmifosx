@@ -22,6 +22,7 @@ import javax.persistence.QueryHint;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +32,8 @@ public interface GLClosureRepository extends JpaRepository<GLClosure, Long>, Jpa
     @Query("from GLClosure closure where closure.closingDate = (select max(closure1.closingDate) from GLClosure closure1 where closure1.office.id=:officeId)  and closure.office.id= :officeId")
     @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     GLClosure getLatestGLClosureByBranch(@Param("officeId") Long officeId);
+   
+    @Modifying
+    @Query("UPDATE GLClosure closure SET closure.deleted =1 WHERE  closure.id = :closureId")
+    void deleteGLClosure(@Param("closureId") Long  closureId);
 }
