@@ -47,6 +47,10 @@ public class MathUtility {
     public static Boolean isGreater(BigDecimal first, BigDecimal second) {
         return zeroIfNull(first).compareTo(zeroIfNull(second)) >= 0;
     }
+    
+    public static Boolean isLesserOrEqualTo(BigDecimal first, BigDecimal second) {
+        return zeroIfNull(first).compareTo(zeroIfNull(second)) == -1 || zeroIfNull(first).compareTo(zeroIfNull(second)) == 0;
+    }
 
     public static BigDecimal add(BigDecimal... first) {
         BigDecimal sum = BigDecimal.ZERO;

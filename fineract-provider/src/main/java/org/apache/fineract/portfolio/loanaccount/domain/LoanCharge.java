@@ -357,6 +357,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 this.amountWrittenOff = null;
             break;
             case FLAT:
+            case SLAB_BASED:    
                 this.percentage = null;
                 this.amountPercentageAppliedTo = null;
                 this.amountPaid = null;
@@ -414,6 +415,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 this.amountWrittenOff = null;
             break;
             case FLAT:
+            case SLAB_BASED: 
                 this.percentage = null;
                 this.amountPercentageAppliedTo = null;
                 this.amountPaid = null;
@@ -539,6 +541,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 case INVALID:
                 break;
                 case FLAT:
+                case SLAB_BASED: 
                     if (isInstalmentFee()) {
                         if (numberOfRepayments == null) {
                             numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
@@ -635,6 +638,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 case INVALID:
                 break;
                 case FLAT:
+                case SLAB_BASED: 
                     if (isInstalmentFee()) {
                         this.amount = newValue.multiply(BigDecimal.valueOf(this.loan.fetchNumberOfInstallmensAfterExceptions()));
                     } else {

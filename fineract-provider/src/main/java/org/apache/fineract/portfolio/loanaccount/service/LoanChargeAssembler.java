@@ -30,8 +30,10 @@ import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
+import org.apache.fineract.portfolio.charge.domain.ChargeSlab;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
+import org.apache.fineract.portfolio.charge.exception.ChargeNotInSlabExpection;
 import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeAddedException;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
@@ -141,7 +143,7 @@ public class LoanChargeAssembler {
                             throw new LoanChargeCannotBeAddedException("loanCharge", "overdue.charge", defaultUserMessage, null,
                                     chargeDefinition.getName());
                         }
-
+                        
                         ChargeTimeType chargeTime = null;
                         if (chargeTimeType != null) {
                             chargeTime = ChargeTimeType.fromInt(chargeTimeType);
@@ -150,6 +152,8 @@ public class LoanChargeAssembler {
                         if (chargeCalculationType != null) {
                             chargeCalculation = ChargeCalculationType.fromInt(chargeCalculationType);
                         }
+                        validateLoanAmountFallsInSlab(principal, chargeDefinition, chargeCalculation);
+
                         ChargePaymentMode chargePaymentModeEnum = null;
                         if (chargePaymentMode != null) {
                             chargePaymentModeEnum = ChargePaymentMode.fromInt(chargePaymentMode);
@@ -245,6 +249,7 @@ public class LoanChargeAssembler {
                             // LoanChargeNotFoundException(loanChargeId);
                         }
                         if (loanCharge != null) {
+                            validateLoanAmountFallsInSlab(principal, loanCharge.getCharge(), null);
                             if (!isMultiDisbursal && loanCharge.isInstalmentFee()
                                     && loanCharge.getCharge().isPercentageOfDisbursementAmount()) {
                             	if(clientMemberJsonArray!=null && clientMemberJsonArray.size()>0){
@@ -263,6 +268,23 @@ public class LoanChargeAssembler {
             }
         }
         return loanCharges;
+    }
+
+    private void validateLoanAmountFallsInSlab(final BigDecimal principal, final Charge chargeDefinition,
+            ChargeCalculationType chargeCalculation) {
+        if (chargeDefinition != null) {
+            if (chargeCalculation == null) {
+                chargeCalculation = ChargeCalculationType.fromInt(chargeDefinition.getChargeCalculation().intValue());
+            }
+            if (chargeCalculation.isSlabBased()) {
+                List<ChargeSlab> chargeSlabs = chargeDefinition.getSlabs();
+                boolean isLoanAmountFallsInSlab = false;
+                for (ChargeSlab chargeSlab : chargeSlabs) {
+                    isLoanAmountFallsInSlab = chargeSlab.isLoanAmountFallsInSlab(principal);
+                }
+                if (!isLoanAmountFallsInSlab) { throw new ChargeNotInSlabExpection(principal.toString()); }
+            }
+        }
     }
 
     private BigDecimal getTotalChargeAmountForGlim(JsonArray clientMemberJsonArray, final Long chargeId, final BigDecimal amount,

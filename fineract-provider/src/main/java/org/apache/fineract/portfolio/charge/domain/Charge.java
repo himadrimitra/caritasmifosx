@@ -25,11 +25,13 @@ import java.util.List;
 import java.util.Map;
 
 import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -53,8 +55,14 @@ import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.MonthDay;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Entity
 @Cacheable
@@ -65,7 +73,7 @@ public class Charge extends AbstractPersistable<Long> {
     @Column(name = "name", length = 100)
     private String name;
 
-    @Column(name = "amount", scale = 6, precision = 19, nullable = false)
+    @Column(name = "amount", scale = 6, precision = 19, nullable = true)
     private BigDecimal amount;
 
     @Column(name = "currency_code", length = 3)
@@ -117,6 +125,14 @@ public class Charge extends AbstractPersistable<Long> {
     @ManyToOne
     @JoinColumn(name = "tax_group_id")
     private TaxGroup taxGroup;
+    
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "charge_id", referencedColumnName = "id", nullable = false)
+    private List<ChargeSlab> slabs = new ArrayList<>();
+    
+    @Column(name = "is_capitalized", nullable = true)
+    private boolean isCapitalized;
 
     @Column(name = "emi_rounding_goalseek", nullable = false)
     private boolean emiRoundingGoalSeek = false;
@@ -138,6 +154,21 @@ public class Charge extends AbstractPersistable<Long> {
         final ChargeCalculationType chargeCalculationType = ChargeCalculationType.fromInt(command
                 .integerValueOfParameterNamed("chargeCalculationType"));
         final Integer chargePaymentMode = command.integerValueOfParameterNamed("chargePaymentMode");
+        boolean isCapitalized = false;
+        List<ChargeSlab> chargeSlab = new ArrayList<>();
+        if (chargeCalculationType.isSlabBased()) {
+            JsonArray chargeSlabArray = command.arrayOfParameterNamed(ChargesApiConstants.slabsParamName);
+            if (chargeSlabArray != null) {
+                for (JsonElement element : chargeSlabArray) {
+                    JsonObject jsonObject = element.getAsJsonObject();
+                    BigDecimal fromLoanAmount = jsonObject.get(ChargesApiConstants.fromLoanAmountParamName).getAsBigDecimal();
+                    BigDecimal toLoanAmount = jsonObject.get(ChargesApiConstants.toLoanAmountParamName).getAsBigDecimal();
+                    BigDecimal chargeAmount = jsonObject.get(ChargesApiConstants.amountParamName).getAsBigDecimal();
+                    chargeSlab.add(new ChargeSlab(fromLoanAmount, toLoanAmount, chargeAmount));
+                }
+            }
+            isCapitalized = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.isCapitalizedParamName);
+        }
 
         final ChargePaymentMode paymentMode = chargePaymentMode == null ? null : ChargePaymentMode.fromInt(chargePaymentMode);
 
@@ -157,7 +188,8 @@ public class Charge extends AbstractPersistable<Long> {
         
 
         return new Charge(name, amount, currencyCode, chargeAppliesTo, chargeTimeType, chargeCalculationType, penalty, active, paymentMode,
-                feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, account, taxGroup, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation);
+                feeOnMonthDay, feeInterval, minCap, maxCap, feeFrequency, account, taxGroup, emiRoundingGoalSeek, isGlimCharge, glimChargeCalculation,
+                isCapitalized, chargeSlab);
     }
 
     protected Charge() {
@@ -168,7 +200,8 @@ public class Charge extends AbstractPersistable<Long> {
             final ChargeTimeType chargeTime, final ChargeCalculationType chargeCalculationType, final boolean penalty,
             final boolean active, final ChargePaymentMode paymentMode, final MonthDay feeOnMonthDay, final Integer feeInterval,
             final BigDecimal minCap, final BigDecimal maxCap, final Integer feeFrequency, final GLAccount account, final TaxGroup taxGroup, 
-            final boolean emiRoundingGoalSeek, final boolean isGlimCharge, final GlimChargeCalculationType glimChargeCalculation) {
+            final boolean emiRoundingGoalSeek, final boolean isGlimCharge, final GlimChargeCalculationType glimChargeCalculation,
+            final boolean isCapitalized, final List<ChargeSlab> chargeSlab) {
         this.name = name;
         this.amount = amount;
         this.currencyCode = currencyCode;
@@ -183,6 +216,11 @@ public class Charge extends AbstractPersistable<Long> {
         this.emiRoundingGoalSeek = emiRoundingGoalSeek;
         this.isGlimCharge = isGlimCharge;
         this.glimChargeCalculation = glimChargeCalculation.getValue();
+        this.isCapitalized = isCapitalized;
+        if (this.slabs == null) {
+            this.slabs = new ArrayList<>();
+        }
+        this.slabs.addAll(chargeSlab);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("charges");
@@ -462,6 +500,15 @@ public class Charge extends AbstractPersistable<Long> {
                     }
                 }
             }
+            
+            // remove the slab charges if ChargeCalculationType is not slab
+            // based
+            if (!ChargeCalculationType.fromInt(this.chargeCalculation.intValue()).isSlabBased()) {
+                if (this.slabs != null && !this.slabs.isEmpty()) {
+                    this.slabs.clear();
+                }
+                actualChanges.put(ChargesApiConstants.slabsParamName, this.slabs);
+            }
         }
 
         if (command.hasParameter("feeOnMonthDay")) {
@@ -570,6 +617,16 @@ public class Charge extends AbstractPersistable<Long> {
         return actualChanges;
     }
 
+    private String[] getSlabsAsStringArray() {
+        final List<String> slabIds = new ArrayList<>();
+
+        for (final ChargeSlab chargeSlab : this.slabs) {
+            slabIds.add(chargeSlab.getId().toString());
+        }
+
+        return slabIds.toArray(new String[slabIds.size()]);
+    }
+
     /**
      * Delete is a <i>soft delete</i>. Updates flag on charge so it wont appear
      * in query/report results.
@@ -601,7 +658,8 @@ public class Charge extends AbstractPersistable<Long> {
         final EnumOptionData glimChargeCalculation = ChargeEnumerations.glimChargeCalculationType(this.glimChargeCalculation);
         return ChargeData.instance(getId(), this.name, this.amount, currency, chargeTimeType, chargeAppliesTo, chargeCalculationType,
                 chargePaymentmode, getFeeOnMonthDay(), this.feeInterval, this.penalty, this.active, this.minCap, this.maxCap,
-                feeFrequencyType, accountData, taxGroupData, this.emiRoundingGoalSeek, this.isGlimCharge, glimChargeCalculation);
+                feeFrequencyType, accountData, taxGroupData, this.emiRoundingGoalSeek, this.isGlimCharge, glimChargeCalculation,
+                this.isCapitalized);
     }
 
     public Integer getChargePaymentMode() {
@@ -718,5 +776,16 @@ public class Charge extends AbstractPersistable<Long> {
         return ChargeCalculationType.fromInt(this.chargeCalculation).isPercentageOfAmountAndInterest();
     }
    
-    
+
+    public void updateSlabCharges(final List<ChargeSlab> slabList) {
+        if (this.slabs != null && !this.slabs.isEmpty()) {
+            this.slabs.clear();
+        }
+        this.slabs.addAll(slabList);
+    }
+
+    public List<ChargeSlab> getSlabs() {
+        return this.slabs;
+    }
+
 }
