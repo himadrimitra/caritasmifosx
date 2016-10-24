@@ -494,16 +494,14 @@ public class CalendarUtils {
         if (recur == null) { return null; }
         LocalDate startDate = disbursementDate;
         final LocalDate seedDate = calendar.getStartDateLocalDate();
-        if (isValidRedurringDate(calendar.getRecurrence(), seedDate, startDate, isSkipRepaymentOnFirstDayOfMonth, numberOfDays)) {
-            startDate = startDate.plusDays(1);
-        }
         // Recurring dates should follow loanRepaymentInterval.
         // e.g.
         // for weekly meeting interval is 1
         // where as for loan product with fortnightly frequency interval is 2
         // to generate currect set of meeting dates reset interval same as loan
         // repayment interval.
-        recur.setInterval(loanRepaymentInterval);
+        int meetingInterval = recur.getInterval();
+        int rep = loanRepaymentInterval / meetingInterval;
 
         // Recurring dates should follow loanRepayment frequency.
         // e.g.
@@ -515,7 +513,11 @@ public class CalendarUtils {
             recur.setFrequency(frequency);
         }
 
-        final LocalDate firstRepaymentDate = getNextRecurringDate(recur, seedDate, startDate);
+        LocalDate firstRepaymentDate = startDate;
+        while(rep > 0){
+        	 firstRepaymentDate = getNextRecurringDate(recur, seedDate, firstRepaymentDate);
+        	 rep--;
+        }
         if (isSkipRepaymentOnFirstDayOfMonth && firstRepaymentDate.getDayOfMonth() == 1) { return adjustRecurringDate(firstRepaymentDate,
                 numberOfDays); }
 
@@ -541,9 +543,6 @@ public class CalendarUtils {
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
         if (recur == null) { return null; }
         LocalDate tmpDate = repaymentDate;
-        if (isValidRecurringDate(recur, seedDate, repaymentDate, isSkipRepaymentOnFirstDayOfMonth, numberOfDays)) {
-            tmpDate = repaymentDate.plusDays(1);
-        }
         /*
          * Recurring dates should follow loanRepaymentInterval.
          * 
@@ -551,7 +550,9 @@ public class CalendarUtils {
          * with fortnightly frequency will have interval of 2, to generate right
          * set of meeting dates reset interval same as loan repayment interval.
          */
-        recur.setInterval(loanRepaymentInterval);
+        
+        int meetingInterval = recur.getInterval();
+        int rep = loanRepaymentInterval / meetingInterval;
 
         /*
          * Recurring dates should follow loanRepayment frequency. //e.g. daily
@@ -563,9 +564,18 @@ public class CalendarUtils {
             recur.setFrequency(frequency);
         }
 
-        LocalDate newRepaymentDate = getNextRecurringDate(recur, seedDate, tmpDate);
-        final LocalDate nextRepaymentDate = getNextRecurringDate(recur, seedDate, newRepaymentDate);
-
+        if (recur.getFrequency().equals(Recur.DAILY)) {
+            recur.setFrequency(frequency);
+        }
+        
+        LocalDate newRepaymentDate = tmpDate;
+		LocalDate nextRepaymentDate = tmpDate;
+		while (rep > 0) {
+			newRepaymentDate = getNextRecurringDate(recur, seedDate, newRepaymentDate);
+			nextRepaymentDate = getNextRecurringDate(recur, seedDate, newRepaymentDate);
+			rep--;
+		}
+        
         newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDate, nextRepaymentDate, workingDays);
         if (isSkipRepaymentOnFirstDayOfMonth) {
             LocalDate newRepaymentDateTemp = adjustRecurringDate(newRepaymentDate, numberOfDays);

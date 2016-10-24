@@ -252,6 +252,99 @@ public class SchedulerJobsTestResults {
                 (Float) summaryAfter.get("accountBalance"));
 
     }
+    
+    @Test
+    public void testApplyHolidays() throws InterruptedException {
+        
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        this.holidayHelper = new HolidayHelper(this.requestSpec, this.responseSpec);
+        
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        System.out.println("clientID..."+clientID);
+        Assert.assertNotNull(clientID);
+
+        Integer christmasHolidayId = this.holidayHelper.createChristmasHolidaysWithExtendingRepaymentSchedule(this.requestSpec, this.responseSpec, false);
+        System.out.println("holidayId..."+christmasHolidayId);
+        Assert.assertNotNull(christmasHolidayId);
+        Integer dusseraHolidayId2 = this.holidayHelper.createDusseraHolidaysWithExtendingRepaymentSchedule(this.requestSpec, this.responseSpec, true);
+        System.out.println("holidayId2..."+dusseraHolidayId2);
+        Assert.assertNotNull(dusseraHolidayId2);
+        
+        christmasHolidayId = this.holidayHelper.activateHolidays(this.requestSpec, this.responseSpec, christmasHolidayId.toString());
+        Assert.assertNotNull(christmasHolidayId);
+        dusseraHolidayId2 = this.holidayHelper.activateHolidays(this.requestSpec, this.responseSpec, dusseraHolidayId2.toString());
+        Assert.assertNotNull(dusseraHolidayId2);
+
+        final Integer loanProductID = createLoanProduct(null);
+        System.out.println("loanProductID..."+loanProductID);
+        Assert.assertNotNull(loanProductID);
+
+        final Integer loanID = applyForLoanApplicationForHoliday(clientID.toString(), loanProductID.toString(), null);
+        System.out.println("loanID..."+loanID);
+        Assert.assertNotNull(loanID);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(AccountTransferTest.LOAN_APPROVAL_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(AccountTransferTest.LOAN_DISBURSAL_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+        
+        final ArrayList<HashMap> repaymentScheduleData = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
+                this.responseSpec, loanID);
+        
+        HashMap holidayData = this.holidayHelper.getHolidayById(this.requestSpec, this.responseSpec, christmasHolidayId.toString());
+        ArrayList<Integer> repaymentsRescheduledDate = (ArrayList<Integer>) holidayData.get("repaymentsRescheduledTo");
+
+        ArrayList<Integer> rescheduleDateAfter = (ArrayList<Integer>) repaymentScheduleData.get(2).get("fromDate");
+        ArrayList<Integer> rescheduleDueDate = (ArrayList<Integer>) repaymentScheduleData.get(8).get("dueDate");
+        Integer rescheduleDaysInPeriod = (Integer) repaymentScheduleData.get(8).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDate8 = new ArrayList<Integer>();
+        rescheduleDueDate8.add(7);
+        rescheduleDueDate8.add(12);
+        rescheduleDueDate8.add(2013);
+        rescheduleDueDate.removeAll(rescheduleDueDate8);
+        Assert.assertTrue(rescheduleDueDate.isEmpty());
+                
+        ArrayList<Integer> rescheduleDueDate9 = (ArrayList<Integer>) repaymentScheduleData.get(9).get("dueDate");
+        Integer rescheduleDaysInPeriod9 = (Integer) repaymentScheduleData.get(9).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDat9 = new ArrayList<Integer>();
+        rescheduleDueDat9.add(14);
+        rescheduleDueDat9.add(12);
+        rescheduleDueDat9.add(2013);
+        rescheduleDueDate9.removeAll(rescheduleDueDat9);
+        Assert.assertTrue(rescheduleDueDate9.isEmpty());
+        
+        ArrayList<Integer> rescheduleDueDate10 = (ArrayList<Integer>) repaymentScheduleData.get(10).get("dueDate");
+        Integer rescheduleDaysInPeriod10 = (Integer) repaymentScheduleData.get(10).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDat10 = new ArrayList<Integer>();
+        rescheduleDueDat10.add(31);
+        rescheduleDueDat10.add(12);
+        rescheduleDueDat10.add(2013);
+        rescheduleDueDate10.removeAll(rescheduleDueDat10);
+        Assert.assertTrue(rescheduleDueDate10.isEmpty());
+        
+        ArrayList<Integer> rescheduleDueDate11 = (ArrayList<Integer>) repaymentScheduleData.get(11).get("dueDate");
+        Integer rescheduleDaysInPeriod11 = (Integer) repaymentScheduleData.get(11).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDat11 = new ArrayList<Integer>();
+        rescheduleDueDat11.add(12);
+        rescheduleDueDat11.add(31);
+        rescheduleDueDat11.add(2013);
+        rescheduleDueDate11.removeAll(rescheduleDueDat11);
+        Assert.assertTrue(rescheduleDueDate11.isEmpty());
+        
+        ArrayList<Integer> rescheduleDueDate12 = (ArrayList<Integer>) repaymentScheduleData.get(12).get("dueDate");
+        Integer rescheduleDaysInPeriod12 = (Integer) repaymentScheduleData.get(12).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDat12 = new ArrayList<Integer>();
+        rescheduleDueDat12.add(4);
+        rescheduleDueDat12.add(1);
+        rescheduleDueDat12.add(2014);
+        rescheduleDueDate12.removeAll(rescheduleDueDat12);
+        Assert.assertTrue(rescheduleDueDate12.isEmpty());
+        
+    }
 
     @Test
     public void testApplyHolidaysToLoansJobOutcome() throws InterruptedException {
@@ -883,6 +976,26 @@ public class SchedulerJobsTestResults {
                 .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
                 .withExpectedDisbursementDate("10 January 2013") //
                 .withSubmittedOnDate("10 January 2013") //
+                .build(clientID, loanProductID, savingsID);
+        return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
+    }
+    
+    private Integer applyForLoanApplicationForHoliday(final String clientID, final String loanProductID, final String savingsID) {
+        System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
+        final String loanApplicationJSON = new LoanApplicationTestBuilder() //
+                .withPrincipal("50,000.00") //
+                .withLoanTermFrequency("22") //
+                .withLoanTermFrequencyAsWeeks() //
+                .withNumberOfRepayments("22") //
+                .withRepaymentEveryAfter("1") //
+                .withRepaymentFrequencyTypeAsWeeks() //
+                .withInterestRatePerPeriod("2") //
+                .withAmortizationTypeAsEqualInstallments() //
+                .withInterestTypeAsDecliningBalance() //
+                .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
+                .withExpectedDisbursementDate("05 October 2013") //
+                .withSubmittedOnDate("10 January 2013") //
+                .withFirstRepaymentDate("05 October 2013")
                 .build(clientID, loanProductID, savingsID);
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }

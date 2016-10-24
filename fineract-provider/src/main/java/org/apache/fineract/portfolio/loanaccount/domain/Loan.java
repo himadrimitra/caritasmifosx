@@ -4851,7 +4851,7 @@ public class Loan extends AbstractPersistable<Long> {
                     // tmpFromDate.plusDays(1) is done to make sure
                     // getNewRepaymentMeetingDate method returns next meeting
                     // date and not the same as tmpFromDate
-                    newRepaymentDate = CalendarUtils.getNewRepaymentMeetingDate(recuringRule, tmpFromDate, tmpFromDate.plusDays(1),
+                    newRepaymentDate = CalendarUtils.getNextRepaymentMeetingDate(recuringRule, tmpFromDate, tmpFromDate,
                             loanRepaymentInterval, frequency, workingDays, isSkipRepaymentonfirstdayofmonth, numberofDays);
                 }
 
