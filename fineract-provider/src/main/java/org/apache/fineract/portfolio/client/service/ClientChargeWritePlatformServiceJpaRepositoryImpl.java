@@ -47,7 +47,6 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
-import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.data.ClientChargeDataValidator;
@@ -61,6 +60,7 @@ import org.apache.fineract.portfolio.client.domain.ClientRecurringChargeReposito
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientTransaction;
 import org.apache.fineract.portfolio.client.domain.ClientTransactionRepository;
+import org.apache.fineract.portfolio.client.exception.ClientHasNoGroupAssociationException;
 import org.apache.fineract.portfolio.client.exception.DuedateIsNotMeetingDateException;
 import org.apache.fineract.portfolio.client.exception.GroupAndClientChargeNotInSynWithMeeting;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
@@ -82,6 +82,7 @@ import org.springframework.stereotype.Service;
 public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements ClientChargeWritePlatformService {
 
     private final static Logger logger = LoggerFactory.getLogger(ClientChargeWritePlatformServiceJpaRepositoryImpl.class);
+
 
     private final PlatformSecurityContext context;
     private final ChargeRepositoryWrapper chargeRepository;
@@ -137,7 +138,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 			final Long chargeDefinitionId = command.longValueOfParameterNamed(ClientApiConstants.chargeIdParamName);
 			LocalDate dueDate = command.localDateValueOfParameterNamed(ClientApiConstants.dueAsOfDateParamName);
 			final Boolean isSynchMeeting = command
-					.booleanObjectValueOfParameterNamed(ClientApiConstants.chargesynchmeetingParamName);
+					.booleanPrimitiveValueOfParameterNamed(ClientApiConstants.chargesynchmeetingParamName);
 
 			final Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 
@@ -156,39 +157,47 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
 				// if the charge synchronized with meeting validate the dueDate
 				// entered
-				if (isSynchMeeting != null && isSynchMeeting) {
+				if (isSynchMeeting) {
 					ClientData clientData = this.clientReadPlatformServiceImpl.retrieveOne(clientId);
 					Collection<GroupGeneralData> groupData = clientData.getGroups();
+					if (groupData.isEmpty()) {
+						throw new ClientHasNoGroupAssociationException(clientId);
+					}
 					for (GroupGeneralData group : groupData) {
 						Long groupId = group.getId();
+						CalendarEntityType calendarEntityType = CalendarEntityType.GROUPS;
 						if (groupId != null) {
 							calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(groupId,
 									CalendarEntityType.GROUPS.getValue());
-
+							
 							if (calendarInstance == null) {
+								calendarEntityType = CalendarEntityType.CENTERS;
 								GroupGeneralData groupGeneralData = this.groupReadPlatformServiceImpl
 										.retrieveOne(groupId);
 								Long centreId = groupGeneralData.getParentId();
 								calendarInstance = this.calendarInstanceRepository
-										.findCalendarInstaneByEntityId(centreId, CalendarEntityType.CENTERS.getValue());
+										.findCalendarInstaneByEntityId(centreId, calendarEntityType.getValue());
 								if (calendarInstance == null) {
 									throw new MeetingNotFoundException(groupId);
 								}
-
+								
 							}
-
 							calendar = calendarInstance.getCalendar();
-							if (!calendar.getRecurrence().toLowerCase().contains(
-									ChargeTimeType.fromInt(charge.getChargeTimeType()).toString().split("_")[0].toLowerCase())) {
+							if (!charge.fetchChargeTimeType().isSameFrequency(CalendarUtils.getFrequency(calendar.getRecurrence()))) {
 								throw new GroupAndClientChargeNotInSynWithMeeting(groupId);
 							}
-							if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(),
-									new LocalDate(calendar.getStartDate()), dueDate)) {
+							if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(), new LocalDate(calendar.getStartDate()), dueDate)) {
 								throw new DuedateIsNotMeetingDateException(dueDate);
 							}
 						}
 					}
-					this.clientRecurringChargeRepository.save(clientRecurringCharge);
+				}
+				this.clientRecurringChargeRepository.save(clientRecurringCharge);
+
+				// if it is synchronized with meeting and date entered is one of
+				// the meeting date save to calendar instance table
+				if (isSynchMeeting && calendarInstance != null) {
+					 calendar = calendarInstance.getCalendar();
 					final CalendarInstance newCalendarInstance = CalendarInstance.from(calendar,
 							clientRecurringCharge.getId(), CalendarEntityType.CHARGES.getValue());
 					this.calendarInstanceRepository.save(newCalendarInstance);
@@ -199,12 +208,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 						clientRecurringCharge.getClient().officeId(), ClientApiConstants.dueAsOfDateParamName,
 						"charge.due.date.is.on.holiday", "charge.due.date.is.a.non.workingday", fmt);
 
-				/*
-				 * System.out.println("calendarId:"+calendarId); if(calendarId
-				 * != null && calendarId != 0) saveCalendarInstance(calendarId,
-				 * clientRecurringCharge.getId());
-				 */
-
 				return new CommandProcessingResultBuilder() //
 						.withEntityId(clientRecurringCharge.getId()) //
 						.withOfficeId(clientRecurringCharge.getClient().getOffice().getId()) //
@@ -212,13 +215,6 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 						.build();
 			}
 			final ClientCharge clientCharge = ClientCharge.createNew(client, charge, command);
-
-			// final ClientCharge clientCharge = ClientCharge.createNew(client,
-			// charge, command);
-
-			// final DateTimeFormatter fmt =
-			// DateTimeFormat.forPattern(command.dateFormat());
-			// validateDueDateOnWorkingDay(clientCharge, fmt);
 
 			this.clientChargeRepository.save(clientCharge);
 			final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat());
@@ -235,7 +231,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 			handleDataIntegrityIssues(clientId, null, dve);
 			return CommandProcessingResult.empty();
 		}
-	}
+}
 
     @Override
     public CommandProcessingResult payCharge(Long clientId, Long clientChargeId, JsonCommand command) {

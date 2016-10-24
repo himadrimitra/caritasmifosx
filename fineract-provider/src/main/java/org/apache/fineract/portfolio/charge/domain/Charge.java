@@ -306,6 +306,10 @@ public class Charge extends AbstractPersistable<Long> {
         return this.chargeTimeType;
     }
 
+    public ChargeTimeType fetchChargeTimeType() {
+        return ChargeTimeType.fromInt(this.chargeTimeType);
+    }
+    
     public Integer getChargeCalculation() {
         return this.chargeCalculation;
     }
@@ -428,7 +432,7 @@ public class Charge extends AbstractPersistable<Long> {
                             .failWithCodeNoParameterAddedToErrorCode("not.allowed.charge.time.for.loan");
                 }
             } else if (isClientCharge()) {
-                if (!isAllowedLoanChargeTime()) {
+                if (!isAllowedClientChargeTime()) {
                     baseDataValidator.reset().parameter("chargeTimeType").value(this.chargeTimeType)
                             .failWithCodeNoParameterAddedToErrorCode("not.allowed.charge.time.for.client");
                 }
