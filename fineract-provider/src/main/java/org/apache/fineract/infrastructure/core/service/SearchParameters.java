@@ -262,6 +262,27 @@ public final class SearchParameters {
                 sortOrder, staffId, accountNo, loanId, savingsId, orphansOnly, isSelfUser, centerId, groupId);
     }
     
+	public static SearchParameters forGLClossure(final Long officeId, final Integer offset, final Integer limit,
+			final String orderBy, final String sortOrder) {
+
+		final Integer maxLimitAllowed = getCheckedLimit(limit);
+		final String accountNo = null;
+		final Long loanId = null;
+		final Long savingsId = null;
+		final boolean isSelfUser = false;
+		final Long centerId = null;
+		final Long groupId = null;
+		final String name = null;
+		final String hierarchy = null;
+		final String sqlSearch = null;
+		final String externalId = null;
+		final Boolean orphansOnly = null;
+		final Long staffId = null;
+		return new SearchParameters(sqlSearch, officeId, externalId, name, hierarchy, null, null, offset,
+				maxLimitAllowed, orderBy, sortOrder, staffId, accountNo, loanId, savingsId, orphansOnly, isSelfUser,
+				centerId, groupId);
+	}
+    
     private SearchParameters(final String sqlSearch, final Long officeId, final String externalId, final String name,
             final String hierarchy, final String firstname, final String lastname, final Integer offset, final Integer limit,
             final String orderBy, final String sortOrder, final Long staffId, final String accountNo, final Long loanId,
