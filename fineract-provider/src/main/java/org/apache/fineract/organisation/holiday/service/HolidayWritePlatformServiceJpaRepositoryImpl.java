@@ -201,36 +201,40 @@ public class HolidayWritePlatformServiceJpaRepositoryImpl implements HolidayWrit
                     toDate.toString());
         }
 
-        if (repaymentsRescheduledTo.isEqual(fromDate) || repaymentsRescheduledTo.isEqual(toDate)
-                || (repaymentsRescheduledTo.isAfter(fromDate) && repaymentsRescheduledTo.isBefore(toDate))) {
+        if (repaymentsRescheduledTo != null) {
+            if (repaymentsRescheduledTo.isEqual(fromDate) || repaymentsRescheduledTo.isEqual(toDate)
+                    || (repaymentsRescheduledTo.isAfter(fromDate) && repaymentsRescheduledTo.isBefore(toDate))) {
 
-            defaultUserMessage = "Repayments rescheduled date should be before from date or after to date.";
-            throw new HolidayDateException("repayments.rescheduled.date.should.be.before.from.date.or.after.to.date", defaultUserMessage,
-                    repaymentsRescheduledTo.toString());
+                defaultUserMessage = "Repayments rescheduled date should be before from date or after to date.";
+                throw new HolidayDateException("repayments.rescheduled.date.should.be.before.from.date.or.after.to.date",
+                        defaultUserMessage, repaymentsRescheduledTo.toString());
+            }
+
+            final WorkingDays workingDays = this.daysRepositoryWrapper.findOne();
+            final Boolean isRepaymentOnWorkingDay = WorkingDaysUtil.isWorkingDay(workingDays, repaymentsRescheduledTo);
+
+            if (!isRepaymentOnWorkingDay) {
+                defaultUserMessage = "Repayments rescheduled date should not fall on non working days";
+                throw new HolidayDateException("repayments.rescheduled.date.should.not.fall.on.non.working.day", defaultUserMessage,
+                        repaymentsRescheduledTo.toString());
+            }
+
+            // validate repaymentsRescheduledTo date
+            // 1. should be within a 7 days date range.
+            // 2. Alternative date should not be an exist holiday.//TBD
+            // 3. Holiday should not be on an repaymentsRescheduledTo date of
+            // another holiday.//TBD
+
+            // restricting repaymentsRescheduledTo date to be within 7 days
+            // range
+            // before or after from date and to date.
+            if (repaymentsRescheduledTo.isBefore(fromDate.minusDays(7)) || repaymentsRescheduledTo.isAfter(toDate.plusDays(7))) {
+                defaultUserMessage = "Repayments Rescheduled to date must be within 7 days before or after from and to dates";
+                throw new HolidayDateException("repayments.rescheduled.to.must.be.within.range", defaultUserMessage, fromDate.toString(),
+                        toDate.toString(), repaymentsRescheduledTo.toString());
+            }
         }
-
-        final WorkingDays workingDays = this.daysRepositoryWrapper.findOne();
-        final Boolean isRepaymentOnWorkingDay = WorkingDaysUtil.isWorkingDay(workingDays, repaymentsRescheduledTo);
-
-        if (!isRepaymentOnWorkingDay) {
-            defaultUserMessage = "Repayments rescheduled date should not fall on non working days";
-            throw new HolidayDateException("repayments.rescheduled.date.should.not.fall.on.non.working.day", defaultUserMessage,
-                    repaymentsRescheduledTo.toString());
-        }
-
-        // validate repaymentsRescheduledTo date
-        // 1. should be within a 7 days date range.
-        // 2. Alternative date should not be an exist holiday.//TBD
-        // 3. Holiday should not be on an repaymentsRescheduledTo date of
-        // another holiday.//TBD
-
-        // restricting repaymentsRescheduledTo date to be within 7 days range
-        // before or after from date and to date.
-        if (repaymentsRescheduledTo.isBefore(fromDate.minusDays(7)) || repaymentsRescheduledTo.isAfter(toDate.plusDays(7))) {
-            defaultUserMessage = "Repayments Rescheduled to date must be within 7 days before or after from and to dates";
-            throw new HolidayDateException("repayments.rescheduled.to.must.be.within.range", defaultUserMessage, fromDate.toString(),
-                    toDate.toString(), repaymentsRescheduledTo.toString());
-        }
+        
     }
 
 }

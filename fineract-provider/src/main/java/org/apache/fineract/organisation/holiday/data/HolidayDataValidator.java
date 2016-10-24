@@ -74,10 +74,17 @@ public class HolidayDataValidator {
         final LocalDate toDate = this.fromApiJsonHelper.extractLocalDateNamed(HolidayApiConstants.toDateParamName, element);
         baseDataValidator.reset().parameter(HolidayApiConstants.toDateParamName).value(toDate).notNull();
 
-        final LocalDate repaymentsRescheduledTo = this.fromApiJsonHelper.extractLocalDateNamed(
+        if(this.fromApiJsonHelper.parameterExists(HolidayApiConstants.repaymentsRescheduledToParamName, element)){
+            final LocalDate repaymentsRescheduledTo = this.fromApiJsonHelper.extractLocalDateNamed(
                 HolidayApiConstants.repaymentsRescheduledToParamName, element);
         baseDataValidator.reset().parameter(HolidayApiConstants.repaymentsRescheduledToParamName).value(repaymentsRescheduledTo).notNull();
-
+        }
+        
+        if(this.fromApiJsonHelper.parameterExists(HolidayApiConstants.extendRepaymentRescheduleParamName, element)){
+	        final boolean extendRepaymentReschedule = this.fromApiJsonHelper.extractBooleanNamed(HolidayApiConstants.extendRepaymentRescheduleParamName, element);
+	        baseDataValidator.reset().parameter(HolidayApiConstants.extendRepaymentRescheduleParamName).value(extendRepaymentReschedule).notNull();
+        }
+        
         Set<Long> offices = null;
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
 
@@ -134,7 +141,12 @@ public class HolidayDataValidator {
             baseDataValidator.reset().parameter(HolidayApiConstants.repaymentsRescheduledToParamName).value(repaymentsRescheduledTo)
                     .notNull();
         }
-
+        
+        if (this.fromApiJsonHelper.parameterExists(HolidayApiConstants.extendRepaymentRescheduleParamName, element)) {
+	        final boolean extendRepaymentReschedule = this.fromApiJsonHelper.extractBooleanNamed(HolidayApiConstants.extendRepaymentRescheduleParamName, element);
+	        baseDataValidator.reset().parameter(HolidayApiConstants.extendRepaymentRescheduleParamName).value(extendRepaymentReschedule).notNull();
+        }
+        
         Set<Long> offices = null;
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
         if (this.fromApiJsonHelper.parameterExists(HolidayApiConstants.officesParamName, element)) {

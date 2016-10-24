@@ -22,8 +22,8 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 import java.util.ArrayList;
 
 import org.apache.fineract.organisation.holiday.service.HolidayUtil;
-import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.ApplicableProperty;
 import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
 import org.apache.fineract.organisation.workingdays.domain.RepaymentScheduleUpdationType;
@@ -96,7 +96,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                     reccuringString = calendarHistory.getRecurrence();
                 }
 
-                dueRepaymentPeriodDate = CalendarUtils.getNewRepaymentMeetingDate(reccuringString, seedDate, lastRepaymentDate.plusDays(1),
+                dueRepaymentPeriodDate = CalendarUtils.getNextRepaymentMeetingDate(reccuringString, seedDate, lastRepaymentDate,
                         loanApplicationTerms.getRepaymentEvery(),
                         CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(loanApplicationTerms.getLoanTermPeriodFrequencyType()),
                         holidayDetailDTO.getWorkingDays(), loanApplicationTerms.isSkipRepaymentOnFirstDayofMonth(),
@@ -129,9 +129,10 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     	LocalDate nextRepaymentDateAsPerSchedule = null;
         LocalDate adjustedDate = dueRepaymentPeriodDate;
         LocalDate newadjustedDate = null;
-        adjustedDate = getadjustedDate(loanApplicationTerms, holidayDetailDTO, adjustedDate);
-        LocalDate originalAdjustDate = adjustedDate;
-		if (loanApplicationTerms.getLoanCalendar() != null) {
+        adjustedDateDetailsDTO = getadjustedDate(dueRepaymentPeriodDate, loanApplicationTerms, holidayDetailDTO, adjustedDate);
+        LocalDate originalAdjustDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+
+        if (loanApplicationTerms.getLoanCalendar() != null) {
 			do {
 				LocalDate seedDate = null;
 				String reccuringString = null;
@@ -155,12 +156,12 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
 					reccuringString = calendarHistory.getRecurrence();
 				}
 
-				adjustedDateDetailsDTO = adjustNextRepaymentDateBasedOnWorkingDaysExemption(adjustedDate,
+				adjustedDateDetailsDTO = adjustNextRepaymentDateBasedOnWorkingDaysExemption(adjustedDateDetailsDTO.getChangedScheduleDate(),
 						holidayDetailDTO, reccuringString, seedDate, loanApplicationTerms);
 				adjustedDate = adjustedDateDetailsDTO.getChangedScheduleDate();
 				newAdjustedDateDetailsDTO = adjustedDateDetailsDTO;
-				newadjustedDate = getadjustedDate(loanApplicationTerms, holidayDetailDTO, adjustedDate);
-			} while (!adjustedDate.isEqual(newadjustedDate));
+				adjustedDateDetailsDTO = getadjustedDate(dueRepaymentPeriodDate, loanApplicationTerms, holidayDetailDTO, adjustedDate);
+			} while (!adjustedDate.isEqual(adjustedDateDetailsDTO.getChangedScheduleDate()));
 
 			if (newAdjustedDateDetailsDTO.getChangeactualMeetingday()) {
 				newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, adjustedDate);
@@ -180,12 +181,12 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
 				newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, originalAdjustDate);
 			}
 		}else{
-			newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, false);
+			newAdjustedDateDetailsDTO = adjustedDateDetailsDTO;
 		}
         return newAdjustedDateDetailsDTO;
     }
 
-	private LocalDate getadjustedDate(final LoanApplicationTerms loanApplicationTerms,
+	private AdjustedDateDetailsDTO getadjustedDate(final LocalDate dueRepaymentPeriodDate, final LoanApplicationTerms loanApplicationTerms,
 			final HolidayDetailDTO holidayDetailDTO, LocalDate adjustedDate) {
 		LocalDate nextDueRepaymentPeriodDate = getRepaymentPeriodDate(loanApplicationTerms.getRepaymentPeriodFrequencyType(),
                 loanApplicationTerms.getRepaymentEvery(), adjustedDate, loanApplicationTerms.getNthDay(),
@@ -213,7 +214,19 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
         if (holidayDetailDTO.isHolidayEnabled()) {
             adjustedDate = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays());
         }
-        return adjustedDate;
+        
+        AdjustedDateDetailsDTO newAdjustedDateDetailsDTO;
+        if(HolidayUtil.isExtendSchduleToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays())){
+        	LocalDate newAdjustedDate = dueRepaymentPeriodDate;
+            do{
+            newAdjustedDate = generateNextRepaymentDate(newAdjustedDate,
+            	loanApplicationTerms, false, holidayDetailDTO);
+            }while(HolidayUtil.isHoliday(newAdjustedDate, holidayDetailDTO.getHolidays()));
+            	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDate, newAdjustedDate);
+        } else {
+        	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, dueRepaymentPeriodDate);
+        }
+        return newAdjustedDateDetailsDTO;
 	}
 
     @Override
@@ -361,29 +374,33 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
 				} else {
 					isRepaymentSheduleExtended = false;
 				}
-				if (EpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(dueRepaymentPeriodDate,
-						workingDayExcemption.getExpression())) {
-					if (ApplicableProperty.INSTALLMENTDATE.getValue()
-							.equals(workingDayExcemption.getApplicableProperty())) {
+				if(EpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(dueRepaymentPeriodDate,
+						workingDayExcemption.getExpression())){
+					do{
+						if (ApplicableProperty.INSTALLMENTDATE.getValue()
+								.equals(workingDayExcemption.getApplicableProperty())) {
 
-						switch (workingDayExcemption.getActionToBePerformed()) {
-						case 3:
-							dueRepaymentPeriodDate = CalendarUtils.getNextRecurringDate(reccuringString, seedDate,
-									dueRepaymentPeriodDate);
-							break;
-						case 5:
-							dueRepaymentPeriodDate = getRepaymentPeriodDate(
-									loanApplicationTerms.getRepaymentPeriodFrequencyType(),
-									loanApplicationTerms.getRepaymentEvery(), dueRepaymentPeriodDate, null, null);
-							dueRepaymentPeriodDate = CalendarUtils.adjustDate(dueRepaymentPeriodDate,
-									loanApplicationTerms.getSeedDate(),
-									loanApplicationTerms.getRepaymentPeriodFrequencyType());
-							break;
-						default:
-							break;
+							switch (workingDayExcemption.getActionToBePerformed()) {
+							case 3:
+								dueRepaymentPeriodDate = CalendarUtils.getNextRecurringDate(reccuringString, seedDate,
+										dueRepaymentPeriodDate);
+								break;
+							case 5:
+								dueRepaymentPeriodDate = getRepaymentPeriodDate(
+										loanApplicationTerms.getRepaymentPeriodFrequencyType(),
+										loanApplicationTerms.getRepaymentEvery(), dueRepaymentPeriodDate, null, null);
+								dueRepaymentPeriodDate = CalendarUtils.adjustDate(dueRepaymentPeriodDate,
+										loanApplicationTerms.getSeedDate(),
+										loanApplicationTerms.getRepaymentPeriodFrequencyType());
+								break;
+							default:
+								break;
+							}
 						}
-					}
+					}while(EpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(dueRepaymentPeriodDate,
+							workingDayExcemption.getExpression()));
 				}
+				
 			}
 			return new AdjustedDateDetailsDTO(dueRepaymentPeriodDate, isRepaymentSheduleExtended);
 		}

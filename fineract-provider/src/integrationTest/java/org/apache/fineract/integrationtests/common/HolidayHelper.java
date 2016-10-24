@@ -45,7 +45,7 @@ public class HolidayHelper {
         this.responseSpec = responseSpec;
     }
 
-    public static String getCreateHolidayDataAsJSON() {
+    public static String getCreateHolidayDataAsJSON(final boolean extendRepaymentReschedule) {
         final HashMap<String, Object> map = new HashMap<>();
         List<HashMap<String, String>> offices = new ArrayList<HashMap<String, String>>();
         HashMap<String, String> officeMap = new HashMap<>();
@@ -58,7 +58,56 @@ public class HolidayHelper {
         map.put("name", Utils.randomNameGenerator("HOLIDAY_", 5));
         map.put("fromDate", "01 April 2013");
         map.put("toDate", "01 April 2013");
-        map.put("repaymentsRescheduledTo", "08 April 2013");
+        if(!extendRepaymentReschedule){
+            map.put("repaymentsRescheduledTo", "08 April 2013");
+        }
+        map.put("extendRepaymentReschedule", extendRepaymentReschedule);
+
+        String HolidayCreateJson = new Gson().toJson(map);
+        System.out.println(HolidayCreateJson);
+        return HolidayCreateJson;
+    }
+    
+    public static String getCreateChristmasHolidayDataAsJSON(final boolean extendRepaymentReschedule) {
+        final HashMap<String, Object> map = new HashMap<>();
+        List<HashMap<String, String>> offices = new ArrayList<HashMap<String, String>>();
+        HashMap<String, String> officeMap = new HashMap<>();
+        officeMap.put("officeId", OFFICE_ID);
+        offices.add(officeMap);
+
+        map.put("offices", offices);
+        map.put("locale", "en");
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("name", Utils.randomNameGenerator("HOLIDAY_", 5));
+        map.put("fromDate", "19 December 2013");
+        map.put("toDate", "30 December 2013");
+        if(!extendRepaymentReschedule){
+            map.put("repaymentsRescheduledTo", "31 December 2013");
+        }
+        map.put("extendRepaymentReschedule", extendRepaymentReschedule);
+
+        String HolidayCreateJson = new Gson().toJson(map);
+        System.out.println(HolidayCreateJson);
+        return HolidayCreateJson;
+    }
+    
+    public static String getCreateDusseraHolidayDataAsJSON(final boolean extendRepaymentReschedule) {
+        final HashMap<String, Object> map = new HashMap<>();
+        List<HashMap<String, String>> offices = new ArrayList<HashMap<String, String>>();
+        HashMap<String, String> officeMap = new HashMap<>();
+        officeMap.put("officeId", OFFICE_ID);
+        offices.add(officeMap);
+
+        map.put("offices", offices);
+        map.put("locale", "en");
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("name", Utils.randomNameGenerator("HOLIDAY_", 5));
+        map.put("fromDate", "19 November 2013");
+        map.put("toDate", "30 November 2013");
+        if(!extendRepaymentReschedule){
+            map.put("repaymentsRescheduledTo", "31 November 2013");
+        }
+        map.put("extendRepaymentReschedule", extendRepaymentReschedule);
 
         String HolidayCreateJson = new Gson().toJson(map);
         System.out.println(HolidayCreateJson);
@@ -73,7 +122,18 @@ public class HolidayHelper {
     }
 
     public static Integer createHolidays(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
-        return Utils.performServerPost(requestSpec, responseSpec, CREATE_HOLIDAY_URL, getCreateHolidayDataAsJSON(), "resourceId");
+        boolean extendRepaymentReschedule = false;
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_HOLIDAY_URL, getCreateHolidayDataAsJSON(extendRepaymentReschedule), "resourceId");
+    }
+    
+    public static Integer createChristmasHolidaysWithExtendingRepaymentSchedule(final RequestSpecification requestSpec,
+            final ResponseSpecification responseSpec, boolean extendRapaymentReschedule) {
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_HOLIDAY_URL, getCreateChristmasHolidayDataAsJSON(extendRapaymentReschedule), "resourceId");
+    }
+    
+    public static Integer createDusseraHolidaysWithExtendingRepaymentSchedule(final RequestSpecification requestSpec,
+            final ResponseSpecification responseSpec, boolean extendRapaymentReschedule) {
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_HOLIDAY_URL, getCreateDusseraHolidayDataAsJSON(extendRapaymentReschedule), "resourceId");
     }
     
     public static Integer activateHolidays(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final String holidayID) {

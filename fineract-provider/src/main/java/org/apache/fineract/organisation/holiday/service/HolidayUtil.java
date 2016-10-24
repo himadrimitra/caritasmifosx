@@ -39,8 +39,9 @@ public class HolidayUtil {
     private static LocalDate getRepaymentRescheduleDateIfHoliday(final LocalDate repaymentDate, final List<Holiday> holidays) {
 
         for (final Holiday holiday : holidays) {
-            if (repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
-                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate()))) {
+            if ((repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
+                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate())))
+                        && !holiday.isExtendRepaymentReschedule()) {
                 // should be take from holiday
                 return holiday.getRepaymentsRescheduledToLocalDate();
             }
@@ -54,6 +55,16 @@ public class HolidayUtil {
                     || (date.isAfter(holiday.getFromDateLocalDate()) && date.isBefore(holiday.getToDateLocalDate()))) { return true; }
         }
 
+        return false;
+    }
+    
+    public static boolean isExtendSchduleToIfHoliday(LocalDate repaymentDate, final List<Holiday> holidays) {
+        for (final Holiday holiday : holidays) {
+            if (repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
+                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate()))) {
+                return holiday.isExtendRepaymentReschedule();
+            }
+        }
         return false;
     }
 }
