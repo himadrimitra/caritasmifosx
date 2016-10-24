@@ -576,6 +576,12 @@ public class Charge extends AbstractPersistable<Long> {
             this.glimChargeCalculation = newValue;
         }
         
+        if (command.isChangeInBooleanParameterNamed(ChargesApiConstants.isCapitalizedParamName, this.isCapitalized)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(ChargesApiConstants.isCapitalizedParamName);
+            actualChanges.put(ChargesApiConstants.isCapitalizedParamName, newValue);
+            this.isCapitalized = newValue;
+        }
+        
         // allow min and max cap to be only added to PERCENT_OF_AMOUNT for now
         if (isPercentageOfApprovedAmount() || isPercentageOfDisbursementAmount()) {
             final String minCapParamName = "minCap";
