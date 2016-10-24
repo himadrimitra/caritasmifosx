@@ -34,7 +34,7 @@ CREATE TABLE `loanprovisioningentries` (
 	`provision_percentage` BIGINT(20) NOT NULL,
 	`loan_id` BIGINT(20) NOT NULL,
 	`dueDate` DATE NOT NULL,
-	`outstandingAsPerType` DECIMAL(10,2) NOT NULL,
+	`outstandingAsPerType` DECIMAL(10,6) NOT NULL,
 	`liability_account` BIGINT(20) NOT NULL,
 	`expense_account` BIGINT(20) NOT NULL,
 	`provisioningAmountType` INT(11) NOT NULL

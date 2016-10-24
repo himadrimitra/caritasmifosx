@@ -679,6 +679,8 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
     public IndividualCollectionSheetData generateIndividualCollectionSheet(final JsonQuery query) {
 
         this.collectionSheetGenerateCommandFromApiJsonDeserializer.validateForGenerateCollectionSheetOfIndividuals(query.json());
+        
+        final boolean isJlgLoansIncluded = this.configurationDomainService.isJlgLoansIncludedInIndividualCollectionSheet();
 
         final LocalDate transactionDate = query.localDateValueOfParameterNamed(transactionDateParamName);
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
@@ -694,7 +696,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
         final boolean checkForStaffId = staffId != null;
 
         final IndividualCollectionSheetFaltDataMapper mapper = new IndividualCollectionSheetFaltDataMapper(checkForOfficeId,
-                checkForStaffId);
+                checkForStaffId, isJlgLoansIncluded);
 
         final SqlParameterSource namedParameters = new MapSqlParameterSource().addValue("dueDate", transactionDateStr).addValue(
                 "officeHierarchy", officeHierarchy);
@@ -728,7 +730,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         private final String sql;
 
-        public IndividualCollectionSheetFaltDataMapper(final boolean checkForOfficeId, final boolean checkforStaffId) {
+        public IndividualCollectionSheetFaltDataMapper(final boolean checkForOfficeId, final boolean checkforStaffId, final boolean isJlgLoansIncluded) {
             StringBuilder sb = new StringBuilder();
             sb.append("SELECT loandata.*, sum(lc.amount_outstanding_derived) as chargesDue ");
             sb.append("from (SELECT cl.display_name As clientName, ");
@@ -755,7 +757,10 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                 sb.append("ln.loan_officer_id = :staffId and ");
             }
             sb.append("(ln.loan_status_id = 300) ");
-            sb.append("and ln.group_id is null GROUP BY cl.id , ln.id ORDER BY cl.id , ln.id ) loandata ");
+			if (!isJlgLoansIncluded) {
+				sb.append("and ln.group_id is null ");
+			}
+            sb.append(" GROUP BY cl.id , ln.id ORDER BY cl.id , ln.id ) loandata ");
             sb.append("LEFT JOIN m_loan_charge lc ON lc.loan_id = loandata.loanId AND lc.is_paid_derived = 0 AND lc.is_active = 1 AND ( lc.due_for_collection_as_of_date  <= :dueDate OR lc.charge_time_enum = 1) ");
             sb.append("GROUP BY loandata.clientId, loandata.loanId ORDER BY loandata.clientId, loandata.loanId ");
 

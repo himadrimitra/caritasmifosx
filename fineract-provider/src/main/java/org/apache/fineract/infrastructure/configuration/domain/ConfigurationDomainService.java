@@ -108,4 +108,5 @@ public interface ConfigurationDomainService {
     
     boolean isCustomerDeDuplicationEnabled();
 
+    boolean isJlgLoansIncludedInIndividualCollectionSheet();
 }

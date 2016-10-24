@@ -369,4 +369,8 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return getGlobalConfigurationPropertyData("customer-deduplication").isEnabled();
     }
     
+	@Override
+	public boolean isJlgLoansIncludedInIndividualCollectionSheet() {
+		return getGlobalConfigurationPropertyData("jlg_loans_included_in_individual_collection_sheet").isEnabled();
+	}
 }
