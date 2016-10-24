@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.charge.domain;
 
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+
 public enum ChargeTimeType {
     INVALID(0, "chargeTimeType.invalid"), //
     DISBURSEMENT(1, "chargeTimeType.disbursement"), // only for loan charges
@@ -195,7 +197,7 @@ public enum ChargeTimeType {
     }
 
     public boolean isAllowedClientChargeTime() {
-        return isOnSpecifiedDueDate();
+        return isOnSpecifiedDueDate() || isAnnualFee() || isMonthlyFee() || isWeeklyFee();
     }
 
     public boolean isAllowedSavingsChargeTime() {
@@ -226,4 +228,26 @@ public enum ChargeTimeType {
     public boolean isUpfrontFee() {
         return this.value.equals(ChargeTimeType.UPFRONT_FEE.getValue());
     }
+    
+    public boolean isSameFrequency(final CalendarFrequencyType calendarFrequencyType){
+    	boolean sameFrequency = false;
+    	switch (calendarFrequencyType) {
+		case WEEKLY:
+			sameFrequency = this.isWeeklyFee();
+			break;
+		case MONTHLY:
+			sameFrequency = this.isMonthlyFee();
+		break;
+		case YEARLY:
+			sameFrequency = this.isAnnualFee();
+			break;
+		default:
+			break;
+		}
+    	
+    	
+    	return sameFrequency;
+    	
+    }
+    
 }
