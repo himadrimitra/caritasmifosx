@@ -262,7 +262,7 @@ public final class SearchParameters {
                 sortOrder, staffId, accountNo, loanId, savingsId, orphansOnly, isSelfUser, centerId, groupId);
     }
     
-	public static SearchParameters forGLClossure(final Long officeId, final Integer offset, final Integer limit,
+	public static SearchParameters formPaginationSearchParameters(final Long officeId, final Integer offset, final Integer limit,
 			final String orderBy, final String sortOrder) {
 
 		final Integer maxLimitAllowed = getCheckedLimit(limit);
