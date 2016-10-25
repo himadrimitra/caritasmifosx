@@ -52,4 +52,20 @@ public class RoleData implements Serializable {
     public int hashCode() {
         return this.id.hashCode();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Boolean getDisabled() {
+        return disabled;
+    }
 }

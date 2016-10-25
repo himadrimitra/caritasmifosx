@@ -1,7 +1,5 @@
 package com.finflux.ruleengine.lib.data;
 
-import java.util.List;
-
 /**
  * Created by dhirendra on 06/09/16.
  */

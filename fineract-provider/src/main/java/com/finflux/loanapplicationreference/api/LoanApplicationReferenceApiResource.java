@@ -15,6 +15,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import com.finflux.workflow.execution.data.WorkflowExecutionData;
+import com.finflux.workflow.execution.domain.WorkflowExecution;
+import com.finflux.workflow.execution.service.WorkflowExecutionService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -49,6 +52,7 @@ public class LoanApplicationReferenceApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
     private final CreditBureauCheckService creditBureauCheckService;
+    private final WorkflowExecutionService workflowExecutionService;
 
     @SuppressWarnings("rawtypes")
     @Autowired
@@ -56,13 +60,15 @@ public class LoanApplicationReferenceApiResource {
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-            final CreditBureauCheckService creditBureauCheckService) {
+            final CreditBureauCheckService creditBureauCheckService,
+            final WorkflowExecutionService workflowExecutionService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
-        this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.creditBureauCheckService = creditBureauCheckService;
+        this.workflowExecutionService = workflowExecutionService;
+        this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
     }
 
     @SuppressWarnings("unchecked")
@@ -187,7 +193,7 @@ public class LoanApplicationReferenceApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String creditBureauReportFileContant(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
-            @PathParam("sourceId") final Long sourceId, @Context final UriInfo uriInfo) {
+            @QueryParam("sourceId") final Long sourceId, @Context final UriInfo uriInfo) {
         this.context.authenticatedUser().validateHasReadPermission(
                 LoanApplicationReferenceApiConstants.LOANAPPLICATIONREFERENCE_RESOURCE_NAME);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
@@ -209,6 +215,24 @@ public class LoanApplicationReferenceApiResource {
         final CreditBureauFileContentData creditBureauFileContentData = this.creditBureauCheckService
                 .getCreditBureauReportFileContent(loanApplicationReferenceId);
         return this.toApiJsonSerializer.serialize(settings, creditBureauFileContentData);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{loanApplicationReferenceId}/workflow")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getLoanApplicationWorkflow(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+                                                   @Context final UriInfo uriInfo) {
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        final Long workflowExecutionId = this.workflowExecutionService
+                .getOrCreateWorkflowExecutionForLoanApplication(loanApplicationReferenceId);
+        if(workflowExecutionId !=null){
+            final WorkflowExecutionData workflowExecutionData = workflowExecutionService.getWorkflowExecutionData(workflowExecutionId);
+            return this.toApiJsonSerializer.serialize(settings, workflowExecutionData);
+        }
+        return this.toApiJsonSerializer.serialize(settings, workflowExecutionId);
     }
 
     private boolean is(final String commandParam, final String commandValue) {
