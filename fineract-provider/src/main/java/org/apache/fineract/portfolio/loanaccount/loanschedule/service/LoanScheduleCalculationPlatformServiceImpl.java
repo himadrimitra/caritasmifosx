@@ -102,7 +102,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
     }
 
     @Override
-    public LoanScheduleModel calculateLoanSchedule(final JsonQuery query, Boolean validateParams) {
+    public LoanScheduleModel calculateLoanSchedule(final JsonQuery query, Boolean validateParams, final boolean considerAllDisbursmentsInSchedule) {
 
         /***
          * TODO: Vishwas, this is probably not required, test and remove the
@@ -137,7 +137,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         }
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
-        return this.loanScheduleAssembler.assembleLoanScheduleFrom(query.parsedJson());
+        return this.loanScheduleAssembler.assembleLoanScheduleFrom(query.parsedJson(), considerAllDisbursmentsInSchedule);
     }
 
     @Override
@@ -218,6 +218,17 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         this.loanScheduleAssembler.assempleVariableScheduleFrom(loan, json);
         return constructLoanScheduleData(loan);
+    }
+    
+    @Override
+    public LoanScheduleModel generateLoanScheduleWithCurrentStatus(final Long loanId) {
+        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        boolean considerFutureDisbursmentsInSchedule = true;
+        boolean considerAllDisbursmentsInSchedule = false;
+        final LocalDate recalculateFrom = null;
+        final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+        return loan.regenerateScheduleModel(scheduleGeneratorDTO);
     }
 
     private LoanScheduleData constructLoanScheduleData(Loan loan) {

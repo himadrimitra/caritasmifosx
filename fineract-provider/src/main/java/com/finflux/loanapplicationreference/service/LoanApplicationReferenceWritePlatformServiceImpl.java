@@ -214,7 +214,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final JsonCommand validateCommand = JsonCommand.fromExistingCommand(command, validateJsonElement);
             final JsonQuery query = JsonQuery.from(validationJsonObject.toString(),
                     this.fromApiJsonHelper.parse(validationJsonObject.toString()), this.fromJsonHelper);
-            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true);
+            final boolean considerAllDisbursmentsInSchedule = true;
+            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true, considerAllDisbursmentsInSchedule);
 
             final JsonObject approveJsonObject = jsonObject.getAsJsonObject("formRequestData");
             final JsonElement approveJsonElement = this.fromApiJsonHelper.parse(approveJsonObject.toString());

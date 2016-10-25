@@ -193,7 +193,7 @@ public class LoanProductData {
     private final Integer minLoanTerm;
     private final Integer maxLoanTerm;
     private final EnumOptionData loanTenureFrequencyType;
-    private final boolean considerFutureDisbursmentsInSchedule;
+    @SuppressWarnings("unused")
     private final List<CodeValueData> codeValueOptions;
     
     final List<EnumOptionData> weeksInYearTypeOptions;
@@ -273,7 +273,6 @@ public class LoanProductData {
         final Integer installmentAmountInMultiplesOf = null;
         final LoanProductConfigurableAttributes loanProductConfigurableAttributes = null;
         
-        final boolean isSubsidyApplicable = false;
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
         final Boolean closeLoanOnOverpayment = false;
@@ -282,7 +281,6 @@ public class LoanProductData {
         final Integer minLoanTerm = null;
         final Integer maxLoanTerm = null;
         final EnumOptionData loanTenureFrequencyType = null;
-        final boolean considerFutureDisbursmentsInSchedule = false;
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYear = null;
 
@@ -301,8 +299,8 @@ public class LoanProductData {
                 floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
                 maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
-                minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, considerFutureDisbursmentsInSchedule, 
-                canUseForTopup, weeksInYear);
+                minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, 
+                weeksInYear);
 
     }
 
@@ -378,7 +376,6 @@ public class LoanProductData {
         final Integer installmentAmountInMultiplesOf = null;
         final LoanProductConfigurableAttributes loanProductConfigurableAttributes = null;
         
-        final boolean isSubsidyApplicable = false;
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
         
@@ -388,7 +385,6 @@ public class LoanProductData {
         final Integer minLoanTerm = null;
         final Integer maxLoanTerm = null;
         final EnumOptionData loanTenureFrequencyType = null;
-        final boolean considerFutureDisbursmentsInSchedule = false;
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYearType = null;
 
@@ -407,8 +403,8 @@ public class LoanProductData {
                 floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
                 maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
-                minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, considerFutureDisbursmentsInSchedule,
-                canUseForTopup, weeksInYearType);
+                minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
+                weeksInYearType);
 
     }
 
@@ -491,7 +487,6 @@ public class LoanProductData {
         final Integer installmentAmountInMultiplesOf = null;
         final LoanProductConfigurableAttributes loanProductConfigurableAttributes = null;
         
-        final boolean isSubsidyApplicable = false;
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
         final Boolean isoverpaymentcloseloan = false;
@@ -500,7 +495,6 @@ public class LoanProductData {
         final Integer minLoanTerm = null;
         final Integer maxLoanTerm = null;
         final EnumOptionData loanTenureFrequencyType = null;
-        final boolean considerFutureDisbursmentsInSchedule = false;
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYearType = null;
 
@@ -521,7 +515,7 @@ public class LoanProductData {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
-                considerFutureDisbursmentsInSchedule, canUseForTopup, weeksInYearType);
+                canUseForTopup, weeksInYearType);
 
     }
 
@@ -566,7 +560,7 @@ public class LoanProductData {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final boolean closeLoanOnOverpayment, 
             final boolean syncExpectedWithDisbursementDate,  final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final EnumOptionData loanTenureFrequencyType, 
-            final boolean considerFutureDisbursmentsInSchedule, final boolean canUseForTopup, final EnumOptionData weeksInYearType) {
+            final boolean canUseForTopup, final EnumOptionData weeksInYearType) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -677,7 +671,6 @@ public class LoanProductData {
         this.minLoanTerm = minLoanTerm;
         this.maxLoanTerm = maxLoanTerm;
         this.loanTenureFrequencyType = loanTenureFrequencyType;
-        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
         this.canUseForTopup = canUseForTopup;
         this.codeValueOptions = null;
         this.weeksInYearTypeOptions = null;
@@ -826,7 +819,6 @@ public class LoanProductData {
         this.minLoanTerm = productData.minLoanTerm;
         this.maxLoanTerm = productData.maxLoanTerm;
         this.loanTenureFrequencyType = productData.loanTenureFrequencyType;
-        this.considerFutureDisbursmentsInSchedule = productData.isConsiderFutureDisbursmentsInSchedule();
         this.canUseForTopup = productData.canUseForTopup;
         this.codeValueOptions = codeValueOptions;
         this.weeksInYearTypeOptions = weeksInYearTypeOptions;
@@ -906,7 +898,6 @@ public class LoanProductData {
         final Integer installmentAmountInMultiplesOf = null;
         final LoanProductConfigurableAttributes loanProductConfigurableAttributes = null;
 
-        final boolean isSubsidyApplicable = false;
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
         final Boolean isoverpaymentcloseloan = false;
@@ -915,7 +906,6 @@ public class LoanProductData {
         final Integer minLoanTerm = null;
         final Integer maxLoanTerm = null;
         final EnumOptionData loanTenureFrequencyType = null;
-        final boolean considerFutureDisbursmentsInSchedule = false;
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYearType = null;
 
@@ -936,7 +926,7 @@ public class LoanProductData {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
-                considerFutureDisbursmentsInSchedule,canUseForTopup, weeksInYearType);
+                canUseForTopup,weeksInYearType);
     }
 
 
@@ -1242,9 +1232,6 @@ public class LoanProductData {
         return this.canDefineInstallmentAmount;
     }
     
-    public boolean considerFutureDisbursmentsInSchedule() {
-        return this.isConsiderFutureDisbursmentsInSchedule();
-    }
     public LoanProductConfigurableAttributes getloanProductConfigurableAttributes() {
         return this.allowAttributeOverrides;
     }
@@ -1313,10 +1300,6 @@ public class LoanProductData {
         return this.maxLoanTerm;
     }
 
-    public boolean isConsiderFutureDisbursmentsInSchedule() {
-        return considerFutureDisbursmentsInSchedule;
-    }
-    
     public BigDecimal getInterestRateDifferential() {
         return this.interestRateDifferential;
     }

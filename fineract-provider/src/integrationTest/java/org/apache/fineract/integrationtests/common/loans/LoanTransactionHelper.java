@@ -98,6 +98,18 @@ public class LoanTransactionHelper {
         final HashMap response = Utils.performServerGet(requestSpec, responseSpec, URL, "repaymentSchedule");
         return (ArrayList) response.get("periods");
     }
+    
+    public HashMap getLoanRepaymentScheduleWithOriginalSchedule(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final Integer loanID) {
+        final String URL = "/fineract-provider/api/v1/loans/" + loanID + "?associations=originalSchedule,repaymentSchedule&" + Utils.TENANT_IDENTIFIER;
+        return  Utils.performServerGet(requestSpec, responseSpec, URL,"");
+    }
+    
+    public ArrayList getLoanRepaymentSchedulePreview(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final Integer loanID) {
+        final String URL = "/fineract-provider/api/v1/loans/" + loanID + "/schedulepreview?" + Utils.TENANT_IDENTIFIER;
+        return  Utils.performServerGet(requestSpec, responseSpec, URL,"periods");
+    }
 
     public ArrayList getLoanFutureRepaymentSchedule(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             final Integer loanID) {

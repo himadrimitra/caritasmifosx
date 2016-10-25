@@ -143,7 +143,6 @@ public interface LoanProductConstants {
     public static final String createSubsidyAccountMappingsParamName = "createSubsidyAccountMappings";
     
     public static final String closeLoanOnOverpayment = "closeLoanOnOverpayment";
-    public static final String considerFutureDisbursmentsInSchedule = "considerFutureDisbursmentsInSchedule";
     
     public static final String weeksInYearType = "weeksInYearType";
 }

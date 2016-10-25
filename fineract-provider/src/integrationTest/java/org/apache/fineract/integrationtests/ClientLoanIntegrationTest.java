@@ -788,8 +788,7 @@ public class ClientLoanIntegrationTest {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
-        final boolean considerFutureDisbursmentsInSchedule = false;
-        final Integer loanProductID = createLoanProductwithFutureDisbursements(true, NONE, considerFutureDisbursmentsInSchedule);
+        final Integer loanProductID = createLoanProductwithFutureDisbursements(true, NONE);
 
         List<HashMap> tranches = new ArrayList<>();
         tranches.add(createTrancheDetail("1 January 2016", "25000"));
@@ -823,8 +822,7 @@ public class ClientLoanIntegrationTest {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
-        final boolean considerFutureDisbursmentsInSchedule = true;
-        final Integer loanProductID = createLoanProductwithFutureDisbursements(true, NONE, considerFutureDisbursmentsInSchedule);
+        final Integer loanProductID = createLoanProductwithFutureDisbursements(true, NONE);
 
         List<HashMap> tranches = new ArrayList<>();
         tranches.add(createTrancheDetail("1 January 2016", "25000"));
@@ -970,7 +968,7 @@ public class ClientLoanIntegrationTest {
         return this.loanTransactionHelper.getLoanProductId(loanProductJSON);
     }
     
-    private Integer createLoanProductwithFutureDisbursements(final boolean multiDisburseLoan, final String accountingRule, final boolean considerFutureDisbursmentsInSchedule, final Account... accounts) {
+    private Integer createLoanProductwithFutureDisbursements(final boolean multiDisburseLoan, final String accountingRule, final Account... accounts) {
         System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
         LoanProductTestBuilder builder = new LoanProductTestBuilder() //
                 .withPrincipal("40000.00") //
@@ -983,7 +981,6 @@ public class ClientLoanIntegrationTest {
                 .withInterestTypeAsDecliningBalance() //
                 .withTranches(multiDisburseLoan) //
                 .withAccounting(accountingRule, accounts)
-                .withFutureDisbursements(considerFutureDisbursmentsInSchedule)
                 .withInterestRecalculation(true);
         if (multiDisburseLoan) {
             builder = builder.withInterestCalculationPeriodTypeAsRepaymentPeriod(true);

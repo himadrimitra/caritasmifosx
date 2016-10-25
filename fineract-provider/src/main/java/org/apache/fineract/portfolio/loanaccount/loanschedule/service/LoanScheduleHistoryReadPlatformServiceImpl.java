@@ -32,7 +32,6 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.joda.time.Days;
@@ -145,7 +144,7 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
                                 periods.add(periodData);
                                 this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(data.amount());
                             } 
-                        } else if (data.isDueForDisbursement(fromDate, dueDate)) {
+                        } else if (data.isDueForDisbursement(fromDate, dueDate)  && data.isDisbursed()) {
                             principal = principal.add(data.amount());
                             final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
                                     data.disbursementDate(), data.amount(), BigDecimal.ZERO, data.isDisbursed());

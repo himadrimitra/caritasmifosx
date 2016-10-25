@@ -30,7 +30,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatRepositoryWrapper;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
-import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
 import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -193,7 +192,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final FineractEntityRelationRepository fineractEntityRelationRepository;
     private final LoanRepositoryWrapper  loanRepositoryWrapper;
     private final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository;
-    private final CodeValueRepository codeValueRepository;
     private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
     private final ChargeRepositoryWrapper chargeRepositoryWrapper;
     private final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository;
@@ -221,7 +219,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
             final FineractEntityToEntityMappingRepository repository, final FineractEntityRelationRepository fineractEntityRelationRepository,
-            final LoanRepositoryWrapper  loanRepositoryWrapper,final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository, final CodeValueRepository codeValueRepository, 
+            final LoanRepositoryWrapper  loanRepositoryWrapper,final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository,  
             final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler, final ChargeRepositoryWrapper chargeRepositoryWrapper,
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository) {
         this.context = context;
@@ -262,7 +260,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.fineractEntityRelationRepository = fineractEntityRelationRepository;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.groupLoanIndividualMonitoringRepository = groupLoanIndividualMonitoringRepository;
-        this.codeValueRepository = codeValueRepository;
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
         this.chargeRepositoryWrapper = chargeRepositoryWrapper;
         this.groupLoanIndividualMonitoringChargeRepository = groupLoanIndividualMonitoringChargeRepository;
@@ -384,7 +381,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         CalendarEntityType.LOANS.getValue());
                 this.calendarInstanceRepository.save(calendarInstance);
             } else {
-                final LoanApplicationTerms loanApplicationTerms = this.loanScheduleAssembler.assembleLoanTerms(command.parsedJson());
+                final boolean considerAllDisbursmentsInSchedule = true;
+                final LoanApplicationTerms loanApplicationTerms = this.loanScheduleAssembler.assembleLoanTerms(command.parsedJson(), considerAllDisbursmentsInSchedule);
                 final Integer repaymentFrequencyNthDayType = command.integerValueOfParameterNamed("repaymentFrequencyNthDayType");
                 if (loanApplicationTerms.getRepaymentPeriodFrequencyType() == PeriodFrequencyType.MONTHS
                         && repaymentFrequencyNthDayType != null) {
@@ -970,7 +968,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 	            final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
 	            final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
 	            existingLoanApplication.updateGlim(glimList);
-	            final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false);
+	            final boolean considerAllDisbursmentsInSchedule = true;
+	            final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false, considerAllDisbursmentsInSchedule);
 	            existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
 	            existingLoanApplication.recalculateAllCharges();
 	            // save GroupLoanIndividualMonitoring clients

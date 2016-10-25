@@ -236,7 +236,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lp.allow_variabe_installments as isVariableIntallmentsAllowed, "
                     + "lvi.minimum_gap as minimumGap, "
                     + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, "
-                    + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, lp.consider_future_disbursments_in_schedule AS considerfuturedisbursmentsinschedule, "
+                    + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, "
                     + "lp.can_use_for_topup as canUseForTopup "
                     + " from m_product_loan lp "
                     + " left join m_fund f on f.id = lp.fund_id "
@@ -467,7 +467,6 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final Integer maxLoanTerm = JdbcSupport.getInteger(rs, "maxLoanTerm");
             EnumOptionData loanTenureFrequencyType = null;
             final Integer loanTenureFrequencyTypeEnum = JdbcSupport.getInteger(rs, "loanTenureFrequencyType");
-            final boolean considerFutureDisbursmentsInSchedule = rs.getBoolean("considerfuturedisbursmentsinschedule");
             if (loanTenureFrequencyTypeEnum != null) {
                 loanTenureFrequencyType = LoanEnumerations.loanTenureFrequencyType(loanTenureFrequencyTypeEnum.intValue());
             }
@@ -492,8 +491,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
-                    minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, considerFutureDisbursmentsInSchedule,
-                    canUseForTopup, weeksInYearType);
+                    minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
+                    weeksInYearType);
         }
     }
 

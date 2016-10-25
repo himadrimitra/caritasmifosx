@@ -119,7 +119,6 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductVariableInstallmentConfig;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
-import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -192,16 +191,17 @@ public class LoanScheduleAssembler {
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
     }
 
-    public LoanApplicationTerms assembleLoanTerms(final JsonElement element) {
+    public LoanApplicationTerms assembleLoanTerms(final JsonElement element, final boolean considerAllDisbursmentsInSchedule) {
         final Long loanProductId = this.fromApiJsonHelper.extractLongNamed("productId", element);
 
         final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
         if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
 
-        return assembleLoanApplicationTermsFrom(element, loanProduct);
+        return assembleLoanApplicationTermsFrom(element, loanProduct, considerAllDisbursmentsInSchedule);
     }
 
-    private LoanApplicationTerms assembleLoanApplicationTermsFrom(final JsonElement element, final LoanProduct loanProduct) {
+    private LoanApplicationTerms assembleLoanApplicationTermsFrom(final JsonElement element, final LoanProduct loanProduct,
+            final boolean considerAllDisbursmentsInSchedule) {
 
         final MonetaryCurrency currency = loanProduct.getCurrency();
         final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
@@ -479,6 +479,7 @@ public class LoanScheduleAssembler {
         final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
+        final boolean considerFutureDisbursmentsInSchedule = true;
         return LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
                 interestRatePerPeriod, interestRatePeriodFrequencyType, annualNominalInterestRate, interestCalculationPeriodMethod,
@@ -492,7 +493,7 @@ public class LoanScheduleAssembler {
                 loanTermVariations, isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfDays, isSkipMeetingOnFirstDay, detailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount,
                 loanProduct.getAdjustedInstallmentInMultiplesOf(), loanProduct.adjustFirstEMIAmount(), 
-                loanProduct.getLoanProductRelatedDetail().getConsiderFutureDisbursmentsInSchedule(),loanProduct.getWeeksInYearType());
+                considerFutureDisbursmentsInSchedule,considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType());
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,
@@ -626,13 +627,14 @@ public class LoanScheduleAssembler {
     }
 
     public LoanProductRelatedDetail assembleLoanProductRelatedDetail(final JsonElement element) {
-        final LoanApplicationTerms loanApplicationTerms = assembleLoanTerms(element);
+        final boolean considerAllDisbursmentsInSchedule = true;
+        final LoanApplicationTerms loanApplicationTerms = assembleLoanTerms(element, considerAllDisbursmentsInSchedule);
         return loanApplicationTerms.toLoanProductRelatedDetail();
     }
 
-    public LoanScheduleModel assembleLoanScheduleFrom(final JsonElement element) {
+    public LoanScheduleModel assembleLoanScheduleFrom(final JsonElement element, final boolean considerAllDisbursmentsInSchedule) {
         // This method is getting called from calculate loan schedule.
-        final LoanApplicationTerms loanApplicationTerms = assembleLoanTerms(element);
+        final LoanApplicationTerms loanApplicationTerms = assembleLoanTerms(element, considerAllDisbursmentsInSchedule);
         // Get holiday details
         final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
 

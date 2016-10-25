@@ -67,7 +67,6 @@ import org.apache.fineract.infrastructure.security.service.RandomPasswordGenerat
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.service.HolidayUtil;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
-import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
@@ -78,9 +77,7 @@ import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
-import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
-import org.apache.fineract.portfolio.calendar.domain.CalendarWeekDaysType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.domain.Charge;
@@ -126,8 +123,6 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
-import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
-import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
@@ -5976,7 +5971,8 @@ public class Loan extends AbstractPersistable<Long> {
                 rescheduleStrategyMethod, calendar, getApprovedPrincipal(), annualNominalInterestRate, loanTermVariations,
                 calendarHistoryDataWrapper, scheduleGeneratorDTO.getNumberOfdays(),
                 scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable,
-                firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount());
+                firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(), 
+                scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule());
         return loanApplicationTerms;
     }
 
@@ -6147,118 +6143,6 @@ public class Loan extends AbstractPersistable<Long> {
         }
 
         return disbursementData;
-    }
-
-    /**
-     * @param restCalendarInstance
-     *            TODO
-     * @param compoundingCalendarInstance
-     *            TODO
-     * @param floatingRateDTO
-     *            TODO
-     * @param isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled 
-     * @param loanCalendarInstance
-     *            Used for accessing the loan's calendar object
-     * @return application terms of the Loan object
-     **/
-    @SuppressWarnings({ "unused" })
-    public LoanApplicationTerms getLoanApplicationTerms(final ApplicationCurrency applicationCurrency,
-            final CalendarInstance restCalendarInstance, CalendarInstance compoundingCalendarInstance, final Calendar loanCalendar,
-            final FloatingRateDTO floatingRateDTO, final boolean isSkipRepaymentonmonthFirst, final Integer numberofdays, 
-            final HolidayDetailDTO holidayDetailDTO) {
-        LoanProduct loanProduct = loanProduct();
-        // LoanProductRelatedDetail loanProductRelatedDetail =
-        // getLoanRepaymentScheduleDetail();
-        final MonetaryCurrency currency = this.loanRepaymentScheduleDetail.getCurrency();
-
-        final Integer loanTermFrequency = getTermFrequency();
-        final PeriodFrequencyType loanTermPeriodFrequencyType = this.loanRepaymentScheduleDetail.getInterestPeriodFrequencyType();
-        NthDayType nthDayType = null;
-        DayOfWeekType dayOfWeekType = null;
-        if (loanCalendar != null) {
-            nthDayType = CalendarUtils.getRepeatsOnNthDayOfMonth(loanCalendar.getRecurrence());
-            CalendarWeekDaysType getRepeatsOnDay = CalendarUtils.getRepeatsOnDay(loanCalendar.getRecurrence());
-            Integer getRepeatsOnDayValue = null;
-            if (getRepeatsOnDay != null) getRepeatsOnDayValue = getRepeatsOnDay.getValue();
-            if (getRepeatsOnDayValue != null) dayOfWeekType = DayOfWeekType.fromInt(getRepeatsOnDayValue);
-        }
-
-        final Integer numberOfRepayments = this.loanRepaymentScheduleDetail.getNumberOfRepayments();
-        final Integer repaymentEvery = this.loanRepaymentScheduleDetail.getRepayEvery();
-        final PeriodFrequencyType repaymentPeriodFrequencyType = this.loanRepaymentScheduleDetail.getRepaymentPeriodFrequencyType();
-
-        final AmortizationMethod amortizationMethod = this.loanRepaymentScheduleDetail.getAmortizationMethod();
-
-        final InterestMethod interestMethod = this.loanRepaymentScheduleDetail.getInterestMethod();
-        final InterestCalculationPeriodMethod interestCalculationPeriodMethod = this.loanRepaymentScheduleDetail
-                .getInterestCalculationPeriodMethod();
-
-        final BigDecimal interestRatePerPeriod = this.loanRepaymentScheduleDetail.getNominalInterestRatePerPeriod();
-        final PeriodFrequencyType interestRatePeriodFrequencyType = this.loanRepaymentScheduleDetail.getInterestPeriodFrequencyType();
-
-        BigDecimal annualNominalInterestRate = this.loanRepaymentScheduleDetail.getAnnualNominalInterestRate();
-        final Money principalMoney = this.loanRepaymentScheduleDetail.getPrincipal();
-
-        final LocalDate expectedDisbursementDate = getExpectedDisbursedOnLocalDate();
-        final LocalDate repaymentsStartingFromDate = getExpectedFirstRepaymentOnDate();
-        LocalDate calculatedRepaymentsStartingFromDate = repaymentsStartingFromDate;
-
-        // TODO get calender linked to loan if any exist. As of 17-07-2014,
-        // could not find a link in the database.
-        // skip for now and set the Calender object to null
-        // Calendar loanCalendar = null;
-        // The calendar instance might be null if the loan is not connected
-        // To a calendar object
-        // if (loanCalendarInstance != null) {
-        // loanCalendar = loanCalendarInstance.getCalendar();
-        // }
-
-        final Integer graceOnPrincipalPayment = this.loanRepaymentScheduleDetail.graceOnPrincipalPayment();
-        final Integer graceOnInterestPayment = this.loanRepaymentScheduleDetail.graceOnInterestPayment();
-        final Integer graceOnInterestCharged = this.loanRepaymentScheduleDetail.graceOnInterestCharged();
-        final LocalDate interestChargedFromDate = getInterestChargedFromDate();
-        final Integer graceOnArrearsAgeing = this.loanRepaymentScheduleDetail.getGraceOnDueDate();
-
-        final Money inArrearsToleranceMoney = this.loanRepaymentScheduleDetail.getInArrearsTolerance();
-        final BigDecimal emiAmount = getFixedEmiAmount();
-        final BigDecimal maxOutstandingBalance = getMaxOutstandingLoanBalance();
-
-        final List<DisbursementData> disbursementData = getDisbursmentData();
-
-        CalendarHistoryDataWrapper calendarHistoryDataWrapper = null;
-        if (loanCalendar != null) {
-            Set<CalendarHistory> calendarHistory = loanCalendar.getActiveCalendarHistory();
-            calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(calendarHistory);
-        }
-
-        RecalculationFrequencyType recalculationFrequencyType = null;
-        InterestRecalculationCompoundingMethod compoundingMethod = null;
-        RecalculationFrequencyType compoundingFrequencyType = null;
-        LoanRescheduleStrategyMethod rescheduleStrategyMethod = null;
-        boolean allowCompoundingOnEod = false;
-        boolean isSubsidyApplicable = false;
-        if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
-            recalculationFrequencyType = this.loanInterestRecalculationDetails.getRestFrequencyType();
-            compoundingMethod = this.loanInterestRecalculationDetails.getInterestRecalculationCompoundingMethod();
-            compoundingFrequencyType = this.loanInterestRecalculationDetails.getCompoundingFrequencyType();
-            rescheduleStrategyMethod = this.loanInterestRecalculationDetails.getRescheduleStrategyMethod();
-            allowCompoundingOnEod = this.loanInterestRecalculationDetails.allowCompoundingOnEod();
-            isSubsidyApplicable = this.loanInterestRecalculationDetails.isSubsidyApplicable();
-        }
-
-        List<LoanTermVariationsData> loanTermVariations = new ArrayList<>();
-        annualNominalInterestRate = constructFloatingInterestRates(annualNominalInterestRate, floatingRateDTO, loanTermVariations);
-
-        return LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, nthDayType,
-                dayOfWeekType, expectedDisbursementDate, repaymentsStartingFromDate, calculatedRepaymentsStartingFromDate,
-                inArrearsToleranceMoney, this.loanRepaymentScheduleDetail, loanProduct.isMultiDisburseLoan(), emiAmount, disbursementData,
-                maxOutstandingBalance, interestChargedFromDate, this.loanProduct.getPrincipalThresholdForLastInstallment(),
-                this.loanProduct.getInstallmentAmountInMultiplesOf(), recalculationFrequencyType, restCalendarInstance, compoundingMethod,
-                compoundingCalendarInstance, compoundingFrequencyType, this.loanProduct.preCloseInterestCalculationStrategy(),
-                rescheduleStrategyMethod, loanCalendar, getApprovedPrincipal(), annualNominalInterestRate, loanTermVariations, 
-                calendarHistoryDataWrapper, numberofdays, isSkipRepaymentonmonthFirst, holidayDetailDTO, allowCompoundingOnEod,
-                isSubsidyApplicable, firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(),
-                this.loanProduct.adjustFirstEMIAmount());
     }
 
     /**
