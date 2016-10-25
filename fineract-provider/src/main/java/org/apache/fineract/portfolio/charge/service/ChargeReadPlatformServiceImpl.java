@@ -102,9 +102,8 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         final ChargeMapper pm = new ChargeMapper();
         final ChargeSlabMapper cm = new ChargeSlabMapper();
-
         public String schema() {
-            return this.pm.chargeSchema();
+            return this.pm.chargeSchemaWithChargeSlabs();
         }
 
         @Override
@@ -307,7 +306,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
     private static final class ChargeMapper implements RowMapper<ChargeData> {
 
-        public String chargeSchema() {
+        public String chargeSchemaWithChargeSlabs() {
             return "c.id as id, c.name as name, c.amount as amount, c.currency_code as currencyCode, "
                     + "c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, "
                     + "c.charge_payment_mode_enum as chargePaymentMode, c.emi_rounding_goalseek as emiRoundingGoalSeek, c.glim_charge_calculation_enum as glimChargeCalculation, "
@@ -323,6 +322,22 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
                     + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
                     + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id "
                     + " LEFT JOIN f_charge_slab cs on cs.charge_id = c.id ";
+        }
+        
+        public String chargeSchema() {
+            return "c.id as id, c.name as name, c.amount as amount, c.currency_code as currencyCode, "
+                    + "c.charge_applies_to_enum as chargeAppliesTo, c.charge_time_enum as chargeTime, "
+                    + "c.charge_payment_mode_enum as chargePaymentMode, c.emi_rounding_goalseek as emiRoundingGoalSeek, c.glim_charge_calculation_enum as glimChargeCalculation, "
+                    + "c.is_glim_charge as isGlimCharge, c.charge_calculation_enum as chargeCalculation, c.is_penalty as penalty, c.is_capitalized as isCapitalized, "
+                    + "c.is_active as active, oc.name as currencyName, oc.decimal_places as currencyDecimalPlaces, "
+                    + "oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
+                    + "oc.internationalized_name_code as currencyNameCode, c.fee_on_day as feeOnDay, c.fee_on_month as feeOnMonth, "
+                    + "c.fee_interval as feeInterval, c.fee_frequency as feeFrequency,c.min_cap as minCap,c.max_cap as maxCap, "
+                    + "c.income_or_liability_account_id as glAccountId , acc.name as glAccountName, acc.gl_code as glCode, "
+                    + "tg.id as taxGroupId, tg.name as taxGroupName " + "from m_charge c "
+                    + "join m_organisation_currency oc on c.currency_code = oc.code "
+                    + " LEFT JOIN acc_gl_account acc on acc.id = c.income_or_liability_account_id "
+                    + " LEFT JOIN m_tax_group tg on tg.id = c.tax_group_id ";
         }
 
         public String loanProductChargeSchema() {

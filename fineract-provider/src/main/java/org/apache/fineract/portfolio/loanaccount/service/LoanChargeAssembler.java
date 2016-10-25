@@ -281,6 +281,7 @@ public class LoanChargeAssembler {
                 boolean isLoanAmountFallsInSlab = false;
                 for (ChargeSlab chargeSlab : chargeSlabs) {
                     isLoanAmountFallsInSlab = chargeSlab.isLoanAmountFallsInSlab(principal);
+                    if (isLoanAmountFallsInSlab) { break; }
                 }
                 if (!isLoanAmountFallsInSlab) { throw new ChargeNotInSlabExpection(principal.toString()); }
             }
