@@ -1,7 +1,7 @@
-DROP TABLE IF EXISTS f_loan_application_workflow_execution;
+DROP TABLE IF EXISTS `f_loan_application_workflow_execution`;
 DROP TABLE IF EXISTS `f_workflow_execution_step`;
 DROP TABLE IF EXISTS `f_workflow_execution`;
-DROP TABLE IF EXISTS f_loan_product_workflow;
+DROP TABLE IF EXISTS `f_loan_product_workflow`;
 DROP TABLE IF EXISTS `f_workflow_step_action`;
 DROP TABLE IF EXISTS `f_workflow_step`;
 DROP TABLE IF EXISTS `f_workflow`;
@@ -141,84 +141,3 @@ CREATE TABLE `f_workflow_step_action` (
 	CONSTRAINT `FK_f_workflow_step_action_createdby_id` FOREIGN KEY (`createdby_id`) REFERENCES `m_appuser` (`id`),
 	CONSTRAINT `FK_f_workflow_step_action_lastmodifiedby_id` FOREIGN KEY (`lastmodifiedby_id`) REFERENCES `m_appuser` (`id`)
 )COLLATE = 'utf8_general_ci' ENGINE = InnoDB;
-
--- sample data
-
-
--- sample task
-insert into f_task(id,name,identifier,config,supported_actions,type,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,"Survey Task","survey",null,null,1,1,1,now(),now()),
-	(2,"Datatable Task","datatable",null,null,2,1,1,now(),now()),
-	(3,"Loan Approval Task","loanapplicationapproval",null,null,3,1,1,now(),now());
-
-
--- workflow
-insert into f_workflow(id,name,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,"Basic Loan Workflow",1,1,now(),now());
-
-
--- workflow steps
-insert into f_workflow_step(id,name,task_id,workflow_id,step_order,config_values,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,"Family Details",2,1,1,'{"datatablename":"family_details"}',1,1,now(),now());
-
--- criteria check example. Get criteria id from f_risk_rule
--- insert into f_workflow_step(id,name,task_id,workflow_id,step_order,config_values,createdby_id,lastmodifiedby_id, created_date, lastmodified_date, criteria_id)
--- VALUES (1,"Family Details",2,1,1,'{"datatablename":"family_details"}',1,1,now(),now(),4);
-
-insert into f_workflow_step(id,name,task_id,workflow_id,step_order,config_values,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (2,"Cash Flow",2,1,2,'{"datatablename":"cash_flow"}',1,1,now(),now());
-
-insert into f_workflow_step(id,name,task_id,workflow_id,step_order,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (3,"Loan Approval",3,1,3,1,1,now(),now());
-
--- step1 action
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,1,null,1,1,now(),now());
-
--- roles example. where [2,3,4] are the applicable roles
--- insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
--- VALUES (1,1,'[2,3,4]',1,1,now(),now());
-
--- criteria check action privilege
--- insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
--- VALUES (1,2,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,3,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,4,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,5,null,1,1,now(),now());
-
--- step2 action
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (2,1,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (2,3,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (2,4,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (2,5,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (2,7,null,1,1,now(),now());
-
--- step2 action
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (3,1,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (3,3,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (3,4,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (3,5,null,1,1,now(),now());
-insert into f_workflow_step_action(workflow_step_id, action, roles,createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (3,7,null,1,1,now(),now());
-
-
--- assign loan_product to workflow
-insert into f_loan_product_workflow (id,loan_product_id, workflow_id, createdby_id,lastmodifiedby_id, created_date, lastmodified_date)
-VALUES (1,1,1,1,1,now(),now());
-
-
--- alter table f_workflow_execution add column	`execution_status` SMALLINT(3)  NULL DEFAULT NULL;
-
-
