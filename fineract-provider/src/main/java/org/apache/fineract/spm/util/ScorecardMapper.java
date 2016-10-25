@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.spm.data.ScorecardData;
+import org.apache.fineract.spm.data.SurveyTakenData;
 import org.apache.fineract.spm.data.ScorecardValue;
 import org.apache.fineract.spm.domain.Question;
 import org.apache.fineract.spm.domain.Response;
@@ -41,23 +41,16 @@ public class ScorecardMapper {
     }
 
     @SuppressWarnings("unchecked")
-    public static List<ScorecardData> map(final List<Scorecard> scorecards) {
-        final Map<Date, ScorecardData> scorecardDataMap = new HashMap<>();
-        ScorecardData scorecardData = null;
+    public static List<SurveyTakenData> map(final List<Scorecard> scorecards) {
+        final Map<Date, SurveyTakenData> scorecardDataMap = new HashMap<>();
+        SurveyTakenData scorecardData = null;
         if (scorecards != null) {
             for (Scorecard scorecard : scorecards) {
-                if ((scorecardData = scorecardDataMap.get(scorecard.getCreatedOn())) == null) {
-                    scorecardData = new ScorecardData();
-                    scorecardData.setEntityId(scorecard.getEntityId());
-                    scorecardDataMap.put(scorecard.getCreatedOn(), scorecardData);
-                    scorecardData.setUserId(scorecard.getAppUser().getId());
-                    scorecardData.setClientId(scorecard.getClient().getId());
-                    scorecardData.setCreatedOn(scorecard.getCreatedOn());
-                    scorecardData.setScorecardValues(new ArrayList<ScorecardValue>());
-                }
-
-                scorecardData.getScorecardValues().add(new ScorecardValue(scorecard.getQuestion().getId(), scorecard.getResponse().getId(),
-                        scorecard.getValue(), scorecard.getQuestion().getText(), scorecard.getResponse().getText()));
+                scorecardData = new SurveyTakenData();
+                scorecardData.setScorecardValues(new ArrayList<ScorecardValue>());
+                scorecardData.getScorecardValues().add(
+                        new ScorecardValue(scorecard.getQuestion().getId(), scorecard.getResponse().getId(), scorecard.getValue(),
+                                scorecard.getQuestion().getText(), scorecard.getResponse().getText()));
             }
 
             return new ArrayList<>(scorecardDataMap.values());
@@ -66,30 +59,24 @@ public class ScorecardMapper {
         return Collections.EMPTY_LIST;
     }
 
-    public static List<Scorecard> map(final ScorecardData scorecardData, final Survey survey,
-                                      final AppUser appUser, final Client client) {
+    public static List<Scorecard> map(final SurveyTakenData scorecardData, final Survey survey, final AppUser appUser, final Client client) {
         final List<Scorecard> scorecards = new ArrayList<>();
 
         final List<ScorecardValue> scorecardValues = scorecardData.getScorecardValues();
 
         if (scorecardValues != null) {
-           for (ScorecardValue scorecardValue : scorecardValues) {
-               final Scorecard scorecard = new Scorecard();
-               scorecard.setEntityId(scorecardData.getEntityId());
-               scorecards.add(scorecard);
-               scorecard.setSurvey(survey);
-               ScorecardMapper.setQuestionAndResponse(scorecardValue, scorecard, survey);
-               scorecard.setAppUser(appUser);
-               scorecard.setClient(client);
-               scorecard.setCreatedOn(scorecardData.getCreatedOn());
-               scorecard.setValue(scorecardValue.getValue());
-           }
+            for (ScorecardValue scorecardValue : scorecardValues) {
+                final Scorecard scorecard = new Scorecard();
+                scorecards.add(scorecard);
+                scorecard.setSurvey(survey);
+                ScorecardMapper.setQuestionAndResponse(scorecardValue, scorecard, survey);
+                scorecard.setValue(scorecardValue.getValue());
+            }
         }
         return scorecards;
     }
 
-    private static void setQuestionAndResponse(final ScorecardValue scorecardValue, final Scorecard scorecard,
-                                        final Survey survey) {
+    private static void setQuestionAndResponse(final ScorecardValue scorecardValue, final Scorecard scorecard, final Survey survey) {
         final List<Question> questions = survey.getQuestions();
         for (final Question question : questions) {
             if (question.getId().equals(scorecardValue.getQuestionId())) {

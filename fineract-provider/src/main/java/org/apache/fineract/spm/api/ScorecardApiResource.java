@@ -18,27 +18,33 @@
  */
 package org.apache.fineract.spm.api;
 
+import java.util.Collections;
+import java.util.List;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
-import org.apache.fineract.spm.data.ScorecardData;
+import org.apache.fineract.spm.data.SurveyTakenData;
 import org.apache.fineract.spm.domain.Scorecard;
 import org.apache.fineract.spm.domain.Survey;
+import org.apache.fineract.spm.domain.SurveyTaken;
 import org.apache.fineract.spm.exception.SurveyNotFoundException;
 import org.apache.fineract.spm.service.ScorecardService;
 import org.apache.fineract.spm.service.SpmService;
 import org.apache.fineract.spm.util.ScorecardMapper;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import java.util.Collections;
-import java.util.List;
 
 @Path("/surveys/{surveyId}/scorecards")
 @Component
@@ -52,7 +58,7 @@ public class ScorecardApiResource {
 
     @Autowired
     public ScorecardApiResource(final PlatformSecurityContext securityContext, final SpmService spmService,
-                                final ScorecardService scorecardService, final ClientRepository clientRepository) {
+            final ScorecardService scorecardService, final ClientRepository clientRepository) {
         super();
         this.securityContext = securityContext;
         this.spmService = spmService;
@@ -60,20 +66,19 @@ public class ScorecardApiResource {
         this.clientRepository = clientRepository;
     }
 
+    @SuppressWarnings("unchecked")
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public List<ScorecardData> findBySurvey(@PathParam("surveyId") final Long surveyId) {
+    public List<SurveyTakenData> findBySurvey(@PathParam("surveyId") final Long surveyId) {
         this.securityContext.authenticatedUser();
 
         final Survey survey = findSurvey(surveyId);
 
         final List<Scorecard> scorecards = this.scorecardService.findBySurvey(survey);
 
-        if (scorecards != null) {
-            return ScorecardMapper.map(scorecards);
-        }
+        if (scorecards != null) { return ScorecardMapper.map(scorecards); }
 
         return Collections.EMPTY_LIST;
     }
@@ -82,47 +87,37 @@ public class ScorecardApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public void createScorecard(@PathParam("surveyId") final Long surveyId, final ScorecardData scorecardData) {
-        final AppUser appUser = this.securityContext.authenticatedUser();
-
+    public Long createScorecard(@PathParam("surveyId") final Long surveyId, final SurveyTakenData surveyTakenData) {
         final Survey survey = findSurvey(surveyId);
-
-        
-
-        this.scorecardService.createScorecard(ScorecardMapper.map(scorecardData, survey, appUser, null));
+        final SurveyTaken surveyTaken = this.scorecardService.createSurveyTakenScorecard(surveyTakenData, survey);
+        return surveyTaken.getId();
     }
 
+    @SuppressWarnings("unchecked")
     @Path("/clients/{clientId}")
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public List<ScorecardData> findBySurveyClient(@PathParam("surveyId") final Long surveyId,
-                                                  @PathParam("clientId") final Long clientId) {
+    public List<SurveyTakenData> findBySurveyClient(@PathParam("surveyId") final Long surveyId, @PathParam("clientId") final Long clientId) {
         this.securityContext.authenticatedUser();
 
         final Survey survey = findSurvey(surveyId);
 
         final Client client = this.clientRepository.findOne(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException(clientId);
-        }
+        if (client == null) { throw new ClientNotFoundException(clientId); }
 
         final List<Scorecard> scorecards = this.scorecardService.findBySurveyAndClient(survey, client);
 
-        if (scorecards != null) {
-            return ScorecardMapper.map(scorecards);
-        }
+        if (scorecards != null) { return ScorecardMapper.map(scorecards); }
 
         return Collections.EMPTY_LIST;
     }
 
     private Survey findSurvey(final Long surveyId) {
         final Survey survey = this.spmService.findById(surveyId);
-        if (survey == null) {
-            throw new SurveyNotFoundException(surveyId);
-        }
+        if (survey == null) { throw new SurveyNotFoundException(surveyId); }
         return survey;
     }
 }

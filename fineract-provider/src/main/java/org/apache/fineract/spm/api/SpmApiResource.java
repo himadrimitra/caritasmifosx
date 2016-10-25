@@ -85,11 +85,12 @@ public class SpmApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     @Transactional
-    public String fetchActiveSurveys(@QueryParam("isActive") final Boolean isActive, @Context final UriInfo uriInfo) {
+    public String fetchActiveSurveys(@QueryParam("isActive") final Boolean isActive,
+            @QueryParam("entityTypeId") final Integer entityTypeId, @Context final UriInfo uriInfo) {
         this.securityContext.authenticatedUser();
         final List<SurveyData> result = new ArrayList<>();
         List<Survey> surveys = null;
-        surveys = this.spmService.fetchAllSurveys(isActive);
+        surveys = this.spmService.fetchAllSurveys(isActive, entityTypeId);
         if (surveys != null) {
             for (final Survey survey : surveys) {
                 result.add(SurveyMapper.map(survey));

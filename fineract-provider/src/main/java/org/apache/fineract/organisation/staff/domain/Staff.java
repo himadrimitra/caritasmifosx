@@ -268,4 +268,8 @@ public class Staff extends AbstractPersistable<Long> {
     public Image getImage() {
         return this.image;
     }
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
 }

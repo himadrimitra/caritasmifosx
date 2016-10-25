@@ -18,16 +18,13 @@
  */
 package org.apache.fineract.spm.repository;
 
-import org.apache.fineract.spm.domain.Question;
-import org.apache.fineract.spm.domain.Scorecard;
-import org.apache.fineract.spm.domain.Survey;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import java.util.Date;
 import java.util.List;
 
+import org.apache.fineract.spm.domain.Question;
+import org.apache.fineract.spm.domain.Survey;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 public interface QuestionRepository extends JpaRepository<Question, Long> {
+
     List<Question> findBySurvey(final Survey survey);
 }

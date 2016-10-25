@@ -39,8 +39,7 @@ public class SpmService {
     private final SurveyRepository surveyRepository;
 
     @Autowired
-    public SpmService(final PlatformSecurityContext securityContext,
-                      final SurveyRepository surveyRepository) {
+    public SpmService(final PlatformSecurityContext securityContext, final SurveyRepository surveyRepository) {
         super();
         this.securityContext = securityContext;
         this.surveyRepository = surveyRepository;
@@ -68,24 +67,13 @@ public class SpmService {
         }
 
         // set valid from to start of today
-        final DateTime validFrom = DateTime
-                .now()
-                .withHourOfDay(0)
-                .withMinuteOfHour(0)
-                .withSecondOfMinute(0)
-                .withMillisOfSecond(0);
+        final DateTime validFrom = DateTime.now().withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
 
         survey.setValidFrom(validFrom.toDate());
 
         // set valid from to end in 100 years
-        final DateTime validTo = validFrom
-                .withDayOfMonth(31)
-                .withMonthOfYear(12)
-                .withHourOfDay(23)
-                .withMinuteOfHour(59)
-                .withSecondOfMinute(59)
-                .withMillisOfSecond(999)
-                .plusYears(100);
+        final DateTime validTo = validFrom.withDayOfMonth(31).withMonthOfYear(12).withHourOfDay(23).withMinuteOfHour(59)
+                .withSecondOfMinute(59).withMillisOfSecond(999).plusYears(100);
 
         survey.setValidTo(validTo.toDate());
 
@@ -99,12 +87,7 @@ public class SpmService {
 
         if (survey != null) {
             // set valid to to yesterday night
-            final DateTime dateTime = DateTime
-                    .now()
-                    .withHourOfDay(23)
-                    .withMinuteOfHour(59)
-                    .withSecondOfMinute(59)
-                    .withMillisOfSecond(999)
+            final DateTime dateTime = DateTime.now().withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).withMillisOfSecond(999)
                     .minusDays(1);
             survey.setValidTo(dateTime.toDate());
 
@@ -123,8 +106,9 @@ public class SpmService {
         this.surveyRepository.save(survey);
     }
 
-    public List<Survey> fetchAllSurveys(final Boolean isActive) {
+    public List<Survey> fetchAllSurveys(final Boolean isActive, final Integer entityTypeId) {
         this.securityContext.authenticatedUser();
+        if (entityTypeId != null) { return this.surveyRepository.fetchAllSurveysByEntityType(entityTypeId); }
         return this.surveyRepository.fetchAllSurveys();
     }
 }

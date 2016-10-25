@@ -18,29 +18,48 @@
  */
 package org.apache.fineract.spm.service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.spm.data.ScorecardValue;
+import org.apache.fineract.spm.data.SurveyTakenData;
 import org.apache.fineract.spm.domain.Scorecard;
 import org.apache.fineract.spm.domain.Survey;
+import org.apache.fineract.spm.domain.SurveyTaken;
+import org.apache.fineract.spm.repository.QuestionRepository;
+import org.apache.fineract.spm.repository.ResponseRepository;
 import org.apache.fineract.spm.repository.ScorecardRepository;
+import org.apache.fineract.spm.repository.SurveyTakenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import ScorecardMapper.SurveyTakenMapper;
 
 @Service
 public class ScorecardService {
 
     private final PlatformSecurityContext securityContext;
+    private final SurveyTakenRepository surveyTakenRepository;
     private final ScorecardRepository scorecardRepository;
+    private final StaffRepositoryWrapper staffRepository;
+    private final QuestionRepository questionRepository;
+    private final ResponseRepository responseRepository;
 
     @Autowired
-    public ScorecardService(final PlatformSecurityContext securityContext,
-                            final ScorecardRepository scorecardRepository) {
+    public ScorecardService(final PlatformSecurityContext securityContext, final SurveyTakenRepository surveyTakenRepository,
+            final ScorecardRepository scorecardRepository, final StaffRepositoryWrapper staffRepository,
+            final QuestionRepository questionRepository, final ResponseRepository responseRepository) {
         super();
         this.securityContext = securityContext;
+        this.surveyTakenRepository = surveyTakenRepository;
         this.scorecardRepository = scorecardRepository;
+        this.staffRepository = staffRepository;
+        this.questionRepository = questionRepository;
+        this.responseRepository = responseRepository;
     }
 
     public List<Scorecard> createScorecard(final List<Scorecard> scorecards) {
@@ -58,6 +77,34 @@ public class ScorecardService {
     public List<Scorecard> findBySurveyAndClient(final Survey survey, final Client client) {
         this.securityContext.authenticatedUser();
 
-        return this.scorecardRepository.findBySurveyAndClient(survey, client);
+        return null;
+    }
+
+    @SuppressWarnings("unused")
+    public SurveyTaken createSurveyTakenScorecard(final SurveyTakenData surveyTakenData, final Survey survey) {
+        this.securityContext.authenticatedUser();
+        final Long surveyedById = surveyTakenData.getSurveyedBy();
+        final Staff surveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyedById);
+        final SurveyTaken surveyTaken = SurveyTakenMapper.map(surveyTakenData, survey, surveyedBy);
+        List<Scorecard> scorecards = new ArrayList<Scorecard>();
+        if (surveyTakenData.getScorecardValues() != null) {
+            for (final ScorecardValue scorecardValue : surveyTakenData.getScorecardValues()) {
+                final Scorecard scorecard = new Scorecard();
+                scorecard.setSurveyTaken(surveyTaken);
+                scorecard.setSurvey(survey);
+                scorecard.setQuestion(this.questionRepository.findOne(scorecardValue.getQuestionId()));
+                scorecard.setResponse(this.responseRepository.findOne(scorecardValue.getResponseId()));
+                scorecard.setValue(scorecardValue.getValue());
+                scorecards.add(scorecard);
+            }
+        }
+        if (!scorecards.isEmpty()) {
+            surveyTaken.setScorecards(scorecards);
+        }
+        return this.surveyTakenRepository.save(surveyTaken);
+    }
+
+    public List<SurveyTaken> findByEntityTypeAndEntityId(final Integer entityType, final Long entityId) {
+        return this.surveyTakenRepository.findByEntityTypeAndEntityId(entityType, entityId);
     }
 }

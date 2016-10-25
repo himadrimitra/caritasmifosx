@@ -18,20 +18,23 @@
  */
 package org.apache.fineract.spm.domain;
 
-import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.useradministration.domain.AppUser;
-import org.springframework.data.jpa.domain.AbstractPersistable;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
-import javax.persistence.*;
-import java.util.Date;
+import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_survey_scorecards")
 public class Scorecard extends AbstractPersistable<Long> {
 
-    @Column(name = "entity_id")
-    private Long entityId;
-    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "survey_taken_id")
+    private SurveyTaken surveyTaken;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "survey_id")
     private Survey survey;
@@ -43,19 +46,6 @@ public class Scorecard extends AbstractPersistable<Long> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "response_id")
     private Response response;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private AppUser appUser;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id")
-    private Client client;
-
-    @Column(name = "created_on")
-    @Temporal(value = TemporalType.TIMESTAMP)
-    @OrderBy("createdOn DESC")
-    private Date createdOn;
 
     @Column(name = "a_value", precision = 4)
     private Integer value;
@@ -88,30 +78,6 @@ public class Scorecard extends AbstractPersistable<Long> {
         this.response = response;
     }
 
-    public AppUser getAppUser() {
-        return appUser;
-    }
-
-    public void setAppUser(AppUser appUser) {
-        this.appUser = appUser;
-    }
-
-    public Client getClient() {
-        return client;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
-    }
-
-    public Date getCreatedOn() {
-        return createdOn;
-    }
-
-    public void setCreatedOn(Date createdOn) {
-        this.createdOn = createdOn;
-    }
-
     public Integer getValue() {
         return value;
     }
@@ -120,11 +86,11 @@ public class Scorecard extends AbstractPersistable<Long> {
         this.value = value;
     }
 
-    public Long getEntityId() {
-        return this.entityId;
+    public SurveyTaken getSurveyTaken() {
+        return this.surveyTaken;
     }
 
-    public void setEntityId(Long entityId) {
-        this.entityId = entityId;
+    public void setSurveyTaken(SurveyTaken surveyTaken) {
+        this.surveyTaken = surveyTaken;
     }
 }

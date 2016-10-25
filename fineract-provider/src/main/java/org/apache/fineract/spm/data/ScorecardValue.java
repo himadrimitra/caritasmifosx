@@ -29,7 +29,7 @@ public class ScorecardValue {
     public String getAnswerName() {
         return this.answerName;
     }
-    
+
     public void setAnswerName(String answerName) {
         this.answerName = answerName;
     }
@@ -46,8 +46,8 @@ public class ScorecardValue {
         super();
     }
 
-    public ScorecardValue(final Long questionId, final Long responseId, final Integer value,
-            final String questionName, final String answerName) {
+    public ScorecardValue(final Long questionId, final Long responseId, final Integer value, final String questionName,
+            final String answerName) {
         super();
         this.questionId = questionId;
         this.responseId = responseId;
