@@ -273,11 +273,11 @@ public class Staff extends AbstractPersistable<Long> {
         return this.displayName;
     }
 
-	public LocalDate getJoiningLocalDate() {
-		LocalDate joiningLocalDate = null;
-		if (this.joiningDate != null) {
-			joiningLocalDate = LocalDate.fromDateFields(this.joiningDate);
-		}
-		return joiningLocalDate;
-	}
+    public LocalDate getJoiningLocalDate() {
+        LocalDate joiningLocalDate = null;
+        if (this.joiningDate != null) {
+            joiningLocalDate = LocalDate.fromDateFields(this.joiningDate);
+        }
+        return joiningLocalDate;
+    }
 }

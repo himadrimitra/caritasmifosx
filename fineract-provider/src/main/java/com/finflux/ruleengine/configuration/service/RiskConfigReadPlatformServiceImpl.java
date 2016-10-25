@@ -1,5 +1,24 @@
 package com.finflux.ruleengine.configuration.service;
 
+import java.lang.reflect.Type;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.spm.repository.SurveyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.stereotype.Service;
+
 import com.finflux.ruleengine.configuration.data.FieldData;
 import com.finflux.ruleengine.configuration.data.FieldType;
 import com.finflux.ruleengine.configuration.data.RuleData;
@@ -9,28 +28,6 @@ import com.finflux.ruleengine.lib.data.EntityRuleType;
 import com.finflux.ruleengine.lib.data.KeyValue;
 import com.finflux.ruleengine.lib.data.ValueType;
 import com.google.gson.reflect.TypeToken;
-import org.apache.fineract.infrastructure.codes.data.CodeValueData;
-import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
-import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.spm.domain.Question;
-import org.apache.fineract.spm.domain.Response;
-import org.apache.fineract.spm.domain.Survey;
-import org.apache.fineract.spm.repository.SurveyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.stereotype.Service;
-
-import java.lang.reflect.Type;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
 
 @Service
 public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatformService {
@@ -46,17 +43,15 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
 
     @Autowired
     public RiskConfigReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-                                             final CodeValueReadPlatformService codeValueReadPlatformService,
-                                             final FromJsonHelper fromJsonHelper,
-                                             final SurveyRepository surveyRepository) {
+            final CodeValueReadPlatformService codeValueReadPlatformService, final FromJsonHelper fromJsonHelper,
+            final SurveyRepository surveyRepository) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.fromJsonHelper = fromJsonHelper;
-        this.fieldDataMapper = new FieldDataMapper(this.fromJsonHelper,this.codeValueReadPlatformService);
+        this.fieldDataMapper = new FieldDataMapper(this.fromJsonHelper, this.codeValueReadPlatformService);
         this.surveyRepository = surveyRepository;
     }
-
 
     @Override
     public List<FieldData> getAllFields() {
@@ -65,7 +60,7 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
         try {
             allFields.addAll(this.jdbcTemplate.query(sql, fieldDataMapper, true));
         } catch (final EmptyResultDataAccessException e) {
-//            return null;
+            // return null;
         }
 
         final String surveyFieldsSql = "select " + surveyFieldDataMapper.schema() + " order by s.id asc, sq.id asc, sr.id asc";
@@ -74,7 +69,7 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
             List<FieldData> surveyFields = getAllSurveyFields(surveyFieldDataList);
             allFields.addAll(surveyFields);
         } catch (final EmptyResultDataAccessException e) {
-//            return null;
+            // return null;
         }
         return allFields;
 
@@ -82,17 +77,17 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
 
     @Override
     public List<RuleData> getAllFactors() {
-        return getAllRulesByEntity( EntityRuleType.FACTOR);
+        return getAllRulesByEntity(EntityRuleType.FACTOR);
     }
 
     @Override
     public RuleData retrieveOneFactor(Long factorId) {
-        return retrieveOneRule(EntityRuleType.FACTOR,factorId);
+        return retrieveOneRule(EntityRuleType.FACTOR, factorId);
     }
 
     @Override
     public List<RuleData> getAllDimensions() {
-        return getAllRulesByEntity( EntityRuleType.DIMENSION);
+        return getAllRulesByEntity(EntityRuleType.DIMENSION);
     }
 
     @Override
@@ -102,7 +97,7 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
 
     @Override
     public List<RuleData> getAllCriterias() {
-        return getAllRulesByEntity( EntityRuleType.CRITERIA);
+        return getAllRulesByEntity(EntityRuleType.CRITERIA);
     }
 
     @Override
@@ -120,14 +115,11 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
         }
     }
 
-
     public RuleData retrieveOneRule(EntityRuleType ruleType, Long id) {
-        final String sql = "select " + ruleDataMapper.schema()+ " where rr.entity_type = ? and rr.id = ?";
+        final String sql = "select " + ruleDataMapper.schema() + " where rr.entity_type = ? and rr.id = ?";
         try {
-            List<RuleData> ruleDatas =  this.jdbcTemplate.query(sql, ruleDataMapper, ruleType.getValue(), id);
-            if(ruleDatas!=null && ruleDatas.size()==1){
-                return ruleDatas.get(0);
-            }
+            List<RuleData> ruleDatas = this.jdbcTemplate.query(sql, ruleDataMapper, ruleType.getValue(), id);
+            if (ruleDatas != null && ruleDatas.size() == 1) { return ruleDatas.get(0); }
         } catch (final EmptyResultDataAccessException e) {
             return null;
         }
@@ -135,7 +127,7 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
     }
 
     public List<RuleData> getAllRulesByEntity(EntityRuleType ruleType) {
-        final String sql = "select " + ruleDataMapper.schema()+ " where rr.entity_type = ? ";
+        final String sql = "select " + ruleDataMapper.schema() + " where rr.entity_type = ? ";
         try {
             return this.jdbcTemplate.query(sql, ruleDataMapper, ruleType.getValue());
         } catch (final EmptyResultDataAccessException e) {
@@ -151,17 +143,10 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
 
         public RuleDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append("rr.id as id, ")
-                    .append("rr.entity_type as entityType, ")
-                    .append("rr.name as name, ")
-                    .append("rr.uname as uname, ")
-                    .append("rr.description as description, ")
-                    .append("rr.default_value as defaultValue, ")
-                    .append("rr.value_type as valueType, ")
-                    .append("rr.possible_outputs as possibleOutputs, ")
-                    .append("rr.expression as expression, ")
-                    .append("rr.is_active as isActive ")
-                    .append("from f_risk_rule as rr ");
+            sqlBuilder.append("rr.id as id, ").append("rr.entity_type as entityType, ").append("rr.name as name, ")
+                    .append("rr.uname as uname, ").append("rr.description as description, ").append("rr.default_value as defaultValue, ")
+                    .append("rr.value_type as valueType, ").append("rr.possible_outputs as possibleOutputs, ")
+                    .append("rr.expression as expression, ").append("rr.is_active as isActive ").append("from f_risk_rule as rr ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -183,11 +168,11 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
             final Boolean isActive = rs.getBoolean("isActive");
             List<KeyValue> possibleOutputs = null;
             List<Bucket> buckets = null;
-            if(possibleOutputStr!=null) {
+            if (possibleOutputStr != null) {
                 Type type = new TypeToken<List<KeyValue>>() {}.getType();
                 possibleOutputs = jsonHelper.getGsonConverter().fromJson(possibleOutputStr, type);
             }
-            if(expressionStr!=null) {
+            if (expressionStr != null) {
                 Type type = new TypeToken<List<Bucket>>() {}.getType();
                 buckets = jsonHelper.getGsonConverter().fromJson(expressionStr, type);
             }
@@ -197,24 +182,20 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
     }
 
     private static final class FieldDataMapper implements RowMapper<FieldData> {
+
         private final FromJsonHelper jsonHelper;
         private final Type type;
         private final CodeValueReadPlatformService codeValueReadPlatformService;
 
         private final String schemaSql;
 
-        public FieldDataMapper(FromJsonHelper fromJsonHelper,CodeValueReadPlatformService codeValueReadPlatformService) {
+        public FieldDataMapper(FromJsonHelper fromJsonHelper, CodeValueReadPlatformService codeValueReadPlatformService) {
             this.jsonHelper = fromJsonHelper;
-            this.type = new TypeToken<List<KeyValue>>(){}.getType();
+            this.type = new TypeToken<List<KeyValue>>() {}.getType();
             this.codeValueReadPlatformService = codeValueReadPlatformService;
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append("rf.id as id,")
-                    .append("rf.name as name,")
-                    .append("rf.uname as uname,")
-                    .append("rf.value_type as valueType,")
-                    .append("rf.options as options, ")
-                    .append("rf.code_name as codeName ")
-                    .append("from f_risk_field as rf");
+            sqlBuilder.append("rf.id as id,").append("rf.name as name,").append("rf.uname as uname,").append("rf.value_type as valueType,")
+                    .append("rf.options as options, ").append("rf.code_name as codeName, ").append("from f_risk_field as rf");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -232,19 +213,19 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
             final String options = rs.getString("options");
             final String codeName = rs.getString("codeName");
             List<KeyValue> optionList = null;
-            if(options!=null){
-                optionList = jsonHelper.getGsonConverter().fromJson(options, type );
-            }else if(codeName!= null){
+            if (options != null) {
+                optionList = jsonHelper.getGsonConverter().fromJson(options, type);
+            } else if (codeName != null) {
                 Collection<CodeValueData> codeValueList = codeValueReadPlatformService.retrieveCodeValuesByCode(codeName);
-                if(codeValueList!=null && !codeValueList.isEmpty()){
+                if (codeValueList != null && !codeValueList.isEmpty()) {
                     optionList = new ArrayList<>();
-                    for(CodeValueData codeValueData : codeValueList){
-                        KeyValue keyValue = new KeyValue(""+codeValueData.getId(),codeValueData.getName());
+                    for (CodeValueData codeValueData : codeValueList) {
+                        KeyValue keyValue = new KeyValue("" + codeValueData.getId(), codeValueData.getName());
                         optionList.add(keyValue);
                     }
                 }
             }
-            return new FieldData( name, uname, ValueType.fromInt(valueType), optionList);
+            return new FieldData(name, uname, ValueType.fromInt(valueType), optionList);
         }
 
     }
@@ -255,14 +236,9 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
 
         public SurveyFieldDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append("s.id as surveyId,")
-                    .append(" s.a_key as surveyDisplay,")
-                    .append(" sq.id as questionId,")
-                    .append(" sq.a_key as questionDisplay,")
-                    .append(" sr.id as responseId,")
-                    .append(" sr.a_text as responseDisplay ")
-                    .append(" from m_survey_responses as sr ")
-                    .append(" left join m_survey_questions as sq on sr.question_id = sq.id ")
+            sqlBuilder.append("s.id as surveyId,").append(" s.a_key as surveyDisplay,").append(" sq.id as questionId,")
+                    .append(" sq.a_key as questionDisplay,").append(" sr.id as responseId,").append(" sr.a_text as responseDisplay ")
+                    .append(" from m_survey_responses as sr ").append(" left join m_survey_questions as sq on sr.question_id = sq.id ")
                     .append(" left join m_surveys as s on sq.survey_id = s.id");
             this.schemaSql = sqlBuilder.toString();
         }
@@ -279,46 +255,30 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
             final String questionDisplay = rs.getString("questionDisplay");
             final Long responseID = rs.getLong("responseId");
             final String responseDisplay = rs.getString("responseDisplay");
-            return new SurveyFieldData( surveyID, surveyDisplay, questionID,questionDisplay, responseID, responseDisplay);
+            return new SurveyFieldData(surveyID, surveyDisplay, questionID, questionDisplay, responseID, responseDisplay);
         }
-
     }
-
 
     private List<FieldData> getAllSurveyFields(List<SurveyFieldData> surveyFieldDataList) {
         Long currQues = -1L;
-        FieldData currFieldData =  null;
+        FieldData currFieldData = null;
         Long currSurvey = -1L;
         List<FieldData> surveyFields = new ArrayList<>();
-        for(SurveyFieldData surveyFieldData: surveyFieldDataList){
-            if(!surveyFieldData.getSurveyId().equals(currSurvey)){
-                FieldData surveyField = new FieldData(surveyFieldData.getSurveyDisplay(),
-                        FieldType.SURVEY+"_"+surveyFieldData.getSurveyId(),ValueType.NUMBER,null,FieldType.SURVEY);
+        for (SurveyFieldData surveyFieldData : surveyFieldDataList) {
+            if (!surveyFieldData.getSurveyId().equals(currSurvey)) {
+                FieldData surveyField = new FieldData(surveyFieldData.getSurveyDisplay(), FieldType.SURVEY + "_"
+                        + surveyFieldData.getSurveyId(), ValueType.NUMBER, null, FieldType.SURVEY);
                 surveyFields.add(surveyField);
                 currSurvey = surveyFieldData.getSurveyId();
             }
-            if(!surveyFieldData.getQuestionId().equals(currQues)){
-                currQues =surveyFieldData.getQuestionId();
-                currFieldData = new FieldData(surveyFieldData.getQuestionDisplay(),
-                        FieldType.QUESTION+"_"+surveyFieldData.getQuestionId(),ValueType.STRING,new ArrayList<>(),FieldType.QUESTION);
+            if (!surveyFieldData.getQuestionId().equals(currQues)) {
+                currQues = surveyFieldData.getQuestionId();
+                currFieldData = new FieldData(surveyFieldData.getQuestionDisplay(), FieldType.QUESTION + "_"
+                        + surveyFieldData.getQuestionId(), ValueType.STRING, new ArrayList<>(), FieldType.QUESTION);
                 surveyFields.add(currFieldData);
             }
-            currFieldData.getOptions().add(new KeyValue(""+surveyFieldData.getResponseId(),surveyFieldData.getResponseDisplay()));
+            currFieldData.getOptions().add(new KeyValue("" + surveyFieldData.getResponseId(), surveyFieldData.getResponseDisplay()));
         }
         return surveyFields;
     }
-
-//    private List<FieldData> getSurveyFields(List<SurveyFieldData> surveyFieldDataList) {
-//        Long currSurvey = -1L;
-//        List<FieldData> surveyFields = new ArrayList<>();
-//        for(SurveyFieldData surveyFieldData: surveyFieldDataList){
-//            if(!surveyFieldData.getSurveyId().equals(currSurvey)){
-//                FieldData surveyField = new FieldData(surveyFieldData.getSurveyDisplay(),
-//                        FieldType.SURVEY+"_"+surveyFieldData.getSurveyId(),ValueType.NUMBER,null,FieldType.SURVEY);
-//                surveyFields.add(surveyField);
-//                currSurvey = surveyFieldData.getSurveyId();
-//            }
-//        }
-//        return surveyFields;
-//    }
 }
