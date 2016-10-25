@@ -32,6 +32,7 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepository;
 import org.apache.fineract.organisation.staff.exception.StaffNotFoundException;
 import org.apache.fineract.organisation.staff.serialization.StaffCommandFromApiJsonDeserializer;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,13 +63,15 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
 
         try {
             this.fromApiJsonDeserializer.validateForCreate(command.json());
-
+           
             final Long officeId = command.longValueOfParameterNamed("officeId");
-
+          
             final Office staffOffice = this.officeRepository.findOne(officeId);
             if (staffOffice == null) { throw new OfficeNotFoundException(officeId); }
 
             final Staff staff = Staff.fromJson(staffOffice, command);
+            
+            validateInputDates(staff);
 
             this.staffRepository.save(staff);
 
@@ -82,7 +85,18 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
         }
     }
 
-    @Transactional
+	private void validateInputDates(Staff staff) {
+		final LocalDate officeOpenDate = staff.office().getOpeningLocalDate();
+		final LocalDate staffJoinDate = staff.getJoiningLocalDate();
+
+		if (officeOpenDate != null && staffJoinDate != null) {
+			if (staffJoinDate.isBefore(officeOpenDate)) {
+				throw new StaffJoinDateException(officeOpenDate.toString(), staffJoinDate.toString());
+			}
+		}
+    }
+
+	@Transactional
     @Override
     public CommandProcessingResult updateStaff(final Long staffId, final JsonCommand command) {
 
@@ -101,7 +115,7 @@ public class StaffWritePlatformServiceJpaRepositoryImpl implements StaffWritePla
 
                 staffForUpdate.changeOffice(newOffice);
             }
-
+            validateInputDates(staffForUpdate);
             if (!changesOnly.isEmpty()) {
                 this.staffRepository.saveAndFlush(staffForUpdate);
             }
