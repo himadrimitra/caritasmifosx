@@ -128,9 +128,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     @Column(name = "interest_recalculation_enabled")
     private boolean isInterestRecalculationEnabled;
     
-    @Column(name = "consider_future_disbursments_in_schedule", nullable = false)
-    private Boolean considerFutureDisbursmentsInSchedule;
-
     @Column(name = "weeks_in_year_enum")
     private Integer weeksInYearType;
 
@@ -142,13 +139,13 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods, final Integer graceOnInterestPayment, final Integer graceOnInterestCharged,
             final AmortizationMethod amortizationMethod, final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing,
             final Integer daysInMonthType, final Integer daysInYearType, final boolean isInterestRecalculationEnabled,
-            final boolean considerFutureDisbursmentsInSchedule, final Integer weeksInYearType) {
+            final Integer weeksInYearType) {
 
         return new LoanProductRelatedDetail(currency, principal, nominalInterestRatePerPeriod, interestRatePeriodFrequencyType,
                 nominalAnnualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion,
                 repaymentEvery, repaymentPeriodFrequencyType, numberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment,
                 graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType,
-                isInterestRecalculationEnabled, considerFutureDisbursmentsInSchedule, weeksInYearType);
+                isInterestRecalculationEnabled, weeksInYearType);
     }
 
     protected LoanProductRelatedDetail() {
@@ -160,10 +157,10 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final BigDecimal defaultAnnualNominalInterestRate, final InterestMethod interestMethod,
             final InterestCalculationPeriodMethod interestCalculationPeriodMethod, final boolean allowPartialPeriodInterestCalcualtion,
             final Integer repayEvery, final PeriodFrequencyType repaymentFrequencyType, final Integer defaultNumberOfRepayments,
-            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods, final Integer graceOnInterestPayment, final Integer graceOnInterestCharged,
-            final AmortizationMethod amortizationMethod, final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing,
-            final Integer daysInMonthType, final Integer daysInYearType, final boolean isInterestRecalculationEnabled,
-            final boolean considerFutureDisbursmentsInSchedule, final Integer weeksInYearType) {
+            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
+            final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
+            final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
+            final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType) {
         this.currency = currency;
         this.principal = defaultPrincipal;
         this.nominalInterestRatePerPeriod = defaultNominalInterestRatePerPeriod;
@@ -189,7 +186,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         this.daysInMonthType = daysInMonthType;
         this.daysInYearType = daysInYearType;
         this.isInterestRecalculationEnabled = isInterestRecalculationEnabled;
-        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
         this.weeksInYearType = weeksInYearType;
     }
 
@@ -306,12 +302,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             this.currency = new MonetaryCurrency(currencyCode, digitsAfterDecimal, inMultiplesOf);
         }
         
-        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.considerFutureDisbursmentsInSchedule, this.getConsiderFutureDisbursmentsInSchedule())) {
-            final Boolean newValue = command.booleanObjectValueOfParameterNamed(LoanProductConstants.considerFutureDisbursmentsInSchedule);
-            actualChanges.put(LoanProductConstants.considerFutureDisbursmentsInSchedule, newValue);
-            this.considerFutureDisbursmentsInSchedule = newValue;
-        }
-
         final String currencyCodeParamName = "currencyCode";
         if (command.isChangeInStringParameterNamed(currencyCodeParamName, currencyCode)) {
             final String newValue = command.stringValueOfParameterNamed(currencyCodeParamName);
@@ -667,11 +657,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     public boolean isAllowPartialPeriodInterestCalcualtion() {
         return this.allowPartialPeriodInterestCalcualtion;
     }
-    
-    public Boolean getConsiderFutureDisbursmentsInSchedule() {
-        return this.considerFutureDisbursmentsInSchedule;
-    }
-
     
     public Integer getWeeksInYearType() {
         return this.weeksInYearType==null?WeeksInYearType.Week_52.getValue():this.weeksInYearType;

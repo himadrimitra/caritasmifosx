@@ -162,7 +162,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 // tranche
                 // details to map
                 BigDecimal disburseAmt = getDisbursementAmount(loanApplicationTerms, scheduleParams.getPeriodStartDate(), periods,
-                        chargesDueAtTimeOfDisbursement, scheduleParams.getDisburseDetailMap(), scheduleParams.applyInterestRecalculation());
+                        chargesDueAtTimeOfDisbursement, scheduleParams.getDisburseDetailMap());
                 scheduleParams.setPrincipalToBeScheduled(Money.of(currency, disburseAmt));
                 loanApplicationTerms.setPrincipal(loanApplicationTerms.getPrincipal().zero().plus(disburseAmt));
                 scheduleParams.setOutstandingBalance(Money.of(currency, disburseAmt));
@@ -1944,7 +1944,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
     private BigDecimal getDisbursementAmount(final LoanApplicationTerms loanApplicationTerms, LocalDate disbursementDate,
             final Collection<LoanScheduleModelPeriod> periods, final BigDecimal chargesDueAtTimeOfDisbursement,
-            final Map<LocalDate, Money> disurseDetail, final boolean excludePastUndisbursed) {
+            final Map<LocalDate, Money> disurseDetail) {
         BigDecimal principal = BigDecimal.ZERO;
         MonetaryCurrency currency = loanApplicationTerms.getPrincipal().getCurrency();
         for (DisbursementData disbursementData : loanApplicationTerms.getDisbursementDatas()) {
@@ -1953,8 +1953,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()), chargesDueAtTimeOfDisbursement);
                 periods.add(disbursementPeriod);
                 principal = principal.add(disbursementData.amount());
-            } else if (!excludePastUndisbursed || disbursementData.isDisbursed()
-                    || (loanApplicationTerms.isConsiderFutureDisbursmentsInSchedule() && !disbursementData.disbursementDate().isBefore(DateUtils.getLocalDateOfTenant()))) {
+            } else if (loanApplicationTerms.isConsiderAllDisbursmentsInSchedule()
+                    || disbursementData.isDisbursed()
+                    || (loanApplicationTerms.isConsiderFutureDisbursmentsInSchedule() && !disbursementData.disbursementDate().isBefore(
+                            DateUtils.getLocalDateOfTenant()))) {
                 disurseDetail.put(disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()));
             }
         }
@@ -2236,7 +2238,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 // tranche
                 // details to map
                 BigDecimal disburseAmt = getDisbursementAmount(loanApplicationTerms, loanApplicationTerms.getExpectedDisbursementDate(),
-                        periods, chargesDueAtTimeOfDisbursement, disburseDetailMap, true);
+                        periods, chargesDueAtTimeOfDisbursement, disburseDetailMap);
                 outstandingBalance = outstandingBalance.zero().plus(disburseAmt);
                 outstandingBalanceAsPerRest = outstandingBalance;
                 principalToBeScheduled = principalToBeScheduled.zero().plus(disburseAmt);

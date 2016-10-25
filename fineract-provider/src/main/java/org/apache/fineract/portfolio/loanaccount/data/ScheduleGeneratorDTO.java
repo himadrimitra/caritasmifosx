@@ -43,15 +43,18 @@ public class ScheduleGeneratorDTO {
     final Integer numberOfdays;
     final boolean isSkipRepaymentOnFirstDayofMonth;
     final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
+    final boolean considerFutureDisbursmentsInSchedule;
+    final boolean considerAllDisbursmentsInSchedule;
 
 
     public ScheduleGeneratorDTO(final LoanScheduleGeneratorFactory loanScheduleFactory, final ApplicationCurrency applicationCurrency,
             final LocalDate calculatedRepaymentsStartingFromDate, final HolidayDetailDTO holidayDetailDTO,
             final CalendarInstance calendarInstanceForInterestRecalculation, final CalendarInstance compoundingCalendarInstance,
             final LocalDate recalculateFrom, final Long overdurPenaltyWaitPeriod, final FloatingRateDTO floatingRateDTO,
-            final Calendar calendar, final CalendarHistoryDataWrapper calendarHistoryDataWrapper, 
-            final Boolean isInterestChargedFromDateAsDisbursementDateEnabled, final Integer numberOfdays, final boolean isSkipRepaymentOnFirstDayofMonth,
-            final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled) {
+            final Calendar calendar, final CalendarHistoryDataWrapper calendarHistoryDataWrapper,
+            final Boolean isInterestChargedFromDateAsDisbursementDateEnabled, final Integer numberOfdays,
+            final boolean isSkipRepaymentOnFirstDayofMonth, final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled,
+            final boolean considerFutureDisbursmentsInSchedule, final boolean considerAllDisbursmentsInSchedule) {
     	
         this.loanScheduleFactory = loanScheduleFactory;
         this.applicationCurrency = applicationCurrency;
@@ -68,6 +71,8 @@ public class ScheduleGeneratorDTO {
         this.numberOfdays = numberOfdays;
         this.isSkipRepaymentOnFirstDayofMonth = isSkipRepaymentOnFirstDayofMonth;
         this.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
+        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
+        this.considerAllDisbursmentsInSchedule = considerAllDisbursmentsInSchedule;
     }
 
     public LoanScheduleGeneratorFactory getLoanScheduleFactory() {
@@ -140,6 +145,16 @@ public class ScheduleGeneratorDTO {
     
     public Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled() {
         return this.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
+    }
+
+    
+    public boolean isConsiderFutureDisbursmentsInSchedule() {
+        return this.considerFutureDisbursmentsInSchedule;
+    }
+
+    
+    public boolean isConsiderAllDisbursmentsInSchedule() {
+        return this.considerAllDisbursmentsInSchedule;
     }
 
 }

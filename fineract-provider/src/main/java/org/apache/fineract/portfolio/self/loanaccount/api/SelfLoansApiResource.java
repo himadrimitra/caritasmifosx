@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.self.loanaccount.api;
 import java.util.HashMap;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -172,14 +173,15 @@ public class SelfLoansApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String calculateLoanScheduleOrSubmitLoanApplication(@QueryParam("command") final String commandParam,
-            @Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
+            @Context final UriInfo uriInfo, @DefaultValue("true") @QueryParam("includePastTranches") final boolean includePastTranches,
+            final String apiRequestBodyAsJson) {
     	
     	HashMap<String, Object> attr = this.dataValidator.validateLoanApplication(apiRequestBodyAsJson);
         final Long clientId = (Long) attr.get("clientId");
         validateAppuserClientsMapping(clientId);
 
     	return this.loansApiResource.calculateLoanScheduleOrSubmitLoanApplication(commandParam, 
-    			uriInfo, apiRequestBodyAsJson);
+    			uriInfo, includePastTranches, apiRequestBodyAsJson);
     }
     
     @PUT

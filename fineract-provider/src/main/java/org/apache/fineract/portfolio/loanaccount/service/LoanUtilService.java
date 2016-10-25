@@ -105,9 +105,31 @@ public class LoanUtilService {
         final HolidayDetailDTO holidayDetailDTO = null;
         return buildScheduleGeneratorDTO(loan, recalculateFrom, holidayDetailDTO);
     }
+    
+    public ScheduleGeneratorDTO buildScheduleGeneratorDTO(final Loan loan, final LocalDate recalculateFrom,
+            final boolean considerFutureDisbursmentsInSchedule, final boolean considerAllDisbursmentsInSchedule) {
+        final HolidayDetailDTO holidayDetailDTO = null;
+        return buildScheduleGeneratorDTO(loan, recalculateFrom, holidayDetailDTO, considerFutureDisbursmentsInSchedule,
+                considerAllDisbursmentsInSchedule);
+    }
 
     public ScheduleGeneratorDTO buildScheduleGeneratorDTO(final Loan loan, final LocalDate recalculateFrom,
             final HolidayDetailDTO holidayDetailDTO) {
+        boolean considerFutureDisbursmentsInSchedule = true;
+        boolean considerAllDisbursmentsInSchedule =true;
+        
+        if(loan.isOpen()){
+            considerFutureDisbursmentsInSchedule = false;
+            considerAllDisbursmentsInSchedule = false;
+        }
+        
+        return buildScheduleGeneratorDTO(loan, recalculateFrom, holidayDetailDTO, considerFutureDisbursmentsInSchedule,
+                considerAllDisbursmentsInSchedule);
+    }
+
+    private ScheduleGeneratorDTO buildScheduleGeneratorDTO(final Loan loan, final LocalDate recalculateFrom,
+            final HolidayDetailDTO holidayDetailDTO, final boolean considerFutureDisbursmentsInSchedule,
+            final boolean considerAllDisbursmentsInSchedule) {
         HolidayDetailDTO holidayDetails = holidayDetailDTO;
         if (holidayDetailDTO == null) {
             holidayDetails = constructHolidayDTO(loan);
@@ -149,9 +171,9 @@ public class LoanUtilService {
         ScheduleGeneratorDTO scheduleGeneratorDTO = new ScheduleGeneratorDTO(loanScheduleFactory, applicationCurrency,
                 calculatedRepaymentsStartingFromDate, holidayDetails, restCalendarInstance, compoundingCalendarInstance, recalculateFrom,
                 overdurPenaltyWaitPeriod, floatingRateDTO, calendar, calendarHistoryDataWrapper, isInterestChargedFromDateAsDisbursementDateEnabled,
-                numberOfDays, isSkipRepaymentOnFirstMonth, isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
+                numberOfDays, isSkipRepaymentOnFirstMonth, isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
 
-               return scheduleGeneratorDTO;
+        return scheduleGeneratorDTO;
     }
 
 	public Boolean isLoanRepaymentsSyncWithMeeting(final Group group, final Calendar calendar) {

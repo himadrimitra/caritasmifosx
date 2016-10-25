@@ -376,7 +376,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         if (loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             recalculateFrom = actualDisbursementDate;
         }
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        final boolean considerFutureDisbursmentsInSchedule = false;
+        final boolean considerAllDisbursmentsInSchedule =false;
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
 
         // validate actual disbursement date against meeting date
         final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
@@ -741,7 +744,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     loan.getLoanTransactions().add(disbursementTransaction);
                 }
                 LocalDate recalculateFrom = null;
-                final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+                final boolean considerFutureDisbursmentsInSchedule = false;
+                final boolean considerAllDisbursmentsInSchedule =false;
+                final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                        considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
                 regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate,
                         rescheduledRepaymentDate);
                 if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
@@ -824,10 +830,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
 
         final LocalDate recalculateFrom = null;
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        final boolean considerFutureDisbursmentsInSchedule = true;
+        final boolean considerAllDisbursmentsInSchedule =true;
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
         if(loan.isGLIMLoan()){
             List<GroupLoanIndividualMonitoring> glimList = this.glimRepository.findByLoanId(loanId);
-            List<Long> glimIds = new ArrayList<Long>();
+            List<Long> glimIds = new ArrayList<>();
             List<GroupLoanIndividualMonitoring> approvedGlimMembers = new ArrayList<>();
             HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
             for (GroupLoanIndividualMonitoring glim : glimList) {
@@ -872,6 +881,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+            
         }
 
         return new CommandProcessingResultBuilder() //
@@ -3157,6 +3167,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final Map<String, Object> accountingBridgeData = loan.deriveAccountingBridgeData(applicationCurrency.toData(),
                     existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
             this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
+            if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+                createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
+            }
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UNDO_LASTDISBURSAL,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
         }

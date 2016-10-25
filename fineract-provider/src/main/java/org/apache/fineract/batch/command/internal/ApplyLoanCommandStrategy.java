@@ -62,13 +62,14 @@ public class ApplyLoanCommandStrategy implements CommandStrategy {
 
         response.setRequestId(request.getRequestId());
         response.setHeaders(request.getHeaders());
+        final boolean includePastTranches = true;
 
         // Try-catch blocks to map exceptions to appropriate status codes
         try {
 
             // Calls 'SubmitLoanFunction' function from 'LoansApiResource' to
             // Apply Loan to an existing client
-            responseBody = loansApiResource.calculateLoanScheduleOrSubmitLoanApplication(null, null, request.getBody());
+            responseBody = loansApiResource.calculateLoanScheduleOrSubmitLoanApplication(null, null,includePastTranches, request.getBody());
 
             response.setStatusCode(200);
             // Sets the body of the response after loan is successfully applied

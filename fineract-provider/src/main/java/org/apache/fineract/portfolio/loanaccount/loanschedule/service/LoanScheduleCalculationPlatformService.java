@@ -24,9 +24,11 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 
 public interface LoanScheduleCalculationPlatformService {
 
-    LoanScheduleModel calculateLoanSchedule(JsonQuery query, Boolean validateParams);
+    LoanScheduleModel calculateLoanSchedule(JsonQuery query, Boolean validateParams, boolean considerAllDisbursmentsInSchedule);
 
     void updateFutureSchedule(LoanScheduleData loanScheduleData, Long loanId);
 
     LoanScheduleData generateLoanScheduleForVariableInstallmentRequest(Long loanId, String json);
+
+    LoanScheduleModel generateLoanScheduleWithCurrentStatus(Long loanId);
 }

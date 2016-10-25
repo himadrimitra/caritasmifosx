@@ -72,7 +72,6 @@ public final class LoanProductDataValidator {
             "accountingRule", "includeInBorrowerCycle", "startDate", "closeDate", "externalId", "isLinkedToFloatingInterestRates",
             "floatingRatesId", "interestRateDifferential", "minDifferentialLendingRate", "defaultDifferentialLendingRate",
             "maxDifferentialLendingRate", "isFloatingInterestRateCalculationAllowed","recurringMoratoriumOnPrincipalPeriods",
-            LoanProductConstants.considerFutureDisbursmentsInSchedule,
             LOAN_PRODUCT_ACCOUNTING_PARAMS.FEES_RECEIVABLE.getValue(), LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(),
             LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_PENALTIES.getValue(),
             LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_LOANS.getValue(), LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_RECEIVABLE.getValue(),
@@ -116,7 +115,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.maximumGapBetweenInstallments, LoanProductConstants.adjustedInstallmentInMultiplesOfParamName,
             LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
             LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
-            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.considerFutureDisbursmentsInSchedule,
+            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, 
             LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType));
 
     private final FromJsonHelper fromApiJsonHelper;

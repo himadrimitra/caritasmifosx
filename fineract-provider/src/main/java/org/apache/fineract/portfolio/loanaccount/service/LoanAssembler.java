@@ -19,7 +19,6 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -41,7 +40,6 @@ import org.apache.fineract.organisation.staff.exception.StaffRoleException;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
-import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
@@ -111,7 +109,6 @@ public class LoanAssembler {
     private final WorkingDaysRepositoryWrapper workingDaysRepository;
     private final LoanUtilService loanUtilService;
     private final LoanPurposeRepositoryWrapper loanPurposeRepository;
-    private final GroupLoanIndividualMonitoringChargeRepositoryWrapper glimRepositoryWrapper;
     private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
 
     @Autowired
@@ -126,7 +123,6 @@ public class LoanAssembler {
             final HolidayRepository holidayRepository, final ConfigurationDomainService configurationDomainService,
             final WorkingDaysRepositoryWrapper workingDaysRepository, final LoanUtilService loanUtilService,
             final LoanPurposeRepositoryWrapper loanPurposeRepository,
-            final GroupLoanIndividualMonitoringChargeRepositoryWrapper glimRepositoryWrapper,
             final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanRepository = loanRepository;
@@ -147,7 +143,6 @@ public class LoanAssembler {
         this.workingDaysRepository = workingDaysRepository;
         this.loanUtilService = loanUtilService;
         this.loanPurposeRepository =loanPurposeRepository;
-        this.glimRepositoryWrapper = glimRepositoryWrapper;
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
     }
 
@@ -302,8 +297,8 @@ public class LoanAssembler {
                 loanDisbursementDetails.updateLoan(loanApplication);
             }
         }
-        
-        final LoanApplicationTerms loanApplicationTerms = this.loanScheduleAssembler.assembleLoanTerms(element);
+        final boolean considerAllDisbursmentsInSchedule = true;
+        final LoanApplicationTerms loanApplicationTerms = this.loanScheduleAssembler.assembleLoanTerms(element, considerAllDisbursmentsInSchedule);
         // GLIM individual clients amount split
         final BigDecimal interestRate = loanApplicationTerms.getAnnualNominalInterestRate();
         final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
