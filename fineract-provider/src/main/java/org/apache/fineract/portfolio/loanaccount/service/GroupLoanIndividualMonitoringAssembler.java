@@ -249,7 +249,7 @@ public class GroupLoanIndividualMonitoringAssembler {
                     emiAmount = BigDecimal.valueOf(Math.ceil(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
                     glim.setInstallmentAmount(emiAmount);
                     totalPaybleAmount = BigDecimal.valueOf(emiAmount.multiply(BigDecimal.valueOf(numberOfRepayment)).doubleValue());
-                    glim.setTotalPaybleAmount(totalAmountBeforeAdjustment);
+                    glim.setTotalPaybleAmount(totalPaybleAmount);
                 }
                 
 
