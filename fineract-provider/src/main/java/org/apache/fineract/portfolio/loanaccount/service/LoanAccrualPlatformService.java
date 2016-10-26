@@ -29,7 +29,7 @@ public interface LoanAccrualPlatformService {
 
     String addPeriodicAccruals(LocalDate tilldate, List<Long> loanList);
 
-    String addPeriodicAccruals(LocalDate tilldate, Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas);
+    String addPeriodicAccruals(LocalDate tilldate, Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas, boolean accrueAllInstallments);
 
     void addAccrualAccounting() throws JobExecutionException;
 

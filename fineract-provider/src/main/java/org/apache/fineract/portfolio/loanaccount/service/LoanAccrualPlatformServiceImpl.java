@@ -90,11 +90,12 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
     @Override
     public String addPeriodicAccruals(final LocalDate tilldate, List<Long> loanList) {
         Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas = this.loanReadPlatformService.retrivePeriodicAccrualData(tilldate, loanList);
-        return addPeriodicAccruals(tilldate, loanScheduleAccrualDatas);
+        final boolean accrueAllInstallments = false;
+        return addPeriodicAccruals(tilldate, loanScheduleAccrualDatas, accrueAllInstallments);
     }
 
     @Override
-    public String addPeriodicAccruals(final LocalDate tilldate, Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas) {
+    public String addPeriodicAccruals(final LocalDate tilldate, Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas, final boolean accrueAllInstallments) {
         StringBuilder sb = new StringBuilder();
         Map<Long, Collection<LoanScheduleAccrualData>> loanDataMap = new HashMap<>();
         for (final LoanScheduleAccrualData accrualData : loanScheduleAccrualDatas) {
@@ -112,7 +113,7 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
             try {
             	counter++;
             	logger.debug("Add Periodic Accrual Counter[" + counter + "], LoanId[" + mapEntry.getKey() + "]");
-                this.loanAccrualWritePlatformService.addPeriodicAccruals(tilldate, mapEntry.getKey(), mapEntry.getValue());
+                this.loanAccrualWritePlatformService.addPeriodicAccruals(tilldate, mapEntry.getKey(), mapEntry.getValue(), accrueAllInstallments);
             } catch (Exception e) {
                 Throwable realCause = e;
                 if (e.getCause() != null) {

@@ -3912,6 +3912,8 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         
+        handleAccrualsForClosedLoanTransactionReversal();
+        
         transactionForAdjustment.reverse();
         transactionForAdjustment.manuallyAdjustedOrReversed();
         
@@ -3941,13 +3943,38 @@ public class Loan extends AbstractPersistable<Long> {
                 }
             }
         }
-
+        
         if (newTransactionDetail.isRepayment() || newTransactionDetail.isInterestWaiver()) {
             changedTransactionDetail = handleRepaymentOrRecoveryOrWaiverTransaction(newTransactionDetail, loanLifecycleStateMachine,
                     transactionForAdjustment, scheduleGeneratorDTO, currentUser);
         }
 
         return changedTransactionDetail;
+    }
+
+    private void handleAccrualsForClosedLoanTransactionReversal() {
+        if (isPeriodicAccrualAccountingEnabledOnLoanProduct() && !isInterestRecalculationEnabledForProduct()
+                && (status().isOverpaid() || status().isClosedObligationsMet())) {
+            LocalDate lastUserTransactionDate = getLastUserTransactionDate();
+            LocalDate lastScheduleDate = determineExpectedMaturityDate();
+            if (lastScheduleDate.isAfter(DateUtils.getLocalDateOfTenant())) {
+                
+                final List<LoanTransaction> transactions = new ArrayList<>();
+                for (final LoanTransaction loanTransaction : getLoanTransactions()) {
+                    if (loanTransaction.isAccrual()) {
+                        if (loanTransaction.getTransactionDate().isEqual(lastUserTransactionDate)) {
+                            loanTransaction.reverse();
+                        } else {
+                            transactions.add(loanTransaction);
+                        }
+                    }
+                }
+                final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
+                Collections.sort(transactions, transactionComparator);
+                applyPeriodicAccruals(transactions);
+            }
+
+        }
     }
 
     public ChangedTransactionDetail undoWrittenOff(final List<Long> existingTransactionIds,
