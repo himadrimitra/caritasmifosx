@@ -43,6 +43,7 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsDataWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalculationDetails;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
@@ -235,6 +236,8 @@ public final class LoanApplicationTerms {
     private int extraPeriods = 0;
     
     private final Integer weeksInYearType;
+    
+    List<LoanCharge> capitalizedCharges = null;
     
     
 
@@ -1866,6 +1869,16 @@ public final class LoanApplicationTerms {
     public void updateTotalInterestAccounted(Money totalInterestAccounted){
         this.totalInterestAccounted = totalInterestAccounted;
 
+    }
+
+    
+    public List<LoanCharge> getCapitalizedCharges() {
+        return capitalizedCharges;
+    }
+
+    
+    public void setCapitalizedCharges(List<LoanCharge> capitalizedCharges) {
+        this.capitalizedCharges = capitalizedCharges;
     }
     
 }

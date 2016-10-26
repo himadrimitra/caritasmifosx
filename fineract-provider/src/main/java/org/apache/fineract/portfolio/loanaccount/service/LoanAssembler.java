@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -54,6 +55,7 @@ import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -304,6 +306,9 @@ public class LoanAssembler {
         final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
         final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(loanApplication, element, interestRate, numberOfRepayments);
         loanApplicationTerms.updateTotalInterestDueForGlim(glimList);
+        //capitalization of charges
+        loanApplication.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(loanCharges));
+        loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(loanCharges));
         final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loanApplication.getOfficeId(),
                 loanApplicationTerms.getExpectedDisbursementDate().toDate(), HolidayStatusType.ACTIVE.getValue());

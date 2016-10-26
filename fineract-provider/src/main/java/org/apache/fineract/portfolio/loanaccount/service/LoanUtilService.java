@@ -19,6 +19,8 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -55,10 +57,13 @@ import org.apache.fineract.portfolio.floatingrates.exception.FloatingRateNotFoun
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail;
 import org.joda.time.LocalDate;
@@ -389,5 +394,46 @@ public class LoanUtilService {
     public static Money deductGivenComponent(final Money transactionAmountRemaining, final Money portionOfTransaction) {
         if (transactionAmountRemaining.isGreaterThanOrEqualTo(portionOfTransaction)) { return portionOfTransaction; }
         return transactionAmountRemaining;
+    }
+    
+	public static Money getCapitalizedChargeBalance(final LoanApplicationTerms loanApplicationTerms, int periodNumber) {
+	    BigDecimal capitalizedAmount = BigDecimal.ZERO;
+	    MonetaryCurrency currency = loanApplicationTerms.getCurrency();
+	    Integer loanTerm = loanApplicationTerms.getNumberOfRepayments();
+	    if (loanApplicationTerms.getCapitalizedCharges() != null && loanApplicationTerms.getCapitalizedCharges().size() > 0 && periodNumber != loanTerm) {        	
+	        for (LoanCharge loanCharge : loanApplicationTerms.getCapitalizedCharges()) {
+	            BigDecimal totalAmount = capitalizedAmount.add(loanCharge.getAmount(currency).getAmount());
+	            BigDecimal defaultAmount = MathUtility.getInstallmentAmount(totalAmount, loanTerm, currency, 1);
+	            if (periodNumber == 0) {
+	            	capitalizedAmount = capitalizedAmount.add(totalAmount);
+	            }else if(periodNumber != loanTerm-1){
+	            	capitalizedAmount = capitalizedAmount.add(defaultAmount);
+	            }else{
+	            	capitalizedAmount = capitalizedAmount.add(MathUtility.getInstallmentAmount(totalAmount, loanTerm, currency, loanTerm));
+	            }
+	        }
+	        
+	    }
+	    return Money.of(currency, capitalizedAmount);
+	}
+    
+    public static BigDecimal getCapitalizedChargeAmount(Collection<LoanCharge> loanCharges){
+    	BigDecimal totalCapitalizedCharge = BigDecimal.ZERO;
+        for(LoanCharge loanCharge:loanCharges){
+            if(loanCharge.isCapitalized()){
+                totalCapitalizedCharge = MathUtility.add(totalCapitalizedCharge, loanCharge.getAmount(loanCharge.getLoan().getCurrency()).getAmount());
+            }
+        }
+        return totalCapitalizedCharge;
+    }
+    
+    public static List<LoanCharge> getCapitalizedCharges(Collection<LoanCharge> loanCharges){
+    	List<LoanCharge> capitalizedCharges = new ArrayList<>();
+        for(LoanCharge loanCharge:loanCharges){
+            if(loanCharge.isCapitalized()){
+                capitalizedCharges.add(loanCharge);                
+            }
+        }
+        return capitalizedCharges;
     }
 }

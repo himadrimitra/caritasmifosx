@@ -80,6 +80,7 @@ import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlat
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
@@ -694,7 +695,16 @@ public class LoanScheduleAssembler {
             loanApplicationTerms.setFirstEmiAmount(firstEmiAmount);
             loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
         }
-
+        //capitalized
+        List<LoanCharge> capitalizedCharges = new ArrayList<>();
+        for(LoanCharge loanCharge:loanCharges){
+            if(loanCharge.isCapitalized()){
+                capitalizedCharges.add(loanCharge);
+            }
+        }
+        if(capitalizedCharges.size()>0){
+            loanApplicationTerms.setCapitalizedCharges(capitalizedCharges);
+        }
         return loanScheduleGenerator.generate(mc, loanApplicationTerms, loanCharges, detailDTO);
     }
 
@@ -1233,5 +1243,5 @@ public class LoanScheduleAssembler {
 		return scheduledDateGenerator.getRepaymentPeriodDate(loanTermPeriodFrequencyType, repaidEvery, disbursalDate,
 				nthDay, dayOfWeek);
 	}
-    
+
 }

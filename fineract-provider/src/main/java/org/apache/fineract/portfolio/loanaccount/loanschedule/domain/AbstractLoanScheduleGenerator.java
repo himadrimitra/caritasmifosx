@@ -59,6 +59,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleP
 import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.MultiDisbursementEmiAmountException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.MultiDisbursementOutstandingAmoutException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.ScheduleDateException;
+import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
@@ -203,6 +204,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             isFirstRepayment = false;
         }
+        Money capitalizedAmount= LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0).negated(); 
+        processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedAmount, loanApplicationTerms.getExpectedDisbursementDate());
         while (!scheduleParams.getOutstandingBalance().isZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
             LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
@@ -393,6 +396,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 }
             }
             scheduleParams.setPeriodStartDate(scheduledDueDate);
+            Money capitalizedChargeAmount= LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, scheduleParams.getInstalmentNumber());
+            processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedChargeAmount, scheduledDueDate);
             scheduleParams.incrementInstalmentNumber();
             scheduleParams.incrementPeriodNumber();
             if (termVariationParams.isRecalculateAmounts()) {
@@ -1921,6 +1926,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         map.put(amountApplicableDate, principalPaid);
 
     }
+    
     public abstract PrincipalInterest calculatePrincipalInterestComponentsForPeriod(PaymentPeriodsInOneYearCalculator calculator,
             double interestCalculationGraceOnRepaymentPeriodFraction, Money totalCumulativePrincipal, Money totalCumulativeInterest,
             Money totalInterestDueForLoan, Money cumulatingInterestPaymentDueToGrace, Money outstandingBalance,
@@ -2078,6 +2084,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             }
             BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
             cumulative = cumulative.plus(loanChargeAmt);
+        } else if (loanCharge.isInstalmentFee() && loanCharge.getChargeCalculation().isSlabBased()) {
+            cumulative = cumulative.plus(MathUtility.getInstallmentAmount(loanCharge.amountOrPercentage(), loanApplicationTerm.getNumberOfRepayments(), cumulative.getCurrency(), periodNumber));
         } else {
             cumulative = cumulative.plus(loanCharge.amountOrPercentage());
         }
@@ -2348,7 +2356,6 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 totalPenaltyChargesCharged = totalPenaltyChargesCharged.plus(installment.getPenaltyChargesCharged(currency));
                 instalmentNumber++;
                 loanTermInDays = Days.daysBetween(installment.getFromDate(), installment.getDueDate()).getDays();
-
                 if (loanApplicationTerms.isInterestRecalculationEnabled()) {
                     // populates the collection with transactions till the due
                     // date
@@ -3039,6 +3046,11 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 }
             }
         }
+    }   
+
+    private void processCapitalizedTransactions(final Map<LocalDate, Money> principalPortionMap,
+            final Money amount,LocalDate applicableDate) {  
+    	updateMapWithAmount(principalPortionMap, amount, applicableDate);                
     }
     
     private class EmiDetails {

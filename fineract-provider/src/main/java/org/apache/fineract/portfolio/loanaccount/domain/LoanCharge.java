@@ -156,6 +156,9 @@ public class LoanCharge extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "loan_charge_id", referencedColumnName = "id", nullable = false)
     private final List<LoanChargeTaxDetails> taxDetails = new ArrayList<>();
+    
+    @Column(name = "is_capitalized", nullable = true)
+    private boolean isCapitalized;
 
     public static LoanCharge createNewFromJson(final Loan loan, final Charge chargeDefinition, final JsonCommand command) {
         final LocalDate dueDate = command.localDateValueOfParameterNamed("dueDate");
@@ -285,6 +288,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
         if (loan != null && this.charge.getTaxGroup() != null) {
             createLoanChargeTaxDetails(loan.getDisbursementDate(), chargeAmount);
         }
+        this.isCapitalized = this.charge==null?false:this.charge.isCapitalized();
                 
     }
     //glim calculation
@@ -361,14 +365,15 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 this.percentage = null;
                 this.amountPercentageAppliedTo = null;
                 this.amountPaid = null;
-                if (isInstalmentFee()) {
+                if (isInstalmentFee() && this.chargeCalculation != ChargeCalculationType.SLAB_BASED.getValue()) {
                     if (numberOfRepayments == null) {
                         numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
                     }
                     this.amount = chargeAmount.multiply(BigDecimal.valueOf(numberOfRepayments));
-                } else {
+                }else{
                     this.amount = chargeAmount;
                 }
+                this.amount = chargeAmount;
                 this.amountOutstanding = this.amount;
                 this.amountWaived = null;
                 this.amountWrittenOff = null;
@@ -419,12 +424,12 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 this.percentage = null;
                 this.amountPercentageAppliedTo = null;
                 this.amountPaid = null;
-                if (isInstalmentFee()) {
+                if (isInstalmentFee() && this.chargeCalculation != ChargeCalculationType.SLAB_BASED.getValue()) {
                     if (numberOfRepayments == null) {
                         numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
                     }
                     this.amount = chargeAmount.multiply(BigDecimal.valueOf(numberOfRepayments));
-                } else {
+                }else{
                     this.amount = chargeAmount;
                 }
                 this.amountOutstanding = this.amount;
@@ -542,14 +547,15 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 break;
                 case FLAT:
                 case SLAB_BASED: 
-                    if (isInstalmentFee()) {
+                    if (isInstalmentFee() && this.chargeCalculation != ChargeCalculationType.SLAB_BASED.getValue()) {
                         if (numberOfRepayments == null) {
                             numberOfRepayments = this.loan.fetchNumberOfInstallmensAfterExceptions();
                         }
                         this.amount = amount.multiply(BigDecimal.valueOf(numberOfRepayments));
-                    } else {
+                    }else {
                         this.amount = amount;
                     }
+                    this.amountOutstanding = this.amount;
                 break;
                 case PERCENT_OF_AMOUNT:
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
@@ -639,12 +645,12 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 break;
                 case FLAT:
                 case SLAB_BASED: 
-                    if (isInstalmentFee()) {
+                    if (isInstalmentFee() && this.chargeCalculation != ChargeCalculationType.SLAB_BASED.getValue()) {
                         this.amount = newValue.multiply(BigDecimal.valueOf(this.loan.fetchNumberOfInstallmensAfterExceptions()));
-                    } else {
+                    }else {
                         this.amount = newValue;
                     }
-                    this.amountOutstanding = calculateOutstanding();
+                    this.amountOutstanding = calculateOutstanding();;
                 break;
                 case PERCENT_OF_AMOUNT:
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
@@ -1313,4 +1319,16 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public boolean isUpfrontFee() {
         return ChargeTimeType.fromInt(this.chargeTime).equals(ChargeTimeType.UPFRONT_FEE);
     }
+
+    
+    public boolean isCapitalized() {
+        return isCapitalized;
+    }
+
+    
+    public void setCapitalized(boolean isCapitalized) {
+        this.isCapitalized = isCapitalized;
+    }
+    
+    
 }

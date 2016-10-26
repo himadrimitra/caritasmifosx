@@ -1396,22 +1396,23 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
             // If loan approved amount is not same as loan amount demanded, then
             // during undo, restore the demand amount to principal amount.
-            
-            List<GroupLoanIndividualMonitoring> glimList  = this.groupLoanIndividualMonitoringRepository.findByLoanIdAndIsClientSelected(loanId, true);
-            HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
-            for (GroupLoanIndividualMonitoring glim : glimList) {
-                final BigDecimal proposedAmount = glim.getProposedAmount();
-                if (proposedAmount != null) {
-                    glim.setIsClientSelected(true);
-                    glim.setApprovedAmount(null);
-                    this.groupLoanIndividualMonitoringAssembler.recalculateTotalFeeCharges(loan, chargesMap, proposedAmount,
-                            glim.getGroupLoanIndividualMonitoringCharges());
+            if(loan.isGLIMLoan()){
+                List<GroupLoanIndividualMonitoring> glimList  = this.groupLoanIndividualMonitoringRepository.findByLoanIdAndIsClientSelected(loanId, true);
+                HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
+                for (GroupLoanIndividualMonitoring glim : glimList) {
+                    final BigDecimal proposedAmount = glim.getProposedAmount();
+                    if (proposedAmount != null) {
+                        glim.setIsClientSelected(true);
+                        glim.setApprovedAmount(null);
+                        this.groupLoanIndividualMonitoringAssembler.recalculateTotalFeeCharges(loan, chargesMap, proposedAmount,
+                                glim.getGroupLoanIndividualMonitoringCharges());
+                    }
                 }
+                this.groupLoanIndividualMonitoringAssembler.updateLoanChargesForGlim(loan, chargesMap);
+                loan.updateGlim(glimList);
+                this.groupLoanIndividualMonitoringAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(),
+                        loan.fetchNumberOfInstallmensAfterExceptions(), glimList);
             }
-            this.groupLoanIndividualMonitoringAssembler.updateLoanChargesForGlim(loan, chargesMap);
-            loan.updateGlim(glimList);
-            this.groupLoanIndividualMonitoringAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(),
-                    loan.fetchNumberOfInstallmensAfterExceptions(), glimList);
 
             if (changes.containsKey(LoanApiConstants.approvedLoanAmountParameterName)
                     || changes.containsKey(LoanApiConstants.disbursementPrincipalParameterName)) {
