@@ -797,5 +797,9 @@ public class Charge extends AbstractPersistable<Long> {
     public List<ChargeSlab> getSlabs() {
         return this.slabs;
     }
+    
+    public boolean isCapitalized(){
+        return this.isCapitalized;
+    }
 
 }

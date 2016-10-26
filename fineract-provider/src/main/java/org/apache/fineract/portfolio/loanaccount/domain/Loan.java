@@ -123,6 +123,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
+import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
@@ -424,6 +425,9 @@ public class Loan extends AbstractPersistable<Long> {
     
     @Transient
     List<GroupLoanIndividualMonitoring> defaultGlimMembers = new ArrayList<>();
+
+    @Column(name = "total_charges_capitalized_at_disbursement_derived", scale = 6, precision = 19, nullable = true)
+    private BigDecimal totalCapitalizedCharges;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -2756,9 +2760,12 @@ public class Loan extends AbstractPersistable<Long> {
         final MathContext mc = new MathContext(8, roundingMode);
 
         final InterestMethod interestMethod = this.loanRepaymentScheduleDetail.getInterestMethod();
+        //capitalization of charges
+        this.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(this.getLoanCharges()));
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
         updateInstallmentAmountForGlim(loanApplicationTerms, charges());
         loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);
+      
         final LoanScheduleGenerator loanScheduleGenerator = scheduleGeneratorDTO.getLoanScheduleFactory().create(interestMethod);
         if (this.loanProduct.adjustFirstEMIAmount() && !this.isOpen()) {
             final BigDecimal firstInstallmentEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms,
@@ -5291,6 +5298,8 @@ public class Loan extends AbstractPersistable<Long> {
                         }
                     }
                     amount = chargeAmountPerInstallment;
+                } else if (loanCharge.isInstalmentFee() && loanCharge.getChargeCalculation().isSlabBased()) {
+                	amount = MathUtility.getInstallmentAmount(loanCharge.amountOrPercentage(), this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(), installment.getInstallmentNumber());
                 } else {
                     amount = calculateInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage(), installment)
                             .getAmount();
@@ -5874,7 +5883,6 @@ public class Loan extends AbstractPersistable<Long> {
 
         final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
         final MathContext mc = new MathContext(8, roundingMode);
-
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(generatorDTO);
         updateInstallmentAmountForGlim(loanApplicationTerms, charges());
         loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);
@@ -5973,6 +5981,7 @@ public class Loan extends AbstractPersistable<Long> {
                 scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable,
                 firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(), 
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule());
+        loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
         return loanApplicationTerms;
     }
 
@@ -7230,5 +7239,16 @@ public class Loan extends AbstractPersistable<Long> {
     public List<GroupLoanIndividualMonitoring> getDefautGlimMembers() {
         return this.defaultGlimMembers;
     }
+
+    
+    public BigDecimal getTotalCapitalizedCharges() {
+        return totalCapitalizedCharges;
+    }
+
+    
+    public void setTotalCapitalizedCharges(BigDecimal totalCapitalizedCharges) {
+        this.totalCapitalizedCharges = totalCapitalizedCharges;
+    } 
+    
     
 }
