@@ -1,5 +1,6 @@
 package com.finflux.ruleengine.execution.service;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         this.fromJsonHelper = fromJsonHelper;
     }
 
+    @SuppressWarnings("unused")
     @Override
     public Map<String, Object> getAllMatrix(Long clientId) {
         Map<String, Object> allClientData = new HashMap<>();
@@ -77,19 +79,129 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         } catch (final EmptyResultDataAccessException e) {}
 
         /**
+         * Client Details From Other Lenders Loans
+         */
+        final List<Map<String, Object>> clientLoanDetailsFromOtherLendersList = getClientLoanDetailsFromOtherLenders(clientId);
+        final BigDecimal clienttotaloutstandingamount = BigDecimal.ZERO;
+        Integer clientActiveMFILoansCount = 0;
+        final BigDecimal clienttotalwrittenoffamount = BigDecimal.ZERO;
+        Integer clientnumberofwrittenoffloans = 0;
+        final BigDecimal clienttotalmonthlydueamount = BigDecimal.ZERO;
+        if (clientLoanDetailsFromOtherLendersList != null && !clientLoanDetailsFromOtherLendersList.isEmpty()) {
+            for (final Map<String, Object> clientLoanDetailsFromOtherLenders : clientLoanDetailsFromOtherLendersList) {
+                if (clientLoanDetailsFromOtherLenders.get("clientwrittenoffamount") != null) {
+                    final BigDecimal clientwrittenoffamount = (BigDecimal) clientLoanDetailsFromOtherLenders.get("clientwrittenoffamount");
+                    clientLoanDetailsFromOtherLenders.remove("clientwrittenoffamount");
+                    if (clientwrittenoffamount.doubleValue() > BigDecimal.ZERO.doubleValue()) {
+                        clientnumberofwrittenoffloans++;
+                        clienttotalwrittenoffamount.add(clientwrittenoffamount);
+                    }
+                }
+                if (clientLoanDetailsFromOtherLenders.get("loanstatus") != null
+                        && Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loanstatus").toString()) == 300) {
+                    clientLoanDetailsFromOtherLenders.remove("loanstatus");
+                    allClientData.putAll(clientLoanDetailsFromOtherLenders);
+                    clienttotaloutstandingamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientoutstandingamount"));
+                    clientActiveMFILoansCount++;
+
+                    if (clientLoanDetailsFromOtherLenders.get("loantenureperiodtype") != null) {
+                        if (Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loantenureperiodtype").toString()) == 1) {
+
+                        } else if (Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loantenureperiodtype").toString()) == 2) {
+                            clienttotalmonthlydueamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientinstallmentamount"));
+                        }
+                        clientLoanDetailsFromOtherLenders.remove("loantenureperiodtype");
+                    }
+                }
+            }
+        }
+
+        /**
+         * Client total amount monthly due
+         */
+        final Map<String, Object> clienttotalmonthlydueamountMap = new HashMap<String, Object>();
+        clienttotalmonthlydueamountMap.put("clienttotalmonthlydueamount", clienttotalmonthlydueamount);
+        allClientData.putAll(clienttotalmonthlydueamountMap);
+
+        /**
+         * Client total written off amount from other lenders
+         */
+        final Map<String, Object> clienttotalwrittenoffamountMap = new HashMap<String, Object>();
+        clienttotalwrittenoffamountMap.put("clienttotalwrittenoffamount", clienttotalwrittenoffamount);
+        allClientData.putAll(clienttotalwrittenoffamountMap);
+
+        /**
+         * Client number of written off loans
+         */
+        final Map<String, Object> clientnumberofwrittenoffloansMap = new HashMap<String, Object>();
+        clientnumberofwrittenoffloansMap.put("clientnumberofwrittenoffloans", clientnumberofwrittenoffloans);
+        allClientData.putAll(clientnumberofwrittenoffloansMap);
+
+        /**
+         * Client total outstanding amount from other lenders
+         */
+        final Map<String, Object> clientTotalOutstandingAmount = new HashMap<String, Object>();
+        clientTotalOutstandingAmount.put("clienttotaloutstandingamount", clienttotaloutstandingamount);
+        allClientData.putAll(clientTotalOutstandingAmount);
+
+        /**
          * Client number of active MFI loans
          */
-        final Map<String, Object> clientActiveMFILoansCountMap = getClientActiveMFILoansCountMap(clientId);
-        if (clientActiveMFILoansCountMap != null) {
-            allClientData.putAll(clientActiveMFILoansCountMap);
+        final Map<String, Object> clientActiveMFILoansCountMap = new HashMap<String, Object>();
+        clientActiveMFILoansCountMap.put("clientactiveloanscount", clientActiveMFILoansCount);
+        allClientData.putAll(clientActiveMFILoansCountMap);
+
+        /**
+         * Client % Income from high stability
+         */
+        final Map<String, Object> clientIncomeFromHighStabilityPercentage = getClientIncomeFromHighStabilityPercentage(clientId);
+        if (clientIncomeFromHighStabilityPercentage != null) {
+            allClientData.putAll(clientIncomeFromHighStabilityPercentage);
+        }
+
+        /**
+         * Client meeting attendance history %
+         */
+        final Map<String, Object> clientMeetingAttendanceHistoryPercentage = getClientMeetingAttendanceHistoryPercentage(clientId);
+        if (clientMeetingAttendanceHistoryPercentage != null) {
+            allClientData.putAll(clientMeetingAttendanceHistoryPercentage);
         }
 
         return allClientData;
     }
 
-    private Map<String, Object> getClientActiveMFILoansCountMap(final Long clientId) {
+    private Map<String, Object> getClientMeetingAttendanceHistoryPercentage(Long clientId) {
+        final StringBuilder sql = new StringBuilder(150);
+        sql.append("SELECT ");
+        sql.append("SUM(IF(ca.attendance_type_enum = 1,1,0))/COUNT(ca.id)*100 AS clientattendancepresentage ");
+        sql.append("FROM m_client_attendance ca ");
+        sql.append("INNER JOIN m_meeting meeting on meeting.id = ca.meeting_id AND meeting.meeting_date >= DATE_SUB(NOW(), INTERVAL 180 DAY) ");
+        sql.append("WHERE ca.client_id = ? ");
+        sql.append("GROUP BY ca.client_id ");
+        return this.jdbcTemplate.queryForMap(sql.toString(), new Object[] { clientId });
+    }
+
+    private List<Map<String, Object>> getClientLoanDetailsFromOtherLenders(final Long clientId) {
+        final StringBuilder sql = new StringBuilder(100);
+        sql.append("SELECT el.loan_status_id AS loanstatus ");
+        sql.append("IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
+        sql.append(",IFNULL(el.installment_amount, 0) clientinstallmentamount ");
+        sql.append(",IFNULL(el.written_off_amount, 0) clientwrittenoffamount ");
+        sql.append(",IFNULL(el.loan_tenure_period_type, 0) loantenureperiodtype ");
+        sql.append("FROM f_existing_loan el ");
+        sql.append("WHERE el.client_id = ? ");
+        return this.jdbcTemplate.queryForList(sql.toString(), new Object[] { clientId });
+    }
+
+    private Map<String, Object> getClientIncomeFromHighStabilityPercentage(final Long clientId) {
         final StringBuilder sql = new StringBuilder(250);
-        sql.append("SELECT COUNT(*) AS clientactiveloanscount FROM f_existing_loan el WHERE el.client_id = ? AND el.loan_status_id = 300");
+        sql.append("SELECT ");
+        sql.append(",((100*SUM(IF(ie.stability_enum_id = 3, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clienthighstabilitypercentage ");
+        sql.append(",((100*SUM(IF(ie.stability_enum_id = 2, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clientmediumstabilitypercentage ");
+        sql.append(",((100*SUM(IF(ie.stability_enum_id = 1, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clientlowstabilitypercentage ");
+        sql.append("FROM f_client_income_expense cie ");
+        sql.append("JOIN f_income_expense ie ON ie.id = cie.income_expense_id ");
+        sql.append("WHERE cie.client_id = ? ");
         return this.jdbcTemplate.queryForMap(sql.toString(), new Object[] { clientId });
     }
 
@@ -178,6 +290,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             return this.schemaSql;
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Override
         public Map<String, Object> mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
             Map<String, Object> mapData = new HashMap();

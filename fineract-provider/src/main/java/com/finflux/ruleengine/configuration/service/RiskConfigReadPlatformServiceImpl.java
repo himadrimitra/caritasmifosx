@@ -195,7 +195,7 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
             this.codeValueReadPlatformService = codeValueReadPlatformService;
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append("rf.id as id,").append("rf.name as name,").append("rf.uname as uname,").append("rf.value_type as valueType,")
-                    .append("rf.options as options, ").append("rf.code_name as codeName, ").append("from f_risk_field as rf");
+                    .append("rf.options as options, ").append("rf.code_name as codeName ").append("from f_risk_field rf");
             this.schemaSql = sqlBuilder.toString();
         }
 
