@@ -692,6 +692,38 @@ public class LoanTransactionHelper {
         assertTrue("No Accrual entries are posted", isTransactionFound);
 
     }
+    
+    public void checkAccrualTransactionsOnDay(final LocalDate transactionDate, final Float interestPortion, final Float feePortion,
+            final Float penaltyPortion, final Integer loanID) {
+
+        ArrayList<HashMap> transactions = (ArrayList<HashMap>) getLoanDetail(this.requestSpec, this.responseSpec, loanID, "transactions");
+        boolean isTransactionFound = false;
+        Double interest = 0d;
+        Double fee = 0d;
+        Double penalty = 0d;
+        for (int i = 0; i < transactions.size(); i++) {
+            HashMap transactionType = (HashMap) transactions.get(i).get("type");
+            boolean isAccrualTransaction = (Boolean) transactionType.get("accrual");
+
+            if (isAccrualTransaction) {
+                ArrayList<Integer> accrualEntryDateAsArray = (ArrayList<Integer>) transactions.get(i).get("date");
+                LocalDate accrualEntryDate = new LocalDate(accrualEntryDateAsArray.get(0), accrualEntryDateAsArray.get(1),
+                        accrualEntryDateAsArray.get(2));
+
+                if (transactionDate.equals(accrualEntryDate)) {
+                    isTransactionFound = true;
+                    interest += new Double(String.valueOf(transactions.get(i).get("interestPortion")));
+                    fee += new Double(String.valueOf(transactions.get(i).get("feeChargesPortion")));
+                    penalty += new Double(String.valueOf(transactions.get(i).get("penaltyChargesPortion")));
+                }
+            }
+        }
+        assertTrue("No Accrual entries are posted", isTransactionFound);
+        assertEquals("Mismatch in transaction amounts", interestPortion, new Float(interest));
+        assertEquals("Mismatch in transaction amounts", feePortion, new Float(fee.floatValue()));
+        assertEquals("Mismatch in transaction amounts", penaltyPortion, new Float(penalty.floatValue()));
+
+    }
 
     public HashMap makeRefundByCash(final String date, final Float amountToBeRefunded, final Integer loanID) {
         return performLoanTransaction(createLoanTransactionURL(MAKE_REFUND_BY_CASH_COMMAND, loanID),

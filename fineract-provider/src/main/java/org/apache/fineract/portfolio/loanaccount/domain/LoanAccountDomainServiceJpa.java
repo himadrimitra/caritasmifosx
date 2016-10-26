@@ -251,7 +251,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer, isLoanToLoanTransfer);
 
         //Fix to recalculate Accruals only in case of back dated entries.
-        if (!DateUtils.getLocalDateOfTenant().isEqual(transactionDate)) {
+        if (!DateUtils.getLocalDateOfTenant().isEqual(transactionDate) || (loan.status().isClosedObligationsMet() || loan.status().isOverpaid())) {
         	recalculateAccruals(loan);
         }
 
@@ -585,9 +585,13 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public void recalculateAccruals(Loan loan, boolean isInterestCalcualtionHappened) {
         LocalDate accruedTill = loan.getAccruedTill();
-        if (!loan.isPeriodicAccrualAccountingEnabledOnLoanProduct() || !isInterestCalcualtionHappened
-                || accruedTill == null || loan.isNpa() || !loan.status().isActive()) { return; }
-        
+        if (!loan.isPeriodicAccrualAccountingEnabledOnLoanProduct() || accruedTill == null
+                || ((!isInterestCalcualtionHappened || loan.isNpa()) && loan.isOpen()) ||
+                (!loan.isOpen() && !(loan.status().isOverpaid() || loan.status().isClosedObligationsMet()))) { return; }
+        boolean accrueAllInstallments = false;
+        if(loan.status().isClosedObligationsMet() || loan.status().isOverpaid()){
+            accrueAllInstallments = true;
+        }
         boolean isOrganisationDateEnabled = this.configurationDomainService.isOrganisationstartDateEnabled();
         Date organisationStartDate = new Date();
         if(isOrganisationDateEnabled){
@@ -606,19 +610,23 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
         CurrencyData currencyData = applicationCurrency.toData();
         Set<LoanCharge> loanCharges = loan.charges();
-
+        if(accrueAllInstallments){
+            accruedTill = loan.getLastUserTransactionDate();
+        }
+        
         for (LoanRepaymentScheduleInstallment installment : installments) {
-            if (installment.getDueDate().isAfter(loan.getMaturityDate())) {
+             if (installment.getDueDate().isAfter(loan.getMaturityDate())) {
                 accruedTill = DateUtils.getLocalDateOfTenant();
             }
             if(!isOrganisationDateEnabled || new LocalDate(organisationStartDate).isBefore(installment.getDueDate())){
                 generateLoanScheduleAccrualData(accruedTill, loanScheduleAccrualDatas, loanId, officeId, accrualStartDate, repaymentFrequency, 
-                        repayEvery, interestCalculatedFrom, loanProductId, currency, currencyData, loanCharges, installment);
+                        repayEvery, interestCalculatedFrom, loanProductId, currency, currencyData, loanCharges, installment, accrueAllInstallments);
             }
         }
+       
 
         if (!loanScheduleAccrualDatas.isEmpty()) {
-            String error = this.loanAccrualPlatformService.addPeriodicAccruals(accruedTill, loanScheduleAccrualDatas);
+            String error = this.loanAccrualPlatformService.addPeriodicAccruals(accruedTill, loanScheduleAccrualDatas, accrueAllInstallments);
             if (error.length() > 0) {
                 String globalisationMessageCode = "error.msg.accrual.exception";
                 throw new GeneralPlatformDomainRuleException(globalisationMessageCode, error, error);
@@ -629,9 +637,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     private void generateLoanScheduleAccrualData(final LocalDate accruedTill, final Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas, 
             final Long loanId, Long officeId, final LocalDate accrualStartDate, final PeriodFrequencyType repaymentFrequency, final Integer repayEvery, 
             final LocalDate interestCalculatedFrom, final Long loanProductId, final MonetaryCurrency currency, final CurrencyData currencyData, 
-            final Set<LoanCharge> loanCharges, final LoanRepaymentScheduleInstallment installment) {
+            final Set<LoanCharge> loanCharges, final LoanRepaymentScheduleInstallment installment, final boolean includeAllInstallments) {
         
-        if (!accruedTill.isBefore(installment.getDueDate())
+        if (includeAllInstallments || !accruedTill.isBefore(installment.getDueDate())
                /* || (accruedTill.isAfter(installment.getFromDate()) && !accruedTill.isAfter(installment.getDueDate()))*/) {
             BigDecimal dueDateFeeIncome = BigDecimal.ZERO;
             BigDecimal dueDatePenaltyIncome = BigDecimal.ZERO;

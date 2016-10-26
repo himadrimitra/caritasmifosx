@@ -942,6 +942,139 @@ public class AccountingScenarioIntegrationTest {
                 NEXT_PENALTY_PORTION, loanID);
 
     }
+    
+    @Test
+    public void checkPeriodicAccrualAccountingAPIFlow_WITH_ADVANCE_PAY_CLOSURE() {
+        final Account assetAccount = this.accountHelper.createAssetAccount();
+        final Account incomeAccount = this.accountHelper.createIncomeAccount();
+        final Account expenseAccount = this.accountHelper.createExpenseAccount();
+        final Account overpaymentAccount = this.accountHelper.createLiabilityAccount();
+
+        final Integer loanProductID = createLoanProductWithPeriodicAccrualAccountingEnabled(assetAccount, incomeAccount, expenseAccount,
+                overpaymentAccount);
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, this.DATE_OF_JOINING);
+        final Integer loanID = applyForLoanApplication(clientID, loanProductID);
+
+        final float FEE_PORTION = 50.0f;
+        final float PENALTY_PORTION = 100.0f;
+        final float NEXT_FEE_PORTION = 55.0f;
+        final float NEXT_PENALTY_PORTION = 105.0f;
+
+        Integer flat = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, String.valueOf(FEE_PORTION), false));
+        Integer flatSpecifiedDueDate = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanSpecifiedDueDateJSON(
+                ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, String.valueOf(PENALTY_PORTION), true));
+
+        Integer flatNext = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper.getLoanSpecifiedDueDateJSON(
+                ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, String.valueOf(NEXT_FEE_PORTION), false));
+        Integer flatSpecifiedDueDateNext = ChargesHelper.createCharges(requestSpec, responseSpec, ChargesHelper
+                .getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, String.valueOf(NEXT_PENALTY_PORTION), true));
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(this.EXPECTED_DISBURSAL_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy", Locale.US);
+
+        Calendar todayDate = Calendar.getInstance();
+        final String currentDate = dateFormat.format(todayDate.getTime());
+
+        todayDate.add(Calendar.DATE, -4);
+
+        final String LOAN_DISBURSEMENT_DATE = dateFormat.format(todayDate.getTime());
+
+        todayDate.add(Calendar.MONTH, 2);
+        final String FIRST_REPAYMENT_DATE = dateFormat.format(todayDate.getTime());
+
+        todayDate = Calendar.getInstance();
+        todayDate.add(Calendar.DATE, -2);
+
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        this.loanTransactionHelper.addChargesForLoan(
+                loanID,
+                LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(String.valueOf(flatSpecifiedDueDate),
+                        dateFormat.format(todayDate.getTime()), String.valueOf(PENALTY_PORTION)));
+        todayDate.add(Calendar.DATE, 1);
+        String runOndate = dateFormat.format(todayDate.getTime());
+
+        this.loanTransactionHelper
+                .addChargesForLoan(
+                        loanID,
+                        LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(String.valueOf(flat), runOndate,
+                                String.valueOf(FEE_PORTION)));
+
+        todayDate.add(Calendar.DATE, 1);
+        this.loanTransactionHelper.addChargesForLoan(
+                loanID,
+                LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(String.valueOf(flatSpecifiedDueDateNext),
+                        dateFormat.format(todayDate.getTime()), String.valueOf(NEXT_PENALTY_PORTION)));
+
+        this.loanTransactionHelper.addChargesForLoan(
+                loanID,
+                LoanTransactionHelper.getSpecifiedDueDateChargesForLoanAsJSON(String.valueOf(flatNext),
+                        dateFormat.format(todayDate.getTime()), String.valueOf(NEXT_FEE_PORTION)));
+
+        // CHECK ACCOUNT ENTRIES
+        System.out.println("Entries ......");
+        final float PRINCIPAL_VALUE_FOR_EACH_PERIOD = 2000.0f;
+        final float TOTAL_INTEREST = 1000.0f;
+        final JournalEntry[] assetAccountInitialEntry = { new JournalEntry(this.LP_PRINCIPAL, JournalEntry.TransactionType.CREDIT),
+                new JournalEntry(this.LP_PRINCIPAL, JournalEntry.TransactionType.DEBIT), };
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, LOAN_DISBURSEMENT_DATE, assetAccountInitialEntry);
+
+        this.periodicAccrualAccountingHelper.runPeriodicAccrualAccounting(runOndate);
+
+        final ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
+                loanID);
+        // MAKE 1
+        List fromDateList = (List) loanSchedule.get(1).get("fromDate");
+        LocalDate fromDateLocal = LocalDate.now();
+        fromDateLocal = fromDateLocal.withYear((int) fromDateList.get(0));
+        fromDateLocal = fromDateLocal.withMonthOfYear((int) fromDateList.get(1));
+        fromDateLocal = fromDateLocal.withDayOfMonth((int) fromDateList.get(2));
+
+        List dueDateList = (List) loanSchedule.get(1).get("dueDate");
+        LocalDate dueDateLocal = LocalDate.now();
+        dueDateLocal = dueDateLocal.withYear((int) dueDateList.get(0));
+        dueDateLocal = dueDateLocal.withMonthOfYear((int) dueDateList.get(1));
+        dueDateLocal = dueDateLocal.withDayOfMonth((int) dueDateList.get(2));
+
+        int totalDaysInPeriod = Days.daysBetween(fromDateLocal, dueDateLocal).getDays();
+
+        float totalInterest = (float) loanSchedule.get(1).get("interestOriginalDue");
+        DecimalFormat numberFormat = new DecimalFormat("#.00", new DecimalFormatSymbols(Locale.US));
+        float INTEREST_3_DAYS = totalInterest / totalDaysInPeriod * 3;
+        INTEREST_3_DAYS = new Float(numberFormat.format(INTEREST_3_DAYS));
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(getDateAsLocalDate(runOndate), INTEREST_3_DAYS, FEE_PORTION,
+                PENALTY_PORTION, loanID);
+
+        runOndate = dateFormat.format(todayDate.getTime());
+
+        this.periodicAccrualAccountingHelper.runPeriodicAccrualAccounting(runOndate);
+        float interestPerDay = (totalInterest / totalDaysInPeriod * 4) - INTEREST_3_DAYS;
+        interestPerDay = new Float(numberFormat.format(interestPerDay));
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(getDateAsLocalDate(runOndate), interestPerDay, NEXT_FEE_PORTION,
+                NEXT_PENALTY_PORTION, loanID);
+        
+        HashMap prepayDetail = this.loanTransactionHelper.getPrepayAmount(this.requestSpec, this.responseSpec, loanID);
+        String prepayAmount = String.valueOf(prepayDetail.get("amount"));
+        Calendar todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        String LOAN_REPAYMENT_DATE = dateFormat.format(todaysDate.getTime());
+        this.loanTransactionHelper.makeRepayment(LOAN_REPAYMENT_DATE, new Float(prepayAmount), loanID);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
+        
+        this.loanTransactionHelper.checkAccrualTransactionsOnDay(getDateAsLocalDate(dateFormat.format(todayDate.getTime())), 990.16f, 55f,
+                105f, loanID);
+        
+
+    }
 
     private Integer createLoanProductWithPeriodicAccrualAccountingEnabled(final Account... accounts) {
         System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");

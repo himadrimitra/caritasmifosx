@@ -4226,6 +4226,115 @@ public class ClientLoanIntegrationTest {
         this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant(), 34.69f, 0f, 0f, loanID);
 
     }
+    
+    @Test
+    public void testLoanScheduleWithInterestRecalculation_PREPAY_NON_REPAYMENT_DAY_WITH_PERIODIC_ACCOUNTING() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        this.periodicAccrualAccountingHelper = new PeriodicAccrualAccountingHelper(this.requestSpec, this.responseSpec);
+        this.journalEntryHelper = new JournalEntryHelper(this.requestSpec, this.responseSpec);
+
+        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy");
+        dateFormat.setTimeZone(Utils.getTimeZoneOfTenant());
+
+        final Account assetAccount = this.accountHelper.createAssetAccount();
+        final Account incomeAccount = this.accountHelper.createIncomeAccount();
+        final Account expenseAccount = this.accountHelper.createExpenseAccount();
+        final Account overpaymentAccount = this.accountHelper.createLiabilityAccount();
+
+        Calendar todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        System.out.println("Disbursal Date Calendar " + todaysDate.getTime());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -16);
+        final String LOAN_DISBURSEMENT_DATE = dateFormat.format(todaysDate.getTime());
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        Account[] accounts = { assetAccount, incomeAccount, expenseAccount, overpaymentAccount };
+        final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
+                LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
+                LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0", LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                accounts, null, null);
+
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE, LoanApplicationTestBuilder.DEFAULT_STRATEGY,
+                new ArrayList<HashMap>(0));
+
+        Assert.assertNotNull(loanID);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        List<Map<String, Object>> expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        System.out.println("Date during repayment schedule" + todaysDate.getTime());
+        addRepaymentValues(expectedvalues, todaysDate, -9, true, "2482.76", "46.15", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2494.22", "34.69", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2505.73", "23.18", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2517.29", "11.62", "0.0", "0.0");
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        System.out.println("-------------------------------DISBURSE LOAN-------------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -9, true, "2482.76", "46.15", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2482.76", "46.15", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2482.76", "46.15", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2551.72", "11.78", "0.0", "0.0");
+
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        final JournalEntry[] assetAccountInitialEntry = { new JournalEntry(10000.0f, JournalEntry.TransactionType.CREDIT),
+                new JournalEntry(10000.0f, JournalEntry.TransactionType.DEBIT), };
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, LOAN_DISBURSEMENT_DATE, assetAccountInitialEntry);
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -2);
+        String runOndate = dateFormat.format(todaysDate.getTime());
+        System.out.println("runOndate : " + runOndate);
+        this.periodicAccrualAccountingHelper.runPeriodicAccrualAccounting(runOndate);
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant().minusDays(9), 46.15f, 0f, 0f, loanID);
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant().minusDays(2), 46.15f, 0f, 0f, loanID);
+
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -9);
+        final String LOAN_FIRST_REPAYMENT_DATE = dateFormat.format(todaysDate.getTime());
+        Float totalDueForCurrentPeriod = (Float) loanSchedule.get(1).get("totalDueForPeriod");
+        this.loanTransactionHelper.makeRepayment(LOAN_FIRST_REPAYMENT_DATE, totalDueForCurrentPeriod, loanID);
+
+        loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -9, true, "2482.76", "46.15", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2494.22", "34.69", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2494.22", "34.69", "0.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2528.8", "11.67", "0.0", "0.0");
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        this.periodicAccrualAccountingHelper.runPeriodicAccrualAccounting(runOndate);
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant().minusDays(9), 46.15f, 0f, 0f, loanID);
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant().minusDays(2), 34.69f, 0f, 0f, loanID);
+
+       
+        HashMap prepayDetail = this.loanTransactionHelper.getPrepayAmount(this.requestSpec, this.responseSpec, loanID);
+        String prepayAmount = String.valueOf(prepayDetail.get("amount"));
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        String LOAN_REPAYMENT_DATE = dateFormat.format(todaysDate.getTime());
+        this.loanTransactionHelper.makeRepayment(LOAN_REPAYMENT_DATE, new Float(prepayAmount), loanID);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
+
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant().minusDays(9), 46.15f, 0f, 0f, loanID);
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant().minusDays(2), 34.69f, 0f, 0f, loanID);
+        this.loanTransactionHelper.checkAccrualTransactionForRepayment(Utils.getLocalDateOfTenant(), 9.91f, 0f, 0f, loanID);
+
+    }
 
     @Test
     public void testLoanScheduleWithInterestRecalculation_WITH_CURRENT_REPAYMENT_BASED_ARREARS_AGEING() {
