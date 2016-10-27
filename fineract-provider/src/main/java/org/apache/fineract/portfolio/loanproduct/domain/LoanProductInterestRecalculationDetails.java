@@ -137,6 +137,7 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
         Integer compoundingRecurrenceOnDay = null;
         Integer compoundingRecurrenceOnWeekday = null;
         boolean allowCompoundingOnEod = false;
+        boolean isCompoundingToBePostedAsTransaction = false;
         if (compoundingMethod.isCompoundingEnabled()) {
             compoundingRecurrenceFrequency = command
                     .integerValueOfParameterNamed(LoanProductConstants.recalculationCompoundingFrequencyTypeParameterName);
@@ -152,6 +153,8 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
                     .integerValueOfParameterNamed(LoanProductConstants.recalculationCompoundingFrequencyOnDayParamName);
             compoundingRecurrenceOnWeekday = command
                     .integerValueOfParameterNamed(LoanProductConstants.recalculationCompoundingFrequencyWeekdayParamName);
+            isCompoundingToBePostedAsTransaction = command
+                    .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName);
             if (!compoundingFrequencyType.isDaily())
                 allowCompoundingOnEod = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.allowCompoundingOnEodParamName);
         }
@@ -162,8 +165,7 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
             preCloseInterestCalculationStrategy = LoanPreClosureInterestCalculationStrategy.TILL_PRE_CLOSURE_DATE.getValue();
         }
 
-        final boolean isCompoundingToBePostedAsTransaction = command
-                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName);
+        
         
         final Boolean isSubsidyApplicable = command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isSubsidyApplicableParamName);
@@ -378,12 +380,22 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
             } else {
                 this.allowCompoundingOnEod = false;
             }
+            if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName,
+                    this.isCompoundingToBePostedAsTransaction)) {
+                final boolean newValue = command
+                        .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName);
+                actualChanges.put(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName, newValue);
+                this.isCompoundingToBePostedAsTransaction = newValue;
+            }
         } else {
             this.compoundingFrequencyType = null;
             this.compoundingInterval = null;
             this.compoundingFrequencyNthDay = null;
-    		this.compoundingFrequencyWeekday = null;
-    		this.compoundingFrequencyOnDay = null;
+            this.compoundingFrequencyWeekday = null;
+            this.compoundingFrequencyOnDay = null;
+            this.allowCompoundingOnEod = false;
+            this.isCompoundingToBePostedAsTransaction = false;
+
         }
 
         if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isArrearsBasedOnOriginalScheduleParamName,
@@ -402,14 +414,6 @@ public class LoanProductInterestRecalculationDetails extends AbstractPersistable
             }
             actualChanges.put(LoanProductConstants.preClosureInterestCalculationStrategyParamName, newValue);
             this.preClosureInterestCalculationStrategy = newValue;
-        }
-        
-        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName,
-                this.isCompoundingToBePostedAsTransaction)) {
-            final boolean newValue = command
-                    .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName);
-            actualChanges.put(LoanProductConstants.isCompoundingToBePostedAsTransactionParamName, newValue);
-            this.isCompoundingToBePostedAsTransaction = newValue;
         }
         
         if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isSubsidyApplicableParamName, this.isSubsidyApplicable)) {
