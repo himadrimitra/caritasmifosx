@@ -3665,6 +3665,115 @@ public class ClientLoanIntegrationTest {
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
     }
+    
+    
+    @Test
+    public void testLoanCharge_WAIVE() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+
+        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy");
+        dateFormat.setTimeZone(Utils.getTimeZoneOfTenant());
+
+        Calendar todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -14);
+        final String LOAN_DISBURSEMENT_DATE = dateFormat.format(todaysDate.getTime());
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
+                LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_NONE,
+                LoanProductTestBuilder.RECALCULATION_STRATEGY_REDUCE_EMI_AMOUN,
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD, "0",
+                LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE, null, null, null);
+
+        List<HashMap> charges = new ArrayList<>();
+        Integer installmentCharge = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "50", false));
+
+        Integer specificflat1 = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
+
+        Integer specificflat2 = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanSpecifiedDueDateJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "75", false));
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        todaysDate.add(Calendar.DAY_OF_MONTH, -8);
+
+        addCharges(charges, installmentCharge, "50", null);
+        addCharges(charges, specificflat1, "100", dateFormat.format(todaysDate.getTime()));
+        todaysDate.add(Calendar.DAY_OF_MONTH, 10);
+        addCharges(charges, specificflat2, "75", dateFormat.format(todaysDate.getTime()));
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
+                LoanApplicationTestBuilder.DEFAULT_STRATEGY, charges);
+
+        Assert.assertNotNull(loanID);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        List<Map<String, Object>> expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -1, false, "2482.76", "46.15", "150.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2494.22", "34.69", "50.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2505.73", "23.18", "125.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2517.29", "11.62", "50.0", "0.0");
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        System.out.println("-------------------------------DISBURSE LOAN-------------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        expectedvalues = new ArrayList<>();
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        addRepaymentValues(expectedvalues, todaysDate, -1, false, "2482.76", "46.15", "150.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2482.76", "46.15", "50.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2505.67", "23.24", "125.0", "0.0");
+        addRepaymentValues(expectedvalues, todaysDate, 1, false, "2528.81", "11.67", "50.0", "0.0");
+
+        verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
+        List<HashMap> loanCharges = this.loanTransactionHelper.getLoanCharges(loanID);
+
+        Integer waivePeriodnum = 4;
+        HashMap response = this.loanTransactionHelper.waiveChargesForLoan(loanID, (Integer) getloanCharge(installmentCharge, loanCharges)
+                .get("id"), LoanTransactionHelper.getWaiveChargeJSON(String.valueOf(waivePeriodnum)));
+        Long waiverTransationId = Long.parseLong(String.valueOf(response.get("transactionId")));
+        HashMap transactionDetail = this.loanTransactionHelper.getLoanTransaction(loanID, waiverTransationId);
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        List expectedDate = getDateAsArray(todaysDate, 0);
+        assertEquals("Checking for Due Date for  Transaction for future installment  waiver", expectedDate, transactionDetail.get("date"));
+
+        waivePeriodnum = 1;
+        response = this.loanTransactionHelper.waiveChargesForLoan(loanID,
+                (Integer) getloanCharge(installmentCharge, loanCharges).get("id"),
+                LoanTransactionHelper.getWaiveChargeJSON(String.valueOf(waivePeriodnum)));
+        waiverTransationId = Long.parseLong(String.valueOf(response.get("transactionId")));
+        transactionDetail = this.loanTransactionHelper.getLoanTransaction(loanID, waiverTransationId);
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        expectedDate = getDateAsArray(todaysDate, -7);
+        assertEquals("Checking for Due Date for  Transaction for past installment  waiver", expectedDate, transactionDetail.get("date"));
+
+        response = this.loanTransactionHelper
+                .waiveChargesForLoan(loanID, (Integer) getloanCharge(specificflat1, loanCharges).get("id"), "");
+        waiverTransationId = Long.parseLong(String.valueOf(response.get("transactionId")));
+        transactionDetail = this.loanTransactionHelper.getLoanTransaction(loanID, waiverTransationId);
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        expectedDate = getDateAsArray(todaysDate, -8);
+        assertEquals("Checking for Due Date for  Transaction for past installment  waiver", expectedDate, transactionDetail.get("date"));
+
+        response = this.loanTransactionHelper
+                .waiveChargesForLoan(loanID, (Integer) getloanCharge(specificflat2, loanCharges).get("id"), "");
+        waiverTransationId = Long.parseLong(String.valueOf(response.get("transactionId")));
+        transactionDetail = this.loanTransactionHelper.getLoanTransaction(loanID, waiverTransationId);
+        todaysDate = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        expectedDate = getDateAsArray(todaysDate, 0);
+        assertEquals("Checking for Due Date for  Transaction for past installment  waiver", expectedDate, transactionDetail.get("date"));
+
+    }
 
     @Test
     public void testLoanScheduleWithInterestRecalculation_WITH_REST_DAILY_INTEREST_COMPOUND_INTEREST_STRATEGY_REDUCE_NUMBER_OF_INSTALLMENTS() {
