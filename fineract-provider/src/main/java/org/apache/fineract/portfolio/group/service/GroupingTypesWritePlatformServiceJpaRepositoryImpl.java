@@ -206,7 +206,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             if (newGroup.isActive()) {
                 // validate Group creation rules for Group
                 if (newGroup.isGroup()) {
-                    validateGroupRulesBeforeActivation(newGroup);
+                    validateGroupRules(newGroup);
                 }
 
                 if (newGroup.isCenter()) {
@@ -306,7 +306,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final Group group = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
 
             if (group.isGroup()) {
-                validateGroupRulesBeforeActivation(group);
+                validateGroupRules(group);
             }
 
             final LocalDate activationDate = command.localDateValueOfParameterNamed("activationDate");
@@ -328,7 +328,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         }
     }
 
-    private void validateGroupRulesBeforeActivation(final Group group) {
+    private void validateGroupRules(final Group group) {
         Integer minClients = configurationDomainService.retrieveMinAllowedClientsInGroup();
         Integer maxClients = configurationDomainService.retrieveMaxAllowedClientsInGroup();
         boolean isGroupClientCountValid = group.isGroupsClientCountWithinMinMaxRange(minClients, maxClients);
@@ -801,8 +801,11 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         checkForActiveJLGLoans(groupForUpdate.getId(), clientMembers);
         validateForJLGSavings(groupForUpdate.getId(), clientMembers);
         final Map<String, Object> actualChanges = new HashMap<>();
-
+       
         final List<String> changes = groupForUpdate.disassociateClients(clientMembers);
+        if (groupForUpdate.isGroup()) {
+            validateGroupRules(groupForUpdate);
+        }
         if (!changes.isEmpty()) {
             actualChanges.put(GroupingTypesApiConstants.clientMembersParamName, changes);
         }

@@ -35,6 +35,13 @@ import com.jayway.restassured.specification.ResponseSpecification;
 public class GroupHelper {
 
     private static final String CREATE_GROUP_URL = "/fineract-provider/api/v1/groups?" + Utils.TENANT_IDENTIFIER;
+    private final RequestSpecification requestSpec;
+    private final ResponseSpecification responseSpec;
+
+    public GroupHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
+        this.requestSpec = requestSpec;
+        this.responseSpec = responseSpec;
+    }
 
     public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             @SuppressWarnings("unused") final boolean active) {
@@ -46,6 +53,19 @@ public class GroupHelper {
             final String activationDate) {
         System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(true, activationDate, null), "groupId");
+    }
+    
+    public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            HashMap<String, List<String>> clientMembers) {
+        System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
+        return createGroup(requestSpec, responseSpec, "04 March 2011", clientMembers);
+    }
+
+    public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final String activationDate, HashMap<String, List<String>> clientMembers) {
+        System.out.println("---------------------------------CREATING A GROUP---------------------------------------------");
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_GROUP_URL, getTestGroupAsJSON(true, activationDate, null, clientMembers),
+                "groupId");
     }
     
     public static Integer createGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
@@ -73,7 +93,7 @@ public class GroupHelper {
                 + "?command=disassociateClients&" + Utils.TENANT_IDENTIFIER;
         System.out.println("---------------------------------Disassociate Client To A GROUP---------------------------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, GROUP_ASSOCIATE_URL, associateClientAsJSON(clientMember), "groupId");
-    }
+    }    
 
     public static Integer activateGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             final String groupId) {
@@ -102,6 +122,14 @@ public class GroupHelper {
         return Utils.performServerDelete(requestSpec, responseSpec, GROUP_ASSOCIATE_URL, "groupId");
     }
 
+    public static Object disAssociateClient(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final String groupId, final String clientMember, final String jsonAttributeToGetBack) {
+        final String GROUP_ASSIGN_STAFF_URL = "/fineract-provider/api/v1/groups/" + groupId + "?" + Utils.TENANT_IDENTIFIER
+                + "&command=disassociateClients";
+        System.out.println("---------------------------------DISASSOCIATE CLIENTS---------------------------------------------");
+        return Utils.performServerPost(requestSpec, responseSpec, GROUP_ASSIGN_STAFF_URL, associateClientAsJSON(clientMember),
+                jsonAttributeToGetBack);
+    }
 
     public static Object assignStaff(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final String groupId,final Long staffId){
         final String GROUP_ASSIGN_STAFF_URL = "/fineract-provider/api/v1/groups/" + groupId + "?" + Utils.TENANT_IDENTIFIER + "&command=assignStaff";
@@ -114,7 +142,32 @@ public class GroupHelper {
         return Utils.performServerPost(requestSpec, responseSpec, GROUP_ASSIGN_STAFF_URL,assignStaffAndInheritStaffForClientAccountsAsJSON(staffId),"changes");
     }
 
+    public static String getTestGroupAsJSON(final boolean active, final String activationDate, final Integer officeId,
+            HashMap<String, List<String>> ClientMembers) {
+        final HashMap<String, Object> map = new HashMap<>();
+        if (officeId != null) {
+            map.put("officeId", officeId);
+        } else {
+            map.put("officeId", "1");
+        }
+        map.putAll(ClientMembers);
+        map.put("name", randomNameGenerator("Group_Name_", 5));
+        map.put("externalId", randomIDGenerator("ID_", 7));
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("locale", "en");
+        if (active) {
+            map.put("active", "true");
+            map.put("activationDate", activationDate);
+        } else {
+            map.put("active", "false");
+            map.put("submittedOnDate", "04 March 2011");
+            System.out.println("defaulting to inactive group: 04 March 2011");
+        }
 
+        System.out.println("map : " + map);
+        return new Gson().toJson(map);
+    }
+    
     public static String getTestGroupAsJSON(final boolean active, final String activationDate, final Integer officeId) {
         final HashMap<String, Object> map = new HashMap<>();
         if (officeId != null) {

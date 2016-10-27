@@ -18,11 +18,15 @@
  */
 package org.apache.fineract.integrationtests;
 
+import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
+import org.apache.fineract.integrationtests.common.ClientHelper;
 import org.apache.fineract.integrationtests.common.CommonConstants;
 import org.apache.fineract.integrationtests.common.GlobalConfigurationHelper;
+import org.apache.fineract.integrationtests.common.GroupHelper;
 import org.apache.fineract.integrationtests.common.Utils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -139,6 +143,48 @@ public class GlobalConfigurationTest {
         }
     }
     
+    @Test
+    public void testCreationOfGroupsAndDeletionOfClientsBelowMinimumNumberIfConfigurationIsEnabled() {
+
+        // Retrieving All Global Configuration details
+        final ArrayList<HashMap> globalConfig = this.globalConfigurationHelper.getAllGlobalConfigurations(this.requestSpec,
+                this.responseSpec);
+        Assert.assertNotNull(globalConfig);
+        final ResponseSpecification errorResponse = new ResponseSpecBuilder().expectStatusCode(403).build();
+        // final SavingsAccountHelper validationErrorHelper = new
+        // SavingsAccountHelper(this.requestSpec, errorResponse);
+        final GroupHelper validationErrorHelper = new GroupHelper(this.requestSpec, errorResponse);
+
+        String configName = "min-clients-in-group";
+
+        for (Integer configIndex = 0; configIndex < (globalConfig.size() - 1); configIndex++) {
+            if (globalConfig.get(configIndex).get("name").equals(configName)) {
+                Integer configId = (Integer) globalConfig.get(configIndex).get("id");
+                Assert.assertNotNull(configId);
+                Boolean isEnabled = (Boolean) globalConfig.get(configIndex).get("enabled");
+                Assert.assertNotNull(isEnabled);
+                if (isEnabled == true) {
+                    final HashMap<String, List<String>> map = new HashMap<String, List<String>>();
+                    final List<String> list = new ArrayList<>();
+
+                    for (int clientCount = 0; clientCount < 5; clientCount++) {
+                        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+                        list.add(clientID.toString());
+                    }
+                    map.put("clientMembers", list);
+
+                    Integer groupID = GroupHelper.createGroup(this.requestSpec, this.responseSpec, map);
+                    Assert.assertNotNull(groupID);
+
+                    ArrayList<HashMap> DisAssociateClientErrorData = (ArrayList<HashMap>) validationErrorHelper.disAssociateClient(
+                            this.requestSpec, errorResponse, groupID.toString(), list.get(4), CommonConstants.RESPONSE_ERROR);
+
+                    assertEquals("error.msg.group.members.count.must.be.in.permissible.range",
+                            DisAssociateClientErrorData.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+                }
+            }
+        }
+    }
     @Test
 	public void testGlobalConfigForcePasswordResetDays() {
 
