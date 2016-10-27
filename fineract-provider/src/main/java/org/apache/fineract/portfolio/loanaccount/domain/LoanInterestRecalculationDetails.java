@@ -189,7 +189,8 @@ public class LoanInterestRecalculationDetails extends AbstractPersistable<Long> 
     }
 
     public boolean isCompoundingToBePostedAsTransaction() {
-        return null == this.isCompoundingToBePostedAsTransaction ? false : this.isCompoundingToBePostedAsTransaction;
+        return null == this.isCompoundingToBePostedAsTransaction ? false : this.getInterestRecalculationCompoundingMethod()
+                .isCompoundingEnabled() && this.isCompoundingToBePostedAsTransaction;
     }
 
     public boolean allowCompoundingOnEod() {
