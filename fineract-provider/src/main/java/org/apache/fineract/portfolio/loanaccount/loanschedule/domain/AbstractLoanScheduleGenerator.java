@@ -156,7 +156,15 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
         if (!scheduleParams.isPartialUpdate()) {
             // Set Fixed Principal Amount
-            updateAmortization(mc, loanApplicationTerms, scheduleParams.getPeriodNumber(), scheduleParams.getOutstandingBalance());
+        	Money capitalizedChargeAmount = Money.zero(currency);
+        	if(loanApplicationTerms.getAmortizationMethod().isEqualInstallment()){
+        	 capitalizedChargeAmount = LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0);
+        	}
+            updateAmortization(mc, loanApplicationTerms, scheduleParams.getPeriodNumber(), scheduleParams.getOutstandingBalance().plus(capitalizedChargeAmount));
+            if(capitalizedChargeAmount.isGreaterThanZero()){
+            	Money perInstallmentCapitalAmount =  LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 1);
+            	loanApplicationTerms.setFixedEmiAmount(loanApplicationTerms.getFixedEmiAmount().subtract(perInstallmentCapitalAmount.getAmount()));
+            }
 
             if (loanApplicationTerms.isMultiDisburseLoan()) {
                 // fetches the first tranche amount and also updates other
