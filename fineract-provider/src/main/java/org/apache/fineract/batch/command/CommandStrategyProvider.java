@@ -102,6 +102,10 @@ public class CommandStrategyProvider {
                 "disburseLoanCommandStrategy");
         this.commandStrategies.put(CommandContext.resource("loans\\/\\d+\\/transactions\\/\\d+\\?command=undo").method("POST").build(),
                 "undoLoanTransactionsCommandStrategy");
+        this.commandStrategies.put(CommandContext.resource("recurringdepositaccounts\\/\\d+\\?command=approve").method("POST").build(),
+                "approveRecurringDepositCommandStrategy");
+        this.commandStrategies.put(CommandContext.resource("recurringdepositaccounts\\/\\d+\\?command=activate").method("POST").build(),
+                "activateRecurringDepositCommandStrategy");
     }
 
 }

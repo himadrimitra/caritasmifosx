@@ -51,6 +51,7 @@ import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSeria
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
@@ -341,4 +342,25 @@ public class RecurringDepositAccountsApiResource {
         return this.toApiJsonSerializer.serialize(settings, account,
                 DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESPONSE_DATA_PARAMETERS);
     }
+    
+    @GET
+    @Path("tasklookup")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
+            @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
+			@QueryParam("groupId") final Long groupId, @QueryParam("centerId") final Long centerId) {
+		this.context.authenticatedUser()
+				.validateHasReadPermission(DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESOURCE_NAME);
+		final Integer offset = null;
+		final Integer limit = null;
+		final String orderBy = null;
+		final String sortOrder = null;
+
+		SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId,
+				offset, limit, orderBy, sortOrder);
+		final Collection<DepositAccountData> rdAccountData = this.depositAccountReadPlatformService.getRDAccountsForTaskLookup(searchParameters);
+		 final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+		 return this.toApiJsonSerializer.serialize(settings, rdAccountData);
+	}
 }
