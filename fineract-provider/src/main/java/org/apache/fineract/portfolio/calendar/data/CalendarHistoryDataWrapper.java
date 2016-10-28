@@ -45,17 +45,27 @@ public class CalendarHistoryDataWrapper {
     }
     
     public CalendarHistory getCalendarHistory(final LocalDate dueRepaymentPeriodDate) {
-        CalendarHistory calendarHistory = null;
-        for (CalendarHistory history : this.calendarHistoryList) {
-            if (history.getEndDateLocalDate().isAfter(dueRepaymentPeriodDate)) {
-                calendarHistory = history;
-               break;
-            }
-        }
-        return calendarHistory;
+        boolean useNextHistoryItem = false;
+        return getCalendarHistory(dueRepaymentPeriodDate, useNextHistoryItem);
     }
         
     public List<CalendarHistory> getCalendarHistoryList(){
         return this.calendarHistoryList;
+    }
+    
+    public CalendarHistory getCalendarHistory(final LocalDate dueRepaymentPeriodDate, final boolean useNextHistoryItem) {
+        CalendarHistory calendarHistory = null;
+        boolean useNextHistory = useNextHistoryItem;
+        for (CalendarHistory history : this.calendarHistoryList) {
+            if (history.getEndDateLocalDate().isAfter(dueRepaymentPeriodDate)) {
+                if (useNextHistory) {
+                    useNextHistory = false;
+                } else {
+                    calendarHistory = history;
+                    break;
+                }
+            }
+        }
+        return calendarHistory;
     }
 }
