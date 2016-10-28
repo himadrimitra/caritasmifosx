@@ -80,7 +80,7 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
         public String schema() {
             return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "+
                         " bsd.transaction_id as transactionId, bsd.amount as amount, "+
-                        " bsd.transaction_date as transactionDate, bsd.description as description, bsd.transaction_type as transactionType, bsd.loan_account_number as loanAccountNumber "+
+                        " bsd.transaction_date as transactionDate, bsd.is_error as isError, bsd.receipt_number as receiptNumber , bsd.description as description, bsd.transaction_type as transactionType, bsd.loan_account_number as loanAccountNumber "+
                         " from f_bank_statement_details bsd "+
                         " where bsd.bank_statement_id = ? ";
         }
@@ -96,7 +96,9 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             final String description = rs.getString("description");
             final String transactionType = rs.getString("transactionType");
             final String loanAccountNumber = rs.getString("loanAccountNumber");
-            return BankStatementDetailsData.generatePortfolioTransactions(id, bankStatementId, transactionId, transactionDate, amount, description, transactionType, loanAccountNumber);
+            final String receiptNumber = rs.getString("receiptNumber");
+            final Boolean isError = rs.getBoolean("isError");
+            return BankStatementDetailsData.generatePortfolioTransactions(id, bankStatementId, transactionId, transactionDate, amount, description, transactionType, loanAccountNumber, receiptNumber, isError);
 
         }
     }
