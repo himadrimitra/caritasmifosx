@@ -86,5 +86,9 @@ public class LoanRepositoryWrapper {
         }
         return loans;
     }
+    
+    public Loan getActiveLoanByAccountNumber(String accountNumber){
+    	return this.repository.findActiveLoanByAccountNumber(accountNumber);
+    }
 
 }

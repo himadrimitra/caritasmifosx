@@ -35,7 +35,7 @@ public class BankReadPlatformServiceImpl implements BankReadPlatformService {
 
         public String schema() {
 
-            return " b.id as id, b.name as name, b.gl_account as glAccount, gl.gl_code as glCode from f_bank b left join acc_gl_account gl on gl.id = b.gl_account ";
+            return " b.id as id, b.name as name, b.gl_account as glAccount, gl.gl_code as glCode, b.support_simplified_statement as supportSimplifiedStatement from f_bank b left join acc_gl_account gl on gl.id = b.gl_account ";
 
         }
 
@@ -46,7 +46,8 @@ public class BankReadPlatformServiceImpl implements BankReadPlatformService {
             final String name = rs.getString("name");
             final Long glAccount = JdbcSupport.getLong(rs, "glAccount");
             final String glCode = rs.getString("glCode");
-            return new BankData(id, name, glAccount, glCode);
+            Boolean supportSimplifiedStatement = rs.getBoolean("supportSimplifiedStatement");
+            return new BankData(id, name, glAccount, glCode, supportSimplifiedStatement);
         }
     }
 
