@@ -18,7 +18,9 @@
  */
 package org.apache.fineract.portfolio.savings.data;
 
+import static org.apache.fineract.portfolio.interestratechart.InterestRateChartApiConstants.chartSlabs; 
 import static org.apache.fineract.portfolio.interestratechart.InterestRateChartApiConstants.idParamName;
+import static org.apache.fineract.portfolio.interestratechart.InterestRateChartSlabApiConstants.annualInterestRateParamName;
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.FIXED_DEPOSIT_PRODUCT_REQUEST_DATA_PARAMETERS;
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.FIXED_DEPOSIT_PRODUCT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.RECURRING_DEPOSIT_PRODUCT_REQUEST_DATA_PARAMETERS;
@@ -355,10 +357,33 @@ public class DepositProductDataValidator {
                 baseDataValidator.reset().parameter(preClosurePenalInterestOnTypeIdParamName).value(preClosurePenalInterestType)
                         .cantBeBlankWhenParameterProvidedIs(preClosurePenalApplicableParamName, preClosurePenalApplicable)
                         .isOneOfTheseValues(PreClosurePenalInterestOnType.integerValues());
+
+                validatePreClosurePenalInterest(element, baseDataValidator);
             }
         }
     }
 
+    public void validatePreClosurePenalInterest(JsonElement element, DataValidatorBuilder baseDataValidator){
+    	JsonObject topLevelJsonElement = element.getAsJsonObject();
+        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+        if (topLevelJsonElement.has(chartsParamName) && topLevelJsonElement.get(chartsParamName).isJsonArray()) {
+            final JsonArray array = topLevelJsonElement.get(chartsParamName).getAsJsonArray();
+            for (int i = 0; i < array.size(); i++) {
+                final JsonObject interestRateChartElement = array.get(i).getAsJsonObject();
+                if(interestRateChartElement.has(chartSlabs) && interestRateChartElement.get(chartSlabs).isJsonArray()){
+                	JsonArray chartslabs =  interestRateChartElement.get(chartSlabs).getAsJsonArray();
+                	if(chartslabs.size() != 0 && this.fromApiJsonHelper.parameterExists(annualInterestRateParamName, chartslabs.get(chartslabs.size()-1))){
+                		final Integer annualInterestRate = this.fromApiJsonHelper.extractIntegerNamed(annualInterestRateParamName, 
+                				chartslabs.get(chartslabs.size()-1), locale);
+                		final Integer preClosurePenalInterest = this.fromApiJsonHelper.extractIntegerNamed(preClosurePenalInterestParamName,
+                				element, locale);
+                		baseDataValidator.reset().parameter(annualInterestRateParamName).value(annualInterestRate).integerGreaterThanNumber(preClosurePenalInterest);
+                	}
+                }  
+            }
+        }
+    }
+    
     public void validateDepositTermDeatilForCreate(JsonElement element, DataValidatorBuilder baseDataValidator) {
 
         final Integer minTerm = fromApiJsonHelper.extractIntegerSansLocaleNamed(minDepositTermParamName, element);
@@ -550,6 +575,9 @@ public class DepositProductDataValidator {
         if (fromApiJsonHelper.parameterExists(preClosurePenalApplicableParamName, element)) {
             final Boolean preClosurePenalApplicable = fromApiJsonHelper.extractBooleanNamed(preClosurePenalApplicableParamName, element);
             baseDataValidator.reset().parameter(preClosurePenalApplicableParamName).value(preClosurePenalApplicable).notNull();
+            if(preClosurePenalApplicable){
+            	validatePreClosurePenalInterest(element, baseDataValidator);
+            }
         }
 
         if (fromApiJsonHelper.parameterExists(preClosurePenalInterestParamName, element)) {
@@ -564,6 +592,7 @@ public class DepositProductDataValidator {
             baseDataValidator.reset().parameter(preClosurePenalInterestOnTypeIdParamName).value(preClosurePenalInterestType).notNull()
                     .isOneOfTheseValues(PreClosurePenalInterestOnType.integerValues());
         }
+                
     }
 
     public void validateDepositTermDetailForUpdate(JsonElement element, DataValidatorBuilder baseDataValidator) {
@@ -749,7 +778,6 @@ public class DepositProductDataValidator {
 
     private void validateDepositAmountForUpdate(JsonElement element, DataValidatorBuilder baseDataValidator) {
         BigDecimal depositAmount = null;
-
         if (this.fromApiJsonHelper.parameterExists(depositAmountParamName, element)) {
             depositAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(depositAmountParamName, element);
             baseDataValidator.reset().parameter(depositAmountParamName).value(depositAmount).notNull().positiveAmount();
@@ -758,13 +786,13 @@ public class DepositProductDataValidator {
         BigDecimal depositMinAmount = null;
         if (this.fromApiJsonHelper.parameterExists(depositMinAmountParamName, element)) {
             depositMinAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(depositMinAmountParamName, element);
-            baseDataValidator.reset().parameter(depositMinAmountParamName).value(depositMinAmount).notNull().positiveAmount();
+            baseDataValidator.reset().parameter(depositMinAmountParamName).value(depositMinAmount).zeroOrPositiveAmount();
         }
 
         BigDecimal depositMaxAmount = null;
         if (this.fromApiJsonHelper.parameterExists(depositMaxAmountParamName, element)) {
             depositMaxAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(depositMaxAmountParamName, element);
-            baseDataValidator.reset().parameter(depositMaxAmountParamName).value(depositMaxAmount).notNull().positiveAmount();
+            baseDataValidator.reset().parameter(depositMaxAmountParamName).value(depositMaxAmount).positiveAmount();
         }
 
         if (depositAmount != null) {
