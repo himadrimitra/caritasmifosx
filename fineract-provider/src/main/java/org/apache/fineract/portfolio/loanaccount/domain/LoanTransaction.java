@@ -320,7 +320,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.officeId = officeId;
         this.externalId = externalId;
         this.submittedOnDate = DateUtils.getDateOfTenant();
-        this.setCreatedDate(createdDate);
+        this.updateCreatedDate(createdDate);
         this.setCreatedBy(appUser);
     }
 
@@ -886,7 +886,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     	if(createdDate != null){
     		date = new DateTime(createdDate);
     	}
-        setCreatedDate(date);
+        updateCreatedDate(date);
     }
 
     public boolean isReconciled() {
