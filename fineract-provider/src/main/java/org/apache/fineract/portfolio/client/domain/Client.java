@@ -263,7 +263,7 @@ public final class Client extends AbstractPersistable<Long> {
             officeJoiningDate = activationDate;
         }
 
-        LocalDate submittedOnDate = new LocalDate();
+        LocalDate submittedOnDate = DateUtils.getLocalDateOfTenant();
         if (active && submittedOnDate.isAfter(activationDate)) {
             submittedOnDate = activationDate;
         }

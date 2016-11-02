@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.spm.data.SurveyData;
 import org.apache.fineract.spm.domain.Survey;
@@ -67,7 +68,7 @@ public class SpmService {
         }
 
         // set valid from to start of today
-        final DateTime validFrom = DateTime.now().withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
+        final DateTime validFrom = DateUtils.getLocalDateTimeOfTenant().toDateTime().withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0);
 
         survey.setValidFrom(validFrom.toDate());
 
@@ -87,7 +88,7 @@ public class SpmService {
 
         if (survey != null) {
             // set valid to to yesterday night
-            final DateTime dateTime = DateTime.now().withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).withMillisOfSecond(999)
+            final DateTime dateTime = DateUtils.getLocalDateTimeOfTenant().toDateTime().withHourOfDay(23).withMinuteOfHour(59).withSecondOfMinute(59).withMillisOfSecond(999)
                     .minusDays(1);
             survey.setValidTo(dateTime.toDate());
 

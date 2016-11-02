@@ -27,6 +27,7 @@ import javax.persistence.*;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.sms.SmsApiConstants;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -112,7 +113,7 @@ public class SmsMessage extends AbstractPersistable<Long> {
         this.sourceAddress = sourceAddress;
         this.message = message;
         this.campaignName = campaignName;
-        this.submittedOnDate = LocalDate.now().toDate();
+        this.submittedOnDate = DateUtils.getLocalDateOfTenant().toDate();
     }
 
     public Map<String, Object> update(final JsonCommand command) {

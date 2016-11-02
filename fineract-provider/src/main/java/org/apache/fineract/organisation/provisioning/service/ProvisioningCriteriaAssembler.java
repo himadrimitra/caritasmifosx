@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountRepository;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.provisioning.constants.ProvisioningCriteriaConstants;
 import org.apache.fineract.organisation.provisioning.domain.LoanProductProvisionCriteria;
@@ -124,7 +125,7 @@ public class ProvisioningCriteriaAssembler {
         AppUser modifiedBy = null;
         DateTime modifiedOn = null;
         Integer provisioningAmountType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ProvisioningCriteriaConstants.JSON_PROVISIONING_AMOUNT_TYPE, jsonElement);
-        ProvisioningCriteria criteria = new ProvisioningCriteria(criteriaName, platformSecurityContext.authenticatedUser(), new DateTime(),
+        ProvisioningCriteria criteria = new ProvisioningCriteria(criteriaName, platformSecurityContext.authenticatedUser(), DateUtils.getLocalDateTimeOfTenant().toDateTime(),
                 modifiedBy, modifiedOn, provisioningAmountType);
         return criteria;
     }
