@@ -12,6 +12,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.NumberToTextConverter;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -61,6 +62,26 @@ public class ExcelUtility {
 
         }
         return rowList;
+    }
+
+    public static String getCellValueAsString(Cell cell) {
+        String param = "";
+        if (Cell.CELL_TYPE_NUMERIC == cell.getCellType()) {
+            param = NumberToTextConverter.toText(cell.getNumericCellValue());
+        } else {
+            param = cell.getStringCellValue();
+        }
+        return param;
+    }
+    
+    public static String getPaymentType(File file){
+    	try {
+            Workbook wb = WorkbookFactory.create(file);
+            Sheet sheet = wb.getSheetAt(0);
+            return (sheet.getRow(0).getCell(0)).toString();
+        } catch (IOException | InvalidFormatException ex) {
+        	return null;
+        }
     }
     
     public static boolean isEmptyRow(Row row){

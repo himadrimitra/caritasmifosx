@@ -323,12 +323,11 @@ public class LoanTransactionHelper {
         return (Integer) response.get("resourceId");
     }
 
-    public Integer waiveChargesForLoan(final Integer loanId, final Integer loanchargeId, final String json) {
+    public HashMap waiveChargesForLoan(final Integer loanId, final Integer loanchargeId, final String json) {
         System.out.println("--------------------------------- WAIVE CHARGES FOR LOAN --------------------------------");
         final String CHARGES_URL = "/fineract-provider/api/v1/loans/" + loanId + "/charges/" + loanchargeId + "?command=waive&"
                 + Utils.TENANT_IDENTIFIER;
-        final HashMap response = Utils.performServerPost(requestSpec, responseSpec, CHARGES_URL, json, "");
-        return (Integer) response.get("resourceId");
+       return Utils.performServerPost(requestSpec, responseSpec, CHARGES_URL, json, "");
     }
 
     public Integer payChargesForLoan(final Integer loanId, final Integer loanchargeId, final String json) {
@@ -337,6 +336,13 @@ public class LoanTransactionHelper {
                 + Utils.TENANT_IDENTIFIER;
         final HashMap response = Utils.performServerPost(requestSpec, responseSpec, CHARGES_URL, json, "");
         return (Integer) response.get("resourceId");
+    }
+    
+    public HashMap getLoanTransaction(final Integer loanId, final Long transactionId) {
+        System.out.println("--------------------------------- WAIVE CHARGES FOR LOAN --------------------------------");
+        final String URL = "/fineract-provider/api/v1/loans/" + loanId + "/transactions/" + transactionId + "?"
+                + Utils.TENANT_IDENTIFIER;
+        return Utils.performServerGet(requestSpec, responseSpec, URL, "");
     }
     
     private String getDisburseLoanAsJSON(final String actualDisbursementDate, final String transactionAmount ) {

@@ -1022,6 +1022,9 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }else if(loanCharge.isInstalmentFee()){
             transactionDate = loanCharge.getInstallmentLoanCharge(loanInstallmentNumber).getRepaymentInstallment().getDueDate();
+            if(transactionDate.isAfter(DateUtils.getLocalDateOfTenant())){
+                transactionDate = DateUtils.getLocalDateOfTenant();
+            }
         }
         
         scheduleGeneratorDTO.setRecalculateFrom(transactionDate);

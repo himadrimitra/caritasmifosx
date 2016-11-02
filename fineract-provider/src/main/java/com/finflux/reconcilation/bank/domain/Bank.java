@@ -32,13 +32,17 @@ public class Bank extends AbstractPersistable<Long> {
     @JoinColumn(name = "gl_account", nullable = true)
     private GLAccount glAccount;
 
-    private Bank(final String name, final GLAccount glAccount) {
+    @Column(name = "support_simplified_statement")
+    private boolean supportSimplifiedStatement;
+
+    private Bank(final String name, final GLAccount glAccount, final boolean supportSimplifiedStatement) {
         this.name = name;
         this.glAccount = glAccount;
+        this.supportSimplifiedStatement = supportSimplifiedStatement;
     }
 
-    public static Bank instance(final String name, final GLAccount glAccount) {
-        return new Bank(name, glAccount);
+    public static Bank instance(final String name, final GLAccount glAccount, final boolean supportSimplifiedStatement) {
+        return new Bank(name, glAccount, supportSimplifiedStatement);
     }
 
     public Bank() {
@@ -61,7 +65,15 @@ public class Bank extends AbstractPersistable<Long> {
         this.glAccount = glAccount;
     }
 
-    public Map<String, Object> getBankActualChanges(JsonCommand command) {
+    public boolean getSupportSimplifiedStatement() {
+		return this.supportSimplifiedStatement;
+	}
+
+	public void setSupportSimplifiedStatement(boolean supportSimplifiedStatement) {
+		this.supportSimplifiedStatement = supportSimplifiedStatement;
+	}
+
+	public Map<String, Object> getBankActualChanges(JsonCommand command) {
         final Map<String, Object> actualChanges = new LinkedHashMap<>(9);
 
         if (command.isChangeInStringParameterNamed(ReconciliationApiConstants.nameParamName, this.name)) {
@@ -72,6 +84,11 @@ public class Bank extends AbstractPersistable<Long> {
         if (command.isChangeInLongParameterNamed(ReconciliationApiConstants.glAccountParamName, this.glAccount.getId())) {
             final Long newGlCode = command.longValueOfParameterNamed(ReconciliationApiConstants.glAccountParamName);
             actualChanges.put(ReconciliationApiConstants.glAccountParamName, newGlCode);
+        }
+
+        if (command.isChangeInBooleanParameterNamed(ReconciliationApiConstants.supportSimplifiedStatement, this.supportSimplifiedStatement)) {
+            final boolean newSupportSimplifiedStatement = command.booleanPrimitiveValueOfParameterNamed(ReconciliationApiConstants.supportSimplifiedStatement);
+            actualChanges.put(ReconciliationApiConstants.supportSimplifiedStatement, newSupportSimplifiedStatement);
         }
 
         return actualChanges;

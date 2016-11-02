@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
-import com.finflux.reconcilation.bank.service.BankReadPlatformService;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
@@ -54,7 +53,12 @@ public class BankDataValidator {
 
         final Long glAccount = this.fromApiJsonHelper.extractLongNamed(ReconciliationApiConstants.glAccountParamName, element);
         baseDataValidator.reset().parameter(ReconciliationApiConstants.glAccountParamName).value(glAccount).notNull();
-
+        
+        if(command.parameterExists(ReconciliationApiConstants.supportSimplifiedStatement)){
+        	final Boolean supportSimplifiedStatement = this.fromApiJsonHelper.extractBooleanNamed(ReconciliationApiConstants.supportSimplifiedStatement, element);
+            baseDataValidator.reset().parameter(ReconciliationApiConstants.supportSimplifiedStatement).value(supportSimplifiedStatement).validateForBooleanValue();
+        }
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 

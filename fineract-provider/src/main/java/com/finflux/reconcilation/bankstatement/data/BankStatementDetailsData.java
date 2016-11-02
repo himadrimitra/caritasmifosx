@@ -46,8 +46,8 @@ public class BankStatementDetailsData {
     private  String branchName;
     private  BankData bankData;
     private Integer bankStatementDetailType;
-    
-    
+    private final String receiptNumber;
+    private final Boolean isError;
 
     public BankStatementDetailsData(Long id, Long bankStatementId, Date transactionDate, String description,
 			BigDecimal amount, String mobileNumber,String loanAccountNumber,String transactionType,
@@ -75,6 +75,8 @@ public class BankStatementDetailsData {
 		this.transactionId = null;
 		this.glCode = null;
 		this.bankStatementDetailType = null;
+		this.receiptNumber = null;
+		this.isError = null;
 	}
     
     public static BankStatementDetailsData reconciledData(Long id, Long bankStatementId, Date transactionDate, String description,
@@ -111,7 +113,9 @@ public class BankStatementDetailsData {
 		this.transactionId = null;
 		this.accountingType = null;
 		this.glCode = null;
-		this.bankStatementDetailType = null;	
+		this.bankStatementDetailType = null;
+		this.receiptNumber = null;
+		this.isError = null;
 		
 	}
     
@@ -149,7 +153,9 @@ public class BankStatementDetailsData {
 		this.loanTransactionOptions = null;
 		this.clientAccountNumber = null;
 		this.loanTransactionData = null;
-		this.bankStatementDetailType = null;	
+		this.bankStatementDetailType = null;
+		this.receiptNumber = null;
+		this.isError = null;
 		
 	}
     
@@ -190,6 +196,8 @@ public class BankStatementDetailsData {
         this.branchExternalId = branchExternalId;
         this.groupExternalId =groupExternalId;
         this.bankStatementDetailType = null;
+		this.receiptNumber = null;
+		this.isError = null;
         
     }
 
@@ -229,7 +237,9 @@ public class BankStatementDetailsData {
 		this.bankData = null;
 		this.transactionId = null;
 		this.glCode = null;
-		this.bankStatementDetailType = null;	
+		this.bankStatementDetailType = null;
+		this.receiptNumber = null;
+		this.isError = null;	
 		
 	}
     
@@ -239,7 +249,7 @@ public class BankStatementDetailsData {
 		this.transactionId = transactionId;
 		this.loanTransactionId = loanTransactionId;
 		this.bankStatementDetailType = bankStatementDetailType;
-                this.loanAccountNumber = loanAccountNumber;
+        this.loanAccountNumber = loanAccountNumber;
 		this.transactionDate = null;
 		this.description = null;
 		this.amount = null;
@@ -257,10 +267,12 @@ public class BankStatementDetailsData {
 		this.branchName = null;
 		this.bankData = null;
 		this.glCode = null;
+		this.receiptNumber = null;
+		this.isError = null;
 	}
     
     public BankStatementDetailsData(Long id, Long bankStatementId, final String transactionId, final Date transactionDate, final BigDecimal amount,
-            final String description, final String transactionType, final String loanAccountNumber) {
+            final String description, final String transactionType, final String loanAccountNumber, final String receiptNumber, final boolean isError) {
         this.id = id;
         this.bankStatementId = bankStatementId;
         this.transactionId = transactionId;
@@ -269,6 +281,8 @@ public class BankStatementDetailsData {
         this.description = description;
         this.transactionType = transactionType;
         this.loanAccountNumber = loanAccountNumber;
+		this.receiptNumber = receiptNumber;
+		this.isError = isError;
         this.branchExternalId = null;
         this.accountingType = null;
         this.branch = null;
@@ -288,9 +302,9 @@ public class BankStatementDetailsData {
     }
     
     public static BankStatementDetailsData generatePortfolioTransactions(Long id, Long bankStatementId, final String transactionId, final Date transactionDate, final BigDecimal amount,
-            final String description, final String transactionType, final String loanAccountNumber) {
+            final String description, final String transactionType, final String loanAccountNumber, final String receiptNumber, final Boolean isError) {
 
-        return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate, amount, description,transactionType,loanAccountNumber);
+        return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate, amount, description,transactionType,loanAccountNumber, receiptNumber, isError);
     }
 
     public Long getId() {

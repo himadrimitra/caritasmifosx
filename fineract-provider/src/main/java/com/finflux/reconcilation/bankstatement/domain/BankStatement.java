@@ -43,6 +43,9 @@ public class BankStatement extends AbstractAuditableCustom<AppUser, Long> {
     @ManyToOne
     @JoinColumn(name = "bank", nullable = true)
     private Bank bank;
+    
+    @Column(name = "payment_type")
+    private String paymentType;
 
     public BankStatement(final String name, final String description, final Document cpifDocument, final Document orgStatementDocument,
             final Boolean isReconciled, final Bank bank) {
@@ -112,4 +115,13 @@ public class BankStatement extends AbstractAuditableCustom<AppUser, Long> {
         return bank;
     }
 
+	public String getPaymentType() {
+		return paymentType;
+	}
+
+	public void setPaymentType(String paymentType) {
+		this.paymentType = paymentType;
+	}
+    
+    
 }

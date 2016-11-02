@@ -13,7 +13,8 @@ public enum SurveyEntityType {
     CLIENTS(1, "surveyEntityType.clients"), //
     GROUPS(2, "surveyEntityType.groups"), //
     CENTERS(3, "surveyEntityType.centers"), //
-    OFFICES(4, "surveyEntityType.offices");// ;
+    OFFICES(4, "surveyEntityType.offices"), //
+    STAFFS(5, "surveyEntityType.staffs");//
 
     private final Integer value;
     private final String code;
@@ -46,6 +47,9 @@ public enum SurveyEntityType {
                 break;
                 case 4:
                     surveyEntityType = SurveyEntityType.OFFICES;
+                break;
+                case 5:
+                    surveyEntityType = SurveyEntityType.STAFFS;
                 break;
             }
         }
@@ -97,6 +101,9 @@ public enum SurveyEntityType {
             break;
             case OFFICES:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), SurveyApiConstants.enumTypeOffices);
+            break;
+            case STAFFS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), SurveyApiConstants.enumTypeStaffs);
             break;
             default:
             break;

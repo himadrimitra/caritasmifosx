@@ -10,7 +10,8 @@ public enum BankStatementDetailType {
 	INVALID(0, "bankStatementDetailsType.invalid"),
 	PORTFOLIO(1, "bankStatementDetailsType.portfolio"), //
     NONPORTFOLIO(2, "bankStatementDetailsType.nonportfolio"), //
-    MISCELLANEOUS(3, "bankStatementDetailsType.miscellaneous"); //
+    MISCELLANEOUS(3, "bankStatementDetailsType.miscellaneous"), //
+    SIMPLIFIED_PORTFOLIO(4, "bankStatementDetailsType.simplifiedPortfolio"); //
 	
 
     private final Integer value;

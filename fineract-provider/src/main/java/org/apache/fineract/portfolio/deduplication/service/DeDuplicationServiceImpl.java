@@ -28,11 +28,15 @@ public class DeDuplicationServiceImpl implements DeDuplicationService {
 
 	@Override
 	public void duplicationCheck(Map<String, Object> data, String table, boolean creation) {
-		String sqlForDeDuplicationCoumns = "select ddc.de_duplication_columns from de_duplication_criteria ddc "
+		String sqlForDeDuplicationColumns = "select ddc.de_duplication_columns from de_duplication_criteria ddc "
+				+ "join de_duplication_table ddt on ddt.id = ddc.criteria where ddc.active = 1 and ddt.table_name = ? ";
+		String sqlForDeDuplicationNullColumns = "select ddc.de_duplication_for_null_columns from de_duplication_criteria ddc "
 				+ "join de_duplication_table ddt on ddt.id = ddc.criteria where ddc.active = 1 and ddt.table_name = ? ";
 		String sqlForErrorMessage = "select ddt.error_message from de_duplication_table ddt where ddt.table_name = ?";
 		String sqlForJoinTableDetails = "select ddt.join_tables from de_duplication_table ddt where ddt.table_name = ?";
-		List<String> columnDetails = this.jdbcTemplate.queryForList(sqlForDeDuplicationCoumns, String.class,
+		List<String> columnDetails = this.jdbcTemplate.queryForList(sqlForDeDuplicationColumns, String.class,
+				new Object[] { table });
+		List<String> nullColumnDetails = this.jdbcTemplate.queryForList(sqlForDeDuplicationNullColumns, String.class,
 				new Object[] { table });
 		String errorMessage = this.jdbcTemplate.queryForObject(sqlForErrorMessage, String.class,
 				new Object[] { table });
@@ -43,10 +47,17 @@ public class DeDuplicationServiceImpl implements DeDuplicationService {
 			if (!builder.toString().equals("")) {
 				builder.append(" and ");
 			}
-			String coulmnArray[] = columnDetail.split(",");
-			for (int i = 0; i < coulmnArray.length; i++) {
-				builder.append(" alias." + coulmnArray[i] + " = " + "'" + data.get(coulmnArray[i]) + "' ");
-				if (i < coulmnArray.length - 1) {
+			String columnArray[] = columnDetail.split(",");
+			for (int i = 0; i < columnArray.length; i++) {
+				Object dataValue = data.get(columnArray[i]);
+				builder.append(" alias." + columnArray[i]);
+				if(dataValue == null && nullColumnDetails.contains(columnArray[i])){
+					builder.append(" is null ");
+				}
+				else{
+					builder.append(" = " + "'" + data.get(columnArray[i]) + "' ");
+				}
+				if (i < columnArray.length - 1) {
 					builder.append(" and ");
 				}
 			}

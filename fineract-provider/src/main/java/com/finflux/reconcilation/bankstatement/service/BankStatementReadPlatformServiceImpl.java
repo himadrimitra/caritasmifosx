@@ -56,7 +56,8 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
                     + " bs.org_statement_key_document_id as orgStatementKeyDocumentId, bs.createdby_id as createdById, bs.created_date as createdDate,"
                     + " bs.lastmodifiedby_id as lastModifiedById, bs.is_reconciled as isReconciled, m1.username as lastModifiedByName, bs.lastmodified_date as lastModifiedDate, m.username as createdByName ,"
                     + " d.file_name as cpifFileName , d1.file_name as orgFileName, "
-                    + " b.id as bank, b.name as bankName, b.gl_account as glAccount, gl.gl_code as glCode " + " from f_bank_statement  bs "
+                    + " b.id as bank, b.name as bankName, b.support_simplified_statement as supportSimplifiedStatement, b.gl_account as glAccount, gl.gl_code as glCode " 
+                    + " from f_bank_statement  bs "
                     + " join m_appuser m on m.id=bs.createdby_id " + " left join m_document d on d.id = bs.cif_key_document_id "
                     + " left join m_appuser m1 on m1.id = bs.lastmodifiedby_id " + " left join f_bank b on b.id = bs.bank "
                     + " left join acc_gl_account gl on gl.id = b.gl_account "
@@ -85,7 +86,8 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
             final String glCode = rs.getString("glCode");
             final Long bank = JdbcSupport.getLong(rs, "bank");
             final Long glAccount = JdbcSupport.getLong(rs, "glAccount");
-            BankData bankData = BankData.instance(bank, bankName, glAccount, glCode);
+            final Boolean supportSimplifiedStatement = rs.getBoolean("supportSimplifiedStatement");
+            BankData bankData = BankData.instance(bank, bankName, glAccount, glCode, supportSimplifiedStatement);
             return new BankStatementData(id, name, description, cifKeyDocumentId, orgStatementKeyDocumentId, createdById, createdDate,
                     lastModifiedById, lastModifiedDate, createdByName, lastModifiedByName, cpifFileName, orgFileName, isReconciled, bankData);
         }

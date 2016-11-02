@@ -386,4 +386,8 @@ public class LoanAssembler {
         }
         return loanPurpose;
     }
+    
+    public Loan getActiveLoanByAccountNumber(String accountNumber){
+    	return this.loanRepository.getActiveLoanByAccountNumber(accountNumber);
+    }
 }

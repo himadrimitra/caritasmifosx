@@ -56,7 +56,7 @@ public class ReconciliationApiConstants {
     public static final String bankNameParamName = "bankName";
     public static final String glAccountParamName = "glAccount";
     public static final String JOURNAL_COMMAND_PARAMETER = "journal";
-    public static final String CLIENT_PAYMEMT = "Client Payment";
+    public static final String CLIENT_PAYMENT = "Client Payment";
     public static final String DISBURSAL = "Disbursal";
     public static final String FIRST_FILE = "file0";
     public static final String SECOND_FILE = "file1";
@@ -80,6 +80,7 @@ public class ReconciliationApiConstants {
     public static final String optionsLengthParam = "optionsLength";
     public static final String loanTransactionDataParam = "loanTransactionData";
     public static final String loanTransactionOptionsParam = "loanTransactionOptions";
+    public static final String receiptNumberParam = "receiptNumber";
 
     public static final String RECONCILED = "reconciled";
     public static final String JOURNAL_ENTRY = "journalentry";
@@ -87,7 +88,12 @@ public class ReconciliationApiConstants {
     public static final String ERROR = "error";
     public static final String MISCELLANEOUS = "miscellaneous";
     public static final String GENERATE_TRANSACTIONS = "generatetransactions";
-
+    
+    public static final String amount = "Amount";
+    public static final String transDate = "Trans.Date";
+    public static final String serial = "Serial";
+    public static final String description = "Description";
+    public static final int headerIndex = 3;
     public static final String portFolioReconciledInflowAmount = "portFolioReconciledInflowAmount";
     public static final String portFolioReconciledOutflowAmount = "portFolioReconciledOutflowAmount";
     public static final String portFolioUnReconciledInflowAmount = "portFolioUnReconciledInflowAmount";
@@ -121,22 +127,24 @@ public class ReconciliationApiConstants {
             mobileNumberParamName, transactionDateParamName, transactionIdParamName, bankStatementIdParamName, loanTransactionIdParamName,
             paymentDetailDataParamName, officeIdParamName, officeNameParamName, externalIdParamName, submittedOnDateParamName, type,
             transactionAmountParamName, dateParamName, bankIdParamName, optionsLengthParam, loanTransactionDataParam,
-            loanTransactionOptionsParam));
+            loanTransactionOptionsParam, receiptNumberParam));
 
     public static final String[] HEADER_DATA = { "Transaction Id", "Transaction Date", "Description", "Amount", "Mobile Number",
             "Client Account No", "Loan Account No", "Group External ID", "Branch External ID", "GL Code", "Accounting Type",
             "Transaction Type" };
-
+    
+    public static final String[] SIMPLIFIED_HEADER_DATA = { "Trans.Date", "Serial", "Amount","Description" };
     public static final String CREATE_ACTION = "CREATE";
     public static final String UPDATE_ACTION = "UPDATE";
     public static final String DELETE_ACTION = "DELETE";
     public static final String BANK_RESOURCE_NAME = "BANK";
+    public static final String supportSimplifiedStatement = "supportSimplifiedStatement";
 
     public static final Set<String> BANK_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
-            glAccountParamName));
+            glAccountParamName, supportSimplifiedStatement));
 
     public static final Set<String> BANK_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
-            glAccountParamName, glCodeParamName));
+            glAccountParamName, glCodeParamName, supportSimplifiedStatement));
 
     public static final String TRANSACTION_ID_CAN_NOT_BE_BLANK = "Transaction Id can not be blank.";
     public static final String TRANSACTION_TYPE_CAN_NOT_BE_BLANK = "Transaction type can not be blank.";
@@ -145,4 +153,5 @@ public class ReconciliationApiConstants {
     public static final String TRANSACTION_DATE_CAN_NOT_BE_BLANK = "Transaction Date can not be blank.";
     public static final String INVALID_TRANSACTION_DATE = "Transaction Date format is invalid.";
     public static final String PORTFOLIO_TRANSACTIONS = "PORTFOLIOTRANSACTIONS";
+    public static final String LOAN_ACCOUNT_NUMBER_CAN_NOT_BE_BLANK = "Loan Account Number can not be blank.";
 }

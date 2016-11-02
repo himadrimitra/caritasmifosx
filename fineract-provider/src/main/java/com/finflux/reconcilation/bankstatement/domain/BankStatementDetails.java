@@ -6,7 +6,6 @@
 package com.finflux.reconcilation.bankstatement.domain;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -19,8 +18,9 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.joda.time.DateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
+import com.finflux.reconcilation.ReconciliationApiConstants;
 
 @SuppressWarnings("serial")
 @Entity
@@ -81,13 +81,19 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_date", nullable = true)
     private Date updatedDate = null;
+
+    @Column(name = "receipt_number", nullable = true)
+    private String receiptNumber;
+
+    @Column(name = "is_error")
+    private Boolean isError;
     
 
     public BankStatementDetails(final BankStatement bankStatement, final String transactionId, final Date transactionDate,
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final String transactionType, final Integer bankStatementDetailType) {
+            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber) {
         this.bankStatement = bankStatement;
         this.transactionId = transactionId;
         this.transactionDate = transactionDate;
@@ -105,6 +111,7 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.transactionType = transactionType;
         this.bankStatementDetailType = bankStatementDetailType;
         this.updatedDate = null;
+        this.receiptNumber = receiptNumber;
     }
 
     public BankStatementDetails() {
@@ -115,12 +122,42 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final String transactionType, final Integer bankStatementDetailType) {
+            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber) {
 
         return new BankStatementDetails(bankStatement, transactionId, transactionDate, description, amount, mobileNumber,
                 clientAccountNumber, loanAccountNumber, groupExternalId, isReconciled, loanTransaction, branchExternalId, accountingType, glCode,
-                transactionType, bankStatementDetailType);
+                transactionType, bankStatementDetailType, receiptNumber);
+    }    
+    
+    public BankStatementDetails(final BankStatement bankStatement, final Date transactionDate,
+            final BigDecimal amount, final String loanAccountNumber, final String receiptNumber,
+            final Integer bankStatementDetailType) {
+        this.bankStatement = bankStatement;
+        this.loanAccountNumber = loanAccountNumber;
+        this.transactionDate = transactionDate;
+        this.bankStatementDetailType = bankStatementDetailType;
+        this.receiptNumber = receiptNumber;
+        this.transactionId = null;
+        this.description = null;
+        this.amount = amount;
+        this.mobileNumber = null;
+        this.clientAccountNumber = null;
+        this.groupExternalId = null;
+        this.isReconciled = false;
+        this.loanTransaction = null;
+        this.branchExternalId = null;
+        this.accountingType = ReconciliationApiConstants.CLIENT_PAYMENT;
+        this.glCode = null;
+        this.transactionType = null;
+        this.updatedDate = null;
     }
+
+    public static BankStatementDetails simplifiedBankDetails(final BankStatement bankStatement, final Date transactionDate,
+            final BigDecimal amount, final String loanAccountNumber, final String receiptNumber,
+            final Integer bankStatementDetailType) {
+
+        return new BankStatementDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber,  bankStatementDetailType);
+    } 
 
     public void setBankStatement(BankStatement bankStatement) {
         this.bankStatement = bankStatement;
@@ -188,7 +225,27 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     
     public void setLoanAccountNumber(String loanAccountNumber) {
         this.loanAccountNumber = loanAccountNumber;
-    }	
+    }
+
+	public BankStatement getBankStatement() {
+		return bankStatement;
+	}
+
+	public String getReceiptNumber() {
+		return receiptNumber;
+	}
+
+	public void setReceiptNumber(String receiptNumber) {
+		this.receiptNumber = receiptNumber;
+	}
+
+	public Boolean getIsError() {
+		return isError;
+	}
+
+	public void setIsError(Boolean isError) {
+		this.isError = isError;
+	}	
 	
 	
 }

@@ -54,8 +54,12 @@ public class BankWritePlatformServiceJpaRepository implements BankWritePlatformS
         this.bankDataValidator.validate(command);
         final String name = command.stringValueOfParameterNamed("name");
         Long glAccountId = command.longValueOfParameterNamed("glAccount");
+        Boolean supportSimplifiedStatement = false;
+        if(command.parameterExists(ReconciliationApiConstants.supportSimplifiedStatement)){
+        	supportSimplifiedStatement = command.booleanObjectValueOfParameterNamed(ReconciliationApiConstants.supportSimplifiedStatement);
+        }
         GLAccount glAccount = this.glAccountRepository.findOneWithNotFoundDetection(glAccountId);
-        Bank bank = Bank.instance(name, glAccount);
+        Bank bank = Bank.instance(name, glAccount, supportSimplifiedStatement);
         this.bankRepository.save(bank);
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
@@ -78,6 +82,10 @@ public class BankWritePlatformServiceJpaRepository implements BankWritePlatformS
             Long glAccountId = command.longValueOfParameterNamed(ReconciliationApiConstants.glAccountParamName);
             GLAccount glAccount = this.glAccountRepository.findOneWithNotFoundDetection(glAccountId);
             bank.setGlAccount(glAccount);
+        }
+        if (changes.containsKey(ReconciliationApiConstants.supportSimplifiedStatement)) {
+            boolean supportSimplifiedStatement = command.booleanPrimitiveValueOfParameterNamed(ReconciliationApiConstants.supportSimplifiedStatement);
+            bank.setSupportSimplifiedStatement(supportSimplifiedStatement);
         }
         if (!changes.isEmpty()) {
             this.bankRepository.save(bank);

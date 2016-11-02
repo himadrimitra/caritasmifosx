@@ -56,9 +56,11 @@ import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepository
 import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
 import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarRepository;
@@ -80,7 +82,6 @@ import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlat
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
-import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
@@ -281,22 +282,7 @@ public class LoanScheduleAssembler {
                 calendar = createLoanCalendar(calendarStartDate, repaymentEvery, CalendarFrequencyType.MONTHLY, dayOfWeek, nthDay);
             }
         }
-
-        /*
-         * If user has not passed the first repayments date then then derive the
-         * same based on loan type.
-         */
-        Integer minimumDaysBetweenDisbursalAndFirstRepayment = calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
-				expectedDisbursementDate, loanProduct, loanTermPeriodFrequencyType, repaymentEvery, nthDay,
-				weekDayType);
         
-		if (calculatedRepaymentsStartingFromDate == null) {
-			
-			calculatedRepaymentsStartingFromDate = deriveFirstRepaymentDate(loanType, repaymentEvery,
-					expectedDisbursementDate, repaymentPeriodFrequencyType,
-					minimumDaysBetweenDisbursalAndFirstRepayment, calendar);
-        }
-
         /*
          * If it is JLG loan/Group Loan synched with a meeting, then make sure
          * first repayment falls on meeting date
@@ -306,6 +292,21 @@ public class LoanScheduleAssembler {
         if(groupId != null){
             group = this.groupRepository.findOneWithNotFoundDetection(groupId);
         }
+
+        /*
+         * If user has not passed the first repayments date then then derive the
+         * same based on loan type.
+         */
+        Integer minimumDaysBetweenDisbursalAndFirstRepayment = calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
+                expectedDisbursementDate, loanProduct, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType);
+        
+        if (calculatedRepaymentsStartingFromDate == null) {
+
+            calculatedRepaymentsStartingFromDate = deriveFirstRepaymentDate(loanType, repaymentEvery, expectedDisbursementDate,
+                    repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment, calendar, group);
+        }
+
+       
     
         Boolean isSkipMeetingOnFirstDay = false;
         Integer numberOfDays = 0;
@@ -576,13 +577,23 @@ public class LoanScheduleAssembler {
     }
 
     public void validateRepaymentsStartDateWithMeetingDates(final LocalDate repaymentsStartingFromDate, final Calendar calendar,
-		boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays) {
-        if (repaymentsStartingFromDate != null
-                && !CalendarUtils.isValidRedurringDate(calendar.getRecurrence(), calendar.getStartDateLocalDate(),
-                        repaymentsStartingFromDate, isSkipRepaymentOnFirstDayOfMonth, numberOfDays)) {
-            final String errorMessage = "First repayment date '" + repaymentsStartingFromDate + "' do not fall on a meeting date";
-            throw new LoanApplicationDateException("first.repayment.date.do.not.match.meeting.date", errorMessage,
-                    repaymentsStartingFromDate);
+            boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays) {
+        if (repaymentsStartingFromDate != null) {
+            Set<CalendarHistory> calendarHistory = calendar.getActiveCalendarHistory();
+            final CalendarHistoryDataWrapper calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(calendarHistory);
+            CalendarHistory history = calendarHistoryDataWrapper.getCalendarHistory(repaymentsStartingFromDate);
+            String recurringRule = calendar.getRecurrence();
+            LocalDate seedDate = calendar.getStartDateLocalDate();
+            if (history != null) {
+                recurringRule = history.getRecurrence();
+                seedDate = history.getStartDateLocalDate();
+            }
+            if (!CalendarUtils.isValidRedurringDate(recurringRule, seedDate, repaymentsStartingFromDate, isSkipRepaymentOnFirstDayOfMonth,
+                    numberOfDays)) {
+                final String errorMessage = "First repayment date '" + repaymentsStartingFromDate + "' do not fall on a meeting date";
+                throw new LoanApplicationDateException("first.repayment.date.do.not.match.meeting.date", errorMessage,
+                        repaymentsStartingFromDate);
+            }
         }
     }
 
@@ -1115,7 +1126,7 @@ public class LoanScheduleAssembler {
 
     private LocalDate deriveFirstRepaymentDate(final AccountType loanType, final Integer repaymentEvery,
             final LocalDate expectedDisbursementDate, final PeriodFrequencyType repaymentPeriodFrequencyType,
-            final Integer minimumDaysBetweenDisbursalAndFirstRepayment, final Calendar calendar) {
+            final Integer minimumDaysBetweenDisbursalAndFirstRepayment, final Calendar calendar, final Group group) {
 
         LocalDate derivedFirstRepayment = null;
 
@@ -1125,9 +1136,9 @@ public class LoanScheduleAssembler {
         if (calendar != null) {
 
             final LocalDate refernceDateForCalculatingFirstRepaymentDate = expectedDisbursementDate;
-            derivedFirstRepayment = this.loanUtilService.deriveFirstRepaymentDateForLoans(repaymentEvery, expectedDisbursementDate,
-                    refernceDateForCalculatingFirstRepaymentDate, repaymentPeriodFrequencyType,
-                    minimumDaysBetweenDisbursalAndFirstRepayment, calendar);
+            derivedFirstRepayment = this.loanUtilService.getCalculatedRepaymentsStartingFromDate(repaymentEvery, expectedDisbursementDate,
+                    repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment,
+                    calendar, group);
 
         }/*** Individual or group account, or JLG not linked to a meeting ***/
         else {
