@@ -1024,18 +1024,19 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
 
             } else {
+                boolean instanceDeleted = false;
                 if (ciList != null && !ciList.isEmpty()) {
                     final CalendarInstance existingCalendarInstance = ciList.get(0);
-                    final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService.isCalendarAssociatedWithEntity(
-                            existingCalendarInstance.getEntityId(), existingCalendarInstance.getCalendar().getId(),
-                            CalendarEntityType.GROUPS.getValue().longValue());
+                    final boolean isCalendarAssociatedWithEntity = this.loanUtilService.isLoanRepaymentsSyncWithMeeting(
+                            existingLoanApplication.getGroup(), existingCalendarInstance.getCalendar());
                     if (isCalendarAssociatedWithEntity) {
                         this.calendarInstanceRepository.delete(existingCalendarInstance);
+                        instanceDeleted = true;
                     }
                 }
                 if (changes.containsKey("repaymentFrequencyNthDayType") || changes.containsKey("repaymentFrequencyDayOfWeekType")) {
                     if (changes.get("repaymentFrequencyNthDayType") == null) {
-                        if (ciList != null && !ciList.isEmpty()) {
+                        if (ciList != null && !ciList.isEmpty() && !instanceDeleted) {
                             final CalendarInstance calendarInstance = ciList.get(0);
                             final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService.isCalendarAssociatedWithEntity(
                                     calendarInstance.getEntityId(), calendarInstance.getCalendar().getId(), CalendarEntityType.LOANS.getValue().longValue());
