@@ -460,7 +460,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         final CurrencyData currencyData = applicationCurrency.toData();
 
-        final LocalDate earliestUnpaidInstallmentDate = LocalDate.now();
+        final LocalDate earliestUnpaidInstallmentDate = DateUtils.getLocalDateOfTenant();
         final LocalDate recalculateFrom = null;
         final ScheduleGeneratorDTO scheduleGeneratorDTO = loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
         final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = loan.fetchPrepaymentDetail(scheduleGeneratorDTO, onDate);
@@ -2273,7 +2273,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }catch(EmptyResultDataAccessException e){
             throw new LoanNotFoundException(loanId);
         }
-        final LocalDate earliestUnpaidInstallmentDate = new LocalDate();
+        final LocalDate earliestUnpaidInstallmentDate = DateUtils.getLocalDateOfTenant();
 
         final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REFUND_FOR_ACTIVE_LOAN);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();

@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.data;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
@@ -221,7 +222,7 @@ public class LoanSchedulePeriodData {
         this.totalOutstandingForPeriod = this.feeChargesOutstanding;
         this.totalActualCostOfLoanForPeriod = this.feeChargesDue;
         this.totalInstallmentAmountForPeriod = null;
-        if (dueDate.isBefore(new LocalDate())) {
+        if (dueDate.isBefore(DateUtils.getLocalDateOfTenant())) {
             this.totalOverdue = this.totalOutstandingForPeriod;
         } else {
             this.totalOverdue = null;
@@ -287,7 +288,7 @@ public class LoanSchedulePeriodData {
         this.totalInstallmentAmountForPeriod = totalInstallmentAmountForPeriod;
         this.recalculatedInterestComponent = recalculatedInterestComponent;
 
-        if (dueDate.isBefore(new LocalDate())) {
+        if (dueDate.isBefore(DateUtils.getLocalDateOfTenant())) {
             this.totalOverdue = this.totalOutstandingForPeriod;
         } else {
             this.totalOverdue = null;
@@ -359,7 +360,7 @@ public class LoanSchedulePeriodData {
         this.totalInstallmentAmountForPeriod = totalInstallmentAmountForPeriod;
         this.recalculatedInterestComponent = false;
 
-        if (dueDate.isBefore(new LocalDate())) {
+        if (dueDate.isBefore(DateUtils.getLocalDateOfTenant())) {
             this.totalOverdue = this.totalOutstandingForPeriod;
         } else {
             this.totalOverdue = null;

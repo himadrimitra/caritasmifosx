@@ -43,6 +43,7 @@ import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.collaterals.api.PledgeApiConstants;
 import org.apache.fineract.portfolio.collaterals.api.PledgeApiConstants.PLEDGE_STATUS_PARAMS;
@@ -252,7 +253,7 @@ public class Pledges extends AbstractPersistable<Long> {
 
     public void close(final AppUser currentUser, final LocalDate closureDate) {
         
-        if (closureDate.isAfter(new LocalDate())) {
+        if (closureDate.isAfter(DateUtils.getLocalDateOfTenant())) {
             final String errorMessage = "The date on which a pledge with identifier : " + this.getId()
                     + " is closed cannot be in the future.";
             throw new InvalidPledgeStateTransitionException("pledge", "cannot.be.a.future.date", errorMessage, closureDate);

@@ -32,6 +32,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.hooks.event.HookEvent;
 import org.apache.fineract.infrastructure.hooks.event.HookEventSource;
@@ -86,7 +87,7 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         CommandSource commandSourceResult = null;
         if (command.commandId() != null) {
             commandSourceResult = this.commandSourceRepository.findOne(command.commandId());
-            commandSourceResult.markAsChecked(maker, DateTime.now());
+            commandSourceResult.markAsChecked(maker, DateUtils.getLocalDateTimeOfTenant().toDateTime());
         } else {
             commandSourceResult = CommandSource.fullEntryFrom(wrapper, command, maker);
         }

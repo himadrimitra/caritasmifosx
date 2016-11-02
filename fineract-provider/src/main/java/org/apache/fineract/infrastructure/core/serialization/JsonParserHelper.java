@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.joda.time.MonthDay;
@@ -290,7 +291,7 @@ public class JsonParserHelper {
                 final Integer month = dateArray.get(1).getAsInt();
                 final Integer day = dateArray.get(2).getAsInt();
 
-                value = new LocalDate().withYearOfEra(year).withMonthOfYear(month).withDayOfMonth(day);
+                value = DateUtils.getLocalDateOfTenant().withYearOfEra(year).withMonthOfYear(month).withDayOfMonth(day);
             }
 
         }

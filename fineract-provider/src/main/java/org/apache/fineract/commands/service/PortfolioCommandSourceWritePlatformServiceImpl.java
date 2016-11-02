@@ -29,11 +29,11 @@ import org.apache.fineract.commands.exception.RollbackTransactionAsCommandIsNotA
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.service.SchedulerJobRunnerReadService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,7 +194,7 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
         final CommandSource commandSourceInput = validateMakerCheckerTransaction(makerCheckerId);
         validateIsUpdateAllowed();
         final AppUser maker = this.context.authenticatedUser();
-        commandSourceInput.markAsRejected(maker, DateTime.now());
+        commandSourceInput.markAsRejected(maker, DateUtils.getLocalDateTimeOfTenant().toDateTime());
         this.commandSourceRepository.save(commandSourceInput);
         return makerCheckerId;
     }
