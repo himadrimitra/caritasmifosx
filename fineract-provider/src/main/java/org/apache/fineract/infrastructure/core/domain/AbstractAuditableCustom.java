@@ -29,6 +29,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.joda.time.DateTime;
 import org.springframework.data.domain.Auditable;
 import org.springframework.data.jpa.domain.AbstractAuditable;
@@ -111,7 +112,7 @@ public abstract class AbstractAuditableCustom<U, PK extends Serializable> extend
     @Override
     public void setCreatedDate(final DateTime createdDate) {
 
-        this.createdDate = null == createdDate ? null : createdDate.toDate();
+        this.createdDate = null == createdDate ? null : DateUtils.getLocalDateTimeOfTenant().toDate();
     }
 
     /*
@@ -159,6 +160,6 @@ public abstract class AbstractAuditableCustom<U, PK extends Serializable> extend
     @Override
     public void setLastModifiedDate(final DateTime lastModifiedDate) {
 
-        this.lastModifiedDate = null == lastModifiedDate ? null : lastModifiedDate.toDate();
+        this.lastModifiedDate = null == lastModifiedDate ? null : DateUtils.getLocalDateTimeOfTenant().toDate();
     }
 }
