@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -33,6 +34,7 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -1477,4 +1479,71 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
         }
 
     }
+    
+	private static final class RDLookUpMapper implements RowMapper<DepositAccountData> {
+
+		@Override
+		public DepositAccountData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+			final Long SavingsId = rs.getLong("savings_id");
+			final String accountNo = rs.getString("accountno");
+			final Long clientId = rs.getLong("clientid");
+			final String clientName = rs.getString("clientname");
+			final Long savingProductId = rs.getLong("savingsproductid");
+			final String sacingProductName = rs.getString("savingsproductname");
+			final Long staffId = rs.getLong("staffid");
+			final String staffName = rs.getString("staffname");
+			final BigDecimal depositAmount = rs.getBigDecimal("mandatory_deposit");
+			return RecurringDepositAccountData.recurringDetailsForTaskLookup(SavingsId, accountNo, clientId, clientName,
+					savingProductId, sacingProductName, staffId, staffName, depositAmount);
+		}
+
+	}
+    
+	@Override
+	public Collection<DepositAccountData> getRDAccountsForTaskLookup(final SearchParameters searchParameters) {
+		final StringBuilder builder = new StringBuilder(400);
+		RDLookUpMapper mapper = new RDLookUpMapper();
+		List<Object> params = new ArrayList<>();
+        String sqlSearch = searchParameters.getSqlSearch();
+		builder.append("select ");
+		builder.append("msa.id as savings_id, ");
+		builder.append("msa.account_no as accountno, ");
+		builder.append("mc.id as clientid, ");
+		builder.append("mc.display_name as clientname, ");
+		builder.append("msp.id as savingsproductid, ");
+		builder.append("msp.name as savingsproductname, ");
+		builder.append("ms.id as staffid, ");
+		builder.append("ms.display_name as staffname, ");
+		builder.append("msa.deposit_type_enum as deposittype, ");
+		builder.append("mdard.mandatory_recommended_deposit_amount as mandatory_deposit ");
+		builder.append("from m_savings_account msa ");
+		builder.append("join m_savings_product msp on msp.id = msa.product_id ");
+		builder.append("join m_client mc on mc.id = msa.client_id ");
+		builder.append("join m_office mo on mo.id = mc.office_id ");
+		builder.append("left join m_staff ms on ms.id = msa.field_officer_id ");
+		builder.append("left join m_group mg on mg.id = msa.group_id ");
+		builder.append("left join m_office mog on mog.id = mg.office_id ");
+		builder.append("left join m_deposit_account_recurring_detail mdard on mdard.savings_account_id = msa.id ");
+		builder.append("where msa.deposit_type_enum = ? ");
+		params.add(DepositAccountType.RECURRING_DEPOSIT.getValue());
+		builder.append(" and (mo.id = ? or mog.id = ?)");
+		params.add(searchParameters.getOfficeId());
+		params.add(searchParameters.getOfficeId());
+		if(searchParameters.getStaffId() != null){
+            builder.append(" and ms.id = ?");
+            params.add(searchParameters.getStaffId());
+        }
+		if(searchParameters.getGroupId() != null){
+            builder.append(" and mg.id = ?");
+            params.add(searchParameters.getGroupId());
+        }
+        if(searchParameters.getCenterId() != null){
+            builder.append(" and mg.parent_id = ?" );
+            params.add(searchParameters.getCenterId());
+        }
+        if (sqlSearch != null) {
+            builder.append(" and (" + sqlSearch + ")");
+        }
+		return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
+	}
 }

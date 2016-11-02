@@ -23,9 +23,11 @@ import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.account.data.AccountTransferDTO;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.DepositAccountData;
+import org.apache.fineract.portfolio.savings.data.RecurringDepositAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionData;
 
 public interface DepositAccountReadPlatformService {
@@ -54,4 +56,6 @@ public interface DepositAccountReadPlatformService {
     Collection<AccountTransferDTO> retrieveDataForInterestTransfer();
 
     Collection<Map<String, Object>> retriveDataForRDScheduleCreation();
+    
+    Collection<DepositAccountData> getRDAccountsForTaskLookup(final SearchParameters searchParameters);
 }
