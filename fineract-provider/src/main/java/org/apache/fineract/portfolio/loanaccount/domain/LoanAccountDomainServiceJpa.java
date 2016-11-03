@@ -585,9 +585,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public void recalculateAccruals(Loan loan, boolean isInterestCalcualtionHappened) {
         LocalDate accruedTill = loan.getAccruedTill();
-        if (!loan.isPeriodicAccrualAccountingEnabledOnLoanProduct() || accruedTill == null
-                || ((!isInterestCalcualtionHappened || loan.isNpa()) && loan.isOpen()) ||
-                (!loan.isOpen() && !(loan.status().isOverpaid() || loan.status().isClosedObligationsMet()))) { return; }
+        if (!loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()
+                || ((accruedTill == null || !isInterestCalcualtionHappened || loan.isNpa()) && loan.isOpen())
+                || (!loan.isOpen() && !(loan.status().isOverpaid() || loan.status().isClosedObligationsMet()))) { return; }
         boolean accrueAllInstallments = false;
         if(loan.status().isClosedObligationsMet() || loan.status().isOverpaid()){
             accrueAllInstallments = true;
@@ -744,38 +744,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final ScheduleGeneratorDTO scheduleGeneratorDTO = null;
         AppUser appUser = getAppUserIfPresent();
         final LoanRepaymentScheduleInstallment foreCloseDetail = loan.fetchLoanForeclosureDetail(foreClosureDate);
-        if (loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()
-                && (loan.getAccruedTill() == null || !foreClosureDate.isEqual(loan.getAccruedTill()))) {
-            loan.reverseAccrualsAfter(foreClosureDate);
-            Money[] accruedReceivables = loan.getReceivableIncome(foreClosureDate);
-            Money interestPortion = foreCloseDetail.getInterestCharged(currency).minus(accruedReceivables[0]);
-            Money feePortion = foreCloseDetail.getFeeChargesCharged(currency).minus(accruedReceivables[1]);
-            Money penaltyPortion = foreCloseDetail.getPenaltyChargesCharged(currency).minus(accruedReceivables[2]);
-            Money total = interestPortion.plus(feePortion).plus(penaltyPortion);
-            if (total.isGreaterThanZero()) {
-                LoanTransaction accrualTransaction = LoanTransaction.accrueTransaction(loan, loan.getOffice(), foreClosureDate,
-                        total.getAmount(), interestPortion.getAmount(), feePortion.getAmount(), penaltyPortion.getAmount());
-                LocalDate fromDate = loan.getDisbursementDate();
-                if (loan.getAccruedTill() != null) {
-                    fromDate = loan.getAccruedTill();
-                }
-                createdDate = createdDate.plusSeconds(1);
-                newTransactions.add(accrualTransaction);
-                loan.getLoanTransactions().add(accrualTransaction);
-                Set<LoanChargePaidBy> accrualCharges = accrualTransaction.getLoanChargesPaid();
-                for (LoanCharge loanCharge : loan.charges()) {
-                    if (loanCharge.isActive()
-                            && !loanCharge.isPaid()
-                            && (loanCharge.isDueForCollectionFromAndUpToAndIncluding(fromDate, foreClosureDate) || loanCharge
-                                    .isInstalmentFee())) {
-                        final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(accrualTransaction, loanCharge, loanCharge
-                                .getAmountOutstanding(currency).getAmount(), null);
-                        accrualCharges.add(loanChargePaidBy);
-                    }
-                }
-            }
-        }
-        
 
         Money interestPayable = foreCloseDetail.getInterestCharged(currency);
         Money feePayable = foreCloseDetail.getFeeChargesCharged(currency);
@@ -834,6 +802,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         }
 
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, false);
+        recalculateAccruals(loan);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_FORECLOSURE,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, payment));
         return changes;
