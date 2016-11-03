@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.client.api;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -42,11 +43,14 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
+import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
+import org.apache.fineract.portfolio.client.domain.ClientIdentifierStatus;
 import org.apache.fineract.portfolio.client.exception.DuplicateClientIdentifierException;
 import org.apache.fineract.portfolio.client.service.ClientIdentifierReadPlatformService;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
@@ -111,7 +115,8 @@ public class ClientIdentifiersApiResource {
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
         final Collection<CodeValueData> codeValues = this.codeValueReadPlatformService.retrieveCodeValuesByCode("Customer Identifier");
-        final ClientIdentifierData clientIdentifierData = ClientIdentifierData.template(codeValues);
+        final List<EnumOptionData> clientIdentifierStatusOptions = ClientEnumerations.clientIdentifierStatus(ClientIdentifierStatus.values());
+        final ClientIdentifierData clientIdentifierData = ClientIdentifierData.template(codeValues, clientIdentifierStatusOptions);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, clientIdentifierData, CLIENT_IDENTIFIER_DATA_PARAMETERS);
@@ -157,7 +162,8 @@ public class ClientIdentifiersApiResource {
                 clientIdentifierId);
         if (settings.isTemplate()) {
             final Collection<CodeValueData> codeValues = this.codeValueReadPlatformService.retrieveCodeValuesByCode("Customer Identifier");
-            clientIdentifierData = ClientIdentifierData.template(clientIdentifierData, codeValues);
+            final List<EnumOptionData> clientIdentifierStatusOptions = ClientEnumerations.clientIdentifierStatus(ClientIdentifierStatus.values());
+            clientIdentifierData = ClientIdentifierData.template(clientIdentifierData, codeValues, clientIdentifierStatusOptions);
         }
 
         return this.toApiJsonSerializer.serialize(settings, clientIdentifierData, CLIENT_IDENTIFIER_DATA_PARAMETERS);

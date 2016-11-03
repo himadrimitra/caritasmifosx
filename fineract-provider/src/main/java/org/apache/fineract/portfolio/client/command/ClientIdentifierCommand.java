@@ -62,6 +62,7 @@ public class ClientIdentifierCommand {
 
         baseDataValidator.reset().parameter("documentTypeId").value(this.documentTypeId).notNull().integerGreaterThanZero();
         baseDataValidator.reset().parameter("documentKey").value(this.documentKey).notBlank();
+        baseDataValidator.reset().parameter("status").value(this.status).notNull().integerGreaterThanZero();
 
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
@@ -73,6 +74,7 @@ public class ClientIdentifierCommand {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("clientIdentifier");
 
         baseDataValidator.reset().parameter("documentKey").value(this.documentKey).ignoreIfNull().notBlank();
+        baseDataValidator.reset().parameter("status").value(this.status).notNull().integerGreaterThanZero();
 
         // FIXME - KW - add in validation
         // if (command.isDocumentTypeChanged()) {

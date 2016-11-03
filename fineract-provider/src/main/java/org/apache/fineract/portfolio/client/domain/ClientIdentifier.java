@@ -63,7 +63,7 @@ public class ClientIdentifier extends AbstractAuditableCustom<AppUser, Long> {
     public static ClientIdentifier fromJson(final Client client, final CodeValue documentType, final JsonCommand command) {
         final String documentKey = command.stringValueOfParameterNamed("documentKey");
         final String description = command.stringValueOfParameterNamed("description");
-        final String status = command.stringValueOfParameterNamed("status");
+        final Integer status = command.integerValueSansLocaleOfParameterNamed("status");
         return new ClientIdentifier(client, documentType, documentKey, status, description);
     }
 
@@ -71,12 +71,12 @@ public class ClientIdentifier extends AbstractAuditableCustom<AppUser, Long> {
         //
     }
 
-    private ClientIdentifier(final Client client, final CodeValue documentType, final String documentKey, final String statusName, String description) {
+    private ClientIdentifier(final Client client, final CodeValue documentType, final String documentKey, final Integer status, String description) {
         this.client = client;
         this.documentType = documentType;
         this.documentKey = StringUtils.defaultIfEmpty(documentKey, null);
         this.description = StringUtils.defaultIfEmpty(description, null);
-        ClientIdentifierStatus statusEnum = ClientIdentifierStatus.valueOf(statusName.toUpperCase());
+        ClientIdentifierStatus statusEnum = ClientIdentifierStatus.fromInt(status);
         this.active = null;      
         if(statusEnum.isActive()){
         	this.active = statusEnum.getValue();
@@ -113,10 +113,10 @@ public class ClientIdentifier extends AbstractAuditableCustom<AppUser, Long> {
         }
         
         final String statusParamName = "status";
-        if(command.isChangeInStringParameterNamed(statusParamName, ClientIdentifierStatus.fromInt(this.status).getCode())){
-            final String newValue = command.stringValueOfParameterNamed(descriptionParamName);
-            actualChanges.put(descriptionParamName, ClientIdentifierStatus.valueOf(newValue));
-            this.status = ClientIdentifierStatus.valueOf(newValue).getValue();
+        if(command.isChangeInIntegerParameterNamed(statusParamName, ClientIdentifierStatus.fromInt(this.status).getValue())){
+            final Integer newValue = command.integerValueOfParameterNamed(statusParamName);
+            actualChanges.put(descriptionParamName, newValue);
+            this.status = newValue;
         }
 
         return actualChanges;

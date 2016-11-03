@@ -102,5 +102,21 @@ public class ClientEnumerations {
         }
         return optionDatas;
     }
+    
+	public static List<EnumOptionData> clientIdentifierStatus(final ClientIdentifierStatus[] clientIdentifierStatus) {
+		final List<EnumOptionData> optionDatas = new ArrayList<>();
+		for (final ClientIdentifierStatus clientIdentifier : clientIdentifierStatus) {
+			if(clientIdentifier != ClientIdentifierStatus.INVALID){
+			optionDatas.add(clientIdentifierStatus(clientIdentifier));
+			}
+		}
+		return optionDatas;
+	}
+
+	public static EnumOptionData clientIdentifierStatus(final ClientIdentifierStatus clientIdentifierStatus) {
+		final EnumOptionData optionData = new EnumOptionData(clientIdentifierStatus.getValue().longValue(),
+				clientIdentifierStatus.getCode(), clientIdentifierStatus.toString());
+		return optionData;
+	}
 
 }
