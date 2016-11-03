@@ -833,8 +833,8 @@ public class DataValidatorBuilder {
             final StringBuilder defaultEnglishMessage = new StringBuilder(Message);
 
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
-                    defaultEnglishMessage.toString(), this.parameter, this.value, expression);
-
+                    defaultEnglishMessage.toString(), this.parameter, this.value, expression, defaultEnglishMessage.toString());
+                                   
             this.dataValidationErrors.add(error);
         }
 
