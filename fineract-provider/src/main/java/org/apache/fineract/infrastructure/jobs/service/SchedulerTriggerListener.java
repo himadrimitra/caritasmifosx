@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.infrastructure.jobs.service;
 
+import java.util.Random;
+
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.security.service.TenantDetailsService;
@@ -26,11 +28,15 @@ import org.quartz.JobKey;
 import org.quartz.Trigger;
 import org.quartz.Trigger.CompletedExecutionInstruction;
 import org.quartz.TriggerListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SchedulerTriggerListener implements TriggerListener {
+	
+	  private final static Logger logger = LoggerFactory.getLogger(SchedulerTriggerListener.class);
 
     private final String name = "Global trigger Listner";
 
@@ -57,19 +63,42 @@ public class SchedulerTriggerListener implements TriggerListener {
     }
 
     @Override
-    public boolean vetoJobExecution(final Trigger trigger, final JobExecutionContext context) {
+	public boolean vetoJobExecution(final Trigger trigger, final JobExecutionContext context) {
 
-        final String tenantIdentifier = trigger.getJobDataMap().getString(SchedulerServiceConstants.TENANT_IDENTIFIER);
-        final FineractPlatformTenant tenant = this.tenantDetailsService.loadTenantById(tenantIdentifier);
-        ThreadLocalContextUtil.setTenant(tenant);
-        final JobKey key = trigger.getJobKey();
-        final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
-        String triggerType = SchedulerServiceConstants.TRIGGER_TYPE_CRON;
-        if (context.getMergedJobDataMap().containsKey(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE)) {
-            triggerType = context.getMergedJobDataMap().getString(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE);
-        }
-        return this.schedularService.processJobDetailForExecution(jobKey, triggerType);
-    }
+		final String tenantIdentifier = trigger.getJobDataMap().getString(SchedulerServiceConstants.TENANT_IDENTIFIER);
+		final FineractPlatformTenant tenant = this.tenantDetailsService.loadTenantById(tenantIdentifier);
+		ThreadLocalContextUtil.setTenant(tenant);
+		final JobKey key = trigger.getJobKey();
+		final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
+		String triggerType = SchedulerServiceConstants.TRIGGER_TYPE_CRON;
+		if (context.getMergedJobDataMap().containsKey(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE)) {
+			triggerType = context.getMergedJobDataMap().getString(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE);
+		}
+		Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+		Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection()
+				.getMaxIntervalBetweenRetries();
+		Integer numberOfRetries = 0;
+		boolean proceedJob = true;
+		while (numberOfRetries <= maxNumberOfRetries) {
+			try {
+				proceedJob = this.schedularService.processJobDetailForExecution(jobKey, triggerType);
+				numberOfRetries = numberOfRetries + 1;
+			} catch (Exception exception) { // Adding generic exception as it
+											// depends on JPA provider
+				logger.debug("processing job details for execution failed for : " + jobKey + "with message :"
+						+ exception.getMessage());
+				try {
+					Random random = new Random();
+					int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
+					Thread.sleep(1000 + (randomNum * 1000));
+					numberOfRetries = numberOfRetries + 1;
+				} catch (InterruptedException e) {
+
+				}
+			}
+		}
+		return proceedJob;
+	}
 
     @Override
     public void triggerMisfired(@SuppressWarnings("unused") final Trigger trigger) {

@@ -34,7 +34,7 @@ import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobRunHistoryRepo
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetail;
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetailRepository;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
-import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -142,7 +142,7 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 		boolean isStopExecution = false;
 		final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
 		if (scheduledJobDetail.isCurrentlyRunning() || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON)
-				&& (scheduledJobDetail.getNextRunTime().after(DateUtils.getLocalDateOfTenant().toDate())))) {
+				&& !(new LocalDateTime(scheduledJobDetail.getNextRunTime()).isBefore(new LocalDateTime())))) {
 			isStopExecution = true;
 		}
 
