@@ -75,13 +75,13 @@ public class StaffHelper {
 
     public static List<HashMap> getStaffList(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         final String url = CREATE_STAFF_URL + "?" + Utils.TENANT_IDENTIFIER;
-        return Utils.performServerGet(requestSpec, responseSpec, url, "");
+        return Utils.performServerGet(requestSpec, responseSpec, url, "pageItems");
     }
 
     public static Object getStaffListWithState(final RequestSpecification requestSpec,
             final ResponseSpecification responseSpec, final String status) {
         final String url = CREATE_STAFF_URL + "?" + Utils.TENANT_IDENTIFIER + "&status=" + status;
-        return Utils.performServerGet(requestSpec, responseSpec, url, "");
+        return Utils.performServerGet(requestSpec, responseSpec, url, "pageItems");
     }
 
     public static Object updateStaff(final RequestSpecification requestSpec,
