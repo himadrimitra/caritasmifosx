@@ -18,12 +18,14 @@
  */
 package org.apache.fineract.useradministration.service;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.useradministration.data.RoleBasedLimitData;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,12 +81,19 @@ public class RoleReadPlatformServiceImpl implements RoleReadPlatformService {
             final String name = rs.getString("name");
             final String description = rs.getString("description");
             final Boolean disabled = rs.getBoolean("disabled");
-            
-            return new RoleData(id, name, description, disabled);
+            RoleBasedLimitData roleBasedLimit = null;
+            final Long roleBasedLimitId = JdbcSupport.getLong(rs, "roleBasedLimitId");
+            if(roleBasedLimitId != null){
+            	final BigDecimal loanApproval = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "loanApproval");
+                roleBasedLimit = new RoleBasedLimitData(roleBasedLimitId, loanApproval);                
+            }
+            return new RoleData(id, name, description, disabled, roleBasedLimit);
         }
 
         public String schema() {
-            return " r.id as id, r.name as name, r.description as description, r.is_disabled as disabled from m_role r";
+            return " r.id as id, r.name as name, r.description as description, r.is_disabled as disabled,"
+            		+ " rbl.id as roleBasedLimitId, rbl.loan_approval as loanApproval from m_role r"
+            		+ " left join m_role_based_limit rbl on rbl.id = r.m_role_based_limit_id ";
         }
     }
 

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.useradministration.service;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,11 +27,15 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.useradministration.api.AppUserApiConstant;
 import org.apache.fineract.useradministration.command.PermissionsCommand;
 import org.apache.fineract.useradministration.domain.Permission;
 import org.apache.fineract.useradministration.domain.PermissionRepository;
 import org.apache.fineract.useradministration.domain.Role;
+import org.apache.fineract.useradministration.domain.RoleBasedLimit;
+import org.apache.fineract.useradministration.domain.RoleBasedLimitRepository;
 import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.apache.fineract.useradministration.exception.PermissionNotFoundException;
 import org.apache.fineract.useradministration.exception.RoleAssociatedException;
@@ -45,6 +50,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.gson.JsonElement;
+
 @Service
 public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatformService {
 
@@ -54,16 +61,21 @@ public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatf
     private final PermissionRepository permissionRepository;
     private final RoleDataValidator roleCommandFromApiJsonDeserializer;
     private final PermissionsCommandFromApiJsonDeserializer permissionsFromApiJsonDeserializer;
+    private final RoleBasedLimitRepository roleBasedLimitRepository;
+    private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
     public RoleWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final RoleRepository roleRepository,
             final PermissionRepository permissionRepository, final RoleDataValidator roleCommandFromApiJsonDeserializer,
-            final PermissionsCommandFromApiJsonDeserializer fromApiJsonDeserializer) {
+            final PermissionsCommandFromApiJsonDeserializer fromApiJsonDeserializer, final RoleBasedLimitRepository roleBasedLimitRepository,
+            final FromJsonHelper fromApiJsonHelper) {
         this.context = context;
         this.roleRepository = roleRepository;
         this.permissionRepository = permissionRepository;
         this.roleCommandFromApiJsonDeserializer = roleCommandFromApiJsonDeserializer;
         this.permissionsFromApiJsonDeserializer = fromApiJsonDeserializer;
+        this.roleBasedLimitRepository = roleBasedLimitRepository;
+        this.fromApiJsonHelper = fromApiJsonHelper;
     }
 
     @Transactional
@@ -76,6 +88,8 @@ public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatf
             this.roleCommandFromApiJsonDeserializer.validateForCreate(command.json());
 
             final Role entity = Role.fromJson(command);
+            RoleBasedLimit roleBasedLimit = createOrUpdateRoleBasedLimit(command);
+            entity.setRoleBasedLimit(roleBasedLimit);
             this.roleRepository.save(entity);
 
             return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withEntityId(entity.getId()).build();
@@ -120,12 +134,11 @@ public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatf
             this.roleCommandFromApiJsonDeserializer.validateForUpdate(command.json());
 
             final Role role = this.roleRepository.findOne(roleId);
-            if (role == null) { throw new RoleNotFoundException(roleId); }
-
+            if (role == null) { throw new RoleNotFoundException(roleId); }            
+            RoleBasedLimit roleBasedLimit = createOrUpdateRoleBasedLimit(command);
+            role.setRoleBasedLimit(roleBasedLimit);
             final Map<String, Object> changes = role.update(command);
-            if (!changes.isEmpty()) {
-                this.roleRepository.saveAndFlush(role);
-            }
+            this.roleRepository.saveAndFlush(role);
 
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
@@ -271,5 +284,39 @@ public class RoleWritePlatformServiceJpaRepositoryImpl implements RoleWritePlatf
             throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue",
                     "Unknown data integrity issue with resource: " + e.getMostSpecificCause());
         }
+    }
+    
+    public RoleBasedLimit createOrUpdateRoleBasedLimit(final JsonCommand command){
+    	RoleBasedLimit  roleBasedLimit = null;
+    	if(command.parameterExists(AppUserApiConstant.roleBasedLimit)){
+        	JsonElement element = command.parsedJson().getAsJsonObject().get(AppUserApiConstant.roleBasedLimit);
+        	if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.idParam, element)){
+        		Long roleBasedLimitId = element.getAsJsonObject().get(AppUserApiConstant.idParam).getAsLong();
+        		if(roleBasedLimitId != null){
+        			BigDecimal loanApproval = null;
+            		roleBasedLimit = this.roleBasedLimitRepository.getOne(roleBasedLimitId);
+            		if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.loanApproval, element)){
+            			JsonElement loanApprovalElement = element.getAsJsonObject().get(AppUserApiConstant.loanApproval);
+            			if(loanApprovalElement != null && loanApprovalElement.toString().length() != AppUserApiConstant.minLength){
+                			loanApproval = loanApprovalElement.getAsBigDecimal();                				
+            			}
+                	}
+        			roleBasedLimit.setLoanApproval(loanApproval);
+        			this.roleBasedLimitRepository.save(roleBasedLimit);
+        		}          		
+        	}else{
+        		if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.loanApproval, element)){
+            		BigDecimal loanApproval = element.getAsJsonObject().get(AppUserApiConstant.loanApproval).getAsBigDecimal();
+            		if(loanApproval != null){
+            			roleBasedLimit = new RoleBasedLimit(loanApproval);
+            			this.roleBasedLimitRepository.save(roleBasedLimit);    
+            			return roleBasedLimit;
+            		}            			
+        		}
+        	}
+        	        	
+        	
+        }
+    	return roleBasedLimit;
     }
 }

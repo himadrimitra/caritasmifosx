@@ -3366,7 +3366,7 @@ public class Loan extends AbstractPersistable<Long> {
                                                 }
 
                                                 if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
-                                                    if (MathUtility.isGreater(feePortion.getAmount(), amountToBePaidInCurrentInstallment)) {
+                                                    if (MathUtility.isEqualOrGreater(feePortion.getAmount(), amountToBePaidInCurrentInstallment)) {
                                                         glimCharge.setPaidCharge(glimCharge.getPaidCharge().subtract(
                                                                 amountToBePaidInCurrentInstallment));
                                                         glimChargeAmountMap.put(glimCharge.getCharge().getId(), MathUtility

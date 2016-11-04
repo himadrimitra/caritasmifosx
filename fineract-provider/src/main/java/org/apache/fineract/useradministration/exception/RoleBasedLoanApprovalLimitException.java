@@ -16,15 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.useradministration.api;
+package org.apache.fineract.useradministration.exception;
 
-public class AppUserApiConstant {
+import java.math.BigDecimal;
 
-    public static final int numberOfPreviousPasswords = 3;
-    public static final String roleBasedLimit = "roleBasedLimit";
-    public static final String loanApproval = "loanApproval";
-    public static final int minLength = 2;
-    public static final String idParam = "id";
-      
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 
+public class RoleBasedLoanApprovalLimitException  extends AbstractPlatformDomainRuleException {
+	
+	public RoleBasedLoanApprovalLimitException(final String errorcode, final BigDecimal amount) {
+        super(errorcode, "Can not approve amount more than limit "+amount, amount);
+    }
 }

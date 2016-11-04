@@ -396,7 +396,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                                                     
                                                     if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
                                                         if (MathUtility
-                                                                .isGreater(currentInstallmentFee, amountToBePaidInCurrentInstallment)) {
+                                                                .isEqualOrGreater(currentInstallmentFee, amountToBePaidInCurrentInstallment)) {
                                                             glimChargeAmountMap.put(glimCharge.getCharge().getId(), MathUtility
                                                                     .add(glimChargeAmountMap.get(glimCharge.getCharge().getId()).add(
                                                                             amountToBePaidInCurrentInstallment)));

@@ -63,7 +63,7 @@ public class RolesApiResource {
      * The set of parameters that are supported in response for {@link RoleData}
      */
     private final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList("id", "name", "description", "availablePermissions",
-            "selectedPermissions"));
+            "selectedPermissions",AppUserApiConstant.roleBasedLimit));
 
     /**
      * The set of parameters that are supported in response for {@link RoleData}

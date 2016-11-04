@@ -44,8 +44,12 @@ public class MathUtility {
         return (amount1 != null) && (amount2 != null) && amount1.compareTo(amount2) == 0;
     }
 
-    public static Boolean isGreater(BigDecimal first, BigDecimal second) {
+    public static Boolean isEqualOrGreater(BigDecimal first, BigDecimal second) {
         return zeroIfNull(first).compareTo(zeroIfNull(second)) >= 0;
+    }
+
+    public static Boolean isGreater(BigDecimal first, BigDecimal second) {
+        return zeroIfNull(first).compareTo(zeroIfNull(second)) > 0;
     }
     
     public static Boolean isLesserOrEqualTo(BigDecimal first, BigDecimal second) {
