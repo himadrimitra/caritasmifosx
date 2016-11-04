@@ -63,42 +63,40 @@ public class SchedulerTriggerListener implements TriggerListener {
     }
 
     @Override
-	public boolean vetoJobExecution(final Trigger trigger, final JobExecutionContext context) {
+    public boolean vetoJobExecution(final Trigger trigger, final JobExecutionContext context) {
 
-		final String tenantIdentifier = trigger.getJobDataMap().getString(SchedulerServiceConstants.TENANT_IDENTIFIER);
-		final FineractPlatformTenant tenant = this.tenantDetailsService.loadTenantById(tenantIdentifier);
-		ThreadLocalContextUtil.setTenant(tenant);
-		final JobKey key = trigger.getJobKey();
-		final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
-		String triggerType = SchedulerServiceConstants.TRIGGER_TYPE_CRON;
-		if (context.getMergedJobDataMap().containsKey(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE)) {
-			triggerType = context.getMergedJobDataMap().getString(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE);
-		}
-		Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
-		Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection()
-				.getMaxIntervalBetweenRetries();
-		Integer numberOfRetries = 0;
-		boolean proceedJob = true;
-		while (numberOfRetries <= maxNumberOfRetries) {
-			try {
-				proceedJob = this.schedularService.processJobDetailForExecution(jobKey, triggerType);
-				numberOfRetries = numberOfRetries + 1;
-			} catch (Exception exception) { // Adding generic exception as it
-											// depends on JPA provider
-				logger.debug("processing job details for execution failed for : " + jobKey + "with message :"
-						+ exception.getMessage());
-				try {
-					Random random = new Random();
-					int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
-					Thread.sleep(1000 + (randomNum * 1000));
-					numberOfRetries = numberOfRetries + 1;
-				} catch (InterruptedException e) {
-
-				}
-			}
-		}
-		return proceedJob;
-	}
+        final String tenantIdentifier = trigger.getJobDataMap().getString(SchedulerServiceConstants.TENANT_IDENTIFIER);
+        final FineractPlatformTenant tenant = this.tenantDetailsService.loadTenantById(tenantIdentifier);
+        ThreadLocalContextUtil.setTenant(tenant);
+        final JobKey key = trigger.getJobKey();
+        final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
+        String triggerType = SchedulerServiceConstants.TRIGGER_TYPE_CRON;
+        if (context.getMergedJobDataMap().containsKey(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE)) {
+            triggerType = context.getMergedJobDataMap().getString(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE);
+        }
+        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
+        Integer numberOfRetries = 0;
+        boolean stopJob = true;
+        while (numberOfRetries <= maxNumberOfRetries) {
+            try {
+                stopJob = this.schedularService.processJobDetailForExecution(jobKey, triggerType);
+                numberOfRetries = maxNumberOfRetries + 1;
+            } catch (Exception exception) { // Adding generic exception as it
+                                            // depends on JPA provider
+                logger.debug("processing job details for execution failed for : " + jobKey + "with message :" + exception.getMessage());
+                try {
+                    Random random = new Random();
+                    int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
+                    Thread.sleep(1000 + (randomNum * 1000));
+                    numberOfRetries = numberOfRetries + 1;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return stopJob;
+    }
 
     @Override
     public void triggerMisfired(@SuppressWarnings("unused") final Trigger trigger) {

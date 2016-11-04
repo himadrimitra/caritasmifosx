@@ -84,6 +84,9 @@ public class ScheduledJobDetail extends AbstractPersistable<Long> {
 
     @Column(name = "is_misfired")
     private boolean triggerMisfired;
+    
+    @Column(name = "depands_on_job_name")
+    private String dependsOn;
 
     protected ScheduledJobDetail() {
 
@@ -178,6 +181,11 @@ public class ScheduledJobDetail extends AbstractPersistable<Long> {
 
     public void updateTriggerMisfired(final boolean triggerMisfired) {
         this.triggerMisfired = triggerMisfired;
+    }
+
+    
+    public String getDependsOn() {
+        return this.dependsOn;
     }
 
 }
