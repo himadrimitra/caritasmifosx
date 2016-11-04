@@ -28,6 +28,8 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.data.StaffData;
@@ -49,6 +51,7 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
     private final PlatformSecurityContext context;
     private final StaffLookupMapper lookupMapper = new StaffLookupMapper();
     private final StaffInOfficeHierarchyMapper staffInOfficeHierarchyMapper = new StaffInOfficeHierarchyMapper();
+    private final PaginationHelper<StaffData> paginationHelper = new PaginationHelper<>();
 
     @Autowired
     public StaffReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
@@ -157,7 +160,7 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
 
     @Override
     public Collection<StaffData> retrieveAllLoanOfficersInOfficeById(final Long officeId) {
-        return retrieveAllStaff(" office_id=" + officeId + " and is_loan_officer=1");
+        return retrieveAllStaffCollection(" office_id=" + officeId + " and is_loan_officer=1");
     }
 
     @Override
@@ -199,13 +202,29 @@ public class StaffReadPlatformServiceImpl implements StaffReadPlatformService {
     }
 
     @Override
-    public Collection<StaffData> retrieveAllStaff(final String sqlSearch, final Long officeId, final boolean loanOfficersOnly,
-            final String status) {
+    public Page<StaffData> retrieveAllStaff(final String sqlSearch, final Long officeId, final boolean loanOfficersOnly,
+            final String status, Integer offset, Integer limit) {
         final String extraCriteria = getStaffCriteria(sqlSearch, officeId, loanOfficersOnly, status);
-        return retrieveAllStaff(extraCriteria);
+        return retrieveAllStaffPaginated(extraCriteria, offset, limit);
     }
 
-    private Collection<StaffData> retrieveAllStaff(final String extraCriteria) {
+    private Page<StaffData> retrieveAllStaffPaginated(final String extraCriteria, Integer offset, Integer limit) {
+
+        final StaffMapper rm = new StaffMapper();
+        String sql = "select SQL_CALC_FOUND_ROWS  " + rm.schema();
+        if (StringUtils.isNotBlank(extraCriteria)) {
+            sql += " where " + extraCriteria;
+        }
+        sql = sql + " order by s.lastname";
+        if(limit != null)
+        sql = sql+" limit "+limit;
+        if(offset != null)
+        sql = sql+" offset "+offset;
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
+        return this.paginationHelper.fetchPage(jdbcTemplate, sqlCountRows, sql, new Object[] {}, rm);
+    }
+    
+    private Collection<StaffData> retrieveAllStaffCollection(final String extraCriteria) {
 
         final StaffMapper rm = new StaffMapper();
         String sql = "select " + rm.schema();

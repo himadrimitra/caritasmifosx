@@ -43,6 +43,7 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
@@ -93,19 +94,24 @@ public class StaffApiResource {
             @QueryParam("officeId") final Long officeId,
             @DefaultValue("false") @QueryParam("staffInOfficeHierarchy") final boolean staffInOfficeHierarchy,
             @DefaultValue("false") @QueryParam("loanOfficersOnly") final boolean loanOfficersOnly,
+            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @DefaultValue("active") @QueryParam("status") final String status) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
-        final Collection<StaffData> staff;
+        Page<StaffData> staffpage = null;
+        Collection<StaffData> staffCollection = null;
         if (staffInOfficeHierarchy) {
-            staff = this.readPlatformService.retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(officeId, loanOfficersOnly);
+            staffCollection = this.readPlatformService.retrieveAllStaffInOfficeAndItsParentOfficeHierarchy(officeId, loanOfficersOnly);
         } else {
-            staff = this.readPlatformService.retrieveAllStaff(sqlSearch, officeId, loanOfficersOnly, status);
+            staffpage = this.readPlatformService.retrieveAllStaff(sqlSearch, officeId, loanOfficersOnly, status, offset, limit);
         }
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, staff, this.RESPONSE_DATA_PARAMETERS);
+		if (staffpage != null) {
+			return this.toApiJsonSerializer.serialize(settings, staffpage, this.RESPONSE_DATA_PARAMETERS);
+		}
+        return this.toApiJsonSerializer.serialize(settings, staffCollection, this.RESPONSE_DATA_PARAMETERS);
     }
 
     @POST
