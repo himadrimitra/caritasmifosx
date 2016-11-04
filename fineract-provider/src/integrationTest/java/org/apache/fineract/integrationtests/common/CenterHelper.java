@@ -39,7 +39,8 @@ public class CenterHelper {
 
     public static final String CREATED_DATE = "29 December 2014";
     private static final String CREATE_CENTER_URL = "/fineract-provider/api/v1/centers?" + Utils.TENANT_IDENTIFIER;
-
+    public static final String DATE_FORMAT = "dd MMMM yyyy";
+	private static final String TIME_FORMAT = "HH:mm:ss";
     public static CenterDomain retrieveByID(int id, final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         final String GET_CENTER_BY_ID_URL = CENTERS_URL + "/" + id + "?associations=groupMembers&" + Utils.TENANT_IDENTIFIER;
         System.out.println("------------------------ RETRIEVING CENTER AT " + id + "-------------------------");
@@ -102,6 +103,28 @@ public class CenterHelper {
         System.out.println("------------------------CREATING CENTER-------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, CREATE_CENTER_URL, new Gson().toJson(hm), "resourceId");
     }
+
+	public static Integer attachCenterMeeting(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final String frequency, final String interval,
+			final String startDate, final Integer centerId) {
+		System.out.println(
+				"---------------------------------ATTACH CENTER MEETING---------------------------------------------");
+		String ATTACH_MEETING_URL = "/fineract-provider/api/v1/centers/" + centerId + "/calendars?"
+				+ Utils.TENANT_IDENTIFIER;
+		return Utils.performServerPost(requestSpec, responseSpec, ATTACH_MEETING_URL,
+				getCenterMeetingAsJSON(frequency, interval, startDate, centerId), "resourceId");
+	}
+
+	public static Integer updateCenterMeeting(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final String presentMeetingDate, final String newMeetingDate,
+			final Integer centerId, final Integer calendarId) {
+		System.out.println(
+				"---------------------------------UPDATE CENTER MEETING---------------------------------------------");
+		String UPDATE_MEETING_URL = "/fineract-provider/api/v1/centers/" + centerId + "/calendars/" + calendarId + "/?"
+				+ Utils.TENANT_IDENTIFIER;
+		return Utils.performServerPut(requestSpec, responseSpec, UPDATE_MEETING_URL,
+				getUpdateCenterMeetingAsJSON(presentMeetingDate, newMeetingDate), "resourceId");
+	}
 
     public static HashMap<String, String> updateCenter(final int id, HashMap request, final RequestSpecification requestSpec,
             final ResponseSpecification responseSpec) {
@@ -220,6 +243,37 @@ public class CenterHelper {
                 externalId, staffId, officeID, officeName, hierarchy, groupMembers);
         
     }
+
+	public static String getCenterMeetingAsJSON(final String frequency, final String interval, final String startDate,
+			final Integer centerId) {
+		final HashMap<String, String> map = new HashMap<>();
+		map.put("repeating", "true");
+		map.put("frequency", frequency);
+		map.put("interval", interval);
+		map.put("startDate", startDate);
+		map.put("locale", "en");
+		map.put("dateFormat", DATE_FORMAT);
+		map.put("typeId", "1");
+		map.put("timeFormat", TIME_FORMAT);
+		map.put("title", "centers_centerId_CollectionMeeting");
+		map.put("meetingtime","00:00:00");
+
+		System.out.println("map : " + map);
+		return new Gson().toJson(map);
+
+	}
+
+	private static String getUpdateCenterMeetingAsJSON(String presentMeetingDate, String newMeetingDate) {
+		final HashMap<String, String> map = new HashMap<>();
+		map.put("presentMeetingDate", presentMeetingDate);
+		map.put("newMeetingDate", newMeetingDate);
+		map.put("reschedulebasedOnMeetingDates", "true");
+		map.put("locale", "en");
+		map.put("dateFormat", DATE_FORMAT);
+
+		System.out.println("map : " + map);
+		return new Gson().toJson(map);
+	}
 
     public static String assignStaffAsJSON(final Long staffId) {
         final HashMap<String, Object> map = new HashMap<>();

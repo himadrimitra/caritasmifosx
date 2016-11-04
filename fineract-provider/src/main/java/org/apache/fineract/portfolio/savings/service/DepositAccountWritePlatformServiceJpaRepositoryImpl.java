@@ -81,6 +81,7 @@ import org.apache.fineract.portfolio.savings.domain.DepositAccountOnHoldTransact
 import org.apache.fineract.portfolio.savings.domain.DepositAccountRecurringDetail;
 import org.apache.fineract.portfolio.savings.domain.FixedDepositAccount;
 import org.apache.fineract.portfolio.savings.domain.RecurringDepositAccount;
+import org.apache.fineract.portfolio.savings.domain.RecurringDepositScheduleInstallment;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountCharge;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountChargeRepositoryWrapper;
@@ -1373,4 +1374,55 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
         return user;
     }
 
+    @Override
+	public void applyMeetingDateChanges(Calendar calendar, Collection<CalendarInstance> savingCalendarInstances,
+			Boolean reschedulebasedOnMeetingDates, LocalDate presentMeetingDate, LocalDate newMeetingDate) {
+
+		final Collection<Long> savingIds = new ArrayList<>(savingCalendarInstances.size());
+
+		final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
+                .isSavingsInterestPostingAtCurrentPeriodEnd();
+        final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+        boolean isPreMatureClosure = false;
+        final MathContext mc = MathContext.DECIMAL64;
+
+		for (final CalendarInstance calendarInstance : savingCalendarInstances) {
+			savingIds.add(calendarInstance.getEntityId());
+
+			final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler
+					.assembleFrom(calendarInstance.getEntityId(), DepositAccountType.RECURRING_DEPOSIT);
+
+			LocalDate removeScheduleFrom = null;
+			if (reschedulebasedOnMeetingDates != null && reschedulebasedOnMeetingDates) {
+				removeScheduleFrom = presentMeetingDate;
+
+			} else {
+				removeScheduleFrom = calendar.getStartDateLocalDate();
+
+			}
+			final List<RecurringDepositScheduleInstallment> depositSchedule = account.depositScheduleInstallments();
+			final List<RecurringDepositScheduleInstallment> depositScheduleInstallment = new ArrayList<>();
+
+			for (final RecurringDepositScheduleInstallment recurringDepositScheduleInstallment : depositSchedule) {
+
+				LocalDate oldDueDate = recurringDepositScheduleInstallment.getDueDate();
+				if (oldDueDate.isEqual(removeScheduleFrom) || oldDueDate.isAfter(removeScheduleFrom)) {
+					depositScheduleInstallment.add(recurringDepositScheduleInstallment);
+				}
+
+			}
+			depositSchedule.removeAll(depositScheduleInstallment);
+			final PeriodFrequencyType frequencyType = CalendarFrequencyType
+					.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
+			Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
+			frequency = frequency == -1 ? 1 : frequency;
+			account.generateSchedule(frequencyType, frequency, calendar,depositSchedule);
+			account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
+                    financialYearBeginningMonth);
+			this.savingAccountRepository.save(account);
+			
+		}
+
+	}
 }
+

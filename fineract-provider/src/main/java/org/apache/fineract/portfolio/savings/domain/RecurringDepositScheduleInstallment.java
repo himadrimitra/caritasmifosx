@@ -241,4 +241,8 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
         this.depositAmount = newDepositAmount;
         this.resetDerivedFields();
     }
+
+	public LocalDate getDueDate() {
+		return new LocalDate(this.dueDate);
+	}
 }

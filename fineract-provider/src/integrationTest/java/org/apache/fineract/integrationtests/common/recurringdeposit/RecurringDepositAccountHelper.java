@@ -348,6 +348,15 @@ public class RecurringDepositAccountHelper {
                 getPrematureCloseForRecurringDepositAccountAsJSON(closedOnDate, closureType, toSavingsId), jsonAttributeToGetBack);
     }
 
+	public static HashMap getRecurringDepositTemplate(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final Integer accountID) {
+		final String GET_RECURRING_DEPOSIT_BY_ID_URL = RECURRING_DEPOSIT_ACCOUNT_URL + "/" + accountID
+				+ "/transactions/template?" + Utils.TENANT_IDENTIFIER + "&command=deposit";
+		System.out.println(
+				"------------------------ RETRIEVING RECURRING DEPOSIT ACCOUNT BY ID -------------------------");
+		return Utils.performServerGet(requestSpec, responseSpec, GET_RECURRING_DEPOSIT_BY_ID_URL, "");
+	}
+    
     private String getApproveRecurringDepositAccountAsJSON(final String approvedOnDate) {
         final HashMap<String, Object> map = new HashMap<>();
         map.put("locale", CommonConstants.locale);
@@ -520,4 +529,5 @@ public class RecurringDepositAccountHelper {
     	return this;
     }
 
+	
 }

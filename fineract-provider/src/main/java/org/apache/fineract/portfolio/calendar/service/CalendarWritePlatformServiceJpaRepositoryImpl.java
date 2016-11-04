@@ -55,6 +55,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
+import org.apache.fineract.portfolio.savings.service.DepositAccountWritePlatformService;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -74,14 +75,14 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
     private final GroupRepositoryWrapper groupRepository;
     private final LoanRepository loanRepository;
     private final ClientRepositoryWrapper clientRepository;
-
+	private final DepositAccountWritePlatformService depositAccountWritePlatformService;
     @Autowired
     public CalendarWritePlatformServiceJpaRepositoryImpl(final CalendarRepository calendarRepository,
             final CalendarHistoryRepository calendarHistoryRepository,
             final CalendarCommandFromApiJsonDeserializer fromApiJsonDeserializer,
             final CalendarInstanceRepository calendarInstanceRepository, final LoanWritePlatformService loanWritePlatformService,
             final ConfigurationDomainService configurationDomainService, final GroupRepositoryWrapper groupRepository,
-            final LoanRepository loanRepository, final ClientRepositoryWrapper clientRepository) {
+            final LoanRepository loanRepository, final ClientRepositoryWrapper clientRepository, final DepositAccountWritePlatformService depositAccountWritePlatformService) {
         this.calendarRepository = calendarRepository;
         this.calendarHistoryRepository = calendarHistoryRepository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -91,6 +92,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
         this.groupRepository = groupRepository;
         this.loanRepository = loanRepository;
         this.clientRepository = clientRepository;
+        this.depositAccountWritePlatformService = depositAccountWritePlatformService;
     }
 
     @Override
@@ -342,6 +344,16 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
 
                 }
             }
+            final Collection<CalendarInstance> savingCalendarInstances = this.calendarInstanceRepository
+					.findByCalendarIdAndEntityTypeId(calendarId,
+							CalendarEntityType.SAVINGS.getValue());
+			
+			if (!CollectionUtils.isEmpty(savingCalendarInstances)) {
+				this.depositAccountWritePlatformService.applyMeetingDateChanges(
+						calendarForUpdate, savingCalendarInstances,
+						reschedulebasedOnMeetingDates, presentMeetingDate,
+						newMeetingDate);
+}
         }
 
         return new CommandProcessingResultBuilder() //

@@ -1130,14 +1130,19 @@ public class RecurringDepositAccount extends SavingsAccount {
     public void generateSchedule(final PeriodFrequencyType frequency, final Integer recurringEvery, final Calendar calendar) {
         final List<RecurringDepositScheduleInstallment> depositScheduleInstallments = depositScheduleInstallments();
         depositScheduleInstallments.clear();
-        LocalDate installmentDate = null;
+		generateSchedule(frequency, recurringEvery, calendar, depositScheduleInstallments);
+	}
+
+	public void generateSchedule(final PeriodFrequencyType frequency, final Integer recurringEvery,
+		final Calendar calendar, final List<RecurringDepositScheduleInstallment> depositScheduleInstallments) {
+		LocalDate installmentDate = null;
         if (this.isCalendarInherited()) {
             installmentDate = CalendarUtils.getNextScheduleDate(calendar, accountSubmittedOrActivationDate());
         } else {
             installmentDate = depositStartDate();
         }
 
-        int installmentNumber = 1;
+        int installmentNumber = depositScheduleInstallments.size()+1;
         final LocalDate maturityDate = calcualteScheduleTillDate(frequency, recurringEvery);
         final BigDecimal depositAmount = this.recurringDetail.mandatoryRecommendedDepositAmount();
         while (maturityDate.isAfter(installmentDate)) {
@@ -1160,7 +1165,7 @@ public class RecurringDepositAccount extends SavingsAccount {
         return tillDate;
     }
 
-    private List<RecurringDepositScheduleInstallment> depositScheduleInstallments() {
+    public List<RecurringDepositScheduleInstallment> depositScheduleInstallments() {
         if (this.depositScheduleInstallments == null) {
             this.depositScheduleInstallments = new ArrayList<>();
         }
