@@ -87,73 +87,73 @@ public class SchedulerJobListener implements JobListener {
     }
 
     @Override
-	public void jobWasExecuted(final JobExecutionContext context, final JobExecutionException jobException) {
-		try {
-			final Trigger trigger = context.getTrigger();
-			final JobKey key = context.getJobDetail().getKey();
-			final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
-			ScheduledJobDetail scheduledJobDetails = null;
-			Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection()
-					.getMaxIntervalBetweenRetries();
-			Integer numberOfRetries = 0;
-			Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
-			while (numberOfRetries <= maxNumberOfRetries) {
-			try {
-				numberOfRetries = numberOfRetries + 1;
-				scheduledJobDetails = this.schedularService.findByJobKey(jobKey);
-			} catch (Exception exception) {
-				logger.debug("finding job by job key failed for : " + jobKey + "with error :" + exception.getMessage());
-				try {
-						Random random = new Random();
-						int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
-						Thread.sleep(1000 + (randomNum * 1000));
-					}catch (InterruptedException e) {
+    public void jobWasExecuted(final JobExecutionContext context, final JobExecutionException jobException) {
 
-					}
-				}
-			}
-			final Long version = this.schedularService.fetchMaxVersionBy(jobKey) + 1;
-			String status = SchedulerServiceConstants.STATUS_SUCCESS;
-			String errorMessage = null;
-			String errorLog = null;
-			if (jobException != null) {
-				status = SchedulerServiceConstants.STATUS_FAILED;
-				this.stackTraceLevel = 0;
-				final Throwable throwable = getCauseFromException(jobException);
-				this.stackTraceLevel = 0;
-				StackTraceElement[] stackTraceElements = null;
-				errorMessage = throwable.getMessage();
-				stackTraceElements = throwable.getStackTrace();
-				final StringBuffer sb = new StringBuffer(throwable.toString());
-				for (final StackTraceElement element : stackTraceElements) {
-					sb.append("\n \t at ").append(element.getClassName()).append(".").append(element.getMethodName())
-							.append("(").append(element.getLineNumber()).append(")");
-				}
-				errorLog = sb.toString();
+        final Trigger trigger = context.getTrigger();
+        final JobKey key = context.getJobDetail().getKey();
+        final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
+        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
+        Integer numberOfRetries = 0;
+        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+        if (maxNumberOfRetries < 2) {
+            maxNumberOfRetries = 2;
+        }
+        while (numberOfRetries <= maxNumberOfRetries) {
+            try {
 
-			}
-			String triggerType = SchedulerServiceConstants.TRIGGER_TYPE_CRON;
-			if (context.getMergedJobDataMap().containsKey(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE)) {
-				triggerType = context.getMergedJobDataMap().getString(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE);
-			}
-			if (triggerType == SchedulerServiceConstants.TRIGGER_TYPE_CRON && trigger.getNextFireTime() != null
-					&& trigger.getNextFireTime().after(scheduledJobDetails.getNextRunTime())) {
-				scheduledJobDetails.updateNextRunTime(trigger.getNextFireTime());
-			}
+                ScheduledJobDetail scheduledJobDetails = this.schedularService.findByJobKey(jobKey);
+                final Long version = this.schedularService.fetchMaxVersionBy(jobKey) + 1;
+                String status = SchedulerServiceConstants.STATUS_SUCCESS;
+                String errorMessage = null;
+                String errorLog = null;
+                if (jobException != null) {
+                    status = SchedulerServiceConstants.STATUS_FAILED;
+                    this.stackTraceLevel = 0;
+                    final Throwable throwable = getCauseFromException(jobException);
+                    this.stackTraceLevel = 0;
+                    StackTraceElement[] stackTraceElements = null;
+                    errorMessage = throwable.getMessage();
+                    stackTraceElements = throwable.getStackTrace();
+                    final StringBuffer sb = new StringBuffer(throwable.toString());
+                    for (final StackTraceElement element : stackTraceElements) {
+                        sb.append("\n \t at ").append(element.getClassName()).append(".").append(element.getMethodName()).append("(")
+                                .append(element.getLineNumber()).append(")");
+                    }
+                    errorLog = sb.toString();
 
-			scheduledJobDetails.updatePreviousRunStartTime(context.getFireTime());
-			scheduledJobDetails.updateCurrentlyRunningStatus(false);
+                }
+                String triggerType = SchedulerServiceConstants.TRIGGER_TYPE_CRON;
+                if (context.getMergedJobDataMap().containsKey(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE)) {
+                    triggerType = context.getMergedJobDataMap().getString(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE);
+                }
+                if (triggerType == SchedulerServiceConstants.TRIGGER_TYPE_CRON && trigger.getNextFireTime() != null
+                        && trigger.getNextFireTime().after(scheduledJobDetails.getNextRunTime())) {
+                    scheduledJobDetails.updateNextRunTime(trigger.getNextFireTime());
+                }
 
-			final ScheduledJobRunHistory runHistory = new ScheduledJobRunHistory(scheduledJobDetails, version,
-					context.getFireTime(), new Date(), status, errorMessage, triggerType, errorLog);
-			// scheduledJobDetails.addRunHistory(runHistory);
+                scheduledJobDetails.updatePreviousRunStartTime(context.getFireTime());
+                scheduledJobDetails.updateCurrentlyRunningStatus(false);
 
-			this.schedularService.saveOrUpdate(scheduledJobDetails, runHistory);
-		} catch (Exception e) {
-			logger.debug("failed in jobWasExecuted for the job :" + context.getJobDetail().getKey().getName()
-					+ "with error :" + e.getMessage());
-		}
-	}
+                final ScheduledJobRunHistory runHistory = new ScheduledJobRunHistory(scheduledJobDetails, version, context.getFireTime(),
+                        new Date(), status, errorMessage, triggerType, errorLog);
+                // scheduledJobDetails.addRunHistory(runHistory);
+
+                this.schedularService.saveOrUpdate(scheduledJobDetails, runHistory);
+                numberOfRetries = maxNumberOfRetries + 1;
+            } catch (Exception exception) {
+                numberOfRetries++;
+                logger.debug("failed in jobWasExecuted for the job :" + key.getName() + "with error :" + exception.getMessage());
+                try {
+                    Random random = new Random();
+                    int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
+                    Thread.sleep(1000 + (randomNum * 1000));
+                } catch (InterruptedException e) {
+
+                }
+            }
+        }
+
+    }
 
     private Throwable getCauseFromException(final Throwable exception) {
         if (this.stackTraceLevel <= SchedulerServiceConstants.STACK_TRACE_LEVEL
