@@ -176,7 +176,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
 						nonPortFolioReconciledInflowAmount = nonPortFolioReconciledInflowAmount.add(amount);
 					}
 				}else if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.ERROR)){
-					if(MathUtility.isGreater(amount, BigDecimal.ZERO)){
+					if(MathUtility.isEqualOrGreater(amount, BigDecimal.ZERO)){
 						miscellaneousReconciledInflowAmount = miscellaneousReconciledInflowAmount.add(amount);
 					}else{
 						miscellaneousReconciledOutflowAmount = miscellaneousReconciledOutflowAmount.add(amount);
@@ -196,7 +196,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
 						nonPortFolioUnReconciledInflowAmount = nonPortFolioUnReconciledInflowAmount.add(amount);
 					}
 				}else if(transactionType.equalsIgnoreCase(ReconciliationApiConstants.ERROR)){
-					if(MathUtility.isGreater(amount, BigDecimal.ZERO)){
+					if(MathUtility.isEqualOrGreater(amount, BigDecimal.ZERO)){
 						miscellaneousUnReconciledInflowAmount = miscellaneousUnReconciledInflowAmount.add(amount);
 					}else{
 						miscellaneousUnReconciledOutflowAmount = miscellaneousUnReconciledOutflowAmount.add(amount);

@@ -16,15 +16,31 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.useradministration.api;
+package org.apache.fineract.useradministration.data;
 
-public class AppUserApiConstant {
+import java.math.BigDecimal;
 
-    public static final int numberOfPreviousPasswords = 3;
-    public static final String roleBasedLimit = "roleBasedLimit";
-    public static final String loanApproval = "loanApproval";
-    public static final int minLength = 2;
-    public static final String idParam = "id";
-      
+public class RoleBasedLimitData {
+	
+	private final Long id;
+    private BigDecimal loanApproval;
+    
+	public RoleBasedLimitData(Long id, BigDecimal loanApproval) {
+		this.id = id;
+		this.loanApproval = loanApproval;
+	}
 
+	public Long getId() {
+		return this.id;
+	}
+
+	public BigDecimal getLoanApproval() {
+		return this.loanApproval;
+	}
+
+	public void setLoanApproval(BigDecimal loanApproval) {
+		this.loanApproval = loanApproval;
+	}
+    
+    
 }

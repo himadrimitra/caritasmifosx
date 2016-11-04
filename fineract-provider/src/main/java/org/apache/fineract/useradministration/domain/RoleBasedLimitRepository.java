@@ -16,15 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.fineract.useradministration.api;
+package org.apache.fineract.useradministration.domain;
 
-public class AppUserApiConstant {
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-    public static final int numberOfPreviousPasswords = 3;
-    public static final String roleBasedLimit = "roleBasedLimit";
-    public static final String loanApproval = "loanApproval";
-    public static final int minLength = 2;
-    public static final String idParam = "id";
-      
+public interface RoleBasedLimitRepository extends JpaRepository<RoleBasedLimit, Long>, JpaSpecificationExecutor<RoleBasedLimit>{
 
 }

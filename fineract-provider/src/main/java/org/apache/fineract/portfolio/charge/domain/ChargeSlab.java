@@ -44,7 +44,7 @@ public class ChargeSlab extends AbstractPersistable<Long> {
 
     public boolean isLoanAmountFallsInSlab(final BigDecimal principalAmount) {
         boolean isLoanAmountFallsInSlab = false;
-        if (MathUtility.isGreater(principalAmount, this.fromLoanAmount) && MathUtility.isLesserOrEqualTo(principalAmount, this.toLoanAmount)) {
+        if (MathUtility.isEqualOrGreater(principalAmount, this.fromLoanAmount) && MathUtility.isLesserOrEqualTo(principalAmount, this.toLoanAmount)) {
             isLoanAmountFallsInSlab = true;
         }
         return isLoanAmountFallsInSlab;

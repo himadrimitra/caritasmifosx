@@ -136,6 +136,8 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.Role;
+import org.apache.fineract.useradministration.exception.RoleBasedLoanApprovalLimitException;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1267,9 +1269,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
         final AppUser currentUser = getAppUserIfPresent();
         LocalDate expectedDisbursementDate = null;
-
         this.loanApplicationTransitionApiJsonValidator.validateApproval(command.json());
-
+        validateRoleBasedLimit(currentUser, command);
         final Loan loan = retrieveLoanBy(loanId);
 
         final JsonArray disbursementDataArray = command.arrayOfParameterNamed(LoanApiConstants.disbursementDataParameterName);
@@ -1663,6 +1664,18 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             if (officeToLoanProductMappingList == null) { throw new NotOfficeSpecificProductException(productId, officeId); }
 
         }
+    }
+    
+    private void validateRoleBasedLimit(AppUser currentUser, JsonCommand command){
+        Set<Role> roleSet = currentUser.getRoles();
+        BigDecimal approvedLoanAmount = command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName);
+        for (Role role : roleSet) {
+			if(role.getRoleBasedLimit() != null && role.getRoleBasedLimit().getLoanApproval() != null && approvedLoanAmount != null){
+				if(MathUtility.isGreater(approvedLoanAmount, role.getRoleBasedLimit().getLoanApproval())){
+					throw new RoleBasedLoanApprovalLimitException("error.msg.amount.exceeding.approval.limit", role.getRoleBasedLimit().getLoanApproval());
+				}
+			}
+		}
     }
     
 }

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.useradministration.domain;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -31,14 +32,20 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.useradministration.api.AppUserApiConstant;
+import org.apache.fineract.useradministration.data.RoleBasedLimitData;
 import org.apache.fineract.useradministration.data.RoleData;
+import org.apache.fineract.useradministration.service.AppUserConstants;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.data.jpa.domain.AbstractPersistable;
+
+import com.google.gson.JsonElement;
 
 @Entity
 @Cacheable
@@ -59,10 +66,14 @@ public class Role extends AbstractPersistable<Long> {
     @Cache(usage=CacheConcurrencyStrategy.READ_ONLY, region = "Permission")
     @JoinTable(name = "m_role_permission", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
     private final Set<Permission> permissions = new HashSet<>();
+    
+    @OneToOne
+    @JoinColumn(name = "m_role_based_limit_id", nullable = true)
+    private RoleBasedLimit roleBasedLimit;
 
     public static Role fromJson(final JsonCommand command) {
         final String name = command.stringValueOfParameterNamed("name");
-        final String description = command.stringValueOfParameterNamed("description");
+        final String description = command.stringValueOfParameterNamed("description");        
         return new Role(name, description);
     }
 
@@ -132,7 +143,11 @@ public class Role extends AbstractPersistable<Long> {
     }
 
     public RoleData toData() {
-        return new RoleData(getId(), this.name, this.description, this.disabled);
+    	RoleBasedLimitData roleBasedLimit = null;
+    	if(this.roleBasedLimit != null){
+    		roleBasedLimit =  new RoleBasedLimitData(this.roleBasedLimit.getId(), this.roleBasedLimit.getLoanApproval());
+    	}
+        return new RoleData(getId(), this.name, this.description, this.disabled, roleBasedLimit);
     }
 
     public void disableRole() {
@@ -150,4 +165,13 @@ public class Role extends AbstractPersistable<Long> {
     public Boolean isEnabled() {
         return this.disabled;
     }
+
+	public RoleBasedLimit getRoleBasedLimit() {
+		return this.roleBasedLimit;
+	}
+
+	public void setRoleBasedLimit(RoleBasedLimit roleBasedLimit) {
+		this.roleBasedLimit = roleBasedLimit;
+	}    
+    
 }

@@ -347,9 +347,9 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             }
 
             if (loanTransaction == null || (MathUtility.isGreaterThanZero(totalPaidAmount) && !loanTransaction.isInterestWaiver())) {
-                if (MathUtility.isGreater(totalPaidAmount, installmentCharge)) {
+                if (MathUtility.isEqualOrGreater(totalPaidAmount, installmentCharge)) {
                     if (MathUtility.isGreaterThanZero(glimPaidCharge)) {
-                        if (MathUtility.isGreater(glimPaidCharge, installmentCharge)) {
+                        if (MathUtility.isEqualOrGreater(glimPaidCharge, installmentCharge)) {
                             glimPaidCharge = glimPaidCharge.subtract(installmentCharge);
                             totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentCharge);
                         } else {
@@ -384,9 +384,9 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             }
 
             if (loanTransaction == null || (MathUtility.isGreaterThanZero(totalPaidAmount) && !loanTransaction.isChargesWaiver())) {
-                if (MathUtility.isGreater(totalPaidAmount, installmentInterest)) {
+                if (MathUtility.isEqualOrGreater(totalPaidAmount, installmentInterest)) {
                     if (MathUtility.isGreaterThanZero(glimPaidInterest)) {
-                        if (MathUtility.isGreater(glimPaidInterest, installmentInterest)) {
+                        if (MathUtility.isEqualOrGreater(glimPaidInterest, installmentInterest)) {
                             glimPaidInterest = MathUtility.subtract(glimPaidInterest, installmentInterest);
                             totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentInterest);
                         } else {
@@ -423,9 +423,9 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             if (loanTransaction == null
                     || (MathUtility.isGreaterThanZero(totalPaidAmount) && (loanTransaction.isRepayment() || loanTransaction.isWriteOff()
                             || loanTransaction.isRecoveryRepayment() || loanTransaction.isReversed()))) {
-                if (MathUtility.isGreater(totalPaidAmount, installmentPrincipal)) {
+                if (MathUtility.isEqualOrGreater(totalPaidAmount, installmentPrincipal)) {
                     if (MathUtility.isGreaterThanZero(glimPaidPrincipal)) {
-                        if (MathUtility.isGreater(glimPaidPrincipal, installmentPrincipal)) {
+                        if (MathUtility.isEqualOrGreater(glimPaidPrincipal, installmentPrincipal)) {
                             glimPaidPrincipal = MathUtility.subtract(glimPaidPrincipal, installmentPrincipal);
                         } else {
                             paidPrincipal = MathUtility.add(paidPrincipal, MathUtility.subtract(installmentPrincipal, glimPaidPrincipal));

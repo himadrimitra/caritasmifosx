@@ -30,16 +30,19 @@ public class RoleData implements Serializable {
     private final String name;
     private final String description;
     private final Boolean disabled;
+    private RoleBasedLimitData roleBasedLimit;
 
     public RolePermissionsData toRolePermissionData(final Collection<PermissionData> permissionUsageData) {
         return new RolePermissionsData(this.id, this.name, this.description, this.disabled, permissionUsageData);
     }
 
-    public RoleData(final Long id, final String name, final String description, final Boolean disabled) {
+    public RoleData(final Long id, final String name, final String description, final Boolean disabled,
+    		RoleBasedLimitData roleBasedLimit) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.disabled = disabled;
+        this.roleBasedLimit = roleBasedLimit;
     }
 
     @Override
@@ -68,4 +71,15 @@ public class RoleData implements Serializable {
     public Boolean getDisabled() {
         return disabled;
     }
+
+	public RoleBasedLimitData getRoleBasedLimit() {
+		return this.roleBasedLimit;
+	}
+
+	public void setRoleBasedLimit(RoleBasedLimitData roleBasedLimit) {
+		this.roleBasedLimit = roleBasedLimit;
+	}
+    
+    
+    
 }
