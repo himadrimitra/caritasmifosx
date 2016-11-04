@@ -136,6 +136,10 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     @JoinColumn(name = "appuser_id", referencedColumnName= "id", nullable = false)
     private Set<AppUserClientMapping> appUserClientMappings = new HashSet<>();
 
+    @Column(name = "latest_successful_login")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastLoginDate;
+
 	public static AppUser fromJson(final Office userOffice, final Staff linkedStaff, final Set<Role> allRoles, 
 			final Collection<Client> clients, final JsonCommand command) {
 
@@ -668,5 +672,15 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
                     authorizationMessage); }
         }
     }
+
+	public Date getLastLoginDate() {
+		return this.lastLoginDate;
+	}
+
+	public void setLastLoginDate(Date lastLoginDate) {
+		this.lastLoginDate = lastLoginDate;
+	}
+    
+    
 
 }

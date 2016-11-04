@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -138,7 +139,7 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
 
         AppUserData retUser = AppUserData.instance(user.getId(), user.getUsername(), user.getEmail(), user.getOffice().getId(),
                 user.getOffice().getName(), user.getFirstname(), user.getLastname(), availableRoles, selectedUserRoles, linkedStaff,
-                user.getPasswordNeverExpires(), user.isSelfServiceUser());
+                user.getPasswordNeverExpires(), user.isSelfServiceUser(),user.getLastLoginDate());
         
         if(retUser.isSelfServiceUser()){
         	Set<ClientData> clients = new HashSet<>();
@@ -176,6 +177,7 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
             final Long staffId = JdbcSupport.getLong(rs, "staffId");
             final Boolean passwordNeverExpire = rs.getBoolean("passwordNeverExpires");
             final Boolean isSelfServiceUser = rs.getBoolean("isSelfServiceUser");
+            final Date lastLoginDate = rs.getTimestamp("lastLoginDate");
             final Collection<RoleData> selectedRoles = this.roleReadPlatformService.retrieveAppUserRoles(id);
 
             final StaffData linkedStaff;
@@ -185,12 +187,12 @@ public class AppUserReadPlatformServiceImpl implements AppUserReadPlatformServic
                 linkedStaff = null;
             }
             return AppUserData.instance(id, username, email, officeId, officeName, firstname, lastname, null, selectedRoles, linkedStaff,
-                    passwordNeverExpire, isSelfServiceUser);
+                    passwordNeverExpire, isSelfServiceUser, lastLoginDate);
         }
 
         public String schema() {
             return " u.id as id, u.username as username, u.firstname as firstname, u.lastname as lastname, u.email as email, u.password_never_expires as passwordNeverExpires, "
-                    + " u.office_id as officeId, o.name as officeName, u.staff_id as staffId, u.is_self_service_user as isSelfServiceUser from m_appuser u "
+                    + " u.latest_successful_login as lastLoginDate ,u.office_id as officeId, o.name as officeName, u.staff_id as staffId, u.is_self_service_user as isSelfServiceUser from m_appuser u "
                     + " join m_office o on o.id = u.office_id where o.hierarchy like ? and u.is_deleted=0 order by u.username";
         }
 

@@ -1,0 +1,1 @@
+ALTER TABLE `m_appuser` ADD COLUMN  `latest_successful_login` DATETIME NULL DEFAULT NULL;
