@@ -129,7 +129,12 @@ public class GroupLoanIndividualMonitoringAssembler {
                     }
 
                     // total interest calculation
-                    totalInterest = calculateTotalInterest(interestRate, numberOfRepayments, amount);
+                    if (loan.getLoanProductRelatedDetail().getInterestMethod().isDecliningBalnce()) {
+                        totalInterest = calculateTotalInterest(interestRate, numberOfRepayments, amount);
+                    } else {
+                        totalInterest = calculateTotalInterestForFlat(loan.getLoanProductRelatedDetail().getNominalInterestRatePerPeriod(),
+                                numberOfRepayments, amount);
+                    }
                     groupLoanIndividualMonitoring.setInterestAmount(totalInterest);
 
                     // calculate percentage of principal amount
@@ -347,7 +352,13 @@ public class GroupLoanIndividualMonitoringAssembler {
                 calculateTotalCharges(newLoanApplication, element, amount, client, clientCharges);
 
                 // total interest calculation
-                totalInterest = calculateTotalInterest(interestRate, numberOfRepayment, amount);
+                if (newLoanApplication.getLoanProductRelatedDetail().getInterestMethod().isDecliningBalnce()) {
+                    totalInterest = calculateTotalInterest(interestRate, numberOfRepayment, amount);
+                } else {
+                    totalInterest = calculateTotalInterestForFlat(newLoanApplication.getLoanProductRelatedDetail().getNominalInterestRatePerPeriod(),
+                            numberOfRepayment, amount);
+                }
+                
 
                 // calculate percentage of principal amount
                 percentage = calculatePercentageOfAmount(element, amount, percentage);
@@ -359,6 +370,12 @@ public class GroupLoanIndividualMonitoringAssembler {
                     waivedInterestAmount, waivedChargeAmount);
             glimList.add(groupLoanIndividualMonitoring);
         }
+    }
+
+    private BigDecimal calculateTotalInterestForFlat(BigDecimal nominalInterestRatePerPeriod, Integer numberOfRepayment, BigDecimal amount) {
+        final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+        BigDecimal totalInterest = (amount.multiply(nominalInterestRatePerPeriod).divide(divisor)).multiply(BigDecimal.valueOf(numberOfRepayment));
+        return totalInterest;
     }
 
     private void calculateTotalCharges(Loan newLoanApplication, final JsonElement element, BigDecimal proposedAmount, Client client,
