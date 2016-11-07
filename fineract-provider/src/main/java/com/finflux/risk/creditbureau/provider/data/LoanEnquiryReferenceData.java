@@ -2,6 +2,7 @@ package com.finflux.risk.creditbureau.provider.data;
 
 import java.util.Date;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
@@ -41,7 +42,7 @@ public class LoanEnquiryReferenceData {
 
     public boolean isCBReportGeneratedDaysGreaterThanStalePeriod(final Integer stalePeriod) {
         if (this.getRequestedDate() != null) {
-            int noOfDaysCBReportGenerated = Days.daysBetween(new LocalDate(this.getRequestedDate()), LocalDate.now()).getDays();
+            int noOfDaysCBReportGenerated = Days.daysBetween(new LocalDate(this.getRequestedDate()), DateUtils.getLocalDateOfTenant()).getDays();
             if (noOfDaysCBReportGenerated > stalePeriod) { return true; }
         }
         return false;

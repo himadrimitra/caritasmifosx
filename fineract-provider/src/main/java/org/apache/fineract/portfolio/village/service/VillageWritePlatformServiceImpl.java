@@ -20,7 +20,6 @@ package org.apache.fineract.portfolio.village.service;
 
 import java.util.Map;
 
-import org.joda.time.LocalDate;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -28,6 +27,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
@@ -35,16 +35,16 @@ import org.apache.fineract.organisation.office.exception.OfficeNotFoundException
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.CenterNotFoundException;
-import org.apache.fineract.portfolio.village.exception.DuplicateVillageNameException;
-import org.apache.fineract.portfolio.loanproduct.exception.LoanProductCannotBeModifiedDueToNonClosedLoansException;
 import org.apache.fineract.portfolio.village.api.VillageTypeApiConstants;
 import org.apache.fineract.portfolio.village.domain.Village;
 import org.apache.fineract.portfolio.village.domain.VillageRepository;
 import org.apache.fineract.portfolio.village.domain.VillageRepositoryWrapper;
+import org.apache.fineract.portfolio.village.exception.DuplicateVillageNameException;
 import org.apache.fineract.portfolio.village.exception.InvalidVillageStateTransitionException;
 import org.apache.fineract.portfolio.village.exception.VillageMustBePendingToBeDeletedException;
 import org.apache.fineract.portfolio.village.serialization.VillageDataValidator;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,7 +118,7 @@ public class VillageWritePlatformServiceImpl implements VillageWritePlatformServ
             }
                
             final boolean active = command.booleanPrimitiveValueOfParameterNamed(VillageTypeApiConstants.activeParamName);
-            LocalDate submittedOnDate = new LocalDate();
+            LocalDate submittedOnDate = DateUtils.getLocalDateOfTenant();
             if (active && submittedOnDate.isAfter(activationDate)) {
                 submittedOnDate = activationDate;
             }

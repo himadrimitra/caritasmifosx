@@ -34,7 +34,7 @@ import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobRunHistoryRepo
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetail;
 import org.apache.fineract.infrastructure.jobs.domain.SchedulerDetailRepository;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
-import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -138,42 +138,42 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 
     @Transactional
     @Override
-	public boolean processJobDetailForExecution(final String jobKey, final String triggerType) {
-		boolean isStopExecution = false;
-		final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
-		if (scheduledJobDetail.isCurrentlyRunning() || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON)
-				&& (scheduledJobDetail.getNextRunTime().after(DateUtils.getLocalDateOfTenant().toDate())))) {
-			isStopExecution = true;
-		}
+    public boolean processJobDetailForExecution(final String jobKey, final String triggerType) {
+        boolean isStopExecution = false;
+        final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
+        if (scheduledJobDetail.isCurrentlyRunning()
+                || (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && !(new LocalDateTime(
+                        scheduledJobDetail.getNextRunTime()).isBefore(new LocalDateTime())))) {
+            isStopExecution = true;
+        }
 
-		String dependentJobs = this.schedulerJobRunnerReadService.getDependentJobs(scheduledJobDetail.getJobName());
+        String dependentJobs = scheduledJobDetail.getDependsOn();
+        if (dependentJobs != null) {
+            String[] dependentJobList = dependentJobs.split(":");
 
-		if (dependentJobs != null) {
-			String[] dependentJobList = dependentJobs.split(":");
-
-			for (String job : dependentJobList) {
+            for (String job : dependentJobList) {
                 Boolean isActive = this.schedulerJobRunnerReadService.isActive(job);
                 if (isActive) {
-				Date lastRunDate = this.schedulerJobRunnerReadService.getLastRunDate(job);
-				if ((lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate()))) {
-					isStopExecution = true;
-					break;
-				}
-                            }
-			}
-		}
-		
-		final SchedulerDetail schedulerDetail = retriveSchedulerDetail();
-		if (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && schedulerDetail.isSuspended()) {
-			scheduledJobDetail.updateTriggerMisfired(true);
-			isStopExecution = true;
-		} else if (!isStopExecution) {
-			scheduledJobDetail.updateCurrentlyRunningStatus(true);
-		}
+                    Date lastRunDate = this.schedulerJobRunnerReadService.getLastRunDate(job);
+                    if ((lastRunDate == null || lastRunDate.before(DateUtils.getLocalDateOfTenant().toDate()))) {
+                        isStopExecution = true;
+                        break;
+                    }
+                }
+            }
+        }
 
-		this.scheduledJobDetailsRepository.save(scheduledJobDetail);
-		return isStopExecution;
-	}
+        final SchedulerDetail schedulerDetail = retriveSchedulerDetail();
+        if (triggerType.equals(SchedulerServiceConstants.TRIGGER_TYPE_CRON) && schedulerDetail.isSuspended()) {
+            scheduledJobDetail.updateTriggerMisfired(true);
+            isStopExecution = true;
+        } else if (!isStopExecution) {
+            scheduledJobDetail.updateCurrentlyRunningStatus(true);
+        }
+
+        this.scheduledJobDetailsRepository.save(scheduledJobDetail);
+        return isStopExecution;
+    }
 
     @Transactional
     @Override

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
@@ -122,7 +123,7 @@ public class GroupLoanIndividualMonitoringRepaymentScheduleData {
         this.totalInstallmentAmountForPeriod = totalInstallmentAmountForPeriod;
         this.periodsWithDisbursement = null;
 
-        if (dueDate.isBefore(new LocalDate())) {
+        if (dueDate.isBefore(DateUtils.getLocalDateOfTenant())) {
             this.totalOverdue = this.totalOutstandingForPeriod;
         } else {
             this.totalOverdue = null;
@@ -235,7 +236,7 @@ public class GroupLoanIndividualMonitoringRepaymentScheduleData {
         this.totalActualCostOfLoanForPeriod = this.feeChargesDue;
         this.totalInstallmentAmountForPeriod = null;
         this.periodsWithDisbursement = null;
-        if (dueDate.isBefore(new LocalDate())) {
+        if (dueDate.isBefore(DateUtils.getLocalDateOfTenant())) {
             this.totalOverdue = this.totalOutstandingForPeriod;
         } else {
             this.totalOverdue = null;

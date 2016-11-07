@@ -19,7 +19,6 @@
 package org.apache.fineract.portfolio.loanaccount.guarantor.service;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +31,7 @@ import javax.annotation.PostConstruct;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.AccountTransferDTO;
@@ -224,7 +224,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
         final boolean isRegularTransaction = true;
         final boolean isExceptionForBalanceCheck = true;
-        LocalDate transactionDate = LocalDate.now();
+        LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
         PortfolioAccountType fromAccountType = PortfolioAccountType.SAVINGS;
         PortfolioAccountType toAccountType = PortfolioAccountType.LOAN;
         final Long toAccountId = loan.getId();

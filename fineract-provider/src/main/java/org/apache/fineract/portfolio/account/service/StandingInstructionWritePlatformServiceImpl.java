@@ -36,6 +36,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformServiceUnavailableException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
@@ -199,7 +200,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
             boolean isDueForTransfer = false;
             AccountTransferRecurrenceType recurrenceType = data.recurrenceType();
             StandingInstructionType instructionType = data.instructionType();
-            LocalDate transactionDate = new LocalDate();
+            LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
             if (recurrenceType.isPeriodicRecurrence()) {
                 final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
                 PeriodFrequencyType frequencyType = data.recurrenceFrequency();
@@ -228,7 +229,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
                     transactionAmount = standingInstructionDuesData.totalDueAmount();
                 }
                 if (recurrenceType.isDuesRecurrence()) {
-                    isDueForTransfer = new LocalDate().equals(standingInstructionDuesData.dueDate());
+                    isDueForTransfer = DateUtils.getLocalDateOfTenant().equals(standingInstructionDuesData.dueDate());
                 }
             }
 

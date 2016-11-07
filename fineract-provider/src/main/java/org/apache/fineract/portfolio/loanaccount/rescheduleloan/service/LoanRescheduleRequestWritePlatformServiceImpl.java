@@ -40,6 +40,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
@@ -466,7 +467,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             }
 
             loan.updateRescheduledByUser(appUser);
-            loan.updateRescheduledOnDate(new LocalDate());
+            loan.updateRescheduledOnDate(DateUtils.getLocalDateOfTenant());
 
             // update the status of the request
             loanRescheduleRequest.approve(appUser, approvedOnDate);

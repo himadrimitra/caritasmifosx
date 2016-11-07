@@ -145,7 +145,7 @@ public class SmsCampaign extends AbstractPersistable<Long> {
         final String paramValue = command.stringValueOfParameterNamed(SmsCampaignValidator.paramValue);
 
         final String message   = command.stringValueOfParameterNamed(SmsCampaignValidator.message);
-        LocalDate submittedOnDate = new LocalDate();
+        LocalDate submittedOnDate = DateUtils.getLocalDateOfTenant();
         if (command.hasParameter(SmsCampaignValidator.submittedOnDateParamName)) {
             submittedOnDate = command.localDateValueOfParameterNamed(SmsCampaignValidator.submittedOnDateParamName);
         }

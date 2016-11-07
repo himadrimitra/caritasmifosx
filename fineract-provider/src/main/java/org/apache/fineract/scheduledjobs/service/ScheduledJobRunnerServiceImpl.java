@@ -430,7 +430,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	public void applyClientRecurringCharge() {
 		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
 				this.dataSourceServiceFactory.determineDataSourceService().retrieveDataSource());
-		LocalDate currentDate = new LocalDate();
+		LocalDate currentDate = DateUtils.getLocalDateOfTenant();
 
 		List<ClientRecurringChargeData> clientRecurringcharges = this.clientRecurringChargeReadPlatformService
 				.retriveActiveRecurringChargesForJob();

@@ -18,6 +18,7 @@ import java.util.Set;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
@@ -173,7 +174,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
 
     public List<GroupLoanIndividualMonitoringData> handleGLIMRepaymentTemplate(List<GroupLoanIndividualMonitoringData> glimData,
             LoanTransactionData loanTransactionData, Loan loan, Date transactionDate) {
-        LocalDate transactionDateAsLocalDate = (transactionDate == null) ? new LocalDate() : new LocalDate(transactionDate);
+        LocalDate transactionDateAsLocalDate = (transactionDate == null) ? DateUtils.getLocalDateOfTenant() : new LocalDate(transactionDate);
         transactionDateAsLocalDate = new LocalDate(transactionDate);
         List<LoanRepaymentScheduleInstallment> loanRepaymentScheduleInstallment = loan.getRepaymentScheduleInstallments();
         MonetaryCurrency currency = loan.getCurrency();

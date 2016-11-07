@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -207,7 +208,7 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
 
         this.context.authenticatedUser();
 
-        return OfficeData.template(null, new LocalDate());
+        return OfficeData.template(null, DateUtils.getLocalDateOfTenant());
     }
 
     @Override
@@ -255,7 +256,7 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         final Collection<OfficeData> parentLookups = retrieveAllOfficesForDropdown();
         final Collection<CurrencyData> currencyOptions = this.currencyReadPlatformService.retrieveAllowedCurrencies();
 
-        return OfficeTransactionData.template(new LocalDate(), parentLookups, currencyOptions);
+        return OfficeTransactionData.template(DateUtils.getLocalDateOfTenant(), parentLookups, currencyOptions);
     }
 
     public PlatformSecurityContext getContext() {

@@ -99,7 +99,7 @@ public class Money implements Comparable<Money> {
     }
     
     public static BigDecimal roundToMultiplesOf(final BigDecimal existingVal, final BigDecimal inMultiplesOf, RoundingMode roundingMode) {
-        return (existingVal.divide(inMultiplesOf).setScale(0, roundingMode).multiply(inMultiplesOf));
+        return (existingVal.divide(inMultiplesOf, 0 , roundingMode).multiply(inMultiplesOf));
     }
 
     public static double roundToMultiplesOf(final double existingVal, final Integer inMultiplesOf) {

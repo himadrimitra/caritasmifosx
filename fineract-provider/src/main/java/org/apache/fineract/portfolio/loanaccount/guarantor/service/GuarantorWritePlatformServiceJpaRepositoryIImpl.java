@@ -32,6 +32,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationType;
 import org.apache.fineract.portfolio.account.domain.AccountAssociations;
@@ -54,7 +55,6 @@ import org.apache.fineract.portfolio.loanaccount.guarantor.exception.InvalidGuar
 import org.apache.fineract.portfolio.loanaccount.guarantor.serialization.GuarantorCommandFromApiJsonDeserializer;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
-import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,7 +124,7 @@ public class GuarantorWritePlatformServiceJpaRepositoryIImpl implements Guaranto
                 guarantorFundingDetails.add(fundingDetails);
                 if (loan.isDisbursed() || loan.isApproved()
                         && (loan.getGuaranteeAmount() != null || loan.loanProduct().isHoldGuaranteeFundsEnabled())) {
-                    this.guarantorDomainService.assignGuarantor(fundingDetails, LocalDate.now());
+                    this.guarantorDomainService.assignGuarantor(fundingDetails, DateUtils.getLocalDateOfTenant());
                     loan.updateGuaranteeAmount(fundingDetails.getAmount());
                 }
             }
@@ -292,7 +292,7 @@ public class GuarantorWritePlatformServiceJpaRepositoryIImpl implements Guaranto
         GuarantorFundStatusType fundStatusType = GuarantorFundStatusType.DELETED;
         if (guarantorForDelete.getLoan().isDisbursed() || guarantorForDelete.getLoan().isApproved()) {
             fundStatusType = GuarantorFundStatusType.WITHDRAWN;
-            this.guarantorDomainService.releaseGuarantor(guarantorFundingDetails, LocalDate.now());
+            this.guarantorDomainService.releaseGuarantor(guarantorFundingDetails, DateUtils.getLocalDateOfTenant());
         }
         guarantorForDelete.updateStatus(guarantorFundingDetails, fundStatusType);
     }

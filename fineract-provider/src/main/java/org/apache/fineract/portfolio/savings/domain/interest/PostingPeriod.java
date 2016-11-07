@@ -24,12 +24,12 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.LocalDateInterval;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 public class PostingPeriod {
@@ -394,13 +394,13 @@ public class PostingPeriod {
                 int year = periodStartDate.getYearOfEra();
                 int monthofYear = periodStartDate.getMonthOfYear();
                 if (monthofYear <= 3) {
-                    periodEndDate = new DateTime().withDate(year, 3, 31).toLocalDate();
+                    periodEndDate = DateUtils.getLocalDateTimeOfTenant().toDateTime().withDate(year, 3, 31).toLocalDate();
                 } else if (monthofYear <= 6) {
-                    periodEndDate = new DateTime().withDate(year, 6, 30).toLocalDate();
+                    periodEndDate = DateUtils.getLocalDateTimeOfTenant().toDateTime().withDate(year, 6, 30).toLocalDate();
                 } else if (monthofYear <= 9) {
-                    periodEndDate = new DateTime().withDate(year, 9, 30).toLocalDate();
+                    periodEndDate = DateUtils.getLocalDateTimeOfTenant().toDateTime().withDate(year, 9, 30).toLocalDate();
                 } else if (monthofYear <= 12) {
-                    periodEndDate = new DateTime().withDate(year, 12, 31).toLocalDate();
+                    periodEndDate = DateUtils.getLocalDateTimeOfTenant().toDateTime().withDate(year, 12, 31).toLocalDate();
                 }
             break;
             case BI_ANNUAL:
@@ -408,9 +408,9 @@ public class PostingPeriod {
                 year = periodStartDate.getYearOfEra();
                 monthofYear = periodStartDate.getMonthOfYear();
                 if (monthofYear <= 6) {
-                    periodEndDate = new DateTime().withDate(year, 6, 30).toLocalDate();
+                    periodEndDate = DateUtils.getLocalDateTimeOfTenant().toDateTime().withDate(year, 6, 30).toLocalDate();
                 } else if (monthofYear <= 12) {
-                    periodEndDate = new DateTime().withDate(year, 12, 31).toLocalDate();
+                    periodEndDate = DateUtils.getLocalDateTimeOfTenant().toDateTime().withDate(year, 12, 31).toLocalDate();
                 }
             break;
             case ANNUAL:
