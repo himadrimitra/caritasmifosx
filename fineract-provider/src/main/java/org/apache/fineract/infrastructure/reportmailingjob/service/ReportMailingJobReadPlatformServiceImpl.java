@@ -132,7 +132,7 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
                     + "rmj.number_of_runs as numberOfRuns, rmj.is_active as isActive, rmj.run_as_userid as runAsUserId, "
                     + "sr.id as reportId, sr.report_name as reportName, sr.report_type as reportType, sr.report_subtype as reportSubType, "
                     + "sr.report_category as reportCategory, sr.report_sql as reportSql, sr.description as reportDescription, "
-                    + "sr.core_report as coreReport, sr.use_report as useReport "
+                    + "sr.core_report as coreReport, sr.track_usage as trackUsage, sr.use_report as useReport "
                     + "from m_report_mailing_job rmj "
                     + "inner join m_appuser cbu "
                     + "on cbu.id = rmj.createdby_id "
@@ -190,9 +190,10 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
             final String reportDescription = rs.getString("reportDescription");
             final boolean coreReport = rs.getBoolean("coreReport");
             final boolean useReport = rs.getBoolean("useReport");
+            final boolean trackUsage = rs.getBoolean("trackUsage");
             
             final ReportData stretchyReport = new ReportData(reportId, reportName, reportType, reportSubType, reportCategory, 
-                    reportDescription, reportSql, coreReport, useReport, null);
+                    reportDescription, reportSql, coreReport, useReport, null, trackUsage);
             
             return ReportMailingJobData.newInstance(id, name, description, startDateTime, recurrence, timeline, emailRecipients, 
                     emailSubject, emailMessage, emailAttachmentFileFormat, stretchyReport, stretchyReportParamMap, previousRunDateTime, 

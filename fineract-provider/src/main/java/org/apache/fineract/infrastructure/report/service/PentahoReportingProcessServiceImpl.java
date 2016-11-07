@@ -49,6 +49,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.ReportAudits.domain.ReportAudit;
+import com.finflux.ReportAudits.service.ReportAuditWritePlatformService;
+
 @Service
 @ReportService(type = "Pentaho")
 public class PentahoReportingProcessServiceImpl implements ReportingProcessService {
@@ -59,15 +62,18 @@ public class PentahoReportingProcessServiceImpl implements ReportingProcessServi
     private final DataSource dataSource;
     private final PlatformSecurityContext context;
     private boolean noPentaho = false;
+    private final ReportAuditWritePlatformService reportAuditWritePlatformService;
 
     @Autowired
-    public PentahoReportingProcessServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
+    public PentahoReportingProcessServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
+    		final ReportAuditWritePlatformService reportAuditWritePlatformService) {
         // kick off pentaho reports server
         ClassicEngineBoot.getInstance().start();
         this.noPentaho = false;
 
         this.context = context;
         this.dataSource = dataSource;
+        this.reportAuditWritePlatformService = reportAuditWritePlatformService;
     }
 
     @Override
@@ -76,7 +82,7 @@ public class PentahoReportingProcessServiceImpl implements ReportingProcessServi
         final String outputTypeParam = queryParams.getFirst("output-type");
         final Map<String, String> reportParams = getReportParams(queryParams);
         final Locale locale = ApiParameterHelper.extractLocale(queryParams);
-
+        ReportAudit reportAudit  = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
         String outputType = "HTML";
         if (StringUtils.isNotBlank(outputTypeParam)) {
             outputType = outputTypeParam;
@@ -110,30 +116,40 @@ public class PentahoReportingProcessServiceImpl implements ReportingProcessServi
 
             if ("PDF".equalsIgnoreCase(outputType)) {
                 PdfReportUtil.createPDF(masterReport, baos);
-                return Response.ok().entity(baos.toByteArray()).type("application/pdf").build();
+                Response response = Response.ok().entity(baos.toByteArray()).type("application/pdf").build();
+                this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+                return response;
             }
 
             if ("XLS".equalsIgnoreCase(outputType)) {
                 ExcelReportUtil.createXLS(masterReport, baos);
-                return Response.ok().entity(baos.toByteArray()).type("application/vnd.ms-excel")
+                Response response = Response.ok().entity(baos.toByteArray()).type("application/vnd.ms-excel")
                         .header("Content-Disposition", "attachment;filename=" + reportName.replaceAll(" ", "") + ".xls").build();
+                this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+                return response;
             }
 
             if ("XLSX".equalsIgnoreCase(outputType)) {
                 ExcelReportUtil.createXLSX(masterReport, baos);
-                return Response.ok().entity(baos.toByteArray()).type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                Response response = Response.ok().entity(baos.toByteArray()).type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                         .header("Content-Disposition", "attachment;filename=" + reportName.replaceAll(" ", "") + ".xlsx").build();
+                this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+                return response;
             }
 
             if ("CSV".equalsIgnoreCase(outputType)) {
                 CSVReportUtil.createCSV(masterReport, baos, "UTF-8");
-                return Response.ok().entity(baos.toByteArray()).type("text/csv")
+                Response response = Response.ok().entity(baos.toByteArray()).type("text/csv")
                         .header("Content-Disposition", "attachment;filename=" + reportName.replaceAll(" ", "") + ".csv").build();
+                this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+                return response;
             }
 
             if ("HTML".equalsIgnoreCase(outputType)) {
                 HtmlReportUtil.createStreamHTML(masterReport, baos);
-                return Response.ok().entity(baos.toByteArray()).type("text/html").build();
+                Response response = Response.ok().entity(baos.toByteArray()).type("text/html").build();
+                this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+                return response;
             }
         } catch (final ResourceException e) {
             throw new PlatformDataIntegrityException("error.msg.reporting.error", e.getMessage());

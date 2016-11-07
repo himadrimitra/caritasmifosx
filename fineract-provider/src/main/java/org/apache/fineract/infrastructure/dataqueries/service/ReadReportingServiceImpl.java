@@ -52,6 +52,8 @@ import org.apache.fineract.infrastructure.dataqueries.data.ReportParameterData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportParameterJoinData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeaderData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
+import org.apache.fineract.infrastructure.dataqueries.domain.Report;
+import org.apache.fineract.infrastructure.dataqueries.domain.ReportRepository;
 import org.apache.fineract.infrastructure.dataqueries.exception.ReportNotFoundException;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.FileSystemContentRepository;
 import org.apache.fineract.infrastructure.report.provider.ReportingProcessServiceProvider;
@@ -94,16 +96,19 @@ public class ReadReportingServiceImpl implements ReadReportingService {
     private final GenericDataService genericDataService;
     private final ReportingProcessServiceProvider reportingProcessServiceProvider;
     private boolean noPentaho = false;
+    private final ReportRepository reportRepository;
 
     @Autowired
     public ReadReportingServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final GenericDataService genericDataService, final ReportingProcessServiceProvider reportingProcessServiceProvider) {
+            final GenericDataService genericDataService, final ReportingProcessServiceProvider reportingProcessServiceProvider,
+            final ReportRepository reportRepository) {
 
         this.context = context;
         this.dataSource = dataSource;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
         this.genericDataService = genericDataService;
         this.reportingProcessServiceProvider = reportingProcessServiceProvider;
+        this.reportRepository = reportRepository;
     }
 
     @Override
@@ -319,7 +324,8 @@ public class ReadReportingServiceImpl implements ReadReportingService {
 
     @Override
     public ReportData retrieveReport(final Long id) {
-        final Collection<ReportData> reports = retrieveReports(id);
+    	final boolean usageTrackingEnabledOnly = false;
+        final Collection<ReportData> reports = retrieveReports(id, usageTrackingEnabledOnly);
 
         for (final ReportData report : reports) {
             return report;
@@ -328,15 +334,15 @@ public class ReadReportingServiceImpl implements ReadReportingService {
     }
 
     @Override
-    public Collection<ReportData> retrieveReportList() {
-        return retrieveReports(null);
+    public Collection<ReportData> retrieveReportList(final boolean usageTrackingEnabledOnly) {
+        return retrieveReports(null,usageTrackingEnabledOnly);
     }
 
-    private Collection<ReportData> retrieveReports(final Long id) {
+    private Collection<ReportData> retrieveReports(final Long id,final boolean usageTrackingEnabledOnly) {
 
         final ReportParameterJoinMapper rm = new ReportParameterJoinMapper();
 
-        final String sql = rm.schema(id);
+        final String sql = rm.schema(id,usageTrackingEnabledOnly);
 
         final Collection<ReportParameterJoinData> rpJoins = this.jdbcTemplate.query(sql, rm, new Object[] {});
 
@@ -354,7 +360,7 @@ public class ReadReportingServiceImpl implements ReadReportingService {
         Boolean coreReport = null;
         Boolean useReport = null;
         String reportSql = null;
-
+        Boolean trackUsage = null;
         Long prevReportId = (long) -1234;
         Boolean firstReport = true;
         for (final ReportParameterJoinData rpJoin : rpJoins) {
@@ -373,7 +379,7 @@ public class ReadReportingServiceImpl implements ReadReportingService {
                 } else {
                     // write report entry
                     reportList.add(new ReportData(reportId, reportName, reportType, reportSubType, reportCategory, description, reportSql,
-                            coreReport, useReport, reportParameters));
+                            coreReport, useReport, reportParameters, trackUsage));
                 }
 
                 prevReportId = rpJoin.getReportId();
@@ -387,7 +393,7 @@ public class ReadReportingServiceImpl implements ReadReportingService {
                 reportSql = rpJoin.getReportSql();
                 coreReport = rpJoin.getCoreReport();
                 useReport = rpJoin.getUseReport();
-
+                trackUsage = rpJoin.getTrackUsage();
                 if (rpJoin.getReportParameterId() != null) {
                     // report has at least one parameter
                     reportParameters = new ArrayList<>();
@@ -401,7 +407,7 @@ public class ReadReportingServiceImpl implements ReadReportingService {
         }
         // write last report
         reportList.add(new ReportData(reportId, reportName, reportType, reportSubType, reportCategory, description, reportSql, coreReport,
-                useReport, reportParameters));
+                useReport, reportParameters, trackUsage));
 
         return reportList;
     }
@@ -426,10 +432,10 @@ public class ReadReportingServiceImpl implements ReadReportingService {
 
     private static final class ReportParameterJoinMapper implements RowMapper<ReportParameterJoinData> {
 
-        public String schema(final Long reportId) {
+        public String schema(final Long reportId,final boolean usageTrackingEnabledOnly) {
 
             String sql = "select r.id as reportId, r.report_name as reportName, r.report_type as reportType, "
-                    + " r.report_subtype as reportSubType, r.report_category as reportCategory, r.description, r.core_report as coreReport, r.use_report as useReport, "
+                    + " r.report_subtype as reportSubType, r.track_usage as trackUsage, r.report_category as reportCategory, r.description, r.core_report as coreReport, r.use_report as useReport, "
                     + " rp.id as reportParameterId, rp.parameter_id as parameterId, rp.report_parameter_name as reportParameterName, p.parameter_name as parameterName";
 
             if (reportId != null) {
@@ -440,7 +446,13 @@ public class ReadReportingServiceImpl implements ReadReportingService {
                     + " left join stretchy_parameter p on p.id = rp.parameter_id";
             if (reportId != null) {
                 sql += " where r.id = " + reportId;
+                if(usageTrackingEnabledOnly){
+                	sql += " and r.track_usage = true";
+                }
             } else {
+            	if(usageTrackingEnabledOnly){
+                	sql += " where r.track_usage = true";
+                }
                 sql += " order by r.id, rp.parameter_id";
             }
 
@@ -471,6 +483,7 @@ public class ReadReportingServiceImpl implements ReadReportingService {
             final String description = rs.getString("description");
             final Boolean coreReport = rs.getBoolean("coreReport");
             final Boolean useReport = rs.getBoolean("useReport");
+            final Boolean trackUsage = rs.getBoolean("trackUsage");
 
             String reportSql;
             // reportSql might not be on the select list of columns
@@ -486,7 +499,7 @@ public class ReadReportingServiceImpl implements ReadReportingService {
             final String parameterName = rs.getString("parameterName");
 
             return new ReportParameterJoinData(reportId, reportName, reportType, reportSubType, reportCategory, description, reportSql,
-                    coreReport, useReport, reportParameterId, parameterId, reportParameterName, parameterName);
+                    coreReport, useReport, reportParameterId, parameterId, reportParameterName, parameterName, trackUsage);
         }
     }
 
@@ -697,5 +710,10 @@ public class ReadReportingServiceImpl implements ReadReportingService {
         return result;
 
     }
+
+	@Override
+	public Report retrieveReportByName(String name) {		
+		return this.reportRepository.getReportByName(name);
+	}
 
 }
