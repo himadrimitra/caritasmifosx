@@ -28,6 +28,7 @@ import javax.ws.rs.core.StreamingOutput;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportData;
 import org.apache.fineract.infrastructure.dataqueries.data.ReportParameterData;
+import org.apache.fineract.infrastructure.dataqueries.domain.Report;
 import org.apache.fineract.useradministration.domain.AppUser;
 
 public interface ReadReportingService {
@@ -40,7 +41,7 @@ public interface ReadReportingService {
 
     String getReportType(String reportName);
 
-    Collection<ReportData> retrieveReportList();
+    Collection<ReportData> retrieveReportList(final boolean usageTrackingEnabledOnly);
 
     Collection<ReportParameterData> getAllowedParameters();
 
@@ -52,4 +53,6 @@ public interface ReadReportingService {
             Map<String, String> queryParams, Locale locale, AppUser runReportAsUser, StringBuilder errorLog);
     
     public GenericResultsetData retrieveGenericResultSetForSmsCampaign(final String name, final String type, final Map<String, String> queryParams);
+    
+    Report retrieveReportByName(final String name);
 }

@@ -31,6 +31,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -79,11 +80,11 @@ public class ReportsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveReportList(@Context final UriInfo uriInfo) {
+    public String retrieveReportList(@Context final UriInfo uriInfo, @QueryParam("usageTrackingEnabledOnly") final boolean usageTrackingEnabledOnly) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<ReportData> result = this.readReportingService.retrieveReportList();
+        
+        final Collection<ReportData> result = this.readReportingService.retrieveReportList(usageTrackingEnabledOnly);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, result, this.RESPONSE_DATA_PARAMETERS);

@@ -51,10 +51,12 @@ final public class ReportData {
     private List<String> allowedReportSubTypes;
     @SuppressWarnings("unused")
     private Collection<ReportParameterData> allowedParameters;
+    @SuppressWarnings("unused")
+    private final Boolean trackUsage;
 
     public ReportData(final Long id, final String reportName, final String reportType, final String reportSubType,
             final String reportCategory, final String description, final String reportSql, final Boolean coreReport,
-            final Boolean useReport, final Collection<ReportParameterData> reportParameters) {
+            final Boolean useReport, final Collection<ReportParameterData> reportParameters,final Boolean trackUsage) {
         this.id = id;
         this.reportName = reportName;
         this.reportType = reportType;
@@ -65,6 +67,7 @@ final public class ReportData {
         this.reportSql = reportSql;
         this.coreReport = coreReport;
         this.useReport = useReport;
+        this.trackUsage = trackUsage;
         this.allowedReportTypes = null;
         this.allowedReportSubTypes = null;
         this.allowedParameters = null;
@@ -84,6 +87,7 @@ final public class ReportData {
         this.allowedReportTypes = null;
         this.allowedReportSubTypes = null;
         this.allowedParameters = null;
+        this.trackUsage = null;
     }
 
     public void appendedTemplate(final Collection<ReportParameterData> allowedParameters, final Collection<String> allowedReportTypes) {

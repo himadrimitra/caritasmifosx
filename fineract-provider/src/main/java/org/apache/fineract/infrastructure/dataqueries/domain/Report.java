@@ -77,6 +77,9 @@ public final class Report extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "report", orphanRemoval = true)
     private final Set<ReportParameterUsage> reportParameterUsages = new HashSet<>();
+    
+    @Column(name = "track_usage", nullable = false)
+    private boolean trackUsage;
 
     public static Report fromJson(final JsonCommand command, final Collection<String> reportTypes) {
 
@@ -87,6 +90,7 @@ public final class Report extends AbstractPersistable<Long> {
         String description = null;
         boolean useReport = false;
         String reportSql = null;
+        boolean trackUsage = false;
 
         if (command.parameterExists("reportName")) {
             reportName = command.stringValueOfParameterNamed("reportName");
@@ -109,8 +113,11 @@ public final class Report extends AbstractPersistable<Long> {
         if (command.parameterExists("reportSql")) {
             reportSql = command.stringValueOfParameterNamed("reportSql");
         }
+        if (command.parameterExists("trackUsage")) {
+        	trackUsage = command.booleanPrimitiveValueOfParameterNamed("trackUsage");
+        }
 
-        return new Report(reportName, reportType, reportSubType, reportCategory, description, useReport, reportSql, reportTypes);
+        return new Report(reportName, reportType, reportSubType, reportCategory, description, useReport, reportSql, reportTypes, trackUsage);
     }
 
     protected Report() {
@@ -118,7 +125,8 @@ public final class Report extends AbstractPersistable<Long> {
     }
 
     public Report(final String reportName, final String reportType, final String reportSubType, final String reportCategory,
-            final String description, final boolean useReport, final String reportSql, final Collection<String> reportTypes) {
+            final String description, final boolean useReport, final String reportSql, final Collection<String> reportTypes,
+            final Boolean trackUsage) {
         this.reportName = reportName;
         this.reportType = reportType;
         this.reportSubType = reportSubType;
@@ -127,6 +135,7 @@ public final class Report extends AbstractPersistable<Long> {
         this.coreReport = false;
         this.useReport = useReport;
         this.reportSql = reportSql;
+        this.trackUsage = trackUsage;        		
         validate(reportTypes);
     }
 
@@ -169,6 +178,12 @@ public final class Report extends AbstractPersistable<Long> {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(paramName);
             actualChanges.put(paramName, newValue);
             this.useReport = newValue;
+        }        
+        
+        if (command.isChangeInBooleanParameterNamed("trackUsage", this.trackUsage)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed("trackUsage");
+            actualChanges.put("trackUsage", newValue);
+            this.trackUsage = newValue;
         }
         paramName = "reportSql";
         if (command.isChangeInStringParameterNamed(paramName, this.reportSql)) {
@@ -278,4 +293,14 @@ public final class Report extends AbstractPersistable<Long> {
 
         return false;
     }
+
+	public boolean isTrackUsage() {
+		return this.trackUsage;
+	}
+
+	public void setTrackUsage(boolean trackUsage) {
+		this.trackUsage = trackUsage;
+	}
+    
+    
 }

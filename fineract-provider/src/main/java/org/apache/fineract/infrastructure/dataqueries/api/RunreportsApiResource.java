@@ -51,6 +51,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.ReportAudits.domain.ReportAudit;
+import com.finflux.ReportAudits.service.ReportAuditWritePlatformService;
+
+
 @Path("/runreports")
 @Component
 @Scope("singleton")
@@ -61,16 +65,19 @@ public class RunreportsApiResource {
     private final ReadReportingService readExtraDataAndReportingService;
     private final GenericDataService genericDataService;
     private final ReportingProcessServiceProvider reportingProcessServiceProvider;
+    private final ReportAuditWritePlatformService reportAuditWritePlatformService;
 
     @Autowired
     public RunreportsApiResource(final PlatformSecurityContext context, final ReadReportingService readExtraDataAndReportingService,
             final GenericDataService genericDataService, final ToApiJsonSerializer<ReportData> toApiJsonSerializer,
-            final ReportingProcessServiceProvider reportingProcessServiceProvider) {
+            final ReportingProcessServiceProvider reportingProcessServiceProvider, 
+            final ReportAuditWritePlatformService reportAuditWritePlatformService) {
         this.context = context;
         this.readExtraDataAndReportingService = readExtraDataAndReportingService;
         this.genericDataService = genericDataService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.reportingProcessServiceProvider = reportingProcessServiceProvider;
+        this.reportAuditWritePlatformService = reportAuditWritePlatformService;
     }
 
     @GET
@@ -87,7 +94,7 @@ public class RunreportsApiResource {
         final boolean exportPdf = ApiParameterHelper.exportPdf(uriInfo.getQueryParameters());
 
         checkUserPermissionForReport(reportName, parameterType);
-
+        
         String parameterTypeValue = null;
         if (!parameterType) {
             parameterTypeValue = "report";
@@ -102,6 +109,7 @@ public class RunreportsApiResource {
 
         if (exportPdf) {
             final Map<String, String> reportParams = getReportParams(queryParams);
+            ReportAudit reportAudit  = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
             final String pdfFileName = this.readExtraDataAndReportingService
                     .retrieveReportPDF(reportName, parameterTypeValue, reportParams);
 
@@ -110,14 +118,14 @@ public class RunreportsApiResource {
             final ResponseBuilder response = Response.ok(file);
             response.header("Content-Disposition", "attachment; filename=\"" + pdfFileName + "\"");
             response.header("content-Type", "application/pdf");
-
+            this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.build().getStatus());
             return response.build();
 
         }
 
         if (!exportCsv) {
             final Map<String, String> reportParams = getReportParams(queryParams);
-
+            ReportAudit reportAudit  = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
             final GenericResultsetData result = this.readExtraDataAndReportingService.retrieveGenericResultset(reportName,
                     parameterTypeValue, reportParams);
 
@@ -133,17 +141,21 @@ public class RunreportsApiResource {
             } else {
                 json = this.toApiJsonSerializer.serializePretty(prettyPrint, result);
             }
-
-            return Response.ok().entity(json).type(MediaType.APPLICATION_JSON).build();
+            
+            Response response = Response.ok().entity(json).type(MediaType.APPLICATION_JSON).build();            
+            this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+            return response;
         }
 
         // CSV Export
         final Map<String, String> reportParams = getReportParams(queryParams);
+        ReportAudit reportAudit  = this.reportAuditWritePlatformService.createReportAudit(reportName, reportParams);
         final StreamingOutput result = this.readExtraDataAndReportingService
                 .retrieveReportCSV(reportName, parameterTypeValue, reportParams);
-
-        return Response.ok().entity(result).type("text/csv")
+        Response response = Response.ok().entity(result).type("text/csv")
                 .header("Content-Disposition", "attachment;filename=" + reportName.replaceAll(" ", "") + ".csv").build();
+        this.reportAuditWritePlatformService.saveReportAudit(reportAudit, response.getStatus());
+        return response;
     }
 
     private void checkUserPermissionForReport(final String reportName, final boolean parameterType) {
@@ -186,4 +198,5 @@ public class RunreportsApiResource {
 		}
 		return reportParams;
 	}
+	
 }
