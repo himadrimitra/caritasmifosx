@@ -3692,7 +3692,6 @@ public class Loan extends AbstractPersistable<Long> {
         if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()
                 && this.status().isClosedObligationsMet()) {
             Date closedDate = this.getClosedOnDate();
-            LocalDate closedLocalDate = new LocalDate(closedDate);
             reverseTransactionsOnOrAfter(retreiveListOfIncomePostingTransactions(), closedDate);
             reverseTransactionsOnOrAfter(retreiveListOfAccrualTransactions(), closedDate);
             HashMap<String, BigDecimal> cumulativeIncomeFromInstallments = new HashMap<>();
@@ -3708,19 +3707,6 @@ public class Loan extends AbstractPersistable<Long> {
             LoanTransaction finalIncomeTransaction = LoanTransaction.incomePosting(this, this.getOffice(), closedDate, amountToPost,
                     interestToPost, feeToPost, penaltyToPost);
             this.loanTransactions.add(finalIncomeTransaction);
-            if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
-                List<LoanTransaction> updatedAccrualTransactions = retreiveListOfAccrualTransactions();
-                LocalDate lastAccruedDate = this.getDisbursementDate();
-                if (updatedAccrualTransactions != null && updatedAccrualTransactions.size() > 0) {
-                    lastAccruedDate = updatedAccrualTransactions.get(updatedAccrualTransactions.size() - 1).getTransactionDate();
-                }
-                HashMap<String, Object> feeDetails = new HashMap<>();
-                determineFeeDetails(lastAccruedDate, closedLocalDate, feeDetails);
-                LoanTransaction finalAccrual = LoanTransaction.accrueTransaction(this, this.getOffice(), closedLocalDate, amountToPost,
-                        interestToPost, feeToPost, penaltyToPost);
-                updateLoanChargesPaidBy(finalAccrual, feeDetails, null);
-                this.loanTransactions.add(finalAccrual);
-            }
         }
         updateLoanOutstandingBalaces();
     }
