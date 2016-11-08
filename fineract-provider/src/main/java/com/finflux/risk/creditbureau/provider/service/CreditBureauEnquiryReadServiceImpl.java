@@ -251,7 +251,7 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         sb.append(",mc.mobile_no AS clientMobileNo, lar.loan_product_id AS loanProductId, lar.loan_amount_requested AS loanAmount,mc.id AS clientId ");
         sb.append("FROM f_loan_application_reference lar ");
         sb.append("INNER JOIN m_client mc ON mc.id = lar.client_id ");
-        sb.append("WHERE mc.status_enum = 300 AND lar.id = ? ");
+        sb.append("WHERE lar.id = ? ");
         return this.jdbcTemplate.queryForObject(sb.toString(), this.enquiryRequestDataExtractor, new Object[] { loanApplicationId });
     }
 

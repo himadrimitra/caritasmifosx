@@ -360,13 +360,7 @@ public class LoanApplicationReferenceDataAssembler {
 
         if (client != null) {
             final LocalDate activationDate = client.getActivationLocalDate();
-
-            if (activationDate == null) {
-                defaultUserMessage = "Client is not activated.";
-                throw new LoanApplicationDateException("client.is.not.activated", defaultUserMessage);
-            }
-
-            if (submittedOnDate.isBefore(activationDate)) {
+            if (activationDate != null && submittedOnDate.isBefore(activationDate)) {
                 defaultUserMessage = "Submitted on date cannot be before the client activation date.";
                 throw new LoanApplicationDateException("submitted.on.date.cannot.be.before.the.client.activation.date", defaultUserMessage,
                         submittedOnDate.toString(), activationDate.toString());
