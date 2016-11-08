@@ -5,13 +5,17 @@
  */
 package com.finflux.ReportAudits.service;
 
-import java.util.List;
+
+
+import org.apache.fineract.infrastructure.core.data.PaginationParameters;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
 import com.finflux.ReportAudits.data.ReportAuditData;
 
 public interface ReportAuditReadPlatformService {
 	
-	public List<ReportAuditData> retrieveAllReportAudits(final String searchParameter);
+	public Page<ReportAuditData> retrieveAllReportAudits(final SearchParameters searchParameters, final PaginationParameters parameters);
 	
 	public ReportAuditData getReportAudits(final Long id);
 }
