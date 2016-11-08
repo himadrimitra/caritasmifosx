@@ -1,0 +1,1 @@
+INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('portfolio', 'READ_INITIATE_CREDIT_BUREAU_ENQUIRY', 'INITIATE_CREDIT_BUREAU_ENQUIRY', 'READ', 0),('portfolio', 'READ_CREDIT_BUREAU_CHECK', 'CREDIT_BUREAU_CHECK', 'READ', 0),('portfolio', 'READ_CREDIT_BUREAU_REPORT', 'CREDIT_BUREAU_REPORT', 'READ', 0);

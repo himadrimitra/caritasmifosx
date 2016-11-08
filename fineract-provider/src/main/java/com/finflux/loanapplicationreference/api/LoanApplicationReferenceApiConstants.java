@@ -7,7 +7,13 @@ import java.util.Set;
 public class LoanApplicationReferenceApiConstants {
 
     public static final String LOANAPPLICATIONREFERENCE_RESOURCE_NAME = "loanapplicationreference";
+    
+    public static final String CREDITBUREAUCHECK_RESOURCE_NAME = "CREDIT_BUREAU_CHECK";
+    
+    public static final String INITIATECREDITBUREAUENQUIRY_RESOURCE_NAME = "INITIATE_CREDIT_BUREAU_ENQUIRY";
 
+    public static final String CREDITBUREAUREPORT_RESOURCE_NAME = "CREDIT_BUREAU_REPORT";
+    
     public static final String externalIdOneParamName = "externalIdOne";
 
     public static final String externalIdTwoParamName = "externalIdTwo";
