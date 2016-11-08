@@ -18,9 +18,8 @@ public class ProductLoanCharge extends AbstractPersistable<Long> {
     @JoinColumn(name = "product_loan_id", nullable = false)
     private LoanProduct loanProduct;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "charge_id", nullable = false)
-    private Charge charge;
+    @Column(name = "charge_id", nullable = false)
+    private Long chargeId;
 
     @Column(name = "is_mandatory", nullable = false)
     private Boolean isMandatory;
@@ -29,7 +28,7 @@ public class ProductLoanCharge extends AbstractPersistable<Long> {
 
     private ProductLoanCharge(final LoanProduct loanProduct, final Charge charge, final Boolean isMandatory) {
         this.loanProduct = loanProduct;
-        this.charge = charge;
+        this.chargeId = charge.getId();
         this.isMandatory = isMandatory;
     }
 
