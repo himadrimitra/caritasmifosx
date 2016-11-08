@@ -150,8 +150,10 @@ public class GroupLoanIndividualMonitoringAssembler {
 
     public void updateLoanChargesForGlim(Loan loan, HashMap<Long, BigDecimal> chargesMap) {
         for (LoanCharge loancharge : loan.charges()) {
-            BigDecimal recalculatedChargeAmount = chargesMap.get(loancharge.getCharge().getId());
-            loancharge.updateAmount(recalculatedChargeAmount);
+            if (!ChargeTimeType.fromInt(loancharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
+                BigDecimal recalculatedChargeAmount = chargesMap.get(loancharge.getCharge().getId());
+                loancharge.updateAmount(recalculatedChargeAmount);
+            }
         }
     }
 
@@ -307,8 +309,10 @@ public class GroupLoanIndividualMonitoringAssembler {
             }
         }
         for (LoanCharge loanCharge : loanCharges) {
-            BigDecimal totalAmount = chargesMap.get(loanCharge.getCharge().getId());
-            loanCharge.updateAmount(totalAmount);
+            if (!ChargeTimeType.fromInt(loanCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
+                BigDecimal totalAmount = chargesMap.get(loanCharge.getCharge().getId());
+                loanCharge.updateAmount(totalAmount);
+            }
         }
     }
 
@@ -416,8 +420,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             JsonObject obj = jsonObject.getAsJsonObject();
             Long clientId = obj.get("id").getAsLong();
             if (clientId.equals(client.getId())) {
-                totalChargeAmount = obj.get("upfrontChargeAmount").getAsBigDecimal();
-                break;
+                totalChargeAmount = totalChargeAmount.add(obj.get("upfrontChargeAmount").getAsBigDecimal());
             }
         }
         return totalChargeAmount;
