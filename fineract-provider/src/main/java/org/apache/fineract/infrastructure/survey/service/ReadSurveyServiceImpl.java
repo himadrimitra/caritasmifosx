@@ -69,13 +69,16 @@ public class ReadSurveyServiceImpl implements ReadSurveyService {
 
         final List<SurveyDataTableData> surveyDataTables = new ArrayList<>();
         while (rs.next()) {
+            final Integer id = rs.getInt("id");
             final String appTableName = rs.getString("application_table_name");
             final String registeredDatatableName = rs.getString("registered_table_name");
             final boolean enabled = rs.getBoolean("enabled");
+            final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
 
-            surveyDataTables.add(SurveyDataTableData.create(DatatableData.create(appTableName, registeredDatatableName, columnHeaderData),
+            surveyDataTables.add(SurveyDataTableData.create(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, 
+                    scopingCriteriaEnum, null),
                     enabled));
         }
 
@@ -84,7 +87,7 @@ public class ReadSurveyServiceImpl implements ReadSurveyService {
 
     private String retrieveAllSurveySQL(String andClause) {
         // PERMITTED datatables
-        return "select application_table_name, cf.enabled, registered_table_name" + " from x_registered_table "
+        return "select application_table_name, cf.enabled, registered_table_name, scoping_criteria_enum" + " from x_registered_table "
                 + " left join c_configuration cf on x_registered_table.registered_table_name = cf.name " + " where exists" + " (select 'f'"
                 + " from m_appuser_role ur " + " join m_role r on r.id = ur.role_id"
                 + " left join m_role_permission rp on rp.role_id = r.id" + " left join m_permission p on p.id = rp.permission_id"
@@ -96,7 +99,7 @@ public class ReadSurveyServiceImpl implements ReadSurveyService {
 
     @Override
     public SurveyDataTableData retrieveSurvey(String surveyName) {
-        final String sql = "select cf.enabled, application_table_name, registered_table_name" + " from x_registered_table "
+        final String sql = "select cf.enabled, application_table_name, registered_table_name " + " from x_registered_table "
                 + " left join c_configuration cf on x_registered_table.registered_table_name = cf.name " + " where exists" + " (select 'f'"
                 + " from m_appuser_role ur " + " join m_role r on r.id = ur.role_id"
                 + " left join m_role_permission rp on rp.role_id = r.id" + " left join m_permission p on p.id = rp.permission_id"
@@ -108,13 +111,15 @@ public class ReadSurveyServiceImpl implements ReadSurveyService {
 
         SurveyDataTableData datatableData = null;
         while (rs.next()) {
+            final Integer id = rs.getInt("id");
             final String appTableName = rs.getString("application_table_name");
             final String registeredDatatableName = rs.getString("registered_table_name");
             final boolean enabled = rs.getBoolean("enabled");
+            final Long scopingCriteriaEnum = null;
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
 
-            datatableData = SurveyDataTableData.create(DatatableData.create(appTableName, registeredDatatableName, columnHeaderData),
+            datatableData = SurveyDataTableData.create(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null),
                     enabled);
 
         }

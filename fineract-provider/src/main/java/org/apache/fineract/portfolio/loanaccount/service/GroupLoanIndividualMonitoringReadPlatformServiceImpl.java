@@ -98,7 +98,7 @@ public class GroupLoanIndividualMonitoringReadPlatformServiceImpl implements Gro
             final Boolean isClientSelected = rs.getBoolean("isClientSelected");
             final Integer codeScore = 0;
             CodeValueData loanPurpose = CodeValueData.instance(loanPuroseId, loanPurposeName, position, description, isLoanPurposeActive,
-                    codeScore, false);
+                    codeScore, false, null);
 
             final BigDecimal chargeAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "chargeAmount");
             final BigDecimal adjustedAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "adjustedAmount");

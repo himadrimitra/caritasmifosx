@@ -35,31 +35,49 @@ public final class ResultsetColumnHeaderData {
     private final boolean isColumnNullable;
     @SuppressWarnings("unused")
     private final boolean isColumnPrimaryKey;
+    @SuppressWarnings("unused")
+    private final String displayName;
+    @SuppressWarnings("unused")
+    private final String dependsOnColumnName;
+    @SuppressWarnings("unused")
+    private final Long orderPosition;
+    @SuppressWarnings("unused")
+    private final Boolean visible;
+    @SuppressWarnings("unused")
+    private final Boolean mandatoryIfVisible;
 
     private final List<ResultsetColumnValueData> columnValues;
     private final String columnCode;
+    List<ResultsetVisibilityCriteriaData> visibilityCriteria;
 
     public static ResultsetColumnHeaderData basic(final String columnName, final String columnType) {
 
         final Long columnLength = null;
         final boolean columnNullable = false;
         final boolean columnIsPrimaryKey = false;
+        final String displayName = null;
         final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
         final String columnCode = null;
+        final Long orderPosition = null;
+        final String dependsOnColumnName = null;
+        final Boolean visible = null;
+        final Boolean mandatoryIfVisible = null;
+        final List<ResultsetVisibilityCriteriaData> visibilityCriteria = new ArrayList<>();
         return new ResultsetColumnHeaderData(columnName, columnType, columnLength, columnNullable, columnIsPrimaryKey, columnValues,
-                columnCode);
+                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
     }
 
     public static ResultsetColumnHeaderData detailed(final String columnName, final String columnType, final Long columnLength,
             final boolean columnNullable, final boolean columnIsPrimaryKey, final List<ResultsetColumnValueData> columnValues,
-            final String columnCode) {
+            final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final  Boolean visible, final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria) {
         return new ResultsetColumnHeaderData(columnName, columnType, columnLength, columnNullable, columnIsPrimaryKey, columnValues,
-                columnCode);
+                columnCode, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
     }
 
     private ResultsetColumnHeaderData(final String columnName, final String columnType, final Long columnLength,
             final boolean columnNullable, final boolean columnIsPrimaryKey, final List<ResultsetColumnValueData> columnValues,
-            final String columnCode) {
+            final String columnCode, final String displayName, final String dependsOnColumnName, final Long orderPosition, final Boolean visible,
+            final Boolean mandatoryIfVisible, List<ResultsetVisibilityCriteriaData> visibilityCriteria) {
         this.columnName = columnName;
         this.columnType = columnType;
         this.columnLength = columnLength;
@@ -67,6 +85,12 @@ public final class ResultsetColumnHeaderData {
         this.isColumnPrimaryKey = columnIsPrimaryKey;
         this.columnValues = columnValues;
         this.columnCode = columnCode;
+        this.displayName = displayName;
+        this.dependsOnColumnName = dependsOnColumnName;
+        this.orderPosition = orderPosition;
+        this.visible = visible;
+        this.mandatoryIfVisible = mandatoryIfVisible;
+        this.visibilityCriteria = visibilityCriteria;
 
         // Refer org.drizzle.jdbc.internal.mysql.MySQLType.java
         adjustColumnTypes();

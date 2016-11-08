@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.exception.CodeValueNotFoundException;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformSe
 
         public String schema() {
             return " cv.id as id, cv.code_value as value, cv.code_id as codeId, cv.code_description as description, cv.order_position as position,"
-                    + " cv.is_active as isActive , cv.code_score as codeScore, cv.is_mandatory as mandatory from m_code_value as cv join m_code c on cv.code_id = c.id ";
+                    + " cv.parent_id as parentId, cv.is_active as isActive , cv.code_score as codeScore, cv.is_mandatory as mandatory from m_code_value as cv join m_code c on cv.code_id = c.id ";
         }
 
         @Override
@@ -62,8 +63,9 @@ public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformSe
             final boolean isActive = rs.getBoolean("isActive");
             final Integer codeScore = rs.getInt("codeScore");
             final boolean mandatory = rs.getBoolean("mandatory");
+            final Long parentId = JdbcSupport.getLong(rs, "parentId");
             
-            return CodeValueData.instance(id, value, position, description, isActive,codeScore, mandatory);
+            return CodeValueData.instance(id, value, position, description, isActive,codeScore, mandatory, parentId);
         }
     }
 
@@ -121,4 +123,14 @@ public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformSe
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { code });
 	}
+	
+    @Override
+    public CodeValueData retriveCodeValueByCodeValueName(final String codeValueName) {
+        this.context.authenticatedUser();
+
+        final CodeValueDataMapper rm = new CodeValueDataMapper();
+        final String sql = "select " + rm.schema() + "where cv.code_value = ? order by position";
+
+        return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { codeValueName });
+    }
 }

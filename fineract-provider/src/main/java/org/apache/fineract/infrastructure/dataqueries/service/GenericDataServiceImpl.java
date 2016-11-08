@@ -23,12 +23,25 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import org.apache.fineract.infrastructure.codes.domain.Code;
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
+import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.dataqueries.data.AllowedValueOptions;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeaderData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnValueData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
+import org.apache.fineract.infrastructure.dataqueries.data.ResultsetVisibilityCriteriaData;
+import org.apache.fineract.infrastructure.dataqueries.data.ScopeCriteriaData;
+import org.apache.fineract.infrastructure.dataqueries.domain.DataTableScopes;
 import org.apache.fineract.infrastructure.dataqueries.exception.DatatableNotFoundException;
+import org.apache.fineract.portfolio.client.domain.LegalForm;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
+import org.apache.fineract.portfolio.savings.data.SavingsProductData;
+import org.apache.fineract.portfolio.savings.service.SavingsProductReadPlatformService;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
@@ -45,11 +58,19 @@ public class GenericDataServiceImpl implements GenericDataService {
     private final JdbcTemplate jdbcTemplate;
     private final DataSource dataSource;
     private final static Logger logger = LoggerFactory.getLogger(GenericDataServiceImpl.class);
+    private final CodeValueRepositoryWrapper codeValueRepositoryWrapper;
+    private final LoanProductReadPlatformService loanProductReadPlatformService;
+    private final SavingsProductReadPlatformService savingsProductReadPlatformService;
+    
 
     @Autowired
-    public GenericDataServiceImpl(final RoutingDataSource dataSource) {
+    public GenericDataServiceImpl(final RoutingDataSource dataSource, final CodeValueRepositoryWrapper codeValueRepositoryWrapper,
+            final LoanProductReadPlatformService loanProductReadPlatformService, SavingsProductReadPlatformService savingsProductReadPlatformService) {
         this.dataSource = dataSource;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
+        this.codeValueRepositoryWrapper = codeValueRepositoryWrapper;
+        this.loanProductReadPlatformService = loanProductReadPlatformService;
+        this.savingsProductReadPlatformService = savingsProductReadPlatformService;
 
     }
 
@@ -202,16 +223,26 @@ public class GenericDataServiceImpl implements GenericDataService {
 
         columnDefinitions.beforeFirst();
         while (columnDefinitions.next()) {
-            final String columnName = columnDefinitions.getString("COLUMN_NAME");
+            String columnName = columnDefinitions.getString("COLUMN_NAME");
             final String isNullable = columnDefinitions.getString("IS_NULLABLE");
             final String isPrimaryKey = columnDefinitions.getString("COLUMN_KEY");
             final String columnType = columnDefinitions.getString("DATA_TYPE");
             final Long columnLength = columnDefinitions.getLong("CHARACTER_MAXIMUM_LENGTH");
-
-            final boolean columnNullable = "YES".equalsIgnoreCase(isNullable);
+            String displayName = null;
+            Integer dependsOn = null;
+            Long orderPosition = null;
+            Boolean visible = null;
+            Boolean mandatoryIfVisible = null;
+            Integer watchColumn = null;
+            Integer codeValueId = null;
+            String dependsOnColumnName = null;
+ 
+            boolean columnNullable = "YES".equalsIgnoreCase(isNullable);
             final boolean columnIsPrimaryKey = "PRI".equalsIgnoreCase(isPrimaryKey);
 
             List<ResultsetColumnValueData> columnValues = new ArrayList<>();
+            List<ResultsetVisibilityCriteriaData> visibilityCriteria = new ArrayList<>();
+            List<ResultsetColumnValueData> visibilityCriteriaValues = new ArrayList<>();
             String codeName = null;
             if ("varchar".equalsIgnoreCase(columnType)) {
 
@@ -240,19 +271,87 @@ public class GenericDataServiceImpl implements GenericDataService {
                 columnValues = retreiveColumnValues(codeId);
 
             }
-            
+            String metaDataColumnName = null;
+            String tempColumnName = null;
+            final SqlRowSet rsValues = retriveXRegisteredMetadata(datatable);
+            if (columnName.contains("_cd")) {
+                tempColumnName = columnName.substring(columnName.lastIndexOf("_") + 1, columnName.length());
+            } else {
+                tempColumnName = columnName;
+            }
+
+            while (rsValues.next()) {
+                metaDataColumnName = rsValues.getString("columnName");
+                if (tempColumnName != null && tempColumnName.equalsIgnoreCase(metaDataColumnName)) {
+                    displayName = rsValues.getString("displayName");
+                    dependsOn = rsValues.getInt("dependsOn");
+                    dependsOnColumnName = retreiveDependsOnColumnName(dependsOn);
+                    orderPosition = rsValues.getLong("orderPosition");
+                    visible = rsValues.getBoolean("visible");
+                    watchColumn = rsValues.getInt("watchColumn");
+                    codeValueId = rsValues.getInt("codeValueId");
+                    if (watchColumn > 0 && codeValueId > 0) {
+                        visibilityCriteriaValues = retreiveColumnValuesByCodeValueId(codeValueId);
+                        String watchColumnName = retreiveWatchColumnName(watchColumn);
+                        visibilityCriteria.add(new ResultsetVisibilityCriteriaData(watchColumnName, visibilityCriteriaValues));
+                    }
+                    mandatoryIfVisible = rsValues.getBoolean("mandatoryIfVisible");
+                    if (visible != null && visible && mandatoryIfVisible != null && mandatoryIfVisible) { 
+                        columnNullable = false;
+                    }
+                }
+
+            }
             /**TODO : Dirty Quick fix for chaitanya**/
             if(columnName.matches("Village Name")){	
             	columnValues = retreiveAllVillages();
             }
 
             final ResultsetColumnHeaderData rsch = ResultsetColumnHeaderData.detailed(columnName, columnType, columnLength, columnNullable,
-                    columnIsPrimaryKey, columnValues, codeName);
+                    columnIsPrimaryKey, columnValues, codeName, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
 
             columnHeaders.add(rsch);
         }
 
         return columnHeaders;
+    }
+
+    private String retreiveDependsOnColumnName(Integer dependsOn) {
+        
+        String dependsOnColumnName = null;
+        if (dependsOn != null) {
+            final String sql = "SELECT xrtm.column_name as columnName FROM x_registered_table_metadata xrtm WHERE xrtm.id = " + dependsOn
+                    + "";
+            final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+
+            while (rsValues.next()) {
+                dependsOnColumnName = rsValues.getString("columnName");
+            }
+        }
+
+        return dependsOnColumnName;
+    }
+
+    private String retreiveWatchColumnName(Integer watchColumn) {
+
+        String watchColumnName = null;
+        final String sql = "SELECT xrtm.column_name as columnName FROM x_registered_table_metadata xrtm WHERE xrtm.id = " + watchColumn
+                + "";
+        final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+
+        while (rsValues.next()) {
+            watchColumnName = rsValues.getString("columnName");
+        }
+        return watchColumnName;
+    }
+
+    private SqlRowSet retriveXRegisteredMetadata(String datatable) {
+        final String sql = "select m.column_name columnName, m.display_name displayName, m.associate_with dependsOn, m.order_position orderPosition, m.visible visible,"
+                + "m.mandatory_if_visible mandatoryIfVisible, r.watch_column watchColumn,v.code_value_id codeValueId from x_registered_table x inner join x_registered_table_metadata m on m.registered_table_id = x.id "
+                + "left join x_registered_table_display_rules r on r.registered_table_metadata_id = m.id left join x_registered_table_display_rules_value v on v.registered_table_display_rules_id = r.id "
+                + " where x.registered_table_name = '" + datatable + "'";
+        final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+        return rsValues;
     }
 
     /*
@@ -262,8 +361,8 @@ public class GenericDataServiceImpl implements GenericDataService {
     private List<ResultsetColumnValueData> retreiveColumnValues(final String codeName) {
 
         final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
-
-        final String sql = "select v.id, v.code_score, v.code_value from m_code m " + " join m_code_value v on v.code_id = m.id "
+   
+        final String sql = "select v.id, v.code_score, v.code_value, v.parent_id from m_code m " + " join m_code_value v on v.code_id = m.id "
                 + " where m.code_name = '" + codeName + "' order by v.order_position, v.id";
 
         final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
@@ -273,8 +372,8 @@ public class GenericDataServiceImpl implements GenericDataService {
             final Integer id = rsValues.getInt("id");
             final String codeValue = rsValues.getString("code_value");
             final Integer score = rsValues.getInt("code_score");
-
-            columnValues.add(new ResultsetColumnValueData(id, codeValue, score));
+            final Integer parentId = rsValues.getInt("parent_id");
+            columnValues.add(new ResultsetColumnValueData(id, codeValue, score, parentId));
         }
 
         return columnValues;
@@ -297,7 +396,25 @@ public class GenericDataServiceImpl implements GenericDataService {
 
         return columnValues;
     }
+    
+    private List<ResultsetColumnValueData> retreiveColumnValuesByCodeValueId(final Integer codeValueId) {
 
+        final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
+        if (codeValueId != null) {
+            final String sql = "select v.id, v.code_value from m_code_value v where v.id =" + codeValueId
+                    + " order by v.order_position, v.id";
+            final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+            rsValues.beforeFirst();
+            while (rsValues.next()) {
+                final Integer id = rsValues.getInt("id");
+                final String codeValue = rsValues.getString("code_value");
+                columnValues.add(new ResultsetColumnValueData(id, codeValue));
+            }
+        }
+
+        return columnValues;
+    }
+    
     private SqlRowSet getDatatableMetaData(final String datatable) {
 
         final String sql = "select COLUMN_NAME, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, COLUMN_KEY"
@@ -319,24 +436,149 @@ public class GenericDataServiceImpl implements GenericDataService {
         return rsValues;
     }
     
-	/** Quick Fix: Dirty code fetches villages for Chaitanya
-	 * @return
-	 */
-	private List<ResultsetColumnValueData> retreiveAllVillages() {
+    /**
+     * Quick Fix: Dirty code fetches villages for Chaitanya
+     * 
+     * @return
+     */
+    private List<ResultsetColumnValueData> retreiveAllVillages() {
 
-		final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
+        final List<ResultsetColumnValueData> columnValues = new ArrayList<>();
 
-		final String sql = "select cv.id as id, cv.village_name as village  from chai_villages cv group by cv.id";
+        final String sql = "select cv.id as id, cv.village_name as village  from chai_villages cv group by cv.id";
 
-		final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
-		rsValues.beforeFirst();
-		while (rsValues.next()) {
-			final Integer id = rsValues.getInt("id");
-			final String villageName = rsValues.getString("village");
+        final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+        rsValues.beforeFirst();
+        while (rsValues.next()) {
+            final Integer id = rsValues.getInt("id");
+            final String villageName = rsValues.getString("village");
 
-			columnValues.add(new ResultsetColumnValueData(id, villageName));
-		}
+            columnValues.add(new ResultsetColumnValueData(id, villageName));
+        }
 
-		return columnValues;
-	}
+        return columnValues;
+    }
+
+    @Override
+    public List<ScopeCriteriaData> fetchDatatableScopesByIdAndScopingCriteria(Integer id, Long scopingCriteriaEnum) {
+        
+        List<ScopeCriteriaData> scopeCriteriaData = new ArrayList<>(); 
+        
+        final String sql = "select rtf.loan_product_id as loanProductId, rtf.savings_product_id as savingsProductId, rtf.code_value_id as"
+                + " codeValueId, rtf.legal_form_enum as legalForm  from f_registered_table_scoping rtf where rtf.registered_table_id = "+id+"";
+
+        final SqlRowSet rsValues = this.jdbcTemplate.queryForRowSet(sql);
+        
+        if (scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
+            if (DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isLoanProduct()) {
+                List<AllowedValueOptions> allowedValues = new ArrayList<>();
+                EnumOptionData data = null;
+                while (rsValues.next()) {
+                    final Long loanProductId = rsValues.getLong("loanProductId");
+                    if (loanProductId != null && loanProductId > 0) {
+                        data = DataTableScopes.dataTableScopes(DataTableScopes.LOAN_PRODUCT.getId());
+                        LoanProductData loanProductData = this.loanProductReadPlatformService.retrieveLoanProduct(loanProductId);
+                        allowedValues.add(AllowedValueOptions.createNew(loanProductData.getId(), loanProductData.getName()));
+                    }
+                }
+                scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+            } else if (DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isSavingsProduct()) {
+                List<AllowedValueOptions> allowedValues = new ArrayList<>();
+                EnumOptionData data = null;
+                while (rsValues.next()) {
+                    final Long savingsProductId = rsValues.getLong("savingsProductId");
+                    if (savingsProductId != null && savingsProductId > 0) {
+                        data = DataTableScopes.dataTableScopes(DataTableScopes.SAVINGS_PRODUCT.getId());
+                        SavingsProductData savingsProductData = this.savingsProductReadPlatformService.retrieveOne(savingsProductId);
+                        allowedValues.add(AllowedValueOptions.createNew(savingsProductData.getId(), savingsProductData.getName()));
+                    }
+                }
+                scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+            } else if (DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isClientType()
+                    || DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isClientClassification()) {
+                List<AllowedValueOptions> allowedValues = new ArrayList<>();
+                EnumOptionData data = null;
+                while (rsValues.next()) {
+                    final Long codeValueId = rsValues.getLong("codeValueId");
+                    if (codeValueId != null && codeValueId > 0) {
+                        CodeValue codeValueData = this.codeValueRepositoryWrapper.findOneWithNotFoundDetection(codeValueId);
+                        Code code = codeValueData.getCode();
+                        if (code.name().equals("ClientType")) {
+                            data = DataTableScopes.dataTableScopes(DataTableScopes.CLIENT_TYPE.getId());
+                            allowedValues.add(AllowedValueOptions.createNew(codeValueData.getId(), codeValueData.label()));
+                        } else {
+                            data = DataTableScopes.dataTableScopes(DataTableScopes.CLIENT_CLASSIFICATION.getId());
+                            allowedValues.add(AllowedValueOptions.createNew(codeValueData.getId(), codeValueData.label()));
+                        }
+                    }
+                }
+                scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+            } else if (DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isClientLegalForm()) {
+                List<AllowedValueOptions> allowedValues = new ArrayList<>();
+                EnumOptionData data = null;
+                while (rsValues.next()) {
+                    final Long legalForm = rsValues.getLong("legalForm");
+                    if (legalForm != null && legalForm > 0) {
+                        data = DataTableScopes.dataTableScopes(DataTableScopes.CLIENT_LEGAL_FORM.getId());
+                        EnumOptionData legalFormType = LegalForm.legalFormType(legalForm.intValue());
+                        allowedValues.add(AllowedValueOptions.createNew(legalFormType.getId(), legalFormType.getValue()));
+                    }
+                }
+                scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+            }
+        }
+        
+/*        if (appTableName != null && appTableName.equals("m_loan")) {
+            List<AllowedValueOptions> allowedValues = new ArrayList<>();
+            EnumOptionData data = null;
+            while (rsValues.next()) {
+                final Long loanProductId = rsValues.getLong("loanProductId");
+                if (loanProductId != null && loanProductId > 0) {
+                    data = DataTableScopes.dataTableScopes(DataTableScopes.LOAN_PRODUCT.getId());
+                    LoanProductData loanProductData = this.loanProductReadPlatformService.retrieveLoanProduct(loanProductId);
+                    allowedValues.add(AllowedValueOptions.createNew(loanProductData.getId(), loanProductData.getName()));
+                }
+            }
+            scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+        } else if(appTableName != null && appTableName.equals("m_savings_account")) {
+            List<AllowedValueOptions> allowedValues = new ArrayList<>();
+            EnumOptionData data = null;
+            while (rsValues.next()) {
+                final Long savingsProductId = rsValues.getLong("savingsProductId");
+                if (savingsProductId != null && savingsProductId > 0) {
+                    data = DataTableScopes.dataTableScopes(DataTableScopes.SAVINGS_PRODUCT.getId());
+                    SavingsProductData savingsProductData = this.savingsProductReadPlatformService.retrieveOne(savingsProductId);
+                    allowedValues.add(AllowedValueOptions.createNew(savingsProductData.getId(), savingsProductData.getName()));
+                }
+            }
+            scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+        } else if(appTableName != null && appTableName.equals("m_client")) {
+            EnumOptionData data = null;
+            while (rsValues.next()) {
+                List<AllowedValueOptions> allowedValues = new ArrayList<>();
+                final Long codeValueId = rsValues.getLong("codeValueId");
+                final Long legalForm = rsValues.getLong("legalForm");
+                
+                if (codeValueId != null && codeValueId > 0) {
+                    CodeValue codeValueData = this.codeValueRepositoryWrapper.findOneWithNotFoundDetection(codeValueId);
+                    Code code = codeValueData.getCode();
+                    if (code.name().equals("ClientType")) {
+                        data = DataTableScopes.dataTableScopes(DataTableScopes.CLIENT_TYPE.getId());
+                        allowedValues.add(AllowedValueOptions.createNew(codeValueData.getId(), codeValueData.label()));
+                        scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+                    } else {
+                        data = DataTableScopes.dataTableScopes(DataTableScopes.CLIENT_CLASSIFICATION.getId());
+                        allowedValues.add(AllowedValueOptions.createNew(codeValueData.getId(), codeValueData.label()));
+                        scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+                    }
+                } else if(legalForm != null && legalForm > 0) {
+                    data = DataTableScopes.dataTableScopes(DataTableScopes.CLIENT_LEGAL_FORM.getId());
+                    EnumOptionData legalFormType = LegalForm.legalFormType(legalForm.intValue());
+                    allowedValues.add(AllowedValueOptions.createNew(legalFormType.getId(), legalFormType.getValue()));
+                    scopeCriteriaData.add(ScopeCriteriaData.createNew(data.getId(), data.getCode(), data.getValue(), allowedValues));
+                }
+            }
+        }*/         
+        return scopeCriteriaData;
+    }
 }
