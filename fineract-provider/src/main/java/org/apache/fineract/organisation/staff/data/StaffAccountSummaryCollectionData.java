@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
+import org.apache.fineract.portfolio.group.data.CenterData;
 
 /**
  *
@@ -31,12 +32,15 @@ public class StaffAccountSummaryCollectionData {
     @SuppressWarnings("unused")
     private final List<LoanAccountSummary> clients;
     @SuppressWarnings("unused")
+    private final Collection<CenterData> centerDataList;
+    @SuppressWarnings("unused")
     private final List<LoanAccountSummary> groups;
-
-    public StaffAccountSummaryCollectionData(final List<LoanAccountSummary> clients, final List<LoanAccountSummary> groups) {
-        this.clients = clients;
-        this.groups = groups;
-    }
+	public StaffAccountSummaryCollectionData(final List<LoanAccountSummary> clients,final List<LoanAccountSummary> groups,
+			final Collection<CenterData> centerDataList) {
+		this.clients = clients;
+		this.centerDataList = centerDataList;
+		this.groups = groups;
+	}
 
     public static final class LoanAccountSummary {
 
