@@ -3612,6 +3612,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (isOverPaid()) {
             // FIXME - kw - update account balance to negative amount.
             handleLoanOverpayment(loanLifecycleStateMachine);
+            this.processIncomeAccrualTransactionOnLoanClosure(transactionDate);
         }else if (this.summary.isRepaidInFull(loanCurrency())) {
             handleLoanRepaymentInFull(transactionDate, loanLifecycleStateMachine);
         }
@@ -3685,15 +3686,14 @@ public class Loan extends AbstractPersistable<Long> {
                     LoanStatus.fromInt(this.loanStatus));
             this.loanStatus = statusEnum.getValue();
         }
-        processIncomeAccrualTransactionOnLoanClosure();
+        processIncomeAccrualTransactionOnLoanClosure(transactionDate);
     }
 
-    private void processIncomeAccrualTransactionOnLoanClosure() {
+    private void processIncomeAccrualTransactionOnLoanClosure(LocalDate transactionDate) {
         if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()
-                && this.status().isClosedObligationsMet()) {
-            Date closedDate = this.getClosedOnDate();
-            reverseTransactionsOnOrAfter(retreiveListOfIncomePostingTransactions(), closedDate);
-            reverseTransactionsOnOrAfter(retreiveListOfAccrualTransactions(), closedDate);
+                && (this.status().isClosedObligationsMet() || this.status().isOverpaid())) {
+            reverseTransactionsOnOrAfter(retreiveListOfIncomePostingTransactions(), transactionDate.toDate());
+            reverseTransactionsOnOrAfter(retreiveListOfAccrualTransactions(), transactionDate.toDate());
             HashMap<String, BigDecimal> cumulativeIncomeFromInstallments = new HashMap<>();
             determineCumulativeIncomeFromInstallments(cumulativeIncomeFromInstallments);
             HashMap<String, BigDecimal> cumulativeIncomeFromIncomePosting = new HashMap<>();
@@ -3704,8 +3704,10 @@ public class Loan extends AbstractPersistable<Long> {
             BigDecimal penaltyToPost = cumulativeIncomeFromInstallments.get("penalty").subtract(
                     cumulativeIncomeFromIncomePosting.get("penalty"));
             BigDecimal amountToPost = interestToPost.add(feeToPost).add(penaltyToPost);
-            LoanTransaction finalIncomeTransaction = LoanTransaction.incomePosting(this, this.getOffice(), closedDate, amountToPost,
+
+            LoanTransaction finalIncomeTransaction = LoanTransaction.incomePosting(this, this.getOffice(), transactionDate.toDate(), amountToPost,
                     interestToPost, feeToPost, penaltyToPost);
+
             this.loanTransactions.add(finalIncomeTransaction);
         }
         updateLoanOutstandingBalaces();
@@ -5736,6 +5738,7 @@ public class Loan extends AbstractPersistable<Long> {
                     .size() - 1);
             reverseTransactionsPostEffectiveDate(incomeTransactions, lastInstallment.getDueDate());
             reverseTransactionsPostEffectiveDate(accrualTransactions, lastInstallment.getDueDate());
+            applyAccurals(currentUser);
         }
     }
 
