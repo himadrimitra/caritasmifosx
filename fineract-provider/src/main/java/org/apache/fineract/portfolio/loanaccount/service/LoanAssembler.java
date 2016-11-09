@@ -19,7 +19,6 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -55,7 +54,6 @@ import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
-import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -304,7 +302,8 @@ public class LoanAssembler {
         // GLIM individual clients amount split
         final BigDecimal interestRate = loanApplicationTerms.getAnnualNominalInterestRate();
         final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
-        final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(loanApplication, element, interestRate, numberOfRepayments);
+        final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(loanApplication,
+        		element, interestRate, numberOfRepayments, loanApplicationTerms.getInterestMethod());
         loanApplicationTerms.updateTotalInterestDueForGlim(glimList);
         //capitalization of charges
         loanApplication.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(loanCharges));

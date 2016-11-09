@@ -518,8 +518,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         isUpfrontFee = true;
                         upfrontFeeAmount = upfrontFeeAmount.add(chargeAmount);
                         for(JsonElement upfrontCharge : upfrontCharges) {
-                            JsonObject jsonObj = upfrontCharge.getAsJsonObject();
-                            totalUpfrontFeeAmount = totalUpfrontFeeAmount.add(jsonObj.get("upfrontChargeAmount").getAsBigDecimal());
+                            JsonObject upfrontChargeJson = upfrontCharge.getAsJsonObject();
+                            if(upfrontChargeJson.has("upfrontChargeAmount")){
+                                totalUpfrontFeeAmount = totalUpfrontFeeAmount.add(upfrontChargeJson.get("upfrontChargeAmount").getAsBigDecimal());
+                            }                            
                         }
                     }
                     
@@ -956,7 +958,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             // modify glim data            
             if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
                 glimList  = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(existingLoanApplication, command.parsedJson(), interestRate,
-                        numberOfRepayments);
+                        numberOfRepayments, existingLoanApplication.getLoanProductRelatedDetail().getInterestMethod());
 		
 		        List<GroupLoanIndividualMonitoring> existingGlimList = this.groupLoanIndividualMonitoringRepository.findByLoanId(loanId);
 		        if (!existingGlimList.isEmpty()) {

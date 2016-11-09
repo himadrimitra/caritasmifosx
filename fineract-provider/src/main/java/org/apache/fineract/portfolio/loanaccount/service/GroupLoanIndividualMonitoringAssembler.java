@@ -39,6 +39,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.exception.ClientAlreadyWriteOffException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
+import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
 import org.apache.fineract.portfolio.tax.domain.TaxGroupMappings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,7 +133,7 @@ public class GroupLoanIndividualMonitoringAssembler {
                     if (loan.getLoanProductRelatedDetail().getInterestMethod().isDecliningBalnce()) {
                         totalInterest = calculateTotalInterest(interestRate, numberOfRepayments, amount);
                     } else {
-                        totalInterest = calculateTotalInterestForFlat(loan.getLoanProductRelatedDetail().getNominalInterestRatePerPeriod(),
+                        totalInterest = calculateTotalInterestForFlat(loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate(),
                                 numberOfRepayments, amount);
                     }
                     groupLoanIndividualMonitoring.setInterestAmount(totalInterest);
@@ -200,11 +201,11 @@ public class GroupLoanIndividualMonitoringAssembler {
     }
 
     public List<GroupLoanIndividualMonitoring> createOrUpdateIndividualClientsAmountSplit(Loan newLoanApplication,
-            final JsonElement element, BigDecimal interestRate, Integer numberOfRepayment) {
+            final JsonElement element, BigDecimal interestRate, Integer numberOfRepayment, InterestMethod interestMethod) {
         List<GroupLoanIndividualMonitoring> glimList = new ArrayList<>();
         if (this.fromApiJsonHelper.parameterExists(LoanApiConstants.clientMembersParamName, element)) {
             JsonArray clientMembers = this.fromApiJsonHelper.extractJsonArrayNamed(LoanApiConstants.clientMembersParamName, element);
-            createGlimAndGlimCharges(newLoanApplication, element, interestRate, numberOfRepayment, glimList, clientMembers);
+            createGlimAndGlimCharges(newLoanApplication, element, interestRate, numberOfRepayment, glimList, clientMembers, interestMethod);
             if (newLoanApplication != null) {
                 Set<LoanCharge> loanCharges = newLoanApplication.charges();
                 adjustRoundOffValuesToApplicableCharges(loanCharges, numberOfRepayment, glimList);
@@ -322,7 +323,8 @@ public class GroupLoanIndividualMonitoringAssembler {
     }
 
     public void createGlimAndGlimCharges(Loan newLoanApplication, final JsonElement element, BigDecimal interestRate,
-            Integer numberOfRepayment, List<GroupLoanIndividualMonitoring> glimList, JsonArray clientMembers) {
+            Integer numberOfRepayment, List<GroupLoanIndividualMonitoring> glimList, JsonArray clientMembers,
+            InterestMethod interestMethod) {
         for (JsonElement clientMember : clientMembers) {
             JsonObject member = clientMember.getAsJsonObject();
             Boolean isClientSelected = member.has(LoanApiConstants.isClientSelectedParamName)
@@ -331,6 +333,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             if (member.has(LoanApiConstants.amountParamName)) {
                 amount = member.get(LoanApiConstants.amountParamName).getAsBigDecimal();
             }
+            
             Long glimClientId = member.get(LoanApiConstants.idParamName).getAsLong();
             Client client = this.clientRepository.getActiveClientInUserScope(glimClientId);
             CodeValue loanPurpose = null;
@@ -356,13 +359,11 @@ public class GroupLoanIndividualMonitoringAssembler {
                 calculateTotalCharges(newLoanApplication, element, amount, client, clientCharges);
 
                 // total interest calculation
-                if (newLoanApplication.getLoanProductRelatedDetail().getInterestMethod().isDecliningBalnce()) {
+                if (interestMethod.isDecliningBalnce()) {
                     totalInterest = calculateTotalInterest(interestRate, numberOfRepayment, amount);
                 } else {
-                    totalInterest = calculateTotalInterestForFlat(newLoanApplication.getLoanProductRelatedDetail().getNominalInterestRatePerPeriod(),
-                            numberOfRepayment, amount);
-                }
-                
+                	totalInterest = calculateTotalInterestForFlat(interestRate,numberOfRepayment, amount);
+                }                
 
                 // calculate percentage of principal amount
                 percentage = calculatePercentageOfAmount(element, amount, percentage);
@@ -378,7 +379,8 @@ public class GroupLoanIndividualMonitoringAssembler {
 
     private BigDecimal calculateTotalInterestForFlat(BigDecimal nominalInterestRatePerPeriod, Integer numberOfRepayment, BigDecimal amount) {
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
-        BigDecimal totalInterest = (amount.multiply(nominalInterestRatePerPeriod).divide(divisor)).multiply(BigDecimal.valueOf(numberOfRepayment));
+        BigDecimal value = MathUtility.multiply(amount, nominalInterestRatePerPeriod,BigDecimal.valueOf(numberOfRepayment));
+        BigDecimal totalInterest = (value).divide(MathUtility.multiply(divisor, 12));
         return totalInterest;
     }
 
@@ -434,10 +436,10 @@ public class GroupLoanIndividualMonitoringAssembler {
 
     private BigDecimal getTotalUpfrontFeeAmount(Client client, JsonArray upfrontCharges, BigDecimal totalChargeAmount) {
         for (JsonElement jsonObject : upfrontCharges) {
-            JsonObject obj = jsonObject.getAsJsonObject();
-            Long clientId = obj.get("id").getAsLong();
-            if (clientId.equals(client.getId())) {
-                totalChargeAmount = totalChargeAmount.add(obj.get("upfrontChargeAmount").getAsBigDecimal());
+            JsonObject upfrontCharge = jsonObject.getAsJsonObject();
+            Long clientId = upfrontCharge.get("id").getAsLong();
+            if (clientId.equals(client.getId()) && upfrontCharge.has("upfrontChargeAmount")) {
+                totalChargeAmount = upfrontCharge.get("upfrontChargeAmount").getAsBigDecimal();
             }
         }
         return totalChargeAmount;
@@ -612,8 +614,8 @@ public class GroupLoanIndividualMonitoringAssembler {
     }
 
     public void updateGLIMAfterRepayment(Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions, Boolean isRecoveryRepayment) {
-        List<GroupLoanIndividualMonitoring> updatedGlimList = new ArrayList<GroupLoanIndividualMonitoring>();
-        List<GroupLoanIndividualMonitoringCharge> glimChargesForUpdate = new ArrayList<GroupLoanIndividualMonitoringCharge>();
+        List<GroupLoanIndividualMonitoring> updatedGlimList = new ArrayList<>();
+        List<GroupLoanIndividualMonitoringCharge> glimChargesForUpdate = new ArrayList<>();
         for (GroupLoanIndividualMonitoringTransaction glimTransaction : glimTransactions) {
             GroupLoanIndividualMonitoring glim = glimTransaction.getGroupLoanIndividualMonitoring();
             Map<String, BigDecimal> processedTransactionMap = glim.getProcessedTransactionMap();

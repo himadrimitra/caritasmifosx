@@ -7137,7 +7137,7 @@ public class Loan extends AbstractPersistable<Long> {
                                             installmentBreakUpMap.get("charge").add(feePortionForCurrentInstallment.getAmount()));
                                     installmentWriteOffMap.put(currentInstallment.getInstallmentNumber(), installmentBreakUpMap);
                                 } else {
-                                    Map<String, BigDecimal> installmentBreakUpMap = new HashMap<String, BigDecimal>();
+                                    Map<String, BigDecimal> installmentBreakUpMap = new HashMap<>();
                                     installmentBreakUpMap.put("principal", principalPortionForCurrentInstallment.getAmount());
                                     installmentBreakUpMap.put("interest", interestPortionForCurrentInstallment.getAmount());
                                     installmentBreakUpMap.put("charge", feePortionForCurrentInstallment.getAmount());

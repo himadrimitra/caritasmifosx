@@ -87,4 +87,12 @@ public class MathUtility {
         if (numberOfRepayment != currentInstallment) { return deafultInstallmentAmount; }
         return amount.subtract(multiply(deafultInstallmentAmount, numberOfRepayment - 1));
     }
+
+    public static BigDecimal multiply(BigDecimal amount, BigDecimal... values) {
+    	BigDecimal product = zeroIfNull(amount);
+        for (BigDecimal value : values) {
+        	product = product.multiply(zeroIfNull(value));
+        }
+        return product;
+    }
 }
