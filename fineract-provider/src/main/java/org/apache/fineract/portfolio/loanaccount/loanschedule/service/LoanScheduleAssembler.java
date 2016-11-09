@@ -667,7 +667,8 @@ public class LoanScheduleAssembler {
         //modify glim data
         final BigDecimal interestRate = loanApplicationTerms.getAnnualNominalInterestRate();
         final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
-        final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(null, element, interestRate, numberOfRepayments);
+        final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(null, 
+        		element, interestRate, numberOfRepayments, loanApplicationTerms.getInterestMethod());
 
         final LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed("expectedDisbursementDate", element);
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, expectedDisbursementDate.toDate(),
