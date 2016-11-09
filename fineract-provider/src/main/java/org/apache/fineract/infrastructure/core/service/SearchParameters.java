@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.infrastructure.core.service;
 
+import java.util.Date;
+
 import org.apache.commons.lang.StringUtils;
 
 public final class SearchParameters {
@@ -50,6 +52,13 @@ public final class SearchParameters {
     private final boolean isSelfUser;
     private final Long centerId;
     private final Long groupId;
+    
+    //report audit search parameter
+    private Long userId;
+    private Integer reportId;
+    private Date startDate;
+    private Date endDate;
+    
 
     public static SearchParameters from(final String sqlSearch, final Long officeId, final String externalId, final String name,
             final String hierarchy) {
@@ -369,6 +378,40 @@ public final class SearchParameters {
         this.centerId = null;
         this.groupId = null;
     }
+    
+    private SearchParameters(final Long userId, final Integer reportId, final Date startDate,
+    		final Date endDate, final Integer offset,final Integer limit, final String orderBy,
+    		final String sortOrder, String sqlSearch) {
+        this.userId = userId;
+        this.reportId = reportId;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.sqlSearch = sqlSearch;
+        this.offset = offset;
+        this.limit = limit;
+        this.orderBy = orderBy;
+        this.sortOrder = sortOrder;
+        this.officeId = null;
+        this.externalId = null;
+        this.name = null;
+        this.hierarchy = null;
+        this.firstname = null;
+        this.lastname = null;
+        this.staffId = null;
+        this.accountNo = null;
+        this.loanId = null;
+        this.savingsId = null;
+        this.orphansOnly = null;
+        this.currencyCode = null;
+        this.provisioningEntryId = null;
+        this.productId = null;
+        this.categoryId = null;
+        this.isSelfUser = false;
+        this.centerId = null;
+        this.groupId = null;
+
+    }
+
 
     public boolean isOrderByRequested() {
         return StringUtils.isNotBlank(this.orderBy);
@@ -531,8 +574,24 @@ public final class SearchParameters {
     public Long getGroupId() {
         return this.groupId;
     }
+    
+    public Long getUserId() {
+		return this.userId;
+	}
 
-    /** 
+	public Integer getReportId() {
+		return this.reportId;
+	}
+
+	public Date getStartDate() {
+		return this.startDate;
+	}
+
+	public Date getEndDate() {
+		return this.endDate;
+	}
+
+	/** 
      * creates an instance of the SearchParameters from a request for the report mailing job run history
      * 
      * @return SearchParameters object
@@ -563,5 +622,11 @@ public final class SearchParameters {
         final Long groupId = null;
         return new SearchParameters(null, null, null, null, null, null, null, offset, maxLimitAllowed, orderBy,
                 sortOrder, null, null, null, null, null, false,centerId,groupId);
+    }
+    
+    public static SearchParameters fromReportAudit(final Long userId, final Integer reportId, final Date startDate,
+    		final Date endDate, final Integer offset,final Integer limit, final String orderBy, final String sortOrder, String sqlSearch) {
+        final Integer maxLimitAllowed = getCheckedLimit(limit);
+        return new SearchParameters(userId, reportId, startDate, endDate, offset, maxLimitAllowed, orderBy, sortOrder, sqlSearch);
     }
 }

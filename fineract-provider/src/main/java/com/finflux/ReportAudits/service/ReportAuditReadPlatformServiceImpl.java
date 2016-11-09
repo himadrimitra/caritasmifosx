@@ -7,11 +7,20 @@ package com.finflux.ReportAudits.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.core.data.PaginationParameters;
+import org.apache.fineract.infrastructure.core.data.PaginationParametersDataValidator;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.data.AppUserData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,19 +29,26 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 import com.finflux.ReportAudits.data.ReportAuditData;
+import com.finflux.ReportAudits.exception.DateRangeInvalidException;
 import com.finflux.ReportAudits.exception.ReportAuditNotFoundException;
+import com.finflux.ReportAudits.exception.ResourceCanNotBeNullException;
 
 @Service
 public class ReportAuditReadPlatformServiceImpl implements ReportAuditReadPlatformService{
 	
 	private final JdbcTemplate jdbcTemplate;
 	private final PlatformSecurityContext context;
+	private final PaginationParametersDataValidator paginationParametersDataValidator;
+	private final PaginationHelper<ReportAuditData> paginationHelper = new PaginationHelper<>();
+	private final static Set<String> supportedOrderByValues = new HashSet<>(Arrays.asList("id"));
 	
 	@Autowired
 	public ReportAuditReadPlatformServiceImpl(final RoutingDataSource dataSource,
-			final PlatformSecurityContext context) {
+			final PlatformSecurityContext context,
+			final PaginationParametersDataValidator paginationParametersDataValidator) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 		this.context = context;
+		this.paginationParametersDataValidator = paginationParametersDataValidator;
 	}
 
 	private static final class ReportAuditDataMapper implements RowMapper<ReportAuditData> {
@@ -70,16 +86,7 @@ public class ReportAuditReadPlatformServiceImpl implements ReportAuditReadPlatfo
 	           return ReportAuditData.instance(id, reportId, reportName, reportType, user, executionStartDate, executionEndDate, reportParameters, executionTime);
 
 	       }
-	   }
-
-	
-	@Override
-	public List<ReportAuditData> retrieveAllReportAudits(String searchParameter) {
-		this.context.authenticatedUser();
-		ReportAuditDataMapper rm = new ReportAuditDataMapper();
-		String sql = " select "+rm.schema()+searchParameter;
-		return this.jdbcTemplate.query(sql, rm, new Object[] {});
-	}
+	   }	
 
 	@Override
 	public ReportAuditData getReportAudits(Long id) {
@@ -104,6 +111,75 @@ public class ReportAuditReadPlatformServiceImpl implements ReportAuditReadPlatfo
 		String seconds = (duration<10)?"0"+duration:duration+"";
 		return hours+":"+minutes+":"+seconds;
 	}
+
+	@Override
+	public Page<ReportAuditData> retrieveAllReportAudits(
+			SearchParameters searchParameters, PaginationParameters parameters) {
+		
+		this.paginationParametersDataValidator.validateParameterValues(parameters, supportedOrderByValues, "audits");
+		validateRequest(searchParameters);
+		ReportAuditDataMapper rm = new ReportAuditDataMapper();
+		final StringBuilder sqlBuilder = new StringBuilder(200);
+        sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
+        sqlBuilder.append(rm.schema());
+        sqlBuilder.append(" where ra.id > 0 ");
+        final String extraCriteria = getSearchCriteria(searchParameters);
+        if (StringUtils.isNotBlank(extraCriteria)) {
+            sqlBuilder.append(extraCriteria);
+        }
+        if (parameters.isOrderByRequested()) {
+            sqlBuilder.append(" order by ").append(searchParameters.getOrderBy()).append(' ').append(searchParameters.getSortOrder());
+        }
+
+        if (parameters.isLimited()) {
+            sqlBuilder.append(" limit ").append(searchParameters.getLimit());
+            if (searchParameters.isOffset()) {
+                sqlBuilder.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(),
+        		new Object[] {}, rm);
+	}
 	
+	private String getSearchCriteria(SearchParameters searchCriteria){
+		
+		StringBuffer extraCriteria = new StringBuffer(200);
+        final Long userId = searchCriteria.getUserId();
+        final Integer reportId = searchCriteria.getReportId();
+        final Date startDate = searchCriteria.getStartDate();
+        final Date endDate = searchCriteria.getEndDate();
+        if(reportId > -1){
+        	extraCriteria.append(" and ra.report_id = ").append(reportId);
+        }
+        if(userId > -1){
+        	extraCriteria.append(" and ra.user_id = ").append(userId);
+        }
+        if(startDate != null){
+        	extraCriteria.append(" and (UNIX_TIMESTAMP(Date(ra.execution_start_date))*1000) >= ").append(startDate.getTime());
+        }
+        if(endDate != null){
+        	extraCriteria.append(" and (UNIX_TIMESTAMP(Date(ra.execution_start_date))*1000) < ").append((endDate.getTime()+24*3600*1000));
+        }
+        
+        return extraCriteria.toString();
+	}
+	
+	private void validateRequest(SearchParameters searchCriteria){
+		final Long userId = searchCriteria.getUserId();
+        final Integer reportId = searchCriteria.getReportId();
+        final Date startDate = searchCriteria.getStartDate();
+        final Date endDate = searchCriteria.getEndDate();
+        if(reportId == null){
+        	throw new ResourceCanNotBeNullException("report");
+        }
+        if(userId == null){
+        	throw new ResourceCanNotBeNullException("user");
+        }
+        if(startDate != null && endDate != null && startDate.getTime()>endDate.getTime()){
+        	throw new DateRangeInvalidException();
+        }
+	}
 
 }
