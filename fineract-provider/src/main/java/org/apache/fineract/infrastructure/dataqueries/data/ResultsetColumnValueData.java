@@ -28,17 +28,20 @@ public class ResultsetColumnValueData {
     private final String value;
     @SuppressWarnings("unused")
     private final Integer score;
-
+    private final Integer parentId;
+ 
     public ResultsetColumnValueData(final int id, final String value) {
         this.id = id;
         this.value = value;
         this.score = null;
+        this.parentId = null;
     }
 
-    public ResultsetColumnValueData(final int id, final String value, final int score) {
+    public ResultsetColumnValueData(final int id, final String value, final int score, final int parentId) {
         this.id = id;
         this.value = value;
         this.score = score;
+        this.parentId = parentId;
     }
 
     public boolean matches(final String match) {

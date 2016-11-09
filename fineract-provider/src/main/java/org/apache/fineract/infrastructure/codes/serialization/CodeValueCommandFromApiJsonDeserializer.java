@@ -68,6 +68,10 @@ public final class CodeValueCommandFromApiJsonDeserializer {
 
         final String name = this.fromApiJsonHelper.extractStringNamed(CODEVALUE_JSON_INPUT_PARAMS.NAME.getValue(), element);
         baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.NAME.getValue()).value(name).notBlank().notExceedingLengthOf(100);
+        
+        final Long parentId = this.fromApiJsonHelper.extractLongNamed(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue(), element);
+        baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue()).value(parentId).ignoreIfNull().longGreaterThanZero();
+        
 
         if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.DESCRIPTION.getValue(), element)) {
             final String description = this.fromApiJsonHelper.extractStringNamed(CODEVALUE_JSON_INPUT_PARAMS.DESCRIPTION.getValue(),
@@ -128,6 +132,12 @@ public final class CodeValueCommandFromApiJsonDeserializer {
         if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element)) {
             final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue(), element);
             baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.IS_ACTIVE.getValue()).value(isActive).validateForBooleanValue();
+        }
+		
+        if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue(), element)) {
+            final Long parentId = this.fromApiJsonHelper.extractLongNamed(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue(), element);
+            baseDataValidator.reset().parameter(CODEVALUE_JSON_INPUT_PARAMS.PARENT_ID.getValue()).value(parentId).ignoreIfNull()
+                    .longGreaterThanZero();
         }
         
 		if (this.fromApiJsonHelper.parameterExists(CODEVALUE_JSON_INPUT_PARAMS.CODE_SCORE.getValue(), element)) {

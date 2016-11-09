@@ -22,7 +22,9 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,13 +34,17 @@ import javax.sql.DataSource;
 
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.exception.CodeValueNotFoundException;
 import org.apache.fineract.infrastructure.codes.service.CodeReadPlatformService;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
@@ -48,14 +54,24 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.JsonParserHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.api.DataTableApiConstant;
+import org.apache.fineract.infrastructure.dataqueries.data.AllowedValueOptions;
 import org.apache.fineract.infrastructure.dataqueries.data.DataTableValidator;
 import org.apache.fineract.infrastructure.dataqueries.data.DatatableData;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetColumnHeaderData;
 import org.apache.fineract.infrastructure.dataqueries.data.ResultsetRowData;
+import org.apache.fineract.infrastructure.dataqueries.data.ScopeCriteriaData;
+import org.apache.fineract.infrastructure.dataqueries.data.ScopeOptionsData;
+import org.apache.fineract.infrastructure.dataqueries.domain.DataTableScopes;
 import org.apache.fineract.infrastructure.dataqueries.exception.DatatableNotFoundException;
 import org.apache.fineract.infrastructure.dataqueries.exception.DatatableSystemErrorException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.apache.fineract.portfolio.client.domain.LegalForm;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
+import org.apache.fineract.portfolio.savings.data.SavingsProductData;
+import org.apache.fineract.portfolio.savings.service.SavingsProductReadPlatformService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
@@ -111,6 +127,9 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     private final ConfigurationDomainService configurationDomainService;
     private final CodeReadPlatformService codeReadPlatformService;
     private final DataTableValidator dataTableValidator;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
+    private final LoanProductReadPlatformService loanProductReadPlatformService;
+    private final SavingsProductReadPlatformService savingsProductReadPlatformService;
 
     // private final GlobalConfigurationWritePlatformServiceJpaRepositoryImpl
     // configurationWriteService;
@@ -119,7 +138,10 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     public ReadWriteNonCoreDataServiceImpl(final RoutingDataSource dataSource, final PlatformSecurityContext context,
             final FromJsonHelper fromJsonHelper, final GenericDataService genericDataService,
             final DatatableCommandFromApiJsonDeserializer fromApiJsonDeserializer, final CodeReadPlatformService codeReadPlatformService,
-            final ConfigurationDomainService configurationDomainService, final DataTableValidator dataTableValidator) {
+            final ConfigurationDomainService configurationDomainService, final DataTableValidator dataTableValidator,
+            final CodeValueReadPlatformService codeValueReadPlatformService,
+            final LoanProductReadPlatformService loanProductReadPlatformService, 
+            final SavingsProductReadPlatformService savingsProductReadPlatformService) {
         this.dataSource = dataSource;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
         this.context = context;
@@ -130,11 +152,14 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         this.codeReadPlatformService = codeReadPlatformService;
         this.configurationDomainService = configurationDomainService;
         this.dataTableValidator = dataTableValidator;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
         // this.configurationWriteService = configurationWriteService;
+        this.loanProductReadPlatformService = loanProductReadPlatformService;
+        this.savingsProductReadPlatformService = savingsProductReadPlatformService;
     }
 
     @Override
-    public List<DatatableData> retrieveDatatableNames(final String appTable) {
+    public List<DatatableData> retrieveDatatableNames(final String appTable, Long associatedEntityId) {
 
         String andClause;
         if (appTable == null) {
@@ -144,7 +169,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
 
         // PERMITTED datatables
-        final String sql = "select application_table_name, registered_table_name" + " from x_registered_table " + " where exists"
+        final String sql = "select id, application_table_name, registered_table_name, scoping_criteria_enum" + " from x_registered_table " + " where exists"
                 + " (select 'f'" + " from m_appuser_role ur " + " join m_role r on r.id = ur.role_id"
                 + " left join m_role_permission rp on rp.role_id = r.id" + " left join m_permission p on p.id = rp.permission_id"
                 + " where ur.appuser_id = " + this.context.authenticatedUser().getId()
@@ -155,22 +180,57 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
         final List<DatatableData> datatables = new ArrayList<>();
         while (rs.next()) {
+            final Integer id = rs.getInt("id");
+            boolean isEntityIdAssociatedWithDatatable = false;
             final String appTableName = rs.getString("application_table_name");
             final String registeredDatatableName = rs.getString("registered_table_name");
-            final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
-                    .fillResultsetColumnHeaders(registeredDatatableName);
+            final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
+            if (associatedEntityId != null && scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
+                isEntityIdAssociatedWithDatatable = isEntityIdAssociatedWithDatatable(id, associatedEntityId, scopingCriteriaEnum);
+                if (isEntityIdAssociatedWithDatatable) {
+                    final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
+                            .fillResultsetColumnHeaders(registeredDatatableName);
 
-            datatables.add(DatatableData.create(appTableName, registeredDatatableName, columnHeaderData));
+                    datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null));
+                }
+            } else {
+                final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
+                        .fillResultsetColumnHeaders(registeredDatatableName);
+
+                datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null));
+            }
         }
 
         return datatables;
+    }
+
+    private boolean isEntityIdAssociatedWithDatatable(Integer id, Long associatedEntityId, Long scopingCriteriaEnum) {
+        boolean isScopeIdAssociateWithDatatable = false;
+        StringBuilder sql = new StringBuilder("select id from f_registered_table_scoping " + " where registered_table_id = "+id+" and ");
+        if(DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isLoanProduct()) {
+            sql = sql.append(" loan_product_id = "+associatedEntityId+"");
+        }else if(DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isSavingsProduct()) {
+            sql = sql.append(" savings_product_id = "+associatedEntityId+"");
+        } else if(DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isClientType() ||
+                DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isClientClassification()) {
+            sql = sql.append(" code_value_id = "+associatedEntityId+"");
+        } else if(DataTableScopes.fromInt(scopingCriteriaEnum.intValue()).isClientLegalForm()) {
+            sql = sql.append(" legal_form_enum = "+associatedEntityId+"");
+        }
+        
+        final SqlRowSet rs = this.jdbcTemplate.queryForRowSet(sql.toString());
+        if (rs.next()) {
+            isScopeIdAssociateWithDatatable = true;
+        }
+                
+        return isScopeIdAssociateWithDatatable;
     }
 
     @Override
     public DatatableData retrieveDatatable(final String datatable) {
 
         // PERMITTED datatables
-        final String sql = "select application_table_name, registered_table_name" + " from x_registered_table " + " where exists"
+        final String sql = "select id, application_table_name, registered_table_name, scoping_criteria_enum" + " from x_registered_table " + " where exists"
                 + " (select 'f'" + " from m_appuser_role ur " + " join m_role r on r.id = ur.role_id"
                 + " left join m_role_permission rp on rp.role_id = r.id" + " left join m_permission p on p.id = rp.permission_id"
                 + " where ur.appuser_id = " + this.context.authenticatedUser().getId() + " and registered_table_name='" + datatable + "'"
@@ -181,12 +241,16 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
         DatatableData datatableData = null;
         while (rs.next()) {
+            final Integer id = rs.getInt("id");
             final String appTableName = rs.getString("application_table_name");
             final String registeredDatatableName = rs.getString("registered_table_name");
+            final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
+            final List<ScopeCriteriaData> scopeCriteriaData = this.genericDataService.fetchDatatableScopesByIdAndScopingCriteria(id, scopingCriteriaEnum);
+            
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
 
-            datatableData = DatatableData.create(appTableName, registeredDatatableName, columnHeaderData);
+            datatableData = DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData);
         }
 
         return datatableData;
@@ -198,12 +262,12 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
     @Transactional
     @Override
-    public void registerDatatable(final String dataTableName, final String applicationTableName) {
+    public void registerDatatable(final String dataTableName, final String applicationTableName, final Long scopingCriteriaEnum) {
 
         Integer category = DataTableApiConstant.CATEGORY_DEFAULT;
 
         final String permissionSql = this._getPermissionSql(dataTableName);
-        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql);
+        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum);
 
     }
 
@@ -213,12 +277,13 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
         final String applicationTableName = this.getTableName(command.getUrl());
         final String dataTableName = this.getDataTableName(command.getUrl());
+        final Long scopingCriteriaEnum = null;
 
         Integer category = this.getCategory(command);
 
         this.dataTableValidator.validateDataTableRegistration(command.json());
         final String permissionSql = this._getPermissionSql(dataTableName);
-        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql);
+        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum);
 
     }
 
@@ -227,24 +292,26 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     public void registerDatatable(final JsonCommand command, final String permissionSql) {
         final String applicationTableName = this.getTableName(command.getUrl());
         final String dataTableName = this.getDataTableName(command.getUrl());
-
+        final Long scopingCriteriaEnum = null;
+        
         Integer category = this.getCategory(command);
 
         this.dataTableValidator.validateDataTableRegistration(command.json());
 
-        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql);
+        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum);
 
     }
 
     @Transactional
     private void _registerDataTable(final String applicationTableName, final String dataTableName, final Integer category,
-            final String permissionsSql) {
+            final String permissionsSql, Long scopingCriteriaEnum) {
 
         validateAppTable(applicationTableName);
         assertDataTableExists(dataTableName);
 
-        final String registerDatatableSql = "insert into x_registered_table (registered_table_name, application_table_name,category) values ('"
-                + dataTableName + "', '" + applicationTableName + "', '" + category + "')";
+        final String registerDatatableSql = "insert into x_registered_table (registered_table_name, application_table_name,category, "
+                + "scoping_criteria_enum ) values ('" + dataTableName + "', '" + applicationTableName + "', '" + category + "', "
+                        + ""+scopingCriteriaEnum+")";
 
         try {
 
@@ -332,12 +399,16 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final String deleteRegisteredDatatableSql = "delete from x_registered_table where registered_table_name = '" + datatable + "'";
 
         final String deleteFromConfigurationSql = "delete from c_configuration where name ='" + datatable + "'";
+        
+        final String deleteRegisteredDatatableScope = "DELETE rts FROM f_registered_table_scoping rts INNER JOIN x_registered_table rt ON rt.id = rts.registered_table_id "
+                + " WHERE rt.registered_table_name =  '" + datatable + "'";
 
-        String[] sqlArray = new String[4];
+        String[] sqlArray = new String[5];
         sqlArray[0] = deleteRolePermissionsSql;
         sqlArray[1] = deletePermissionsSql;
-        sqlArray[2] = deleteRegisteredDatatableSql;
-        sqlArray[3] = deleteFromConfigurationSql;
+        sqlArray[2] = deleteRegisteredDatatableScope;
+        sqlArray[3] = deleteRegisteredDatatableSql;
+        sqlArray[4] = deleteFromConfigurationSql;
 
         this.jdbcTemplate.batchUpdate(sqlArray);
     }
@@ -351,13 +422,23 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final CommandProcessingResult commandProcessingResult = checkMainResourceExistsWithinScope(appTable, appTableId);
 
             final List<ResultsetColumnHeaderData> columnHeaders = this.genericDataService.fillResultsetColumnHeaders(dataTableName);
-
+            JsonElement jsonElement = this.fromJsonHelper.parse(command.json());
             final Type typeOfMap = new TypeToken<Map<String, String>>() {}.getType();
-            final Map<String, String> dataParams = this.fromJsonHelper.extractDataMap(typeOfMap, command.json());
-
-            final String sql = getAddSql(columnHeaders, dataTableName, getFKField(appTable), appTableId, dataParams);
-
-            this.jdbcTemplate.update(sql);
+            if(jsonElement.isJsonArray()){
+            	JsonArray  jsonArray = (JsonArray)jsonElement;
+                Iterator<JsonElement> jsonArrayIterator = jsonArray.iterator();
+                JsonObject jsonObject = null;
+                while (jsonArrayIterator.hasNext()) {
+	                jsonObject = jsonArrayIterator.next().getAsJsonObject();
+	                final Map<String, String> dataParams = this.fromJsonHelper.extractDataMap(typeOfMap, jsonObject.toString());
+	                final String sql = getAddSql(columnHeaders, dataTableName, getFKField(appTable), appTableId, dataParams);
+	                this.jdbcTemplate.update(sql);
+                }
+            }else{
+            	final Map<String, String> dataParams = this.fromJsonHelper.extractDataMap(typeOfMap, command.json());
+                final String sql = getAddSql(columnHeaders, dataTableName, getFKField(appTable), appTableId, dataParams);
+                this.jdbcTemplate.update(sql);
+            }
 
             return commandProcessingResult; //
 
@@ -476,11 +557,12 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 sqlBuilder = sqlBuilder.append("(11)");
             }
         }
-
-        if (mandatory) {
-            sqlBuilder = sqlBuilder.append(" NOT NULL");
-        } else {
-            sqlBuilder = sqlBuilder.append(" DEFAULT NULL");
+        if (mandatory != null) {
+            if (mandatory) {
+                sqlBuilder = sqlBuilder.append(" NOT NULL");
+            } else {
+                sqlBuilder = sqlBuilder.append(" DEFAULT NULL");
+            }
         }
 
         sqlBuilder = sqlBuilder.append(", ");
@@ -501,6 +583,9 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             datatableName = this.fromJsonHelper.extractStringNamed("datatableName", element);
             final String apptableName = this.fromJsonHelper.extractStringNamed("apptableName", element);
             Boolean multiRow = this.fromJsonHelper.extractBooleanNamed("multiRow", element);
+            final Long scopingCriteriaEnum = this.fromJsonHelper.extractLongNamed("scopingCriteriaEnum", element);
+            final JsonObject jsonObject = element.getAsJsonObject();
+            JsonElement scope = jsonObject.get(DataTableApiConstant.scopeParamName);
 
             /***
              * In cases of tables storing hierarchical entities (like m_group),
@@ -556,8 +641,28 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             sqlBuilder = sqlBuilder.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
             this.jdbcTemplate.execute(sqlBuilder.toString());
 
-            registerDatatable(datatableName, apptableName);
+            registerDatatable(datatableName, apptableName, scopingCriteriaEnum);
             registerColumnCodeMapping(codeMappings);
+            registerDatatableMetadata(datatableName, columns);
+            boolean isCreateDataTable = true;
+            updateXRegisteredDisplayRules(datatableName, columns, isCreateDataTable);
+            if (scope != null) {
+                if (scope.isJsonArray()) {
+                    final JsonArray scopeArray = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.scopeParamName, element);
+                    for (JsonElement ele : scopeArray) {
+                        final Long id = this.fromJsonHelper.extractLongNamed(DataTableApiConstant.idParamName, ele);
+                        final JsonArray allowedValues = this.fromJsonHelper.extractJsonArrayNamed(
+                                DataTableApiConstant.allowedValuesParamName, ele);
+                        updateDataTableScope(datatableName, id, allowedValues);
+                    }
+                } else {
+                    final Long id = this.fromJsonHelper.extractLongNamed(DataTableApiConstant.idParamName, scope);
+                    final JsonArray allowedValues = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.allowedValuesParamName,
+                            scope);
+                    updateDataTableScope(datatableName, id, allowedValues);
+                }
+            }
+            
         } catch (final DataIntegrityViolationException e) {
             final Throwable realCause = e.getCause();
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -577,6 +682,126 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
 
         return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withResourceIdAsString(datatableName).build();
+    }
+
+    private void updateDataTableScope(String datatableName, Long scopeId, JsonArray allowedValues) {
+        String sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
+        Integer xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+        
+        StringBuilder deleteSql = new StringBuilder("delete from f_registered_table_scoping where registered_table_id = "+xResgisteredTableId+" ");
+        StringBuilder sqlQuery = new StringBuilder("INSERT INTO f_registered_table_scoping(registered_table_id,");
+                
+        if (DataTableScopes.fromInt(scopeId.intValue()).isLoanProduct()) {
+            sqlQuery = sqlQuery.append(" loan_product_id ) ");
+        }
+        if (DataTableScopes.fromInt(scopeId.intValue()).isSavingsProduct()) {
+            sqlQuery = sqlQuery.append(" savings_product_id ) ");
+        }
+        if (DataTableScopes.fromInt(scopeId.intValue()).isClientLegalForm()) {
+            sqlQuery = sqlQuery.append(" legal_form_enum ) ");
+        }
+        if (DataTableScopes.fromInt(scopeId.intValue()).isClientType() || DataTableScopes.fromInt(scopeId.intValue()).isClientClassification()) {
+            sqlQuery = sqlQuery.append(" code_value_id ) ");
+        }
+        
+        deleteExistingScopeExceptAllowedValues(deleteSql);
+            
+        for (final JsonElement allowedValue : allowedValues) {
+            String insertsql = "";
+            insertsql = insertsql + "VALUES(" + xResgisteredTableId + "," + allowedValue.getAsLong() + ");";
+            String query = sqlQuery + insertsql;
+            this.jdbcTemplate.execute(query);
+        }
+        
+    }
+
+    private void deleteExistingScopeExceptAllowedValues(StringBuilder deleteSql) {
+        this.jdbcTemplate.execute(deleteSql.toString());
+    }
+
+    private void updateXRegisteredDisplayRules(String datatableName, JsonArray columns, boolean isCreateDataTable) {
+
+        String sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
+        Integer xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+        for (final JsonElement column : columns) {
+            final String name = this.fromJsonHelper.extractStringNamed("name", column);
+            final String dependsOn = this.fromJsonHelper.extractStringNamed("dependsOn", column);
+            final JsonArray visibilityCriteria = this.fromJsonHelper.extractJsonArrayNamed("visibilityCriteria", column);
+            final String displayName = this.fromJsonHelper.extractStringNamed("displayName", column);
+            final Long displayPosition = this.fromJsonHelper.extractLongNamed("displayPosition", column);
+            Boolean visible = this.fromJsonHelper.extractBooleanNamed("visible", column);
+            final Boolean mandatoryIfVisible = this.fromJsonHelper.extractBooleanNamed("mandatoryIfVisible", column);
+
+            Long associatedColumnId = null;
+            if (dependsOn != null) {
+                String sqlQuery = "SELECT xrtm.id FROM x_registered_table_metadata xrtm WHERE xrtm.column_name = '" + dependsOn
+                        + "' " + "and xrtm.registered_table_id = " + xResgisteredTableId + "";
+                associatedColumnId = this.jdbcTemplate.queryForLong(sqlQuery);
+                String updateQuery = "UPDATE x_registered_table_metadata xrtm SET xrtm.associate_with = " + associatedColumnId + ", "
+                        + "xrtm.display_name = '" + displayName + "', xrtm.order_position = "+displayPosition+", xrtm.visible = " +visible+ ", "
+                        + "xrtm.mandatory_if_visible = "+mandatoryIfVisible+"  WHERE "
+                        + "xrtm.column_name = '" + name + "' AND xrtm.registered_table_id = " + xResgisteredTableId + "";
+                this.jdbcTemplate.update(updateQuery);
+            }
+            if (visibilityCriteria != null) {
+                for (final JsonElement criteria : visibilityCriteria) {
+                    final String columnName = this.fromJsonHelper.extractStringNamed("columnName", criteria);
+                    final String value = this.fromJsonHelper.extractStringNamed("value", criteria);
+                    CodeValueData codeValueData = this.codeValueReadPlatformService.retriveCodeValueByCodeValueName(value);
+                    if (codeValueData == null) { throw new CodeValueNotFoundException(value, "code value not found"); }
+                    String watchColumnSql = "SELECT xrtm.id from x_registered_table_metadata xrtm where xrtm.column_name = '" + columnName
+                            + "' " + "and xrtm.registered_table_id = " + xResgisteredTableId + "";
+                    Integer watchColumnId = this.jdbcTemplate.queryForInt(watchColumnSql);
+                    String selectSql = "SELECT xrtm.id from x_registered_table_metadata xrtm where xrtm.column_name = '" + name + "' "
+                            + "and xrtm.registered_table_id = " + xResgisteredTableId + "";
+                    Integer xRegisterTableMetadataId = this.jdbcTemplate.queryForInt(selectSql);
+                    if (isCreateDataTable) {
+                        String insertQuery = "INSERT INTO x_registered_table_display_rules (registered_table_metadata_id, watch_column) VALUES"
+                                + "(" + xRegisterTableMetadataId + "," + watchColumnId + ")";
+                        this.jdbcTemplate.execute(insertQuery);
+                        String query = "SELECT dtrv.id FROM x_registered_table_display_rules dtrv WHERE dtrv.registered_table_metadata_id = "
+                                + xRegisterTableMetadataId + "";
+                        Integer rulesValueId = this.jdbcTemplate.queryForInt(query);
+                        String sqlQuery = "INSERT INTO x_registered_table_display_rules_value(code_value_id, registered_table_display_rules_id)"
+                                + "VALUES(" + codeValueData.getId() + "," + rulesValueId + ")";
+                        this.jdbcTemplate.execute(sqlQuery);
+                    } else {
+                        String updateQuery = "UPDATE x_registered_table_display_rules  xrtdr SET  watch_column = " + watchColumnId + " "
+                                + "WHERE registered_table_metadata_id = "+xRegisterTableMetadataId+" ";
+                        this.jdbcTemplate.execute(updateQuery);
+                        String query = "SELECT dtrv.id FROM x_registered_table_display_rules dtrv WHERE dtrv.registered_table_metadata_id = "
+                                + xRegisterTableMetadataId + "";
+                        Integer rulesValueId = this.jdbcTemplate.queryForInt(query);
+                        String updateSql = "UPDATE x_registered_table_display_rules_value xrtdr SET code_value_id = "+codeValueData.getId()+ ""
+                                + " WHERE registered_table_display_rules_id = "+rulesValueId+"";
+                        this.jdbcTemplate.execute(updateSql);
+                    }
+                }
+            }
+        }
+
+    }
+
+    @Transactional
+    private void registerDatatableMetadata(String datatableName, JsonArray columns) {
+        String sql = null;
+        String query = null;
+        sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
+        int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+        
+        for (final JsonElement column : columns) {
+            final String name = this.fromJsonHelper.extractStringNamed("name", column);
+            final String displayName = this.fromJsonHelper.extractStringNamed("displayName", column);
+            final Long displayPosition = this.fromJsonHelper.extractLongNamed("displayPosition", column);
+            Boolean visible = this.fromJsonHelper.extractBooleanNamed("visible", column);
+            final Boolean mandatoryIfVisible = this.fromJsonHelper.extractBooleanNamed("mandatoryIfVisible", column);
+
+            Long associatedColumnId = null;
+            query = "insert into x_registered_table_metadata(registered_table_id, column_name, associate_with, display_name, order_position, visible, mandatory_if_visible) " +
+            	"values("+xResgisteredTableId+", '"+name+"', "+associatedColumnId+", '"+displayName+"', "+displayPosition+", "+visible+", "+mandatoryIfVisible+")";
+            this.jdbcTemplate.execute(query);
+    	
+        }
     }
 
     private void parseDatatableColumnForUpdate(final JsonObject column,
@@ -653,12 +878,13 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             }
         }
 
-        if (mandatory) {
-            sqlBuilder = sqlBuilder.append(" NOT NULL");
-        } else {
-            sqlBuilder = sqlBuilder.append(" DEFAULT NULL");
+        if (mandatory != null) {
+            if (mandatory) {
+                sqlBuilder = sqlBuilder.append(" NOT NULL");
+            } else {
+                sqlBuilder = sqlBuilder.append(" DEFAULT NULL");
+            }
         }
-
         if (after != null) {
             sqlBuilder = sqlBuilder.append(" AFTER `" + after + "`");
         }
@@ -710,13 +936,13 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 sqlBuilder = sqlBuilder.append("(11)");
             }
         }
-
-        if (mandatory) {
-            sqlBuilder = sqlBuilder.append(" NOT NULL");
-        } else {
-            sqlBuilder = sqlBuilder.append(" DEFAULT NULL");
+        if (mandatory != null) {
+            if (mandatory) {
+                sqlBuilder = sqlBuilder.append(" NOT NULL");
+            } else {
+                sqlBuilder = sqlBuilder.append(" DEFAULT NULL");
+            }
         }
-
         if (after != null) {
             sqlBuilder = sqlBuilder.append(" AFTER `" + after + "`");
         }
@@ -805,6 +1031,9 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final JsonArray addColumns = this.fromJsonHelper.extractJsonArrayNamed("addColumns", element);
             final JsonArray dropColumns = this.fromJsonHelper.extractJsonArrayNamed("dropColumns", element);
             final String apptableName = this.fromJsonHelper.extractStringNamed("apptableName", element);
+            final Long scopingCriteriaEnum = this.fromJsonHelper.extractLongNamed("scopingCriteriaEnum", element);
+            final JsonObject jsonObject = element.getAsJsonObject();
+            JsonElement scope = jsonObject.get(DataTableApiConstant.scopeParamName);
 
             validateDatatableName(datatableName);
 
@@ -846,7 +1075,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                     this.jdbcTemplate.execute(sqlBuilder.toString());
 
                     deregisterDatatable(datatableName);
-                    registerDatatable(datatableName, apptableName);
+                    registerDatatable(datatableName, apptableName, scopingCriteriaEnum);
                 }
             }
 
@@ -857,10 +1086,23 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 StringBuilder sqlBuilder = new StringBuilder("ALTER TABLE `" + datatableName + "`");
                 final StringBuilder constrainBuilder = new StringBuilder();
                 final List<String> codeMappings = new ArrayList<>();
+                DatatableData datatableData = retrieveDatatable(datatableName);
+            	Integer xRegisterTableId = datatableData.getId();
+            	updateScopeCriteriaEnum(scopingCriteriaEnum, xRegisterTableId);
+            	final StringBuilder deleteColumnValues = new StringBuilder();
+            	StringBuilder sql = new StringBuilder("DELETE FROM `x_registered_table_metadata` WHERE " );
+                int i = 0;
                 for (final JsonElement column : dropColumns) {
                     parseDatatableColumnForDrop(column.getAsJsonObject(), sqlBuilder, datatableName, constrainBuilder, codeMappings);
-                }
-
+                    final String name = (column.getAsJsonObject().has("name")) ? column.getAsJsonObject().get("name").getAsString() : null;
+                    if(i == 0){
+                    	deleteColumnValues.append("'"+name+"'");
+                    }else{
+                    	deleteColumnValues.append(", '"+name+"'");
+                    }
+                    i++;
+                 }
+                sql.append("column_name IN  ("+deleteColumnValues+") AND registered_table_id = "+xRegisterTableId+"");
                 // Remove the first comma, right after ALTER TABLE `datatable`
                 final int indexOfFirstComma = sqlBuilder.indexOf(",");
                 if (indexOfFirstComma != -1) {
@@ -868,6 +1110,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 }
                 sqlBuilder.append(constrainBuilder);
                 this.jdbcTemplate.execute(sqlBuilder.toString());
+                this.jdbcTemplate.execute(sql.toString());
                 deleteColumnCodeMapping(codeMappings);
             }
             if (addColumns != null) {
@@ -879,7 +1122,11 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                     parseDatatableColumnForAdd(column.getAsJsonObject(), sqlBuilder, datatableName.toLowerCase().replaceAll("\\s", "_"),
                             constrainBuilder, codeMappings, isConstraintApproach);
                 }
-
+                String sql = "Select xrt.id from x_registered_table xrt where xrt.registered_table_name = '" + datatableName + "'";
+                int xResgisteredTableId = this.jdbcTemplate.queryForInt(sql);
+                updateScopeCriteriaEnum(scopingCriteriaEnum, xResgisteredTableId);
+                registerDatatableMetadata(datatableName, addColumns);
+                updateXRegisteredDisplayRules(datatableName, addColumns, false);
                 // Remove the first comma, right after ALTER TABLE `datatable`
                 final int indexOfFirstComma = sqlBuilder.indexOf(",");
                 if (indexOfFirstComma != -1) {
@@ -895,14 +1142,22 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 final StringBuilder constrainBuilder = new StringBuilder();
                 final Map<String, Long> codeMappings = new HashMap<>();
                 final List<String> removeMappings = new ArrayList<>();
+                DatatableData datatableData = retrieveDatatable(datatableName);
+            	Integer xRegisterTableId = datatableData.getId();
+            	updateScopeCriteriaEnum(scopingCriteriaEnum, xRegisterTableId);
                 for (final JsonElement column : changeColumns) {
                     // remove NULL values from column where mandatory is true
                     removeNullValuesFromStringColumn(datatableName, column.getAsJsonObject(), mapColumnNameDefinition);
 
                     parseDatatableColumnForUpdate(column.getAsJsonObject(), mapColumnNameDefinition, sqlBuilder, datatableName,
                             constrainBuilder, codeMappings, removeMappings, isConstraintApproach);
+                    String name = (column.getAsJsonObject().has("name")) ? column.getAsJsonObject().get("name").getAsString() : null;
+                    String newName = (column.getAsJsonObject().has("newName")) ? column.getAsJsonObject().get("newName").getAsString() : name;
+                    String sql = "UPDATE `x_registered_table_metadata` SET column_name = '"+newName+"' WHERE column_name = '"+name+"' AND registered_table_id = "+xRegisterTableId+"";
+                    this.jdbcTemplate.execute(sql.toString());
+                 
                 }
-
+                updateXRegisteredDisplayRules(datatableName, changeColumns, false);
                 // Remove the first comma, right after ALTER TABLE `datatable`
                 final int indexOfFirstComma = sqlBuilder.indexOf(",");
                 if (indexOfFirstComma != -1) {
@@ -928,6 +1183,22 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                                     "One of the data table columns contains null values"); }
                 }
             }
+            if (scope != null) {
+                if (scope.isJsonArray()) {
+                    final JsonArray scopeArray = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.scopeParamName, element);
+                    for (JsonElement ele : scopeArray) {
+                        final Long id = this.fromJsonHelper.extractLongNamed(DataTableApiConstant.idParamName, ele);
+                        final JsonArray allowedValues = this.fromJsonHelper.extractJsonArrayNamed(
+                                DataTableApiConstant.allowedValuesParamName, ele);
+                        updateDataTableScope(datatableName, id, allowedValues);
+                    }
+                } else {
+                    final Long id = this.fromJsonHelper.extractLongNamed(DataTableApiConstant.idParamName, scope);
+                    final JsonArray allowedValues = this.fromJsonHelper.extractJsonArrayNamed(DataTableApiConstant.allowedValuesParamName,
+                            scope);
+                    updateDataTableScope(datatableName, id, allowedValues);
+                }
+            }
         } catch (final DataIntegrityViolationException e) {
             final Throwable realCause = e.getCause();
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -943,6 +1214,11 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
             throwExceptionIfValidationWarningsExist(dataValidationErrors);
         }
+    }
+
+    private void updateScopeCriteriaEnum(final Long scopingCriteriaEnum, Integer xRegisterTableId) {
+        String updateSql = "UPDATE `x_registered_table` SET scoping_criteria_enum = "+scopingCriteriaEnum+" where id = "+xRegisterTableId+"";
+        this.jdbcTemplate.execute(updateSql);
     }
 
     @Transactional
@@ -1653,5 +1929,66 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         if (currValue.equals(pValue)) { return false; }
 
         return true;
+    }
+
+    @Override
+    public ScopeOptionsData retriveAllScopeOptions() {
+        List<ScopeCriteriaData> loan = new ArrayList<>();
+        List<ScopeCriteriaData> savings = new ArrayList<>();
+        List<ScopeCriteriaData> client = new ArrayList<>();
+        Collection<EnumOptionData> dataTableScopes = DataTableScopes.entityTypeOptions();
+        for (EnumOptionData dataTableScope : dataTableScopes) {
+            if (DataTableScopes.fromInt(dataTableScope.getId().intValue()).isLoanProduct()) {
+                List<AllowedValueOptions> allowedValueOptions = new ArrayList<>();
+                Collection<LoanProductData> loanProductDatas = this.loanProductReadPlatformService.retrieveAllLoanProducts();
+                for (LoanProductData loanProductData : loanProductDatas) {
+                    allowedValueOptions.add(AllowedValueOptions.createNew(loanProductData.getId(), loanProductData.getName()));
+                }
+                loan.add(ScopeCriteriaData.createNew(dataTableScope.getId(), dataTableScope.getCode(), dataTableScope.getValue(),
+                        allowedValueOptions));
+            }
+            if (DataTableScopes.fromInt(dataTableScope.getId().intValue()).isSavingsProduct()) {
+                List<AllowedValueOptions> allowedValueOptions = new ArrayList<>();
+                Collection<SavingsProductData> savingsProductDatas = this.savingsProductReadPlatformService.retrieveAll();
+                for (SavingsProductData savingsProductData : savingsProductDatas) {
+                    allowedValueOptions.add(AllowedValueOptions.createNew(savingsProductData.getId(), savingsProductData.getName()));
+                }
+                savings.add(ScopeCriteriaData.createNew(dataTableScope.getId(), dataTableScope.getCode(), dataTableScope.getValue(),
+                        allowedValueOptions));
+            }
+            if (DataTableScopes.fromInt(dataTableScope.getId().intValue()).isClientLegalForm()) {
+                List<AllowedValueOptions> allowedValueOptions = new ArrayList<>();
+                Collection<EnumOptionData> clientLegalFormOptions = LegalForm.legalFormTypeOptions();
+                for (EnumOptionData clientLegalFormOption : clientLegalFormOptions) {
+                    allowedValueOptions.add(AllowedValueOptions.createNew(clientLegalFormOption.getId(), clientLegalFormOption.getValue()));
+                }
+                client.add(ScopeCriteriaData.createNew(dataTableScope.getId(), dataTableScope.getCode(), dataTableScope.getValue(),
+                        allowedValueOptions));
+            }
+            if (DataTableScopes.fromInt(dataTableScope.getId().intValue()).isClientType()) {
+                List<AllowedValueOptions> allowedValueOptions = new ArrayList<>();
+                Collection<CodeValueData> clientTypeOptions = this.codeValueReadPlatformService
+                        .retrieveCodeValuesByCode(ClientApiConstants.CLIENT_TYPE);
+                for (CodeValueData clientTypeOption : clientTypeOptions) {
+                    allowedValueOptions.add(AllowedValueOptions.createNew(clientTypeOption.getId(), clientTypeOption.getName()));
+                }
+                client.add(ScopeCriteriaData.createNew(dataTableScope.getId(), dataTableScope.getCode(), dataTableScope.getValue(),
+                        allowedValueOptions));
+            }
+
+            if (DataTableScopes.fromInt(dataTableScope.getId().intValue()).isClientClassification()) {
+                List<AllowedValueOptions> allowedValueOptions = new ArrayList<>();
+                Collection<CodeValueData> clientClassificationOptions = this.codeValueReadPlatformService
+                        .retrieveCodeValuesByCode(ClientApiConstants.CLIENT_CLASSIFICATION);
+                for (CodeValueData clientClassificationOption : clientClassificationOptions) {
+                    allowedValueOptions.add(AllowedValueOptions.createNew(clientClassificationOption.getId(),
+                            clientClassificationOption.getName()));
+                }
+                client.add(ScopeCriteriaData.createNew(dataTableScope.getId(), dataTableScope.getCode(), dataTableScope.getValue(),
+                        allowedValueOptions));
+            }
+        }
+
+        return new ScopeOptionsData(loan, savings, client);
     }
 }

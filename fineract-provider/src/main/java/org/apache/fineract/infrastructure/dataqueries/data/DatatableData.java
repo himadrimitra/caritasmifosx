@@ -25,24 +25,34 @@ import java.util.List;
  */
 public class DatatableData {
 
+    private final Integer id;
     @SuppressWarnings("unused")
     private final String applicationTableName;
     @SuppressWarnings("unused")
     private final String registeredTableName;
-    @SuppressWarnings("unused")
     private final List<ResultsetColumnHeaderData> columnHeaderData;
+    private final Long scopingCriteriaEnum;
+    private final List<ScopeCriteriaData> scopeCriteriaData;
 
 
-    public static DatatableData create(final String applicationTableName, final String registeredTableName,
-            final List<ResultsetColumnHeaderData> columnHeaderData) {
-        return new DatatableData(applicationTableName, registeredTableName, columnHeaderData);
+    public static DatatableData create(final Integer id, final String applicationTableName, final String registeredTableName,
+            final List<ResultsetColumnHeaderData> columnHeaderData, Long scopingCriteriaEnum, List<ScopeCriteriaData> scopeCriteriaData) {
+        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData);
     }
 
-    private DatatableData(final String applicationTableName, final String registeredTableName,
-            final List<ResultsetColumnHeaderData> columnHeaderData) {
+    private DatatableData(final Integer id, final String applicationTableName, final String registeredTableName,
+            final List<ResultsetColumnHeaderData> columnHeaderData, final Long scopingCriteriaEnum,
+            List<ScopeCriteriaData> scopeCriteriaData) {
+        this.id = id;
         this.applicationTableName = applicationTableName;
         this.registeredTableName = registeredTableName;
         this.columnHeaderData = columnHeaderData;
+        this.scopingCriteriaEnum = scopingCriteriaEnum;
+        this.scopeCriteriaData = scopeCriteriaData;
 
+    }
+    
+    public Integer getId() {
+        return this.id;
     }
 }

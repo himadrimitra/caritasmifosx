@@ -35,5 +35,18 @@ public class DataTableApiConstant {
     public static final Set<String> REGISTER_PARAMS = new HashSet<>(Arrays.asList(categoryParamName,localParamName));
 
     public static final String DATATABLE_RESOURCE_NAME ="dataTables";
+    public static final String displayNameParamName = "displayName";
+    public static final String diplayPositionParamName = "displayPosition";
+    public static final String visibleParamName = "visible";
+    public static final String dependsOnWithParamName = "dependsOn";
+    public static final String visibilityCriteriaParamName = "visibilityCriteria";
+    public static final String columnNameParamName = "columnName";
+    public static final String valueParamName = "value";
+    public static final String mandatoryIfVisibleParamName = "mandatoryIfVisible";
+    public static final String columnValuesParamName = "columnValues";
+    public static final String scopeParamName = "scope";
+    public static final String idParamName = "id";
+    public static final String allowedValuesParamName = "allowedValues";
+    public static final String scopingCriteriaEnumParamName = "scopingCriteriaEnum";
 
 }

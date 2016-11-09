@@ -18,6 +18,11 @@
  */
 package org.apache.fineract.portfolio.client.domain;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 /**
  * Type used to differentiate the type of client
  */
@@ -63,5 +68,35 @@ public enum LegalForm {
     
     public boolean isEntity() {
         return this.value.equals(LegalForm.ENTITY.getValue());
+    }
+    
+    public static EnumOptionData legalFormType(final LegalForm type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case ENTITY:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Entity");
+            break;
+            case PERSON:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Person");
+            break;
+            default:
+            break;
+        }
+        return optionData;
+    }
+    
+    public static Collection<EnumOptionData> legalFormTypeOptions() {
+        final Collection<EnumOptionData> legalFormTypeOptions = new ArrayList<>();
+        for (final LegalForm enumType : values()) {
+            final EnumOptionData enumOptionData = legalFormType(enumType.getValue());
+            if (enumOptionData != null) {
+                legalFormTypeOptions.add(enumOptionData);
+            }
+        }
+        return legalFormTypeOptions;
+    }
+    
+    public static EnumOptionData legalFormType(final int id) {
+        return legalFormType(LegalForm.fromInt(id));
     }
 }

@@ -24,11 +24,12 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.dataqueries.data.DatatableData;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
+import org.apache.fineract.infrastructure.dataqueries.data.ScopeOptionsData;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 public interface ReadWriteNonCoreDataService {
 
-    List<DatatableData> retrieveDatatableNames(String appTable);
+    List<DatatableData> retrieveDatatableNames(String appTable, Long associatedEntityId);
 
     DatatableData retrieveDatatable(String datatable);
 
@@ -36,7 +37,7 @@ public interface ReadWriteNonCoreDataService {
     void registerDatatable(JsonCommand command);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGISTER_DATATABLE')")
-    void registerDatatable(String dataTableName, String applicationTableName);
+    void registerDatatable(String dataTableName, String applicationTableName, final Long scopingCriteriaEnum);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGISTER_DATATABLE')")
     void registerDatatable(JsonCommand command, String permissionTable);
@@ -67,5 +68,7 @@ public interface ReadWriteNonCoreDataService {
     String getTableName(String Url);
 
     String getDataTableName(String Url);
+
+    ScopeOptionsData retriveAllScopeOptions();
 
 }

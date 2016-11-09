@@ -32,6 +32,8 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
+import org.apache.fineract.infrastructure.dataqueries.api.DataTableApiConstant;
+import org.apache.fineract.infrastructure.dataqueries.exception.DataTableDependentColumnNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -47,20 +49,29 @@ public class DatatableCommandFromApiJsonDeserializer {
     /**
      * The parameters supported for this command.
      */
-    private final Set<String> supportedParametersForCreate = new HashSet<>(Arrays.asList("datatableName", "apptableName", "multiRow",
-            "columns"));
+    private final Set<String> supportedParametersForCreate = new HashSet<>(Arrays.asList("datatableName", "apptableName", "multiRow", "columns", 
+            DataTableApiConstant.scopeParamName, DataTableApiConstant.idParamName, DataTableApiConstant.allowedValuesParamName,
+            DataTableApiConstant.scopingCriteriaEnumParamName));
     private final Set<String> supportedParametersForCreateColumns = new HashSet<>(Arrays.asList("name", "type", "length",
-            "mandatory", "code"));
+            "mandatory", "code", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
+            DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName));
     private final Set<String> supportedParametersForUpdate = new HashSet<>(Arrays.asList("apptableName", "changeColumns",
-            "addColumns", "dropColumns"));
+            "addColumns", "dropColumns", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
+            DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName,
+            DataTableApiConstant.scopeParamName, DataTableApiConstant.idParamName, DataTableApiConstant.allowedValuesParamName, DataTableApiConstant.scopingCriteriaEnumParamName));
     private final Set<String> supportedParametersForAddColumns = new HashSet<>(Arrays.asList("name", "type", "length", "mandatory",
-            "after", "code"));
+            "after", "code", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
+            DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName,
+            DataTableApiConstant.columnValuesParamName, "newCode", "newName"));
     private final Set<String> supportedParametersForChangeColumns = new HashSet<>(Arrays.asList("name", "newName", "length",
-            "mandatory", "after", "code", "newCode"));
+            "mandatory", "after", "code", "newCode", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
+            DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName,
+            DataTableApiConstant.columnValuesParamName));
     private final Set<String> supportedParametersForDropColumns = new HashSet<>(Arrays.asList("name"));
     private final Object[] supportedColumnTypes = { "string", "number", "boolean", "decimal", "date", "datetime", "text", "dropdown" };
     private final Object[] supportedApptableNames = { "m_loan", "m_savings_account", "m_client", "m_group", "m_center", "m_office",
             "m_savings_product", "m_product_loan" };
+    private final Set<String> supportedParametersForVisibilityCriteria = new HashSet<>(Arrays.asList("columnName", "value"));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -112,6 +123,8 @@ public class DatatableCommandFromApiJsonDeserializer {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("datatable");
+        
+        Boolean columnFound = false;
 
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
@@ -142,13 +155,66 @@ public class DatatableCommandFromApiJsonDeserializer {
 
                 final Boolean mandatory = this.fromApiJsonHelper.extractBooleanNamed("mandatory", column);
                 baseDataValidator.reset().parameter("mandatory").value(mandatory).ignoreIfNull().notBlank().isOneOfTheseValues(true, false);
+                
+                final String displayName = this.fromApiJsonHelper.extractStringNamed("displayName", column);
+                baseDataValidator.reset().parameter("displayName").value(displayName).ignoreIfNull().matchesRegularExpression(DATATABLE_COLUMN_NAME_REGEX_PATTERN);
+                
+                final Long displayPosition = this.fromApiJsonHelper.extractLongNamed("displayPosition", column);
+                baseDataValidator.reset().parameter("displayPosition").value(displayPosition).ignoreIfNull().longZeroOrGreater();
+                
+                final Boolean visible = this.fromApiJsonHelper.extractBooleanNamed("visible", column);
+                baseDataValidator.reset().parameter("visible").value(visible).ignoreIfNull().notBlank().isOneOfTheseValues(true, false);
+                
+                final String dependsOn = this.fromApiJsonHelper.extractStringNamed("dependsOn", column);
+                baseDataValidator.reset().parameter("dependsOn").value(dependsOn).ignoreIfNull();
+                
+                if (dependsOn != null) {
+                    columnFound = validateDataTableColumnExists(columns, dependsOn);
+                    if (!columnFound) { throw new DataTableDependentColumnNotFoundException(); }
+                }
+                
+                final JsonArray visibilityCriteria = this.fromApiJsonHelper.extractJsonArrayNamed("visibilityCriteria", column);
+                baseDataValidator.reset().parameter("visibilityCriteria").value(visibilityCriteria).ignoreIfNull();
+                
+                if (visibilityCriteria != null) {
+                    for (final JsonElement criteria : visibilityCriteria) {
+                        this.fromApiJsonHelper.checkForUnsupportedParameters(criteria.getAsJsonObject(),
+                                this.supportedParametersForVisibilityCriteria);
+                        Boolean visibilityCriteriaColumnFound = false;
+                        final String columnName = this.fromApiJsonHelper.extractStringNamed("columnName", criteria);
+                        baseDataValidator.reset().parameter("columnName").value(columnName).ignoreIfNull();
+
+                        final String value = this.fromApiJsonHelper.extractStringNamed("value", criteria);
+                        baseDataValidator.reset().parameter("value").value(value).ignoreIfNull();
+                        visibilityCriteriaColumnFound = validateDataTableColumnExists(columns, columnName);
+                        if (!visibilityCriteriaColumnFound) { throw new DataTableDependentColumnNotFoundException(); }
+
+                    }
+                }
+                
+                final Boolean mandatoryIfVisible = this.fromApiJsonHelper.extractBooleanNamed("mandatoryIfVisible", column);
+                baseDataValidator.reset().parameter("mandatoryIfVisible").value(mandatoryIfVisible).ignoreIfNull().notBlank().isOneOfTheseValues(true, false);
             }
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    public void validateForUpdate(final String json) {
+    public boolean validateDataTableColumnExists(final JsonArray columns, String dependsOn) {
+        boolean columnFound = false;
+        for (final JsonElement column : columns) {
+            final String columnCode = this.fromApiJsonHelper.extractStringNamed("code", column);
+            final String columnName = this.fromApiJsonHelper.extractStringNamed("name", column);
+            if (columnCode != null && columnCode.equalsIgnoreCase(dependsOn)) {
+                columnFound = true;
+            } else if(columnName != null && columnName.equalsIgnoreCase(dependsOn)) {
+                columnFound = true;
+            }
+        }
+        return columnFound;
+    }
+	
+	public void validateForUpdate(final String json) {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
         // Because all parameters are optional, a check to see if at least one
         // parameter
@@ -255,4 +321,5 @@ public class DatatableCommandFromApiJsonDeserializer {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
                 "Validation errors exist.", dataValidationErrors); }
     }
+    
 }
