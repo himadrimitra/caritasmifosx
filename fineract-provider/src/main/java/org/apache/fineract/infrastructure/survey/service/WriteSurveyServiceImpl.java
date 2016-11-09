@@ -73,7 +73,7 @@ public class WriteSurveyServiceImpl implements WriteSurveyService {
     @Override
     public CommandProcessingResult fullFillSurvey(final String dataTableName, final Long appTableId, final JsonCommand command) {
 
-        return readWriteNonCoreDataService.createPPIEntry(dataTableName, appTableId, command);
+        return readWriteNonCoreDataService.createPPIEntry(dataTableName, appTableId.toString(), command);
     }
 
 }

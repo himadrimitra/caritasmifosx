@@ -33,6 +33,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
@@ -173,15 +174,15 @@ public class DatatablesApiResource {
     }
 
     @GET
-    @Path("{datatable}/{apptableId}")
+    @Path("{datatable}/{apptableIdentifier}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String getDatatable(@PathParam("datatable") final String datatable, @PathParam("apptableId") final Long apptableId,
+    public String getDatatable(@PathParam("datatable") final String datatable, @PathParam("apptableIdentifier") final String apptableIdentifier,
             @QueryParam("order") final String order, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasDatatableReadPermission(datatable);
 
-        final GenericResultsetData results = this.readWriteNonCoreDataService.retrieveDataTableGenericResultSet(datatable, apptableId,
+        final GenericResultsetData results = this.readWriteNonCoreDataService.retrieveDataTableGenericResultSet(datatable, apptableIdentifier,
                 order, null);
 
         String json = "";
@@ -195,19 +196,18 @@ public class DatatablesApiResource {
 
         return json;
     }
-
+    
     @GET
-    @Path("{datatable}/{apptableId}/{datatableId}")
+    @Path("{datatable}/{apptableIdentifier}/{datatableId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String getDatatableManyEntry(@PathParam("datatable") final String datatable, @PathParam("apptableId") final Long apptableId,
+    public String getDatatableManyEntry(@PathParam("datatable") final String datatable, @PathParam("apptableIdentifier") final String apptableIdentifier,
             @PathParam("datatableId") final Long datatableId, @QueryParam("order") final String order, @Context final UriInfo uriInfo) {
 
         logger.debug("::1 we came in the getDatatbleManyEntry apiRessource method");
 
         this.context.authenticatedUser().validateHasDatatableReadPermission(datatable);
-
-        final GenericResultsetData results = this.readWriteNonCoreDataService.retrieveDataTableGenericResultSet(datatable, apptableId,
+        final GenericResultsetData results = this.readWriteNonCoreDataService.retrieveDataTableGenericResultSet(datatable, apptableIdentifier,
                 order, datatableId);
 
         String json = "";
@@ -221,85 +221,121 @@ public class DatatablesApiResource {
 
         return json;
     }
-
+    
     @POST
-    @Path("{datatable}/{apptableId}")
+    @Path("{datatable}/{apptableIdentifier}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String createDatatableEntry(@PathParam("datatable") final String datatable, @PathParam("apptableId") final Long apptableId,
-            final String apiRequestBodyAsJson) {
+    public String createDatatableEntry(@PathParam("datatable") final String datatable, @PathParam("apptableIdentifier") final String apptableIdentifier,
+            final String apiRequestBodyAsJson, @QueryParam("command") final String commandParam) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .createDatatable(datatable, apptableId, null) //
-                .withJson(apiRequestBodyAsJson) //
-                .build();
-
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "acc_gl_journal_entry")) {
+            commandRequest = new CommandWrapperBuilder() //
+            .createDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, null) //
+            .withJson(apiRequestBodyAsJson) //
+            .build();
+        } else {
+            commandRequest = new CommandWrapperBuilder() //
+            .createDatatable(datatable, apptableIdentifier, null) //
+            .withJson(apiRequestBodyAsJson) //
+            .build();
+        }
+        
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
     }
 
     @PUT
-    @Path("{datatable}/{apptableId}")
+    @Path("{datatable}/{apptableIdentifier}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String updateDatatableEntryOnetoOne(@PathParam("datatable") final String datatable,
-            @PathParam("apptableId") final Long apptableId, final String apiRequestBodyAsJson) {
+            @PathParam("apptableIdentifier") final String apptableIdentifier, final String apiRequestBodyAsJson, @QueryParam("command") final String commandParam) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .updateDatatable(datatable, apptableId, null) //
-                .withJson(apiRequestBodyAsJson) //
-                .build();
-
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "acc_gl_journal_entry")) {
+            commandRequest = new CommandWrapperBuilder() //
+            .updateDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, null) //
+            .withJson(apiRequestBodyAsJson) //
+            .build();
+        } else {
+            commandRequest = new CommandWrapperBuilder() //
+            .updateDatatable(datatable, apptableIdentifier, null) //
+            .withJson(apiRequestBodyAsJson) //
+            .build();
+        }
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
     }
 
     @PUT
-    @Path("{datatable}/{apptableId}/{datatableId}")
+    @Path("{datatable}/{apptableIdentifier}/{datatableId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String updateDatatableEntryOneToMany(@PathParam("datatable") final String datatable,
-            @PathParam("apptableId") final Long apptableId, @PathParam("datatableId") final Long datatableId,
-            final String apiRequestBodyAsJson) {
+            @PathParam("apptableIdentifier") final String apptableIdentifier, @PathParam("datatableId") final Long datatableId,
+            final String apiRequestBodyAsJson, @QueryParam("command") final String commandParam) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .updateDatatable(datatable, apptableId, datatableId) //
-                .withJson(apiRequestBodyAsJson) //
-                .build();
-
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "acc_gl_journal_entry")) {
+            commandRequest = new CommandWrapperBuilder() //
+            .updateDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, datatableId) //
+            .withJson(apiRequestBodyAsJson) //
+            .build();
+        } else {
+            commandRequest = new CommandWrapperBuilder() //
+            .updateDatatable(datatable, apptableIdentifier, datatableId) //
+            .withJson(apiRequestBodyAsJson) //
+            .build();
+        }
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
     }
 
     @DELETE
-    @Path("{datatable}/{apptableId}")
+    @Path("{datatable}/{apptableIdentifier}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String deleteDatatableEntries(@PathParam("datatable") final String datatable, @PathParam("apptableId") final Long apptableId) {
-
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .deleteDatatable(datatable, apptableId, null) //
-                .build();
-
+    public String deleteDatatableEntries(@PathParam("datatable") final String datatable, @PathParam("apptableIdentifier") final String apptableIdentifier,
+            @QueryParam("command") final String commandParam) {
+        
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "acc_gl_journal_entry")) {
+            commandRequest = new CommandWrapperBuilder() //
+            .deleteDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, null) //
+            .build();
+        } else {
+            commandRequest = new CommandWrapperBuilder() //
+            .deleteDatatable(datatable, apptableIdentifier, null) //
+            .build();
+        }
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
     }
 
     @DELETE
-    @Path("{datatable}/{apptableId}/{datatableId}")
+    @Path("{datatable}/{apptableIdentifier}/{datatableId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String deleteDatatableEntries(@PathParam("datatable") final String datatable, @PathParam("apptableId") final Long apptableId,
-            @PathParam("datatableId") final Long datatableId) {
+    public String deleteDatatableEntries(@PathParam("datatable") final String datatable, @PathParam("apptableIdentifier") final String apptableIdentifier,
+            @PathParam("datatableId") final Long datatableId, @QueryParam("command") final String commandParam) {
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .deleteDatatable(datatable, apptableId, datatableId) //
-                .build();
-
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "acc_gl_journal_entry")) {
+            commandRequest = new CommandWrapperBuilder() //
+            .deleteDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, datatableId) //
+            .build();
+        } else {
+            commandRequest = new CommandWrapperBuilder() //
+            .deleteDatatable(datatable, apptableIdentifier, datatableId) //
+            .build();
+        }
+            
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
@@ -315,5 +351,9 @@ public class DatatablesApiResource {
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.scopeOptionsDataApiJsonSerializer.serialize(settings, scopeOptionsData);
+    }
+    
+    private boolean is(final String commandParam, final String commandValue) {
+        return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
 }

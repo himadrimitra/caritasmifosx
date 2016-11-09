@@ -70,7 +70,7 @@ public class DatatableCommandFromApiJsonDeserializer {
     private final Set<String> supportedParametersForDropColumns = new HashSet<>(Arrays.asList("name"));
     private final Object[] supportedColumnTypes = { "string", "number", "boolean", "decimal", "date", "datetime", "text", "dropdown" };
     private final Object[] supportedApptableNames = { "m_loan", "m_savings_account", "m_client", "m_group", "m_center", "m_office",
-            "m_savings_product", "m_product_loan" };
+            "m_savings_product", "m_product_loan","acc_gl_journal_entry" };
     private final Set<String> supportedParametersForVisibilityCriteria = new HashSet<>(Arrays.asList("columnName", "value"));
 
     private final FromJsonHelper fromApiJsonHelper;
@@ -135,7 +135,7 @@ public class DatatableCommandFromApiJsonDeserializer {
         final String apptableName = this.fromApiJsonHelper.extractStringNamed("apptableName", element);
         baseDataValidator.reset().parameter("apptableName").value(apptableName).notBlank().notExceedingLengthOf(50)
                 .isOneOfTheseValues(this.supportedApptableNames);
-        final String fkColumnName = (apptableName != null) ? apptableName.substring(2) + "_id" : "";
+        final String fkColumnName = (apptableName != null) ? apptableName.substring(apptableName.indexOf('_') + 1) + "_id" : "";
 
         final Boolean multiRow = this.fromApiJsonHelper.extractBooleanNamed("multiRow", element);
         baseDataValidator.reset().parameter("multiRow").value(multiRow).ignoreIfNull().notBlank().isOneOfTheseValues(true, false);
@@ -233,7 +233,7 @@ public class DatatableCommandFromApiJsonDeserializer {
         final String apptableName = this.fromApiJsonHelper.extractStringNamed("apptableName", element);
         baseDataValidator.reset().parameter("apptableName").value(apptableName).ignoreIfNull().notBlank()
                 .isOneOfTheseValues(this.supportedApptableNames);
-        final String fkColumnName = (apptableName != null) ? apptableName.substring(2) + "_id" : "";
+        final String fkColumnName = (apptableName != null) ? apptableName.substring(apptableName.indexOf('_') + 1) + "_id" : "";
 
         final JsonArray changeColumns = this.fromApiJsonHelper.extractJsonArrayNamed("changeColumns", element);
         baseDataValidator.reset().parameter("changeColumns").value(changeColumns).ignoreIfNull().jsonArrayNotEmpty();

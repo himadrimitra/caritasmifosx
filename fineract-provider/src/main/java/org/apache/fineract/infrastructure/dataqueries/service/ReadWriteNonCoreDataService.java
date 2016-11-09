@@ -45,7 +45,7 @@ public interface ReadWriteNonCoreDataService {
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'DEREGISTER_DATATABLE')")
     void deregisterDatatable(String datatable);
 
-    GenericResultsetData retrieveDataTableGenericResultSet(String datatable, Long appTableId, String order, Long id);
+    GenericResultsetData retrieveDataTableGenericResultSet(String datatable, String apptableIdentifier, String order, Long id);
 
     CommandProcessingResult createDatatable(JsonCommand command);
 
@@ -53,17 +53,17 @@ public interface ReadWriteNonCoreDataService {
 
     void deleteDatatable(String datatableName);
 
-    CommandProcessingResult createNewDatatableEntry(String datatable, Long appTableId, JsonCommand command);
+    CommandProcessingResult createNewDatatableEntry(JsonCommand command);
 
-    CommandProcessingResult createPPIEntry(String datatable, Long appTableId, JsonCommand command);
+    CommandProcessingResult createPPIEntry(String datatable, String apptableIdentifier, JsonCommand command);
 
-    CommandProcessingResult updateDatatableEntryOneToOne(String datatable, Long appTableId, JsonCommand command);
+    CommandProcessingResult updateDatatableEntryOneToOne(JsonCommand command);
 
-    CommandProcessingResult updateDatatableEntryOneToMany(String datatable, Long appTableId, Long datatableId, JsonCommand command);
+    CommandProcessingResult updateDatatableEntryOneToMany(JsonCommand command);
 
-    CommandProcessingResult deleteDatatableEntries(String datatable, Long appTableId);
+    CommandProcessingResult deleteDatatableEntries(JsonCommand command);
 
-    CommandProcessingResult deleteDatatableEntry(String datatable, Long appTableId, Long datatableId);
+    CommandProcessingResult deleteDatatableEntry(JsonCommand command);
 
     String getTableName(String Url);
 
