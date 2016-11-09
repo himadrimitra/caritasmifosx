@@ -577,6 +577,11 @@ public class CalendarUtils {
 		}
         
         newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDate, nextRepaymentDate, workingDays);
+        
+        if(newRepaymentDate.equals(repaymentDate)){
+        	newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate.plusDays(1), 
+        			loanRepaymentInterval, frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
+        }
         if (isSkipRepaymentOnFirstDayOfMonth) {
             LocalDate newRepaymentDateTemp = adjustRecurringDate(newRepaymentDate, numberOfDays);
             return WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDateTemp, nextRepaymentDate, workingDays);
