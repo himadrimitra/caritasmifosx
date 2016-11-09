@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.group.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -51,7 +52,7 @@ public class CenterData {
 
     private final GroupTimelineData timeline;
     // associations
-    private final Collection<GroupGeneralData> groupMembers;
+    private  Collection<GroupGeneralData> groupMembers;
 
     // template
     private final Collection<GroupGeneralData> groupMembersOptions;
@@ -140,6 +141,34 @@ public class CenterData {
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
                 closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue);
     }
+    
+    public static CenterData formCenterData(final Long id, final String name){
+         final String accountNo = null;
+         final String externalId = null;
+         final EnumOptionData status = null;
+         final LocalDate activationDate = null;
+         final Long officeId = null;
+         final String officeName = null;
+         final Long staffId = null;
+         final String staffName = null;
+         final String hierarchy = null;
+         final Collection<OfficeData> officeOptions = null;
+         final Collection<VillageData> villageOptions = null;
+         final VillageData villageCounter = null;
+         final Collection<StaffData> staffOptions = null;
+         final Collection<GroupGeneralData> groupMembersOptions = null;
+         final CalendarData collectionMeetingCalendar = null;
+         final GroupTimelineData timeline = null;
+         final BigDecimal totalCollected = null;
+         final BigDecimal totalOverdue = null;
+         final BigDecimal totaldue = null;
+         final BigDecimal installmentDue = null;
+         final Collection<CodeValueData> closureReasons = null;
+         final Collection<GroupGeneralData> groupMembers = new ArrayList<>();
+    	return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
+                groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue);
+    }
 
     private CenterData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
             final LocalDate activationDate, final Long officeId, final String officeName, final Long staffId, final String staffName,
@@ -213,4 +242,11 @@ public class CenterData {
     public String getStaffName() {
         return this.staffName;
     }
+    
+	public void addGroups(GroupGeneralData groupGeneralData) {
+		if (this.groupMembers == null) {
+			this.groupMembers = new ArrayList<>();
+		}
+		this.groupMembers.add(groupGeneralData);
+	}
 }

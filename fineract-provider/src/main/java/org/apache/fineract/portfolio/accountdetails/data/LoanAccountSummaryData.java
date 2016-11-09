@@ -76,4 +76,21 @@ public class LoanAccountSummaryData {
         return new LoanAccountSummaryData(id, accountNo, externalId, productId, loanProductName, shortLoanProductName, loanStatus,
                 loanType, loanCycle, timeline, inArrears, originalLoan, loanBalance, amountPaid);
     }
+    
+    public static LoanAccountSummaryData formLoanAccountSummaryData(final Long id, final String accountNo, final String loanProductName
+            ) {
+         final String externalId = null;
+         final EnumOptionData loanType = null;
+         final LoanApplicationTimelineData timeline = null;
+         final Boolean inArrears = null;
+         final Integer loanCycle = null;
+         final Long productId = null;
+         final String shortLoanProductName = null;
+         final LoanStatusEnumData loanStatus = null;
+         final BigDecimal originalLoan = null;
+         final BigDecimal loanBalance = null;
+         final BigDecimal amountPaid = null;
+         return new LoanAccountSummaryData(id, accountNo, externalId, productId, loanProductName, shortLoanProductName, loanStatus,
+                 loanType, loanCycle, timeline, inArrears, originalLoan, loanBalance, amountPaid);
+     }
 }

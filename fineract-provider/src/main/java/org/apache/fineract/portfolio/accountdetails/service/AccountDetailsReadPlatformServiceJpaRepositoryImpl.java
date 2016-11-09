@@ -33,6 +33,7 @@ import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectio
 import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
 import org.apache.fineract.portfolio.accountdetails.data.SavingsAccountSummaryData;
 import org.apache.fineract.portfolio.accountdetails.data.ShareAccountSummaryData;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collaterals.data.PledgeData;
 import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
@@ -121,8 +122,8 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
     public Collection<LoanAccountSummaryData> retrieveClientLoanAccountsByLoanOfficerId(final Long clientId, final Long loanOfficerId) {
         // Check if client exists
         this.clientReadPlatformService.retrieveOne(clientId);
-        final String loanWhereClause = " where l.client_id = ? and l.loan_officer_id = ?";
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, loanOfficerId });
+        final String loanWhereClause = " where l.client_id = ? and l.loan_officer_id = ? and l.loan_type_enum = ?";
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, loanOfficerId, AccountType.INDIVIDUAL.getValue() });
     }
 
     @Override

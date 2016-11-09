@@ -414,6 +414,57 @@ final public class ClientData implements Comparable<ClientData> {
                 clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientNonPerson,
                 clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
     }
+    
+    public static ClientData formClientData(final Long id, final String displayName) {
+        final String accountNo = null;
+        final EnumOptionData status = null;
+        final CodeValueData subStatus = null;
+        final Long transferToOfficeId = null;
+        final String transferToOfficeName = null;
+        final String firstname = null;
+        final String middlename = null;
+        final String lastname = null;
+        final String fullname = null;
+        final String externalId = null;
+        final String mobileNo = null;
+        final LocalDate dateOfBirth = null;
+        final CodeValueData gender = null;
+        final LocalDate activationDate = null;
+        final Long imageId = null;
+        final Long staffId = null;
+        final String staffName = null;
+        final Collection<OfficeData> allowedOffices = null;
+        final Collection<GroupGeneralData> groups = null;
+        final Collection<StaffData> staffOptions = null;
+        final Collection<CodeValueData> closureReasons = null;
+        final Collection<CodeValueData> genderOptions = null;
+        final ClientTimelineData timeline = null;
+        final Collection<SavingsProductData> savingProductOptions = null;
+        final Long savingsProductId = null;
+        final String savingsProductName = null;
+        final Long savingsAccountId = null;
+        final Collection<SavingsAccountData> savingAccountOptions = null;
+        final CodeValueData clientType = null;
+        final CodeValueData clientClassification = null;
+        final Collection<CodeValueData> clientTypeOptions = null;
+        final Collection<CodeValueData> clientClassificationOptions = null;
+        final Collection<CodeValueData> clientNonPersonConstitutionOptions = null;
+        final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
+        final List<EnumOptionData> clientLegalFormOptions = null;
+        final EnumOptionData legalForm = null;
+        final ClientNonPersonData clientNonPerson = null;
+        final Long officeId = null;
+        final String officeName = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = new ArrayList<>();
+        return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
+                middlename, lastname, fullname, displayName, externalId, mobileNo, dateOfBirth, gender, activationDate, imageId, staffId,
+                staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline, savingProductOptions,
+                savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType, clientClassification,
+                clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, 
+                clientNonPerson, clientLegalFormOptions, legalForm, loanAccountSummaryDatas, savingsAccountSummaryDatas);
+
+    }
 
     private ClientData(final String accountNo, final EnumOptionData status, final CodeValueData subStatus, final Long officeId,
             final String officeName, final Long transferToOfficeId, final String transferToOfficeName, final Long id,
@@ -589,4 +640,5 @@ final public class ClientData implements Comparable<ClientData> {
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
+    
 }

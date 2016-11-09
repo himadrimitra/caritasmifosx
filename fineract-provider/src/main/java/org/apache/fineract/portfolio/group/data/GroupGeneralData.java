@@ -139,6 +139,40 @@ public class GroupGeneralData {
                 clientOptions, groupRoles, availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, timeline, 
                 isShowLoanDetailsInCenterPageEnabled);
     }
+    
+    public static GroupGeneralData formGroupData(final Long id,  final String name){
+         final Collection<ClientData> activeClientMembers = null;
+         final Collection<CenterData> centerOptions = null;
+         final Collection<OfficeData> officeOptions = null;
+         final Collection<StaffData> staffOptions = null;
+         final Collection<ClientData> clientOptions = null;
+         final Collection<GroupRoleData> groupRoles = null;
+         final Collection<CodeValueData> availableRoles = null;
+         final GroupRoleData role = null;
+         final Collection<CalendarData> calendarsData = null;
+         final CalendarData collectionMeetingCalendar = null;
+         final Collection<CodeValueData> closureReasons = null;
+         final boolean isShowLoanDetailsInCenterPageEnabled = false;
+         final String accountNo = null;
+         final String externalId = null;
+         final EnumOptionData status = null;
+         final LocalDate activationDate = null;
+         final Long officeId = null;
+         final String officeName = null;
+         final Long centerId = null;
+         final String centerName = null;
+         final Long staffId = null;
+         final String staffName = null;
+         final String hierarchy = null;
+         final String groupLevel = null;
+         final GroupTimelineData timeline = null;
+         final Collection<ClientData> clientMembers = new ArrayList<>();
+
+         return new GroupGeneralData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, centerId, centerName, staffId,
+                 staffName, hierarchy, groupLevel, clientMembers, activeClientMembers, centerOptions, officeOptions, staffOptions,
+                 clientOptions, groupRoles, availableRoles, role, calendarsData, collectionMeetingCalendar, closureReasons, timeline, 
+                 isShowLoanDetailsInCenterPageEnabled);
+    }
 
     private GroupGeneralData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
             final LocalDate activationDate, final Long officeId, final String officeName, final Long centerId, final String centerName,
@@ -300,5 +334,12 @@ public class GroupGeneralData {
     
     public void updateClientMembers(Collection<ClientData> clientMembers) {
     	this.clientMembers = clientMembers;
+    }
+    
+    public void addClients(ClientData clientData){
+    	if(this.clientMembers == null){
+    		this.clientMembers = new ArrayList<>();
+    	}
+    	this.clientMembers.add(clientData);
     }
 }
