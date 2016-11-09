@@ -41,9 +41,8 @@ public class UpdateOneToOneDatatableEntryCommandHandler implements NewCommandSou
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
 
-        final CommandProcessingResult commandProcessingResult = this.writePlatformService.updateDatatableEntryOneToOne(
-                command.entityName(), command.entityId(), command);
-
+        final CommandProcessingResult commandProcessingResult = this.writePlatformService.updateDatatableEntryOneToOne(command);
+        
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
                 .withEntityId(command.entityId()) //
@@ -52,6 +51,7 @@ public class UpdateOneToOneDatatableEntryCommandHandler implements NewCommandSou
                 .withClientId(commandProcessingResult.getClientId()) //
                 .withSavingsId(commandProcessingResult.getSavingsId()) //
                 .withLoanId(commandProcessingResult.getLoanId()) //
+                .withTransactionId(commandProcessingResult.getTransactionId()) //
                 .with(commandProcessingResult.getChanges()) //
                 .build();
     }

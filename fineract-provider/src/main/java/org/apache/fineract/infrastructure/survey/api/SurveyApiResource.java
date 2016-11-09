@@ -168,9 +168,9 @@ public class SurveyApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String deleteDatatableEntries(@PathParam("surveyName") final String surveyName, @PathParam("clientId") final Long clientId,
             @PathParam("fulfilledId") final Long fulfilledId) {
-
+        
         final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .deleteDatatable(surveyName, clientId, fulfilledId) //
+                .deleteDatatable(surveyName, clientId.toString(), fulfilledId) //
                 .build();
 
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
