@@ -122,7 +122,7 @@ public class SpmApiResource {
     public Long createSurvey(final SurveyData surveyData) {
         this.securityContext.authenticatedUser();
         final Survey survey = SurveyMapper.map(surveyData);
-        this.spmService.createSurvey(survey);
+        this.spmService.saveSurvey(survey);
         return survey.getId();
     }
 
