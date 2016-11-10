@@ -118,10 +118,12 @@ import org.apache.fineract.portfolio.loanaccount.exception.MultiDisbursementData
 import org.apache.fineract.portfolio.loanaccount.exception.UndoLastTrancheDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleDTO;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -4836,7 +4838,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void updateLoanRepaymentScheduleDates(final LocalDate meetingStartDate, final String recuringRule,
-            final boolean isHolidayEnabled, final List<Holiday> holidays, final WorkingDays workingDays,
+            final boolean isHolidayEnabled, final ScheduleGeneratorDTO scheduleGeneratorDTO, final WorkingDays workingDays,
             final Boolean reschedulebasedOnMeetingDates, final LocalDate presentMeetingDate, final LocalDate newMeetingDate,
             final boolean isSkipRepaymentonfirstdayofmonth, final Integer numberofDays) {
 
@@ -4854,6 +4856,7 @@ public class Loan extends AbstractPersistable<Long> {
         LocalDate newRepaymentDate = null;
         Boolean isFirstTime = true;
         LocalDate latestRepaymentDate = null;
+        LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
         for (final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment : this.repaymentScheduleInstallments) {
 
             LocalDate oldDueDate = loanRepaymentScheduleInstallment.getDueDate();
@@ -4874,7 +4877,9 @@ public class Loan extends AbstractPersistable<Long> {
                 }
 
                 if (isHolidayEnabled) {
-                    newRepaymentDate = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(newRepaymentDate, holidays);
+                	ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
+                	newRepaymentDate = scheduledDateGenerator.adjustRepaymentDate(newRepaymentDate, loanApplicationTerms,
+                			scheduleGeneratorDTO.getHolidayDetailDTO()).getChangedScheduleDate();
                 }
                 if (latestRepaymentDate == null || latestRepaymentDate.isBefore(newRepaymentDate)) {
                     latestRepaymentDate = newRepaymentDate;
@@ -4898,7 +4903,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void updateLoanRepaymentScheduleDates(final LocalDate meetingStartDate, final String recuringRule,
-            final boolean isHolidayEnabled, final List<Holiday> holidays, final WorkingDays workingDays,
+    		final ScheduleGeneratorDTO scheduleGeneratorDTO, final boolean isHolidayEnabled, final WorkingDays workingDays,
             final boolean isSkipRepaymentonfirstdayofmonth, final Integer numberofDays) {
 
         // first repayment's from date is same as disbursement date.
@@ -4910,6 +4915,7 @@ public class Loan extends AbstractPersistable<Long> {
         LocalDate newRepaymentDate = null;
         LocalDate seedDate = meetingStartDate;
         LocalDate latestRepaymentDate = null;
+        LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
         for (final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment : this.repaymentScheduleInstallments) {
 
             LocalDate oldDueDate = loanRepaymentScheduleInstallment.getDueDate();
@@ -4930,7 +4936,9 @@ public class Loan extends AbstractPersistable<Long> {
                 }
 
                 if (isHolidayEnabled) {
-                    newRepaymentDate = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(newRepaymentDate, holidays);
+                	ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
+                	newRepaymentDate = scheduledDateGenerator.adjustRepaymentDate(newRepaymentDate, loanApplicationTerms, scheduleGeneratorDTO.getHolidayDetailDTO())
+                			.getChangedScheduleDate();
                 }
                 if (latestRepaymentDate == null || latestRepaymentDate.isBefore(newRepaymentDate)) {
                     latestRepaymentDate = newRepaymentDate;
@@ -4949,7 +4957,7 @@ public class Loan extends AbstractPersistable<Long> {
             this.expectedMaturityDate = latestRepaymentDate.toDate();
         }
     }
-
+    
     private LocalDate getMaxDateLimitForNewRepayment(final PeriodFrequencyType periodFrequencyType, final Integer loanRepaymentInterval,
             final LocalDate startDate) {
         LocalDate dueRepaymentPeriodDate = startDate;

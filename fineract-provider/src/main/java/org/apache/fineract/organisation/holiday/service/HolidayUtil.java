@@ -39,9 +39,9 @@ public class HolidayUtil {
     private static LocalDate getRepaymentRescheduleDateIfHoliday(final LocalDate repaymentDate, final List<Holiday> holidays) {
 
         for (final Holiday holiday : holidays) {
-            if ((repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
-                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate())))
-                        && !holiday.isExtendRepaymentReschedule()) {
+            if (!holiday.isExtendRepaymentReschedule() && (repaymentDate.equals(holiday.getFromDateLocalDate()) || 
+            		repaymentDate.equals(holiday.getToDateLocalDate()) || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && 
+            				repaymentDate.isBefore(holiday.getToDateLocalDate())))) {
                 // should be take from holiday
                 return holiday.getRepaymentsRescheduledToLocalDate();
             }
