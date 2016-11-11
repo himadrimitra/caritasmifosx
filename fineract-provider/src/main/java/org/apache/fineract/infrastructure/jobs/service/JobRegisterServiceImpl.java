@@ -50,6 +50,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.core.env.Environment;
 import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -115,18 +116,40 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
         final List<FineractPlatformTenant> allTenants = this.tenantDetailsService.findAllTenants();
         for (final FineractPlatformTenant tenant : allTenants) {
             ThreadLocalContextUtil.setTenant(tenant);
-            final List<ScheduledJobDetail> scheduledJobDetails = this.schedularWritePlatformService.retrieveAllJobs();
-            for (final ScheduledJobDetail jobDetails : scheduledJobDetails) {
-                scheduleJob(jobDetails);
-                jobDetails.updateTriggerMisfired(false);
-                this.schedularWritePlatformService.saveOrUpdate(jobDetails);
-            }
-            final SchedulerDetail schedulerDetail = this.schedularWritePlatformService.retriveSchedulerDetail();
-            if (schedulerDetail.isResetSchedulerOnBootup()) {
-                schedulerDetail.updateSuspendedState(false);
-                this.schedularWritePlatformService.updateSchedulerDetail(schedulerDetail);
+            boolean loadJobs =  isJobLoadingRequired();
+            if (loadJobs) {
+                final List<ScheduledJobDetail> scheduledJobDetails = this.schedularWritePlatformService.retrieveAllJobs();
+                for (final ScheduledJobDetail jobDetails : scheduledJobDetails) {
+                    scheduleJob(jobDetails);
+                    jobDetails.updateTriggerMisfired(false);
+                    this.schedularWritePlatformService.saveOrUpdate(jobDetails);
+                }
+                final SchedulerDetail schedulerDetail = this.schedularWritePlatformService.retriveSchedulerDetail();
+                if (schedulerDetail.isResetSchedulerOnBootup()) {
+                    schedulerDetail.updateSuspendedState(false);
+                    this.schedularWritePlatformService.updateSchedulerDetail(schedulerDetail);
+                }
             }
         }
+    }
+    
+    private boolean isJobLoadingRequired() {
+        Environment environment = applicationContext.getEnvironment();
+        boolean loadJobs = true;
+        if (environment.containsProperty("loadJobsForTenantIdentifier")) {
+            String tenamtIdentifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
+            loadJobs = false;
+            String tenantsAsString = environment.getProperty("loadJobsForTenantIdentifier");
+            if (tenantsAsString != null) {
+                String[] tenants = tenantsAsString.split(":");
+                for (String tenant : tenants) {
+                    if (tenamtIdentifier.equalsIgnoreCase(tenant)) {
+                        loadJobs = true;
+                    }
+                }
+            }
+        }
+        return loadJobs;
     }
 
     public void executeJob(final ScheduledJobDetail scheduledJobDetail, String triggerType) {
@@ -163,15 +186,18 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
 
     public void rescheduleJob(final ScheduledJobDetail scheduledJobDetail) {
         try {
-            final String jobIdentity = scheduledJobDetail.getJobKey();
-            final JobKey jobKey = constructJobKey(jobIdentity);
-            final String schedulername = getSchedulerName(scheduledJobDetail);
-            final Scheduler scheduler = this.schedulers.get(schedulername);
-            if (scheduler != null) {
-                scheduler.deleteJob(jobKey);
+            boolean loadJobs =  isJobLoadingRequired();
+            if (loadJobs) {
+                final String jobIdentity = scheduledJobDetail.getJobKey();
+                final JobKey jobKey = constructJobKey(jobIdentity);
+                final String schedulername = getSchedulerName(scheduledJobDetail);
+                final Scheduler scheduler = this.schedulers.get(schedulername);
+                if (scheduler != null) {
+                    scheduler.deleteJob(jobKey);
+                }
+                scheduleJob(scheduledJobDetail);
+                this.schedularWritePlatformService.saveOrUpdate(scheduledJobDetail);
             }
-            scheduleJob(scheduledJobDetail);
-            this.schedularWritePlatformService.saveOrUpdate(scheduledJobDetail);
         } catch (final Throwable throwable) {
             final String stackTrace = getStackTraceAsString(throwable);
             scheduledJobDetail.updateErrorLog(stackTrace);
