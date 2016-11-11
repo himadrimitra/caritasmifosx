@@ -116,7 +116,8 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     @JoinColumn(name = "staff_id", nullable = true)
     private Staff staff;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @ManyToMany
     @Cache(usage=CacheConcurrencyStrategy.READ_ONLY, region = "Role")
     @JoinTable(name = "m_appuser_role", joinColumns = @JoinColumn(name = "appuser_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
