@@ -221,16 +221,19 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         
         if (!isRecoveryRepayment && loan.isSubsidyApplicable()
                 && isRealizationTransactionApplicable(loan, transactionDate, scheduleGeneratorDTO)) {
-            final LoanTransaction newrealizationLoanSubsidyTransaction = LoanTransaction.realizationLoanSubsidy(loan.getOffice(),
+            if(!loan.isOpen()){
+            	loan.activateLoan();
+            }
+        	final LoanTransaction newrealizationLoanSubsidyTransaction = LoanTransaction.realizationLoanSubsidy(loan.getOffice(),
                     loan.getTotalSubsidyAmount(), paymentDetail, transactionDate, txnExternalId);
-            final ChangedTransactionDetail changedTransactionDetailAfterRealization = loan.makeRepayment(
+	        final ChangedTransactionDetail changedTransactionDetailAfterRealization = loan.makeRepayment(
                     newrealizationLoanSubsidyTransaction, defaultLoanLifecycleStateMachine(), existingTransactionIds,
                     existingReversedTransactionIds, isRecoveryRepayment, scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
              saveLoanTransactionWithDataIntegrityViolationChecks(newrealizationLoanSubsidyTransaction);
             if (changedTransactionDetail != null && changedTransactionDetailAfterRealization != null) {
                 changedTransactionDetail.getNewTransactionMappings().putAll(
-                        changedTransactionDetailAfterRealization.getNewTransactionMappings());
-            }
+                	changedTransactionDetailAfterRealization.getNewTransactionMappings());
+	    }
             saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
         }
         

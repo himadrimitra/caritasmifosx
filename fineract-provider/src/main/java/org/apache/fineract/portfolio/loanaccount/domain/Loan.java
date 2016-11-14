@@ -4306,7 +4306,7 @@ public class Loan extends AbstractPersistable<Long> {
     public boolean isClosed() {
         return status().isClosed() || isCancelled();
     }
-
+    
     private boolean isClosedObligationsMet() {
         return status().isClosedObligationsMet();
     }
@@ -7293,5 +7293,8 @@ public class Loan extends AbstractPersistable<Long> {
         this.totalCapitalizedCharges = totalCapitalizedCharges;
     } 
     
+    public void activateLoan(){
+    	this.loanStatus = LoanStatus.ACTIVE.getValue();
+    }
     
 }
