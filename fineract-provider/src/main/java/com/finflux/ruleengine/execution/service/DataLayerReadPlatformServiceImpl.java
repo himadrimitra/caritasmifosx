@@ -173,7 +173,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private Map<String, Object> getClientMeetingAttendanceHistoryPercentage(Long clientId) {
         final StringBuilder sql = new StringBuilder(150);
         sql.append("SELECT ");
-        sql.append("SUM(IF(ca.attendance_type_enum = 1,1,0))/COUNT(ca.id)*100 AS clientattendancepresentage ");
+        sql.append("ifNull(SUM(IF(ca.attendance_type_enum = 1,1,0))/COUNT(ca.id)*100,0) AS clientattendancepresentage ");
         sql.append("FROM m_client_attendance ca ");
         sql.append("INNER JOIN m_meeting meeting on meeting.id = ca.meeting_id AND meeting.meeting_date >= DATE_SUB(NOW(), INTERVAL 180 DAY) ");
         sql.append("WHERE ca.client_id = ? ");
@@ -184,7 +184,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private List<Map<String, Object>> getClientLoanDetailsFromOtherLenders(final Long clientId) {
         final StringBuilder sql = new StringBuilder(100);
         sql.append("SELECT el.loan_status_id AS loanstatus ");
-        sql.append("IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
+        sql.append(",IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
         sql.append(",IFNULL(el.installment_amount, 0) clientinstallmentamount ");
         sql.append(",IFNULL(el.written_off_amount, 0) clientwrittenoffamount ");
         sql.append(",IFNULL(el.loan_tenure_period_type, 0) loantenureperiodtype ");
@@ -196,7 +196,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private Map<String, Object> getClientIncomeFromHighStabilityPercentage(final Long clientId) {
         final StringBuilder sql = new StringBuilder(250);
         sql.append("SELECT ");
-        sql.append(",((100*SUM(IF(ie.stability_enum_id = 3, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clienthighstabilitypercentage ");
+        sql.append("((100*SUM(IF(ie.stability_enum_id = 3, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clienthighstabilitypercentage ");
         sql.append(",((100*SUM(IF(ie.stability_enum_id = 2, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clientmediumstabilitypercentage ");
         sql.append(",((100*SUM(IF(ie.stability_enum_id = 1, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clientlowstabilitypercentage ");
         sql.append("FROM f_client_income_expense cie ");

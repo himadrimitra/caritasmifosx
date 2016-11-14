@@ -8,9 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.finflux.ruleengine.execution.data.EligibilityResult;
-import com.finflux.ruleengine.lib.data.RuleOutput;
-import com.finflux.ruleengine.lib.data.RuleResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -23,6 +20,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.workflow.execution.data.StepStatus;
 import com.finflux.workflow.execution.data.TaskType;
 import com.finflux.workflow.execution.data.WorkflowExecutionData;
@@ -32,7 +30,6 @@ import com.finflux.workflow.execution.exception.WorkflowExecutionNotFoundExcepti
 import com.finflux.workflow.execution.service.WorkflowReadService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class WorkflowReadServiceImpl implements WorkflowReadService {
@@ -49,8 +46,7 @@ public class WorkflowReadServiceImpl implements WorkflowReadService {
 
     @Override
     public List<Long> getWorkflowStepsIds(final Long workflowId) {
-        return this.jdbcTemplate.query(
-                "SELECT wfs.id FROM f_workflow_step wfs JOIN f_workflow wf ON wf.id = ? ORDER BY wfs.step_order ASC ",
+        return this.jdbcTemplate.query("SELECT wfs.id FROM f_workflow_step wfs WHERE wfs.workflow_id = ? ORDER BY wfs.step_order ASC ",
                 new ParameterizedRowMapper<Long>() {
 
                     @SuppressWarnings("unused")
