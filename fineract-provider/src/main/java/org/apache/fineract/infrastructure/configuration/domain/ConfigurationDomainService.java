@@ -95,8 +95,6 @@ public interface ConfigurationDomainService {
 
     boolean isShowLoanDetailsInCenterPageEnabled();
 
-    void removeGlobalConfigurationPropertyDataFromCache(String propertyName);
-
     boolean isSavingAccountsInculdedInCollectionSheet();
     
     boolean isWithDrawForSavingsIncludedInCollectionSheet();
