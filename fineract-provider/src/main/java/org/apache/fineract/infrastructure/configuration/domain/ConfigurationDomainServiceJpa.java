@@ -19,15 +19,12 @@
 package org.apache.fineract.infrastructure.configuration.domain;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.cache.domain.CacheType;
 import org.apache.fineract.infrastructure.cache.domain.PlatformCache;
 import org.apache.fineract.infrastructure.cache.domain.PlatformCacheRepository;
 import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
-import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.useradministration.domain.Permission;
 import org.apache.fineract.useradministration.domain.PermissionRepository;
 import org.apache.fineract.useradministration.exception.PermissionNotFoundException;
@@ -42,7 +39,6 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     private final PermissionRepository permissionRepository;
     private final GlobalConfigurationRepositoryWrapper globalConfigurationRepository;
     private final PlatformCacheRepository cacheTypeRepository;
-    private static Map<String, GlobalConfigurationPropertyData> configurations = new HashMap<>();
 
     @Autowired
     public ConfigurationDomainServiceJpa(final PermissionRepository permissionRepository,
@@ -330,22 +326,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return property.isEnabled();
     }
-    @Override
-    public void removeGlobalConfigurationPropertyDataFromCache(final String propertyName) {
-        String identifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        String key = identifier + "_" + propertyName;
-        configurations.remove(key);
-    }
     
     @Override
     public GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(final String propertyName) {
-        String identifier = ThreadLocalContextUtil.getTenant().getTenantIdentifier();
-        String key = identifier + "_" + propertyName;
-        if (!configurations.containsKey(key)) {
-            GlobalConfigurationProperty configuration = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
-            configurations.put(key, configuration.toData());
-        }
-        return configurations.get(key);
+        GlobalConfigurationProperty configuration = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
+        return configuration.toData();
     }
 
 
