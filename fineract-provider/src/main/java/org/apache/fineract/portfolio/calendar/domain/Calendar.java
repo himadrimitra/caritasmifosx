@@ -672,4 +672,69 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
         }
         return activeCalendarHistory;  
     }
+    
+    public void setStartDate(final Date startDate) {
+        this.startDate = startDate;
+    }
+    
+    public void updateStartDateAndNthDayAndDayOfWeekType(LocalDate newMeetingStartDate) {
+
+        final LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+
+        if (newMeetingStartDate.isBefore(currentDate)) {
+            final String defaultUserMessage = "New meeting effective from date cannot be in past";
+            throw new CalendarDateException("new.start.date.cannot.be.in.past", defaultUserMessage, newMeetingStartDate,
+                    getStartDateLocalDate());
+        } else if (isStartDateAfter(newMeetingStartDate) && isStartDateBeforeOrEqual(currentDate)) {
+            // new meeting date should be on or after start date or current
+            // date
+            final String defaultUserMessage = "New meeting effective from date cannot be a date before existing meeting start date";
+            throw new CalendarDateException("new.start.date.before.existing.date", defaultUserMessage, newMeetingStartDate,
+                    getStartDateLocalDate());
+        } else {
+
+            this.startDate = newMeetingStartDate.toDate();
+
+            /*
+             * If meeting start date is changed then there is possibilities of
+             * recurring day may change, so derive the recurring day and update
+             * it if it is changed. For weekly type is weekday and for monthly
+             * type it is day of the month
+             */
+
+            CalendarFrequencyType calendarFrequencyType = CalendarUtils.getFrequency(this.recurrence);
+            Integer interval = CalendarUtils.getInterval(this.recurrence);
+            Integer repeatsOnDay = null;
+            Integer weekOfMonth = null;
+
+            /*
+             * Repeats on day, need to derive based on the start date
+             */
+
+            if (calendarFrequencyType.isWeekly()) {
+                repeatsOnDay = newMeetingStartDate.getDayOfWeek();
+            } else if (calendarFrequencyType.isMonthly()) {
+                repeatsOnDay = newMeetingStartDate.getDayOfWeek();
+                weekOfMonth = getWeekOfMonth(newMeetingStartDate);
+            }
+
+            // TODO cover other recurrence also
+
+            this.recurrence = constructRecurrence(calendarFrequencyType, interval, repeatsOnDay, weekOfMonth);
+
+        }
+    }
+
+    private int getWeekOfMonth(LocalDate modifiedScheduledDueDate) {
+        int weekOfMonth = 0;
+        java.util.Calendar now = java.util.Calendar.getInstance();
+        now.set(modifiedScheduledDueDate.getYear(), modifiedScheduledDueDate.getMonthOfYear(), modifiedScheduledDueDate.getDayOfMonth());
+        weekOfMonth = now.get(java.util.Calendar.DAY_OF_WEEK_IN_MONTH);
+        // setting to last week of the month
+        if (weekOfMonth >= NthDayType.FIVE.getValue().intValue()) {
+            weekOfMonth = NthDayType.LAST.getValue().intValue();
+        }
+
+        return weekOfMonth;
+    }
 }

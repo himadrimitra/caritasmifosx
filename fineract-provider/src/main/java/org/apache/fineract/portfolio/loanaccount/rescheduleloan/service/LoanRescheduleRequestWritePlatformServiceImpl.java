@@ -47,6 +47,12 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepos
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.account.service.AccountTransfersWritePlatformService;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistoryRepository;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
@@ -115,6 +121,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
     private final DefaultScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
     private final LoanAccountDomainService loanAccountDomainService;
     private final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository;
+    private final CalendarHistoryRepository calendarHistoryRepository;
 
     /**
      * LoanRescheduleRequestWritePlatformServiceImpl constructor
@@ -136,7 +143,8 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             final LoanScheduleGeneratorFactory loanScheduleFactory, final LoanSummaryWrapper loanSummaryWrapper,
             final AccountTransfersWritePlatformService accountTransfersWritePlatformService,
             final LoanAccountDomainService loanAccountDomainService,
-            final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository) {
+            final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
+            final CalendarHistoryRepository calendarHistoryRepository) {
         this.codeValueRepositoryWrapper = codeValueRepositoryWrapper;
         this.platformSecurityContext = platformSecurityContext;
         this.loanRescheduleRequestDataValidator = loanRescheduleRequestDataValidator;
@@ -155,6 +163,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
         this.accountTransfersWritePlatformService = accountTransfersWritePlatformService;
         this.loanAccountDomainService = loanAccountDomainService;
         this.repaymentScheduleInstallmentRepository = repaymentScheduleInstallmentRepository;
+        this.calendarHistoryRepository = calendarHistoryRepository;
     }
 
     /**
@@ -426,6 +435,19 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             if (rescheduleFromDate == null) {
                 rescheduleFromDate = loanRescheduleRequest.getRescheduleFromDate();
             }
+            if (dueDateVariationInCurrentRequest != null) {
+                if (!(loanApplicationTerms.getNthDay() == null || loanApplicationTerms.getWeekDayType() == null || loanApplicationTerms
+                        .getWeekDayType() == DayOfWeekType.INVALID) && loanApplicationTerms.getRepaymentPeriodFrequencyType().isMonthly()) {
+                    Calendar loanCalendar = loanApplicationTerms.getLoanCalendar();
+                    // create calendar history before updating calendar
+                    final CalendarHistory calendarHistory = new CalendarHistory(loanCalendar, loanCalendar.getStartDate());
+                    Date endDate = dueDateVariationInCurrentRequest.fetchDateValue().minusDays(1).toDate();
+                    calendarHistory.updateEndDate(endDate);
+                    this.calendarHistoryRepository.save(calendarHistory);
+                    loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                }
+            }
             for (LoanRescheduleRequestToTermVariationMapping mapping : loanRescheduleRequest
                     .getLoanRescheduleRequestToTermVariationMappings()) {
                 mapping.getLoanTermVariations().updateIsActive(true);
@@ -434,18 +456,6 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             List<LoanTermVariationsData> loanTermVariations = new ArrayList<>();
             loan.constructLoanTermVariations(scheduleGeneratorDTO.getFloatingRateDTO(), annualNominalInterestRate, loanTermVariations);
             loanApplicationTerms.getLoanTermVariations().setExceptionData(loanTermVariations);
-
-            /*for (LoanTermVariationsData loanTermVariation : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
-                if (rescheduleFromDate.isBefore(loanTermVariation.getTermApplicableFrom())) {
-                    LocalDate applicableDate = this.scheduledDateGenerator.generateNextRepaymentDate(rescheduleFromDate,
-                            loanApplicationTerms, false, loanApplicationTerms.getHolidayDetailDTO());
-                    if (loanTermVariation.getTermApplicableFrom().equals(applicableDate)) {
-                        LocalDate adjustedDate = this.scheduledDateGenerator.generateNextRepaymentDate(adjustedApplicableDate,
-                                loanApplicationTerms, false, loanApplicationTerms.getHolidayDetailDTO());
-                        loanTermVariation.setApplicableFromDate(adjustedDate);
-                    }
-                }
-            }*/
 
             final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
             final MathContext mathContext = new MathContext(8, roundingMode);
@@ -595,5 +605,5 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
         throw new PlatformDataIntegrityException("error.msg.loan.reschedule.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource.");
     }
-
+    
 }
