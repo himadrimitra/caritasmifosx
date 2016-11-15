@@ -21,10 +21,14 @@ package org.apache.fineract.portfolio.loanaccount.rescheduleloan.service;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -84,12 +88,21 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         List<LoanTermVariationsData> removeLoanTermVariationsData = new ArrayList<>();
         final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
         LoanTermVariations dueDateVariationInCurrentRequest = loanRescheduleRequest.getDueDateTermVariationIfExists();
-        if(dueDateVariationInCurrentRequest != null){
+        if (dueDateVariationInCurrentRequest != null) {
             for (LoanTermVariationsData loanTermVariation : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
                 if (loanTermVariation.getDateValue().equals(dueDateVariationInCurrentRequest.fetchTermApplicaDate())) {
                     rescheduleFromDate = loanTermVariation.getTermApplicableFrom();
                     removeLoanTermVariationsData.add(loanTermVariation);
                 }
+            }
+            if (!(loanApplicationTerms.getNthDay() == null || loanApplicationTerms.getWeekDayType() == null || loanApplicationTerms
+                    .getWeekDayType() == DayOfWeekType.INVALID) && loanApplicationTerms.getRepaymentPeriodFrequencyType().isMonthly()) {
+                Calendar loanCalendar = loanApplicationTerms.getLoanCalendar();
+                final CalendarHistory calendarHistory = new CalendarHistory(loanCalendar, loanCalendar.getStartDate());
+                Date endDate = dueDateVariationInCurrentRequest.fetchDateValue().minusDays(1).toDate();
+                calendarHistory.updateEndDate(endDate);
+                loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
+                loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
             }
         }
         loanApplicationTerms.getLoanTermVariations().getDueDateVariation().removeAll(removeLoanTermVariationsData);
@@ -141,5 +154,5 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         
         return loanScheduleModels;
     }
-
+    
 }
