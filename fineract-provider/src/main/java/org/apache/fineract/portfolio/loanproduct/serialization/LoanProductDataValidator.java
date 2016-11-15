@@ -116,7 +116,8 @@ public final class LoanProductDataValidator {
             LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
             LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
             LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, 
-            LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType));
+            LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
+    		LoanProductConstants.adjustInterestForRoundingParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -599,6 +600,13 @@ public final class LoanProductDataValidator {
         }
         
         validateAdjustFirstInstallment(baseDataValidator, element, null);
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.adjustInterestForRoundingParamName, element)) {
+            final Boolean adjustInterestForRounding = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.adjustInterestForRoundingParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.adjustInterestForRoundingParamName).value(adjustInterestForRounding)
+            	.isOneOfTheseValues(true, false);
+        }
 
         // accounting related data validation
         final Integer accountingRuleType = this.fromApiJsonHelper.extractIntegerNamed("accountingRule", element, Locale.getDefault());
@@ -1584,6 +1592,13 @@ public final class LoanProductDataValidator {
         }
         
         validateAdjustFirstInstallment(baseDataValidator, element, loanProduct);
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.adjustInterestForRoundingParamName, element)) {
+            final Boolean adjustInterestForRounding = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.adjustInterestForRoundingParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.adjustInterestForRoundingParamName).value(adjustInterestForRounding)
+            	.isOneOfTheseValues(true, false);
+        }
 
         final Integer accountingRuleType = this.fromApiJsonHelper.extractIntegerNamed("accountingRule", element, Locale.getDefault());
         baseDataValidator.reset().parameter("accountingRule").value(accountingRuleType).ignoreIfNull().inMinMaxRange(1, 4);

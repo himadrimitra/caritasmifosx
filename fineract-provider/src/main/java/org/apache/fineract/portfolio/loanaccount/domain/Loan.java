@@ -2778,6 +2778,8 @@ public class Loan extends AbstractPersistable<Long> {
             loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
             this.firstEmiAmount = firstInstallmentEmiAmount;
             loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
+        }else if(this.loanProduct.isAdjustInterestForRounding() && !this.isOpen()){
+        	loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
         }
         final LoanScheduleModel loanSchedule = loanScheduleGenerator.generate(mc, loanApplicationTerms, charges(),
                 scheduleGeneratorDTO.getHolidayDetailDTO());
@@ -6007,7 +6009,8 @@ public class Loan extends AbstractPersistable<Long> {
                 calendarHistoryDataWrapper, scheduleGeneratorDTO.getNumberOfdays(),
                 scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable,
                 firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(), 
-                scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule());
+                scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
+                this.loanProduct.isAdjustInterestForRounding());
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
         return loanApplicationTerms;
     }

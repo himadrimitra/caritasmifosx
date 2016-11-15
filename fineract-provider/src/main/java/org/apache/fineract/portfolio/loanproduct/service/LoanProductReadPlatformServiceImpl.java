@@ -237,7 +237,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lvi.minimum_gap as minimumGap, "
                     + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, "
                     + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, "
-                    + "lp.can_use_for_topup as canUseForTopup "
+                    + "lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding"
                     + " from m_product_loan lp "
                     + " left join m_fund f on f.id = lp.fund_id "
                     + " left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id "
@@ -460,6 +460,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final boolean accountMovesOutOfNPAOnlyOnArrearsCompletion = rs.getBoolean("accountMovesOutOfNPAOnlyOnArrearsCompletion");
             final Integer adjustedInstallmentInMultiplesOf = JdbcSupport.getInteger(rs,"adjustedInstallmentInMultiplesOf");
             final boolean adjustFirstEMIAmount = rs.getBoolean("adjustFirstEMIAmount");
+            final boolean adjustInterestForRounding = rs.getBoolean("adjustInterestForRounding");
             final Boolean closeLoanOnOverpayment = rs.getBoolean("closeLoanOnOverpayment");
             final boolean syncExpectedWithDisbursementDate = rs.getBoolean("syncExpectedWithDisbursementDate");
 
@@ -492,7 +493,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                    weeksInYearType);
+                    weeksInYearType, adjustInterestForRounding);
         }
     }
 

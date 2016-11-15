@@ -113,6 +113,7 @@ public interface LoanProductConstants {
     public static final String installmentAmountInMultiplesOfParamName = "installmentAmountInMultiplesOf";
     public static final String adjustedInstallmentInMultiplesOfParamName = "adjustedInstallmentInMultiplesOf";
     public static final String adjustFirstEMIAmountParamName = "adjustFirstEMIAmount";
+    public static final String adjustInterestForRoundingParamName = "adjustInterestForRounding";
     
     //Loan Configurable Attributes
     public static final String allowAttributeOverridesParamName = "allowAttributeOverrides";

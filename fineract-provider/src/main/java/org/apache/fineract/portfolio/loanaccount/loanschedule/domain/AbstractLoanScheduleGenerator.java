@@ -214,6 +214,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         }
         Money capitalizedAmount= LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0).negated(); 
         processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedAmount, loanApplicationTerms.getExpectedDisbursementDate());
+        if (firstRepaymentdate.isBefore(DateUtils.getLocalDateOfTenant())) {
+            loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(false);
+        }
         while (!scheduleParams.getOutstandingBalance().isZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
             LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
@@ -2450,6 +2453,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 retainedInstallments.addAll(newRepaymentScheduleInstallments);
                 loanScheduleParams.getCompoundingDateVariations().putAll(compoundingDateVariations);
                 loanApplicationTerms.updateTotalInterestDue(Money.of(currency, loan.getLoanSummary().getTotalInterestCharged()));
+                loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(false);
             } else {
                 loanApplicationTerms.getLoanTermVariations().resetVariations();
             }
@@ -2474,6 +2478,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 if (!scheduleDate.isBefore(DateUtils.getLocalDateOfTenant())) {
                     loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
                 }
+            }else if(loanApplicationTerms.isAdjustInterestForRounding()){
+            	loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
             }
             periods.clear();
         }
@@ -3040,14 +3046,22 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
      */
     private void adjustInterestForRoundingEMIAmount(final LoanApplicationTerms loanApplicationTerms, final EmiDetails emiDetails,
             LoanScheduleParams scheduleParams, LoanScheduleModelPeriod installment) {
-        if (loanApplicationTerms.getInterestMethod().isDecliningBalnce() && loanApplicationTerms.isAdjustFirstEMIAmount()) {
+        if ((loanApplicationTerms.isAdjustFirstEMIAmount()
+        		|| loanApplicationTerms.isAdjustLastInstallmentInterestForRounding())) {
             final MonetaryCurrency currency = scheduleParams.getCurrency();
-            if (loanApplicationTerms.isAdjustLastInstallmentInterestForRounding() && scheduleParams.getOutstandingBalance().isZero()) {
-                if (emiDetails.getEmiAmount().compareTo(emiDetails.getLastEmiAmount()) != 0) {
-                    installment.addInterestAmount(Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount())));
+            if (scheduleParams.getOutstandingBalance().isZero()) {
+                if (loanApplicationTerms.isAdjustInterestForRounding()){
+                	if(loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() != null 
+                			&& loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() > 0){
+                		BigDecimal roundedLastEmiAmount = loanApplicationTerms.roundAdjustedEmiAmount(emiDetails.getEmiAmount());
+                            installment.addInterestAmount(Money.of(currency,
+                            		roundedLastEmiAmount.subtract(emiDetails.getLastEmiAmount())));
+                	}else{
+                		installment.addInterestAmount(Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount())));
+                	}
                 }
             } else if (scheduleParams.getPeriodNumber() == 1 && loanApplicationTerms.getFirstEmiAmount() != null) {
-                BigDecimal roundedFirstEmiAmount = loanApplicationTerms.roundFirstEmiAmount(loanApplicationTerms.getFirstEmiAmount());
+                BigDecimal roundedFirstEmiAmount = loanApplicationTerms.roundAdjustedEmiAmount(loanApplicationTerms.getFirstEmiAmount());
                 if (roundedFirstEmiAmount.compareTo(loanApplicationTerms.getFirstEmiAmount()) != 0) {
                     installment.addInterestAmount(Money.of(currency,
                             roundedFirstEmiAmount.subtract(loanApplicationTerms.getFirstEmiAmount())));
