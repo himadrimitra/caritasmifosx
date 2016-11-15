@@ -127,7 +127,7 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		System.out.println("the client id is" + clientId);
 		String aadhaarNumber = "594671960" + generate(3);
 		Integer resourceId = (Integer) ClientHelper.addClientIdentifier(requestSpec, responseSpec, clientId,
-				aadhaarCodeValueId, aadhaarNumber, "Active");
+				aadhaarCodeValueId, aadhaarNumber, ClientHelper.CLIENT_IDENTIFIER_STATAUS_ACTIVE);
 		System.out.println("the client id and resource id are " + clientId + " re " + resourceId);
 		Assert.assertNotNull(resourceId);
 		System.out
