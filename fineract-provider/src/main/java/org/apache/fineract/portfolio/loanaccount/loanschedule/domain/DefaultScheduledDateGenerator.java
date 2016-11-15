@@ -216,14 +216,19 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
             adjustedDate = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays());
         }
         
-        AdjustedDateDetailsDTO newAdjustedDateDetailsDTO;
+        AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = null;
         if(HolidayUtil.isExtendSchduleToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays())){
         	LocalDate newAdjustedDate = dueRepaymentPeriodDate;
             do{
-            newAdjustedDate = generateNextRepaymentDate(newAdjustedDate,
-            	loanApplicationTerms, false, holidayDetailDTO);
+            	if(!HolidayUtil.isExtendSchduleToIfHoliday(newAdjustedDate, holidayDetailDTO.getHolidays())){
+            		newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(HolidayUtil.getRepaymentRescheduleDateToIfHoliday(newAdjustedDate, 
+            				holidayDetailDTO.getHolidays()), newAdjustedDate);
+            	}
+            	newAdjustedDate = generateNextRepaymentDate(newAdjustedDate, loanApplicationTerms, false, holidayDetailDTO);
             }while(HolidayUtil.isHoliday(newAdjustedDate, holidayDetailDTO.getHolidays()));
+            if(newAdjustedDateDetailsDTO == null){
             	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDate, newAdjustedDate);
+            }
         } else {
         	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, dueRepaymentPeriodDate);
         }
