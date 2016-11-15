@@ -60,6 +60,7 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
@@ -169,6 +170,8 @@ import org.apache.fineract.portfolio.loanaccount.exception.SubsidyNotAppliedExce
 import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorDomainService;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
@@ -210,6 +213,7 @@ import com.google.gson.JsonElement;
 public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatformService {
 
     private final static Logger logger = LoggerFactory.getLogger(LoanWritePlatformServiceJpaRepositoryImpl.class);
+    private final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
 
     private final PlatformSecurityContext context;
     private final LoanEventApiJsonValidator loanEventApiJsonValidator;
@@ -255,6 +259,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringRepository glimRepository;
     private final GroupLoanIndividualMonitoringAssembler glimAssembler;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
+    private final LoanScheduleGeneratorFactory loanScheduleFactory;
 
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -289,7 +294,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
             final GroupLoanIndividualMonitoringRepository glimRepository,
             final GroupLoanIndividualMonitoringAssembler glimAssembler,
-            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository) {
+            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
+            final LoanScheduleGeneratorFactory loanScheduleFactory) {
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
         this.loanAssembler = loanAssembler;
@@ -334,6 +340,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimRepository = glimRepository;
         this.glimAssembler = glimAssembler;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
+        this.loanScheduleFactory = loanScheduleFactory;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -2216,7 +2223,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     public void applyMeetingDateChanges(final Calendar calendar, final Collection<CalendarInstance> loanCalendarInstances,
             final Boolean reschedulebasedOnMeetingDates, final LocalDate presentMeetingDate, final LocalDate newMeetingDate) {
 
-        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
         final AppUser currentUser = getAppUserIfPresent();
         final List<Long> existingTransactionIds = new ArrayList<>();
@@ -2232,7 +2238,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final List<Loan> loans = this.loanRepository.findByIdsAndLoanStatusAndLoanType(loanIds, loanStatuses, loanTypes);
         this.loanEventApiJsonValidator.validateGroupMeetingDateHasActiveLoans(loans, reschedulebasedOnMeetingDates, presentMeetingDate);
-        List<Holiday> holidays = null;
         LocalDate recalculateFrom = presentMeetingDate;
         
         //checking with back dated future meeting date 
@@ -2251,14 +2256,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 Boolean isSkipRepaymentOnFirstMonth = false;
                 Integer numberOfDays = 0;
                 boolean isSkipRepaymentOnFirstMonthEnabled = configurationDomainService.isSkippingMeetingOnFirstDayOfMonthEnabled();
+                final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
                 if(isSkipRepaymentOnFirstMonthEnabled){
                     isSkipRepaymentOnFirstMonth = this.loanUtilService.isLoanRepaymentsSyncWithMeeting(loan.group(), calendar);
                     if(isSkipRepaymentOnFirstMonth) { numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue(); }  
                 }
-
-                holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(), loan.getDisbursementDate().toDate());
+                
+                ScheduleGeneratorDTO scheduleGeneratorDTO = loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
                 if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
-                    ScheduleGeneratorDTO scheduleGeneratorDTO = loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
                     loan.setHelpers(null, this.loanSummaryWrapper, this.transactionProcessingStrategy);
                     ChangedTransactionDetail changedTransactionDetail = loan.recalculateScheduleFromLastTransaction(scheduleGeneratorDTO, existingTransactionIds,
                             existingReversedTransactionIds, currentUser);
@@ -2274,11 +2279,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
                 } else if (reschedulebasedOnMeetingDates) {
                     loan.updateLoanRepaymentScheduleDates(calendar.getStartDateLocalDate(), calendar.getRecurrence(), isHolidayEnabled,
-                            holidays, workingDays, reschedulebasedOnMeetingDates, presentMeetingDate, newMeetingDate,
+                    		scheduleGeneratorDTO, workingDays, reschedulebasedOnMeetingDates, presentMeetingDate, newMeetingDate,
                             isSkipRepaymentOnFirstMonth, numberOfDays);
                 } else {
-                    loan.updateLoanRepaymentScheduleDates(calendar.getStartDateLocalDate(), calendar.getRecurrence(), isHolidayEnabled,
-                            holidays, workingDays, isSkipRepaymentOnFirstMonth, numberOfDays);
+                    loan.updateLoanRepaymentScheduleDates(calendar.getStartDateLocalDate(), calendar.getRecurrence(), scheduleGeneratorDTO,
+                    		isHolidayEnabled, workingDays, isSkipRepaymentOnFirstMonth, numberOfDays);
                 }
 
                 saveLoanWithDataIntegrityViolationChecks(loan);
@@ -2465,10 +2470,51 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             // office id
             // get all group loans
             loans.addAll(this.loanRepository.findByGroupOfficeIdsAndLoanStatus(officeIds, loanStatuses));
+            
+            final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
+            final boolean allowTransactionsOnNonWorkingDay = this.configurationDomainService.allowTransactionsOnNonWorkingDayEnabled();
 
             for (final Loan loan : loans) {
                 // apply holiday
-                loan.applyHolidayToRepaymentScheduleDates(holiday);
+            	
+            	final List<Holiday> holidaysToBeProcessForLoan = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(),
+            			DateUtils.getLocalDateOfTenant().toDate());
+                final WorkingDays workingDays = this.workingDaysRepository.findOne();
+            	LocalDate recalculateFrom = null;
+                final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.
+                		getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
+                HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidaysToBeProcessForLoan, workingDays, 
+                		allowTransactionsOnHoliday, allowTransactionsOnNonWorkingDay, workingDayExemptions);
+                
+                ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                		holidayDetailDTO);
+            	
+                final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
+                LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+                LocalDate actualRepaymentDate = loanApplicationTerms.getExpectedDisbursementDate();
+                LocalDate lastActualRepaymentDate = actualRepaymentDate;
+                LocalDate lastScheduledDate = actualRepaymentDate;
+                boolean isFirstRepayment = true;
+                for (LoanRepaymentScheduleInstallment installment : loan.getRepaymentScheduleInstallments()) {
+                    // this will generate the next schedule due date and allows to
+                    // process the installment only if recalculate from date is
+                    // greater than due date
+                    
+                	isFirstRepayment = installment.getInstallmentNumber() == 1 ? true : false;
+                	LocalDate previousRepaymentDate = lastActualRepaymentDate;
+                    actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(previousRepaymentDate, loanApplicationTerms,
+                            isFirstRepayment, holidayDetailDTO);                        
+                    AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
+                            holidayDetailDTO);
+                    lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();  
+                    if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
+	                    installment.updateFromDate(lastScheduledDate);
+	                    lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+	                    installment.updateDueDate(lastScheduledDate);                                              
+                    } else {
+                    	lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+                    }
+                }
             }
             this.loanRepository.save(loans);
             holiday.processed();

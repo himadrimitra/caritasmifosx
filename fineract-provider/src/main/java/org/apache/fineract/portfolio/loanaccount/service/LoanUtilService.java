@@ -180,7 +180,7 @@ public class LoanUtilService {
 
         return scheduleGeneratorDTO;
     }
-
+    
     public Boolean isLoanRepaymentsSyncWithMeeting(final Group group, final Calendar calendar) {
         Boolean isSkipRepaymentOnFirstMonth = false;
         Long entityId = null;
@@ -202,7 +202,6 @@ public class LoanUtilService {
         return isSkipRepaymentOnFirstMonth;
     }
 
-
     public LocalDate getCalculatedRepaymentsStartingFromDate(final Loan loan) {
         final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
                 CalendarEntityType.LOANS.getValue());
@@ -210,7 +209,7 @@ public class LoanUtilService {
         return this.getCalculatedRepaymentsStartingFromDate(loan.getDisbursementDate(), loan, calendarInstance, calendarHistoryDataWrapper);
     }
 
-    private HolidayDetailDTO constructHolidayDTO(final Loan loan) {
+    public HolidayDetailDTO constructHolidayDTO(final Loan loan) {
         final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(), loan
                 .getDisbursementDate().toDate(), HolidayStatusType.ACTIVE.getValue());
@@ -348,15 +347,17 @@ public class LoanUtilService {
             final Integer minimumDaysBetweenDisbursalAndFirstRepayment, CalendarHistoryDataWrapper calendarHistoryDataWrapper, final WorkingDays workingDays,
             final boolean isMeetingSkipOnFirstDayOfMonth, int numberOfDays, final Integer repayEvery, final String frequency) {
         boolean useNextHistoryItem = false;
+        int matchHistory  = 1;
         LocalDate derivedFirstRepayment = null;
-
         do {
-            CalendarHistory history = calendarHistoryDataWrapper.getCalendarHistory(actualDisbursementDate, useNextHistoryItem);
+            CalendarHistory history = calendarHistoryDataWrapper.getCalendarHistory(actualDisbursementDate, matchHistory);
+            useNextHistoryItem = false;
             if (history == null) { return null; }
             derivedFirstRepayment = CalendarUtils.getNextRepaymentMeetingDate(history.getRecurrence(), history.getStartDateLocalDate(),
                     actualDisbursementDate, repayEvery, frequency, workingDays, isMeetingSkipOnFirstDayOfMonth, numberOfDays);
             if (history.getEndDateLocalDate().isBefore(derivedFirstRepayment)) {
                 useNextHistoryItem = true;
+                matchHistory++;
             }
         } while (useNextHistoryItem);
 
