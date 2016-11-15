@@ -52,6 +52,7 @@ public class ClientHelper {
     public static final String TRANSACTION_DATE = "01 March 2013";
     public static final String LAST_TRANSACTION_DATE = "01 March 2013";
     public static final String DATE_FORMAT = "dd MMMM yyyy";
+    public static final String CLIENT_IDENTIFIER_STATAUS_ACTIVE = "200";
     
 
     public ClientHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
