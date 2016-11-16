@@ -196,7 +196,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                 BigDecimal installmentInterest = BigDecimal.ZERO;
 
                 if (dueDate.isBefore(transactionDateAsLocalDate) || dueDate.isEqual(transactionDateAsLocalDate) || i == 0) {
-                    if (i + 1 == loanRepaymentScheduleInstallment.size()) {
+                    if (scheduleInstallment.getInstallmentNumber() == loanRepaymentScheduleInstallment.size()) {
                         installmentCharge = glimIndividualData.getChargeAmount().subtract(chargeAmount);
                         installmentInterest = glimIndividualData.getInterestAmount().subtract(interestAmount);
                     } else {
@@ -206,8 +206,12 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                                 glimIndividualData.getInterestAmount(), scheduleInstallment.getInterestCharged(currency).getAmount(), loan
                                         .getSummary().getTotalInterestCharged());
                     }
-
-                    installmentAmount = installmentAmount.add(defaultInstallmentAmount);
+                    if(loan.getLoanProduct().adjustFirstEMIAmount() && i==0){
+                    	installmentAmount = MathUtility.subtract(MathUtility.add(glimIndividualData.getDisbursedAmount(),  glimIndividualData.getInterestAmount()),  MathUtility.multiply(defaultInstallmentAmount, loanRepaymentScheduleInstallment.size()-1));
+                    }else{
+                    	installmentAmount = installmentAmount.add(defaultInstallmentAmount);
+                    }
+                    
                     for (GroupLoanIndividualMonitoringCharge glimCharge : glimCharges) {
                         if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()
                                 && scheduleInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
@@ -317,11 +321,15 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         Boolean isChargeWaived = MathUtility.isGreaterThanZero(glim.getWaivedChargeAmount());
         Boolean isInterestWaived = MathUtility.isGreaterThanZero(glim.getWaivedInterestAmount());
         for (int i = 0; i < scheduleList.size(); i++) {
+        	if(loan.getLoanProduct().adjustFirstEMIAmount() && i==0){   
+        		BigDecimal principal = (glim.getDisbursedAmount() != null)?glim.getDisbursedAmount():(glim.getApprovedAmount() != null)? glim.getApprovedAmount(): glim.getProposedAmount();
+        		installmentAmount = MathUtility.subtract(MathUtility.add(principal,  glim.getInterestAmount()),  MathUtility.multiply(glim.getInstallmentAmount(), numberOfInstallments-1));        		
+        	}
             LoanRepaymentScheduleInstallment schedule = scheduleList.get(i);
             BigDecimal installmentCharge = getDefaultChargeSharePerInstallment(loan, glim.getId(), schedule.getInstallmentNumber());
             BigDecimal installmentInterest = getDefaultInterestSharePerInstallment(loan, glim.getId(), glim.getInterestAmount(), schedule
-                    .getInterestCharged(currency).getAmount(), loan.getSummary().getTotalInterestCharged());
-            if (i + 1 == numberOfInstallments && installmentNumber == numberOfInstallments) {
+                    .getInterestCharged(currency).getAmount(), loan.getTotalInterest());
+            if (schedule.getInstallmentNumber() == numberOfInstallments && installmentNumber == numberOfInstallments) {
                 installmentInterest = glim.getInterestAmount().subtract(adjustedPaidInterest);
                 installmentCharge = glim.getChargeAmount().subtract(adjustedPaidCharge);
             } else {
@@ -335,7 +343,12 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                 installmentAmount = glim.getInstallmentAmount();
                 if (i + 1 == numberOfInstallments && installmentNumber == numberOfInstallments) {
                     BigDecimal adjustLastInstallmentAmount = MathUtility.multiply(glim.getInstallmentAmount(), numberOfInstallments - 1);
-                    installmentAmount = MathUtility.subtract(glim.getTotalPaybleAmount(), MathUtility.add(glim.getChargeAmount(), adjustLastInstallmentAmount));
+                    if(loan.getLoanProduct().adjustFirstEMIAmount()){
+                    	installmentAmount = MathUtility.subtract(glim.getTotalPaybleAmount(), MathUtility.add(glim.getChargeAmount(), glim.getInstallmentAmount()));
+                    }else{
+                    	installmentAmount = MathUtility.subtract(glim.getTotalPaybleAmount(), MathUtility.add(glim.getChargeAmount(), adjustLastInstallmentAmount));
+                    }
+                    
                 }
             }
             installmentPrincipal = installmentAmount.subtract(installmentInterest).subtract(installmentCharge);

@@ -54,6 +54,7 @@ import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -301,10 +302,12 @@ public class LoanAssembler {
         final LoanApplicationTerms loanApplicationTerms = this.loanScheduleAssembler.assembleLoanTerms(element, considerAllDisbursmentsInSchedule);
         // GLIM individual clients amount split
         final BigDecimal interestRate = loanApplicationTerms.getAnnualNominalInterestRate();
-        final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
+        final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();        
         final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(loanApplication,
         		element, interestRate, numberOfRepayments, loanApplicationTerms.getInterestMethod());
         loanApplicationTerms.updateTotalInterestDueForGlim(glimList);
+        final BigDecimal firstInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
+     	loanApplicationTerms.setFirstFixedEmiAmount(firstInstallmentEmiAmount);
         //capitalization of charges
         loanApplication.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(loanCharges));
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(loanCharges));
@@ -388,5 +391,5 @@ public class LoanAssembler {
     
     public Loan getActiveLoanByAccountNumber(String accountNumber){
     	return this.loanRepository.getActiveLoanByAccountNumber(accountNumber);
-    }
+    } 
 }
