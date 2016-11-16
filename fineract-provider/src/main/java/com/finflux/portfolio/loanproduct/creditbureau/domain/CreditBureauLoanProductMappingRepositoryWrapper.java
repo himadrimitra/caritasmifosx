@@ -18,24 +18,24 @@ public class CreditBureauLoanProductMappingRepositoryWrapper {
     }
 
     public CreditBureauLoanProductMapping findOneWithNotFoundDetection(final Long id) {
-        final CreditBureauLoanProductMapping loanProductCreditBureauMapping = this.repository.findOne(id);
-        if (loanProductCreditBureauMapping == null) { throw new CreditBureauLoanProductMappingNotFoundException(id); }
-        return loanProductCreditBureauMapping;
+        final CreditBureauLoanProductMapping creditBureauLoanProductMapping = this.repository.findOne(id);
+        if (creditBureauLoanProductMapping == null) { throw new CreditBureauLoanProductMappingNotFoundException(id); }
+        return creditBureauLoanProductMapping;
     }
 
-    public void save(final CreditBureauLoanProductMapping loanProductCreditBureauMapping) {
-        this.repository.save(loanProductCreditBureauMapping);
+    public void save(final CreditBureauLoanProductMapping creditBureauLoanProductMapping) {
+        this.repository.save(creditBureauLoanProductMapping);
     }
 
-    public void save(final List<CreditBureauLoanProductMapping> loanProductCreditBureauMapping) {
-        this.repository.save(loanProductCreditBureauMapping);
+    public void save(final List<CreditBureauLoanProductMapping> creditBureauLoanProductMapping) {
+        this.repository.save(creditBureauLoanProductMapping);
     }
 
-    public void saveAndFlush(final CreditBureauLoanProductMapping loanProductCreditBureauMapping) {
-        this.repository.saveAndFlush(loanProductCreditBureauMapping);
+    public void saveAndFlush(final CreditBureauLoanProductMapping creditBureauLoanProductMapping) {
+        this.repository.saveAndFlush(creditBureauLoanProductMapping);
     }
 
-    public void delete(final CreditBureauLoanProductMapping loanProductCreditBureauMapping) {
-        this.repository.delete(loanProductCreditBureauMapping);
+    public void delete(final CreditBureauLoanProductMapping creditBureauLoanProductMapping) {
+        this.repository.delete(creditBureauLoanProductMapping);
     }
 }
