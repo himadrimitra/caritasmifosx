@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.fingerprint.api.FingerPrintApiConstants;
 import com.finflux.fingerprint.data.FingerPrintDataValidator;
+import com.finflux.fingerprint.data.FingerPrintEntityTypeEnums;
 import com.finflux.fingerprint.domain.FingerPrint;
 import com.finflux.fingerprint.domain.FingerPrintRepositoryWrapper;
 
@@ -80,9 +81,10 @@ public class FingerPrintWritePlatformServicesImpl implements FingerPrintWritePla
 
         if (realCause.getMessage().contains("f_client_fingerprint_UNIQUE")) {
             final Integer fingerId = command.integerValueOfParameterNamed(FingerPrintApiConstants.fingerIdParamName);
-            throw new PlatformDataIntegrityException("error.msg.finger.id.duplicate",
-                    "FingerId `" + fingerId + "` already exists for client", "ClientId `" + clientId + "`", "entityId", "fingerId",
-                    clientId, fingerId);
+            final FingerPrintEntityTypeEnums fingerType = FingerPrintEntityTypeEnums.fromInt(fingerId);
+            throw new PlatformDataIntegrityException("error.msg.finger.duplicate",
+                    "FingerId `" + fingerType.getCode() + "` already exists for client", "ClientId `" + clientId + "`", "entityId", "fingerId",
+                    clientId, fingerType.getCode());
         }
 
         logAsErrorUnexpectedDataIntegrityException(dve);

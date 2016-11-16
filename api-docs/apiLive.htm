@@ -456,7 +456,50 @@
 								<td></td>
 								<td></td>
 							</tr>
-
+							<tr>
+								<td><a href="#client_fingerprint">Client Fingerprint</td>
+								<td>clients/{clientId}/fingerprint</td>
+								<td><a href="#fingerprint_save">Register FingerPrint Data</a></td>
+								<td><a href="#fingerprint_data">Retrieve fingerprint data</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>clients/{clientId}/fingerprint/template</td>
+								<td></td>
+								<td><a href="#fingerprint_template">Retrive fingerPrint template</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#client_smartcard">Client SmartCard</td>
+								<td>{entityType}/{clientId}/smartcard</td>
+								<td><a href="#smartcard_actions">SmartCard Actions</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>{entityType}/{clientId}/smartcard/{entityId}</td>
+								<td></td>
+								<td><a href="#generate_cardNumber">Smartcard Number Generation</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td><a href="#List_smartcard">Retrieve SmartCardList</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
 						</table>
 					</div>
 				</div>
@@ -41984,6 +42027,232 @@ No Request Body
 "officeId":1,
 "clientId":189,
 "resourceId":222
+}
+					</code>
+				</div>
+			</div>
+			
+			<a id="smartcard_actions" name="smartcard_actions" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Activate Smartcard</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/{entityType}/{clientId}/smartcard?command=activate
+					</code>
+					<code class="method-request">
+{
+"cardNumber":"102325362145",
+"locale": "en",
+"dateFormat": "dd MMMM yyyy",
+"note": "user note"
+}
+					</code>
+					<code class="method-response">
+
+{
+"resourceId":222
+}
+					</code>
+				</div>
+				<div class="method-description">
+					<h4>InActivate Smartcard</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/{entityType}/{clientId}/smartcard?command=inactivate
+					</code>
+					<code class="method-request">
+{
+"cardNumber":"102325362145",
+"locale": "en",
+"dateFormat": "dd MMMM yyyy",
+"note": "user note"
+}
+					</code>
+					<code class="method-response">
+
+{
+"resourceId":222
+}
+					</code>
+				</div>
+			</div>
+			
+           <a id="generate_cardNumber" name="generate_cardNumber" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Generate Smartcard Number</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/{entityType}/{clientId}/smartcard/{entityId}?template=true
+					</code>
+					<code class="method-response">
+
+{
+	"cardId": 1,
+	"clientId": 1,
+	"entityId": "000000001",
+	"entityType": 4,
+	"cardNumber": "103886134831",
+	"cardStatus": 2,
+	"note": "",
+	"createdDate": [2016,10,24],
+	"statusEnumOptionData": {
+		"id": 2,
+		"code": "smartCardStatusType.pending",
+		"value": "PENDING"
+	},
+	"entityEnumOptionData": {
+		"id": 4,
+		"code": "smartCardStatusType.clients",
+		"value": "CLIENTS"
+	}
+}
+					</code>
+				</div>
+			</div>
+			<a id="List_smartcard" name="List_smartcard" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Smartcard List</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/{entityType}/{clientId}/smartcard
+					</code>
+					<code class="method-response">
+
+[{
+	"cardId": 1,
+	"clientId": 1,
+	"entityId": "000000001",
+	"entityType": 4,
+	"cardNumber": "103886134831",
+	"cardStatus": 2,
+	"note": "activeOnly",
+	"createdDate": [2016,10,24],
+	"statusEnumOptionData": {
+		"id": 2,
+		"code": "smartCardStatusType.active",
+		"value": "ACTIVE"
+	},
+	"entityEnumOptionData": {
+		"id": 4,
+		"code": "smartCardStatusType.clients",
+		"value": "CLIENTS"
+	}
+}]
+					</code>
+				</div>
+			</div>
+			<a id="fingerprint_save" name="fingerprint_save" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Register FingerPrint Data</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/clients/{clientId}/fingerPrint
+					</code>
+					<code class="method-request">
+{
+	"dateFormat": "dd MMMM yyyy",
+	"fingerData": "IVMBAAD/////bkoBRk1SACAyMAAAAAFKAAABAAGQAMUAxQEAAAAYMoBoACNsUIBAAC58SkB9ADxo\n",
+	"fingerId": 1,
+	"locale": "en"
+}
+					</code>
+					<code class="method-response">
+
+{
+ "resourceId":23
+}
+					</code>
+				</div>
+			</div>
+			<a id="fingerprint_data" name="fingerprint_data" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve FingerPrint Data</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/clients/{clientId}/fingerPrint
+					</code>
+					<code class="method-response">
+
+
+[FingerPrintData{
+	entityId=8,
+	fingerId='1',
+	"fingerData": "IVMBAAD/////bkoBRk1SACAyMAAAAAFKAAABAAGQAMUAxQEAAAAYMoBoACNsUIBAAC58SkB9ADxo\n",
+}]
+			<a id="fingerprint_template" name="fingerprint_template" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve FingerPrint template</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/clients/{clientId}/fingerPrint/template
+					</code>
+					<code class="method-response">
+
+
+{
+	"fingerOptions": [{
+		"id": 1,
+		"code": "fingerIdEntityType.right-thumb",
+		"value": "RIGHT_THUMB"
+	},
+	{
+		"id": 2,
+		"code": "fingerIdEntityType.right-index",
+		"value": "RIGHT_INDEX"
+	},
+	{
+		"id": 3,
+		"code": "fingerIdEntityType.right-middle",
+		"value": "RIGHT_MIDDLE"
+	},
+	{
+		"id": 4,
+		"code": "fingerIdEntityType.right-ring",
+		"value": "RIGHT_RING"
+	},
+	{
+		"id": 5,
+		"code": "fingerIdEntityType.right-pinky",
+		"value": "RIGHT_PINKY"
+	},
+	{
+		"id": 6,
+		"code": "fingerIdEntityType.left-thumb",
+		"value": "LEFT_THUMB"
+	},
+	{
+		"id": 7,
+		"code": "fingerIdEntityType.left-index",
+		"value": "LEFT_INDEX"
+	},
+	{
+		"id": 8,
+		"code": "fingerIdEntityType.left-middle",
+		"value": "LEFT_MIDDLE"
+	},
+	{
+		"id": 9,
+		"code": "fingerIdEntityType.left-ring",
+		"value": "LEFT_RING"
+	},
+	{
+		"id": 10,
+		"code": "fingerIdEntityType.left-pinky",
+		"value": "LEFT_PINKY"
+	}]
 }
 					</code>
 				</div>
