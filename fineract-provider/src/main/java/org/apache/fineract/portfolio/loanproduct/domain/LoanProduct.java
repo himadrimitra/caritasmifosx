@@ -189,6 +189,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @Column(name = "adjust_first_emi_amount", nullable = true)
     private boolean adjustFirstEMIAmount;
     
+    @Column(name = "adjust_interest_for_rounding", nullable = true)
+    private boolean adjustInterestForRounding;
+    
     @Column(name = "adjusted_instalment_in_multiples_of", nullable = true)
     private Integer adjustedInstallmentInMultiplesOf;
 
@@ -361,6 +364,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.adjustFirstEMIAmountParamName);
         final Integer adjustedInstallmentInMultiplesOf = command
                 .integerValueOfParameterNamed(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName);
+        final boolean adjustInterestForRounding = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.adjustInterestForRoundingParamName);
         
         final Boolean closeLoanOnOverpayment = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.closeLoanOnOverpayment);
         final boolean syncExpectedWithDisbursementDate = command
@@ -390,7 +394,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
                 maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
-                loanTenureFrequencyType, canUseForTopup, weeksInYearType);
+                loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding);
 
     }
 
@@ -625,7 +629,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment, 
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
-            final boolean canUseForTopup, final WeeksInYearType weeksInYearType) {
+            final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -702,6 +706,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.installmentAmountInMultiplesOf = installmentAmountInMultiplesOf;
         this.adjustFirstEMIAmount = adjustFirstEMIAmount;
         this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
+        this.adjustInterestForRounding = adjustInterestForRounding;
         this.closeLoanOnOverpayment = closeLoanOnOverpayment;
         this.syncExpectedWithDisbursementDate = syncExpectedWithDisbursementDate;
         this.minLoanTerm = minLoanTerm;
@@ -1107,6 +1112,12 @@ public class LoanProduct extends AbstractPersistable<Long> {
             actualChanges.put(LoanProductConstants.adjustFirstEMIAmountParamName, newValue);
             this.adjustFirstEMIAmount = newValue;
         }
+        
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.adjustInterestForRoundingParamName, this.adjustInterestForRounding)) {
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.adjustInterestForRoundingParamName);
+            actualChanges.put(LoanProductConstants.adjustInterestForRoundingParamName, newValue);
+            this.adjustInterestForRounding = newValue;
+        }
 
         if (command.isChangeInIntegerParameterNamedWithNullCheck(LoanProductConstants.adjustedInstallmentInMultiplesOfParamName,
                 this.adjustedInstallmentInMultiplesOf)) {
@@ -1490,7 +1501,11 @@ public class LoanProduct extends AbstractPersistable<Long> {
         return this.adjustFirstEMIAmount;
     }
 
-    public Integer getAdjustedInstallmentInMultiplesOf() {
+    public boolean isAdjustInterestForRounding() {
+		return this.adjustInterestForRounding;
+	}
+
+	public Integer getAdjustedInstallmentInMultiplesOf() {
         return this.adjustedInstallmentInMultiplesOf;
     }
 

@@ -141,7 +141,7 @@ public class LoanProductTestBuilder {
     private Integer minNumberOfRepayments = null;
     private Integer maxNumberOfRepayments = null;
     private Integer loanTenureFrequencyType = null;
-
+    private boolean adjustInterestForRounding = false;
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -229,6 +229,7 @@ public class LoanProductTestBuilder {
         }
         map.put("allowPartialPeriodInterestCalcualtion", this.allowPartialPeriodInterestCalcualtion);
         map.put("allowVariableInstallments", allowVariableInstallments) ;
+        map.put("adjustInterestForRounding", this.adjustInterestForRounding);
         if(allowVariableInstallments) {
             map.put("minimumGap", minimumGap) ;
             map.put("maximumGap", maximumGap) ;
@@ -240,12 +241,11 @@ public class LoanProductTestBuilder {
 
         if (isAdjustFirstEMIAmount) {
             map.put("adjustFirstEMIAmount", this.isAdjustFirstEMIAmount);
-
-            if (adjustedInstallmentInMultiplesOf != null) {
-                map.put("adjustedInstallmentInMultiplesOf", this.adjustedInstallmentInMultiplesOf);
-            }
         }
-
+        
+		if (adjustedInstallmentInMultiplesOf != null) {
+			map.put("adjustedInstallmentInMultiplesOf", this.adjustedInstallmentInMultiplesOf);
+		}
         if (installmentAmountInMultiplesOf != null) {
             map.put("installmentAmountInMultiplesOf", this.installmentAmountInMultiplesOf);
 
@@ -367,6 +367,11 @@ public class LoanProductTestBuilder {
         return this;
     }
 
+    public LoanProductTestBuilder withAdjustInterestForRounding(final boolean adjustInterestForRounding){
+    	this.adjustInterestForRounding = adjustInterestForRounding;
+    	return this;
+    }
+    
     public LoanProductTestBuilder withInArrearsTolerance(final String amountCanBeWaved) {
         this.inArrearsTolerance = amountCanBeWaved;
         return this;

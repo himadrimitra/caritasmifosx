@@ -122,6 +122,7 @@ public class LoanProductData {
     private final Integer installmentAmountInMultiplesOf;
     private final Integer adjustedInstallmentInMultiplesOf;
     private final boolean adjustFirstEMIAmount;
+    private final boolean adjustInterestForRounding;
 
     // charges
     private Collection<ProductLoanChargeData> charges;
@@ -275,6 +276,7 @@ public class LoanProductData {
         
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
+        final boolean adjustInterestForRounding = false;
         final Boolean closeLoanOnOverpayment = false;
         final boolean syncExpectedWithDisbursementDate = false;
         final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment = null;
@@ -300,7 +302,7 @@ public class LoanProductData {
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
                 maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, 
-                weeksInYear);
+                weeksInYear, adjustInterestForRounding);
 
     }
 
@@ -378,6 +380,7 @@ public class LoanProductData {
         
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
+        final boolean adjustInterestForRounding = false;
         
         final Boolean isoverpaymentcloseloan = false;
         final boolean syncExpectedWithDisbursementDate = false;
@@ -404,7 +407,7 @@ public class LoanProductData {
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
                 maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                weeksInYearType);
+                weeksInYearType, adjustInterestForRounding);
 
     }
 
@@ -489,6 +492,7 @@ public class LoanProductData {
         
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
+        final boolean adjustInterestForRounding = false;
         final Boolean isoverpaymentcloseloan = false;
         final Boolean syncExpectedWithDisbursementDate = false;
         final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment = null;
@@ -515,7 +519,7 @@ public class LoanProductData {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
-                canUseForTopup, weeksInYearType);
+                canUseForTopup, weeksInYearType, adjustInterestForRounding);
 
     }
 
@@ -560,7 +564,7 @@ public class LoanProductData {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final boolean closeLoanOnOverpayment, 
             final boolean syncExpectedWithDisbursementDate,  final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final EnumOptionData loanTenureFrequencyType, 
-            final boolean canUseForTopup, final EnumOptionData weeksInYearType) {
+            final boolean canUseForTopup, final EnumOptionData weeksInYearType, final boolean adjustInterestForRounding) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -666,6 +670,7 @@ public class LoanProductData {
         
         this.adjustedInstallmentInMultiplesOf = adjustedInstallmentInMultiplesOf;
         this.adjustFirstEMIAmount = adjustFirstEMIAmount;
+        this.adjustInterestForRounding = adjustInterestForRounding;
         this.closeLoanOnOverpayment = closeLoanOnOverpayment;
         this.syncExpectedWithDisbursementDate = syncExpectedWithDisbursementDate;
         this.minLoanTerm = minLoanTerm;
@@ -813,6 +818,7 @@ public class LoanProductData {
         this.preClosureInterestCalculationStrategyOptions = preCloseInterestCalculationStrategyOptions;
         this.adjustedInstallmentInMultiplesOf = productData.adjustedInstallmentInMultiplesOf;
         this.adjustFirstEMIAmount = productData.adjustFirstEMIAmount;
+        this.adjustInterestForRounding = productData.adjustInterestForRounding;
         this.closeLoanOnOverpayment = closeLoanOnOverpayment;
         this.syncExpectedWithDisbursementDate = productData.syncExpectedWithDisbursementDate;
         this.minimumPeriodsBetweenDisbursalAndFirstRepayment = productData.minimumPeriodsBetweenDisbursalAndFirstRepayment;
@@ -900,6 +906,7 @@ public class LoanProductData {
 
         final Integer adjustedInstallmentInMultiplesOf = null;
         final boolean adjustFirstEMIAmount = false;
+        final boolean adjustInterestForRounding = false;
         final Boolean isoverpaymentcloseloan = false;
         final Boolean syncExpectedWithDisbursementDate = false;
         final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment = null;
@@ -926,7 +933,7 @@ public class LoanProductData {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
-                canUseForTopup,weeksInYearType);
+                canUseForTopup,weeksInYearType, adjustInterestForRounding);
     }
 
 

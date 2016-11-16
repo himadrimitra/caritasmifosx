@@ -105,7 +105,7 @@ public class FlatInterestLoanScheduleGenerator extends AbstractLoanScheduleGener
                     interestForThisInstallment = interestForThisInstallment.plus(interestDiff);
                     principalForThisInstallment = principalForThisInstallment.plus(principalDiff);
                     emiAmount = principalForThisInstallment.plus(interestForThisInstallment);
-                    BigDecimal firstEmiAmount = loanApplicationTerms.roundFirstEmiAmount(emiAmount.getAmount());
+                    BigDecimal firstEmiAmount = loanApplicationTerms.roundAdjustedEmiAmount(emiAmount.getAmount());
                     Money adjustInterest = emiAmount.minus(firstEmiAmount);
                     interestForThisInstallment = interestForThisInstallment.minus(adjustInterest);
                     loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().minus(adjustInterest));

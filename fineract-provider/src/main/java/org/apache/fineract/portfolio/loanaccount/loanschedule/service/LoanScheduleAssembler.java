@@ -495,7 +495,7 @@ public class LoanScheduleAssembler {
                 loanTermVariations, isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfDays, isSkipMeetingOnFirstDay, detailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount,
                 loanProduct.getAdjustedInstallmentInMultiplesOf(), loanProduct.adjustFirstEMIAmount(), 
-                considerFutureDisbursmentsInSchedule,considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType());
+                considerFutureDisbursmentsInSchedule,considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(), loanProduct.isAdjustInterestForRounding());
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,
@@ -706,7 +706,10 @@ public class LoanScheduleAssembler {
                     detailDTO);
             loanApplicationTerms.setFirstEmiAmount(firstEmiAmount);
             loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
+        }else if(loanApplicationTerms.isAdjustInterestForRounding()){
+        	loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
         }
+        
         //capitalized
         List<LoanCharge> capitalizedCharges = new ArrayList<>();
         for(LoanCharge loanCharge:loanCharges){
