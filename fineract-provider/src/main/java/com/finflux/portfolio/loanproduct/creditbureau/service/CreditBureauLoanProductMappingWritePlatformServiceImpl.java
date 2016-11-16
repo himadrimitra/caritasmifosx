@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.finflux.portfolio.loanproduct.creditbureau.data.CreditBureauLoanProductMappingDataValidator;
 import com.finflux.portfolio.loanproduct.creditbureau.domain.CreditBureauLoanProductMapping;
@@ -55,6 +56,7 @@ public class CreditBureauLoanProductMappingWritePlatformServiceImpl implements C
         }
     }
 
+    @Transactional
     @Override
     public CommandProcessingResult update(final Long cblpMappingId, final JsonCommand command) {
         try {
@@ -64,7 +66,7 @@ public class CreditBureauLoanProductMappingWritePlatformServiceImpl implements C
             this.validator.validateForUpdate(command.json());
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(creditBureauLoanProductMapping, command);
             if (!changes.isEmpty()) {
-                this.repository.save(creditBureauLoanProductMapping);
+                this.repository.saveAndFlush(creditBureauLoanProductMapping);
             }
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//
