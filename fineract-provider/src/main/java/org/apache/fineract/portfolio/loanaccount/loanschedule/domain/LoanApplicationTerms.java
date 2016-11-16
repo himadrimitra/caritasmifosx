@@ -239,6 +239,8 @@ public final class LoanApplicationTerms {
     private final boolean adjustInterestForRounding;
     List<LoanCharge> capitalizedCharges = null;
     
+    BigDecimal firstFixedEmiAmount = null;
+    
     
 
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency currency, final Integer loanTermFrequency,
@@ -1892,4 +1894,17 @@ public final class LoanApplicationTerms {
     public void setCapitalizedCharges(List<LoanCharge> capitalizedCharges) {
 		this.capitalizedCharges = capitalizedCharges;
 	}
+    
+    public boolean isFirstEmiAdjusted(){
+    	return (this.adjustFirstEMIAmount);
+    }
+
+	public BigDecimal getFirstFixedEmiAmount() {
+		return this.firstFixedEmiAmount;
+	}
+
+	public void setFirstFixedEmiAmount(BigDecimal firstFixedEmiAmount) {
+		this.firstFixedEmiAmount = firstFixedEmiAmount;
+	}
+    
 }

@@ -82,6 +82,7 @@ import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlat
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
@@ -701,6 +702,9 @@ public class LoanScheduleAssembler {
         final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         
+
+        BigDecimal firstFixedEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
+        loanApplicationTerms.setFirstFixedEmiAmount(firstFixedEmiAmount);
         if (loanApplicationTerms.adjustFirstEMIAmount()) {
             BigDecimal firstEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms, loanCharges,
                     detailDTO);

@@ -26,8 +26,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
+import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringAssembler;
 import org.joda.time.LocalDate;
 
 public class FlatInterestLoanScheduleGenerator extends AbstractLoanScheduleGenerator {
@@ -43,7 +46,7 @@ public class FlatInterestLoanScheduleGenerator extends AbstractLoanScheduleGener
         
         Money principalForThisInstallment = loanApplicationTerms.calculateTotalPrincipalForPeriod(calculator, outstandingBalance,
                 periodNumber, mc, null);
-
+        
         final PrincipalInterest result = loanApplicationTerms.calculateTotalInterestForPeriod(calculator,
                 interestCalculationGraceOnRepaymentPeriodFraction, periodNumber, mc, cumulatingInterestPaymentDueToGrace,
                 outstandingBalance, periodStartDate, periodEndDate);
@@ -134,7 +137,9 @@ public class FlatInterestLoanScheduleGenerator extends AbstractLoanScheduleGener
         }*/
         interestForThisInstallment = loanApplicationTerms.adjustInterestIfLastRepaymentPeriod(interestForThisInstallment,
                 totalCumulativeInterestToDate, loanApplicationTerms.getTotalInterestDue(), periodNumber);
-
+        if(loanApplicationTerms.getFirstFixedEmiAmount() != null){
+        		principalForThisInstallment = GroupLoanIndividualMonitoringAssembler.calculatePrincipalAmount(loanApplicationTerms, periodNumber, interestForThisInstallment);
+        }
         return new PrincipalInterest(principalForThisInstallment, interestForThisInstallment, interestBroughtForwardDueToGrace);
     }
 }

@@ -124,6 +124,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
+import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -2769,9 +2770,10 @@ public class Loan extends AbstractPersistable<Long> {
         this.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(this.getLoanCharges()));
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
         updateInstallmentAmountForGlim(loanApplicationTerms, charges());
-        loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);
-      
+        loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);        
         final LoanScheduleGenerator loanScheduleGenerator = scheduleGeneratorDTO.getLoanScheduleFactory().create(interestMethod);
+        final BigDecimal firstFixedInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
+    	loanApplicationTerms.setFirstFixedEmiAmount(firstFixedInstallmentEmiAmount);
         if (this.loanProduct.adjustFirstEMIAmount() && !this.isOpen()) {
             final BigDecimal firstInstallmentEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms,
                     charges(), scheduleGeneratorDTO.getHolidayDetailDTO());
@@ -5917,7 +5919,8 @@ public class Loan extends AbstractPersistable<Long> {
         loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
-        
+        final BigDecimal firstFixedInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
+    	loanApplicationTerms.setFirstFixedEmiAmount(firstFixedInstallmentEmiAmount);
         if (this.loanProduct.adjustFirstEMIAmount() && !this.isOpen()) {
             final BigDecimal firstInstallmentEmiAmount = loanScheduleGenerator.calculateFirstInstallmentAmount(mc, loanApplicationTerms,
                     charges(), generatorDTO.getHolidayDetailDTO());

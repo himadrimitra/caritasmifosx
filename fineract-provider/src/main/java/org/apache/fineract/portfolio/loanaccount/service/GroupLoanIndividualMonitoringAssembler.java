@@ -659,4 +659,33 @@ public class GroupLoanIndividualMonitoringAssembler {
         }
         return isWriteOf;
     }
+    
+    public static BigDecimal calculateGlimFirstInstallmentAmount(LoanApplicationTerms loanApplicationTerms){
+    	if(loanApplicationTerms.getGroupLoanIndividualMonitoring() != null && !loanApplicationTerms.getGroupLoanIndividualMonitoring().isEmpty()){
+        	BigDecimal firstInstallmentAmount = BigDecimal.ZERO;
+        	for (GroupLoanIndividualMonitoring glim : loanApplicationTerms.getGroupLoanIndividualMonitoring()) {
+    			BigDecimal principalAndInterest = MathUtility.subtract(glim.getTotalPaybleAmount(),glim.getChargeAmount());
+    			BigDecimal beforeAdjustmentAmount = MathUtility.multiply(glim.getInstallmentAmount(), (loanApplicationTerms.fetchNumberOfRepaymentsAfterExceptions()-1));
+    			firstInstallmentAmount = MathUtility.add(firstInstallmentAmount, MathUtility.subtract(principalAndInterest, beforeAdjustmentAmount));
+    		}
+        	return firstInstallmentAmount;	
+        }
+    	return null;
+    }
+    
+    public static Money calculatePrincipalAmount(LoanApplicationTerms loanApplicationTerms, int periodNumber, Money interestForThisInstallment){
+    	if(periodNumber == 1){
+    		return Money.of(loanApplicationTerms.getCurrency(), loanApplicationTerms.getFirstFixedEmiAmount()).minus(interestForThisInstallment);
+    	}
+    	return Money.of(loanApplicationTerms.getCurrency(), getInstallmentAmount(loanApplicationTerms)).minus(interestForThisInstallment);
+    }
+    
+    public static BigDecimal getInstallmentAmount(LoanApplicationTerms loanApplicationTerms){
+    	BigDecimal installmentAmount = BigDecimal.ZERO;
+    	for(GroupLoanIndividualMonitoring glim: loanApplicationTerms.getGroupLoanIndividualMonitoring()){
+    		installmentAmount = MathUtility.add(installmentAmount, glim.getInstallmentAmount());
+    	}
+    	return installmentAmount;
+    }
+    
 }
