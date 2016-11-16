@@ -3594,4 +3594,24 @@ public class CommandWrapperBuilder {
         this.href = "/surveys";
         return this;
     }
+    
+	public CommandWrapperBuilder activateSmartCard(final Long entityTypeId, final String entityType,
+			final Long clientId) {
+		this.actionName = "ACTIVATE";
+		this.entityName = "SMARTCARD";
+		this.clientId = clientId;
+		this.subentityId = entityTypeId;
+		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+		return this;
+	}
+
+	public CommandWrapperBuilder inActivateSmartCard(final Long entityTypeId, final String entityType,
+			final Long clientId) {
+		this.actionName = "INACTIVATE";
+		this.entityName = "SMARTCARD";
+		this.clientId = clientId;
+		this.subentityId = entityTypeId;
+		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+		return this;
+	}
 }
