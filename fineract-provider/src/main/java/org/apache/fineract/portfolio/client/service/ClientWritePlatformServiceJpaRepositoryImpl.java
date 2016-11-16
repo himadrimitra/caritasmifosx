@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.client.service;
 
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -58,6 +59,9 @@ import org.apache.fineract.portfolio.client.exception.ClientHasNoStaffException;
 import org.apache.fineract.portfolio.client.exception.ClientMustBePendingToBeDeletedException;
 import org.apache.fineract.portfolio.client.exception.InvalidClientSavingProductException;
 import org.apache.fineract.portfolio.client.exception.InvalidClientStateTransitionException;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.GroupMemberCountNotInPermissibleRangeException;
@@ -120,6 +124,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final AddressWritePlatformService addressWritePlatformService;
     private final FamilyDetailWritePlatromService familyDetailWritePlatromService;
     private final ExistingLoanWritePlatformService existingLoanWritePlatformService;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public ClientWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -134,7 +139,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final FromJsonHelper fromApiJsonHelper,
             final AddressWritePlatformService addressWritePlatformService,
             final FamilyDetailWritePlatromService familyDetailWritePlatromService,
-            final ExistingLoanWritePlatformService existingLoanWritePlatformService) {
+            final ExistingLoanWritePlatformService existingLoanWritePlatformService,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientNonPersonRepository = clientNonPersonRepository;
@@ -156,6 +162,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.addressWritePlatformService = addressWritePlatformService;
         this.familyDetailWritePlatromService = familyDetailWritePlatromService;
         this.existingLoanWritePlatformService = existingLoanWritePlatformService;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -717,7 +724,10 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 throw new InvalidClientStateTransitionException("close", "date.cannot.before.client.actvation.date", errorMessage,
                         closureDate, client.getActivationLocalDate());
             }
-
+            
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_CLOSE,
+                    constructEntityMap(BUSINESS_ENTITY.CLIENT, client));
+            
             final List<Loan> clientLoans = this.loanRepository.findLoanByClientId(clientId);
 
             for (final Loan loan : clientLoans) {
@@ -755,6 +765,12 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
+    }
+    
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
+        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+        map.put(entityEvent, entity);
+        return map;
     }
 
     @Override

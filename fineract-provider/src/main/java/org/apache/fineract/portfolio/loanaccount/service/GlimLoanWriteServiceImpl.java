@@ -13,11 +13,14 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.exception.InvalidClientStateTransitionException;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventListner;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanGlimRepaymentScheduleInstallmentRepository;
@@ -27,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
 @Service
 public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessEventListner {
 
@@ -34,18 +38,23 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
     private final static Logger logger = LoggerFactory.getLogger(GlimLoanWriteServiceImpl.class);
     private final BusinessEventNotifierService businessEventNotifierService;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
+    private final GroupLoanIndividualMonitoringRepositoryWrapper glimRepositoryWrapper;
 
     @Autowired
     public GlimLoanWriteServiceImpl(final BusinessEventNotifierService businessEventNotifierService,
-            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository) {
+            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
+            final GroupLoanIndividualMonitoringRepositoryWrapper glimRepositoryWrapper) {
         this.businessEventNotifierService = businessEventNotifierService;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
+        this.glimRepositoryWrapper = glimRepositoryWrapper;
     }
 
     @PostConstruct
     public void registerForNotification() {
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL,
                 new GlimLoanRepaymentSchedulaEventListner());
+        this.businessEventNotifierService.addBusinessEventPreListners(BUSINESS_EVENTS.CLIENT_CLOSE,
+                new GLIMValidatationEventListner());
     }
 
     @SuppressWarnings("unused")
@@ -93,7 +102,8 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
             }
         }
     }
-
+    
+    
     @SuppressWarnings("unused")
     @Override
     public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
@@ -108,6 +118,17 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
 
     }
 
+    private void validateClientHasActiveGlimLoan(Client client) {
+        final List<GroupLoanIndividualMonitoring> glimMembers = this.glimRepositoryWrapper.findByClientId(client.getId());
+        for (GroupLoanIndividualMonitoring glim : glimMembers) {
+            if (!glim.isOutstandingBalanceZero()) {
+                final String errorMessage = "Client cannot be closed because of active glim loans.";
+                throw new InvalidClientStateTransitionException("close", "cannot.close.client.with.active.glim.loan", errorMessage);
+            }
+        }
+        
+    }
+
     private class GlimLoanRepaymentSchedulaEventListner implements BusinessEventListner {
 
         @SuppressWarnings("unused")
@@ -119,11 +140,31 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
 
         @Override
         public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object loanEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
-            if (loanEntity != null) {
-                Loan loan = (Loan) loanEntity;
-                generateGlimLoanRepaymentSchedule(loan);
+            Object clientEntity = businessEventEntity.get(BUSINESS_ENTITY.CLIENT);
+            if (clientEntity != null) {
+                Client client  = (Client) clientEntity;
+                validateClientHasActiveGlimLoan(client);
             }
+        }
+
+    }
+    
+    private class GLIMValidatationEventListner implements BusinessEventListner {
+
+        @SuppressWarnings("unused")
+        @Override
+        public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            Object clientEntity = businessEventEntity.get(BUSINESS_ENTITY.CLIENT);
+            if (clientEntity != null) {
+                Client client  = (Client) clientEntity;
+                validateClientHasActiveGlimLoan(client);
+            }
+
+        }
+
+        @Override
+        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+            // TODO Auto-generated method stub
         }
 
     }

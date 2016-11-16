@@ -18,5 +18,7 @@ public interface GroupLoanIndividualMonitoringRepository extends JpaRepository<G
             @Param("isClientSelected") Boolean isClientSelected);
 
     List<GroupLoanIndividualMonitoring> findByLoanId(@Param("loanId") Long loanId);
+    
+    List<GroupLoanIndividualMonitoring> findByClientId(@Param("clientId") Long clientId);
 
 }
