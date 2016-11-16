@@ -283,5 +283,10 @@ public class ClientApiConstants {
     public static final Set<String> CLIENT_TRANSACTION_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
             transactionAmountParamName, paymentDetailDataParamName, reversedParamName, dateParamName, officeIdParamName,
             officeNameParamName, transactionTypeParamName, transactionCurrencyParamName, externalIdParamName, submittedOnDateParamName));
+    
+    // client actions
+    public static final String clientClose = "close";
+    public static final String clientTransfer = "transfer";
+    public static final String clientDisassociate = "disassociate";
 
 }

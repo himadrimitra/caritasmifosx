@@ -6,13 +6,16 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.exception.InvalidClientStateTransitionException;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
@@ -54,6 +57,10 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL,
                 new GlimLoanRepaymentSchedulaEventListner());
         this.businessEventNotifierService.addBusinessEventPreListners(BUSINESS_EVENTS.CLIENT_CLOSE,
+                new GLIMValidatationEventListner());
+        this.businessEventNotifierService.addBusinessEventPreListners(BUSINESS_EVENTS.CLIENT_DISASSOCIATE,
+                new GLIMValidatationEventListner());
+        this.businessEventNotifierService.addBusinessEventPreListners(BUSINESS_EVENTS.TRANSFER_CLIENT,
                 new GLIMValidatationEventListner());
     }
 
@@ -118,15 +125,14 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
 
     }
 
-    private void validateClientHasActiveGlimLoan(Client client) {
+    private void validateClientHasActiveGlimLoan(Client client, String action) {
         final List<GroupLoanIndividualMonitoring> glimMembers = this.glimRepositoryWrapper.findByClientId(client.getId());
         for (GroupLoanIndividualMonitoring glim : glimMembers) {
             if (!glim.isOutstandingBalanceZero()) {
-                final String errorMessage = "Client cannot be closed because of active glim loans.";
-                throw new InvalidClientStateTransitionException("close", "cannot.close.client.with.active.glim.loan", errorMessage);
+                final String errorMessage = "Client cannot be " + action + " because of active glim loans.";
+                throw new InvalidClientStateTransitionException(action, "client cannot. " + action + " because.client.has.active.glim.loan", errorMessage);
             }
         }
-        
     }
 
     private class GlimLoanRepaymentSchedulaEventListner implements BusinessEventListner {
@@ -140,10 +146,10 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
 
         @Override
         public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object clientEntity = businessEventEntity.get(BUSINESS_ENTITY.CLIENT);
-            if (clientEntity != null) {
-                Client client  = (Client) clientEntity;
-                validateClientHasActiveGlimLoan(client);
+            Object loanEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
+            if (loanEntity != null) {
+                Loan loan = (Loan) loanEntity;
+                generateGlimLoanRepaymentSchedule(loan);
             }
         }
 
@@ -151,15 +157,31 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
     
     private class GLIMValidatationEventListner implements BusinessEventListner {
 
-        @SuppressWarnings("unused")
         @Override
         public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
             Object clientEntity = businessEventEntity.get(BUSINESS_ENTITY.CLIENT);
+            Object clientDisassociateEntity = businessEventEntity.get(BUSINESS_ENTITY.CLIENT_DISASSOCIATE);
+            Object transferClientsEntity = businessEventEntity.get(BUSINESS_ENTITY.TRANSFER_CLIENT);
             if (clientEntity != null) {
                 Client client  = (Client) clientEntity;
-                validateClientHasActiveGlimLoan(client);
+                String action = ClientApiConstants.clientClose;
+                validateClientHasActiveGlimLoan(client, action);
+            } else if(clientDisassociateEntity != null) {
+                Set<Client> clientMembers = (Set<Client>) clientDisassociateEntity;
+                String action = ClientApiConstants.clientDisassociate;
+                validateClientMembers(clientMembers, action);
+            } else if(transferClientsEntity != null) {
+                List<Client> clientMembers = (List<Client>) transferClientsEntity;
+                String action = ClientApiConstants.clientTransfer;
+                validateClientMembers(clientMembers, action);
             }
 
+        }
+
+        private void validateClientMembers(final Collection<Client> clientMembers, final String action) {
+            for (Client client : clientMembers) {
+                validateClientHasActiveGlimLoan(client, action);
+            }
         }
 
         @Override

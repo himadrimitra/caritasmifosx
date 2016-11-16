@@ -58,6 +58,9 @@ import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.service.LoanStatusMapper;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.api.GroupingTypesApiConstants;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupLevel;
@@ -119,6 +122,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final AccountNumberGenerator accountNumberGenerator;
     private final VillageRepositoryWrapper villageRepository; 
     private final LoanReadPlatformService loanReadPlatformService;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public GroupingTypesWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -130,7 +134,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
             final SavingsAccountRepository savingsAccountRepository, final LoanRepositoryWrapper loanRepositoryWrapper, 
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator,
-            final VillageRepositoryWrapper villageRepository, final LoanReadPlatformService loanReadPlatformService) {
+            final VillageRepositoryWrapper villageRepository, final LoanReadPlatformService loanReadPlatformService,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.context = context;
         this.groupRepository = groupRepository;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
@@ -151,6 +156,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.accountNumberGenerator = accountNumberGenerator;
         this.villageRepository = villageRepository;
         this.loanReadPlatformService = loanReadPlatformService;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     private CommandProcessingResult createGroupingType(final JsonCommand command, final GroupTypes groupingType, final Long centerId) {
@@ -797,6 +803,9 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
         final Group groupForUpdate = this.groupRepository.findOneWithNotFoundDetection(groupId,loadLazyEntities);
         final Set<Client> clientMembers = assembleSetOfClients(groupForUpdate.officeId(), command);
+        
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.CLIENT_DISASSOCIATE,
+                            constructEntityMap(BUSINESS_ENTITY.CLIENT_DISASSOCIATE, clientMembers));
 
         // check if any client has got group loans
         checkForActiveJLGLoans(groupForUpdate.getId(), clientMembers);
@@ -969,15 +978,19 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     }
     
     private void validateGroupMembersHasLoans(final Set<Group> groupMembersSet) {
-		for (final Group group : groupMembersSet) {
-			final Collection<Long> loanIds = loanReadPlatformService
-					.retrieveAllActiveSubmittedAprrovedGroupLoanIds(group.getId());
-			if (!loanIds.isEmpty()) {
-				final String defaultUserMessage = "Romoval of group from center is not possible since  it has  submitted and pending for approval, approved and active loans";
-				throw new CalendarDateException(
-						"removal.of.group.not.possible.since.it.has.submitted.or.approved.or.active.loans",
-						defaultUserMessage, loanIds);
-			}
-		}
-	}
+        for (final Group group : groupMembersSet) {
+            final Collection<Long> loanIds = loanReadPlatformService.retrieveAllActiveSubmittedAprrovedGroupLoanIds(group.getId());
+            if (!loanIds.isEmpty()) {
+                final String defaultUserMessage = "Romoval of group from center is not possible since  it has  submitted and pending for approval, approved and active loans";
+                throw new CalendarDateException("removal.of.group.not.possible.since.it.has.submitted.or.approved.or.active.loans",
+                        defaultUserMessage, loanIds);
+            }
+        }
+    }
+    
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
+        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+        map.put(entityEvent, entity);
+        return map;
+    }
 }
