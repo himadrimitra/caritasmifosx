@@ -6,6 +6,7 @@
 package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.portfolio.loanaccount.exception.GroupLoanIndividualMonitoringNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,12 @@ public class GroupLoanIndividualMonitoringRepositoryWrapper {
     public GroupLoanIndividualMonitoring findOneWithNotFoundDetection(final Long id) {
         final GroupLoanIndividualMonitoring entity = this.groupLoanIndividualMonitoringRepository.findOne(id);
         if (entity == null) { throw new GroupLoanIndividualMonitoringNotFoundException(id); }
+        return entity;
+    }
+    
+    public List<GroupLoanIndividualMonitoring> findByClientId(final Long clientId) {
+        final List<GroupLoanIndividualMonitoring> entity = this.groupLoanIndividualMonitoringRepository.findByClientId(clientId);
+        if (entity == null) { throw new GroupLoanIndividualMonitoringNotFoundException(clientId); }
         return entity;
     }
     
