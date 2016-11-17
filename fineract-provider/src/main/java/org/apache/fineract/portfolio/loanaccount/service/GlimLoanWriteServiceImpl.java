@@ -73,6 +73,10 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
 
                         final LoanGlimRepaymentScheduleInstallment loanGlimRepaymentScheduleInstallment = LoanGlimRepaymentScheduleInstallment
                                 .create(glimMember, currentInstallment, principal, interestCharged, feeChargesCharged, null);
+                        LoanGlimRepaymentScheduleInstallment existingRepaymentSchedule = this.loanGlimRepaymentScheduleInstallmentRepository.getLoanGlimRepaymentScheduleByLoanRepaymentScheduleId(currentInstallment.getId(), glimMember.getId());
+                        if(existingRepaymentSchedule != null){
+                        	this.loanGlimRepaymentScheduleInstallmentRepository.delete(existingRepaymentSchedule.getId());
+                        }
                         loanGlimRepaymentScheduleInstallments.add(loanGlimRepaymentScheduleInstallment);
                         transactionAmount = transactionAmount.subtract(totalAmountForCurrentInstallment);
 

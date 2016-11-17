@@ -125,12 +125,12 @@ public class GroupLoanIndividualMonitoringReadPlatformServiceImpl implements Gro
             BigDecimal totalFeeChargeOutstanding = BigDecimal.ZERO;
             BigDecimal totalpenaltyChargeOutstanding = BigDecimal.ZERO;
             BigDecimal totalLoanOutstandingAmount = BigDecimal.ZERO;
-            if (proposedAmount != null) {
-                totalPrincipalOutstanding = MathUtility.subtract(proposedAmount, paidPrincipalAmount, principalWrittenOffAmount);
+            if (disbursedAmount != null) {
+                totalPrincipalOutstanding = MathUtility.subtract(disbursedAmount, paidPrincipalAmount, principalWrittenOffAmount);
             } else if (approvedAmount != null) {
                 totalPrincipalOutstanding = MathUtility.subtract(approvedAmount, paidPrincipalAmount, principalWrittenOffAmount);
             } else {
-                totalPrincipalOutstanding = MathUtility.subtract(disbursedAmount, paidPrincipalAmount, principalWrittenOffAmount);
+            	totalPrincipalOutstanding = MathUtility.subtract(proposedAmount, paidPrincipalAmount, principalWrittenOffAmount);                
             }
             totalInterestOutstanding = MathUtility.subtract(interestAmount, paidInterestAmount, waivedInterestAmount,
                     interestWrittenOffAmount);

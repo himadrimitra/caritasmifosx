@@ -19,5 +19,8 @@ public interface LoanGlimRepaymentScheduleInstallmentRepository extends JpaRepos
     
     @Query("from LoanGlimRepaymentScheduleInstallment loanGlimRepayment where loanGlimRepayment.groupLoanIndividualMonitoring.id IN :ids ")
     List<LoanGlimRepaymentScheduleInstallment> getLoanGlimRepaymentScheduleInstallmentByGlimIds(@Param("ids") Collection<Long> ids);
+    
+    @Query("from LoanGlimRepaymentScheduleInstallment loanGlimRepayment where loanGlimRepayment.groupLoanIndividualMonitoring.id =:glimId and loanGlimRepayment.loanRepaymentScheduleInstallment.id =:ids ")
+    LoanGlimRepaymentScheduleInstallment getLoanGlimRepaymentScheduleByLoanRepaymentScheduleId(@Param("ids") Long ids, @Param("glimId") Long glimId);
 
 }
