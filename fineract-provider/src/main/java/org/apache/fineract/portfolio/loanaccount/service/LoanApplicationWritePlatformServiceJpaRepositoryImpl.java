@@ -197,6 +197,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
     private final ChargeRepositoryWrapper chargeRepositoryWrapper;
     private final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository;
+    private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -223,7 +224,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final FineractEntityToEntityMappingRepository repository, final FineractEntityRelationRepository fineractEntityRelationRepository,
             final LoanRepositoryWrapper  loanRepositoryWrapper,final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository,  
             final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler, final ChargeRepositoryWrapper chargeRepositoryWrapper,
-            final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository) {
+            final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
+            final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -265,6 +267,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
         this.chargeRepositoryWrapper = chargeRepositoryWrapper;
         this.groupLoanIndividualMonitoringChargeRepository = groupLoanIndividualMonitoringChargeRepository;
+        this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -421,7 +424,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             this.groupLoanIndividualMonitoringRepository.save(glimList);
             
             attachLoanAccountToPledge(command, newLoanApplication);
-
+            if(newLoanApplication.isGLIMLoan()){
+            	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(newLoanApplication);
+            }
+            
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(newLoanApplication.getId()) //
@@ -1184,6 +1190,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(repaymentsStartingFromDate,
                         existingLoanApplication, expectedDisbursementDate);
             }
+            
+            if(existingLoanApplication.isGLIMLoan()){
+            	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(existingLoanApplication);
+            }
 
             return new CommandProcessingResultBuilder() //
                     .withEntityId(loanId) //
@@ -1371,6 +1381,12 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_APPROVED,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+            
+
+            
+            if(loan.isGLIMLoan()){
+            	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(loan);
+            }
         }   
         
         return new CommandProcessingResultBuilder() //

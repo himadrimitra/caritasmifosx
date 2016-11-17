@@ -260,6 +260,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringAssembler glimAssembler;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final LoanScheduleGeneratorFactory loanScheduleFactory;
+    private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
 
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -295,7 +296,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final GroupLoanIndividualMonitoringRepository glimRepository,
             final GroupLoanIndividualMonitoringAssembler glimAssembler,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
-            final LoanScheduleGeneratorFactory loanScheduleFactory) {
+            final LoanScheduleGeneratorFactory loanScheduleFactory, final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl) {
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
         this.loanAssembler = loanAssembler;
@@ -341,6 +342,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimAssembler = glimAssembler;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.loanScheduleFactory = loanScheduleFactory;
+        this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -885,6 +887,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UNDO_DISBURSAL,
                     constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+            
+            if(loan.isGLIMLoan()){
+            	this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(loan);
+            }
             
         }
 
