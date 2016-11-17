@@ -141,6 +141,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 }
                 final WorkflowExecutionStep workflowExecutionStep = WorkflowExecutionStep.create(workflowExecution.getId(), workflowStepId,
                         stepStatus.getValue());
+                if(index == 0){
+                    updateAssignedTo(workflowExecutionStep,stepStatus);
+                }
                 this.workflowExecutionStepRepository.save(workflowExecutionStep);
                 index = index + 1;
             }
