@@ -17,9 +17,6 @@ public class WorkflowStepAction extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "action", nullable = false)
     private Integer action;
 
-    @Column(name = "roles", nullable = true)
-    private String roles;
-
     protected WorkflowStepAction() {}
 
     public Long getWorkflowStepId() {
@@ -38,11 +35,4 @@ public class WorkflowStepAction extends AbstractAuditableCustom<AppUser, Long> {
         this.action = action;
     }
 
-    public String getRoles() {
-        return roles;
-    }
-
-    public void setRoles(String roles) {
-        this.roles = roles;
-    }
 }

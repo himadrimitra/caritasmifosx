@@ -20,6 +20,9 @@ public class WorkflowExecutionStep extends AbstractAuditableCustom<AppUser, Long
     @Column(name = "status", nullable = false)
     private Integer status;
 
+    @Column(name = "assigned_to", nullable = true)
+    private Long assignedTo;
+
     @Column(name = "criteria_action", nullable = true)
     private Integer criteriaAction;
 
@@ -76,5 +79,13 @@ public class WorkflowExecutionStep extends AbstractAuditableCustom<AppUser, Long
 
     public void setCriteriaResult(String criteriaResult) {
         this.criteriaResult = criteriaResult;
+    }
+
+    public Long getAssignedTo() {
+        return assignedTo;
+    }
+
+    public void setAssignedTo(Long assignedTo) {
+        this.assignedTo = assignedTo;
     }
 }

@@ -11,28 +11,30 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 
 public enum StepAction {
-    TASKCOMPLETE(1, "stepActionType.taskcomplete", 3, false),
-    CRITERIACHECK(2, "stepActionType.criteriacheck", 4, true),
-    REVIEW(3, "stepActionType.review",5,true),
-    APPROVE(4, "stepActionType.approve",6,true),
-    NEXT(5, "stepActionType.next",7,true),
-    REJECT(6, "stepActionType.reject",8,true),
-    SKIP(7, "stepActionType.skip",2,true),
-    STARTOVER(8, "stepActionType.startover",2,false),
-    TASKEDIT(9, "stepActionType.taskedit", 2, false),
-    TASKVIEW(10, "stepActionType.taskview",null,false);
+    TASKCOMPLETE(1, "stepActionType.taskcomplete", 3, false, true),
+    CRITERIACHECK(2, "stepActionType.criteriacheck", 4, true, true),
+    REVIEW(3, "stepActionType.review",5,true,true),
+    APPROVE(4, "stepActionType.approve",7,true,true),
+    NEXT(5, "stepActionType.next",null,true, false),
+    REJECT(6, "stepActionType.reject",8,true, true),
+    SKIP(7, "stepActionType.skip",null,true, true),
+    STARTOVER(8, "stepActionType.startover",2,false, true),
+    TASKEDIT(9, "stepActionType.taskedit", 2, false, true),
+    TASKVIEW(10, "stepActionType.taskview",null,false, true);
 
     private final Integer value;
     private final String code;
     private final Integer toStatus;
     private final boolean clickable;//whether to show as button or not
+    private final boolean checkPermission;
 
 
-    StepAction(final Integer value, final String code, Integer toStatus, boolean clickable) {
+    StepAction(final Integer value, final String code, Integer toStatus, boolean clickable, boolean checkPermission) {
         this.value = value;
         this.code = code;
         this.toStatus = toStatus;
         this.clickable = clickable;
+        this.checkPermission = checkPermission;
     }
 
     public Integer getValue() {
@@ -67,5 +69,9 @@ public enum StepAction {
 
     public boolean isClickable() {
         return clickable;
+    }
+
+    public boolean isCheckPermission() {
+        return checkPermission;
     }
 }
