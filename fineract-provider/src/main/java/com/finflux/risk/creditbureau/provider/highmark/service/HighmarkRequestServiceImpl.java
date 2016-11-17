@@ -216,6 +216,24 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
             applicantSegment.setIDS(ids);
         }
 
+
+
+        //Relations
+//        APPLICANTSEGMENT.RELATIONS relations = requestFactory.createAPPLICANTSEGMENTRELATIONS();
+//        List<APPLICANTSEGMENT.RELATIONS.RELATION> relationList = relations.getRELATION();
+//
+//        APPLICANTSEGMENT.RELATIONS.RELATION spouseRelation = requestFactory.createAPPLICANTSEGMENTRELATIONSRELATION();
+//
+//        spouseRelation.setNAME();
+//        spouseRelation.setTYPE();
+//
+//        APPLICANTSEGMENT.RELATIONS.RELATION fatherRelation = requestFactory.createAPPLICANTSEGMENTRELATIONSRELATION();
+//
+//        fatherRelation.setNAME();
+//        fatherRelation.setTYPE();
+
+        //Phones
+
         APPLICANTSEGMENT.PHONES.PHONE phone = requestFactory.createAPPLICANTSEGMENTPHONESPHONE();
         phone.setTELENOTYPE("P07");
 

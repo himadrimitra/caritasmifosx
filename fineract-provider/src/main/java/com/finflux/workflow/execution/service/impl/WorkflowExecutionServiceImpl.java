@@ -63,6 +63,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final RuleCacheService ruleCacheService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
     private final ExpressionExecutor expressionExecutor;
+    private final WorkflowStepActionRoleRepository workflowStepActionRoleRepository;
 
     @Autowired
     public WorkflowExecutionServiceImpl(final WorkflowReadService workflowExecutionReadService,
@@ -79,7 +80,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                                         final DataLayerReadPlatformService dataLayerReadPlatformService,
                                         final RuleCacheService ruleCacheService,
                                         final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-                                        final MyExpressionExecutor expressionExecutor) {
+                                        final MyExpressionExecutor expressionExecutor,
+                                        final WorkflowStepActionRoleRepository workflowStepActionRoleRepository) {
         this.workflowReadService = workflowExecutionReadService;
         this.workflowWriteService = workflowExecutionWriteService;
         this.workflowExecutionRepository = workflowExecutionRepository;
@@ -96,8 +98,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.expressionExecutor = expressionExecutor;
+        this.workflowStepActionRoleRepository = workflowStepActionRoleRepository;
     }
-
 
     @Override
     public Long getOrCreateWorkflowExecutionForLoanApplication(final Long loanApplicationId) {
@@ -139,6 +141,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 }
                 final WorkflowExecutionStep workflowExecutionStep = WorkflowExecutionStep.create(workflowExecution.getId(), workflowStepId,
                         stepStatus.getValue());
+                if(index == 0){
+                    updateAssignedTo(workflowExecutionStep,stepStatus);
+                }
                 this.workflowExecutionStepRepository.save(workflowExecutionStep);
                 index = index + 1;
             }
@@ -167,9 +172,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             if(status.getPossibleActionsEnumOption().contains(stepAction)){
                 //not supported action
             }
-            WorkflowStepAction workflowStepAction= workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
-                    workflowExecutionStep.getWorkflowStepId(), stepAction.getValue());
-            checkUserhasActionPrivilege(workflowStepAction, stepAction);
+
+            if(stepAction.isCheckPermission()) {
+                checkUserhasActionPrivilege(workflowExecutionStep, stepAction);
+            }
             if(StepAction.CRITERIACHECK.equals(stepAction)){
                 runCriteriaCheckAndPopulate(workflowExecutionStep);
             }
@@ -180,9 +186,22 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                     return;
                 }
                 workflowExecutionStep.setStatus(newStatus.getValue());
+                // update assigned-to if current user has next action
+                updateAssignedTo(workflowExecutionStep, newStatus);
+
                 workflowExecutionStepRepository.save(workflowExecutionStep);
                 notifyWorkflow(workflowExecutionStep.getWorkflowExecutionId(), workflowExecutionStepId, status, newStatus);
             }
+        }
+        //do Action Log
+    }
+
+    private void updateAssignedTo(WorkflowExecutionStep workflowExecutionStep, StepStatus newStatus) {
+        StepAction nextPossibleAction = newStatus.getNextPositiveAction();
+        if(canUserDothisAction(workflowExecutionStep, nextPossibleAction)){
+            workflowExecutionStep.setAssignedTo(context.authenticatedUser().getId());
+        }else{
+            workflowExecutionStep.setAssignedTo(null);
         }
     }
 
@@ -239,9 +258,11 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         workflowExecutionStep.setCriteriaResult(new Gson().toJson(eligibilityResult));
     }
 
-    private void checkUserhasActionPrivilege(WorkflowStepAction workflowStepAction, StepAction stepAction) {
+    private void checkUserhasActionPrivilege(WorkflowExecutionStep workflowExecutionStep, StepAction stepAction) {
+        WorkflowStepAction workflowStepAction= workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
+                workflowExecutionStep.getWorkflowStepId(), stepAction.getValue());
         if(workflowStepAction!=null){
-            if(canUserDothisAction(workflowStepAction, stepAction,context.authenticatedUser().getId())){
+            if(canUserDothisAction(workflowStepAction)){
                 return;
             }else{
                 throw new WorkflowStepNoActionPermissionException(stepAction);
@@ -249,17 +270,25 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         }
     }
 
-    private boolean canUserDothisAction(WorkflowStepAction workflowStepAction, StepAction stepAction, Long id) {
-        List<Long> rolesHavingPermission = new ArrayList<>();
-        if(workflowStepAction.getRoles()!=null){
-            rolesHavingPermission = new Gson().fromJson(workflowStepAction.getRoles(), new TypeToken<List<Long>>() {}.getType());
-        }
-        if(rolesHavingPermission == null || rolesHavingPermission.isEmpty()){
+    private boolean canUserDothisAction(WorkflowExecutionStep workflowExecutionStep, StepAction stepAction) {
+        WorkflowStepAction workflowStepAction= workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
+                workflowExecutionStep.getWorkflowStepId(), stepAction.getValue());
+        return canUserDothisAction(workflowStepAction);
+    }
+
+    private boolean canUserDothisAction(WorkflowStepAction workflowStepAction) {
+        List<WorkflowStepActionRole> actionRoles = workflowStepActionRoleRepository.findByWorkflowStepActionId(workflowStepAction.getId());
+        List<Long> roles = new ArrayList<>();
+
+        if(actionRoles == null || actionRoles.isEmpty()){
             return true;
+        }
+        for(WorkflowStepActionRole actionRole:actionRoles){
+            roles.add(actionRole.getRoleId());
         }
         Collection<RoleData> roleDatas = roleReadPlatformService.retrieveAppUserRoles(context.authenticatedUser().getId());
         for(RoleData roleData: roleDatas){
-            if(rolesHavingPermission.contains(roleData.getId())){
+            if(roles.contains(roleData.getId())){
                 return true;
             }
         }
@@ -276,6 +305,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                     WorkflowExecutionStep nextExecutionStep =  workflowExecutionStepRepository.findOne(nextExecutionStepId);
                     if(StepStatus.INACTIVE.getValue().equals(nextExecutionStep.getStatus())){
                         nextExecutionStep.setStatus(StepStatus.INITIATED.getValue());
+                        updateAssignedTo(nextExecutionStep,StepStatus.INITIATED);
                         workflowExecutionStepRepository.save(nextExecutionStep);
                     }
                 }
@@ -300,7 +330,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
     @Override
-    public void addNoteToWorkflowExecutionStep(Long workflowExecutionId) {
+    public void addNoteToWorkflowExecutionStep(Long workflowExecutionStepId) {
 
     }
 
@@ -313,6 +343,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
         StepStatus status = StepStatus.fromInt(workflowExecutionStep.getStatus());
         List<EnumOptionData> actionEnums = new ArrayList<>();
+        //skip over statuses if no actions been configured workflow_Step_action.
+        // Example if Approval is not assigned to a step. After Review it will move the step from Underreview to Completed
+        //instead of Under Approval
         StepStatus nextEquivalentStatus = getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(),status);
         WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
         if(workflowStep.getCriteriaId()!=null && StepStatus.UNDERREVIEW.equals(status)){
@@ -330,11 +363,11 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 continue;
             }
             if(onlyClickable){
-                if (action.isClickable() && canUserDothisAction(workflowStepAction, action, userId)) {
+                if (action.isClickable() && canUserDothisAction(workflowStepAction)) {
                     actionEnums.add(action.getEnumOptionData());
                 }
             }else{
-                if (canUserDothisAction(workflowStepAction, action, userId)) {
+                if (canUserDothisAction(workflowStepAction)) {
                     actionEnums.add(action.getEnumOptionData());
                 }
             }

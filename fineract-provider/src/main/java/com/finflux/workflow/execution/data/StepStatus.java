@@ -18,7 +18,6 @@ public enum  StepStatus {
     UNDERCRITERIACHECK(3, StepAction.CRITERIACHECK,"stepStatus.undercriteriacheck", StepAction.CRITERIACHECK),
     UNDERREVIEW(4, StepAction.REVIEW,"stepStatus.underreview", StepAction.REVIEW, StepAction.REJECT, StepAction.TASKEDIT),
     UNDERAPPROVAL(5, StepAction.APPROVE,"stepStatus.underapproval", StepAction.APPROVE, StepAction.REJECT),
-    UNDERCOMPLETE(6, StepAction.NEXT,"stepStatus.undercomplete", StepAction.NEXT),
     COMPLETED(7, null,"stepStatus.completed", StepAction.STARTOVER, StepAction.NEXT),
     CANCELLED(8, null,"stepStatus.cancelled", StepAction.STARTOVER, StepAction.NEXT),
     SKIPPED(9, null,"stepStatus.skipped", StepAction.STARTOVER, StepAction.NEXT);
