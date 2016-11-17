@@ -159,7 +159,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                     baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
 
                     BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.amountParamName, jsonElement, locale);
-                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().positiveAmount();
+                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
                     
                     if (fromAmount.compareTo(toAmount) == 1) {
                         baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
@@ -386,7 +386,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                     baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
 
                     BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed("amount", jsonElement, locale);
-                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().positiveAmount();
+                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
                     
                     if (fromAmount.compareTo(toAmount) == 1) {
                         baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
