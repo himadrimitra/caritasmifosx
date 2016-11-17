@@ -20,7 +20,9 @@ package org.apache.fineract.portfolio.transfer.service;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -40,6 +42,9 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.client.exception.ClientHasBeenClosedException;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
@@ -82,6 +87,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     private final NoteWritePlatformService noteWritePlatformService;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public TransferWritePlatformServiceJpaRepositoryImpl(final ClientRepositoryWrapper clientRepository,
@@ -91,7 +97,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
             final NoteWritePlatformService noteWritePlatformService, final StaffRepositoryWrapper staffRepositoryWrapper,
             final SavingsAccountRepository savingsAccountRepository,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-            final LoanRepositoryWrapper loanRepositoryWrapper) {
+            final LoanRepositoryWrapper loanRepositoryWrapper, final BusinessEventNotifierService businessEventNotifierService) {
         this.clientRepository = clientRepository;
         this.officeRepository = officeRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
@@ -104,6 +110,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Override
@@ -127,6 +134,9 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
 
         if (sourceGroupId == destinationGroupId) { throw new TransferNotSupportedException(
                 TRANSFER_NOT_SUPPORTED_REASON.SOURCE_AND_DESTINATION_GROUP_CANNOT_BE_SAME, sourceGroupId, destinationGroupId); }
+        
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.TRANSFER_CLIENT,
+                            constructEntityMap(BUSINESS_ENTITY.TRANSFER_CLIENT, clients));
 
         /*** Do not allow bulk client transfers across branches ***/
         if (!(sourceOffice.getId() == destinationGroup.getOffice().getId())) { throw new TransferNotSupportedException(
@@ -536,5 +546,11 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
      * group) { if (!group.isTransferInProgressOrOnHold()) { throw new
      * ClientNotAwaitingTransferApprovalException(group.getId()); } }
      **/
+    
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
+        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+        map.put(entityEvent, entity);
+        return map;
+    }
 
 }
