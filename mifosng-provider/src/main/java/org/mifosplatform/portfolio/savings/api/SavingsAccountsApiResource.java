@@ -37,6 +37,8 @@ import org.mifosplatform.infrastructure.core.serialization.DefaultToApiJsonSeria
 import org.mifosplatform.infrastructure.core.service.Page;
 import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
 import org.mifosplatform.infrastructure.core.service.SearchParameters;
+import org.mifosplatform.portfolio.loanaccount.guarantor.data.GuarantorData;
+import org.mifosplatform.portfolio.loanaccount.guarantor.service.GuarantorReadPlatformService;
 import org.mifosplatform.portfolio.savings.DepositAccountType;
 import org.mifosplatform.portfolio.savings.SavingsApiConstants;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountChargeData;
@@ -54,7 +56,8 @@ import org.springframework.util.CollectionUtils;
 @Scope("singleton")
 public class SavingsAccountsApiResource {
 
-    private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+    private final GuarantorReadPlatformService guarantorReadPlatformService;
+	private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
     private final PlatformSecurityContext context;
     private final DefaultToApiJsonSerializer<SavingsAccountData> toApiJsonSerializer;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
@@ -66,13 +69,15 @@ public class SavingsAccountsApiResource {
             final PlatformSecurityContext context, final DefaultToApiJsonSerializer<SavingsAccountData> toApiJsonSerializer,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final ApiRequestParameterHelper apiRequestParameterHelper,
-            final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService) {
+            final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService, final GuarantorReadPlatformService guarantorReadPlatformService) {
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
+        this.guarantorReadPlatformService = guarantorReadPlatformService;
+
     }
 
     @GET
@@ -155,6 +160,8 @@ public class SavingsAccountsApiResource {
 
         Collection<SavingsAccountTransactionData> transactions = null;
         Collection<SavingsAccountChargeData> charges = null;
+        Collection<GuarantorData> guarantors = null;
+
 
         final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         if (!associationParameters.isEmpty()) {
@@ -163,6 +170,14 @@ public class SavingsAccountsApiResource {
                 associationParameters.addAll(Arrays.asList(SavingsApiConstants.transactions, SavingsApiConstants.charges));
             }
 
+            if (associationParameters.contains("guarantors")) {
+                mandatoryResponseParameters.add("guarantors");
+                guarantors = this.guarantorReadPlatformService.retrieveGuarantorsForSavings(accountId);
+                if (CollectionUtils.isEmpty(guarantors)) {
+                    guarantors = null;
+                }
+            }
+            
             if (associationParameters.contains(SavingsApiConstants.transactions)) {
                 mandatoryResponseParameters.add(SavingsApiConstants.transactions);
                 final Collection<SavingsAccountTransactionData> currentTransactions = this.savingsAccountReadPlatformService
@@ -189,7 +204,7 @@ public class SavingsAccountsApiResource {
                     savingsAccount.productId(), staffInSelectedOfficeOnly);
         }
 
-        return SavingsAccountData.withTemplateOptions(savingsAccount, templateData, transactions, charges);
+        return SavingsAccountData.withTemplateOptions(savingsAccount, templateData, transactions, charges, guarantors);
     }
 
     @PUT
