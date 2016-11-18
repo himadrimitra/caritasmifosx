@@ -48,10 +48,12 @@ public class BankStatementDetailsData {
     private Integer bankStatementDetailType;
     private final String receiptNumber;
     private final Boolean isError;
+    private final Boolean isManualReconciled;
 
     public BankStatementDetailsData(Long id, Long bankStatementId, Date transactionDate, String description,
 			BigDecimal amount, String mobileNumber,String loanAccountNumber,String transactionType,
-			String groupExternalId, final Long loanTransactionId, Boolean isReconciled, String accountingType) {
+			String groupExternalId, final Long loanTransactionId, Boolean isReconciled, String accountingType,
+			final Boolean isManualReconciled, final String transactionId) {
 		this.id = id;
 		this.bankStatementId = bankStatementId;
 		this.transactionDate = transactionDate;
@@ -64,6 +66,8 @@ public class BankStatementDetailsData {
 		this.loanTransactionId = loanTransactionId;
 		this.accountingType = accountingType;
 		this.isReconciled = isReconciled;
+		this.isManualReconciled = isManualReconciled;
+		this.transactionId = transactionId;
 		this.loanTransactionData = null;
 		this.loanTransactionOptions = null;
 		this.clientAccountNumber = null;
@@ -72,7 +76,6 @@ public class BankStatementDetailsData {
 		this.glAccount = null;
 		this.branchName = null;
 		this.bankData = null;
-		this.transactionId = null;
 		this.glCode = null;
 		this.bankStatementDetailType = null;
 		this.receiptNumber = null;
@@ -81,11 +84,12 @@ public class BankStatementDetailsData {
     
     public static BankStatementDetailsData reconciledData(Long id, Long bankStatementId, Date transactionDate, String description,
 			BigDecimal amount, String mobileNumber,String loanAccountNumber,String transactionType,String
-			groupExternalId, final Long loanTransactionId, boolean isReconciled, String accountingType) {
+			groupExternalId, final Long loanTransactionId, boolean isReconciled, String accountingType, boolean isManualReconciled,
+			final String transactionId) {
 
         return new BankStatementDetailsData(id, bankStatementId, transactionDate, description,
     			amount, mobileNumber, loanAccountNumber, transactionType, groupExternalId, 
-    			loanTransactionId, isReconciled, accountingType);
+    			loanTransactionId, isReconciled, accountingType, isManualReconciled, transactionId);
     }
     
     public BankStatementDetailsData(Long id, Long bankStatementId, Date transactionDate, String description,
@@ -116,7 +120,7 @@ public class BankStatementDetailsData {
 		this.bankStatementDetailType = null;
 		this.receiptNumber = null;
 		this.isError = null;
-		
+		this.isManualReconciled = null;
 	}
     
     public static BankStatementDetailsData dataForReconcile(Long id, Long bankStatementId, Date transactionDate, String description,
@@ -156,7 +160,7 @@ public class BankStatementDetailsData {
 		this.bankStatementDetailType = null;
 		this.receiptNumber = null;
 		this.isError = null;
-		
+		this.isManualReconciled = null;
 	}
     
     public static BankStatementDetailsData nonPortfolioData(Long id, Long bankStatementId, String transactionId, Date transactionDate,
@@ -198,6 +202,7 @@ public class BankStatementDetailsData {
         this.bankStatementDetailType = null;
 		this.receiptNumber = null;
 		this.isError = null;
+		this.isManualReconciled = null;
         
     }
 
@@ -240,10 +245,11 @@ public class BankStatementDetailsData {
 		this.bankStatementDetailType = null;
 		this.receiptNumber = null;
 		this.isError = null;	
-		
+		this.isManualReconciled = null;
 	}
     
-    public BankStatementDetailsData(Long id, Long bankStatementId, String transactionId, Long loanTransactionId, Integer bankStatementDetailType, String loanAccountNumber) {
+    public BankStatementDetailsData(Long id, Long bankStatementId, String transactionId, Long loanTransactionId, 
+    		Integer bankStatementDetailType, String loanAccountNumber, final boolean isManualReconciled) {
 		this.id = id;
 		this.bankStatementId = bankStatementId;
 		this.transactionId = transactionId;
@@ -269,6 +275,7 @@ public class BankStatementDetailsData {
 		this.glCode = null;
 		this.receiptNumber = null;
 		this.isError = null;
+		this.isManualReconciled = isManualReconciled;
 	}
     
     public BankStatementDetailsData(Long id, Long bankStatementId, final String transactionId, final Date transactionDate, final BigDecimal amount,
@@ -298,7 +305,7 @@ public class BankStatementDetailsData {
         this.clientAccountNumber = null;
         this.loanTransactionData = null;
         this.bankStatementDetailType = null;
-
+        this.isManualReconciled = null;
     }
     
     public static BankStatementDetailsData generatePortfolioTransactions(Long id, Long bankStatementId, final String transactionId, final Date transactionDate, final BigDecimal amount,
@@ -421,6 +428,11 @@ public class BankStatementDetailsData {
 
 	public void setBankStatementDetailType(Integer bankStatementDetailType) {
 		this.bankStatementDetailType = bankStatementDetailType;
-	}   
+	}
+
+	public Boolean getIsManualReconciled() {
+		return this.isManualReconciled;
+	}
     
+	
 }

@@ -319,18 +319,21 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 if (row.getRowNum() != 0 && isValid) {
                 	Integer bankStatementDetailType = 0;
                 	if(bankStatementTransactionType.replaceAll(" ", "").equalsIgnoreCase((ReconciliationApiConstants.OTHER).replaceAll(" ", ""))){
+                		transactionId = null;
                 		bankStatementDetailType = BankStatementDetailType.NONPORTFOLIO.getValue();
                 	}else if(bankStatementTransactionType.replaceAll(" ", "").equalsIgnoreCase((ReconciliationApiConstants.ERROR).replaceAll(" ", ""))){
+                		transactionId = null;
                 		bankStatementDetailType = BankStatementDetailType.MISCELLANEOUS.getValue();
                 	}else{
                 		bankStatementDetailType = BankStatementDetailType.PORTFOLIO.getValue();
                 	}
                 	boolean isReconciled = false;
+                	boolean isManualReconciled = false;
                 	LoanTransaction loanTransaction = null;
                 	String receiptNumber = null;
                     BankStatementDetails bankStatementDetails = BankStatementDetails.instance(null, transactionId, transactionDate,
                             description, amount, mobileNumber, clientAccountNumber, loanAccountNumber, groupExternalId, isReconciled, loanTransaction,
-                            branchExternalId, accountingType, glCode, bankStatementTransactionType, bankStatementDetailType, receiptNumber);
+                            branchExternalId, accountingType, glCode, bankStatementTransactionType, bankStatementDetailType, receiptNumber, isManualReconciled);
                     bankStatementDetails.setIsError(false);
                     bankStatementDetailsList.add(bankStatementDetails);
                 }
@@ -417,7 +420,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 	if(isValid){
                     	Integer bankStatementDetailType = BankStatementDetailType.SIMPLIFIED_PORTFOLIO.getValue();                	
                     	BankStatement bankStatement = null;
-                        BankStatementDetails bankStatementDetails = BankStatementDetails.simplifiedBankDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType);
+                    	boolean isManualReconciled = false;
+                        BankStatementDetails bankStatementDetails = BankStatementDetails.simplifiedBankDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber, bankStatementDetailType, isManualReconciled);
                         bankStatementDetails.setIsError(false);
                         bankStatementDetailsList.add(bankStatementDetails);
                 		
@@ -466,7 +470,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     loanTransactionsForUndo.add(bankStatementDetailsData);
                 }else if (bankStatementDetailsData.getBankStatementDetailType()==BankStatementDetailType.NONPORTFOLIO.getValue()) {
                     changedJournalEntriesData.add(bankStatementDetailsData.getTransactionId());
-                } else if (bankStatementDetailsData.getBankStatementDetailType()==BankStatementDetailType.PORTFOLIO.getValue()){
+                } else if (bankStatementDetailsData.getBankStatementDetailType()==BankStatementDetailType.PORTFOLIO.getValue() && !bankStatementDetailsData.getIsManualReconciled()){
                     loanTransactionForUndoReconcile.add(bankStatementDetailsData.getLoanTransactionId());
                 }
             }
@@ -750,36 +754,54 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
 
     @Override
     public CommandProcessingResult reconcileBankStatementDetails(JsonCommand command) {
+    	boolean isManualReconcile = false;
+    	if(command.hasParameter("isManualReconcile")){
+    		isManualReconcile = command.booleanPrimitiveValueOfParameterNamed("isManualReconcile");
+    	}
         if (command.parameterExists(ReconciliationApiConstants.transactionDataParamName)) {
-
             final JsonArray transactionDataArray = command.arrayOfParameterNamed(ReconciliationApiConstants.transactionDataParamName);
             if (!transactionDataArray.isJsonNull() && transactionDataArray.size() > 0) {
             	List<BankStatementDetails> bankDetailsList = new ArrayList<>();
                 for (int i = 0; i < transactionDataArray.size(); i++) {
-
                     final JsonObject jsonObject = transactionDataArray.get(i).getAsJsonObject();
                     final Long bankStatementDetailId = jsonObject.get(ReconciliationApiConstants.bankTransctionIdParamName).getAsLong();
-                    final Long loanTransactionId = jsonObject.get(ReconciliationApiConstants.loanTransactionIdParamName).getAsLong();
-                    BankStatementDetails bankStatementDetail = null;
-                    LoanTransaction loanTransaction = null;
-                    if (loanTransactionId != null) {
-                        loanTransaction = this.loanTransactionRepository.findOneWithNotFoundDetection(loanTransactionId);
-                        if (loanTransaction != null && !loanTransaction.isReversed() && !loanTransaction.isRefund()
-                                && !loanTransaction.isReconciled()) {
-                            loanTransaction.setReconciled(true);
-                            bankStatementDetail = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailId);
-                            bankStatementDetail.setIsReconciled(true);
-                            bankStatementDetail.setLoanTransaction(loanTransaction);
-                            bankStatementDetail.setUpdatedDate(new Date());
-                            bankDetailsList.add(bankStatementDetail);
-                        }
+                    BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailId);
+                    bankStatementDetail.setUpdatedDate(new Date());
+                    bankStatementDetail.setIsReconciled(true);                    
+                    if(isManualReconcile){                         
+                        bankStatementDetail.setManualReconciled(true);
+                    	if(jsonObject.has(ReconciliationApiConstants.transactionIdParamName)){
+                    		final String transactionId = jsonObject.get(ReconciliationApiConstants.transactionIdParamName).getAsString().trim();
+                    		if(StringUtils.isNotBlank(transactionId)){
+                    			List<JournalEntry> journalEntries = this.journalEntryRepository.findUnReversedManualJournalEntriesByTransactionId(transactionId);
+                    			if(!journalEntries.isEmpty()){
+                    				bankStatementDetail.setTransactionId(transactionId);
+                    				bankDetailsList.add(bankStatementDetail); 
+                    			}
+                    		}else{
+                    			bankStatementDetail.setTransactionId(null);
+                    			bankDetailsList.add(bankStatementDetail); 
+                    		}
+                    	}else{
+                    		bankStatementDetail.setTransactionId(null);
+                    		bankDetailsList.add(bankStatementDetail); 
+                    	} 
+                    }else{
+                    	final Long loanTransactionId = jsonObject.get(ReconciliationApiConstants.loanTransactionIdParamName).getAsLong();                        
+                        LoanTransaction loanTransaction = null;
+                        if (loanTransactionId != null) {
+                        	loanTransaction = this.loanTransactionRepository.findOneWithNotFoundDetection(loanTransactionId);
+                            if (loanTransaction != null && !loanTransaction.isReversed() && !loanTransaction.isRefund()
+                                    && !loanTransaction.isReconciled()) {
+                                loanTransaction.setReconciled(true);
+                                bankStatementDetail.setLoanTransaction(loanTransaction);                                                  
+                                bankDetailsList.add(bankStatementDetail);
+                            }
+                        }                                          	
                     }
-
                 }
                 this.bankStatementDetailsRepository.save(bankDetailsList);
-
             }
-
         }
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
@@ -900,10 +922,16 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     final JsonObject jsonObject = transactionDataArray.get(i).getAsJsonObject();
                     final Long bankStatementDetailId = jsonObject.get(ReconciliationApiConstants.bankTransctionIdParamName).getAsLong();
                     BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailId);
-                    LoanTransaction loanTransaction = bankStatementDetail.getLoanTransaction();
-                    loanTransaction.setReconciled(false);
-                    loanTransactionList.add(loanTransaction);
-                    bankStatementDetail.setLoanTransaction(null);
+                    if(bankStatementDetail.isManualReconciled()){
+                    	bankStatementDetail.setTransactionId(null);
+                    	bankStatementDetail.setManualReconciled(false);
+                    }else{
+                    	LoanTransaction loanTransaction = bankStatementDetail.getLoanTransaction();
+                        loanTransaction.setReconciled(false);
+                        loanTransactionList.add(loanTransaction);
+                        bankStatementDetail.setLoanTransaction(null);
+                    }
+                    
                     bankStatementDetail.setIsReconciled(false);
                 }
                 this.bankStatementDetailsRepository.save(bankDetailsList);

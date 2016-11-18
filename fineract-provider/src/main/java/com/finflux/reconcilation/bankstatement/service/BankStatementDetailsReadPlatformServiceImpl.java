@@ -109,8 +109,8 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
    	 public String schema() {
        	
        return	" bsd.id as id, bsd.bank_statement_id as bankStatementId, bsd.description as "+
-       		" description, bsd.mobile_number as mobileNumber,"+
-       		" bsd.amount as amount, bsd.transaction_date as transactionDate, "+
+       		" description, bsd.mobile_number as mobileNumber, bsd.is_manual_reconciled as isManualReconciled, "+
+       		" bsd.amount as amount, bsd.transaction_date as transactionDate,bsd.transaction_id as transactionId, "+
        		" bsd.transaction_type as transactionType, bsd.is_reconciled as isReconciled , "+
        		" bsd.loan_account_number as loanAccountNumber, bsd.accounting_type as accountingType,"+
        		" bsd.group_external_id as groupExternalId,bsd.loan_transaction as loanTransactionId "+
@@ -133,10 +133,11 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
            final Long loanTransactionId = rs.getLong("loanTransactionId");
            final String groupExternalId = rs.getString("groupExternalId");
            final boolean isReconciled = rs.getBoolean("isReconciled");
-           
+           final boolean isManualReconciled = rs.getBoolean("isManualReconciled");
+           final String transactionId = rs.getString("transactionId");
            return BankStatementDetailsData.reconciledData(id, bankStatementId, transactionDate, description,
            		amount, mobileNumber, loanAccountNumber, transactionType, groupExternalId, loanTransactionId,
-           		isReconciled, accountingType);
+           		isReconciled, accountingType, isManualReconciled, transactionId);
 
        }
    }
@@ -145,7 +146,7 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
     private static final class BankStatementDetailsRevertMapper implements RowMapper<BankStatementDetailsData> {
     	
         public String schema() {
-            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "+
+            return " bsd.id as id, bsd.bank_statement_id as bankStatementId,bsd.is_manual_reconciled as isManualReconciled, "+
             		" bsd.transaction_id as transactionId, bsd.loan_transaction as loanTransaction, "+
             		" bsd.bank_statement_detail_type as bankStatementDetailType, bsd.loan_account_number as loanAccountNumber from f_bank_statement_details bsd "+
             		" where bsd.bank_statement_id = ? and  bsd.is_reconciled = 1 ";
@@ -160,12 +161,13 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             final Long loanTransaction = JdbcSupport.getLong(rs, "loanTransaction");
             final Integer bankStatementDetailType = JdbcSupport.getInteger(rs, "bankStatementDetailType");
             final String loanAccountNumber = rs.getString("loanAccountNumber");
-            
-            return new BankStatementDetailsData(id, bankStatementId, transactionId, loanTransaction, bankStatementDetailType, loanAccountNumber);
+            final boolean isManualReconciled = rs.getBoolean("isManualReconciled");
+            return new BankStatementDetailsData(id, bankStatementId, transactionId, loanTransaction, 
+            		bankStatementDetailType, loanAccountNumber, isManualReconciled);
 
         }
-    }
-
+    } 
+     
     
 	@Override
 	public List<BankStatementDetailsData> changedBankStatementDetailsData(
