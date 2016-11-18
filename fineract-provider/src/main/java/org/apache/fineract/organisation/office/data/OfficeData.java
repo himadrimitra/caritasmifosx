@@ -24,6 +24,8 @@ import java.util.List;
 
 import org.joda.time.LocalDate;
 
+import com.finflux.workflow.execution.data.WorkFlowSummaryData;
+
 /**
  * Immutable data object for office data.
  */
@@ -39,6 +41,7 @@ public class OfficeData implements Serializable {
     private final String parentName;
     @SuppressWarnings("unused")
     private final Collection<OfficeData> allowedParents;
+    private Collection<WorkFlowSummaryData> workFlowSummaries;
 
     public static OfficeData dropdown(final Long id, final String name, final String nameDecorated) {
         return new OfficeData(id, name, nameDecorated, null, null, null, null, null, null);
@@ -66,6 +69,10 @@ public class OfficeData implements Serializable {
         this.allowedParents = allowedParents;
     }
 
+    public static OfficeData lookup(final Long id, final String name) {
+        return new OfficeData(id, name, null, null, null, null, null, null, null);
+    }
+    
     public boolean hasIdentifyOf(final Long officeId) {
         return this.id.equals(officeId);
     }
@@ -76,5 +83,17 @@ public class OfficeData implements Serializable {
 
     public String getHierarchy() {
         return this.hierarchy;
+    }
+
+    public Collection<WorkFlowSummaryData> getWorkFlowSummaries() {
+        return this.workFlowSummaries;
+    }
+
+    public void setWorkFlowSummaries(Collection<WorkFlowSummaryData> workFlowSummaries) {
+        this.workFlowSummaries = workFlowSummaries;
+    }
+
+    public Long getId() {
+        return this.id;
     }
 }

@@ -1,6 +1,19 @@
 package com.finflux.workflow.execution.service.impl;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.useradministration.data.RoleData;
+import org.apache.fineract.useradministration.service.RoleReadPlatformService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
@@ -18,27 +31,30 @@ import com.finflux.ruleengine.lib.data.ExpressionNode;
 import com.finflux.ruleengine.lib.data.RuleResult;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
 import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
-import com.finflux.workflow.configuration.domain.*;
-import com.finflux.workflow.execution.domain.*;
-import com.finflux.workflow.execution.exception.WorkflowStepNoActionPermissionException;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.useradministration.data.RoleData;
-import org.apache.fineract.useradministration.service.RoleReadPlatformService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
-
+import com.finflux.workflow.configuration.domain.LoanProductWorkflow;
+import com.finflux.workflow.configuration.domain.LoanProductWorkflowRepository;
+import com.finflux.workflow.configuration.domain.WorkflowStep;
+import com.finflux.workflow.configuration.domain.WorkflowStepAction;
+import com.finflux.workflow.configuration.domain.WorkflowStepActionRepository;
+import com.finflux.workflow.configuration.domain.WorkflowStepActionRole;
+import com.finflux.workflow.configuration.domain.WorkflowStepActionRoleRepository;
+import com.finflux.workflow.configuration.domain.WorkflowStepRepository;
 import com.finflux.workflow.execution.data.StepAction;
 import com.finflux.workflow.execution.data.StepStatus;
 import com.finflux.workflow.execution.data.WorkflowExecutionData;
 import com.finflux.workflow.execution.data.WorkflowExecutionStepData;
+import com.finflux.workflow.execution.domain.LoanApplicationWorkflowExecution;
+import com.finflux.workflow.execution.domain.LoanApplicationWorkflowExecutionRepository;
+import com.finflux.workflow.execution.domain.WorkflowExecution;
+import com.finflux.workflow.execution.domain.WorkflowExecutionRepository;
+import com.finflux.workflow.execution.domain.WorkflowExecutionStep;
+import com.finflux.workflow.execution.domain.WorkflowExecutionStepRepository;
+import com.finflux.workflow.execution.exception.WorkflowStepNoActionPermissionException;
 import com.finflux.workflow.execution.service.WorkflowExecutionService;
-import com.finflux.workflow.execution.service.WorkflowReadService;
 import com.finflux.workflow.execution.service.WorkflowExecutionWriteService;
-import org.springframework.transaction.annotation.Transactional;
+import com.finflux.workflow.execution.service.WorkflowReadService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Created by dhirendra on 22/09/16.
@@ -67,21 +83,17 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     @Autowired
     public WorkflowExecutionServiceImpl(final WorkflowReadService workflowExecutionReadService,
-                                        final WorkflowExecutionWriteService workflowExecutionWriteService, final WorkflowExecutionRepository workflowExecutionRepository,
-                                        final WorkflowExecutionStepRepository workflowExecutionStepRepository,
-                                        final WorkflowStepRepository workflowStepRepository,
-                                        final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
-                                        final LoanProductWorkflowRepository loanProductWorkflowRepository,
-                                        final LoanApplicationWorkflowExecutionRepository loanApplicationWorkflowExecutionRepository,
-                                        final WorkflowStepActionRepository workflowStepActionRepository,
-                                        final RoleReadPlatformService roleReadPlatformService,
-                                        final PlatformSecurityContext context,
-                                        final RuleExecutionService ruleExecutionService,
-                                        final DataLayerReadPlatformService dataLayerReadPlatformService,
-                                        final RuleCacheService ruleCacheService,
-                                        final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-                                        final MyExpressionExecutor expressionExecutor,
-                                        final WorkflowStepActionRoleRepository workflowStepActionRoleRepository) {
+            final WorkflowExecutionWriteService workflowExecutionWriteService,
+            final WorkflowExecutionRepository workflowExecutionRepository,
+            final WorkflowExecutionStepRepository workflowExecutionStepRepository, final WorkflowStepRepository workflowStepRepository,
+            final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
+            final LoanProductWorkflowRepository loanProductWorkflowRepository,
+            final LoanApplicationWorkflowExecutionRepository loanApplicationWorkflowExecutionRepository,
+            final WorkflowStepActionRepository workflowStepActionRepository, final RoleReadPlatformService roleReadPlatformService,
+            final PlatformSecurityContext context, final RuleExecutionService ruleExecutionService,
+            final DataLayerReadPlatformService dataLayerReadPlatformService, final RuleCacheService ruleCacheService,
+            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
+            final MyExpressionExecutor expressionExecutor, final WorkflowStepActionRoleRepository workflowStepActionRoleRepository) {
         this.workflowReadService = workflowExecutionReadService;
         this.workflowWriteService = workflowExecutionWriteService;
         this.workflowExecutionRepository = workflowExecutionRepository;
@@ -105,25 +117,21 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     public Long getOrCreateWorkflowExecutionForLoanApplication(final Long loanApplicationId) {
         LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = loanApplicationWorkflowExecutionRepository
                 .findOneByLoanApplicationId(loanApplicationId);
-        if(loanApplicationWorkflowExecution !=null){
-            return loanApplicationWorkflowExecution.getWorkflowExecutionId();
-        }else{
-            return createWorkflowExecutionForLoanApplication(loanApplicationId);
-        }
+        if (loanApplicationWorkflowExecution != null) { return loanApplicationWorkflowExecution.getWorkflowExecutionId(); }
+        return createWorkflowExecutionForLoanApplication(loanApplicationId);
     }
 
     @Transactional
     private Long createWorkflowExecutionForLoanApplication(final Long loanApplicationId) {
-        //create workflow
+        // create workflow
         LoanApplicationReference loanApplicationReference = loanApplicationReferenceRepository.findOne(loanApplicationId);
         Long loanProductId = loanApplicationReference.getLoanProduct().getId();
-        LoanProductWorkflow loanProductWorkflow= loanProductWorkflowRepository.findOne(loanProductId);
-        if(loanProductWorkflow == null){
-            return null;
-        }
+        LoanProductWorkflow loanProductWorkflow = loanProductWorkflowRepository.findOneByLoanProductId(loanProductId);
+        if (loanProductWorkflow == null) { return null; }
         Long workflowId = loanProductWorkflow.getWorkflowId();
         Long workflowExecutionId = createWorkflowExecutionForWorkflow(workflowId);
-        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = LoanApplicationWorkflowExecution.create(loanApplicationId,workflowExecutionId);
+        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = LoanApplicationWorkflowExecution.create(loanApplicationId,
+                workflowExecutionId);
         loanApplicationWorkflowExecutionRepository.save(loanApplicationWorkflowExecution);
         return workflowExecutionId;
     }
@@ -136,13 +144,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             int index = 0;
             for (final Long workflowStepId : workflowStepIds) {
                 StepStatus stepStatus = StepStatus.INACTIVE;
-                if(index == 0){
+                if (index == 0) {
                     stepStatus = StepStatus.INITIATED;
                 }
                 final WorkflowExecutionStep workflowExecutionStep = WorkflowExecutionStep.create(workflowExecution.getId(), workflowStepId,
                         stepStatus.getValue());
-                if(index == 0){
-                    updateAssignedTo(workflowExecutionStep,stepStatus);
+                if (index == 0) {
+                    updateAssignedTo(workflowExecutionStep, stepStatus);
                 }
                 this.workflowExecutionStepRepository.save(workflowExecutionStep);
                 index = index + 1;
@@ -159,30 +167,30 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     @Override
     public WorkflowExecutionStepData getWorkflowExecutionStepData(final Long workflowExecutionStepId) {
-        WorkflowExecutionStepData stepData =  this.workflowReadService.getWorkflowExecutionStepData(workflowExecutionStepId);
+        WorkflowExecutionStepData stepData = this.workflowReadService.getWorkflowExecutionStepData(workflowExecutionStepId);
         return stepData;
     }
 
     @Override
     @Transactional
     public void doActionOnWorkflowExecutionStep(Long workflowExecutionStepId, StepAction stepAction) {
-        WorkflowExecutionStep workflowExecutionStep =  workflowExecutionStepRepository.findOne(workflowExecutionStepId);
+        WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
         StepStatus status = StepStatus.fromInt(workflowExecutionStep.getStatus());
-        if(stepAction !=null && status!=null){
-            if(status.getPossibleActionsEnumOption().contains(stepAction)){
-                //not supported action
+        if (stepAction != null && status != null) {
+            if (status.getPossibleActionsEnumOption().contains(stepAction)) {
+                // not supported action
             }
 
-            if(stepAction.isCheckPermission()) {
+            if (stepAction.isCheckPermission()) {
                 checkUserhasActionPrivilege(workflowExecutionStep, stepAction);
             }
-            if(StepAction.CRITERIACHECK.equals(stepAction)){
+            if (StepAction.CRITERIACHECK.equals(stepAction)) {
                 runCriteriaCheckAndPopulate(workflowExecutionStep);
             }
-            if(stepAction.getToStatus()!=null) {
+            if (stepAction.getToStatus() != null) {
                 StepStatus newStatus = stepAction.getToStatus();
-                if(status.equals(newStatus)){
-                    //do-nothing
+                if (status.equals(newStatus)) {
+                    // do-nothing
                     return;
                 }
                 workflowExecutionStep.setStatus(newStatus.getValue());
@@ -193,50 +201,51 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 notifyWorkflow(workflowExecutionStep.getWorkflowExecutionId(), workflowExecutionStepId, status, newStatus);
             }
         }
-        //do Action Log
+        // do Action Log
     }
 
     private void updateAssignedTo(WorkflowExecutionStep workflowExecutionStep, StepStatus newStatus) {
         StepAction nextPossibleAction = newStatus.getNextPositiveAction();
-        if(canUserDothisAction(workflowExecutionStep, nextPossibleAction)){
+        if (canUserDothisAction(workflowExecutionStep, nextPossibleAction)) {
             workflowExecutionStep.setAssignedTo(context.authenticatedUser().getId());
-        }else{
+        } else {
             workflowExecutionStep.setAssignedTo(null);
         }
     }
 
     private void runCriteriaCheckAndPopulate(WorkflowExecutionStep workflowExecutionStep) {
-        WorkflowStep workflowStep =  workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
-        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = loanApplicationWorkflowExecutionRepository.findOneByWorkflowExecutionId(workflowExecutionStep.getWorkflowExecutionId());
+        WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
+        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = loanApplicationWorkflowExecutionRepository
+                .findOneByWorkflowExecutionId(workflowExecutionStep.getWorkflowExecutionId());
         Long loanApplicationId = loanApplicationWorkflowExecution.getLoanApplicationId();
         LoanApplicationReferenceData loanApplicationReference = loanApplicationReferenceReadPlatformService.retrieveOne(loanApplicationId);
         Long clientId = loanApplicationReference.getClientId();
-        LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(loanApplicationId,clientId,
-                dataLayerReadPlatformService, ruleCacheService);
-        RuleResult ruleResult = ruleExecutionService.executeCriteria(workflowStep.getCriteriaId(),dataLayer);
+        LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(loanApplicationId, clientId, dataLayerReadPlatformService,
+                ruleCacheService);
+        RuleResult ruleResult = ruleExecutionService.executeCriteria(workflowStep.getCriteriaId(), dataLayer);
         EligibilityResult eligibilityResult = new EligibilityResult();
         eligibilityResult.setStatus(EligibilityStatus.TO_BE_REVIEWED);
         eligibilityResult.setCriteriaOutput(ruleResult);
-        ExpressionNode approvalLogic = new Gson().fromJson(workflowStep.getApprovalLogic(),new TypeToken<ExpressionNode>() {}.getType());
-        ExpressionNode rejectionLogic = new Gson().fromJson(workflowStep.getRejectionLogic(),new TypeToken<ExpressionNode>() {}.getType());
-        if(ruleResult !=null && ruleResult.getOutput().getValue()!=null){
+        ExpressionNode approvalLogic = new Gson().fromJson(workflowStep.getApprovalLogic(), new TypeToken<ExpressionNode>() {}.getType());
+        ExpressionNode rejectionLogic = new Gson().fromJson(workflowStep.getRejectionLogic(), new TypeToken<ExpressionNode>() {}.getType());
+        if (ruleResult != null && ruleResult.getOutput().getValue() != null) {
             Map<String, Object> map = new HashMap();
             map.put("criteria", ruleResult.getOutput().getValue());
             boolean rejectionResult = false;
             boolean approvalResult = false;
             try {
-                rejectionResult = expressionExecutor.executeExpression(rejectionLogic,map);
+                rejectionResult = expressionExecutor.executeExpression(rejectionLogic, map);
             } catch (FieldUndefinedException e) {
                 e.printStackTrace();
             } catch (InvalidExpressionException e) {
                 e.printStackTrace();
             }
 
-            if(rejectionResult){
+            if (rejectionResult) {
                 eligibilityResult.setStatus(EligibilityStatus.REJECTED);
-            }else{
+            } else {
                 try {
-                    approvalResult = expressionExecutor.executeExpression(approvalLogic,map);
+                    approvalResult = expressionExecutor.executeExpression(approvalLogic, map);
                 } catch (FieldUndefinedException e) {
                     e.printStackTrace();
                 } catch (InvalidExpressionException e) {
@@ -244,14 +253,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 }
             }
 
-            if(approvalResult){
+            if (approvalResult) {
                 eligibilityResult.setStatus(EligibilityStatus.APPROVED);
             }
         }
         StepAction nextEligibleAction = StepAction.REVIEW;
-        if(EligibilityStatus.APPROVED.equals(eligibilityResult.getStatus())){
+        if (EligibilityStatus.APPROVED.equals(eligibilityResult.getStatus())) {
             nextEligibleAction = StepAction.APPROVE;
-        }else if(EligibilityStatus.REJECTED.equals(eligibilityResult.getStatus())){
+        } else if (EligibilityStatus.REJECTED.equals(eligibilityResult.getStatus())) {
             nextEligibleAction = StepAction.REJECT;
         }
         workflowExecutionStep.setCriteriaAction(nextEligibleAction.getValue());
@@ -259,19 +268,19 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
     private void checkUserhasActionPrivilege(WorkflowExecutionStep workflowExecutionStep, StepAction stepAction) {
-        WorkflowStepAction workflowStepAction= workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
+        WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
                 workflowExecutionStep.getWorkflowStepId(), stepAction.getValue());
-        if(workflowStepAction!=null){
-            if(canUserDothisAction(workflowStepAction)){
+        if (workflowStepAction != null) {
+            if (canUserDothisAction(workflowStepAction)) {
                 return;
-            }else{
+            } else {
                 throw new WorkflowStepNoActionPermissionException(stepAction);
             }
         }
     }
 
     private boolean canUserDothisAction(WorkflowExecutionStep workflowExecutionStep, StepAction stepAction) {
-        WorkflowStepAction workflowStepAction= workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
+        WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
                 workflowExecutionStep.getWorkflowStepId(), stepAction.getValue());
         return canUserDothisAction(workflowStepAction);
     }
@@ -280,49 +289,44 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         List<WorkflowStepActionRole> actionRoles = workflowStepActionRoleRepository.findByWorkflowStepActionId(workflowStepAction.getId());
         List<Long> roles = new ArrayList<>();
 
-        if(actionRoles == null || actionRoles.isEmpty()){
-            return true;
-        }
-        for(WorkflowStepActionRole actionRole:actionRoles){
+        if (actionRoles == null || actionRoles.isEmpty()) { return true; }
+        for (WorkflowStepActionRole actionRole : actionRoles) {
             roles.add(actionRole.getRoleId());
         }
         Collection<RoleData> roleDatas = roleReadPlatformService.retrieveAppUserRoles(context.authenticatedUser().getId());
-        for(RoleData roleData: roleDatas){
-            if(roles.contains(roleData.getId())){
-                return true;
-            }
+        for (RoleData roleData : roleDatas) {
+            if (roles.contains(roleData.getId())) { return true; }
         }
         return false;
     }
 
     private void notifyWorkflow(Long workflowExecutionId, Long workflowExecutionStepId, StepStatus status, StepStatus newStatus) {
 
-        if(StepStatus.COMPLETED.equals(newStatus)){
+        if (StepStatus.COMPLETED.equals(newStatus)) {
 
-            List<Long> nextExecutionStepIds = getNextExecutionStepsByOrder(workflowExecutionId,workflowExecutionStepId);
-            if(nextExecutionStepIds!=null && !nextExecutionStepIds.isEmpty()){
-                for(Long nextExecutionStepId: nextExecutionStepIds){
-                    WorkflowExecutionStep nextExecutionStep =  workflowExecutionStepRepository.findOne(nextExecutionStepId);
-                    if(StepStatus.INACTIVE.getValue().equals(nextExecutionStep.getStatus())){
+            List<Long> nextExecutionStepIds = getNextExecutionStepsByOrder(workflowExecutionId, workflowExecutionStepId);
+            if (nextExecutionStepIds != null && !nextExecutionStepIds.isEmpty()) {
+                for (Long nextExecutionStepId : nextExecutionStepIds) {
+                    WorkflowExecutionStep nextExecutionStep = workflowExecutionStepRepository.findOne(nextExecutionStepId);
+                    if (StepStatus.INACTIVE.getValue().equals(nextExecutionStep.getStatus())) {
                         nextExecutionStep.setStatus(StepStatus.INITIATED.getValue());
-                        updateAssignedTo(nextExecutionStep,StepStatus.INITIATED);
+                        updateAssignedTo(nextExecutionStep, StepStatus.INITIATED);
                         workflowExecutionStepRepository.save(nextExecutionStep);
                     }
                 }
             }
-            //set workflow status as all step done
+            // set workflow status as all step done
 
-        }else if(StepStatus.CANCELLED.equals(newStatus)){
-            //do some logging or transition steps
+        } else if (StepStatus.CANCELLED.equals(newStatus)) {
+            // do some logging or transition steps
         }
     }
 
     private List<Long> getNextExecutionStepsByOrder(Long workflowExecutionId, Long workflowExecutionStepId) {
-        WorkflowExecutionStep workflowExecutionStep =  workflowExecutionStepRepository.findOne(workflowExecutionStepId);
+        WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
         WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
-        return workflowReadService.getExecutionStepsByOrder(workflowExecutionId,workflowStep.getStepOrder()+1);
+        return workflowReadService.getExecutionStepsByOrder(workflowExecutionId, workflowStep.getStepOrder() + 1);
     }
-
 
     @Override
     public void addNoteToWorkflowExecution(Long workflowExecutionId) {
@@ -336,21 +340,23 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     @Override
     public List<EnumOptionData> getClickableActionsForUser(Long workflowExecutionStepId, Long userId) {
-        return getPossibleActions(workflowExecutionStepId,userId,true);
+        return getPossibleActions(workflowExecutionStepId, userId, true);
     }
 
     private List<EnumOptionData> getPossibleActions(Long workflowExecutionStepId, Long userId, boolean onlyClickable) {
         WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
         StepStatus status = StepStatus.fromInt(workflowExecutionStep.getStatus());
         List<EnumOptionData> actionEnums = new ArrayList<>();
-        //skip over statuses if no actions been configured workflow_Step_action.
-        // Example if Approval is not assigned to a step. After Review it will move the step from Underreview to Completed
-        //instead of Under Approval
-        StepStatus nextEquivalentStatus = getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(),status);
+        // skip over statuses if no actions been configured
+        // workflow_Step_action.
+        // Example if Approval is not assigned to a step. After Review it will
+        // move the step from Underreview to Completed
+        // instead of Under Approval
+        StepStatus nextEquivalentStatus = getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(), status);
         WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
-        if(workflowStep.getCriteriaId()!=null && StepStatus.UNDERREVIEW.equals(status)){
+        if (workflowStep.getCriteriaId() != null && StepStatus.UNDERREVIEW.equals(status)) {
             StepAction stepAction = StepAction.fromInt(workflowExecutionStep.getCriteriaAction());
-            if(stepAction!=null){
+            if (stepAction != null) {
                 actionEnums.add(stepAction.getEnumOptionData());
                 return actionEnums;
             }
@@ -359,14 +365,14 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         for (StepAction action : actions) {
             WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
                     workflowExecutionStep.getWorkflowStepId(), action.getValue());
-            if(workflowStepAction == null){
+            if (workflowStepAction == null) {
                 continue;
             }
-            if(onlyClickable){
+            if (onlyClickable) {
                 if (action.isClickable() && canUserDothisAction(workflowStepAction)) {
                     actionEnums.add(action.getEnumOptionData());
                 }
-            }else{
+            } else {
                 if (canUserDothisAction(workflowStepAction)) {
                     actionEnums.add(action.getEnumOptionData());
                 }
@@ -377,13 +383,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
     private StepStatus getNextEquivalentStatus(Long workflowStepId, StepStatus status) {
-        while(status.getNextPositiveAction()!=null){
+        while (status.getNextPositiveAction() != null) {
             StepAction nextAction = status.getNextPositiveAction();
-            WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
-                    workflowStepId, nextAction.getValue());
-            if(workflowStepAction==null){
+            WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(workflowStepId,
+                    nextAction.getValue());
+            if (workflowStepAction == null) {
                 status = nextAction.getToStatus();
-            }else{
+            } else {
                 return status;
             }
         }
