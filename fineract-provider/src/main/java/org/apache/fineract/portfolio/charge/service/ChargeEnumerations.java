@@ -166,6 +166,10 @@ public class ChargeEnumerations {
             	optionData = new EnumOptionData(ChargeCalculationType.SLAB_BASED.getValue().longValue(),
             	        ChargeCalculationType.SLAB_BASED.getCode(), "Slab Based");
             break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+            	optionData = new EnumOptionData(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getValue().longValue(),
+            			ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getCode(), "%(Loan Amount + Interest + Fees)");
+            break;	
             default:
                 optionData = new EnumOptionData(ChargeCalculationType.INVALID.getValue().longValue(),
                         ChargeCalculationType.INVALID.getCode(), "Invalid");

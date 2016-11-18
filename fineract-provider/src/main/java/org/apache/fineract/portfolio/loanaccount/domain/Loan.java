@@ -914,11 +914,15 @@ public class Loan extends AbstractPersistable<Long> {
             break;
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
                 if (loanCharge.getTrancheDisbursementCharge() != null) {
-                    amount = loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().principal();
+                	amount = loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().principal();
                 } else {
                     amount = getPrincpal().getAmount();
                 }
             break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+            	final BigDecimal totalInterestChargd = getTotalInterest();
+                amount = getPrincpal().getAmount().add(totalInterestChargd).add(this.getSummary().getTotalFeeChargesCharged());
+            break;	
             default:
             break;
         }
@@ -972,6 +976,10 @@ public class Loan extends AbstractPersistable<Long> {
             break;
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
                 percentOf = installment.getPrincipal(getCurrency());
+            break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+                percentOf = installment.getPrincipal(getCurrency()).plus(installment.getInterestCharged(getCurrency()))
+                	.plus(installment.getFeeChargesCharged(getCurrency()));
             break;
             default:
             break;
@@ -1756,6 +1764,10 @@ public class Loan extends AbstractPersistable<Long> {
             break;
             case PERCENT_OF_INTEREST:
                 amount = installment.getInterestOutstanding(getCurrency());
+            break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+            	amount = installment.getPrincipal(getCurrency()).plus(installment.getInterestCharged(getCurrency()))
+                	.plus(installment.getFeeChargesCharged(getCurrency()));
             break;
             default:
             break;

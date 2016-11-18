@@ -1217,8 +1217,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final BigDecimal interestOutstanding = interestActualDue.subtract(interestPaid);
 
             final Integer installmentNumber = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "period");
+            
+            final BigDecimal feeChargesDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesDue");
+            
             final OverdueLoanScheduleData overdueLoanScheduleData = new OverdueLoanScheduleData(loanId, chargeId, dueDate, amount,
-                    dateFormat, locale, principalOutstanding, interestOutstanding, installmentNumber);
+                    dateFormat, locale, principalOutstanding, interestOutstanding, installmentNumber, feeChargesDue);
 
             return overdueLoanScheduleData;
         }
@@ -1713,7 +1716,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append(" and DATE_SUB(CURDATE(),INTERVAL ? DAY) > ls.duedate ")
                 .append(" and ls.recalculated_interest_component <> 1 ")
                 .append(" and ls.completed_derived <> 1 and mc.charge_applies_to_enum =1 ");
-
         if (backdatePenalties) { return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { penaltyWaitPeriod }); }
         // Only apply for duedate = yesterday (so that we don't apply
         // penalties on the duedate itself)
