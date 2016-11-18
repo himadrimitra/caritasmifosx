@@ -88,12 +88,15 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     @Column(name = "is_error")
     private Boolean isError;
     
+    @Column(name = "is_manual_reconciled")
+    private Boolean isManualReconciled;
+    
 
     public BankStatementDetails(final BankStatement bankStatement, final String transactionId, final Date transactionDate,
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber) {
+            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber, Boolean isManualReconciled) {
         this.bankStatement = bankStatement;
         this.transactionId = transactionId;
         this.transactionDate = transactionDate;
@@ -112,6 +115,7 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.bankStatementDetailType = bankStatementDetailType;
         this.updatedDate = null;
         this.receiptNumber = receiptNumber;
+        this.isManualReconciled = isManualReconciled;
     }
 
     public BankStatementDetails() {
@@ -122,16 +126,16 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber) {
+            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber, final Boolean isManualReconciled) {
 
         return new BankStatementDetails(bankStatement, transactionId, transactionDate, description, amount, mobileNumber,
                 clientAccountNumber, loanAccountNumber, groupExternalId, isReconciled, loanTransaction, branchExternalId, accountingType, glCode,
-                transactionType, bankStatementDetailType, receiptNumber);
+                transactionType, bankStatementDetailType, receiptNumber, isManualReconciled);
     }    
     
     public BankStatementDetails(final BankStatement bankStatement, final Date transactionDate,
             final BigDecimal amount, final String loanAccountNumber, final String receiptNumber,
-            final Integer bankStatementDetailType) {
+            final Integer bankStatementDetailType, Boolean isManualReconciled) {
         this.bankStatement = bankStatement;
         this.loanAccountNumber = loanAccountNumber;
         this.transactionDate = transactionDate;
@@ -150,13 +154,14 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.glCode = null;
         this.transactionType = null;
         this.updatedDate = null;
+        this.isManualReconciled = isManualReconciled;
     }
 
     public static BankStatementDetails simplifiedBankDetails(final BankStatement bankStatement, final Date transactionDate,
             final BigDecimal amount, final String loanAccountNumber, final String receiptNumber,
-            final Integer bankStatementDetailType) {
+            final Integer bankStatementDetailType, Boolean isManualReconciled) {
 
-        return new BankStatementDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber,  bankStatementDetailType);
+        return new BankStatementDetails(bankStatement, transactionDate, amount, loanAccountNumber, receiptNumber,  bankStatementDetailType, isManualReconciled);
     } 
 
     public void setBankStatement(BankStatement bankStatement) {
@@ -245,7 +250,14 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
 
 	public void setIsError(Boolean isError) {
 		this.isError = isError;
+	}
+
+	public Boolean isManualReconciled() {
+		return this.isManualReconciled;
+	}
+
+	public void setManualReconciled(Boolean isManualReconciled) {
+		this.isManualReconciled = isManualReconciled;
 	}	
-	
 	
 }

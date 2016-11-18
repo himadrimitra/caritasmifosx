@@ -39,6 +39,7 @@ public class ReconciliationApiConstants {
     public static final String xlsFileExtension = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     public static final String xlsxFileExtension = "application/vnd.ms-excel";
     public static final String RECONCILE_ACTION = "RECONCILE";
+    public static final String MANUAL_RECONCILE_ACTION = "MANUALRECONCILE";
     public static final String UNDO_RECONCILE_ACTION = "UNDORECONCILE";
     public static final String bankIdParamName = "bankId";
     public static final String BANK_DEFAULT_GL_CODE = "000001";
@@ -88,6 +89,7 @@ public class ReconciliationApiConstants {
     public static final String ERROR = "error";
     public static final String MISCELLANEOUS = "miscellaneous";
     public static final String GENERATE_TRANSACTIONS = "generatetransactions";
+    public static final String MANUAL_RECONCILED = "manualreconciled";
     
     public static final String amount = "Amount";
     public static final String transDate = "Trans.Date";
