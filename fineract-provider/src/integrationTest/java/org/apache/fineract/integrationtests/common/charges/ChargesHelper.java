@@ -61,6 +61,7 @@ public class ChargesHelper {
     public static final Integer CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT = 2;
     public static final Integer CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST = 3;
     public static final Integer CHARGE_CALCULATION_TYPE_PERCENTAGE_INTEREST = 4;
+    public static final Integer CHARGE_CALCULATION_TYPE_PERCENT_OF_AMOUNT_INTEREST_AND_FEES = 7;
 
     private static final Integer CHARGE_PAYMENT_MODE_REGULAR = 0;
     private static final Integer CHARGE_PAYMENT_MODE_ACCOUNT_TRANSFER = 1;
@@ -281,6 +282,18 @@ public class ChargesHelper {
         map.put("chargePaymentMode", ChargesHelper.CHARGE_PAYMENT_MODE_REGULAR);
         map.put("chargeTimeType", CHARGE_OVERDUE_INSTALLMENT_FEE);
         map.put("chargeCalculationType", ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENTAGE_AMOUNT_AND_INTEREST);
+        String chargesCreateJson = new Gson().toJson(map);
+        System.out.println(chargesCreateJson);
+        return chargesCreateJson;
+    }
+    
+    public static String getLoanOverdueFeeJSONWithCalculattionTypePercentageOfAmountInterestAndFees() {
+        final HashMap<String, Object> map = populateDefaultsForLoan();
+        map.put("penalty", ChargesHelper.penalty);
+        map.put("amount", "5");
+        map.put("chargePaymentMode", ChargesHelper.CHARGE_PAYMENT_MODE_REGULAR);
+        map.put("chargeTimeType", CHARGE_OVERDUE_INSTALLMENT_FEE);
+        map.put("chargeCalculationType", ChargesHelper.CHARGE_CALCULATION_TYPE_PERCENT_OF_AMOUNT_INTEREST_AND_FEES);
         String chargesCreateJson = new Gson().toJson(map);
         System.out.println(chargesCreateJson);
         return chargesCreateJson;

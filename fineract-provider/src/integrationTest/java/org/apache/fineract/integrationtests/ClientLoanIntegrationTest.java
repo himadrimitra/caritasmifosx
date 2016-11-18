@@ -5651,6 +5651,65 @@ public class ClientLoanIntegrationTest {
 
     }
     
+    @Test
+    public void testLoanOverdueChargewithCalculationTypePercentageAmountAndFees()
+            throws InterruptedException {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        this.schedulerJobHelper = new SchedulerJobHelper(this.requestSpec, this.responseSpec);
+
+        Integer overdueFeeChargeId = ChargesHelper.createCharges(this.requestSpec, this.responseSpec,
+                ChargesHelper.getLoanOverdueFeeJSONWithCalculattionTypePercentageOfAmountInterestAndFees());
+        
+        Integer flat = ChargesHelper.createCharges(requestSpec, responseSpec,
+                ChargesHelper.getLoanInstallmentJSON(ChargesHelper.CHARGE_CALCULATION_TYPE_FLAT, "100", false));
+        
+        Assert.assertNotNull(overdueFeeChargeId);
+        Assert.assertNotNull(flat);
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        final String recalculationCompoundingFrequencyInterval = null;
+        final String LOAN_DISBURSEMENT_DATE = "03 June 2013";
+        final Integer loanProductID = createLoanProductWithInterestRecalculation(LoanProductTestBuilder.DEFAULT_STRATEGY,
+                LoanProductTestBuilder.RECALCULATION_COMPOUNDING_METHOD_INTEREST_AND_FEE,
+                LoanProductTestBuilder.RECALCULATION_STRATEGY_RESCHEDULE_NEXT_REPAYMENTS,
+                LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_DAILY, "1", LoanProductTestBuilder.RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD,
+                recalculationCompoundingFrequencyInterval, LoanProductTestBuilder.INTEREST_APPLICABLE_STRATEGY_ON_PRE_CLOSE_DATE,
+                null, overdueFeeChargeId.toString(), false,
+                null, null, null, null);
+
+        final Integer loanID = applyForLoanApplicationForInterestRecalculation(clientID, loanProductID, LOAN_DISBURSEMENT_DATE,
+                LoanApplicationTestBuilder.DEFAULT_STRATEGY, null);
+
+        Assert.assertNotNull(loanID);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+        
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------" + loanID);
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        this.loanTransactionHelper.addChargesForLoan(loanID,
+                LoanTransactionHelper.getInstallmentChargesForLoanAsJSON(String.valueOf(flat), "100"));
+        
+        System.out.println("-------------------------------DISBURSE LOAN-------------------------------------------" + loanID);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        final String jobName = "Apply penalty to overdue loans";
+        try {
+            this.schedulerJobHelper.executeJob(jobName);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
+        ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
+        HashMap disbursementDetail = loanSchedule.get(1);
+        System.out.println(disbursementDetail);
+        validateNumberForEqual("131.45", String.valueOf(disbursementDetail.get("penaltyChargesOutstanding")));
+    }
+    
     private void validateIfValuesAreNotOverridden(Integer loanID, Integer loanProductID) {
         String loanProductDetails = this.loanTransactionHelper.getLoanProductDetails(this.requestSpec, this.responseSpec, loanProductID);
         String loanDetails = this.loanTransactionHelper.getLoanDetails(this.requestSpec, this.responseSpec, loanID);
