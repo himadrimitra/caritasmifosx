@@ -15,9 +15,9 @@ public enum StepAction {
     CRITERIACHECK(2, "stepActionType.criteriacheck", 4, true, true),
     REVIEW(3, "stepActionType.review",5,true,true),
     APPROVE(4, "stepActionType.approve",7,true,true),
-    NEXT(5, "stepActionType.next",null,true, false),
+//    NEXT(5, "stepActionType.next",null,true, false),
     REJECT(6, "stepActionType.reject",8,true, true),
-    SKIP(7, "stepActionType.skip",null,true, true),
+    SKIP(7, "stepActionType.skip",9,true, true),
     STARTOVER(8, "stepActionType.startover",2,false, true),
     TASKEDIT(9, "stepActionType.taskedit", 2, false, true),
     TASKVIEW(10, "stepActionType.taskview",null,false, true);

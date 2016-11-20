@@ -188,7 +188,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 runCriteriaCheckAndPopulate(workflowExecutionStep);
             }
             if (stepAction.getToStatus() != null) {
-                StepStatus newStatus = stepAction.getToStatus();
+                StepStatus newStatus = getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(), stepAction.getToStatus());
+                // StepStatus newStatus = stepAction.getToStatus();
                 if (status.equals(newStatus)) {
                     // do-nothing
                     return;
@@ -204,15 +205,19 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         // do Action Log
     }
 
-    private void updateAssignedTo(WorkflowExecutionStep workflowExecutionStep, StepStatus newStatus) {
+    private void updateAssignedTo(final WorkflowExecutionStep workflowExecutionStep, final StepStatus newStatus) {
         StepAction nextPossibleAction = newStatus.getNextPositiveAction();
-        if (canUserDothisAction(workflowExecutionStep, nextPossibleAction)) {
+        if (nextPossibleAction != null) {
+            workflowExecutionStep.setCurrentAction(nextPossibleAction.getValue());
+        }
+        if (nextPossibleAction != null && canUserDothisAction(workflowExecutionStep, nextPossibleAction)) {
             workflowExecutionStep.setAssignedTo(context.authenticatedUser().getId());
         } else {
             workflowExecutionStep.setAssignedTo(null);
         }
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void runCriteriaCheckAndPopulate(WorkflowExecutionStep workflowExecutionStep) {
         WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
         LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = loanApplicationWorkflowExecutionRepository
@@ -271,11 +276,8 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
                 workflowExecutionStep.getWorkflowStepId(), stepAction.getValue());
         if (workflowStepAction != null) {
-            if (canUserDothisAction(workflowStepAction)) {
-                return;
-            } else {
-                throw new WorkflowStepNoActionPermissionException(stepAction);
-            }
+            if (canUserDothisAction(workflowStepAction)) { return; }
+            throw new WorkflowStepNoActionPermissionException(stepAction);
         }
     }
 
@@ -286,6 +288,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     }
 
     private boolean canUserDothisAction(WorkflowStepAction workflowStepAction) {
+        if (workflowStepAction == null) { return true; }
+        final StepAction stepAction = StepAction.fromInt(workflowStepAction.getAction());
+        if (!stepAction.isCheckPermission()) { return true; }
+
         List<WorkflowStepActionRole> actionRoles = workflowStepActionRoleRepository.findByWorkflowStepActionId(workflowStepAction.getId());
         List<Long> roles = new ArrayList<>();
 
@@ -300,9 +306,10 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         return false;
     }
 
+    @SuppressWarnings("unused")
     private void notifyWorkflow(Long workflowExecutionId, Long workflowExecutionStepId, StepStatus status, StepStatus newStatus) {
 
-        if (StepStatus.COMPLETED.equals(newStatus)) {
+        if (StepStatus.COMPLETED.equals(newStatus) || StepStatus.SKIPPED.equals(newStatus)) {
 
             List<Long> nextExecutionStepIds = getNextExecutionStepsByOrder(workflowExecutionId, workflowExecutionStepId);
             if (nextExecutionStepIds != null && !nextExecutionStepIds.isEmpty()) {
@@ -352,7 +359,9 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         // Example if Approval is not assigned to a step. After Review it will
         // move the step from Underreview to Completed
         // instead of Under Approval
-        StepStatus nextEquivalentStatus = getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(), status);
+        // StepStatus nextEquivalentStatus =
+        // getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(),
+        // status);
         WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
         if (workflowStep.getCriteriaId() != null && StepStatus.UNDERREVIEW.equals(status)) {
             StepAction stepAction = StepAction.fromInt(workflowExecutionStep.getCriteriaAction());
@@ -361,13 +370,15 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
                 return actionEnums;
             }
         }
-        List<StepAction> actions = nextEquivalentStatus.getPossibleActionEnums();
+        List<StepAction> actions = status.getPossibleActionEnums();
         for (StepAction action : actions) {
             WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByWorkflowStepIdAndAction(
                     workflowExecutionStep.getWorkflowStepId(), action.getValue());
-            if (workflowStepAction == null) {
+
+            if (workflowStepAction == null && action.isCheckPermission()) {
                 continue;
             }
+
             if (onlyClickable) {
                 if (action.isClickable() && canUserDothisAction(workflowStepAction)) {
                     actionEnums.add(action.getEnumOptionData());

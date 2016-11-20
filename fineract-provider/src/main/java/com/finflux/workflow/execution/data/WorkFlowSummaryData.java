@@ -5,13 +5,15 @@ import java.util.List;
 public class WorkFlowSummaryData {
 
     private String stepName;
+    private String stepShortName;
     private Long noOfCount;
     private List<StepSummaryData> stepSummaries;
 
     public WorkFlowSummaryData() {}
 
-    public WorkFlowSummaryData(final String stepName, final Long noOfCount) {
+    public WorkFlowSummaryData(final String stepName, final String stepShortName, final Long noOfCount) {
         this.stepName = stepName;
+        this.stepShortName = stepShortName;
         this.noOfCount = noOfCount;
     }
 
@@ -21,6 +23,14 @@ public class WorkFlowSummaryData {
 
     public void setStepName(String stepName) {
         this.stepName = stepName;
+    }
+
+    public String getStepShortName() {
+        return this.stepShortName;
+    }
+
+    public void setStepShortName(String stepShortName) {
+        this.stepShortName = stepShortName;
     }
 
     public Long getNoOfCount() {

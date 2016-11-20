@@ -33,9 +33,8 @@ public class WorkflowExecutionAPI {
     private final ToApiJsonSerializer toApiJsonSerializer;
 
     @Autowired
-    public WorkflowExecutionAPI(final PlatformSecurityContext context,
-                                final WorkflowExecutionService workflowExecutionService,
-                                final DefaultToApiJsonSerializer toApiJsonSerializer) {
+    public WorkflowExecutionAPI(final PlatformSecurityContext context, final WorkflowExecutionService workflowExecutionService,
+            final DefaultToApiJsonSerializer toApiJsonSerializer) {
         this.context = context;
         this.workflowExecutionService = workflowExecutionService;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -55,25 +54,24 @@ public class WorkflowExecutionAPI {
 
     @POST
     @Path("step/{workflowExecutionStepId}")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
     public String doActionOnWorkflowExecutionStep(@PathParam("workflowExecutionStepId") final Long workflowExecutionStepId,
-                                       @QueryParam("action") final Long actionId,
-                                       @Context final UriInfo uriInfo){
+            @QueryParam("action") final Long actionId, @Context final UriInfo uriInfo) {
         context.authenticatedUser();
-            workflowExecutionService.doActionOnWorkflowExecutionStep(workflowExecutionStepId, StepAction.fromInt(actionId.intValue()));
-            WorkflowExecutionStepData executionStepData = workflowExecutionService.getWorkflowExecutionStepData(workflowExecutionStepId);
-            return this.toApiJsonSerializer.serialize(executionStepData);
+        workflowExecutionService.doActionOnWorkflowExecutionStep(workflowExecutionStepId, StepAction.fromInt(actionId.intValue()));
+        WorkflowExecutionStepData executionStepData = workflowExecutionService.getWorkflowExecutionStepData(workflowExecutionStepId);
+        return this.toApiJsonSerializer.serialize(executionStepData);
     }
 
     @GET
     @Path("step/{workflowExecutionStepId}/actions")
-    @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    public String getNextActions(@PathParam("workflowExecutionStepId") final Long workflowExecutionStepId,
-                                                  @Context final UriInfo uriInfo){
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getNextActions(@PathParam("workflowExecutionStepId") final Long workflowExecutionStepId, @Context final UriInfo uriInfo) {
         context.authenticatedUser();
-        List<EnumOptionData> possibleActions = workflowExecutionService.getClickableActionsForUser(workflowExecutionStepId,context.authenticatedUser().getId());
+        List<EnumOptionData> possibleActions = workflowExecutionService.getClickableActionsForUser(workflowExecutionStepId, context
+                .authenticatedUser().getId());
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 }
