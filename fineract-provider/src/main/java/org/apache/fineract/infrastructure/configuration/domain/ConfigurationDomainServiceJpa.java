@@ -358,4 +358,9 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
 	public boolean isJlgLoansIncludedInIndividualCollectionSheet() {
 		return getGlobalConfigurationPropertyData("jlg_loans_included_in_individual_collection_sheet").isEnabled();
 	}
+
+	@Override
+	public boolean isGlimLoanInClientProfileShown() {
+		return getGlobalConfigurationPropertyData("glim-loans-in-client-profile").isEnabled();
+	}
 }
