@@ -274,7 +274,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     
     public Boolean isRealizationTransactionApplicable(final Loan loan, final LocalDate transactionDate,
             final ScheduleGeneratorDTO scheduleGeneratorDTO) {
-        if (loan.getTotalSubsidyAmount().plus(loan.getTotalTransactionAmountPaid())
+        if (loan.getTotalSubsidyAmount().isGreaterThanZero() && loan.getTotalSubsidyAmount().plus(loan.getTotalTransactionAmountPaid())
                 .isGreaterThanOrEqualTo(loan.getPrincpal().plus(loan.getTotalInterestAmountTillDate(transactionDate)))) {
             final MonetaryCurrency currency = loan.getCurrency();
             final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = loan.fetchPrepaymentDetail(scheduleGeneratorDTO,
@@ -589,6 +589,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     public void recalculateAccruals(Loan loan, boolean isInterestCalcualtionHappened) {
         LocalDate accruedTill = loan.getAccruedTill();
         if (!loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()
+        		|| (loan.loanInterestRecalculationDetails() != null && loan.loanInterestRecalculationDetails().isCompoundingToBePostedAsTransaction())
                 || ((accruedTill == null || !isInterestCalcualtionHappened || loan.isNpa()) && loan.isOpen())
                 || (!loan.isOpen() && !(loan.status().isOverpaid() || loan.status().isClosedObligationsMet()))) { return; }
         boolean accrueAllInstallments = false;
