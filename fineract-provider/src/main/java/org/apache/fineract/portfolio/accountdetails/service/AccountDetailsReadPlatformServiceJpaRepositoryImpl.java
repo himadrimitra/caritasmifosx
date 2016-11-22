@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -64,15 +65,17 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
     private final ClientReadPlatformService clientReadPlatformService;
     private final GroupReadPlatformService groupReadPlatformService;
     private final PledgeReadPlatformService pledgeReadPlatformService;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public AccountDetailsReadPlatformServiceJpaRepositoryImpl(final ClientReadPlatformService clientReadPlatformService,
             final RoutingDataSource dataSource, final GroupReadPlatformService groupReadPlatformService
-            , final PledgeReadPlatformService pledgeReadPlatformService) {
+            , final PledgeReadPlatformService pledgeReadPlatformService, final ConfigurationDomainService configurationDomainService) {
         this.clientReadPlatformService = clientReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.groupReadPlatformService = groupReadPlatformService;
         this.pledgeReadPlatformService = pledgeReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
         
     }
 
@@ -81,11 +84,17 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         // Check if client exists
         this.clientReadPlatformService.retrieveOne(clientId);
         final String loanwhereClause = " where l.client_id = ?";
+        final String glimLoanwhereClause = " where glim.client_id = ?";
         final String savingswhereClause = " where sa.client_id = ? order by sa.status_enum ASC, sa.account_no ASC";
-        final List<LoanAccountSummaryData> loanAccounts = retrieveLoanAccountDetails(loanwhereClause, new Object[] { clientId });
+        final Boolean isGlimLoanInClientProfile = this.configurationDomainService.isGlimLoanInClientProfileShown();
+        final List<LoanAccountSummaryData> loanAccounts = retrieveLoanAccountDetails(loanwhereClause, new Object[] { clientId }, false);
         final List<SavingsAccountSummaryData> savingsAccounts = retrieveAccountDetails(savingswhereClause, new Object[] { clientId });
         final List<PledgeData> pledges = this.pledgeReadPlatformService.retrievePledgesByClientId(clientId);
         final List<ShareAccountSummaryData> shareAccounts = retrieveShareAccountDetails(clientId) ;
+        if(isGlimLoanInClientProfile){
+        	List<LoanAccountSummaryData> glimloanAccountsForClient = retrieveLoanAccountDetails(glimLoanwhereClause, new Object[] { clientId }, isGlimLoanInClientProfile);
+        	loanAccounts.addAll(glimloanAccountsForClient);
+        }   
         return new AccountSummaryCollectionData(loanAccounts, savingsAccounts, pledges, shareAccounts);
     }
 
@@ -97,11 +106,13 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         final String loanWhereClauseForMembers = " where l.group_id = ? and l.client_id is not null";
         final String savingswhereClauseForGroup = " where sa.group_id = ? and sa.client_id is null order by sa.status_enum ASC, sa.account_no ASC";
         final String savingswhereClauseForMembers = " where sa.group_id = ? and sa.client_id is not null order by sa.status_enum ASC, sa.account_no ASC";
-        final List<LoanAccountSummaryData> groupLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForGroup, new Object[] { groupId });
+        boolean isGlimLoanInClientProfile = false;
+        final List<LoanAccountSummaryData> groupLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForGroup, new Object[] { groupId },
+        		isGlimLoanInClientProfile);
         final List<SavingsAccountSummaryData> groupSavingsAccounts = retrieveAccountDetails(savingswhereClauseForGroup,
                 new Object[] { groupId });
         final List<LoanAccountSummaryData> memberLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForMembers,
-                new Object[] { groupId });
+                new Object[] { groupId }, isGlimLoanInClientProfile);
         final List<SavingsAccountSummaryData> memberSavingsAccounts = retrieveAccountDetails(savingswhereClauseForMembers,
                 new Object[] { groupId });
         return new AccountSummaryCollectionData(groupLoanAccounts, groupSavingsAccounts, memberLoanAccounts, memberSavingsAccounts, null);
@@ -122,8 +133,10 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
     public Collection<LoanAccountSummaryData> retrieveClientLoanAccountsByLoanOfficerId(final Long clientId, final Long loanOfficerId) {
         // Check if client exists
         this.clientReadPlatformService.retrieveOne(clientId);
+        boolean isGlimLoanInClientProfile = false;
         final String loanWhereClause = " where l.client_id = ? and l.loan_officer_id = ? and l.loan_type_enum = ?";
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, loanOfficerId, AccountType.INDIVIDUAL.getValue() });
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, loanOfficerId, AccountType.INDIVIDUAL.getValue() },
+        		isGlimLoanInClientProfile);
     }
 
     @Override
@@ -131,17 +144,19 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         // Check if group exists
         this.groupReadPlatformService.retrieveOne(groupId);
         final String loanWhereClause = " where l.group_id = ? and l.client_id is null and l.loan_officer_id = ?";
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { groupId, loanOfficerId });
+        boolean isGlimLoanInClientProfile = false;
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { groupId, loanOfficerId }, isGlimLoanInClientProfile);
     }
 
     @Override public Collection<LoanAccountSummaryData> retrieveClientActiveLoanAccountSummary(final Long clientId) {
         final String loanWhereClause = " where l.client_id = ? and l.loan_status_id = 300 ";
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId });
+        boolean isGlimLoanInClientProfile = false;
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId }, isGlimLoanInClientProfile);
     }
 
-    private List<LoanAccountSummaryData> retrieveLoanAccountDetails(final String loanwhereClause, final Object[] inputs) {
+    private List<LoanAccountSummaryData> retrieveLoanAccountDetails(final String loanwhereClause, final Object[] inputs, boolean isGlimLoanInClientProfile) {
         final LoanAccountSummaryDataMapper rm = new LoanAccountSummaryDataMapper();
-        final String sql = "select " + rm.loanAccountSummarySchema() + loanwhereClause;
+        final String sql = "select " + (isGlimLoanInClientProfile?rm.glimLoanAccountSummarySchema():rm.loanAccountSummarySchema() )+ loanwhereClause;
         return this.jdbcTemplate.query(sql, rm, inputs);
     }
 
@@ -429,6 +444,52 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
                     .append(" l.writtenoffon_date as writtenOffOnDate, l.expected_maturedon_date as expectedMaturityDate")
 
                     .append(" from m_loan l ").append("LEFT JOIN m_product_loan AS lp ON lp.id = l.product_id")
+                    .append(" left join m_appuser sbu on sbu.id = l.submittedon_userid")
+                    .append(" left join m_appuser rbu on rbu.id = l.rejectedon_userid")
+                    .append(" left join m_appuser wbu on wbu.id = l.withdrawnon_userid")
+                    .append(" left join m_appuser abu on abu.id = l.approvedon_userid")
+                    .append(" left join m_appuser dbu on dbu.id = l.disbursedon_userid")
+                    .append(" left join m_appuser cbu on cbu.id = l.closedon_userid")
+                    .append(" left join m_loan_arrears_aging la on la.loan_id = l.id");
+
+            return accountsSummary.toString();
+        }
+        
+        public String glimLoanAccountSummarySchema() {
+
+            final StringBuilder accountsSummary = new StringBuilder("l.id as id, l.account_no as accountNo, l.external_id as externalId,");
+            accountsSummary
+                    .append(" l.product_id as productId, lp.name as productName, lp.short_name as shortProductName,")
+                    .append(" l.loan_status_id as statusId, l.loan_type_enum as loanType,")
+                    
+                    .append(" glim.total_payble_amount as originalLoan,")
+                    .append("(glim.total_payble_amount - IFNULL(glim.paid_amount,0)) as loanBalance,")
+                    .append("glim.paid_amount as amountPaid,")
+                    
+                    .append(" l.loan_product_counter as loanCycle,")
+
+                    .append(" l.submittedon_date as submittedOnDate,")
+                    .append(" sbu.username as submittedByUsername, sbu.firstname as submittedByFirstname, sbu.lastname as submittedByLastname,")
+
+                    .append(" l.rejectedon_date as rejectedOnDate,")
+                    .append(" rbu.username as rejectedByUsername, rbu.firstname as rejectedByFirstname, rbu.lastname as rejectedByLastname,")
+
+                    .append(" l.withdrawnon_date as withdrawnOnDate,")
+                    .append(" wbu.username as withdrawnByUsername, wbu.firstname as withdrawnByFirstname, wbu.lastname as withdrawnByLastname,")
+
+                    .append(" l.approvedon_date as approvedOnDate,")
+                    .append(" abu.username as approvedByUsername, abu.firstname as approvedByFirstname, abu.lastname as approvedByLastname,")
+
+                    .append(" l.expected_disbursedon_date as expectedDisbursementDate, l.disbursedon_date as actualDisbursementDate,")
+                    .append(" dbu.username as disbursedByUsername, dbu.firstname as disbursedByFirstname, dbu.lastname as disbursedByLastname,")
+
+                    .append(" l.closedon_date as closedOnDate,")
+                    .append(" cbu.username as closedByUsername, cbu.firstname as closedByFirstname, cbu.lastname as closedByLastname,")
+                    .append(" la.overdue_since_date_derived as overdueSinceDate,")
+                    .append(" l.writtenoffon_date as writtenOffOnDate, l.expected_maturedon_date as expectedMaturityDate")
+
+                    .append(" from m_loan l ").append("JOIN m_loan_glim AS glim ON glim.loan_id = l.id ")
+                    .append("LEFT JOIN m_product_loan AS lp ON lp.id = l.product_id")
                     .append(" left join m_appuser sbu on sbu.id = l.submittedon_userid")
                     .append(" left join m_appuser rbu on rbu.id = l.rejectedon_userid")
                     .append(" left join m_appuser wbu on wbu.id = l.withdrawnon_userid")
