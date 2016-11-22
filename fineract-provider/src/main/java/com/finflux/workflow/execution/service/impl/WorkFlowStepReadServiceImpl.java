@@ -33,7 +33,7 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("SELECT lp.id AS loanProductId,lp.name AS loanProductName,wf.id AS workFlowId, wf.name AS workFlowName ");
         sqlBuilder.append(",co.id AS officeId, co.name AS officeName, wfes.status AS stepStatus ");
-        sqlBuilder.append(",wfs.id AS stepId, wfs.name AS stepName ");
+        sqlBuilder.append(",wfs.id AS stepId, wfs.name AS stepName,wfs.short_name AS stepShortName ");
         sqlBuilder.append(",SUM(IF(wfes.status BETWEEN 2 AND 6,1,0)) AS noOfCount ");
         sqlBuilder.append("FROM f_workflow wf ");
         sqlBuilder.append("JOIN f_loan_product_workflow lpw ON lpw.workflow_id = wf.id ");
@@ -78,6 +78,7 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
                     final String workFlowName = (String) l.get("workFlowName");
                     final Long stepId = (Long) l.get("stepId");
                     final String stepName = (String) l.get("stepName");
+                    final String stepShortName = (String) l.get("stepShortName");
                     final Long noOfCount = Long.parseLong(l.get("noOfCount").toString());
                     final String stepStatus = StepStatus.fromInt(stepStatusId).toString();
 
@@ -130,7 +131,7 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
                     }
                     if (!isWorkFlowData) {
                         stepSummaries = new ArrayList<StepSummaryData>();
-                        workFlowSummary = new WorkFlowSummaryData(stepName, noOfCount);
+                        workFlowSummary = new WorkFlowSummaryData(stepName, stepShortName, noOfCount);
                         workFlowSummary.setStepSummaries(stepSummaries);
                         workFlowSummaries.add(workFlowSummary);
                     }

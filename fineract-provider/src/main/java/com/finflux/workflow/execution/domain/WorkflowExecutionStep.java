@@ -20,6 +20,9 @@ public class WorkflowExecutionStep extends AbstractAuditableCustom<AppUser, Long
     @Column(name = "status", nullable = false)
     private Integer status;
 
+    @Column(name = "current_action", nullable = true)
+    private Integer currentAction;
+
     @Column(name = "assigned_to", nullable = true)
     private Long assignedTo;
 
@@ -87,5 +90,13 @@ public class WorkflowExecutionStep extends AbstractAuditableCustom<AppUser, Long
 
     public void setAssignedTo(Long assignedTo) {
         this.assignedTo = assignedTo;
+    }
+
+    public Integer getCurrentAction() {
+        return this.currentAction;
+    }
+
+    public void setCurrentAction(final Integer currentAction) {
+        this.currentAction = currentAction;
     }
 }

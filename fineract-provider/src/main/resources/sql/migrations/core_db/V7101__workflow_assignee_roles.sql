@@ -40,3 +40,17 @@ alter table f_workflow_execution_step add CONSTRAINT `FK_f_workflow_execution_st
 
 
 alter table f_workflow_execution add column `config_values`	VARCHAR(512) NULL DEFAULT NULL;
+
+ALTER TABLE `f_workflow_step`
+	ADD COLUMN `short_name` VARCHAR(10) NULL AFTER `name`,
+	ADD INDEX `INX_short_name` (`short_name`);
+	
+UPDATE f_workflow_step ws SET ws.short_name = SUBSTR(ws.name, 1, 5) WHERE ws.short_name IS NULL;
+
+ALTER TABLE `f_workflow_step`
+	ALTER `short_name` DROP DEFAULT;
+ALTER TABLE `f_workflow_step`
+	CHANGE COLUMN `short_name` `short_name` VARCHAR(10) NOT NULL AFTER `name`;
+	
+ALTER TABLE `f_workflow_execution_step`
+	ADD COLUMN `current_action` SMALLINT(3) NULL AFTER `status`;

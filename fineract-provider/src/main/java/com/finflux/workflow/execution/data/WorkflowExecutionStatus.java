@@ -16,7 +16,7 @@ public enum WorkflowExecutionStatus {
     INITIATED(1, "stepStatus.survey", StepAction.SKIP),
     UNDERREVIEW(2, "stepStatus.survey", StepAction.REVIEW, StepAction.REJECT),
     UNDERAPPROVAL(3, "stepStatus.survey", StepAction.APPROVE, StepAction.REJECT),
-    UNDERCOMPLETE(4, "stepStatus.question", StepAction.NEXT),
+    UNDERCOMPLETE(4, "stepStatus.question"),
     COMPLETED(5, "stepStatus.question", StepAction.STARTOVER),
     CANCELLED(6, "stepStatus.question", StepAction.STARTOVER),
     SKIPPED(7, "stepStatus.question", StepAction.STARTOVER),
