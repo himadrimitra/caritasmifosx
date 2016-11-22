@@ -1307,6 +1307,7 @@ public class Loan extends AbstractPersistable<Long> {
      * unprocessed transactions
      */
     private void applyAccurals(AppUser currentUser) {
+        if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) { return; }
         Collection<LoanTransaction> accruals = retreiveListOfAccrualTransactions();
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
             applyPeriodicAccruals(accruals);
@@ -3727,6 +3728,19 @@ public class Loan extends AbstractPersistable<Long> {
                     interestToPost, feeToPost, penaltyToPost);
 
             this.loanTransactions.add(finalIncomeTransaction);
+            if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
+                List<LoanTransaction> updatedAccrualTransactions = retreiveListOfAccrualTransactions();
+                LocalDate lastAccruedDate = this.getDisbursementDate();
+                if (updatedAccrualTransactions != null && updatedAccrualTransactions.size() > 0) {
+                    lastAccruedDate = updatedAccrualTransactions.get(updatedAccrualTransactions.size() - 1).getTransactionDate();
+                }
+                HashMap<String, Object> feeDetails = new HashMap<>();
+                determineFeeDetails(lastAccruedDate, transactionDate, feeDetails);
+                LoanTransaction finalAccrual = LoanTransaction.accrueTransaction(this, this.getOffice(), transactionDate, amountToPost,
+                        interestToPost, feeToPost, penaltyToPost);
+                updateLoanChargesPaidBy(finalAccrual, feeDetails, null);
+                this.loanTransactions.add(finalAccrual);
+            }
         }
         updateLoanOutstandingBalaces();
     }
@@ -3926,7 +3940,8 @@ public class Loan extends AbstractPersistable<Long> {
         transactionForAdjustment.reverse();
         transactionForAdjustment.manuallyAdjustedOrReversed();
         
-        if (isSubsidyApplicable() && (status().isOverpaid() || status().isClosedObligationsMet() || status().isClosed())) {
+        if (isSubsidyApplicable() && getTotalSubsidyAmount().isGreaterThanZero()
+                && (status().isOverpaid() || status().isClosedObligationsMet() || status().isClosed())) {
             final LoanTransaction realizationLoanTransaction = findRealizationTransaction();
             if(realizationLoanTransaction == null){
                 final String errorMessage = "Only transactions of type realization cannot be adjusted.";
