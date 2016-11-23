@@ -514,6 +514,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         Object loanTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
         Object loanAdjustTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_ADJUSTED_TRANSACTION);
         Object loanChargeEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_CHARGE);
+        Object changedTransactionDetail = businessEventEntity.get(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL);
         if (loanEntity != null) {
             loan = (Loan) loanEntity;
         } else if (loanTransactionEntity != null) {
@@ -526,12 +527,15 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
             LoanCharge loanCharge = (LoanCharge) loanChargeEntity;
             loan = loanCharge.getLoan();
         }
-        if (loan != null && loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()
-                && loan.loanProduct().isArrearsBasedOnOriginalSchedule()) {
-            updateLoanArrearsAgeingDetailsWithOriginalSchedule(loan);
-        } else {
-            updateLoanArrearsAgeingDetails(loan);
+        if(changedTransactionDetail ==null){
+        	if (loan != null && loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()
+                    && loan.loanProduct().isArrearsBasedOnOriginalSchedule()) {
+                updateLoanArrearsAgeingDetailsWithOriginalSchedule(loan);
+            } else {
+                updateLoanArrearsAgeingDetails(loan);
+            }
         }
+        
     }
 
     private class DisbursementEventListner implements BusinessEventListner {

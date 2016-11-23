@@ -298,13 +298,13 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 loanTransaction.dateOf, loanTransaction.amount, loanTransaction.principalPortion, loanTransaction.interestPortion,
                 loanTransaction.feeChargesPortion, loanTransaction.penaltyChargesPortion, loanTransaction.overPaymentPortion,
                 loanTransaction.reversed, loanTransaction.paymentDetail, loanTransaction.externalId, loanTransaction.getCreatedDate(),
-                loanTransaction.getCreatedBy());
+                loanTransaction.getCreatedBy(), loanTransaction.isReconciled);
     }
     
     private LoanTransaction(final Loan loan, final Long officeId, final Integer typeOf, final Integer loanTransactionSubType,final Date dateOf, final BigDecimal amount,
             final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
             final BigDecimal penaltyChargesPortion, final BigDecimal overPaymentPortion, final boolean reversed,
-            final PaymentDetail paymentDetail, final String externalId, final DateTime createdDate, final AppUser appUser) {
+            final PaymentDetail paymentDetail, final String externalId, final DateTime createdDate, final AppUser appUser, boolean isReconciled) {
         this.loan = loan;
         this.typeOf = typeOf;
         this.subTypeOf = loanTransactionSubType;
@@ -322,6 +322,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.submittedOnDate = DateUtils.getDateOfTenant();
         this.updateCreatedDate(createdDate);
         this.setCreatedBy(appUser);
+        this.isReconciled = isReconciled;
     }
 
     public static LoanTransaction accrueLoanCharge(final Loan loan, final Office office, final Money amount, final LocalDate applyDate,

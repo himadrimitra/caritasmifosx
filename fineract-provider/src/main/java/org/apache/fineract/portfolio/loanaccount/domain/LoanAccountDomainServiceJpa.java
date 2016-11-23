@@ -258,6 +258,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         	recalculateAccruals(loan);
         }
 
+        if(changedTransactionDetail != null){
+            Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT, changedTransactionEntityMap);        	
+        }
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, newRepaymentTransaction));
 
@@ -335,6 +339,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 loan.getLoanTransactions().add(mapEntry.getValue());
                 updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
             }
+            Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(businessEvent, changedTransactionEntityMap);
         }
 
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
@@ -989,6 +995,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 loan.getLoanTransactions().add(mapEntry.getValue());
                 this.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
             }
+            Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WAIVE_INTEREST, changedTransactionEntityMap);
         }
 
         if (StringUtils.isNotBlank(noteText)) {
@@ -1046,6 +1054,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 loan.getLoanTransactions().add(mapEntry.getValue());
                 updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
             }
+            Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WRITTEN_OFF, changedTransactionEntityMap);
         }
 
         if (StringUtils.isNotBlank(noteText)) {
@@ -1057,8 +1067,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
         recalculateAccruals(loan);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WRITTEN_OFF,
-                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, writeoffTransaction));
-
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, writeoffTransaction));        
         builderResult.withEntityId(writeoffTransaction.getId()).withOfficeId(loan.getOfficeId()) //
                 .withClientId(loan.getClientId()) //
                 .withGroupId(loan.getGroupId());
