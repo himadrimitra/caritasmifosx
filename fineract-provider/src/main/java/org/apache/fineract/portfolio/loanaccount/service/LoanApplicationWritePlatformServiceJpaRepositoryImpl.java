@@ -133,6 +133,7 @@ import org.apache.fineract.portfolio.loanproduct.serialization.LoanProductDataVa
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -198,6 +199,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final ChargeRepositoryWrapper chargeRepositoryWrapper;
     private final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository;
     private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
+    private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -225,7 +227,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final LoanRepositoryWrapper  loanRepositoryWrapper,final GroupLoanIndividualMonitoringRepository groupLoanIndividualMonitoringRepository,  
             final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler, final ChargeRepositoryWrapper chargeRepositoryWrapper,
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
-            final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl) {
+            final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl, final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -268,6 +270,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.chargeRepositoryWrapper = chargeRepositoryWrapper;
         this.groupLoanIndividualMonitoringChargeRepository = groupLoanIndividualMonitoringChargeRepository;
         this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
+        this.paymentTypeRepository = paymentTypeRepository;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -832,7 +835,18 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
                 if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
             }
-
+            if (changes.containsKey(LoanApiConstants.expectedDisbursalPaymentTypeParamName)) {
+                final Long expectedDisbursalPaymentTypeId = command.longValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName);
+                if(expectedDisbursalPaymentTypeId != null){                	;
+                	existingLoanApplication.setExpectedDisbursalPaymentType(this.paymentTypeRepository.findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId));
+                }
+            }
+            if (changes.containsKey(LoanApiConstants.expectedRepaymentPaymentTypeParamName)) {
+                final Long expectedRepaymentPaymentTypeId = command.longValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName);
+                if(expectedRepaymentPaymentTypeId != null){                	;
+                	existingLoanApplication.setExpectedRepaymentPaymentType(this.paymentTypeRepository.findOneWithNotFoundDetection(expectedRepaymentPaymentTypeId));
+                }
+            }
             existingLoanApplication.updateIsInterestRecalculationEnabled();
 
             validateSubmittedOnDate(existingLoanApplication.getSubmittedOnDate(),

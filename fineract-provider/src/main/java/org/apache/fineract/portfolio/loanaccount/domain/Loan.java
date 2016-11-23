@@ -136,6 +136,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessin
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -431,6 +432,14 @@ public class Loan extends AbstractPersistable<Long> {
 
     @Column(name = "total_charges_capitalized_at_disbursement_derived", scale = 6, precision = 19, nullable = true)
     private BigDecimal totalCapitalizedCharges;
+    
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name = "expected_disbursal_payment_type_id", nullable = true)
+    private PaymentType expectedDisbursalPaymentType;
+    
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name = "expected_repayment_payment_type_id", nullable = true)
+    private PaymentType expectedRepaymentPaymentType;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -438,14 +447,15 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
             final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
-            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential) {
+            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
+            final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
         final Group group = null;
         final Boolean syncDisbursementWithMeeting = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     public static Loan newGroupLoanApplication(final String accountNo, final Group group, final Integer loanType,
@@ -455,13 +465,13 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
             final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
-            final BigDecimal interestRateDifferential) {
+            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
         final Client client = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     public static Loan newIndividualLoanApplicationFromGroup(final String accountNo, final Client client, final Group group,
@@ -471,12 +481,12 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
             final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
-            final BigDecimal interestRateDifferential) {
+            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     protected Loan() {
@@ -489,7 +499,8 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCharge> loanCharges, final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting,
             final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
-            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential) {
+            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
+            final PaymentType expectedRepaymentPaymentType) {
 
         this.loanRepaymentScheduleDetail = loanRepaymentScheduleDetail;
         this.loanRepaymentScheduleDetail.validateRepaymentPeriodWithGraceSettings();
@@ -550,6 +561,8 @@ public class Loan extends AbstractPersistable<Long> {
          */
 
         this.proposedPrincipal = this.loanRepaymentScheduleDetail.getPrincipal().getAmount();
+        this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+        this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
     }
 
     private LoanSummary updateSummaryWithTotalFeeChargesDueAtDisbursement(final BigDecimal feeChargesDueAtDisbursement) {
@@ -1678,7 +1691,12 @@ public class Loan extends AbstractPersistable<Long> {
         } else {
             this.fixedEmiAmount = null;
         }
-        
+        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, this.getExpectedDisbursalPaymentType().getId().intValue())){
+        	actualChanges.put(LoanApiConstants.expectedDisbursalPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName));
+        }
+        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, this.getExpectedRepaymentPaymentType().getId().intValue())){
+        	actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
+        }
         return actualChanges;
     }
 
@@ -7337,5 +7355,25 @@ public class Loan extends AbstractPersistable<Long> {
     public void activateLoan(){
     	this.loanStatus = LoanStatus.ACTIVE.getValue();
     }
+
+	public PaymentType getExpectedDisbursalPaymentType() {
+		return this.expectedDisbursalPaymentType;
+	}
+
+	public void setExpectedDisbursalPaymentType(
+			PaymentType expectedDisbursalPaymentType) {
+		this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+	}
+
+	public PaymentType getExpectedRepaymentPaymentType() {
+		return this.expectedRepaymentPaymentType;
+	}
+
+	public void setExpectedRepaymentPaymentType(
+			PaymentType expectedRepaymentPaymentType) {
+		this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+	}
+    
+    
     
 }

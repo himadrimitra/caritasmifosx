@@ -725,6 +725,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " lir.is_compounding_to_be_posted_as_transaction as isCompoundingToBePostedAsTransaction, "
                     + " lir.allow_compounding_on_eod as allowCompoundingOnEod, "
                     + " l.is_floating_interest_rate as isFloatingInterestRate, "
+                    + "l.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId,pt_disburse.value as disbursementPaymentTypeName, "
+                    + "l.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName, "
                     + " l.interest_rate_differential as interestRateDifferential, "
                     + " l.create_standing_instruction_at_disbursement as createStandingInstructionAtDisbursement, "
                     + " lpvi.minimum_gap as minimuminstallmentgap, lpvi.maximum_gap as maximuminstallmentgap , "
@@ -754,7 +756,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " left join ref_loan_transaction_processing_strategy lps on lps.id = l.loan_transaction_strategy_id"
                     + " left join m_product_loan_variable_installment_config lpvi on lpvi.loan_product_id = l.product_id"
                     + " left join m_loan_topup as topup on l.id = topup.loan_id"
-                    + " left join m_loan as topuploan on topuploan.id = topup.closure_loan_id";
+                    + " left join m_loan as topuploan on topuploan.id = topup.closure_loan_id"
+                    + " LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = l.expected_disbursal_payment_type_id "
+                    + " LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = l.expected_repayment_payment_type_id ";
+            
+            
         }
 
         @Override
@@ -1051,7 +1057,18 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final Long closureLoanId = rs.getLong("closureLoanId");
             final String closureLoanAccountNo = rs.getString("closureLoanAccountNo");
             final BigDecimal topupAmount = rs.getBigDecimal("topupAmount");
-
+            PaymentTypeData expectedDisbursalPaymentType = null;
+            final Integer expectedDisbursalPaymentTypeId = rs.getInt("expectedDisbursalPaymentTypeId");
+            if(expectedDisbursalPaymentTypeId != null){
+                final String disbursementPaymentTypeName = rs.getString("disbursementPaymentTypeName");
+                expectedDisbursalPaymentType = PaymentTypeData.instance(expectedDisbursalPaymentTypeId.longValue(), disbursementPaymentTypeName);            	
+            }
+            PaymentTypeData expectedRepaymentPaymentType = null;
+            final Integer expectedRepaymentPaymentTypeId = rs.getInt("expectedRepaymentPaymentTypeId");
+            if(expectedRepaymentPaymentTypeId != null){
+            	final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
+            	expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);            	
+            } 
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
                     isLoanProductLinkedToFloatingRate, fundId, fundName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName,
@@ -1066,7 +1083,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
                     interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed, minimumGap,
                     maximumGap,loanSubStatus,canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
-                    weeksInYearType);
+                    weeksInYearType, expectedDisbursalPaymentType,expectedRepaymentPaymentType);
         }
     }
     
@@ -1075,9 +1092,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         public String loanSchema() {
 
             return " l.id AS id, l.account_no AS accountNo, c.id AS clientId, c.display_name AS clientName, lp.name AS loanProductName, "
-                    + "l.expected_disbursedon_date AS expectedDisbursementDate, l.principal_amount AS principal, l.loan_status_id AS lifeCycleStatusId"
+                    + "l.expected_disbursedon_date AS expectedDisbursementDate, l.principal_amount AS principal, l.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId,"
+            		+" pt_disburse.value as disbursementPaymentTypeName,l.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName, l.loan_status_id AS lifeCycleStatusId "
                     + " FROM m_loan l " + "JOIN m_product_loan lp ON lp.id = l.product_id " + "LEFT JOIN m_client c ON c.id = l.client_id "
-                    + "LEFT JOIN m_group g ON g.id = l.group_id " + "LEFT JOIN m_staff s ON s.id = l.loan_officer_id ";
+                    + "LEFT JOIN m_group g ON g.id = l.group_id " + "LEFT JOIN m_staff s ON s.id = l.loan_officer_id "
+                    + "LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = l.expected_disbursal_payment_type_id "
+                    + "LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = l.expected_repayment_payment_type_id ";
 
         }
         @Override
@@ -1096,9 +1116,21 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             final Integer lifeCycleStatusId = JdbcSupport.getInteger(rs, "lifeCycleStatusId");
             final LoanStatusEnumData status = LoanEnumerations.status(lifeCycleStatusId);
+            final Integer expectedDisbursalPaymentTypeId = rs.getInt("expectedDisbursalPaymentTypeId");
+            PaymentTypeData expectedDisbursalPaymentType = null;
+            if(expectedDisbursalPaymentTypeId != null){
+                final String disbursementPaymentTypeName = rs.getString("disbursementPaymentTypeName");
+                expectedDisbursalPaymentType = PaymentTypeData.instance(expectedDisbursalPaymentTypeId.longValue(), disbursementPaymentTypeName);            	
+            }
+            PaymentTypeData expectedRepaymentPaymentType = null;
+            final Integer expectedRepaymentPaymentTypeId = rs.getInt("expectedRepaymentPaymentTypeId");
+            if(expectedRepaymentPaymentTypeId != null){
+            	final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
+            	expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);            	
+            }           
 
             return LoanAccountData.basicLoanDetailsForDataLookup(id, accountNo, status, clientId, clientName, loanProductName,
-                    principal, timeline);
+                    principal, timeline, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
         }
     }
     @Override
@@ -1624,12 +1656,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         if(loanProduct.canUseForTopup() && clientId != null){
             clientActiveLoanOptions = this.accountDetailsReadPlatformService.retrieveClientActiveLoanAccountSummary(clientId);
         }
-
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
+				.retrieveAllPaymentTypes();
         return LoanAccountData.loanProductWithTemplateDefaults(loanProduct, loanTermFrequencyTypeOptions, repaymentFrequencyTypeOptions,
                 repaymentFrequencyNthDayTypeOptions, repaymentFrequencyDaysOfWeekTypeOptions, repaymentStrategyOptions,
                 interestRateFrequencyTypeOptions, amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions,
                 fundOptions, chargeOptions, loanPurposeOptions, loanCollateralOptions, loanCycleCounter, loanProductCollateralPledgesOptions,
-                clientActiveLoanOptions);
+                clientActiveLoanOptions, paymentOptions);
     }
 
     @Override
