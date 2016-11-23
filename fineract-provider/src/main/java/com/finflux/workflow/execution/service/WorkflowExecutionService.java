@@ -3,6 +3,7 @@ package com.finflux.workflow.execution.service;
 import com.finflux.workflow.execution.data.StepAction;
 import com.finflux.workflow.execution.data.WorkflowExecutionData;
 import com.finflux.workflow.execution.data.WorkflowExecutionStepData;
+
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public interface WorkflowExecutionService {
 
-    Long getOrCreateWorkflowExecutionForLoanApplication(Long loanApplicationId);
+    Long getOrCreateWorkflowExecution(final Integer entityTypeId, final Long entityId);
 
     public WorkflowExecutionData getWorkflowExecutionData(Long workflowExecutionId);
 

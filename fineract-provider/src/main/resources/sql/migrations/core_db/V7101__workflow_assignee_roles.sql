@@ -54,3 +54,27 @@ ALTER TABLE `f_workflow_step`
 	
 ALTER TABLE `f_workflow_execution_step`
 	ADD COLUMN `current_action` SMALLINT(3) NULL AFTER `status`;
+	
+CREATE TABLE `f_workflow_entity_type_mapping` (
+	`id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+	`workflow_id` BIGINT(20) NOT NULL,
+	`entity_type` SMALLINT(3) NOT NULL,
+	`entity_id` BIGINT(20) NULL DEFAULT NULL,
+	PRIMARY KEY (`id`),
+	UNIQUE INDEX `UQ_f_workflow_entity_type_mapping` (`workflow_id`,`entity_type`,`entity_id`),
+	CONSTRAINT `FK_entity_type_mapping_workflow_id` FOREIGN KEY (`workflow_id`) REFERENCES `f_workflow` (`id`)
+);
+
+ALTER TABLE `f_workflow_execution`
+	ADD COLUMN `entity_type` SMALLINT(3) NOT NULL DEFAULT '1' AFTER `workflow_id`,
+	ADD COLUMN `entity_id` BIGINT(20) NULL AFTER `entity_type`;
+	
+UPDATE f_workflow_execution we SET we.entity_id = (
+SELECT lapw.loan_application_id
+FROM f_loan_application_workflow_execution lapw
+WHERE lapw.workflow_execution_id = we.id)
+WHERE we.entity_id IS NULL;
+
+DROP TABLE IF EXISTS f_loan_application_workflow_execution;
+
+DROP TABLE IF EXISTS f_loan_product_workflow;
