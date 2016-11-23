@@ -61,4 +61,8 @@ public class LoanTransactionProcessingStrategy extends AbstractPersistable<Long>
     public boolean isOverdueDuePenaltiesFeeInterestPrincipal() {
         return "Overdue-Due-Penalties-Fee-Interest-Principal".equalsIgnoreCase(this.code);
     }
+    
+    public boolean isNewStrategy() {
+        return "new-strategy".equalsIgnoreCase(this.code);
+    }
 }
