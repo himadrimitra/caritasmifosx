@@ -45,7 +45,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanInstallmentCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleProcessingWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionSubType;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionToRepaymentScheduleMapping;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.CreocoreLoanRepaymentScheduleTransactionProcessor;
@@ -103,7 +102,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         final ChangedTransactionDetail changedTransactionDetail = new ChangedTransactionDetail();
         final List<LoanTransaction> transactionstoBeProcessed = new ArrayList<>();
         for (final LoanTransaction loanTransaction : transactionsPostDisbursement) {
-
+            
             if (!(loanTransaction.getId() != null && loanTransaction.getLoan().isGLIMLoan())) {
 
                 if (loanTransaction.isChargePayment()) {
@@ -305,9 +304,9 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         List<GroupLoanIndividualMonitoring> glimMembers =  (loan == null)?null:loan.getGroupLoanIndividualMonitoringList();        
         Set<LoanCharge>   charges= loan.charges();
         Map<Long,BigDecimal> chargeAmountMap = new HashMap<Long, BigDecimal>();
-        for (LoanCharge loanCharge : charges) {
-        	chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
-		}
+            for (LoanCharge loanCharge : charges) {
+                chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
+            }
         
         for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
                 if (glimMember.isClientSelected() && glimMember.getTransactionAmount().compareTo(BigDecimal.ZERO) > 0) {

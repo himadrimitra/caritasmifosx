@@ -51,6 +51,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleIns
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepository;
+import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanTransactionTypeException;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanEventApiJsonValidator;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
@@ -148,6 +149,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         final Boolean isHolidayValidationDone = false;
         final HolidayDetailDTO holidayDetailDto = null;
         boolean isAccountTransfer = false;
+        // validate for current transaction date should be before last user transaction for glim loans
+        validateGlimTransaction(transactionDate, loan);
         final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
         LoanTransaction loanTransaction = this.loanAccountDomainService.makeRepayment(loan, commandProcessingResultBuilder,
                 transactionDate, transactionAmount, paymentDetail, noteText, txnExternalId, isRecoveryRepayment, isAccountTransfer,
@@ -164,6 +167,15 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 .withLoanId(loanId) //
                 .with(changes) //
                 .build();
+    }
+
+    private void validateGlimTransaction(LocalDate transactionDate, Loan loan) {
+        LocalDate lastUserTransactionDate = loan.getLastUserTransactionDate();
+        if (transactionDate.isBefore(lastUserTransactionDate)) {
+            final String errorMessage = "repayment before last transaction is not allowed for GLIM loan.";
+            throw new InvalidLoanTransactionTypeException("transaction", "repayment.before.last.transaction.is.not.allowed.for.glim.loan",
+                    errorMessage);
+        }
     }
 
     @Override
@@ -187,6 +199,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         loan.updateGlim(glimMembers);
         final JsonArray glimList = command.arrayOfParameterNamed("clientMembers");
         BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
+        final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
+        validateGlimTransaction(transactionDate, loan);
 
         if (glimList != null) {
             for (GroupLoanIndividualMonitoring glim : glimMembers) {
@@ -261,7 +275,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 }
             }
             final LoanTransaction waiveLoanChargeTransaction = LoanTransaction.waiveLoanCharge(loan, loan.getOffice(),
-                    Money.of(loan.getCurrency(), transactionAmount), DateUtils.getLocalDateOfTenant(),
+                    Money.of(loan.getCurrency(), transactionAmount), transactionDate,
                     Money.of(loan.getCurrency(), transactionAmount), Money.zero(loan.getCurrency()), Money.zero(loan.getCurrency()));
             loan.getLoanTransactions().add(waiveLoanChargeTransaction);
 
@@ -369,6 +383,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         changes.put("dateFormat", command.dateFormat());
 
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        validateGlimTransaction(transactionDate, loan);
         List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
         loan.updateDefautGlimMembers(defaultGlimMembers);
         boolean isRecoveryPayment = false;
@@ -397,6 +412,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
         changes.put("locale", command.locale());
         changes.put("dateFormat", command.dateFormat());
+        LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         CodeValue writeoffReason = null;
         if (command.hasParameter("writeoffReasonId")) {
@@ -406,7 +422,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
             changes.put("writeoffReasonId", writeoffReasonId);
             loan.updateWriteOffReason(writeoffReason);
         }
-
+        validateGlimTransaction(transactionDate, loan);
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
         final String noteText = command.stringValueOfParameterNamed("note");
