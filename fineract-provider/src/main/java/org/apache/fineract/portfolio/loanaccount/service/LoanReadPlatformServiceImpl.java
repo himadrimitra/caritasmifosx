@@ -78,6 +78,7 @@ import org.apache.fineract.portfolio.group.data.GroupRoleData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanApplicationTimelineData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanApprovalData;
@@ -176,6 +177,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
     private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
+    private final GroupLoanIndividualMonitoringTransactionReadPlatformService groupLoanIndividualMonitoringTransactionReadPlatformService;
 
     @Autowired
     public LoanReadPlatformServiceImpl(final PlatformSecurityContext context, final LoanRepository loanRepository,
@@ -193,8 +195,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
             final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService,
-    		final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
-    		final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService) {
+            final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
+            final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
+            final GroupLoanIndividualMonitoringTransactionReadPlatformService groupLoanIndividualMonitoringTransactionReadPlatformService) {
         this.context = context;
         this.loanRepository = loanRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -220,6 +223,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         this.loanPurposeGroupReadPlatformService =loanPurposeGroupReadPlatformService;
         this.fingerPrintReadPlatformServices = fingerPrintReadPlatformServices;
         this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
+        this.groupLoanIndividualMonitoringTransactionReadPlatformService = groupLoanIndividualMonitoringTransactionReadPlatformService;
        
     }
 
@@ -433,18 +437,17 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public LoanTransactionData retrieveLoanTransactionTemplate(final Long loanId) {
 
         this.context.authenticatedUser();
-		try {
-			RepaymentTransactionTemplateMapper mapper = new RepaymentTransactionTemplateMapper();
-			String sql = "select " + mapper.schema() + " where l.id =?";
-			LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, mapper,
-					LoanTransactionType.REPAYMENT.getValue(), loanId, loanId);
+        try {
+            RepaymentTransactionTemplateMapper mapper = new RepaymentTransactionTemplateMapper();
+            String sql = "select " + mapper.schema() + " where l.id =?";
+            LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, mapper,
+                    LoanTransactionType.REPAYMENT.getValue(), loanId, loanId);
 
-			final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
-					.retrieveAllPaymentTypes();
-			return LoanTransactionData.templateOnTop(loanTransactionData, paymentOptions);
-		} catch (EmptyResultDataAccessException e) {
-			throw new LoanNotFoundException(loanId);
-		}
+            final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+            return LoanTransactionData.templateOnTop(loanTransactionData, paymentOptions);
+        } catch (EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
     }
 
     @Override
@@ -629,7 +632,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         try {
             final LoanTransactionsMapper rm = new LoanTransactionsMapper();
             final String sql = "select " + rm.LoanPaymentsSchema() + " where l.id = ? and tr.id = ? ";
-            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanId, transactionId });
+            LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanId, transactionId });
+            List<GroupLoanIndividualMonitoringTransactionData> glimTransactions = this.groupLoanIndividualMonitoringTransactionReadPlatformService
+                    .retriveGlimTransaction(transactionId);
+            loanTransactionData.updateGlimTransactions(glimTransactions);
+            return loanTransactionData;
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanTransactionNotFoundException(transactionId);
         }
@@ -1564,8 +1571,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 			final AppUserData updatedBy = AppUserData.auditdetails(updatedById, updatedByUserName, updatedByFirstName, updatedByLastName);
             return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currencyData, date, totalAmount, principalPortion, interestPortion,
                     feeChargesPortion, penaltyChargesPortion, overPaymentPortion, unrecognizedIncomePortion, null, externalId, transfer,
-                    null, outstandingLoanBalance, submittedOnDate, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy);
+                    null, outstandingLoanBalance, submittedOnDate, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy, null);
         }
+
     }
 
     @Override

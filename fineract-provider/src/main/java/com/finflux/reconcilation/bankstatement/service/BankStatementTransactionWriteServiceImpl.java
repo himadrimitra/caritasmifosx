@@ -95,12 +95,15 @@ public class BankStatementTransactionWriteServiceImpl implements BankStatementTr
 		@Override
 		public void businessEventWasExecuted(
 				Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-			ChangedTransactionDetail changedTransactionDetail = (ChangedTransactionDetail) businessEventEntity.get(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL);
-					if(changedTransactionDetail != null){
-						updateLoanTransactionOnReversal(changedTransactionDetail);					
-					}
+			Object obj = businessEventEntity
+					.get(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL);
+			if (obj instanceof ChangedTransactionDetail) {
+				ChangedTransactionDetail changedTransactionDetail = (ChangedTransactionDetail) obj;
+				if (changedTransactionDetail != null) {
+					updateLoanTransactionOnReversal(changedTransactionDetail);
+				}
+			}
 		}
-		
 	}
 
 	@Override

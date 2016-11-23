@@ -19,7 +19,9 @@
 package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -77,6 +79,7 @@ public class LoanTransactionData {
     private final Collection<TransactionAuthenticationData> transactionAuthenticationOptions;
     private final LoanAccountData loanAccountData;
     private final Collection<FingerPrintData> fingerPrintData;
+    private List<GroupLoanIndividualMonitoringTransactionData> glimTransactions;
 
     public static LoanTransactionData templateOnTop(final LoanTransactionData loanTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
@@ -87,7 +90,7 @@ public class LoanTransactionData {
                 loanTransactionData.unrecognizedIncomePortion, paymentTypeOptions, loanTransactionData.externalId,
                 loanTransactionData.transfer, loanTransactionData.fixedEmiAmount, loanTransactionData.outstandingLoanBalance,
                 loanTransactionData.manuallyReversed, loanTransactionData.createdDate, loanTransactionData.updatedDate, 
-                loanTransactionData.createdBy, loanTransactionData.updatedBy);
+                loanTransactionData.createdBy, loanTransactionData.updatedBy, loanTransactionData.glimTransactions);
 
     }
 
@@ -130,10 +133,10 @@ public class LoanTransactionData {
             final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, BigDecimal unrecognizedIncomePortion,
             final Collection<PaymentTypeData> paymentTypeOptions, final String externalId, final AccountTransferData transfer,
             final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, boolean manuallyReversed, final LocalDate createdDate, 
-            final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy) {
+            final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy, final List<GroupLoanIndividualMonitoringTransactionData> glimTransactions) {
         this(id, officeId, officeName, transactionType, paymentDetailData, currency, date, amount, principalPortion, interestPortion,
                 feeChargesPortion, penaltyChargesPortion, overpaymentPortion, unrecognizedIncomePortion, paymentTypeOptions, externalId,
-                transfer, fixedEmiAmount, outstandingLoanBalance, null, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy);
+                transfer, fixedEmiAmount, outstandingLoanBalance, null, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy, glimTransactions);
     }
 
     public static LoanTransactionData populateLoanTransactionData(final Long id, final BigDecimal amount) {
@@ -196,6 +199,7 @@ public class LoanTransactionData {
         this.updatedDate = null;
         this.createdBy = null;
         this.updatedBy = null;
+        this.glimTransactions = null;
     }
     
     public LoanTransactionData(final Long id, final Long officeId, final String officeName, final LoanTransactionEnumData transactionType,
@@ -204,7 +208,8 @@ public class LoanTransactionData {
             final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, final BigDecimal unrecognizedIncomePortion,
             final Collection<PaymentTypeData> paymentTypeOptions, final String externalId, final AccountTransferData transfer,
             final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, final LocalDate submittedOnDate, final boolean manuallyReversed, 
-            final LocalDate createdDate, final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy) {
+            final LocalDate createdDate, final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy,
+            final List<GroupLoanIndividualMonitoringTransactionData> glimTransactions) {
         this.id = id;
         this.officeId = officeId;
         this.officeName = officeName;
@@ -234,6 +239,7 @@ public class LoanTransactionData {
         this.updatedBy = updatedBy;
         this.loanAccountData = null;
         this.fingerPrintData = null;
+        this.glimTransactions = glimTransactions;
 
     }
 
@@ -309,6 +315,7 @@ public class LoanTransactionData {
          this.updatedDate = null;
          this.createdBy = null;
          this.updatedBy = null;
+         this.glimTransactions = null;
 	}
 
     private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -346,6 +353,7 @@ public class LoanTransactionData {
         this.updatedDate = null;
         this.createdBy = null;
         this.updatedBy = null;
+        this.glimTransactions = null;
     }
 
     public static LoanTransactionData LoanTransactionDataForReconciliationLoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -384,6 +392,7 @@ public class LoanTransactionData {
         this.updatedDate = loanTransactionData.updatedDate;
         this.createdBy = loanTransactionData.createdBy;
         this.updatedBy = loanTransactionData.updatedBy;
+        this.glimTransactions = loanTransactionData.glimTransactions;
     }
     
     public static LoanTransactionData LoanTransactionRepaymentTemplate(final LoanTransactionData loanTransactionData, final LoanAccountData loanAccountData){
@@ -437,8 +446,15 @@ public class LoanTransactionData {
     	this.writeOffReasonOptions =writeOffReasonOptions;
     }
 
-	public Long getId() {
-		return this.id;
-	}
+    public Long getId() {
+        return this.id;
+    }
+    
+    public void updateGlimTransactions(final List<GroupLoanIndividualMonitoringTransactionData> glimTransactions) {
+        if (this.glimTransactions == null) {
+            this.glimTransactions = new ArrayList<>();
+        }
+        this.glimTransactions.addAll(glimTransactions);
+    }
 	
 }
