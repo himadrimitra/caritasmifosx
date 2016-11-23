@@ -1110,7 +1110,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append("select ");
          builder.append("ml.id as id, ml.account_no AS accountNo,ml.loan_status_id AS lifeCycleStatusId, ");
          builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
-         builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loanpurpose_cv_id as loanPurposeId, cv.code_value as loanPurposeName, ");
+         builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
          builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
          builder.append("ml.principal_amount as principal, dd.principal as firstTrancheAmount, ml.loan_type_enum as loanType ");
 
@@ -1118,7 +1118,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append("join m_product_loan mp on mp.id = ml.product_id ");
          builder.append("LEFT JOIN m_staff s ON s.id = ml.loan_officer_id ");
          builder.append(" left join m_loan_disbursement_detail dd on dd.loan_id = ml.id and dd.expected_disburse_date = ml.expected_disbursedon_date ");
-         builder.append(" left join m_code_value cv on cv.id = ml.loanpurpose_cv_id  ");
+         builder.append(" left join f_loan_purpose flp on flp.id = ml.loan_purpose_id  ");
          builder.append(" left join m_client c on ml.client_id = c.id ");
          builder.append(" left JOIN m_office o ON o.id = c.office_id ");
          builder.append(" left JOIN m_group g ON g.id = ml.group_id ");
