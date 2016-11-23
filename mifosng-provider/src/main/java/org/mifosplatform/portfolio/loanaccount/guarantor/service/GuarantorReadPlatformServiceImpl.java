@@ -88,6 +88,17 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
 
         return mergeDetailsForClientOrStaffGuarantor(guarantorData);
     }
+    
+    @Override
+    public List<GuarantorData> retrieveGuarantorsForSavings(final Long savingsId) {
+        final GuarantorSavingsMapper rm = new GuarantorSavingsMapper();
+        String sql = "select " + rm.schema();
+        sql += " where sa.id = ?  group by sa.id,gfd.id";
+        final List<GuarantorData> guarantorDatas = this.jdbcTemplate.query(sql, rm,
+                new Object[] { AccountAssociationType.GUARANTOR_ACCOUNT_ASSOCIATION.getValue(),
+                		savingsId });
+        return guarantorDatas;
+    }
 
     private static final class GuarantorMapper implements RowMapper<GuarantorData> {
 
@@ -161,11 +172,98 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
                 }
             }
 
+            final String accountNumber = null;
+            final String clientName = null;
            
 
             return new GuarantorData(id, loanId, clientRelationshipType, entityId, guarantorType, firstname, lastname, dob, addressLine1,
                     addressLine2, city, state, zip, country, mobileNumber, housePhoneNumber, comment, null, null, null, status,
-                    guarantorFundingDetails, null, null, accountLinkingOptions);
+                    guarantorFundingDetails, null, null, accountLinkingOptions, accountNumber, clientName);
+        }
+    }
+    
+    
+    private static final class GuarantorSavingsMapper implements RowMapper<GuarantorData> {
+
+        private GuarantorTransactionMapper guarantorTransactionMapper = new GuarantorTransactionMapper();
+        private GuarantorFundingMapper guarantorFundingMapper = new GuarantorFundingMapper(guarantorTransactionMapper);
+
+        private final StringBuilder sqlBuilder = new StringBuilder(
+                " g.id as id, g.loan_id as loanId, ml.account_no as loanAccountNumber, c.display_name as loanClientName, g.client_reln_cv_id clientRelationshipTypeId, g.entity_id as entityId, g.type_enum guarantorType ,g.firstname as firstname, g.lastname as lastname, g.dob as dateOfBirth, g.address_line_1 as addressLine1, g.address_line_2 as addressLine2, g.city as city, g.state as state, g.country as country, g.zip as zip, g.house_phone_number as housePhoneNumber, g.mobile_number as mobilePhoneNumber, g.comment as comment, ")
+                .append(" g.is_active as guarantorStatus,")//
+                .append(" cv.code_value as typeName, ")//
+                .append("gfd.amount,")//
+                .append(this.guarantorFundingMapper.schema())//
+                .append(",")//
+                .append(this.guarantorTransactionMapper.schema())//
+                .append(" FROM m_guarantor g") //
+                .append(" join m_loan ml on ml.id = g.loan_id")
+                .append(" left join m_client c on c.id = ml.client_id")
+                .append(" left JOIN m_code_value cv on g.client_reln_cv_id = cv.id")//
+                .append(" left JOIN m_guarantor_funding_details gfd on g.id = gfd.guarantor_id")//
+                .append(" left JOIN m_portfolio_account_associations aa on gfd.account_associations_id = aa.id and aa.association_type_enum = ?")//
+                .append(" left JOIN m_savings_account sa on sa.id = aa.linked_savings_account_id ")//
+                .append(" left join m_guarantor_transaction gt on gt.guarantor_fund_detail_id = gfd.id") //
+                .append(" left join m_deposit_account_on_hold_transaction oht on oht.id = gt.deposit_on_hold_transaction_id");
+
+        public String schema() {
+            return this.sqlBuilder.toString();
+        }
+
+        @Override
+        public GuarantorData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
+            final Long id = rs.getLong("id");
+            final Long loanId = rs.getLong("loanId");
+            final Long clientRelationshipTypeId = JdbcSupport.getLong(rs, "clientRelationshipTypeId");
+            CodeValueData clientRelationshipType = null;
+
+            if (clientRelationshipTypeId != null) {
+                final String typeName = rs.getString("typeName");
+                clientRelationshipType = CodeValueData.instance(clientRelationshipTypeId, typeName);
+            }
+
+            final Integer guarantorTypeId = rs.getInt("guarantorType");
+            final EnumOptionData guarantorType = GuarantorEnumerations.guarantorType(guarantorTypeId);
+            final Long entityId = rs.getLong("entityId");
+            final String firstname = rs.getString("firstname");
+            final String lastname = rs.getString("lastname");
+            final LocalDate dob = JdbcSupport.getLocalDate(rs, "dateOfBirth");
+            final String addressLine1 = rs.getString("addressLine1");
+            final String addressLine2 = rs.getString("addressLine2");
+            final String city = rs.getString("city");
+            final String state = rs.getString("state");
+            final String zip = rs.getString("zip");
+            final String country = rs.getString("country");
+            final String mobileNumber = rs.getString("mobilePhoneNumber");
+            final String housePhoneNumber = rs.getString("housePhoneNumber");
+            final String comment = rs.getString("comment");
+            final boolean status = rs.getBoolean("guarantorStatus");
+            final String accountNumber = rs.getString("loanaccountNumber");
+            final String clientName = rs.getString("loanclientName");
+            final Collection<PortfolioAccountData> accountLinkingOptions = null;
+            List<GuarantorFundingData> guarantorFundingDetails = null;
+            GuarantorFundingData guarantorFundingData = this.guarantorFundingMapper.mapRow(rs, rowNum);
+            if (guarantorFundingData != null) {
+                guarantorFundingDetails = new ArrayList<>();
+                guarantorFundingDetails.add(guarantorFundingData);
+                while (rs.next()) {
+                    Long tempId = rs.getLong("id");
+                    if (tempId.equals(id)) {
+                        guarantorFundingData = this.guarantorFundingMapper.mapRow(rs, rowNum);
+                        guarantorFundingDetails.add(guarantorFundingData);
+                    } else {
+                        rs.previous();
+                        break;
+                    }
+
+                }
+            }
+
+           
+
+            return new GuarantorData(id, loanId, clientRelationshipType, entityId, guarantorType, firstname, lastname, dob, addressLine1,
+                    addressLine2, city, state, zip, country, mobileNumber, housePhoneNumber, comment, null, null, null, status,
+                    guarantorFundingDetails, null, null, accountLinkingOptions, accountNumber, clientName);
         }
     }
 

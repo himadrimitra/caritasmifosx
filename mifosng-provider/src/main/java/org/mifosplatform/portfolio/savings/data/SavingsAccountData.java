@@ -15,6 +15,7 @@ import org.mifosplatform.infrastructure.core.data.EnumOptionData;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.staff.data.StaffData;
 import org.mifosplatform.portfolio.charge.data.ChargeData;
+import org.mifosplatform.portfolio.loanaccount.guarantor.data.GuarantorData;
 
 /**
  * Immutable data object representing a savings account.
@@ -54,6 +55,8 @@ public class SavingsAccountData {
     private final boolean enforceMinRequiredBalance;
     private final BigDecimal minBalanceForInterestCalculation;
     private final BigDecimal onHoldFunds;
+    private final Collection<GuarantorData> guarantors;
+
 
     // associations
     private final SavingsAccountSummaryData summary;
@@ -103,6 +106,7 @@ public class SavingsAccountData {
         final Collection<SavingsAccountTransactionData> transactions = null;
         final Collection<SavingsAccountChargeData> charges = null;
         final Collection<ChargeData> chargeOptions = null;
+        final Collection<GuarantorData> guarantors = null;
 
         return new SavingsAccountData(id, accountNo, depositType, externalId, groupId, groupName, clientId, clientName, productId,
                 productName, fieldOfficerId, fieldOfficerName, status, timeline, currency, interestRate, interestCompoundingPeriodType,
@@ -111,7 +115,7 @@ public class SavingsAccountData {
                 fieldOfficerOptions, interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions,
                 interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions,
                 withdrawalFeeTypeOptions, charges, chargeOptions, allowOverdraft, overdraftLimit, minRequiredBalance,
-                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor);
+                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor, guarantors);
     }
 
     public static SavingsAccountData lookup(final Long accountId, final String accountNo, final EnumOptionData depositType) {
@@ -164,6 +168,7 @@ public class SavingsAccountData {
 
         final Collection<SavingsAccountChargeData> charges = null;
         final Collection<ChargeData> chargeOptions = null;
+        final Collection<GuarantorData> guarantors = null;
 
         return new SavingsAccountData(accountId, accountNo, depositType, externalId, groupId, groupName, clientId, clientName, productId,
                 productName, fieldOfficerId, fieldOfficerName, status, timeline, currency, nominalAnnualInterestRate, interestPeriodType,
@@ -172,7 +177,7 @@ public class SavingsAccountData {
                 fieldOfficerOptions, interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions,
                 interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions,
                 withdrawalFeeTypeOptions, charges, chargeOptions, allowOverdraft, overdraftLimit, minRequiredBalance,
-                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds,  releaseguarantor);
+                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds,  releaseguarantor, guarantors);
     }
 
     public static SavingsAccountData lookupWithProductDetails(final Long accountId, final String accountNo,
@@ -223,6 +228,7 @@ public class SavingsAccountData {
 
         final Collection<SavingsAccountChargeData> charges = null;
         final Collection<ChargeData> chargeOptions = null;
+        final Collection<GuarantorData> guarantors = null;
 
         return new SavingsAccountData(accountId, accountNo, depositType, externalId, groupId, groupName, clientId, clientName, productId,
                 productName, fieldOfficerId, fieldOfficerName, status, timeline, currency, nominalAnnualInterestRate, interestPeriodType,
@@ -231,11 +237,12 @@ public class SavingsAccountData {
                 fieldOfficerOptions, interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions,
                 interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions,
                 withdrawalFeeTypeOptions, charges, chargeOptions, allowOverdraft, overdraftLimit, minRequiredBalance,
-                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor);
+                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor, guarantors);
     }
 
     public static SavingsAccountData withTemplateOptions(final SavingsAccountData account, final SavingsAccountData template,
-            final Collection<SavingsAccountTransactionData> transactions, final Collection<SavingsAccountChargeData> charges) {
+            final Collection<SavingsAccountTransactionData> transactions, final Collection<SavingsAccountChargeData> charges,
+            final Collection<GuarantorData> guarantors) {
 
         if (template == null) {
             final Collection<SavingsProductData> productOptions = null;
@@ -250,7 +257,7 @@ public class SavingsAccountData {
 
             return withTemplateOptions(account, productOptions, fieldOfficerOptions, interestCompoundingPeriodTypeOptions,
                     interestPostingPeriodTypeOptions, interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions,
-                    lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, transactions, charges, chargeOptions);
+                    lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, transactions, charges, chargeOptions, guarantors);
         }
 
         return new SavingsAccountData(account.id, account.accountNo, account.depositType, account.externalId, account.groupId,
@@ -264,7 +271,7 @@ public class SavingsAccountData {
                 template.interestCalculationDaysInYearTypeOptions, template.lockinPeriodFrequencyTypeOptions,
                 template.withdrawalFeeTypeOptions, charges, template.chargeOptions, account.allowOverdraft, account.overdraftLimit,
                 account.minRequiredBalance, account.enforceMinRequiredBalance, account.minBalanceForInterestCalculation,
-                account.onHoldFunds, account.releaseguarantor);
+                account.onHoldFunds, account.releaseguarantor, guarantors);
     }
 
     public static SavingsAccountData withTemplateOptions(final SavingsAccountData account,
@@ -275,7 +282,7 @@ public class SavingsAccountData {
             final Collection<EnumOptionData> interestCalculationDaysInYearTypeOptions,
             final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions, final Collection<EnumOptionData> withdrawalFeeTypeOptions,
             final Collection<SavingsAccountTransactionData> transactions, final Collection<SavingsAccountChargeData> charges,
-            final Collection<ChargeData> chargeOptions) {
+            final Collection<ChargeData> chargeOptions, Collection<GuarantorData> guarantors) {
 
         return new SavingsAccountData(account.id, account.accountNo, account.depositType, account.externalId, account.groupId,
                 account.groupName, account.clientId, account.clientName, account.savingsProductId, account.savingsProductName,
@@ -287,7 +294,7 @@ public class SavingsAccountData {
                 interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions,
                 withdrawalFeeTypeOptions, charges, chargeOptions, account.allowOverdraft, account.overdraftLimit,
                 account.minRequiredBalance, account.enforceMinRequiredBalance, account.minBalanceForInterestCalculation,
-                account.onHoldFunds, account.releaseguarantor);
+                account.onHoldFunds, account.releaseguarantor, guarantors);
     }
 
     public static SavingsAccountData withClientTemplate(final Long clientId, final String clientName, final Long groupId,
@@ -340,6 +347,7 @@ public class SavingsAccountData {
 
         final Collection<SavingsAccountChargeData> charges = null;
         final Collection<ChargeData> chargeOptions = null;
+        final Collection<GuarantorData> guarantors = null;
 
         return new SavingsAccountData(id, accountNo, depositType, externalId, groupId, groupName, clientId, clientName, productId,
                 productName, fieldOfficerId, fieldOfficerName, status, timeline, currency, nominalAnnualInterestRate, interestPeriodType,
@@ -348,7 +356,7 @@ public class SavingsAccountData {
                 fieldOfficerOptions, interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions,
                 interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions,
                 withdrawalFeeTypeOptions, charges, chargeOptions, allowOverdraft, overdraftLimit, minRequiredBalance,
-                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor);
+                enforceMinRequiredBalance, minBalanceForInterestCalculation, onHoldFunds, releaseguarantor, guarantors);
     }
 
     private SavingsAccountData(final Long id, final String accountNo, final EnumOptionData depositType, final String externalId,
@@ -368,7 +376,7 @@ public class SavingsAccountData {
             final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions, final Collection<EnumOptionData> withdrawalFeeTypeOptions,
             final Collection<SavingsAccountChargeData> charges, final Collection<ChargeData> chargeOptions, final boolean allowOverdraft,
             final BigDecimal overdraftLimit, final BigDecimal minRequiredBalance, final boolean enforceMinRequiredBalance,
-            final BigDecimal minBalanceForInterestCalculation, final BigDecimal onHoldFunds, final boolean releaseguarantor) {
+            final BigDecimal minBalanceForInterestCalculation, final BigDecimal onHoldFunds, final boolean releaseguarantor, final Collection<GuarantorData> guarantors) {
         this.id = id;
         this.accountNo = accountNo;
         this.depositType = depositType;
@@ -426,6 +434,7 @@ public class SavingsAccountData {
         this.minBalanceForInterestCalculation = minBalanceForInterestCalculation;
         this.onHoldFunds = onHoldFunds;
         this.releaseguarantor = releaseguarantor;
+        this.guarantors = guarantors;
     }
 
     public SavingsAccountSummaryData getSummary() {
