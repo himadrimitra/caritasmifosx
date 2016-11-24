@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.risk.creditbureau.provider.data.CreditBureauResponse;
 import com.finflux.risk.creditbureau.provider.data.EnquiryAddressData;
+import com.finflux.risk.creditbureau.provider.data.EnquiryClientRelationshipData;
 import com.finflux.risk.creditbureau.provider.data.EnquiryDocumentData;
 import com.finflux.risk.creditbureau.provider.data.EnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.data.EnquiryResponse;
@@ -130,7 +131,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         headerSegment.setPRODUCTVER(highmarkCredentialsData.getPRODUCTVER());
         headerSegment.setREQMBR(highmarkCredentialsData.getREQMBR());
         headerSegment.setSUBMBRID(highmarkCredentialsData.getSUBMBRID());
-        headerSegment.setINQDTTM(new SimpleDateFormat("dd-MM-yyyy").format(new Date())); // requestdate
+        headerSegment.setINQDTTM(new SimpleDateFormat(HighmarkConstants.dateFormat).format(new Date())); // requestdate
         headerSegment.setREQVOLTYP(highmarkCredentialsData.getREQVOLTYP());
         headerSegment.setREQACTNTYP(requestType); // req type
         headerSegment.setTESTFLG(highmarkCredentialsData.getTESTFLG());
@@ -192,38 +193,84 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         // DOB
         APPLICANTSEGMENT.DOB dob = requestFactory.createAPPLICANTSEGMENTDOB();
         if ((!(requestData.getClientDOB() == null))) {
-            dob.setDOBDATE(new SimpleDateFormat("dd-MM-yyyy").format(requestData.getClientDOB()));
+            dob.setDOBDATE(new SimpleDateFormat(HighmarkConstants.dateFormat).format(requestData.getClientDOB()));
             applicantSegment.setDOB(dob);
         }
 
+        if (requestData.getGender() != null) {
+            applicantSegment.setGENDER(requestData.getGender());
+        }
+
         if (requestData.getDocumentList() != null && !requestData.getDocumentList().isEmpty()) {
-            APPLICANTSEGMENT.IDS ids = requestFactory.createAPPLICANTSEGMENTIDS();
-            List<APPLICANTSEGMENT.IDS.ID> idList = ids.getID();
+            APPLICANTSEGMENT.IDS documentIds = requestFactory.createAPPLICANTSEGMENTIDS();
+            List<APPLICANTSEGMENT.IDS.ID> documentList = documentIds.getID();
             for (EnquiryDocumentData enquiryDocumentData : requestData.getDocumentList()) {
-                APPLICANTSEGMENT.IDS.ID id = requestFactory.createAPPLICANTSEGMENTIDSID();
-                if (enquiryDocumentData.getClientIdentificationType().equalsIgnoreCase("1")) {
-                    id.setTYPE("ID02");
-                } else if (enquiryDocumentData.getClientIdentificationType().equalsIgnoreCase("2")) {
-                    id.setTYPE("ID05");
-                } else if (enquiryDocumentData.getClientIdentificationType().equalsIgnoreCase("3")) {
-                    id.setTYPE("ID03");
+                APPLICANTSEGMENT.IDS.ID documentId = requestFactory.createAPPLICANTSEGMENTIDSID();
+                if (enquiryDocumentData.getClientIdentificationTypeId() != null) {
+                    if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID01_PASSPORT())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID01_PASSPORT);
+                    } else if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID02_VOTER_ID())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID02_VOTER_ID);
+                    } else if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID03_UID())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID03_UID);
+                    } else if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID04_OTHER())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID04_OTHER);
+                    } else if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID05_RATION_CARD())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID05_RATION_CARD);
+                    } else if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID06_DRIVING_CARD())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID06_DRIVING_CARD);
+                    } else if (enquiryDocumentData.getClientIdentificationTypeId().equalsIgnoreCase(
+                            highmarkCredentialsData.getDOCUMENT_TYPE_ID07_PAN())) {
+                        documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID07_PAN);
+                    } else {
+                        documentId.setTYPE("");
+                    }
                 } else {
-                    id.setTYPE("");
+                    documentId.setTYPE("");
                 }
-                id.setVALUE(enquiryDocumentData.getClientIdentification());
-                idList.add(id);
+                documentId.setVALUE(enquiryDocumentData.getClientIdentification());
+                documentList.add(documentId);
             }
-            applicantSegment.setIDS(ids);
+            applicantSegment.setIDS(documentIds);
+        }
+
+        if (requestData.getRelationshipList() != null && !requestData.getRelationshipList().isEmpty()) {
+            APPLICANTSEGMENT.RELATIONS relations = requestFactory.createAPPLICANTSEGMENTRELATIONS();
+            List<APPLICANTSEGMENT.RELATIONS.RELATION> relationshipList = relations.getRELATION();
+            for (EnquiryClientRelationshipData relationshipData : requestData.getRelationshipList()) {
+                APPLICANTSEGMENT.RELATIONS.RELATION relation = requestFactory.createAPPLICANTSEGMENTRELATIONSRELATION();
+                if (highmarkCredentialsData.getRELATIONSHIP_TYPE_K01_FATHER().equalsIgnoreCase(relationshipData.getRelationshipTypeId())) {
+                    relation.setTYPE(HighmarkConstants.RELATIONSHIP_TYPE_K01_FATHER);
+                    relation.setNAME(relationshipData.getName());
+                } else if (highmarkCredentialsData.getRELATIONSHIP_TYPE_SPOUSE().equalsIgnoreCase(relationshipData.getRelationshipTypeId())) {
+                    if (highmarkCredentialsData.getGENDER_TYPE_MALE().equalsIgnoreCase(requestData.getGenderId())) {
+                        relation.setTYPE(HighmarkConstants.RELATIONSHIP_TYPE_K06_WIFE);
+                        relation.setNAME(relationshipData.getName());
+                    } else if (highmarkCredentialsData.getGENDER_TYPE_FEMALE().equalsIgnoreCase(requestData.getGenderId())) {
+                        relation.setTYPE(HighmarkConstants.RELATIONSHIP_TYPE_K02_HUSBAND);
+                        relation.setNAME(relationshipData.getName());
+                    }
+                }
+                relationshipList.add(relation);
+            }
+            applicantSegment.setRELATIONS(relations);
         }
 
         APPLICANTSEGMENT.PHONES.PHONE phone = requestFactory.createAPPLICANTSEGMENTPHONESPHONE();
-        phone.setTELENOTYPE("P07");
+        phone.setTELENOTYPE("");
 
         APPLICANTSEGMENT.PHONES phones = requestFactory.createAPPLICANTSEGMENTPHONES();
         List<APPLICANTSEGMENT.PHONES.PHONE> phoneList = phones.getPHONE();
         if (requestData.getClientMobileNo() == null || requestData.getClientMobileNo().isEmpty()) {
             phone.setTELENO(null);
         } else {
+            phone.setTELENOTYPE(HighmarkConstants.PHONE_TYPE_P03_MOBILE);
             phone.setTELENO(new BigInteger(requestData.getClientMobileNo()));
             phoneList.add(phone);
             applicantSegment.setPHONES(phones);
@@ -236,10 +283,36 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         List<ADDRESSSEGMENT.ADDRESS> addressList = addressSegment.getADDRESS();
         for (EnquiryAddressData addressData : requestData.getAddressList()) {
             ADDRESSSEGMENT.ADDRESS address = requestFactory.createADDRESSSEGMENTADDRESS();
-            address.setTYPE("D04");
+            if (addressData.getClientAddressTypeId() != null && addressData.getClientAddressTypeId().length() > 0) {
+                if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D01_RESIDENCE())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D01_RESIDENCE);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D02_COMPANY())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D02_COMPANY);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D03_RESCUMOFF())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D03_RESCUMOFF);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D04_PERMANENT())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D04_PERMANENT);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D05_CURRENT())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D05_CURRENT);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D06_FOREIGN())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D06_FOREIGN);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D07_MILITARY())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D07_MILITARY);
+                } else if (addressData.getClientAddressTypeId().equalsIgnoreCase(highmarkCredentialsData.getADDRESS_TYPE_D08_OTHER())) {
+                    address.setTYPE(HighmarkConstants.ADDRESS_TYPE_D08_OTHER);
+                } else {
+                    address.setTYPE("");
+                }
+            } else {
+                address.setTYPE("");
+            }
             address.setADDRESS1(addressData.getClientAddress());
             address.setCITY(addressData.getClientCity());
-            address.setSTATE("KA");
+            if (addressData.getClientStateCode() != null) {
+                address.setSTATE(addressData.getClientStateCode());
+            } else {
+                address.setSTATE("");
+            }
             if (addressData.getClientPin() != null && !addressData.getClientPin().isEmpty()) {
                 address.setPIN(Integer.parseInt(addressData.getClientPin()));
             }
@@ -255,7 +328,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         applicationSegment.setCREDTINQPURPSTYP(highmarkCredentialsData.getCREDTINQPURPSTYP());
         applicationSegment.setCREDTINQPURPSTYPDESC(highmarkCredentialsData.getCREDTINQPURPSTYPDESC());
         applicationSegment.setCREDITINQUIRYSTAGE(highmarkCredentialsData.getCREDITINQUIRYSTAGE());
-        applicationSegment.setCREDTRPTTRNDTTM(new SimpleDateFormat("dd-MM-yyyy").format(new Date()));
+        applicationSegment.setCREDTRPTTRNDTTM(new SimpleDateFormat(HighmarkConstants.dateFormat).format(new Date()));
         applicationSegment.setMBRID(highmarkCredentialsData.getREQMBR());
         applicationSegment.setBRANCHID(requestData.getBranchId().toString());
         String losAppId = null;
