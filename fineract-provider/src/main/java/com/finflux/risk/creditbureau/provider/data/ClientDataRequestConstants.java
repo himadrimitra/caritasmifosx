@@ -21,8 +21,4 @@ public class ClientDataRequestConstants {
     public static final String clientId = "clientId";
     public static final String branchId = "branchId";
     public static final String loanProductId = "loanProductId";
-    public static final String gender = "gender";
-    public static final String genderId = "genderId";
-    public static final String clientIdentificationTypeId = "clientIdentificationTypeId";
-    public static final String clientAddressTypeId = "clientAddressTypeId";
 }

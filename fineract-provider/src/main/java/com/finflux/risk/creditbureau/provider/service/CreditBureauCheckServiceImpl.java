@@ -211,8 +211,6 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             if (loanEnquiryData != null) {
                 loanEnquiryData.setAddressList(creditBureauEnquiryReadService.getClientAddressData(loanEnquiryData.getClientId()));
                 loanEnquiryData.setDocumentList(creditBureauEnquiryReadService.getClientDocumentData(loanEnquiryData.getClientId()));
-                loanEnquiryData
-                        .setRelationshipList(creditBureauEnquiryReadService.getClientRelationshipData(loanEnquiryData.getClientId()));
                 loanEnquiryReferenceData.setEnquiryData(loanEnquiryData);
                 loanEnquiryReferenceDataList.add(loanEnquiryReferenceData);
             }
