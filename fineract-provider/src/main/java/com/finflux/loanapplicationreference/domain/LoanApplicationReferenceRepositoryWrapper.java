@@ -18,9 +18,9 @@ public class LoanApplicationReferenceRepositoryWrapper {
     }
 
     public LoanApplicationReference findOneWithNotFoundDetection(final Long loanApplicationReferenceId) {
-        final LoanApplicationReference LoanApplicationReference = this.repository.findOne(loanApplicationReferenceId);
-        if (LoanApplicationReference == null) { throw new LoanApplicationReferenceNotFoundException(loanApplicationReferenceId); }
-        return LoanApplicationReference;
+        final LoanApplicationReference loanApplicationReference = this.repository.findOne(loanApplicationReferenceId);
+        if (loanApplicationReference == null) { throw new LoanApplicationReferenceNotFoundException(loanApplicationReferenceId); }
+        return loanApplicationReference;
     }
 
     public void save(final LoanApplicationReference loanApplicationReference) {

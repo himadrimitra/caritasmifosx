@@ -23,10 +23,6 @@ public class LoanApplicationDataLayer implements DataLayer {
         keyValueMap = dataLayerReadPlatformService.getAllMatrix(clientId);
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
         this.ruleCacheService = ruleCacheService;
-        // keyValueMap.put("age", 25L);
-        // // keyValueMap.put("sex", "M");
-        // // keyValueMap.put("isMarried", true);
-        // keyValueMap.put("name", "dhirendra");
     }
 
     @Override

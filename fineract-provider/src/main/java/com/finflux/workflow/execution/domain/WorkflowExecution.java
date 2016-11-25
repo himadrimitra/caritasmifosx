@@ -14,16 +14,24 @@ public class WorkflowExecution extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "workflow_id", nullable = false)
     private Long workflowId;
 
+    @Column(name = "entity_type", nullable = false)
+    private Integer entityType;
+
+    @Column(name = "entity_id", nullable = true)
+    private Long entityId;
+
     @Column(name = "execution_status", nullable = false)
     private Integer executionStatus;
 
     protected WorkflowExecution() {}
 
-    private WorkflowExecution(final Long workflowId) {
+    private WorkflowExecution(final Long workflowId, final Integer entityType, final Long entityId) {
         this.workflowId = workflowId;
+        this.entityType = entityType;
+        this.entityId = entityId;
     }
 
-    public static WorkflowExecution create(final Long workflowId) {
-        return new WorkflowExecution(workflowId);
+    public static WorkflowExecution create(final Long workflowId, final Integer entityType, final Long entityId) {
+        return new WorkflowExecution(workflowId, entityType, entityId);
     }
 }

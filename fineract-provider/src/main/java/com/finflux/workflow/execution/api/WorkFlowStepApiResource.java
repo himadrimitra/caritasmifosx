@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.finflux.kyc.address.api.AddressApiConstants;
+import com.finflux.workflow.execution.data.WorkFlowStepActionData;
 import com.finflux.workflow.execution.service.WorkFlowStepReadService;
 
 @Path("/workflowsteps")
@@ -52,13 +52,25 @@ public class WorkFlowStepApiResource {
     public String retrieveLoanProductWorkFlowSummary(@QueryParam("loanProductId") final Long loanProductId,
             @QueryParam("officeId") final Long officeId, @Context final UriInfo uriInfo) {
 
-        this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
-
         final List<LoanProductData> loanProductWorkFlowSummaries = this.workFlowTaskReadService.retrieveLoanProductWorkFlowSummary(
                 loanProductId, officeId);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
         return this.toApiJsonSerializer.serialize(settings, loanProductWorkFlowSummaries);
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("actions")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @Context final UriInfo uriInfo) {
+
+        final List<WorkFlowStepActionData> workFlowStepActions = this.workFlowTaskReadService.retrieveWorkFlowStepActions(filterBy);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.toApiJsonSerializer.serialize(settings, workFlowStepActions);
     }
 }

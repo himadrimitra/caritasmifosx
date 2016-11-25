@@ -2,9 +2,7 @@ package com.finflux.workflow.execution.service.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -15,24 +13,16 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
-import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepository;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
 import com.finflux.ruleengine.configuration.service.RuleCacheService;
-import com.finflux.ruleengine.execution.data.EligibilityResult;
-import com.finflux.ruleengine.execution.data.EligibilityStatus;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
-import com.finflux.ruleengine.execution.service.impl.LoanApplicationDataLayer;
-import com.finflux.ruleengine.lib.FieldUndefinedException;
-import com.finflux.ruleengine.lib.InvalidExpressionException;
-import com.finflux.ruleengine.lib.data.ExpressionNode;
-import com.finflux.ruleengine.lib.data.RuleResult;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
 import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
-import com.finflux.workflow.configuration.domain.LoanProductWorkflow;
-import com.finflux.workflow.configuration.domain.LoanProductWorkflowRepository;
+import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMapping;
+import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMappingRepository;
 import com.finflux.workflow.configuration.domain.WorkflowStep;
 import com.finflux.workflow.configuration.domain.WorkflowStepAction;
 import com.finflux.workflow.configuration.domain.WorkflowStepActionRepository;
@@ -41,20 +31,17 @@ import com.finflux.workflow.configuration.domain.WorkflowStepActionRoleRepositor
 import com.finflux.workflow.configuration.domain.WorkflowStepRepository;
 import com.finflux.workflow.execution.data.StepAction;
 import com.finflux.workflow.execution.data.StepStatus;
+import com.finflux.workflow.execution.data.WorkFlowEntityType;
+import com.finflux.workflow.execution.data.WorkFlowExecutionEntityType;
 import com.finflux.workflow.execution.data.WorkflowExecutionData;
 import com.finflux.workflow.execution.data.WorkflowExecutionStepData;
-import com.finflux.workflow.execution.domain.LoanApplicationWorkflowExecution;
-import com.finflux.workflow.execution.domain.LoanApplicationWorkflowExecutionRepository;
 import com.finflux.workflow.execution.domain.WorkflowExecution;
 import com.finflux.workflow.execution.domain.WorkflowExecutionRepository;
 import com.finflux.workflow.execution.domain.WorkflowExecutionStep;
 import com.finflux.workflow.execution.domain.WorkflowExecutionStepRepository;
 import com.finflux.workflow.execution.exception.WorkflowStepNoActionPermissionException;
 import com.finflux.workflow.execution.service.WorkflowExecutionService;
-import com.finflux.workflow.execution.service.WorkflowExecutionWriteService;
 import com.finflux.workflow.execution.service.WorkflowReadService;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 /**
  * Created by dhirendra on 22/09/16.
@@ -64,14 +51,11 @@ import com.google.gson.reflect.TypeToken;
 public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
 
     private final WorkflowReadService workflowReadService;
-    private final WorkflowExecutionWriteService workflowWriteService;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final WorkflowExecutionStepRepository workflowExecutionStepRepository;
     private final WorkflowStepRepository workflowStepRepository;
     private final WorkflowStepActionRepository workflowStepActionRepository;
-    private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
-    private final LoanProductWorkflowRepository loanProductWorkflowRepository;
-    private final LoanApplicationWorkflowExecutionRepository loanApplicationWorkflowExecutionRepository;
+    private final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository;
     private final RoleReadPlatformService roleReadPlatformService;
     private final PlatformSecurityContext context;
     private final RuleExecutionService ruleExecutionService;
@@ -80,28 +64,24 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
     private final ExpressionExecutor expressionExecutor;
     private final WorkflowStepActionRoleRepository workflowStepActionRoleRepository;
+    private final WorkflowEntityTypeMappingRepository workflowEntityTypeMappingRepository;
 
     @Autowired
     public WorkflowExecutionServiceImpl(final WorkflowReadService workflowExecutionReadService,
-            final WorkflowExecutionWriteService workflowExecutionWriteService,
             final WorkflowExecutionRepository workflowExecutionRepository,
             final WorkflowExecutionStepRepository workflowExecutionStepRepository, final WorkflowStepRepository workflowStepRepository,
-            final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
-            final LoanProductWorkflowRepository loanProductWorkflowRepository,
-            final LoanApplicationWorkflowExecutionRepository loanApplicationWorkflowExecutionRepository,
+            final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
             final WorkflowStepActionRepository workflowStepActionRepository, final RoleReadPlatformService roleReadPlatformService,
             final PlatformSecurityContext context, final RuleExecutionService ruleExecutionService,
             final DataLayerReadPlatformService dataLayerReadPlatformService, final RuleCacheService ruleCacheService,
             final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-            final MyExpressionExecutor expressionExecutor, final WorkflowStepActionRoleRepository workflowStepActionRoleRepository) {
+            final MyExpressionExecutor expressionExecutor, final WorkflowStepActionRoleRepository workflowStepActionRoleRepository,
+            final WorkflowEntityTypeMappingRepository workflowEntityTypeMappingRepository) {
         this.workflowReadService = workflowExecutionReadService;
-        this.workflowWriteService = workflowExecutionWriteService;
         this.workflowExecutionRepository = workflowExecutionRepository;
         this.workflowExecutionStepRepository = workflowExecutionStepRepository;
         this.workflowStepRepository = workflowStepRepository;
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
-        this.loanProductWorkflowRepository = loanProductWorkflowRepository;
-        this.loanApplicationWorkflowExecutionRepository = loanApplicationWorkflowExecutionRepository;
         this.workflowStepActionRepository = workflowStepActionRepository;
         this.roleReadPlatformService = roleReadPlatformService;
         this.context = context;
@@ -111,35 +91,45 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.expressionExecutor = expressionExecutor;
         this.workflowStepActionRoleRepository = workflowStepActionRoleRepository;
+        this.workflowEntityTypeMappingRepository = workflowEntityTypeMappingRepository;
     }
 
     @Override
-    public Long getOrCreateWorkflowExecutionForLoanApplication(final Long loanApplicationId) {
-        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = loanApplicationWorkflowExecutionRepository
-                .findOneByLoanApplicationId(loanApplicationId);
-        if (loanApplicationWorkflowExecution != null) { return loanApplicationWorkflowExecution.getWorkflowExecutionId(); }
-        return createWorkflowExecutionForLoanApplication(loanApplicationId);
+    public Long getOrCreateWorkflowExecution(final Integer entityTypeId, final Long entityId) {
+        final WorkflowExecution workflowExecution = this.workflowExecutionRepository.findByEntityTypeAndEntityId(entityTypeId, entityId);
+        if (workflowExecution != null) { return workflowExecution.getId(); }
+        return createWorkflowExecution(entityTypeId, entityId);
     }
 
+    /**
+     * Create Work Flow Execution for entity type and entity id.
+     * 
+     * @param entityTypeId
+     * @param entityId
+     * @return
+     */
     @Transactional
-    private Long createWorkflowExecutionForLoanApplication(final Long loanApplicationId) {
-        // create workflow
-        LoanApplicationReference loanApplicationReference = loanApplicationReferenceRepository.findOne(loanApplicationId);
-        Long loanProductId = loanApplicationReference.getLoanProduct().getId();
-        LoanProductWorkflow loanProductWorkflow = loanProductWorkflowRepository.findOneByLoanProductId(loanProductId);
-        if (loanProductWorkflow == null) { return null; }
-        Long workflowId = loanProductWorkflow.getWorkflowId();
-        Long workflowExecutionId = createWorkflowExecutionForWorkflow(workflowId);
-        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = LoanApplicationWorkflowExecution.create(loanApplicationId,
-                workflowExecutionId);
-        loanApplicationWorkflowExecutionRepository.save(loanApplicationWorkflowExecution);
-        return workflowExecutionId;
+    private Long createWorkflowExecution(final Integer entityTypeId, final Long entityId) {
+        WorkFlowEntityType workFlowEntityType = null;
+        WorkflowEntityTypeMapping workflowEntityTypeMapping = null;
+        final WorkFlowExecutionEntityType workFlowExecutionEntityType = WorkFlowExecutionEntityType.fromInt(entityTypeId);
+        if (workFlowExecutionEntityType != null && workFlowExecutionEntityType.toString().equalsIgnoreCase("LOAN_APPLICATION")) {
+            final LoanApplicationReference loanApplicationReference = loanApplicationReferenceRepository
+                    .findOneWithNotFoundDetection(entityId);
+            final Long loanProductId = loanApplicationReference.getLoanProduct().getId();
+            workFlowEntityType = WorkFlowEntityType.LOAN_PRODUCT;
+            workflowEntityTypeMapping = this.workflowEntityTypeMappingRepository.findOneByEntityTypeAndEntityId(workFlowEntityType.getValue(),
+                    loanProductId);
+        }
+        if (workflowEntityTypeMapping == null) { return null; }
+        final Long workflowId = workflowEntityTypeMapping.getWorkflowId();
+        return createWorkflowExecutionForWorkflow(workflowId, entityTypeId, entityId);
     }
 
-    private Long createWorkflowExecutionForWorkflow(final Long workflowId) {
+    private Long createWorkflowExecutionForWorkflow(final Long workflowId, final Integer entityTypeId, final Long entityId) {
         final List<Long> workflowStepIds = this.workflowReadService.getWorkflowStepsIds(workflowId);
         if (!workflowStepIds.isEmpty()) {
-            final WorkflowExecution workflowExecution = WorkflowExecution.create(workflowId);
+            final WorkflowExecution workflowExecution = WorkflowExecution.create(workflowId, entityTypeId, entityId);
             this.workflowExecutionRepository.save(workflowExecution);
             int index = 0;
             for (final Long workflowStepId : workflowStepIds) {
@@ -217,11 +207,13 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
         }
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void runCriteriaCheckAndPopulate(WorkflowExecutionStep workflowExecutionStep) {
-        WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
-        LoanApplicationWorkflowExecution loanApplicationWorkflowExecution = loanApplicationWorkflowExecutionRepository
-                .findOneByWorkflowExecutionId(workflowExecutionStep.getWorkflowExecutionId());
+    @SuppressWarnings({ })
+    private void runCriteriaCheckAndPopulate(final WorkflowExecutionStep workflowExecutionStep) {
+        /**
+         * We will reuse this code in future
+         */
+        /*final WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
+        
         Long loanApplicationId = loanApplicationWorkflowExecution.getLoanApplicationId();
         LoanApplicationReferenceData loanApplicationReference = loanApplicationReferenceReadPlatformService.retrieveOne(loanApplicationId);
         Long clientId = loanApplicationReference.getClientId();
@@ -269,7 +261,7 @@ public class WorkflowExecutionServiceImpl implements WorkflowExecutionService {
             nextEligibleAction = StepAction.REJECT;
         }
         workflowExecutionStep.setCriteriaAction(nextEligibleAction.getValue());
-        workflowExecutionStep.setCriteriaResult(new Gson().toJson(eligibilityResult));
+        workflowExecutionStep.setCriteriaResult(new Gson().toJson(eligibilityResult));*/
     }
 
     private void checkUserhasActionPrivilege(WorkflowExecutionStep workflowExecutionStep, StepAction stepAction) {
