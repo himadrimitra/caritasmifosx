@@ -79,6 +79,9 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessin
 import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
 import org.apache.fineract.portfolio.loanproduct.exception.LinkedAccountRequiredException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,6 +114,7 @@ public class LoanAssembler {
     private final LoanUtilService loanUtilService;
     private final LoanPurposeRepositoryWrapper loanPurposeRepository;
     private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
+    private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 
     @Autowired
     public LoanAssembler(final FromJsonHelper fromApiJsonHelper, final LoanRepositoryWrapper loanRepository,
@@ -124,7 +128,8 @@ public class LoanAssembler {
             final HolidayRepository holidayRepository, final ConfigurationDomainService configurationDomainService,
             final WorkingDaysRepositoryWrapper workingDaysRepository, final LoanUtilService loanUtilService,
             final LoanPurposeRepositoryWrapper loanPurposeRepository,
-            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler) {
+            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler,
+            final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanRepository = loanRepository;
         this.loanProductRepository = loanProductRepository;
@@ -145,6 +150,7 @@ public class LoanAssembler {
         this.loanUtilService = loanUtilService;
         this.loanPurposeRepository =loanPurposeRepository;
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
+        this.paymentTypeRepository = paymentTypeRepository;
     }
 
     public Loan assembleFrom(final Long accountId) {
@@ -249,7 +255,20 @@ public class LoanAssembler {
         final String loanTypeParameterName = "loanType";
         final String loanTypeStr = this.fromApiJsonHelper.extractStringNamed(loanTypeParameterName, element);
         final EnumOptionData loanType = AccountEnumerations.loanType(loanTypeStr);
-       
+        PaymentType expectedDisbursalPaymentType = null;
+        PaymentType expectedRepaymentPaymentType = null;
+        if(element.getAsJsonObject().has(LoanApiConstants.expectedDisbursalPaymentTypeParamName)){
+    	   Integer expectedDisbursalPaymentTypeId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, element);
+    	   if(expectedDisbursalPaymentTypeId != null){
+    		   expectedDisbursalPaymentType = this.paymentTypeRepository.findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId.longValue());
+    	   }
+        }
+        if(element.getAsJsonObject().has(LoanApiConstants.expectedRepaymentPaymentTypeParamName)){
+        	Integer expectedRepaymentPaymentTypeId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, element);
+     	   if(expectedRepaymentPaymentTypeId != null){
+     		  expectedRepaymentPaymentType = this.paymentTypeRepository.findOneWithNotFoundDetection(expectedRepaymentPaymentTypeId.longValue());
+     	   }
+        }
         if (clientId != null) {
             client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
@@ -268,21 +287,21 @@ public class LoanAssembler {
             loanApplication = Loan.newIndividualLoanApplicationFromGroup(accountNo, client, group, loanType.getId().intValue(),
                     loanProduct, fund, loanOfficer, loanPurpose, loanTransactionProcessingStrategy, loanProductRelatedDetail, loanCharges,
                     collateral, syncDisbursementWithMeeting, fixedEmiAmount, disbursementDetails, maxOutstandingLoanBalance,
-                    createStandingInstructionAtDisbursement, isFloatingInterestRate, interestRateDifferential);
+                    createStandingInstructionAtDisbursement, isFloatingInterestRate, interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
 
         } else if (group != null) {
 
             loanApplication = Loan.newGroupLoanApplication(accountNo, group, loanType.getId().intValue(), loanProduct, fund, loanOfficer,
                     loanPurpose, loanTransactionProcessingStrategy, loanProductRelatedDetail, loanCharges, collateral,
                     syncDisbursementWithMeeting, fixedEmiAmount, disbursementDetails, maxOutstandingLoanBalance,
-                    createStandingInstructionAtDisbursement,isFloatingInterestRate, interestRateDifferential);
+                    createStandingInstructionAtDisbursement,isFloatingInterestRate, interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
 
         } else if (client != null) {
 
             loanApplication = Loan.newIndividualLoanApplication(accountNo, client, loanType.getId().intValue(), loanProduct, fund,
                     loanOfficer, loanPurpose, loanTransactionProcessingStrategy, loanProductRelatedDetail, loanCharges, collateral,
                     fixedEmiAmount, disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement,
-                    isFloatingInterestRate, interestRateDifferential);
+                    isFloatingInterestRate, interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
 
         }
 

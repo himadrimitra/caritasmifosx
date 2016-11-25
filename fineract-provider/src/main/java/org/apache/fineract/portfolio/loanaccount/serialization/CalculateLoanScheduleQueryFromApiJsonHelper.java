@@ -70,7 +70,8 @@ public final class CalculateLoanScheduleQueryFromApiJsonHelper {
             LoanApiConstants.isFloatingInterestRateParameterName, LoanApiConstants.interestRateDifferentialParameterName,
             LoanApiConstants.repaymentFrequencyNthDayTypeParameterName, LoanApiConstants.repaymentFrequencyDayOfWeekTypeParameterName,LoanApiConstants.recurringMoratoriumOnPrincipalPeriods,
             LoanProductConstants.isSubsidyApplicableParamName, "fixedEmiAmount", 
-            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName));
+            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName, LoanApiConstants.expectedDisbursalPaymentTypeParamName,
+            LoanApiConstants.expectedRepaymentPaymentTypeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 

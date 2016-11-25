@@ -147,4 +147,9 @@ public interface LoanApiConstants {
     public static final String feePortionParamName = "feePortion";
     public static final String penaltyPortionParamName = "penaltyPortion";
     public static final String transactionAmountParamName = "transactionAmount";
+    
+    //expected payment type
+    public static final String expectedDisbursalPaymentTypeParamName = "expectedDisbursalPaymentType";
+    public static final String expectedRepaymentPaymentTypeParamName = "expectedRepaymentPaymentType";
+    public static final String paymentOptionsParamName = "paymentOptions";
 }

@@ -112,6 +112,8 @@ import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatform
 import org.apache.fineract.portfolio.note.data.NoteData;
 import org.apache.fineract.portfolio.note.domain.NoteType;
 import org.apache.fineract.portfolio.note.service.NoteReadPlatformServiceImpl;
+import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
+import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -144,7 +146,7 @@ public class LoansApiResource {
             "syncDisbursementWithMeeting", "loanCounter", "loanProductCounter", "notes", "accountLinkingOptions", "linkedAccount",
             "interestRateDifferential", "isFloatingInterestRate", "interestRatesPeriods",
             LoanApiConstants.canUseForTopup,
-            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.topupAmount, LoanApiConstants.clientActiveLoanOptions));
+            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.topupAmount, LoanApiConstants.clientActiveLoanOptions, LoanApiConstants.paymentOptionsParamName));
 
     private final Set<String> LOAN_APPROVAL_DATA_PARAMETERS = new HashSet<>(Arrays.asList("approvalDate", "approvalAmount"));
     private final String resourceNameForPermissions = "LOAN";
@@ -175,6 +177,7 @@ public class LoansApiResource {
     private final PledgeReadPlatformService pledgeReadPlatformService;
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
+    private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
 
     @Autowired
     public LoansApiResource(final PlatformSecurityContext context, final LoanReadPlatformService loanReadPlatformService,
@@ -195,7 +198,7 @@ public class LoansApiResource {
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
             final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService, final PledgeReadPlatformService pledgeReadPlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService) {
+            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService, final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
         this.context = context;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
@@ -222,6 +225,7 @@ public class LoansApiResource {
         this.pledgeReadPlatformService = pledgeReadPlatformService;
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.loanPurposeGroupReadPlatformService = loanPurposeGroupReadPlatformService;
+        this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
     }
 
     /*
@@ -268,6 +272,7 @@ public class LoansApiResource {
         // template
         final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive);
 
+        
         // options
         Collection<StaffData> allowedLoanOfficers = null;
         Collection<CodeValueData> loanCollateralOptions = null;
@@ -625,7 +630,10 @@ public class LoansApiResource {
 
             paidInAdvanceTemplate = this.loanReadPlatformService.retrieveTotalPaidInAdvance(loanId);
         }
-
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
+				.retrieveAllPaymentTypes();
+        loanBasicDetails.setPaymentOptions(paymentOptions);
+        
         final LoanAccountData loanAccount = LoanAccountData.associationsAndTemplate(loanBasicDetails, repaymentSchedule, loanRepayments,
                 charges, collateral, guarantors, meeting, productOptions, loanTermFrequencyTypeOptions, repaymentFrequencyTypeOptions,
                 repaymentFrequencyNthDayTypeOptions, repaymentFrequencyDayOfWeekTypeOptions, repaymentStrategyOptions, 

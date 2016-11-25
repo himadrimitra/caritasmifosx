@@ -98,7 +98,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanProductConstants.graceOnArrearsAgeingParameterName, LoanApiConstants.createStandingInstructionAtDisbursementParameterName, "pledgeId", "collateralUserValue",
             LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName,
             LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName,
-            LoanApiConstants.upfrontChargesAmountParamName));
+            LoanApiConstants.upfrontChargesAmountParamName,LoanApiConstants.expectedDisbursalPaymentTypeParamName,LoanApiConstants.expectedRepaymentPaymentTypeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
@@ -498,6 +498,17 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                     baseDataValidator.reset().parameter(LoanApiConstants.loanIdToClose).value(loanId).notNull().longGreaterThanZero();
                 }
             }
+        }
+
+        final String expectedDisbursalPaymentTypeParameterName = LoanApiConstants.expectedDisbursalPaymentTypeParamName;
+        if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+            final Long expectedDisbursalPaymentTypeId = this.fromApiJsonHelper.extractLongNamed(expectedDisbursalPaymentTypeParameterName, element);
+            baseDataValidator.reset().parameter(expectedDisbursalPaymentTypeParameterName).value(expectedDisbursalPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
+        }
+        final String expectedRepaymentPaymentTypeParameterName = LoanApiConstants.expectedRepaymentPaymentTypeParamName;
+        if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+            final Long expectedRepaymentPaymentTypeId = this.fromApiJsonHelper.extractLongNamed(expectedRepaymentPaymentTypeParameterName, element);
+            baseDataValidator.reset().parameter(expectedRepaymentPaymentTypeParameterName).value(expectedRepaymentPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
         }
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
@@ -940,6 +951,17 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                     baseDataValidator.reset().parameter(LoanApiConstants.loanIdToClose).value(loanId).notNull().longGreaterThanZero();
                 }
             }
+        }
+
+        final String expectedDisbursalPaymentTypeParameterName = LoanApiConstants.expectedDisbursalPaymentTypeParamName;
+        if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+            final Long expectedDisbursalPaymentTypeId = this.fromApiJsonHelper.extractLongNamed(expectedDisbursalPaymentTypeParameterName, element);
+            baseDataValidator.reset().parameter(expectedDisbursalPaymentTypeParameterName).value(expectedDisbursalPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
+        }
+        final String expectedRepaymentPaymentTypeParameterName = LoanApiConstants.expectedRepaymentPaymentTypeParamName;
+        if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+            final Long expectedRepaymentPaymentTypeId = this.fromApiJsonHelper.extractLongNamed(expectedRepaymentPaymentTypeParameterName, element);
+            baseDataValidator.reset().parameter(expectedRepaymentPaymentTypeParameterName).value(expectedRepaymentPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
         }
 
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
