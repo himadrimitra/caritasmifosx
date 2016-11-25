@@ -20,13 +20,10 @@ public class LoanEnquiryData {
     final BigDecimal loanAmount;
     final Long clientId;
     final Long branchId;
-    List<EnquiryClientRelationshipData> relationshipList;
-    final String gender;
-    final String genderId;
 
     public LoanEnquiryData(final String clientName, final Date clientDOB, final String clientMobileNo, final Long loanProductId,
             final BigDecimal loanAmount, final Long clientId, Long branchId, final String firstName, final String middlename,
-            final String lastName, final String gender, final String genderId) {
+            final String lastName) {
         super();
         this.clientName = clientName;
         this.clientDOB = clientDOB;
@@ -38,11 +35,8 @@ public class LoanEnquiryData {
         this.clientFirstName = firstName;
         this.clientLastName = lastName;
         this.clientMiddleName = middlename;
-        this.addressList = new ArrayList<>();
-        this.documentList = new ArrayList<>();
-        this.relationshipList = new ArrayList<>();
-        this.gender = gender;
-        this.genderId = genderId;
+        addressList = new ArrayList<>();
+        documentList = new ArrayList<>();
     }
 
     public String getClientName() {
@@ -107,21 +101,5 @@ public class LoanEnquiryData {
 
     public void setLoanApplicationId(String loanApplicationId) {
         this.loanApplicationId = loanApplicationId;
-    }
-
-    public List<EnquiryClientRelationshipData> getRelationshipList() {
-        return this.relationshipList;
-    }
-
-    public void setRelationshipList(final List<EnquiryClientRelationshipData> relationshipList) {
-        this.relationshipList = relationshipList;
-    }
-
-    public String getGender() {
-        return this.gender;
-    }
-
-    public String getGenderId() {
-        return this.genderId;
     }
 }

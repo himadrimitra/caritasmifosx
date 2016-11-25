@@ -91,7 +91,7 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
             return new SMTPCredentialsData(username, password, host, port, useTLS);
         }
     }
-
+    
     private static final class HighmarkCredentialsDataExtractor implements ResultSetExtractor<HighmarkCredentialsData> {
 
         @Override
@@ -119,42 +119,6 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
             String CREDTRPTTRNDTTM = null;
             String ORDEROFREQUEST = null;
             String HIGHMARKQUERY = null;
-            String DOCUMENT_TYPE_ID01_PASSPORT = null;
-            String DOCUMENT_TYPE_ID02_VOTER_ID = null;
-            String DOCUMENT_TYPE_ID03_UID = null;
-            String DOCUMENT_TYPE_ID04_OTHER = null;
-            String DOCUMENT_TYPE_ID05_RATION_CARD = null;
-            String DOCUMENT_TYPE_ID06_DRIVING_CARD = null;
-            String DOCUMENT_TYPE_ID07_PAN = null;
-
-            String ADDRESS_TYPE_D01_RESIDENCE = null;
-            String ADDRESS_TYPE_D02_COMPANY = null;
-            String ADDRESS_TYPE_D03_RESCUMOFF = null;
-            String ADDRESS_TYPE_D04_PERMANENT = null;
-            String ADDRESS_TYPE_D05_CURRENT = null;
-            String ADDRESS_TYPE_D06_FOREIGN = null;
-            String ADDRESS_TYPE_D07_MILITARY = null;
-            String ADDRESS_TYPE_D08_OTHER = null;
-
-            String GENDER_TYPE_MALE = null;
-            String GENDER_TYPE_FEMALE = null;
-            String RELATIONSHIP_TYPE_SPOUSE = null;
-
-            String RELATIONSHIP_TYPE_K01_FATHER = null;
-            String RELATIONSHIP_TYPE_K02_HUSBAND = null;
-            String RELATIONSHIP_TYPE_K03_MOTHER = null;
-            String RELATIONSHIP_TYPE_K04_SON = null;
-            String RELATIONSHIP_TYPE_K05_DAUGHTER = null;
-            String RELATIONSHIP_TYPE_K06_WIFE = null;
-            String RELATIONSHIP_TYPE_K07_BROTHER = null;
-            String RELATIONSHIP_TYPE_K08_MOTHER_IN_LAW = null;
-            String RELATIONSHIP_TYPE_K09_FATHER_IN_LAW = null;
-            String RELATIONSHIP_TYPE_K10_DAUGHTER_IN_LAW = null;
-            String RELATIONSHIP_TYPE_K11_SISTER_IN_LAW = null;
-            String RELATIONSHIP_TYPE_K12_SON_IN_LAW = null;
-            String RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW = null;
-            String RELATIONSHIP_TYPE_K15_OTHER = null;
-
             while (rs.next()) {
                 if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_AUTHFLG)) {
                     AUTHFLG = rs.getString("value");
@@ -222,154 +186,18 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
                 if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_ORDEROFREQUEST)) {
                     CREDTRPTTRNDTTM = rs.getString("value");
                 }
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_HIGHMARKQUERY)) {
+                if(rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.HIGHMARK_HIGHMARKQUERY)){
                     HIGHMARKQUERY = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID01_PASSPORT)) {
-                    DOCUMENT_TYPE_ID01_PASSPORT = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID02_VOTER_ID)) {
-                    DOCUMENT_TYPE_ID02_VOTER_ID = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID03_UID)) {
-                    DOCUMENT_TYPE_ID03_UID = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID04_OTHER)) {
-                    DOCUMENT_TYPE_ID04_OTHER = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID05_RATION_CARD)) {
-                    DOCUMENT_TYPE_ID05_RATION_CARD = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID06_DRIVING_CARD)) {
-                    DOCUMENT_TYPE_ID06_DRIVING_CARD = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_ID07_PAN)) {
-                    DOCUMENT_TYPE_ID07_PAN = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D01_RESIDENCE)) {
-                    ADDRESS_TYPE_D01_RESIDENCE = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D02_COMPANY)) {
-                    ADDRESS_TYPE_D02_COMPANY = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D03_RESCUMOFF)) {
-                    ADDRESS_TYPE_D03_RESCUMOFF = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D04_PERMANENT)) {
-                    ADDRESS_TYPE_D04_PERMANENT = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D05_CURRENT)) {
-                    ADDRESS_TYPE_D05_CURRENT = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D06_FOREIGN)) {
-                    ADDRESS_TYPE_D06_FOREIGN = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D07_MILITARY)) {
-                    ADDRESS_TYPE_D07_MILITARY = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.ADDRESS_TYPE_D08_OTHER)) {
-                    ADDRESS_TYPE_D08_OTHER = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.GENDER_TYPE_MALE)) {
-                    GENDER_TYPE_MALE = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.GENDER_TYPE_FEMALE)) {
-                    GENDER_TYPE_FEMALE = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_SPOUSE)) {
-                    RELATIONSHIP_TYPE_SPOUSE = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K01_FATHER)) {
-                    RELATIONSHIP_TYPE_K01_FATHER = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K02_HUSBAND)) {
-                    RELATIONSHIP_TYPE_K02_HUSBAND = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K03_MOTHER)) {
-                    RELATIONSHIP_TYPE_K03_MOTHER = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K04_SON)) {
-                    RELATIONSHIP_TYPE_K04_SON = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K05_DAUGHTER)) {
-                    RELATIONSHIP_TYPE_K05_DAUGHTER = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K06_WIFE)) {
-                    RELATIONSHIP_TYPE_K06_WIFE = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K07_BROTHER)) {
-                    RELATIONSHIP_TYPE_K07_BROTHER = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K08_MOTHER_IN_LAW)) {
-                    RELATIONSHIP_TYPE_K08_MOTHER_IN_LAW = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K09_FATHER_IN_LAW)) {
-                    RELATIONSHIP_TYPE_K09_FATHER_IN_LAW = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K10_DAUGHTER_IN_LAW)) {
-                    RELATIONSHIP_TYPE_K10_DAUGHTER_IN_LAW = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K11_SISTER_IN_LAW)) {
-                    RELATIONSHIP_TYPE_K11_SISTER_IN_LAW = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K12_SON_IN_LAW)) {
-                    RELATIONSHIP_TYPE_K12_SON_IN_LAW = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW)) {
-                    RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW = rs.getString("value");
-                }
-
-                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_K15_OTHER)) {
-                    RELATIONSHIP_TYPE_K15_OTHER = rs.getString("value");
                 }
 
             }
             return new HighmarkCredentialsData(PRODUCTTYP, PRODUCTVER, REQMBR, SUBMBRID, REQVOLTYP, TESTFLG, USERID, PWD, AUTHFLG,
                     AUTHTITLE, RESFRMT, MEMBERPREOVERRIDE, RESFRMTEMBD, LOSNAME, URL, CREDTRPTID, CREDTREQTYP, CREDTINQPURPSTYP,
-                    CREDTINQPURPSTYPDESC, CREDITINQUIRYSTAGE, CREDTRPTTRNDTTM, ORDEROFREQUEST, HIGHMARKQUERY, DOCUMENT_TYPE_ID01_PASSPORT,
-                    DOCUMENT_TYPE_ID02_VOTER_ID, DOCUMENT_TYPE_ID03_UID, DOCUMENT_TYPE_ID04_OTHER, DOCUMENT_TYPE_ID05_RATION_CARD,
-                    DOCUMENT_TYPE_ID06_DRIVING_CARD, DOCUMENT_TYPE_ID07_PAN, ADDRESS_TYPE_D01_RESIDENCE, ADDRESS_TYPE_D02_COMPANY,
-                    ADDRESS_TYPE_D03_RESCUMOFF, ADDRESS_TYPE_D04_PERMANENT, ADDRESS_TYPE_D05_CURRENT, ADDRESS_TYPE_D06_FOREIGN,
-                    ADDRESS_TYPE_D07_MILITARY, ADDRESS_TYPE_D08_OTHER, GENDER_TYPE_MALE, GENDER_TYPE_FEMALE, RELATIONSHIP_TYPE_SPOUSE,
-                    RELATIONSHIP_TYPE_K01_FATHER, RELATIONSHIP_TYPE_K02_HUSBAND, RELATIONSHIP_TYPE_K03_MOTHER, RELATIONSHIP_TYPE_K04_SON,
-                    RELATIONSHIP_TYPE_K05_DAUGHTER, RELATIONSHIP_TYPE_K06_WIFE, RELATIONSHIP_TYPE_K07_BROTHER,
-                    RELATIONSHIP_TYPE_K08_MOTHER_IN_LAW, RELATIONSHIP_TYPE_K09_FATHER_IN_LAW, RELATIONSHIP_TYPE_K10_DAUGHTER_IN_LAW,
-                    RELATIONSHIP_TYPE_K11_SISTER_IN_LAW, RELATIONSHIP_TYPE_K12_SON_IN_LAW, RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW,
-                    RELATIONSHIP_TYPE_K15_OTHER);
+                    CREDTINQPURPSTYPDESC, CREDITINQUIRYSTAGE, CREDTRPTTRNDTTM, ORDEROFREQUEST,HIGHMARKQUERY);
         }
 
     }
+
 
     private static final class ExternalServiceMapper implements RowMapper<ExternalServicesPropertiesData> {
 
@@ -417,9 +245,9 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
             case "SMTP":
                 serviceNameToUse = ExternalServicesConstants.SMTP_SERVICE_NAME;
             break;
-
+            
             case "Aadhaar":
-                serviceNameToUse = ExternalServicesConstants.AADHAAR_SERVICE_NAME;
+            	serviceNameToUse = ExternalServicesConstants.AADHAAR_SERVICE_NAME;
             break;
 
             default:
@@ -431,7 +259,7 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
         return this.jdbcTemplate.query(sql, mapper, new Object[] {});
 
     }
-
+    
     @Override
     public HighmarkCredentialsData getHighmarkCredentials() {
         final ResultSetExtractor<HighmarkCredentialsData> resultSetExtractor = new HighmarkCredentialsDataExtractor();
@@ -440,5 +268,5 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
         final HighmarkCredentialsData highmarkCredentialsData = this.jdbcTemplate.query(sql, resultSetExtractor, new Object[] {});
         return highmarkCredentialsData;
     }
-
+    
 }

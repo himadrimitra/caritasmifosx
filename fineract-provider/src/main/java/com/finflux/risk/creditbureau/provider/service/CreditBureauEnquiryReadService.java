@@ -26,6 +26,4 @@ public interface CreditBureauEnquiryReadService {
             final Long creditBureauProductId);
 
     void inActivePreviousLoanApplicationCreditbureauEnquiries(final Long loanApplicationId);
-
-    List<EnquiryClientRelationshipData> getClientRelationshipData(final Long clientId);
 }
