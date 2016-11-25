@@ -68,7 +68,7 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
         final String clientSql = "select distinct " + staffClientMapper.schema() + " and c.status_enum=?";
 
         final StaffGroupMapper staffGroupMapper = new StaffGroupMapper();
-        final String groupSql = "select distinct " + staffGroupMapper.schema() + " and g.status_enum=?";
+        final String groupSql = "select distinct " + staffGroupMapper.schema() + " and g.status_enum=? and g.parent_id is null";
 
         final List<StaffAccountSummaryCollectionData.LoanAccountSummary> clientSummaryList = this.jdbcTemplate.query(clientSql,
                 staffClientMapper, new Object[] { loanOfficerId, ClientStatus.ACTIVE.getValue() });
@@ -92,7 +92,7 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
         }
         
         final StaffAccountSummaryCollectionDataMapper staffAccountSummaryCollectionDataMapper = new StaffAccountSummaryCollectionDataMapper();
-        final String dataSql = "select "+staffAccountSummaryCollectionDataMapper.schema();
+        final String dataSql = "select "+staffAccountSummaryCollectionDataMapper.schema()+" order by cn.id,g.id,cl.id";
         Collection <CenterData> staffAccountSummaryCollectionData = this.jdbcTemplate.query(dataSql, staffAccountSummaryCollectionDataMapper, new Object[] { 
         		ClientStatus.ACTIVE.getValue(), GroupingTypeStatus.ACTIVE.getValue(), loanOfficerId, LoanStatus.ACTIVE.getValue(),
         		});
@@ -163,7 +163,7 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
     		 Long clientidTemp = null;
     		 while (rs.next()) {
     			 Long centerId = JdbcSupport.getLong(rs, "centerId");
-    			 if(centerIdTemp == null || centerId != centerIdTemp){
+    			 if(centerIdTemp == null || centerId.longValue() != centerIdTemp.longValue()){
     				 centerIdTemp = centerId;
     				 CenterData centerData = CenterData.formCenterData(centerId, rs.getString("Cetername"));
     				 tempcenterData = centerData;
@@ -171,7 +171,7 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
     			 }
     			 
     			 Long groupId = JdbcSupport.getLong(rs, "groupId");
-    			 if(groupIdTemp == null || groupIdTemp != groupId){
+    			 if(groupIdTemp == null || groupIdTemp.longValue() != groupId.longValue()){
     				 groupIdTemp = groupId;
     				 GroupGeneralData groupGeneralData = GroupGeneralData.formGroupData(groupId, rs.getString("groupName"));
     				 tempgroupGeneralData = groupGeneralData;
@@ -179,7 +179,7 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
     			 }
     			 
     			 Long  clientId = JdbcSupport.getLong(rs, "clientId");
-    			 if(clientidTemp == null || clientidTemp != clientId){
+    			 if(clientidTemp == null || clientidTemp.longValue() != clientId.longValue()){
     				 clientidTemp = clientId;
     				 ClientData clientData = ClientData.formClientData(clientId,  rs.getString("clientName"));
     				 tempclientData = clientData;
