@@ -1,19 +1,21 @@
 package com.finflux.workflow.execution.service;
 
-import com.finflux.workflow.execution.data.StepAction;
-import com.finflux.workflow.execution.data.WorkflowExecutionData;
-import com.finflux.workflow.execution.data.WorkflowExecutionStepData;
+import com.finflux.workflow.execution.data.*;
 
+import com.finflux.workflow.execution.domain.WorkflowExecution;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by dhirendra on 22/09/16.
  */
 public interface WorkflowExecutionService {
 
-    Long getOrCreateWorkflowExecution(final Integer entityTypeId, final Long entityId);
+    Long createWorkflowExecutionForWorkflow(Long workflowId, WorkFlowExecutionEntityType entityType, Long entityId,
+            Long clientId, Long officeId, Map<WorkflowConfigKey, String> configValues);
 
     public WorkflowExecutionData getWorkflowExecutionData(Long workflowExecutionId);
 
@@ -26,4 +28,6 @@ public interface WorkflowExecutionService {
     public void addNoteToWorkflowExecutionStep(Long workflowExecutionId);
 
     List<EnumOptionData> getClickableActionsForUser(Long workflowExecutionStepId, Long id);
+
+    Long getWorkflowExecution(WorkFlowExecutionEntityType entityType, Long entityId);
 }

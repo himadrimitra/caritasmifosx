@@ -222,9 +222,8 @@ public class LoanApplicationReferenceApiResource {
     public String getLoanApplicationWorkflow(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
             @Context final UriInfo uriInfo) {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final Integer entityTypeId = WorkFlowExecutionEntityType.LOAN_APPLICATION.getValue();
         final Long entityId = loanApplicationReferenceId;
-        final Long workflowExecutionId = this.workflowExecutionService.getOrCreateWorkflowExecution(entityTypeId,
+        final Long workflowExecutionId = this.workflowExecutionService.getWorkflowExecution(WorkFlowExecutionEntityType.LOAN_APPLICATION,
                 entityId);
         if (workflowExecutionId != null) {
             final WorkflowExecutionData workflowExecutionData = workflowExecutionService.getWorkflowExecutionData(workflowExecutionId);
