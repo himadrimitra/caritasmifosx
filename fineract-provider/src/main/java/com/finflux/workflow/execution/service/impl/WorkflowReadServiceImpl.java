@@ -84,7 +84,7 @@ public class WorkflowReadServiceImpl implements WorkflowReadService {
     @Override
     public List<Long> getExecutionStepsByOrder(Long workflowExecutionId, int orderId) {
         this.context.authenticatedUser();
-        String sql = "SELECT " + workflowExecutionStepIdMapper.schema() + "  WHERE wfes.workflow_execution_id = ? and wfs.step_order = ? ";
+        String sql = "SELECT " + workflowExecutionStepIdMapper.schema() + "  WHERE wfes.workflow_execution_id = ? and wfes.step_order = ? ";
         return this.jdbcTemplate.query(sql, workflowExecutionStepIdMapper,workflowExecutionId, orderId);
     }
 
@@ -92,15 +92,14 @@ public class WorkflowReadServiceImpl implements WorkflowReadService {
 
         public String schema() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("wfe.id AS wfeId, wf.name AS wfName, wfes.id AS wfesId, wfs.name AS wfsName ");
+            sqlBuilder.append("wfe.id AS wfeId, wf.name AS wfName, wfes.id AS wfesId, wfes.name AS wfsName ");
             sqlBuilder.append(",task.id AS taskId, task.identifier as identifier, task.name AS taskName ");
-            sqlBuilder.append(", task.`type` AS taskType, wfs.config_values AS wfsConfigValues ");
+            sqlBuilder.append(", task.`type` AS taskType, wfes.config_values AS wfsConfigValues ");
             sqlBuilder.append(",wfes.`status` AS wfesStatus, wfes.criteria_result as criteriaResult ");
             sqlBuilder.append("FROM f_workflow_execution_step wfes  ");
             sqlBuilder.append("LEFT JOIN f_workflow_execution wfe ON wfes.workflow_execution_id = wfe.id ");
             sqlBuilder.append("JOIN f_workflow wf ON wf.id = wfe.workflow_id ");
-            sqlBuilder.append("LEFT JOIN f_workflow_step wfs ON wfs.id = wfes.workflow_step_id ");
-            sqlBuilder.append("LEFT JOIN f_task task ON task.id = wfs.task_id ");
+            sqlBuilder.append("LEFT JOIN f_task task ON task.id = wfes.task_id ");
             return sqlBuilder.toString();
         }
 
@@ -155,15 +154,14 @@ public class WorkflowReadServiceImpl implements WorkflowReadService {
 
         public String schema() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("wfe.id AS wfeId, wf.name AS wfName, wfes.id AS wfesId, wfs.name AS wfsName ");
+            sqlBuilder.append("wfe.id AS wfeId, wf.name AS wfName, wfes.id AS wfesId, wfes.name AS wfsName ");
             sqlBuilder.append(",task.id AS taskId, task.identifier as identifier, task.name AS taskName ");
-            sqlBuilder.append(", task.`type` AS taskType, wfs.config_values AS wfsConfigValues ");
+            sqlBuilder.append(", task.`type` AS taskType, wfes.config_values AS wfsConfigValues ");
             sqlBuilder.append(",wfes.`status` AS wfesStatus, wfes.criteria_result as criteriaResult ");
             sqlBuilder.append("FROM f_workflow_execution_step wfes  ");
             sqlBuilder.append("LEFT JOIN f_workflow_execution wfe ON wfes.workflow_execution_id = wfe.id ");
             sqlBuilder.append("JOIN f_workflow wf ON wf.id = wfe.workflow_id ");
-            sqlBuilder.append("LEFT JOIN f_workflow_step wfs ON wfs.id = wfes.workflow_step_id ");
-            sqlBuilder.append("LEFT JOIN f_task task ON task.id = wfs.task_id ");
+            sqlBuilder.append("LEFT JOIN f_task task ON task.id = wfes.task_id ");
             return sqlBuilder.toString();
         }
 
@@ -213,7 +211,6 @@ public class WorkflowReadServiceImpl implements WorkflowReadService {
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder.append("wfes.id AS wfesId ");
             sqlBuilder.append("FROM f_workflow_execution_step wfes  ");
-            sqlBuilder.append("LEFT JOIN f_workflow_step wfs ON wfs.id = wfes.workflow_step_id ");
 
             return sqlBuilder.toString();
         }

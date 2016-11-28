@@ -185,15 +185,14 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
 
         public String all() {
             final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT wes.id AS stepId,ws.name AS stepName, wes.status AS stepStatusId ");
+            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
             sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
             sqlBuilder.append("FROM f_workflow_execution_step wes ");
             sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
-            sqlBuilder.append("JOIN f_workflow_step ws ON ws.id = wes.workflow_step_id ");
             sqlBuilder
-                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.workflow_step_id = wes.workflow_step_id AND wes.current_action = wsa.action ");
+                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
             sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
             sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
             sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
@@ -206,15 +205,14 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
 
         public String assigned() {
             final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT wes.id AS stepId,ws.name AS stepName, wes.status AS stepStatusId ");
+            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
             sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
             sqlBuilder.append("FROM f_workflow_execution_step wes ");
             sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
-            sqlBuilder.append("JOIN f_workflow_step ws ON ws.id = wes.workflow_step_id ");
             sqlBuilder
-                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.workflow_step_id = wes.workflow_step_id AND wes.current_action = wsa.action ");
+                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
             sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
             sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
             sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
@@ -227,15 +225,14 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
 
         public String unAssigned() {
             final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT wes.id AS stepId,ws.name AS stepName, wes.status AS stepStatusId ");
+            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
             sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
             sqlBuilder.append("FROM f_workflow_execution_step wes ");
             sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
-            sqlBuilder.append("JOIN f_workflow_step ws ON ws.id = wes.workflow_step_id ");
             sqlBuilder
-                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.workflow_step_id = wes.workflow_step_id AND wes.current_action = wsa.action ");
+                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
             sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
             sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
             sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");

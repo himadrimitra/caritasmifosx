@@ -11,21 +11,13 @@ import javax.persistence.Table;
 @Table(name = "f_workflow_step_action")
 public class WorkflowStepAction extends AbstractAuditableCustom<AppUser, Long> {
 
-    @Column(name = "workflow_step_id", nullable = false)
-    private Long workflowStepId;
+    @Column(name = "action_group_id", nullable = false)
+    private Long actionGroupId;
 
     @Column(name = "action", nullable = false)
     private Integer action;
 
     protected WorkflowStepAction() {}
-
-    public Long getWorkflowStepId() {
-        return workflowStepId;
-    }
-
-    public void setWorkflowStepId(Long workflowStepId) {
-        this.workflowStepId = workflowStepId;
-    }
 
     public Integer getAction() {
         return action;
@@ -35,4 +27,11 @@ public class WorkflowStepAction extends AbstractAuditableCustom<AppUser, Long> {
         this.action = action;
     }
 
+    public Long getActionGroupId() {
+        return actionGroupId;
+    }
+
+    public void setActionGroupId(Long actionGroupId) {
+        this.actionGroupId = actionGroupId;
+    }
 }
