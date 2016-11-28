@@ -43,7 +43,7 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
     @Override
     public List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId) {
         final StringBuilder sqlBuilder = new StringBuilder(200);
-        sqlBuilder.append("SELECT lp.id AS loanProductId,lp.name AS loanProductName,wf.id AS workFlowId, wf.name AS workFlowName ");
+        sqlBuilder.append("SELECT DISTINCT co.id, lp.id AS loanProductId,lp.name AS loanProductName,wf.id AS workFlowId, wf.name AS workFlowName ");
         sqlBuilder.append(",co.id AS officeId, co.name AS officeName, wfes.status AS stepStatus ");
         sqlBuilder.append(",wfs.id AS stepId, wfs.name AS stepName,wfs.short_name AS stepShortName ");
         sqlBuilder.append(",SUM(IF(wfes.status BETWEEN 2 AND 6,1,0)) AS noOfCount ");
@@ -64,7 +64,8 @@ public class WorkFlowStepReadServiceImpl implements WorkFlowStepReadService {
         if (officeId != null) {
             sqlBuilder.append("AND o.id = ").append(officeId).append(" ");
         }
-        sqlBuilder.append("GROUP BY lp.id,wf.id,co.id,wfes.status,wfs.name ");
+        sqlBuilder.append("WHERE wfes.status BETWEEN 1 AND 6 ");
+        sqlBuilder.append("GROUP BY lp.id,wf.id,co.id,wfes.status,wfs.name,co.id,o.id ");
         sqlBuilder.append("ORDER BY lp.name,wf.name,co.id,wfs.step_order,wfes.status ");
         final List<Map<String, Object>> list = this.jdbcTemplate.queryForList(sqlBuilder.toString());
         final List<LoanProductData> loanProducts = new ArrayList<>();
