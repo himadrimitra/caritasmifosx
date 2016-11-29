@@ -129,7 +129,6 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             this.repository.save(loanApplicationReference);
 
             //create workflow if configured
-            
             if (this.configurationDomainService.isWorkFlowEnabled()) {
                 final WorkflowEntityTypeMapping workflowEntityTypeMapping = this.workflowEntityTypeMappingRepository
                         .findOneByEntityTypeAndEntityId(WorkFlowEntityType.LOAN_PRODUCT.getValue(), loanProductId);
