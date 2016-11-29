@@ -2375,6 +2375,16 @@ public class CommandWrapperBuilder {
         this.href = "/refundByTransfer";
         return this;
     }
+    
+    public CommandWrapperBuilder refundOverPaidLoan(final Long loanId) {
+        this.actionName = "REFUND";
+        this.entityName = "LOAN";
+        this.entityId = null;
+        this.href = "/refund";
+        this.loanId = loanId;
+        this.entityId = loanId;
+        return this;
+    }
 
     public CommandWrapperBuilder createTeller() {
         this.actionName = "CREATE";
