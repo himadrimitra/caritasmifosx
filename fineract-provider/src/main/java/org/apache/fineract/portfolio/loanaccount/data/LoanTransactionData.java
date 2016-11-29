@@ -399,7 +399,36 @@ public class LoanTransactionData {
     	return new LoanTransactionData(loanTransactionData, loanAccountData);
     }
 
-    public LocalDate dateOf() {
+	public static LoanTransactionData LoanTransactionRefundData(final LoanTransactionEnumData transactionType, final LocalDate date,
+			final BigDecimal amount, final Collection<PaymentTypeData> paymentOptions) {
+		final Long id = null;
+		final Long officeId = null;
+		final String officeName = null;
+		final PaymentDetailData paymentDetailData = null;
+		final CurrencyData currency = null;
+		final BigDecimal unrecognizedIncomePortion = null;
+		final BigDecimal principalPortion = null;
+		final BigDecimal interestPortion = null;
+		final BigDecimal feeChargesPortion = null;
+		final BigDecimal penaltyChargesPortion = null;
+		final BigDecimal overpaymentPortion = null;
+		final String externalId = null;
+		final BigDecimal outstandingLoanBalance = null;
+		final AccountTransferData transfer = null;
+		final LocalDate submittedOnDate = null;
+		final boolean manuallyReversed = false;
+		final BigDecimal retriveLastEmiAmount = null;
+		final LocalDate possibleNextRepaymentDate = null;
+		final Collection<TransactionAuthenticationData> transactionAuthenticationOptions = null;
+		final Collection<FingerPrintData> fingerPrintData = null;
+		return new LoanTransactionData(id, officeId, officeName, transactionType, paymentDetailData, currency, date,
+				amount, principalPortion, interestPortion, feeChargesPortion, penaltyChargesPortion, overpaymentPortion,
+				unrecognizedIncomePortion, paymentOptions, transfer, externalId, retriveLastEmiAmount,
+				outstandingLoanBalance, submittedOnDate, manuallyReversed, possibleNextRepaymentDate, transactionAuthenticationOptions, fingerPrintData);
+
+	}
+
+	public LocalDate dateOf() {
         return this.date;
     }
 

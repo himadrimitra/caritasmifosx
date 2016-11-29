@@ -127,7 +127,9 @@ public class LoanTransactionsApiResource {
             transactionData = this.loanReadPlatformService.retrieveDisbursalTemplate(loanId, false);
         } else if (is(commandParam, "recoverypayment")) {
             transactionData = this.loanReadPlatformService.retrieveRecoveryPaymentTemplate(loanId);
-        } else if (is(commandParam, "prepayLoan")) {
+        }else if (is(commandParam, "refund")) {
+            transactionData = this.loanReadPlatformService.refundTemplate(loanId);
+    	}else if (is(commandParam, "prepayLoan")) {
             LocalDate transactionDate = null;
             if (transactionDateParam == null) {
                 transactionDate = DateUtils.getLocalDateOfTenant();
@@ -212,6 +214,9 @@ public class LoanTransactionsApiResource {
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         } else if (is(commandParam, "revokesubsidy")) {
             final CommandWrapper commandRequest = builder.loanSubsidyRevokeTransaction(loanId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else if (is(commandParam, "refund")) {
+        	final CommandWrapper commandRequest = builder.refundOverPaidLoan(loanId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         } else if (is(commandParam, "foreclosure")) {
             final CommandWrapper commandRequest = builder.loanForeclosure(loanId).build();

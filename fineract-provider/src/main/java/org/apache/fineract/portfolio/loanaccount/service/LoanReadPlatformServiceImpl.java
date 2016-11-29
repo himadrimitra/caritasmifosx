@@ -1825,6 +1825,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final String sql = "select " + rm.schema() + " where dd.loan_id=? and dd.id=?";
         return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanId, disbursementId });
     }
+    
+    @Override
+    public LoanTransactionData refundTemplate(Long loanId) {
+        final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REFUND);
+        final LocalDate refundDate = DateUtils.getLocalDateOfTenant();
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+        final String sql = "select total_overpaid_derived from m_loan ml where ml.id=?";
+        final BigDecimal overPaidAmount = this.jdbcTemplate.queryForObject(sql, BigDecimal.class, loanId);
+        return LoanTransactionData.LoanTransactionRefundData(transactionType, refundDate, overPaidAmount, paymentOptions);
+    }
 
     @Override
     public Collection<LoanTermVariationsData> retrieveLoanTermVariations(Long loanId, Integer termType) {

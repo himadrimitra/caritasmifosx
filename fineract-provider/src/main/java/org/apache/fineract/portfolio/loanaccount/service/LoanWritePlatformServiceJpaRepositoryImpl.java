@@ -18,6 +18,11 @@
  */
 package org.apache.fineract.portfolio.loanaccount.service;
 
+import static org.apache.fineract.portfolio.account.AccountDetailConstants.fromAccountIdParamName;
+import static org.apache.fineract.portfolio.account.AccountDetailConstants.toAccountIdParamName;
+import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConstants.transferAmountParamName;
+import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConstants.transferDateParamName;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -196,6 +201,9 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
@@ -267,6 +275,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper;
 
+
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final LoanEventApiJsonValidator loanEventApiJsonValidator,
@@ -304,6 +313,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanScheduleGeneratorFactory loanScheduleFactory, final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,
             final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper) {
+
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
         this.loanAssembler = loanAssembler;
@@ -976,6 +986,30 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .withLoanId(loanId) //
                 .with(changes) //
                 .build();
+    } 
+    
+    @Transactional
+    @Override
+    public CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command,final boolean isOverPaidRefund){
+    	this.loanEventApiJsonValidator.validateRefundTransaction(command.json());
+        final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
+        final Map<String, Object> changes = new LinkedHashMap<>();
+        changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
+        changes.put("locale", command.locale());
+        changes.put("paymentTypeId", command.stringValueOfParameterNamed("paymentTypeId"));
+        final String noteText = command.stringValueOfParameterNamed("note");
+        if(StringUtils.isNotBlank(noteText)){
+        	changes.put("note", noteText);
+        }
+        final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
+        boolean isAccountTransfer = false;
+        final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
+        BigDecimal transactionAmount = null;
+        this.loanAccountDomainService.makeRefund(loanId, commandProcessingResultBuilder, transactionDate, transactionAmount, paymentDetail, noteText, null, isAccountTransfer);
+        return commandProcessingResultBuilder.withCommandId(command.commandId()) //
+                .withLoanId(loanId) //
+                .with(changes) //
+                .build();
     }
 
     @Transactional
@@ -1370,6 +1404,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         return result;
     }
 
+    
+    
     @Transactional
     @Override
     public CommandProcessingResult closeAsRescheduled(final Long loanId, final JsonCommand command) {

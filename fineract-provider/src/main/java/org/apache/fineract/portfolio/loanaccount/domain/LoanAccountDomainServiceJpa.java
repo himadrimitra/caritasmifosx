@@ -499,16 +499,18 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public LoanTransaction makeRefund(final Long accountId, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
-            final String txnExternalId) {
-        boolean isAccountTransfer = true;
+            final String txnExternalId,final Boolean isAccountTransfer) {
+        
         final Loan loan = this.loanAccountAssembler.assembleFrom(accountId);
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_REFUND,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
-
-        final Money refundAmount = Money.of(loan.getCurrency(), transactionAmount);
+        Money refundAmount = Money.of(loan.getCurrency(), transactionAmount);
+        if(refundAmount.isZero()){
+        	refundAmount = refundAmount.plus(loan.getTotalOverpaid());
+        }
         final LoanTransaction newRefundTransaction = LoanTransaction.refund(loan.getOffice(), refundAmount, paymentDetail, transactionDate,
                 txnExternalId);
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
@@ -538,6 +540,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         return newRefundTransaction;
     }
+    
 
     @Transactional
     @Override
