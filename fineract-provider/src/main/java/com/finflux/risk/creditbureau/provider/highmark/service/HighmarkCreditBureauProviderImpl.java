@@ -1,6 +1,5 @@
 package com.finflux.risk.creditbureau.provider.highmark.service;
 
-import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
 import org.apache.fineract.infrastructure.configuration.service.ExternalServicesPropertiesReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,7 +14,7 @@ public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
 
     final HighmarkRequestService highmarkRequestService;
     final HighmarkIssueService highmarkIssueService;
-    final HighmarkCredentialsData highmarkCredentialsData;
+    final ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService;
 
     private static final String KEY = "india.highmark.olp";
 
@@ -25,7 +24,7 @@ public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
             ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService) {
         this.highmarkRequestService = highmarkRequestService;
         this.highmarkIssueService = highmarkIssueService;
-        this.highmarkCredentialsData = externalServicesPropertiesReadPlatformService.getHighmarkCredentials();
+        this.externalServicesPropertiesReadPlatformService = externalServicesPropertiesReadPlatformService;
     }
 
     @Override
@@ -35,12 +34,14 @@ public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
 
     @Override
     public CreditBureauResponse enquireCreditBureau(EnquiryReferenceData enquiryReferenceData) {
-        return highmarkRequestService.sendHighmarkEnquiry(enquiryReferenceData, highmarkCredentialsData);
+        return highmarkRequestService.sendHighmarkEnquiry(enquiryReferenceData,
+                this.externalServicesPropertiesReadPlatformService.getHighmarkCredentials());
     }
 
     @Override
     public CreditBureauResponse fetchCreditBureauReport(LoanEnquiryReferenceData enquiryData) {
-        return highmarkIssueService.sendHighmarkIssue(enquiryData, highmarkCredentialsData);
+        return highmarkIssueService.sendHighmarkIssue(enquiryData,
+                this.externalServicesPropertiesReadPlatformService.getHighmarkCredentials());
     }
 
 }
