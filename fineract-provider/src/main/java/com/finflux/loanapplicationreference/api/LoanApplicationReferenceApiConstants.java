@@ -71,20 +71,25 @@ public class LoanApplicationReferenceApiConstants {
      */
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
+    
+    //expected payment type
+    public static final String expectedDisbursalPaymentTypeParamName = "expectedDisbursalPaymentType";
+    public static final String expectedRepaymentPaymentTypeParamName = "expectedRepaymentPaymentType";
+    public static final String paymentOptionsParamName = "paymentOptions";
 
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdOneParamName,
             externalIdTwoParamName, clientIdParamName, loanOfficerIdParamName, groupIdParamName, accountTypeParamName,
             loanProductIdParamName, loanPurposeIdParamName, loanAmountRequestedParamName, numberOfRepaymentsParamName,
             repaymentPeriodFrequencyEnumParamName, repayEveryParamName, termPeriodFrequencyEnumParamName, termFrequencyParamName,
             fixedEmiAmountParamName, maxOutstandingLoanBalanceParamName, noOfTrancheParamName, submittedOnDateParamName, chargesParamName,
-            localeParamName, dateFormatParamName));
+            localeParamName, dateFormatParamName, expectedDisbursalPaymentTypeParamName, expectedRepaymentPaymentTypeParamName));
 
     public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdOneParamName,
             externalIdTwoParamName, clientIdParamName, loanOfficerIdParamName, groupIdParamName, accountTypeParamName,
             loanProductIdParamName, loanPurposeIdParamName, loanAmountRequestedParamName, numberOfRepaymentsParamName,
             repaymentPeriodFrequencyEnumParamName, repayEveryParamName, termPeriodFrequencyEnumParamName, termFrequencyParamName,
             fixedEmiAmountParamName, maxOutstandingLoanBalanceParamName, noOfTrancheParamName, submittedOnDateParamName, chargesParamName,
-            localeParamName, dateFormatParamName));
+            localeParamName, dateFormatParamName, expectedDisbursalPaymentTypeParamName, expectedRepaymentPaymentTypeParamName));
 
     public static final Set<String> APPROVE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(loanAmountApprovedParamName,
             approvedOnDateParaName, expectedDisbursementDateParaName, numberOfRepaymentsParamName, repaymentPeriodFrequencyEnumParamName,

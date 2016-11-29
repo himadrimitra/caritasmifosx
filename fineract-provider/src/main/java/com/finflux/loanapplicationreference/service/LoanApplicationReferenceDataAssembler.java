@@ -25,6 +25,8 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateEx
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -55,13 +57,14 @@ public class LoanApplicationReferenceDataAssembler {
     private final LoanApplicationChargeRepositoryWrapper loanApplicationChargeRepository;
     private final GroupRepositoryWrapper groupRepository;
     private final LoanPurposeRepositoryWrapper loanPurposeRepository;
+    private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 
     @Autowired
     public LoanApplicationReferenceDataAssembler(final FromJsonHelper fromApiJsonHelper, final RoutingDataSource dataSource,
             final LoanProductRepository loanProductRepository, final ClientRepositoryWrapper clientRepository,
             final StaffRepositoryWrapper staffRepository, final ChargeRepositoryWrapper chargeRepository,
             final LoanApplicationChargeRepositoryWrapper loanApplicationChargeRepository, final GroupRepositoryWrapper groupRepository,
-            final LoanPurposeRepositoryWrapper loanPurposeRepository) {
+            final LoanPurposeRepositoryWrapper loanPurposeRepository, final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.loanProductRepository = loanProductRepository;
@@ -71,9 +74,12 @@ public class LoanApplicationReferenceDataAssembler {
         this.loanApplicationChargeRepository = loanApplicationChargeRepository;
         this.groupRepository = groupRepository;
         this.loanPurposeRepository = loanPurposeRepository;
+        this.paymentTypeRepository = paymentTypeRepository;
     }
 
     public LoanApplicationReference assembleCreateForm(final JsonCommand command) {
+    	
+    	final JsonElement element = command.parsedJson();
 
         final String loanApplicationReferenceNo = generateNextSequenceValue(null);
 
@@ -140,11 +146,30 @@ public class LoanApplicationReferenceDataAssembler {
 
         final LocalDate expectedFirstRepaymentOnDate = null;
         validateSubmittedOnDate(submittedOnDate, expectedFirstRepaymentOnDate, loanProduct, client);
+        
+        PaymentType expectedDisbursalPaymentType = null;
+		PaymentType expectedRepaymentPaymentType = null;
+		if (element.getAsJsonObject().has(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName)) {
+			Integer expectedDisbursalPaymentTypeId = this.fromApiJsonHelper
+					.extractIntegerSansLocaleNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName, element);
+			if (expectedDisbursalPaymentTypeId != null) {
+				expectedDisbursalPaymentType = this.paymentTypeRepository
+						.findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId.longValue());
+			}
+		}
+		if (element.getAsJsonObject().has(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName)) {
+			Integer expectedRepaymentPaymentTypeId = this.fromApiJsonHelper
+					.extractIntegerSansLocaleNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName, element);
+			if (expectedRepaymentPaymentTypeId != null) {
+				expectedRepaymentPaymentType = this.paymentTypeRepository
+						.findOneWithNotFoundDetection(expectedRepaymentPaymentTypeId.longValue());
+			}
+		}
 
         final LoanApplicationReference loanApplicationReference = LoanApplicationReference.create(loanApplicationReferenceNo,
                 externalIdOne, externalIdTwo, client, loanOfficer, group, statusEnum, accountTypeEnum, loanProduct, loanPurpose,
                 loanAmountRequested, numberOfRepayments, repaymentPeriodFrequencyEnum, repayEvery, termPeriodFrequencyEnum, termFrequency,
-                fixedEmiAmount, noOfTranche, submittedOnDate.toDate());
+                fixedEmiAmount, noOfTranche, submittedOnDate.toDate(), expectedDisbursalPaymentType, expectedRepaymentPaymentType);
 
         final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
                 command.json());
@@ -233,6 +258,28 @@ public class LoanApplicationReferenceDataAssembler {
                 final LoanPurpose loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanPurposeId);
                 loanApplicationReference.updateLoanPurpose(loanPurpose);
             }
+            
+			if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName)) {
+				final Long expectedDisbursalPaymentTypeId = command
+						.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName);
+				if (expectedDisbursalPaymentTypeId != null) {
+					loanApplicationReference.setExpectedDisbursalPaymentType(
+							this.paymentTypeRepository.findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId));
+				}else{
+					loanApplicationReference.setExpectedDisbursalPaymentType(null);
+				}
+				
+			}
+			if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName)) {
+				final Long expectedRepaymentPaymentTypeId = command
+						.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName);
+				if (expectedRepaymentPaymentTypeId != null) {
+					loanApplicationReference.setExpectedRepaymentPaymentType(
+							this.paymentTypeRepository.findOneWithNotFoundDetection(expectedRepaymentPaymentTypeId));
+				}else{
+					loanApplicationReference.setExpectedRepaymentPaymentType(null);
+				}
+			}
         }
         return actualChanges;
     }
