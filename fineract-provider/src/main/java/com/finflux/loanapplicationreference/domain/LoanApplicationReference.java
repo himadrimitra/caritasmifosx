@@ -26,6 +26,7 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -111,6 +112,14 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loanApplicationReference", orphanRemoval = true)
     private List<LoanApplicationCharge> loanApplicationCharges = new ArrayList<>();
+    
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name = "expected_disbursal_payment_type_id", nullable = true)
+    private PaymentType expectedDisbursalPaymentType;
+       
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name = "expected_repayment_payment_type_id", nullable = true)
+    private PaymentType expectedRepaymentPaymentType;
 
     protected LoanApplicationReference() {}
 
@@ -119,7 +128,7 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             final LoanProduct loanProduct, final LoanPurpose loanPurpose, final BigDecimal loanAmountRequested,
             final Integer numberOfRepayments, final Integer repaymentPeriodFrequencyEnum, final Integer repayEvery,
             final Integer termPeriodFrequencyEnum, final Integer termFrequency, final BigDecimal fixedEmiAmount, final Integer noOfTranche,
-            final Date submittedOnDate) {
+            final Date submittedOnDate, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
         this.loanApplicationReferenceNo = loanApplicationReferenceNo;
         this.externalIdOne = externalIdOne;
         this.externalIdTwo = externalIdTwo;
@@ -139,6 +148,8 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
         this.fixedEmiAmount = fixedEmiAmount;
         this.noOfTranche = noOfTranche;
         this.submittedOnDate = submittedOnDate;
+        this.expectedDisbursalPaymentType= expectedDisbursalPaymentType;
+        this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
     }
 
     public static LoanApplicationReference create(final String loanApplicationReferenceNo, final String externalIdOne,
@@ -146,12 +157,13 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             final Integer accountTypeEnum, final LoanProduct loanProduct, final LoanPurpose loanPurpose,
             final BigDecimal loanAmountRequested, final Integer numberOfRepayments, final Integer repaymentPeriodFrequencyEnum,
             final Integer repayEvery, final Integer termPeriodFrequencyEnum, final Integer termFrequency, final BigDecimal fixedEmiAmount,
-            final Integer noOfTranche, final Date submittedOnDate) {
+            final Integer noOfTranche, final Date submittedOnDate,final PaymentType expectedDisbursalPaymentType,
+            final PaymentType expectedRepaymentPaymentType ) {
 
         return new LoanApplicationReference(loanApplicationReferenceNo, externalIdOne, externalIdTwo, client, loanOfficer, group,
                 statusEnum, accountTypeEnum, loanProduct, loanPurpose, loanAmountRequested, numberOfRepayments,
                 repaymentPeriodFrequencyEnum, repayEvery, termPeriodFrequencyEnum, termFrequency, fixedEmiAmount, noOfTranche,
-                submittedOnDate);
+                submittedOnDate, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -284,6 +296,28 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             actualChanges.put(LoanApplicationReferenceApiConstants.noOfTrancheParamName, newValue);
             this.noOfTranche = newValue;
         }
+        
+		
+		Long expectedDisbursalTypeId = null;
+		if (this.getExpectedDisbursalPaymentType() != null) {
+			expectedDisbursalTypeId = this.getExpectedDisbursalPaymentType().getId();
+		}
+		if (command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName,
+				expectedDisbursalTypeId)) {
+			actualChanges.put(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName,
+					command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName));
+		}
+		
+		Long expectedRepaymentPaymentTypeId = null;
+		if (this.getExpectedRepaymentPaymentType() != null) {
+			expectedRepaymentPaymentTypeId = this.getExpectedRepaymentPaymentType().getId();
+		}
+		
+		if (command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName,
+				expectedRepaymentPaymentTypeId)) {
+			actualChanges.put(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName,
+					command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName));
+		}
 
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
@@ -368,4 +402,20 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     public BigDecimal getLoanAmountRequested() {
         return this.loanAmountRequested;
     }
+
+	public PaymentType getExpectedDisbursalPaymentType() {
+		return this.expectedDisbursalPaymentType;
+	}
+	
+	public void setExpectedDisbursalPaymentType(PaymentType expectedDisbursalPaymentType) {
+		this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+	}
+
+	public PaymentType getExpectedRepaymentPaymentType() {
+		return this.expectedRepaymentPaymentType;
+	}
+    
+	public void setExpectedRepaymentPaymentType(PaymentType expectedRepaymentPaymentType) {
+		this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+	}
 }
