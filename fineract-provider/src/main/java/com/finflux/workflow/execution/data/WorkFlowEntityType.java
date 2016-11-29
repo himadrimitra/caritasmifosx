@@ -8,7 +8,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 public enum WorkFlowEntityType {
 
     INVALID(0, "workFlowEntityType.invalid"), //
-    LOAN_PRODUCT(1, "workFlowEntityType.loan.product");//
+    LOAN_PRODUCT(1, "workFlowEntityType.loan.product"),//
+    ADHOC(2, "workFlowEntityType.adhoc");//
 
     private final Integer value;
     private final String code;

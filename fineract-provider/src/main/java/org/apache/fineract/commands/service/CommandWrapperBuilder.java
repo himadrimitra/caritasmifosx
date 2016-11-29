@@ -3614,4 +3614,11 @@ public class CommandWrapperBuilder {
 		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
 		return this;
 	}
+
+    public CommandWrapperBuilder createAdhocTask() {
+        this.actionName = "CREATE";
+        this.entityName = "ADHOCTASK";
+        this.href = "/task/adhoc";
+        return this;
+    }
 }
