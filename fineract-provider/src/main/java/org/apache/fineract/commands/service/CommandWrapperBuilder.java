@@ -43,11 +43,12 @@ public class CommandWrapperBuilder {
     private Long productId;
     private Long templateId;
     private String option;
+    private Integer entityTypeId;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
-                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId, this.templateId,
-                this.option);
+                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
+                this.templateId, this.option, entityTypeId);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -3595,23 +3596,49 @@ public class CommandWrapperBuilder {
         return this;
     }
     
-	public CommandWrapperBuilder activateSmartCard(final Long entityTypeId, final String entityType,
-			final Long clientId) {
-		this.actionName = "ACTIVATE";
-		this.entityName = "SMARTCARD";
-		this.clientId = clientId;
-		this.subentityId = entityTypeId;
-		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
-		return this;
-	}
+    public CommandWrapperBuilder activateSmartCard(final Long entityTypeId, final String entityType, final Long clientId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "SMARTCARD";
+        this.clientId = clientId;
+        this.subentityId = entityTypeId;
+        this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+        return this;
+    }
 
-	public CommandWrapperBuilder inActivateSmartCard(final Long entityTypeId, final String entityType,
-			final Long clientId) {
-		this.actionName = "INACTIVATE";
-		this.entityName = "SMARTCARD";
-		this.clientId = clientId;
-		this.subentityId = entityTypeId;
-		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
-		return this;
-	}
+    public CommandWrapperBuilder inActivateSmartCard(final Long entityTypeId, final String entityType, final Long clientId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "SMARTCARD";
+        this.clientId = clientId;
+        this.subentityId = entityTypeId;
+        this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+        return this;
+    }
+    
+    public CommandWrapperBuilder createBankAccountDetail(final String supportedEntityType, final Long supportedEntityId,
+            final Integer entityTypeId) {
+        this.actionName = "CREATE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateBankAccountDetail(final String supportedEntityType, final Long supportedEntityId, final Integer entityTypeId) {
+        this.actionName = "UPDATE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteBankAccountDetail(final String supportedEntityType, final Long supportedEntityId, final Integer entityTypeId) {
+        this.actionName = "DELETE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
+        return this;
+    }
 }

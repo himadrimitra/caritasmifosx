@@ -1691,11 +1691,23 @@ public class Loan extends AbstractPersistable<Long> {
         } else {
             this.fixedEmiAmount = null;
         }
-        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, this.getExpectedDisbursalPaymentType().getId().intValue())){
-        	actualChanges.put(LoanApiConstants.expectedDisbursalPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName));
+        Long expectedDisbursalTypeId = null;
+        if(this.getExpectedDisbursalPaymentType() != null){
+            expectedDisbursalTypeId = this.getExpectedDisbursalPaymentType().getId();
         }
-        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, this.getExpectedRepaymentPaymentType().getId().intValue())){
-        	actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
+        
+        Long expectedRepaymentPaymentTypeId = null;
+        if(this.getExpectedRepaymentPaymentType() != null){
+            expectedRepaymentPaymentTypeId = this.getExpectedRepaymentPaymentType().getId();   
+        }
+        
+        if (command.isChangeInLongParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, expectedDisbursalTypeId)) {
+            actualChanges.put(LoanApiConstants.expectedDisbursalPaymentTypeParamName,
+                    command.integerValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName));
+        }
+        if (command.isChangeInLongParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, expectedRepaymentPaymentTypeId)) {
+            actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName,
+                    command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
         }
         return actualChanges;
     }
@@ -7370,23 +7382,21 @@ public class Loan extends AbstractPersistable<Long> {
     	this.loanStatus = LoanStatus.ACTIVE.getValue();
     }
 
-	public PaymentType getExpectedDisbursalPaymentType() {
-		return this.expectedDisbursalPaymentType;
-	}
+    public PaymentType getExpectedDisbursalPaymentType() {
+        return this.expectedDisbursalPaymentType;
+    }
 
-	public void setExpectedDisbursalPaymentType(
-			PaymentType expectedDisbursalPaymentType) {
-		this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
-	}
+    public void setExpectedDisbursalPaymentType(PaymentType expectedDisbursalPaymentType) {
+        this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+    }
 
-	public PaymentType getExpectedRepaymentPaymentType() {
-		return this.expectedRepaymentPaymentType;
-	}
+    public PaymentType getExpectedRepaymentPaymentType() {
+        return this.expectedRepaymentPaymentType;
+    }
 
-	public void setExpectedRepaymentPaymentType(
-			PaymentType expectedRepaymentPaymentType) {
-		this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
-	}
+    public void setExpectedRepaymentPaymentType(PaymentType expectedRepaymentPaymentType) {
+        this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+    }
     
     
     

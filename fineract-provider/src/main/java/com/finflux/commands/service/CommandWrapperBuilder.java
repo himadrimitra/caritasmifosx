@@ -28,11 +28,12 @@ public class CommandWrapperBuilder {
     private Long productId;
     private Long templateId;
     private String option;
+    private Integer entityTypeId;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
                 this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
-                this.templateId, this.option);
+                this.templateId, this.option, this.entityTypeId);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {

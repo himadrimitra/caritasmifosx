@@ -18,40 +18,95 @@
  */
 package org.apache.fineract.portfolio.paymenttype.data;
 
+import java.util.Collection;
+
+import com.finflux.portfolio.bank.data.BankAccountDetailData;
+import com.finflux.portfolio.external.data.ExternalServicesData;
+
 public class PaymentTypeData {
 
-    @SuppressWarnings("unused")
     private Long id;
-    @SuppressWarnings("unused")
     private String name;
-    @SuppressWarnings("unused")
     private String description;
-    @SuppressWarnings("unused")
     private Boolean isCashPayment;
-    @SuppressWarnings("unused")
     private Long position;
 
-    public PaymentTypeData(final Long id, final String name, final String description, final Boolean isCashPayment, final Long position) {
+    private Long externalServiceId;
+    private BankAccountDetailData bankAccountDetails;
+
+    private Collection<ExternalServicesData> externalServiceOptions;
+
+    public PaymentTypeData(final Long id, final String name, final String description, final Boolean isCashPayment, final Long position,
+            final Long externalServiceId, final BankAccountDetailData bankAccountDetails, final Collection<ExternalServicesData> externalServiceOptions) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.isCashPayment = isCashPayment;
         this.position = position;
+        this.externalServiceId = externalServiceId;
+        this.bankAccountDetails = bankAccountDetails;
+        this.externalServiceOptions = externalServiceOptions;
     }
 
     public static PaymentTypeData instance(final Long id, final String name, final String description, final Boolean isCashPayment,
             final Long position) {
-        return new PaymentTypeData(id, name, description, isCashPayment, position);
+        Long externalServiceId = null;
+        BankAccountDetailData bankAccountDetails = null;
+        final Collection<ExternalServicesData> externalServiceOptions = null;
+        return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
+                externalServiceOptions);
+    }
+
+    public static PaymentTypeData instance(final Long id, final String name, final String description, final Boolean isCashPayment,
+            final Long position, final Long externalServiceId) {
+
+        BankAccountDetailData bankAccountDetails = null;
+        final Collection<ExternalServicesData> externalServiceOptions = null;
+        return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
+                externalServiceOptions);
+    }
+
+    public static PaymentTypeData instance(final PaymentTypeData paymentTypeData, final BankAccountDetailData bankAccountDetails) {
+        return new PaymentTypeData(paymentTypeData.id, paymentTypeData.name, paymentTypeData.description, paymentTypeData.isCashPayment,
+                paymentTypeData.position, paymentTypeData.externalServiceId, bankAccountDetails, paymentTypeData.externalServiceOptions);
     }
 
     public static PaymentTypeData instance(final Long id, final String name) {
         String description = null;
         Boolean isCashPayment = null;
         Long position = null;
-        return new PaymentTypeData(id, name, description, isCashPayment, position);
+        Long externalServiceId = null;
+        BankAccountDetailData bankAccountDetails = null;
+        final Collection<ExternalServicesData> externalServiceOptions = null;
+        return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
+                externalServiceOptions);
     }
+
+    public static PaymentTypeData template(final Collection<ExternalServicesData> externalServiceOptions) {
+        final Long id = null;
+        final String name = null;
+        String description = null;
+        Boolean isCashPayment = null;
+        Long position = null;
+        Long externalServiceId = null;
+        BankAccountDetailData bankAccountDetails = null;
+        return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
+                externalServiceOptions);
+    }
+
+    public static PaymentTypeData withTemplate(final PaymentTypeData paymentTypeData,
+            final Collection<ExternalServicesData> externalServiceOptions) {
+        return new PaymentTypeData(paymentTypeData.id, paymentTypeData.name, paymentTypeData.description, paymentTypeData.isCashPayment,
+                paymentTypeData.position, paymentTypeData.externalServiceId, paymentTypeData.bankAccountDetails,
+                externalServiceOptions);
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
     
-	public Long getId() {
-		return this.id;
-	}
+    public Long getExternalServiceId() {
+        return this.externalServiceId;
+    }
 }
