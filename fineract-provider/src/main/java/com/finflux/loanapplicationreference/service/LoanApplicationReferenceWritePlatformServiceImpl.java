@@ -1,14 +1,13 @@
 package com.finflux.loanapplicationreference.service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMapping;
-import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMappingRepository;
-import com.finflux.workflow.execution.data.WorkFlowEntityType;
-import com.finflux.workflow.execution.data.WorkFlowExecutionEntityType;
-import com.finflux.workflow.execution.data.WorkflowConfigKey;
-import com.finflux.workflow.execution.service.WorkflowExecutionService;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -44,6 +43,12 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataVal
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
+import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMapping;
+import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMappingRepository;
+import com.finflux.workflow.execution.data.WorkFlowEntityType;
+import com.finflux.workflow.execution.data.WorkFlowExecutionEntityType;
+import com.finflux.workflow.execution.data.WorkflowConfigKey;
+import com.finflux.workflow.execution.service.WorkflowExecutionService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -69,6 +74,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
     private final WorkflowEntityTypeMappingRepository workflowEntityTypeMappingRepository;
     private final WorkflowExecutionService workflowExecutionService;
+    private final ConfigurationDomainService configurationDomainService;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
 
@@ -83,7 +89,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
             final WorkflowEntityTypeMappingRepository workflowEntityTypeMappingRepository,
-            final WorkflowExecutionService workflowExecutionService) {
+            final WorkflowExecutionService workflowExecutionService,
+            final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -100,6 +107,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
         this.workflowEntityTypeMappingRepository = workflowEntityTypeMappingRepository;
         this.workflowExecutionService = workflowExecutionService;
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -121,19 +129,21 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             this.repository.save(loanApplicationReference);
 
             //create workflow if configured
-            WorkflowEntityTypeMapping workflowEntityTypeMapping = this.workflowEntityTypeMappingRepository.findOneByEntityTypeAndEntityId(WorkFlowEntityType.LOAN_PRODUCT.getValue(),
-                    loanProductId);
-            if(workflowEntityTypeMapping!=null){
-                Map<WorkflowConfigKey, String> map = new HashMap<>();
-                final Long loanApplicationId = loanApplicationReference.getId();
-                final Long clientId = loanApplicationReference.getClient().getOffice().getId();
-                final Long officeId = loanApplicationReference.getClient().getOffice().getId();
+            
+            if (this.configurationDomainService.isWorkFlowEnabled()) {
+                final WorkflowEntityTypeMapping workflowEntityTypeMapping = this.workflowEntityTypeMappingRepository
+                        .findOneByEntityTypeAndEntityId(WorkFlowEntityType.LOAN_PRODUCT.getValue(), loanProductId);
+                if (workflowEntityTypeMapping != null) {
+                    Map<WorkflowConfigKey, String> map = new HashMap<>();
+                    final Long loanApplicationId = loanApplicationReference.getId();
+                    final Long clientId = loanApplicationReference.getClient().getOffice().getId();
+                    final Long officeId = loanApplicationReference.getClient().getOffice().getId();
 
-                map.put(WorkflowConfigKey.CLIENT_ID,String.valueOf(clientId));
-                map.put(WorkflowConfigKey.LOANAPPLICATION_ID,String.valueOf(loanApplicationId));
-                workflowExecutionService.createWorkflowExecutionForWorkflow(workflowEntityTypeMapping.getWorkflowId(),
-                        WorkFlowExecutionEntityType.LOAN_APPLICATION, loanApplicationId,
-                        clientId, officeId, map);
+                    map.put(WorkflowConfigKey.CLIENT_ID, String.valueOf(clientId));
+                    map.put(WorkflowConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
+                    workflowExecutionService.createWorkflowExecutionForWorkflow(workflowEntityTypeMapping.getWorkflowId(),
+                            WorkFlowExecutionEntityType.LOAN_APPLICATION, loanApplicationId, clientId, officeId, map);
+                }
             }
 
             return new CommandProcessingResultBuilder()//

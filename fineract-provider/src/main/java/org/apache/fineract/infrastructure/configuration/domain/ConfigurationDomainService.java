@@ -101,10 +101,13 @@ public interface ConfigurationDomainService {
     
     boolean isSearchIncludeGroupInfo();
 
-	GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(
-			String propertyName);
+    GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(String propertyName);
     
     boolean isCustomerDeDuplicationEnabled();
 
     boolean isJlgLoansIncludedInIndividualCollectionSheet();
+    
+    boolean isGlimLoanInClientProfileShown();
+    
+    boolean isWorkFlowEnabled();
 }
