@@ -46,8 +46,13 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationType;
 import org.apache.fineract.portfolio.account.domain.AccountAssociations;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationsRepository;
@@ -68,6 +73,7 @@ import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -120,6 +126,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     private final CalendarInstanceRepository calendarInstanceRepository;
     private final ConfigurationDomainService configurationDomainService;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
+    private final WorkingDaysRepositoryWrapper workingDaysRepository;
+    private final HolidayRepositoryWrapper holidayRepository;
 
     @Autowired
     public DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -134,7 +142,9 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final RecurringDepositAccountRepository recurringDepositAccountRepository,
             final AccountAssociationsRepository accountAssociationsRepository, final FromJsonHelper fromJsonHelper,
             final CalendarInstanceRepository calendarInstanceRepository, final ConfigurationDomainService configurationDomainService,
-            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository) {
+            final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository,
+            final WorkingDaysRepositoryWrapper workingDaysRepository,
+            final HolidayRepositoryWrapper holidayRepository) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.depositAccountAssembler = depositAccountAssembler;
@@ -154,6 +164,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         this.calendarInstanceRepository = calendarInstanceRepository;
         this.configurationDomainService = configurationDomainService;
         this.accountNumberFormatRepository = accountNumberFormatRepository;
+        this.workingDaysRepository = workingDaysRepository;
+        this.holidayRepository = holidayRepository;
     }
 
     /*
@@ -244,6 +256,11 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     @Override
     public CommandProcessingResult submitRDApplication(final JsonCommand command) {
         try {
+        	final WorkingDays workingDays = this.workingDaysRepository.findOne();
+        	
+        	final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+        	
+        	final List<WorkingDayExemptionsData> workingDayExemptions = null;
             this.depositAccountDataValidator.validateRecurringDepositForSubmit(command.json());
             final AppUser submittedBy = this.context.authenticatedUser();
 
@@ -253,6 +270,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
 
             final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(command,
                     submittedBy, DepositAccountType.RECURRING_DEPOSIT);
+            final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.getClient().getOffice().getId(), account.getSubmittedOnDate().toDate());
+            final HolidayDetailDTO holidayDetails = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
 
             this.recurringDepositAccountRepository.save(account);
 
@@ -273,7 +292,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
             Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
             frequency = frequency == -1 ? 1 : frequency;
-            account.generateSchedule(frequencyType, frequency, calendar);
+            account.generateSchedule(frequencyType, frequency, calendar, holidayDetails);
             final boolean isPreMatureClosure = false;
             account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
                     financialYearBeginningMonth);
@@ -444,6 +463,11 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     @Override
     public CommandProcessingResult modifyRDApplication(final Long accountId, final JsonCommand command) {
         try {
+        	final WorkingDays workingDays = this.workingDaysRepository.findOne();
+        	
+        	final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+        	
+        	final List<WorkingDayExemptionsData> workingDayExemptions = null;
             this.depositAccountDataValidator.validateRecurringDepositForUpdate(command.json());
 
             final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
@@ -454,6 +478,8 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
 
             final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(accountId,
                     DepositAccountType.RECURRING_DEPOSIT);
+            final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.getClient().getOffice().getId(), account.getSubmittedOnDate().toDate());
+            final HolidayDetailDTO holidayDetails = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
             checkClientOrGroupActive(account);
             account.modifyApplication(command, changes);
             account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), DepositAccountType.RECURRING_DEPOSIT.resourceName());
@@ -467,7 +493,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                 final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
                 Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
                 frequency = frequency == -1 ? 1 : frequency;
-                account.generateSchedule(frequencyType, frequency, calendar);
+                account.generateSchedule(frequencyType, frequency, calendar, holidayDetails);
                 final boolean isPreMatureClosure = false;
                 account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
                         financialYearBeginningMonth);

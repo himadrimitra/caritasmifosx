@@ -33,6 +33,7 @@ import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.holiday.data.HolidayData;
+import org.apache.fineract.organisation.holiday.domain.RescheduleType;
 import org.apache.fineract.organisation.holiday.exception.HolidayNotFoundException;
 import org.apache.fineract.organisation.workingdays.domain.RepaymentScheduleUpdationType;
 import org.joda.time.LocalDate;
@@ -139,10 +140,11 @@ public class HolidayReadPlatformServiceImpl implements HolidayReadPlatformServic
         }
     }
     
-    @Override
+    @SuppressWarnings("unused")
+	@Override
     public List<EnumOptionData> retrieveRepaymentScheduleUpdationTyeOptions(){
-        List<EnumOptionData> repSchUpdationTypeOptions = new ArrayList(RepaymentScheduleUpdationType.values().length);
-        for (RepaymentScheduleUpdationType repSchUpdationType : RepaymentScheduleUpdationType.values()) {
+        List<EnumOptionData> repSchUpdationTypeOptions = new ArrayList<EnumOptionData>(RescheduleType.values().length);
+        for (RescheduleType repSchUpdationType : RescheduleType.values()) {
             repSchUpdationTypeOptions.add(new EnumOptionData(repSchUpdationType.getValue().longValue(),
                     repSchUpdationType.getCode(), repSchUpdationType.name()));
         }

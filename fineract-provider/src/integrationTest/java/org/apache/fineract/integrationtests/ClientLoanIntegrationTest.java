@@ -5588,7 +5588,7 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("1045.27", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("1098.23", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
