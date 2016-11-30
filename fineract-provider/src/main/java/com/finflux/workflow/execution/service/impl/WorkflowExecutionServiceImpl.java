@@ -2,6 +2,15 @@ package com.finflux.workflow.execution.service.impl;
 
 import java.util.*;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.useradministration.data.RoleData;
+import org.apache.fineract.useradministration.service.RoleReadPlatformService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepository;
@@ -19,26 +28,17 @@ import com.finflux.ruleengine.lib.data.RuleResult;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
 import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
 import com.finflux.workflow.configuration.domain.*;
-import com.finflux.workflow.execution.domain.*;
-import com.finflux.workflow.execution.exception.WorkflowStepNoActionPermissionException;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.useradministration.data.RoleData;
-import org.apache.fineract.useradministration.service.RoleReadPlatformService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
-
 import com.finflux.workflow.execution.data.StepAction;
 import com.finflux.workflow.execution.data.StepStatus;
 import com.finflux.workflow.execution.data.WorkflowExecutionData;
 import com.finflux.workflow.execution.data.WorkflowExecutionStepData;
+import com.finflux.workflow.execution.domain.*;
+import com.finflux.workflow.execution.exception.WorkflowStepNoActionPermissionException;
 import com.finflux.workflow.execution.service.WorkflowExecutionService;
-import com.finflux.workflow.execution.service.WorkflowReadService;
 import com.finflux.workflow.execution.service.WorkflowExecutionWriteService;
-import org.springframework.transaction.annotation.Transactional;
+import com.finflux.workflow.execution.service.WorkflowReadService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Created by dhirendra on 22/09/16.
