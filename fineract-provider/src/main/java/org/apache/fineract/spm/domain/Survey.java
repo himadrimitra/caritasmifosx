@@ -18,30 +18,34 @@
  */
 package org.apache.fineract.spm.domain;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_surveys")
 public class Survey extends AbstractPersistable<Long> {
 
-    @OneToMany(mappedBy = "survey", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "survey", orphanRemoval = true)
     @OrderBy("sequenceNo")
     private List<Component> components;
 
-    @OneToMany(mappedBy = "survey", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "survey", orphanRemoval = true)
     @OrderBy("sequenceNo")
     private List<Question> questions;
 
@@ -79,16 +83,26 @@ public class Survey extends AbstractPersistable<Long> {
         return components;
     }
 
+    @SuppressWarnings("unused")
     public void setComponents(List<Component> components) {
-        this.components = components;
+        if (this.components == null) {
+            this.components = new ArrayList<Component>();
+        }
+        this.components.clear();
+        this.components.addAll(components);
     }
 
     public List<Question> getQuestions() {
         return questions;
     }
 
+    @SuppressWarnings("unused")
     public void setQuestions(List<Question> questions) {
-        this.questions = questions;
+        if (this.questions == null) {
+            this.questions = new ArrayList<Question>();
+        }
+        this.questions.clear();
+        this.questions.addAll(questions);
     }
 
     public String getKey() {

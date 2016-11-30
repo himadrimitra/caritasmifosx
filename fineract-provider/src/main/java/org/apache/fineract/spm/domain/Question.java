@@ -18,20 +18,25 @@
  */
 package org.apache.fineract.spm.domain;
 
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import javax.persistence.*;
+
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "m_survey_questions")
 public class Question extends AbstractPersistable<Long> {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "survey_id")
     private Survey survey;
 
-    @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "question", orphanRemoval = true)
     @OrderBy("sequenceNo")
     private List<Response> responses;
 
@@ -67,7 +72,11 @@ public class Question extends AbstractPersistable<Long> {
     }
 
     public void setResponses(List<Response> responses) {
-        this.responses = responses;
+        if(this.responses == null){
+            this.responses = new ArrayList<Response>();
+        }
+        this.responses.clear();
+        this.responses.addAll(responses);
     }
 
     public String getComponentKey() {

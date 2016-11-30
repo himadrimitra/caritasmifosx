@@ -1322,7 +1322,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 }
                 for(DisbursementData data : disbursementData){
                     if(data.getChargeAmount() != null){
+                    	if(incluedeAllDisbursements || data.isDisbursed()){
                         disbursementChargeAmount = disbursementChargeAmount.subtract(data.getChargeAmount());
+                    	}
                     }
                 }
                 this.outstandingLoanPrincipalBalance = BigDecimal.ZERO;
@@ -1364,11 +1366,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                                 principal = principal.add(data.amount());
                                 if (data.getChargeAmount() == null) {
                                     final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                                            data.disbursementDate(), data.amount(), BigDecimal.ZERO, data.isDisbursed());
+                                            data.disbursementDate(), data.amount(), disbursementChargeAmount, data.isDisbursed());
                                     periods.add(periodData);
                                 } else {
                                     final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                                            data.disbursementDate(), data.amount(), data.getChargeAmount(), data.isDisbursed());
+                                            data.disbursementDate(), data.amount(), disbursementChargeAmount.add(data.getChargeAmount()), data.isDisbursed());
                                     periods.add(periodData);
                                 }
                                 this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(data.amount());
