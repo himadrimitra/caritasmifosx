@@ -30,4 +30,31 @@ public class BankAccountDetailData {
         this.status = status;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public String getIfscCode() {
+        return ifscCode;
+    }
+
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public EnumOptionData getStatus() {
+        return status;
+    }
 }
