@@ -6,6 +6,7 @@
 package org.apache.fineract.portfolio.loanaccount.api;
 
 import java.math.BigDecimal;
+import java.util.Random;
 
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
@@ -94,5 +95,23 @@ public class MathUtility {
         	product = product.multiply(zeroIfNull(value));
         }
         return product;
+    }
+    
+    public static String randomStringGenerator(final String prefix, final int len, final String sourceSetString) {
+        final int lengthOfSource = sourceSetString.length();
+        final Random rnd = new Random();
+        final StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append((sourceSetString).charAt(rnd.nextInt(lengthOfSource)));
+        }
+        return (prefix + (sb.toString()));
+    }
+    
+    public static String randomStringGenerator(final String prefix, final int len) {
+        return randomStringGenerator(prefix, len, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    }
+
+    public static String randomNameGenerator(final String prefix, final int lenOfRandomSuffix) {
+        return randomStringGenerator(prefix, lenOfRandomSuffix);
     }
 }

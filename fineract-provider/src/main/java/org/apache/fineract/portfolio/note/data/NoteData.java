@@ -42,6 +42,10 @@ public class NoteData {
     @SuppressWarnings("unused")
     private final Long savingAccountId;
     @SuppressWarnings("unused")
+    private final Long cgtId;
+    @SuppressWarnings("unused")
+    private final Long cgtDayId;
+    @SuppressWarnings("unused")
     private final EnumOptionData noteType;
     @SuppressWarnings("unused")
     private final String note;
@@ -61,7 +65,7 @@ public class NoteData {
     public NoteData(final Long id, final Long clientId, final Long groupId, final Long loanId, final Long transactionId,
             final Long depositAccountId, final Long savingAccountId, final EnumOptionData noteType, final String note,
             final DateTime createdDate, final Long createdById, final String createdByUsername, final DateTime lastModifiedDate,
-            final Long lastModifiedById, final String updatedByUsername) {
+            final Long lastModifiedById, final String updatedByUsername, final Long cgtId, final Long cgtDayId) {
         this.id = id;
         this.clientId = clientId;
         this.groupId = groupId;
@@ -77,5 +81,7 @@ public class NoteData {
         this.updatedOn = lastModifiedDate;
         this.updatedById = lastModifiedById;
         this.updatedByUsername = updatedByUsername;
+        this.cgtId = cgtId;
+        this.cgtDayId = cgtDayId;
     }
 }

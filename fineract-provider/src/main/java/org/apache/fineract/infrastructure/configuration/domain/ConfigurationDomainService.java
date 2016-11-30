@@ -109,4 +109,14 @@ public interface ConfigurationDomainService {
     boolean isJlgLoansIncludedInIndividualCollectionSheet();
     
     boolean isGlimLoanInClientProfileShown();
+
+    boolean isCgtEnabled();
+    
+    boolean isMaxCgtDaysEnabled();
+    
+    boolean isMinCgtDaysEnabled();
+    
+    Long getMinCgtDays();
+    
+    Long getMaxCgtDays();
 }
