@@ -59,8 +59,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.joda.time.LocalDateTime;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 /**
  * All monetary transactions against a loan are modelled through this entity.
@@ -925,5 +923,15 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     public Set<GroupLoanIndividualMonitoringTransaction> getGlimTransaction() {
         return this.groupLoanIndividualMonitoringTransactions;
+    }
+
+    
+    public PaymentDetail getPaymentDetail() {
+        return this.paymentDetail;
+    }
+
+    
+    public BigDecimal getAmount() {
+        return this.amount;
     }
 }

@@ -112,7 +112,7 @@ public interface LoanWritePlatformService {
 
     CommandProcessingResult forecloseLoan(final Long loanId, JsonCommand command);
     
-	CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command, boolean isOverPaidRefund);
+	CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command);
 
 
 }
