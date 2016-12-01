@@ -47,4 +47,6 @@ public interface ClientReadPlatformService {
     ClientData retrieveAllNarrations(String clientNarrations);
     
     Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
+
+	Long retrieveDefaultStaffIdFromGroup(Long clientId);
 }
