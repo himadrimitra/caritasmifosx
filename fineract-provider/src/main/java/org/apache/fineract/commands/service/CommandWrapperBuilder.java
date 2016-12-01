@@ -1666,6 +1666,65 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder createCgt() {
+        this.actionName = "CREATE";
+        this.entityName = "CGT";
+        this.entityId = null;
+        this.href = "/cgt";
+        return this;
+    }
+    
+    public CommandWrapperBuilder rejectCgt(final Long cgtId) {
+        this.actionName = "REJECT";
+        this.entityName = "CGT";
+        this.entityId = cgtId;
+        this.href = "/cgt/" + cgtId + "?action=reject";
+        return this;
+    }
+    
+    public CommandWrapperBuilder completeCgt(final Long cgtId) {
+        this.actionName = "COMPLETE";
+        this.entityName = "CGT";
+        this.entityId = cgtId;
+        this.href = "/cgt/" + cgtId + "?action=complete";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateCgt(final Long cgtId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CGT";
+        this.entityId = cgtId;
+        this.href = "/cgt/" + cgtId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder createCgtDay(final Long cgtId) {
+        this.actionName = "CREATE";
+        this.entityName = "CGTDAY";
+        this.entityId = null;
+        this.subentityId = cgtId;
+        this.href = "/cgt/" + cgtId + "/cgtSub";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateCgtDay(final Long cgtId, final Long cgtDayId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CGTDAY";
+        this.entityId = cgtDayId;
+        this.subentityId = cgtId;
+        this.href = "/cgt/" + cgtId + "/cgtSub" + cgtDayId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder completeCgtDay(final Long cgtId, final Long cgtDayId) {
+        this.actionName = "COMPLETE";
+        this.entityName = "CGTDAY";
+        this.entityId = cgtDayId;
+        this.subentityId = cgtId;
+        this.href = "/cgt/" + cgtId + "/cgtSub" + cgtDayId + "?action=complete";
+        return this;
+    }
+    
     public CommandWrapperBuilder createCenter() {
         this.actionName = "CREATE";
         this.entityName = "CENTER";

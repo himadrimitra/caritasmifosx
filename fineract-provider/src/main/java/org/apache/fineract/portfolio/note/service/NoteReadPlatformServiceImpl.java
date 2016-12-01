@@ -77,7 +77,7 @@ public class NoteReadPlatformServiceImpl implements NoteReadPlatformService {
             final String createdByUsername = rs.getString("createdBy");
             final String updatedByUsername = rs.getString("modifiedBy");
             return new NoteData(id, clientId, groupId, loanId, transactionId, null, null, noteType, note, createdDate, createdById,
-                    createdByUsername, lastModifiedDate, lastModifiedById, updatedByUsername);
+                    createdByUsername, lastModifiedDate, lastModifiedById, updatedByUsername, null, null);
         }
     }
 
@@ -129,10 +129,17 @@ public class NoteReadPlatformServiceImpl implements NoteReadPlatformService {
             case GROUP:
                 conditionSql = " n.group_id = ? ";
             break;
+            case CGT:
+                conditionSql = " n.cgt_id = ? ";
+            break;
+            case CGT_DAY:
+                conditionSql = " n.cgt_day_id = ? ";
+            break;
             default:
             break;
         }
 
         return conditionSql;
     }
+    
 }
