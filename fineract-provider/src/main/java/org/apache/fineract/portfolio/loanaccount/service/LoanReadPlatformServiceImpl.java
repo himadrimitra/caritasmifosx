@@ -1644,6 +1644,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 true);
         final Collection<CodeValueData> loanCollateralOptions = this.codeValueReadPlatformService
                 .retrieveCodeValuesByCode("LoanCollateral");
+        Long loanOfficerId = null;
+        if(clientId!= null){
+        loanOfficerId = this.clientReadPlatformService.retrieveDefaultStaffIdFromGroup(clientId);
+        }
         final Collection<PledgeData> loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(clientId, productId, null);
         Collection<ChargeData> chargeOptions = null;
         if (loanProduct.getMultiDisburseLoan()) {
@@ -1673,7 +1677,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 repaymentFrequencyNthDayTypeOptions, repaymentFrequencyDaysOfWeekTypeOptions, repaymentStrategyOptions,
                 interestRateFrequencyTypeOptions, amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions,
                 fundOptions, chargeOptions, loanPurposeOptions, loanCollateralOptions, loanCycleCounter, loanProductCollateralPledgesOptions,
-                clientActiveLoanOptions, paymentOptions);
+                clientActiveLoanOptions, paymentOptions, loanOfficerId);
     }
 
     @Override

@@ -1156,7 +1156,7 @@ public class LoanAccountData {
             final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions,
             final Collection<LoanPurposeData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions,
             final Integer loanCycleNumber, final Collection<PledgeData> loanProductCollateralPledgesOptions,
-            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final Collection<PaymentTypeData> paymentOptions) {
+            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final Collection<PaymentTypeData> paymentOptions, Long loanOfficerId) {
 
         final Long id = null;
         final String accountNo = null;
@@ -1171,7 +1171,6 @@ public class LoanAccountData {
         final EnumOptionData loanType = null;
         final Long loanPurposeId = null;
         final String loanPurposeName = null;
-        final Long loanOfficerId = null;
         final String loanOfficerName = null;
         final Long pledgeId = null;
 

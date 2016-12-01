@@ -839,4 +839,21 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions, closureReasons);
     }
 
+    @Override
+    public Long retrieveDefaultStaffIdFromGroup(final Long clientId) {
+        final StringBuilder builder = new StringBuilder(400);
+
+    	builder.append("SELECT IFNULL(pg.staff_id,g.staff_id) ");
+    	builder.append("FROM m_group_client gc "); 
+    	builder.append("LEFT JOIN m_group g ON g.id=gc.group_id ");
+    	builder.append("LEFT JOIN m_group pg ON pg.id = g.parent_id ");
+    	builder.append("where gc.client_id=? ");
+    	try{
+            return this.jdbcTemplate.queryForObject(builder.toString(), Long.class, clientId);
+    }catch (final EmptyResultDataAccessException e) {
+        return null;
+    }
+  }
+
+
 }
