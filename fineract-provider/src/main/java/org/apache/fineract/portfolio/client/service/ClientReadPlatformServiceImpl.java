@@ -126,11 +126,14 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final List<CodeValueData> clientNonPersonMainBusinessLineOptions = new ArrayList<>(
                 this.codeValueReadPlatformService.retrieveCodeValuesByCode(ClientApiConstants.CLIENT_NON_PERSON_MAIN_BUSINESS_LINE));
         
+		final List<CodeValueData> closureReasons = new ArrayList<>(
+				this.codeValueReadPlatformService.retrieveCodeValuesByCode(ClientApiConstants.CLIENT_CLOSURE_REASON));
+
         final List<EnumOptionData> clientLegalFormOptions = ClientEnumerations.legalForm(LegalForm.values());
 
         return ClientData.template(defaultOfficeId, DateUtils.getLocalDateOfTenant(), offices, staffOptions, null, genderOptions, savingsProductDatas,
                 clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
-                clientLegalFormOptions);
+                clientLegalFormOptions, closureReasons);
     }
 
     @Override
@@ -432,7 +435,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final String savingsProductName = rs.getString("savingsProductName");
 
             final Long savingsAccountId = JdbcSupport.getLong(rs, "savingsAccountId");
+			CodeValueData closurereason = null;
 
+            
             final LocalDate closedOnDate = JdbcSupport.getLocalDate(rs, "closedOnDate");
             final String closedByUsername = rs.getString("closedByUsername");
             final String closedByFirstname = rs.getString("closedByFirstname");
@@ -471,7 +476,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.instance(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id,
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
-                    classification, legalForm, clientNonPerson);
+                    classification, legalForm, clientNonPerson, closurereason);
 
         }
     }
@@ -513,6 +518,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             builder.append("c.client_classification_cv_id as classificationId, ");
             builder.append("cvclassification.code_value as classificationValue, ");
             builder.append("c.legal_form_enum as legalFormEnum, ");
+			builder.append("c.closure_reason_cv_id as closurereasonId, ");
+		    builder.append("cvclosurereason.code_value as closurereasonValue, ");
 
             builder.append("c.submittedon_date as submittedOnDate, ");
             builder.append("sbu.username as submittedByUsername, ");
@@ -552,6 +559,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             builder.append("left join m_appuser clu on clu.id = c.closedon_userid ");
             builder.append("left join m_code_value cv on cv.id = c.gender_cv_id ");
             builder.append("left join m_code_value cvclienttype on cvclienttype.id = c.client_type_cv_id ");
+			builder.append("left join m_code_value cvclosurereason on cvclosurereason.id = c.closure_reason_cv_id ");
             builder.append("left join m_code_value cvclassification on cvclassification.id = c.client_classification_cv_id ");
             builder.append("left join m_code_value cvSubStatus on cvSubStatus.id = c.sub_status ");
             builder.append("left join m_code_value cvConstitution on cvConstitution.id = cnp.constitution_cv_id ");
@@ -601,6 +609,13 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final Long clienttypeId = JdbcSupport.getLong(rs, "clienttypeId");
             final String clienttypeValue = rs.getString("clienttypeValue");
             final CodeValueData clienttype = CodeValueData.instance(clienttypeId, clienttypeValue);
+            
+			CodeValueData closurereason = null;
+			final Long closurereasonId = JdbcSupport.getLong(rs, "closurereasonId");
+			if (closurereasonId != null) {
+				final String closurereasonValue = rs.getString("closurereasonValue");
+				closurereason = CodeValueData.instance(closurereasonId, closurereasonValue);
+			}
 
             final Long classificationId = JdbcSupport.getLong(rs, "classificationId");
             final String classificationValue = rs.getString("classificationValue");
@@ -653,7 +668,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.instance(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id,
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
-                    classification, legalForm, clientNonPerson);
+                    classification, legalForm, clientNonPerson, closurereason);
 
         }
     }
@@ -819,8 +834,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final Collection<CodeValueData> clientNonPersonConstitutionOptions = null;
         final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
         final List<EnumOptionData> clientLegalFormOptions = null;
+        final List<CodeValueData> closureReasons = null;
         return ClientData.template(null, null, null, null, narrations, null, null, clientTypeOptions, clientClassificationOptions, 
-        		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions);
+        		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions, closureReasons);
     }
 
 }
