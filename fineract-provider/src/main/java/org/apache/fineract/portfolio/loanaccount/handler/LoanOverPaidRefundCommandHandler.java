@@ -21,7 +21,7 @@ public class LoanOverPaidRefundCommandHandler implements NewCommandSourceHandler
 	@Override
 	public CommandProcessingResult processCommand(JsonCommand command) {
 		final boolean isOverPaidRefund = true;
-        return writePlatformService.refundOverPaidLoan(command.getLoanId(), command, isOverPaidRefund);
+        return writePlatformService.refundOverPaidLoan(command.getLoanId(), command);
 	}
 
 }

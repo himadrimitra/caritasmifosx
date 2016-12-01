@@ -18,11 +18,6 @@
  */
 package org.apache.fineract.portfolio.loanaccount.service;
 
-import static org.apache.fineract.portfolio.account.AccountDetailConstants.fromAccountIdParamName;
-import static org.apache.fineract.portfolio.account.AccountDetailConstants.toAccountIdParamName;
-import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConstants.transferAmountParamName;
-import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConstants.transferDateParamName;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -179,7 +174,6 @@ import org.apache.fineract.portfolio.loanaccount.guarantor.service.GuarantorDoma
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
@@ -201,9 +195,6 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
-import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
@@ -270,7 +261,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringRepository glimRepository;
     private final GroupLoanIndividualMonitoringAssembler glimAssembler;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
-    private final LoanScheduleGeneratorFactory loanScheduleFactory;
     private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper;
@@ -310,7 +300,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final GroupLoanIndividualMonitoringRepository glimRepository,
             final GroupLoanIndividualMonitoringAssembler glimAssembler,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
-            final LoanScheduleGeneratorFactory loanScheduleFactory, final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
+            final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,
             final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper) {
 
@@ -358,7 +348,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimRepository = glimRepository;
         this.glimAssembler = glimAssembler;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
-        this.loanScheduleFactory = loanScheduleFactory;
         this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
         this.glimTransactionAssembler = glimTransactionAssembler;
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper = groupLoanIndividualMonitoringTransactionRepositoryWrapper;
@@ -525,6 +514,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 changedTransactionDetail = loan.disburse(currentUser, command, changes, scheduleGeneratorDTO, null);
             }
         }
+        Map<BUSINESS_ENTITY, Object> notifyParamMap = new HashMap<>();
         if (!changes.isEmpty()) {
             if (changedTransactionDetail != null) {
                 for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
@@ -540,14 +530,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 final Note note = Note.loanNote(loan, noteText);
                 this.noteRepository.save(note);
             }
-
             if (changedTransactionDetail != null) {
                 for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
                     this.loanTransactionRepository.save(mapEntry.getValue());
                     this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
                 }
-                Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
-                this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, changedTransactionEntityMap);
+                notifyParamMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
             }
 
             // auto create standing instruction
@@ -587,6 +575,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         if(disbursementTransaction != null){
             map.put(BUSINESS_ENTITY.LOAN_TRANSACTION, disbursementTransaction);
         }
+        map.putAll(notifyParamMap);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, map);
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
@@ -990,7 +979,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     
     @Transactional
     @Override
-    public CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command,final boolean isOverPaidRefund){
+    public CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command){
     	this.loanEventApiJsonValidator.validateRefundTransaction(command.json());
         final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
         final Map<String, Object> changes = new LinkedHashMap<>();
