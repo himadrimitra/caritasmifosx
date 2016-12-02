@@ -47,6 +47,8 @@ public enum JobName {
     UPDATE_SMS_OUTBOUND_WITH_CAMPAIGN_MESSAGE("Update Sms Outbound with campaign message"),
     EXECUTE_REPORT_MAILING_JOBS("Execute Report Mailing Jobs"),
     APPLY_RECURRING_CHARGE_ON_CLIENT("Apply Recurring Charge On Client"),
+    INITIATE_BANK_TRANSACTION("Initiate Bank Transactions"),
+    UPDATE_BANK_TRANSACTION_STATUS("Update Bank Transaction Status"),
     HIGHMARK_ENQUIRY("Highmark Enquiry");
 
     private final String name;

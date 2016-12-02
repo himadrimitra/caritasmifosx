@@ -9,11 +9,14 @@ import java.util.Map;
  * Created by dhirendra on 25/11/16.
  */
 public enum TransactionStatus {
-        DRAFT(1, "transactionStatus.initiated"),
-        INITIATED(2, "transactionStatus.initiated"),
-        SUCCESS(3, "transactionStatus.success"),
-        FAILED(4, "transactionStatus.failed"),
-        PENDING(5, "transactionStatus.pending");
+        DRAFTED(1, "transactionStatus.draft"),
+        SUBMITTED(2, "transactionStatus.submitted"),
+        INITIATED(3, "transactionStatus.initiated"),
+        PENDING(4, "transactionStatus.pending"),
+        SUCCESS(5, "transactionStatus.success"),
+        FAILED(6, "transactionStatus.failed"),
+        CLOSED(7, "transactionStatus.closed");
+
         private static final Map<Integer, TransactionStatus> intToEnumMap = new HashMap<>();
 
         static {
