@@ -218,6 +218,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lp.min_periods_between_disbursal_and_first_repayment as minimumPeriodsBetweenDisbursalAndFirstRepayment, "
                     + "lp.min_loan_term as minLoanTerm, lp.max_loan_term as maxLoanterm ,"
                     + "lp.loan_tenure_frequency_type as loanTenureFrequencyType , "
+                    + "lp.emi_based_on_disbursements as isEmiBasedOnDisbursements , "
                     + "lpg.id as lpgId, lpg.mandatory_guarantee as mandatoryGuarantee, "
                     + "lpg.minimum_guarantee_from_own_funds as minimumGuaranteeFromOwnFunds, lpg.minimum_guarantee_from_guarantor_funds as minimumGuaranteeFromGuarantor, "
                     + "lp.account_moves_out_of_npa_only_on_arrears_completion as accountMovesOutOfNPAOnlyOnArrearsCompletion, "
@@ -361,6 +362,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
             final Boolean multiDisburseLoan = rs.getBoolean("multiDisburseLoan");
             final Integer maxTrancheCount = rs.getInt("maxTrancheCount");
+            final Boolean isEmiBasedOnDisbursements = rs.getBoolean("isEmiBasedOnDisbursements") ;
             final BigDecimal outstandingLoanBalance = rs.getBigDecimal("outstandingLoanBalance");
 
             final int daysInMonth = JdbcSupport.getInteger(rs, "daysInMonth");
@@ -493,7 +495,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                    weeksInYearType, adjustInterestForRounding);
+                    weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements);
         }
     }
 

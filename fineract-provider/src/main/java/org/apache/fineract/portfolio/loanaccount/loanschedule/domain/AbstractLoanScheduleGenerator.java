@@ -176,6 +176,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 loanApplicationTerms.setPrincipal(loanApplicationTerms.getPrincipal().zero().plus(disburseAmt));
                 scheduleParams.setOutstandingBalance(Money.of(currency, disburseAmt));
                 scheduleParams.setOutstandingBalanceAsPerRest(Money.of(currency, disburseAmt));
+                if(loanApplicationTerms.isEmiBasedOnDisbursements()) {
+                	adjustInstallmentOrPrincipalAmount(loanApplicationTerms, Money.zero(loanApplicationTerms.getCurrency()), scheduleParams.getPeriodNumber(), mc);	
+                }
             }
         }
 
@@ -283,7 +286,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     interestCalculationGraceOnRepaymentPeriodFraction);
 
             if (loanApplicationTerms.isMultiDisburseLoan()) {
-                updateBalanceBasedOnDisbursement(loanApplicationTerms, chargesDueAtTimeOfDisbursement, scheduleParams, periods,
+                updateBalanceBasedOnDisbursement(mc, loanApplicationTerms, chargesDueAtTimeOfDisbursement, scheduleParams, periods,
                         scheduledDueDate);
             }
 
@@ -999,7 +1002,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
      * Method updates outstanding balance of the loan for interest calculation
      * 
      */
-    private void updateBalanceBasedOnDisbursement(final LoanApplicationTerms loanApplicationTerms,
+    private void updateBalanceBasedOnDisbursement(final MathContext mc, final LoanApplicationTerms loanApplicationTerms,
             final BigDecimal chargesDueAtTimeOfDisbursement, LoanScheduleParams scheduleParams,
             final Collection<LoanScheduleModelPeriod> periods, final LocalDate scheduledDueDate) {
         for (Map.Entry<LocalDate, Money> disburseDetail : scheduleParams.getDisburseDetailMap().entrySet()) {
@@ -1024,6 +1027,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 scheduleParams.addOutstandingBalance(disburseDetail.getValue());
                 scheduleParams.addPrincipalToBeScheduled(disburseDetail.getValue());
                 loanApplicationTerms.setPrincipal(loanApplicationTerms.getPrincipal().plus(disburseDetail.getValue()));
+                if(loanApplicationTerms.isEmiBasedOnDisbursements()) {
+                	adjustInstallmentOrPrincipalAmount(loanApplicationTerms, scheduleParams.getTotalCumulativePrincipal(), scheduleParams.getPeriodNumber(), mc);	
+                }
+                
             }
         }
     }
@@ -1308,8 +1315,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
      */
     private Money getPrincipalToBeScheduled(final LoanApplicationTerms loanApplicationTerms) {
         Money principalToBeScheduled;
-        if (loanApplicationTerms.isMultiDisburseLoan() && loanApplicationTerms.getApprovedPrincipal().isGreaterThanZero()) {
-            principalToBeScheduled = loanApplicationTerms.getApprovedPrincipal();
+        if (loanApplicationTerms.isMultiDisburseLoan() && loanApplicationTerms.getApprovedPrincipal().isGreaterThanZero() && !loanApplicationTerms.isEmiBasedOnDisbursements()) {
+            principalToBeScheduled = loanApplicationTerms.getApprovedPrincipal() ;
         } else {
             principalToBeScheduled = loanApplicationTerms.getPrincipal();
         }
@@ -1971,8 +1978,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 periods.add(disbursementPeriod);
                 principal = principal.add(disbursementData.amount());
             } else if (loanApplicationTerms.isConsiderAllDisbursmentsInSchedule()
-                    || disbursementData.isDisbursed()
-                    || (loanApplicationTerms.isConsiderFutureDisbursmentsInSchedule() && !disbursementData.disbursementDate().isBefore(
+                    || disbursementData.isDisbursed() || (loanApplicationTerms.isConsiderFutureDisbursmentsInSchedule() && !disbursementData.disbursementDate().isBefore(
                             DateUtils.getLocalDateOfTenant()))) {
                 disurseDetail.put(disbursementData.disbursementDate(), Money.of(currency, disbursementData.amount()));
             }
@@ -2261,6 +2267,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 outstandingBalance = outstandingBalance.zero().plus(disburseAmt);
                 outstandingBalanceAsPerRest = outstandingBalance;
                 principalToBeScheduled = principalToBeScheduled.zero().plus(disburseAmt);
+                if(loanApplicationTerms.isEmiBasedOnDisbursements()) {
+                	adjustInstallmentOrPrincipalAmount(loanApplicationTerms, Money.zero(loanApplicationTerms.getCurrency()), periodNumber, mc);	
+                }
             }
             int loanTermInDays = 0;
 
@@ -2350,6 +2359,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         // disbursement detail
                         outstandingBalance = outstandingBalance.plus(disburseDetail.getValue());
                         principalToBeScheduled = principalToBeScheduled.plus(disburseDetail.getValue());
+                        if(loanApplicationTerms.isEmiBasedOnDisbursements()) {
+                        	adjustInstallmentOrPrincipalAmount(loanApplicationTerms, Money.zero(loanApplicationTerms.getCurrency()), periodNumber, mc);
+                        }
                     }
                 }
 

@@ -131,6 +131,9 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     @Column(name = "weeks_in_year_enum")
     private Integer weeksInYearType;
 
+    @Column(name = "emi_based_on_disbursements")
+    private boolean isEmiBasedOnDisbursements ;
+    
     public static LoanProductRelatedDetail createFrom(final MonetaryCurrency currency, final BigDecimal principal,
             final BigDecimal nominalInterestRatePerPeriod, final PeriodFrequencyType interestRatePeriodFrequencyType,
             final BigDecimal nominalAnnualInterestRate, final InterestMethod interestMethod,
@@ -139,13 +142,13 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods, final Integer graceOnInterestPayment, final Integer graceOnInterestCharged,
             final AmortizationMethod amortizationMethod, final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing,
             final Integer daysInMonthType, final Integer daysInYearType, final boolean isInterestRecalculationEnabled,
-            final Integer weeksInYearType) {
+            final Integer weeksInYearType, final boolean isEmiBasedOnDisbursements) {
 
         return new LoanProductRelatedDetail(currency, principal, nominalInterestRatePerPeriod, interestRatePeriodFrequencyType,
                 nominalAnnualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion,
                 repaymentEvery, repaymentPeriodFrequencyType, numberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment,
                 graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType,
-                isInterestRecalculationEnabled, weeksInYearType);
+                isInterestRecalculationEnabled, weeksInYearType, isEmiBasedOnDisbursements);
     }
 
     protected LoanProductRelatedDetail() {
@@ -160,7 +163,8 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
             final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
             final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
-            final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType) {
+            final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
+            final boolean isEmiBasedOnDisbursements) {
         this.currency = currency;
         this.principal = defaultPrincipal;
         this.nominalInterestRatePerPeriod = defaultNominalInterestRatePerPeriod;
@@ -187,6 +191,7 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         this.daysInYearType = daysInYearType;
         this.isInterestRecalculationEnabled = isInterestRecalculationEnabled;
         this.weeksInYearType = weeksInYearType;
+        this.isEmiBasedOnDisbursements = isEmiBasedOnDisbursements ;
     }
 
     private Integer defaultToNullIfZero(final Integer value) {
@@ -507,6 +512,14 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             this.isInterestRecalculationEnabled = newValue;
         }
 
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isEmiBasedOnDisbursements,
+                this.isEmiBasedOnDisbursements)) {
+            final boolean newValue = command
+                    .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isEmiBasedOnDisbursements);
+            actualChanges.put(LoanProductConstants.isEmiBasedOnDisbursements, newValue);
+            this.isEmiBasedOnDisbursements = newValue;
+        }
+        
         validateRepaymentPeriodWithGraceSettings();
 
         return actualChanges;
@@ -668,5 +681,7 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     }
     
     
-
+    public boolean isEmiBasedOnDisbursements() {
+    	return this.isEmiBasedOnDisbursements ;
+    }
 }

@@ -137,6 +137,8 @@ public interface LoanProductConstants {
     
     public static final String allowPartialPeriodInterestCalcualtionParamName = "allowPartialPeriodInterestCalcualtion";
 
+    public static final String isEmiBasedOnDisbursements = "isEmiBasedOnDisbursements" ;
+    
     public static final String canUseForTopup = "canUseForTopup";
     
     //Subsidy related constants
