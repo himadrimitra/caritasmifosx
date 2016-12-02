@@ -34,6 +34,12 @@ public class WorkingDaysHelper {
         System.out.println("---------------------------------UPDATE WORKINGDAY---------------------------------------------");
         return Utils.performServerPut(requestSpec, responseSpec, UPDATE_WORKINGDAYS_URL, updateWorkingDaysAsJson(), "");
     }
+    
+    public static Object updateWorkingDays(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final String json) {
+        final String UPDATE_WORKINGDAYS_URL = WORKINGDAYS_URL + "?" + Utils.TENANT_IDENTIFIER;
+        System.out.println("---------------------------------UPDATE WORKINGDAY---------------------------------------------");
+        return Utils.performServerPut(requestSpec, responseSpec, UPDATE_WORKINGDAYS_URL, json, "");
+    }
 
     public static Object updateWorkingDaysWithWrongRecurrence(final RequestSpecification requestSpec,
             final ResponseSpecification responseSpec, String jsonAttributeToGetback) {
@@ -49,6 +55,16 @@ public class WorkingDaysHelper {
         map.put("recurrence", "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR,SA,SU");
         map.put("locale", "en");
         map.put("repaymentRescheduleType", randomInt(1, 4));
+        map.put("extendTermForDailyRepayments", false);
+        System.out.println("map : " + map);
+        return new Gson().toJson(map);
+    }
+    
+    public static String updateWorkingDaysSetSunDayAsJson() {
+        final HashMap<String, Object> map = new HashMap<>();
+        map.put("recurrence", "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR,SA");
+        map.put("locale", "en");
+        map.put("repaymentRescheduleType", 2);
         map.put("extendTermForDailyRepayments", false);
         System.out.println("map : " + map);
         return new Gson().toJson(map);

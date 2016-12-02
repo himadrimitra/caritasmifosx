@@ -53,6 +53,10 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
     @Temporal(TemporalType.DATE)
     @Column(name = "duedate", nullable = false)
     private final Date dueDate;
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "actualduedate", nullable = false)
+    private final Date actualDueDate;
 
     @Column(name = "deposit_amount", scale = 6, precision = 19, nullable = true)
     private BigDecimal depositAmount;
@@ -80,6 +84,7 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
         this.installmentNumber = null;
         this.fromDate = null;
         this.dueDate = null;
+        this.actualDueDate = null;
         this.obligationsMet = false;
     }
 
@@ -96,13 +101,14 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
      * @param obligationsMetOnDate
      */
     private RecurringDepositScheduleInstallment(final RecurringDepositAccount account, final Integer installmentNumber,
-            final Date fromDate, final Date dueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
+            final Date fromDate, final Date dueDate, final Date actualDueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
             final BigDecimal totalPaidInAdvance, final BigDecimal totalPaidLate, final boolean obligationsMet,
             final Date obligationsMetOnDate) {
         this.account = account;
         this.installmentNumber = installmentNumber;
         this.fromDate = fromDate;
         this.dueDate = dueDate;
+        this.actualDueDate = actualDueDate;
         this.depositAmount = defaultToNullIfZero(depositAmount);
         this.depositAmountCompleted = depositAmountCompleted;
         this.totalPaidInAdvance = totalPaidInAdvance;
@@ -112,15 +118,15 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
     }
 
     public static RecurringDepositScheduleInstallment from(final RecurringDepositAccount account, final Integer installmentNumber,
-            final Date fromDate, final Date dueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
+            final Date fromDate, final Date dueDate, final Date actualDueDate, final BigDecimal depositAmount, final BigDecimal depositAmountCompleted,
             final BigDecimal totalPaidInAdvance, final BigDecimal totalPaidLate, final boolean obligationsMet,
             final Date obligationsMetOnDate) {
-        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, depositAmount,
+        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, actualDueDate, depositAmount,
                 depositAmountCompleted, totalPaidInAdvance, totalPaidLate, obligationsMet, obligationsMetOnDate);
     }
 
     public static RecurringDepositScheduleInstallment installment(final RecurringDepositAccount account, final Integer installmentNumber,
-            final Date dueDate, final BigDecimal depositAmount) {
+            final Date dueDate, final Date actualDueDate, final BigDecimal depositAmount) {
 
         final Date fromDate = null;
         final BigDecimal depositAmountCompleted = null;
@@ -129,7 +135,7 @@ public class RecurringDepositScheduleInstallment extends AbstractAuditableCustom
         final boolean obligationsMet = false;
         final Date obligationsMetOnDate = null;
 
-        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, depositAmount,
+        return new RecurringDepositScheduleInstallment(account, installmentNumber, fromDate, dueDate, actualDueDate, depositAmount,
                 depositAmountCompleted, totalPaidInAdvance, totalPaidLate, obligationsMet, obligationsMetOnDate);
     }
 

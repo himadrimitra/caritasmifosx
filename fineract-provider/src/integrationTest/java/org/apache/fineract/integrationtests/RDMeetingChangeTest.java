@@ -14,7 +14,9 @@ import java.util.Locale;
 import org.apache.fineract.integrationtests.common.CenterHelper;
 import org.apache.fineract.integrationtests.common.ClientHelper;
 import org.apache.fineract.integrationtests.common.GroupHelper;
+import org.apache.fineract.integrationtests.common.HolidayHelper;
 import org.apache.fineract.integrationtests.common.Utils;
+import org.apache.fineract.integrationtests.common.WorkingDaysHelper;
 import org.apache.fineract.integrationtests.common.accounting.Account;
 import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
 import org.apache.fineract.integrationtests.common.recurringdeposit.RecurringDepositAccountHelper;
@@ -39,6 +41,7 @@ public class RDMeetingChangeTest {
 	private ResponseSpecification responseSpec;
     private RequestSpecification requestSpec;
 	private RecurringDepositAccountHelper recurringDepositAccountHelper;
+	private HolidayHelper holidayHelper;
 	
     @Before
     public void setup() {
@@ -133,6 +136,158 @@ public class RDMeetingChangeTest {
         assertEquals("Checking for Due Date for  installment " , afetrMeetingChange, depositSchedule.get("date"));
 }
     
+    @SuppressWarnings("rawtypes")
+	@Test
+    public void testRDaccountWithHolidays() {
+    	this.holidayHelper = new HolidayHelper(this.requestSpec, this.responseSpec);
+    	String holidayJson = this.holidayHelper.build("01 February 2016", "01 February 2016", "02 February 2016", false);
+    	Integer holidayID = HolidayHelper.createHolidays(this.requestSpec, this.responseSpec, holidayJson);
+    	HolidayHelper.activateHolidays(this.requestSpec, this.responseSpec, holidayID.toString());
+        this.recurringDepositAccountHelper = new RecurringDepositAccountHelper(this.requestSpec, this.responseSpec);
+        final String VALID_FROM = "01 January 2016";
+        final String VALID_TO = "10 January 2016";
+        final String SUBMITTED_ON_DATE = "01 January 2016";
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        Assert.assertNotNull(clientID);
+
+        final String accountingRule = NONE;
+        final String EXPECTED_FIRST_DEPOSIT_ON_DATE = "01 January 2016";
+        final String APPROVED_ON_DATE = "01 January 2016";
+        final String ACTIVATION_DATE = "01 January 2016";
+
+        Integer recurringDepositProductId = createRecurringDepositProduct(VALID_FROM, VALID_TO, accountingRule);
+        Assert.assertNotNull(recurringDepositProductId);
+
+        Integer recurringDepositAccountId = applyForRecurringDepositApplicationWithoutCalander(clientID.toString(), recurringDepositProductId.toString(),
+                VALID_FROM, VALID_TO, SUBMITTED_ON_DATE, WHOLE_TERM, EXPECTED_FIRST_DEPOSIT_ON_DATE);
+        Assert.assertNotNull(recurringDepositAccountId);
+
+		HashMap recurringDepositAccountStatusHashMap = RecurringDepositAccountStatusChecker
+				.getStatusOfRecurringDepositAccount(this.requestSpec, this.responseSpec, recurringDepositAccountId.toString());
+		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsPending(recurringDepositAccountStatusHashMap);
+		
+		
+
+		recurringDepositAccountStatusHashMap = this.recurringDepositAccountHelper.approveRecurringDeposit(recurringDepositAccountId, APPROVED_ON_DATE);
+		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsApproved(recurringDepositAccountStatusHashMap);
+
+	        /***
+	         * Activate the RD Account and verify whether account is activated
+	         */
+		recurringDepositAccountStatusHashMap = this.recurringDepositAccountHelper.activateRecurringDeposit(recurringDepositAccountId, ACTIVATION_DATE);
+		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsActive(recurringDepositAccountStatusHashMap);
+		RecurringDepositAccountHelper.depositIntoRecurringDeposit(requestSpec, responseSpec, recurringDepositAccountId, "2000", "01 January 2016");
+		HashMap depositSchedule = RecurringDepositAccountHelper.getRecurringDepositTemplate(this.requestSpec, this.responseSpec, recurringDepositAccountId);
+		
+        List<Object> beforeMeetingChange = new ArrayList<>();
+        beforeMeetingChange.add(2016);
+        beforeMeetingChange.add(2);
+        beforeMeetingChange.add(2);
+        assertEquals("Checking for Due Date for  installment " , beforeMeetingChange, depositSchedule.get("date"));
+        HolidayHelper.deleteHolidays(this.requestSpec, this.responseSpec, holidayID.toString());
+}
+    
+    @SuppressWarnings("rawtypes")
+ 	@Test
+     public void testRDaccountWithHolidaysExtendSchedule() {
+     	this.holidayHelper = new HolidayHelper(this.requestSpec, this.responseSpec);
+     	String holidayJson = this.holidayHelper.build("01 February 2016", "01 February 2016", "02 February 2016", true);
+     	Integer holidayID = HolidayHelper.createHolidays(this.requestSpec, this.responseSpec, holidayJson);
+     	HolidayHelper.activateHolidays(this.requestSpec, this.responseSpec, holidayID.toString());
+         this.recurringDepositAccountHelper = new RecurringDepositAccountHelper(this.requestSpec, this.responseSpec);
+         final String VALID_FROM = "01 January 2016";
+         final String VALID_TO = "10 January 2016";
+         final String SUBMITTED_ON_DATE = "01 January 2016";
+         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+         Assert.assertNotNull(clientID);
+
+         final String accountingRule = NONE;
+         final String EXPECTED_FIRST_DEPOSIT_ON_DATE = "01 January 2016";
+         final String APPROVED_ON_DATE = "01 January 2016";
+         final String ACTIVATION_DATE = "01 January 2016";
+
+         Integer recurringDepositProductId = createRecurringDepositProduct(VALID_FROM, VALID_TO, accountingRule);
+         Assert.assertNotNull(recurringDepositProductId);
+
+         Integer recurringDepositAccountId = applyForRecurringDepositApplicationWithoutCalander(clientID.toString(), recurringDepositProductId.toString(),
+                 VALID_FROM, VALID_TO, SUBMITTED_ON_DATE, WHOLE_TERM, EXPECTED_FIRST_DEPOSIT_ON_DATE);
+         Assert.assertNotNull(recurringDepositAccountId);
+
+ 		HashMap recurringDepositAccountStatusHashMap = RecurringDepositAccountStatusChecker
+ 				.getStatusOfRecurringDepositAccount(this.requestSpec, this.responseSpec, recurringDepositAccountId.toString());
+ 		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsPending(recurringDepositAccountStatusHashMap);
+ 		
+ 		
+
+ 		recurringDepositAccountStatusHashMap = this.recurringDepositAccountHelper.approveRecurringDeposit(recurringDepositAccountId, APPROVED_ON_DATE);
+ 		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsApproved(recurringDepositAccountStatusHashMap);
+
+ 	        /***
+ 	         * Activate the RD Account and verify whether account is activated
+ 	         */
+ 		recurringDepositAccountStatusHashMap = this.recurringDepositAccountHelper.activateRecurringDeposit(recurringDepositAccountId, ACTIVATION_DATE);
+ 		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsActive(recurringDepositAccountStatusHashMap);
+ 		RecurringDepositAccountHelper.depositIntoRecurringDeposit(requestSpec, responseSpec, recurringDepositAccountId, "2000", "01 January 2016");
+ 		RecurringDepositAccountHelper.depositIntoRecurringDeposit(requestSpec, responseSpec, recurringDepositAccountId, "2000", "02 February 2016");
+ 		HashMap depositSchedule = RecurringDepositAccountHelper.getRecurringDepositTemplate(this.requestSpec, this.responseSpec, recurringDepositAccountId);
+ 		
+         List<Object> beforeMeetingChange = new ArrayList<>();
+         beforeMeetingChange.add(2016);
+         beforeMeetingChange.add(3);
+         beforeMeetingChange.add(2);
+         assertEquals("Checking for Due Date for  installment " , beforeMeetingChange, depositSchedule.get("date"));
+         HolidayHelper.deleteHolidays(this.requestSpec, this.responseSpec, holidayID.toString());
+ }
+    
+    @SuppressWarnings("rawtypes")
+	@Test
+    public void testRDaccountWithWorkingDays() {
+    	String workingdayJson = WorkingDaysHelper.updateWorkingDaysSetSunDayAsJson();
+    	WorkingDaysHelper.updateWorkingDays(requestSpec, responseSpec, workingdayJson);
+        this.recurringDepositAccountHelper = new RecurringDepositAccountHelper(this.requestSpec, this.responseSpec);
+        final String VALID_FROM = "01 January 2016";
+        final String VALID_TO = "10 January 2016";
+        final String SUBMITTED_ON_DATE = "01 January 2016";
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        Assert.assertNotNull(clientID);
+
+        final String accountingRule = NONE;
+        final String EXPECTED_FIRST_DEPOSIT_ON_DATE = "07 January 2016";
+        final String APPROVED_ON_DATE = "01 January 2016";
+        final String ACTIVATION_DATE = "01 January 2016";
+
+        Integer recurringDepositProductId = createRecurringDepositProduct(VALID_FROM, VALID_TO, accountingRule);
+        Assert.assertNotNull(recurringDepositProductId);
+
+        Integer recurringDepositAccountId = applyForRecurringDepositApplicationWithoutCalander(clientID.toString(), recurringDepositProductId.toString(),
+                VALID_FROM, VALID_TO, SUBMITTED_ON_DATE, WHOLE_TERM, EXPECTED_FIRST_DEPOSIT_ON_DATE);
+        Assert.assertNotNull(recurringDepositAccountId);
+
+		HashMap recurringDepositAccountStatusHashMap = RecurringDepositAccountStatusChecker
+				.getStatusOfRecurringDepositAccount(this.requestSpec, this.responseSpec, recurringDepositAccountId.toString());
+		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsPending(recurringDepositAccountStatusHashMap);
+		
+		
+
+		recurringDepositAccountStatusHashMap = this.recurringDepositAccountHelper.approveRecurringDeposit(recurringDepositAccountId, APPROVED_ON_DATE);
+		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsApproved(recurringDepositAccountStatusHashMap);
+
+	        /***
+	         * Activate the RD Account and verify whether account is activated
+	         */
+		recurringDepositAccountStatusHashMap = this.recurringDepositAccountHelper.activateRecurringDeposit(recurringDepositAccountId, ACTIVATION_DATE);
+		RecurringDepositAccountStatusChecker.verifyRecurringDepositIsActive(recurringDepositAccountStatusHashMap);
+		RecurringDepositAccountHelper.depositIntoRecurringDeposit(requestSpec, responseSpec, recurringDepositAccountId, "2000", "07 January 2016");
+		HashMap depositSchedule = RecurringDepositAccountHelper.getRecurringDepositTemplate(this.requestSpec, this.responseSpec, recurringDepositAccountId);
+		
+        List<Object> beforeMeetingChange = new ArrayList<>();
+        beforeMeetingChange.add(2016);
+        beforeMeetingChange.add(2);
+        beforeMeetingChange.add(8);
+        assertEquals("Checking for Due Date for  installment " , beforeMeetingChange, depositSchedule.get("date"));
+        WorkingDaysHelper.updateWorkingDays(requestSpec, responseSpec);
+}
+    
 	@SuppressWarnings("rawtypes")
 	private List getDateAsArray(Calendar todaysDate) {
 		return new ArrayList<>(Arrays.asList(todaysDate.get(Calendar.YEAR), todaysDate.get(Calendar.MONTH) + 1,
@@ -164,6 +319,18 @@ public class RDMeetingChangeTest {
 	        return RecurringDepositAccountHelper.applyRecurringDepositApplication(recurringDepositApplicationJSON, this.requestSpec,
 	                this.responseSpec);
 	    }
+	 
+	 @SuppressWarnings("unused")
+		private Integer applyForRecurringDepositApplicationWithoutCalander(final String clientID, final String productID, final String validFrom,
+		            final String validTo, final String submittedOnDate, final String penalInterestType, final String expectedFirstDepositOnDate) {
+		        System.out.println("--------------------------------APPLYING FOR RECURRING DEPOSIT ACCOUNT --------------------------------");
+		        final String recurringDepositApplicationJSON = new RecurringDepositAccountHelper(this.requestSpec, this.responseSpec)
+		                .withSubmittedOnDate(submittedOnDate)
+		                .withExpectedFirstDepositOnDate(expectedFirstDepositOnDate)
+		                .build(clientID, productID, penalInterestType);
+		        return RecurringDepositAccountHelper.applyRecurringDepositApplication(recurringDepositApplicationJSON, this.requestSpec,
+		                this.responseSpec);
+		    }
 
 
 }

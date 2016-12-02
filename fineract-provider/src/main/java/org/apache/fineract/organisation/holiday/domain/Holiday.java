@@ -85,6 +85,9 @@ public class Holiday extends AbstractPersistable<Long> {
     
     @Column(name = "extend_repayment_schedule", nullable = false)
     private boolean extendRepaymentReschedule;
+    
+    @Column(name = "resheduling_type", nullable = false)
+    private int reshedulingType;
 
     @Column(name = "status_enum", nullable = false)
     private Integer status;
@@ -110,7 +113,8 @@ public class Holiday extends AbstractPersistable<Long> {
                                         // should update this field.
         final String description = command.stringValueOfParameterNamed(HolidayApiConstants.descriptionParamName);
         final boolean extendRepaymentReschedule = command.booleanPrimitiveValueOfParameterNamed(HolidayApiConstants.extendRepaymentRescheduleParamName);
-        return new Holiday(name, fromDate, toDate, repaymentsRescheduledTo, status, processed, description, offices, extendRepaymentReschedule);
+        final int repaymentScheduleUpdateType = command.integerValueOfParameterNamed(HolidayApiConstants.reshedulingType);
+        return new Holiday(name, fromDate, toDate, repaymentsRescheduledTo, status, processed, description, offices, extendRepaymentReschedule, repaymentScheduleUpdateType);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -233,7 +237,7 @@ public class Holiday extends AbstractPersistable<Long> {
     }
 
     private Holiday(final String name, final LocalDate fromDate, final LocalDate toDate, final LocalDate repaymentsRescheduledTo,
-            final Integer status, final boolean processed, final String description, final Set<Office> offices, final boolean extendRepaymentReschedule) {
+            final Integer status, final boolean processed, final String description, final Set<Office> offices, final boolean extendRepaymentReschedule, final int repaymentScheduleUpdateType) {
         if (StringUtils.isNotBlank(name)) {
             this.name = name.trim();
         }
@@ -264,6 +268,7 @@ public class Holiday extends AbstractPersistable<Long> {
         }
         
         this.extendRepaymentReschedule = extendRepaymentReschedule;
+        this.reshedulingType = repaymentScheduleUpdateType;
     }
 
     protected Holiday() {}
@@ -333,4 +338,8 @@ public class Holiday extends AbstractPersistable<Long> {
         }
         this.status = HolidayStatusType.DELETED.getValue();
     }
+
+	public RescheduleType getReScheduleType() {
+		return RescheduleType.fromInt(this.reshedulingType);
+	}
 }

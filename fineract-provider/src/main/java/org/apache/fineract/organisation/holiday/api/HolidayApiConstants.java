@@ -42,12 +42,13 @@ public class HolidayApiConstants {
     public static final String processed = "processed";
     public static final String status = "status";
     public static final String extendRepaymentRescheduleParamName = "extendRepaymentReschedule";
+    public static final String reshedulingType = "reshedulingType";
 
     public static final Set<String> HOLIDAY_CREATE_OR_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, nameParamName, fromDateParamName, toDateParamName, descriptionParamName, officesParamName,
-            repaymentsRescheduledToParamName, extendRepaymentRescheduleParamName));
+            repaymentsRescheduledToParamName, extendRepaymentRescheduleParamName, reshedulingType));
 
     public static final Set<String> HOLIDAY_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
             fromDateParamName, descriptionParamName, toDateParamName, repaymentsRescheduledToParamName, localeParamName,
-            dateFormatParamName, status, extendRepaymentRescheduleParamName));
+            dateFormatParamName, status, extendRepaymentRescheduleParamName, reshedulingType));
 }

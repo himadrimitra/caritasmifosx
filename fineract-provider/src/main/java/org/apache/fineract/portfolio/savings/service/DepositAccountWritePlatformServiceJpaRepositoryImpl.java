@@ -18,6 +18,23 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import static org.apache.fineract.portfolio.savings.DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESOURCE_NAME;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.amountParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargeIdParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.dueAsOfDateParamName;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
@@ -33,6 +50,7 @@ import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
@@ -41,6 +59,8 @@ import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.AccountTransferDTO;
@@ -63,6 +83,7 @@ import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
@@ -101,23 +122,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import static org.apache.fineract.portfolio.savings.DepositsApiConstants.RECURRING_DEPOSIT_ACCOUNT_RESOURCE_NAME;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.amountParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargeIdParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.dueAsOfDateParamName;
 
 @Service
 public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements DepositAccountWritePlatformService {
@@ -284,6 +288,12 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     @Transactional
     @Override
     public CommandProcessingResult activateRDAccount(final Long savingsId, final JsonCommand command) {
+    	final WorkingDays workingDays = this.workingDaysRepository.findOne();
+    	
+    	final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+    	
+    	final List<WorkingDayExemptionsData> workingDayExemptions = null;
+    	
         boolean isRegularTransaction = false;
 
         final AppUser user = this.context.authenticatedUser();
@@ -296,6 +306,8 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
 
         final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler.assembleFrom(savingsId,
                 DepositAccountType.RECURRING_DEPOSIT);
+        final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.getClient().getOffice().getId(), account.getSubmittedOnDate().toDate());
+        final HolidayDetailDTO holidayDetails = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         checkClientOrGroupActive(account);
 
         final Set<Long> existingTransactionIds = new HashSet<>();
@@ -340,7 +352,7 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
                 final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
                 Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
                 frequency = frequency == -1 ? 1 : frequency;
-                account.generateSchedule(frequencyType, frequency, calendar);
+                account.generateSchedule(frequencyType, frequency, calendar, holidayDetails);
                 account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
                         financialYearBeginningMonth);
             }
@@ -1377,6 +1389,12 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
     @Override
 	public void applyMeetingDateChanges(Calendar calendar, Collection<CalendarInstance> savingCalendarInstances,
 			Boolean reschedulebasedOnMeetingDates, LocalDate presentMeetingDate, LocalDate newMeetingDate) {
+    	
+    	final WorkingDays workingDays = this.workingDaysRepository.findOne();
+    	
+    	final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+    	
+    	final List<WorkingDayExemptionsData> workingDayExemptions = null;
 
 		final Collection<Long> savingIds = new ArrayList<>(savingCalendarInstances.size());
 
@@ -1391,6 +1409,9 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
 
 			final RecurringDepositAccount account = (RecurringDepositAccount) this.depositAccountAssembler
 					.assembleFrom(calendarInstance.getEntityId(), DepositAccountType.RECURRING_DEPOSIT);
+			
+			final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.getId(), account.getSubmittedOnDate().toDate());
+	        final HolidayDetailDTO holidayDetails = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
 
 			LocalDate removeScheduleFrom = null;
 			if (reschedulebasedOnMeetingDates != null && reschedulebasedOnMeetingDates) {
@@ -1416,7 +1437,7 @@ public class DepositAccountWritePlatformServiceJpaRepositoryImpl implements Depo
 					.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
 			Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
 			frequency = frequency == -1 ? 1 : frequency;
-			account.generateSchedule(frequencyType, frequency, calendar,depositSchedule);
+			account.generateSchedule(frequencyType, frequency, calendar,depositSchedule, holidayDetails);
 			account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
                     financialYearBeginningMonth);
 			this.savingAccountRepository.save(account);
