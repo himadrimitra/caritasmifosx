@@ -1,5 +1,7 @@
 package com.finflux.transaction.execution.data;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +34,11 @@ public enum TransferType {
 		final TransferType type = intToEnumMap.get(Integer.valueOf(i));
 		return type;
 	}
+
+	public EnumOptionData getEnumOptionData() {
+		return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.toString());
+	}
+
 
 	public Integer getValue() {
 		return this.value;

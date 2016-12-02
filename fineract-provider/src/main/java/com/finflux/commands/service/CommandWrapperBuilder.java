@@ -180,7 +180,7 @@ public class CommandWrapperBuilder {
         this.href = "/transaction/authentications/" + transactionAuthenticationServiceId;
         return this;
     }
-    
+
     public CommandWrapperBuilder activateCreditBureau(Long creditBureauId) {
         this.actionName = "ACTIVATE";
         this.entityName = "CREDITBUREAU";
@@ -238,6 +238,22 @@ public class CommandWrapperBuilder {
         this.entityId = bureauId;
         this.productId = productId;
         this.href = "/loanproducts/" + productId + "/creditbureau/" + bureauId ;
+        return this;
+    }
+
+    public CommandWrapperBuilder submitBankTransaction(Long transactionId) {
+        this.actionName = "SUBMIT";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=submit&template=true";
+        return this;
+    }
+
+    public CommandWrapperBuilder initiateBankTransaction(Long transactionId) {
+        this.actionName = "INITIATE";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=inititate&template=true";
         return this;
     }
 }

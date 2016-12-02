@@ -14,4 +14,19 @@ public class ExternalServicesData {
         this.type = type;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDisplayCode() {
+        return displayCode;
+    }
+
+    public Integer getType() {
+        return type;
+    }
 }
