@@ -18,17 +18,23 @@
  */
 package org.apache.fineract.portfolio.savings.service;
 
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.joda.time.LocalDate;
+import org.joda.time.Months;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -104,5 +110,69 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
 				this.savingsAccountWritePlatformService.escheat(savingsId);
 			}
 		}
+    }
+
+    @CronTarget(jobName = JobName.REDUCE_DP_LIMIT_FOR_SAVINGS)
+    @Override
+    public void reduceDpLimitForAccounts() throws JobExecutionException {
+        final LocalDate today = DateUtils.getLocalDateOfTenant();
+        Collection<SavingsAccountDpDetailsData>  savingsAccountDpDetailsDatas = this.savingAccountReadPlatformService.retriveSavingsAccountDpDetailsDatas();
+        
+        for (SavingsAccountDpDetailsData savingsAccountDpDetailsData : savingsAccountDpDetailsDatas) {
+            int periodNumber = calculatePeriodsBetweenDates(new LocalDate(savingsAccountDpDetailsData.getsavingsActivatedonDate()), today, savingsAccountDpDetailsData);
+            if (periodNumber > 0) {
+                BigDecimal dpAmount = savingsAccountDpDetailsData.getDpAmount();
+                BigDecimal amount = savingsAccountDpDetailsData.getAmount();
+                Integer duration = savingsAccountDpDetailsData.getDuration();
+                if (isPeriodNumberFallsInDuration(periodNumber, duration)) {
+                    BigDecimal dpLimitAmount = BigDecimal.ZERO;
+                    if (!isLastPeriod(periodNumber, duration)) {
+                        dpLimitAmount = dpAmount.subtract(BigDecimal.valueOf(periodNumber).multiply(amount));
+                    } 
+                    this.savingAccountReadPlatformService.updateSavingsAccountDpLimit(dpLimitAmount, savingsAccountDpDetailsData.getSavingsAccountId());
+                    
+                }
+            }
+        }
+        
+        
+    }
+    
+    private boolean isLastPeriod(int periodNumber, Integer duration) {
+        boolean isLastPeriod = false;
+        if (periodNumber == duration.intValue()) {
+            isLastPeriod = true;
+        }
+        return isLastPeriod;
+    }
+
+    private boolean isPeriodNumberFallsInDuration(int periodNumber, Integer duration) {
+        boolean isNumberOfPeriodFallsInDuring = false;
+        if (periodNumber <= duration.intValue()) {
+            isNumberOfPeriodFallsInDuring = true;
+        }
+        return isNumberOfPeriodFallsInDuring;
+    }
+
+    public int calculatePeriodsBetweenDates(final LocalDate startDate, LocalDate endDate, SavingsAccountDpDetailsData savingsAccountDpDetailsData) {
+        int periodNumber = 0;
+        switch(savingsAccountDpDetailsData.getFrequencyType()) {
+            case DAYS:
+                break;
+            case MONTHS:
+                int reduceEvery = savingsAccountDpDetailsData.getDpReductionEvery();
+                periodNumber = Months.monthsBetween(startDate, endDate).getMonths();
+                if (reduceEvery > 1) {
+                    periodNumber = periodNumber / reduceEvery;
+                }
+                break;
+            case YEARS:
+                break;
+            default:
+                break;
+                
+        }
+        return periodNumber;
+        
     }
 }
