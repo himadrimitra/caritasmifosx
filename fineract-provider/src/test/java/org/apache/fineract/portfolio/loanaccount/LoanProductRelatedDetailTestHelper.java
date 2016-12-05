@@ -154,13 +154,13 @@ public class LoanProductRelatedDetailTestHelper {
         final Integer daysInYearType = DaysInYearType.ACTUAL.getValue();
         final boolean isInterestRecalculationEnabled = false;
         final boolean considerPartialPeriodInterest = false;
-        final boolean considerFutureDisbursmentsInSchedule = false;   
         final Integer weeksInMonthType = WeeksInYearType.Week_52.getValue();
         final boolean isEmiBasedOnDisbursements = false ;
+        final Integer pmtCalculationPeriodMethod = null;
         return new LoanProductRelatedDetail(currency, defaultPrincipal, defaultNominalInterestRatePerPeriod, interestPeriodFrequencyType,
                 defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod, considerPartialPeriodInterest, repayEvery,
                 repaymentFrequencyType, defaultNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
                 amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType, isInterestRecalculationEnabled, weeksInMonthType,
-                isEmiBasedOnDisbursements);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
     }
 }

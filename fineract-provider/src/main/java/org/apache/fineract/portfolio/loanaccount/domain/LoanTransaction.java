@@ -191,6 +191,11 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
             final LocalDate paymentDate, final String externalId) {
         return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.REALIZATION_SUBSIDY.getValue(), paymentDetail, amount.getAmount(), paymentDate, externalId);
     }
+    
+    public static LoanTransaction prepayment(final Office office, final Money amount, final PaymentDetail paymentDetail,
+            final LocalDate paymentDate, final String externalId) {
+        return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.PRE_PAYMENT.getValue(), paymentDetail, amount.getAmount(), paymentDate, externalId);
+    }
 
     public static LoanTransaction recoveryRepayment(final Office office, final Money amount, final PaymentDetail paymentDetail,
             final LocalDate paymentDate, final String externalId) {
@@ -898,6 +903,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
 
     public Integer getSubTypeOf() {
         return this.subTypeOf;
+    }
+    
+    public LoanTransactionSubType getTransactionSubTye() {
+        LoanTransactionSubType type = LoanTransactionSubType.INVALID;
+        if(this.subTypeOf != null){
+            type = LoanTransactionSubType.fromInt(this.subTypeOf);
+        }
+        return type;
     }
     
     public Date getSubmittedOnDate() {

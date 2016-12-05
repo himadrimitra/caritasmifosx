@@ -294,6 +294,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
 
         final LocalDate transactionDate = loanTransaction.getTransactionDate();
         Money transactionAmountUnprocessed = loanTransaction.getAmount(currency);
+        boolean isPrePayment = loanTransaction.getTransactionSubTye().isPrePayment();
         if (amountToProcess != null) {
             transactionAmountUnprocessed = amountToProcess;
         }
@@ -455,11 +456,15 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                 if (transactionAmountUnprocessed.isGreaterThanZero()) {
                     if (currentInstallment.isNotFullyPaidOff()) {
 
+                        
+                        if(isPrePayment){
+                            transactionAmountUnprocessed = handleTransactionThatIsPrePaymentInstallment(currentInstallment, installments, loanTransaction, transactionDate, transactionAmountUnprocessed, transactionMappings);
+                        }
                         // is this transaction early/late/on-time with respect
                         // to
                         // the
                         // current installment?
-                        if (isTransactionInAdvanceOfInstallment(installmentIndex, installments, transactionDate,
+                        else if (isTransactionInAdvanceOfInstallment(installmentIndex, installments, transactionDate,
                                 transactionAmountUnprocessed)) {
                             transactionAmountUnprocessed = handleTransactionThatIsPaymentInAdvanceOfInstallment(currentInstallment,
                                     installments, loanTransaction, transactionDate, transactionAmountUnprocessed, transactionMappings);
@@ -751,6 +756,18 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
             final LoanTransaction loanTransaction, final Money transactionAmountUnprocessed,
             final List<LoanTransactionToRepaymentScheduleMapping> transactionMappings);
 
+    protected Money handleTransactionThatIsPrePaymentInstallment(final LoanRepaymentScheduleInstallment currentInstallment,
+            @SuppressWarnings("unused") final List<LoanRepaymentScheduleInstallment> installments, final LoanTransaction loanTransaction,
+            final LocalDate transactionDate, final Money amount, final List<LoanTransactionToRepaymentScheduleMapping> transactionMappings) {
+        Money transactionAmountRemaining = amount;
+        Money principalPortion = currentInstallment.payPrincipalComponent(transactionDate, transactionAmountRemaining);
+        transactionAmountRemaining = transactionAmountRemaining.minus(principalPortion);
+        loanTransaction.updateComponents(principalPortion, principalPortion.zero(), principalPortion.zero(), principalPortion.zero());
+        transactionMappings.add(LoanTransactionToRepaymentScheduleMapping.createFrom(currentInstallment, principalPortion,
+                principalPortion.zero(), principalPortion.zero(), principalPortion.zero()));
+        return transactionAmountRemaining;
+    }
+    
     /**
      * Invoked when a transaction results in an over-payment of the full loan.
      * 

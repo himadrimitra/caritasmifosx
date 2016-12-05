@@ -151,7 +151,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.standingInstructionRepository = standingInstructionRepository;
     }
 
-    @Transactional
     @Override
     public LoanTransaction makeRepayment(final Loan loan, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
@@ -161,12 +160,22 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 txnExternalId, isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone, false);
     }
 
-    @Transactional
     @Override
     public LoanTransaction makeRepayment(final Loan loan, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
             final String txnExternalId, final boolean isRecoveryRepayment, boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto,
             Boolean isHolidayValidationDone, final boolean isLoanToLoanTransfer) {
+        
+        final boolean isPrepayment = false;
+        return makeRepayment(loan, builderResult, transactionDate, transactionAmount, paymentDetail, noteText, txnExternalId,
+                isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone, isLoanToLoanTransfer, isPrepayment);
+    }
+
+    @Override
+    public LoanTransaction makeRepayment(final Loan loan, final CommandProcessingResultBuilder builderResult,
+            final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
+            final String txnExternalId, final boolean isRecoveryRepayment, boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto,
+            Boolean isHolidayValidationDone, final boolean isLoanToLoanTransfer, final boolean isPrepayment) {
         AppUser currentUser = getAppUserIfPresent();
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT,
@@ -192,6 +201,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         LoanTransaction newRepaymentTransaction = null;
         if (isRecoveryRepayment) {
             newRepaymentTransaction = LoanTransaction.recoveryRepayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
+                    txnExternalId);
+        } else if (isPrepayment) {
+            newRepaymentTransaction = LoanTransaction.prepayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
                     txnExternalId);
         } else {
             newRepaymentTransaction = LoanTransaction.repayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,

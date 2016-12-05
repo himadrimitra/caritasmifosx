@@ -100,6 +100,7 @@ public class LoanScheduleParams {
     private int loanTermInDays;
     private final MonetaryCurrency currency;
     private final boolean applyInterestRecalculation;
+    private boolean resetEMI;
 
     private LoanScheduleParams(final int periodNumber, final int instalmentNumber, int loanTermInDays, LocalDate periodStartDate,
             final LocalDate actualRepaymentDate, final Money totalCumulativePrincipal, final Money totalCumulativeInterest,
@@ -141,6 +142,7 @@ public class LoanScheduleParams {
         if (this.currency != null) {
             this.compoundedInLastInstallment = Money.zero(this.currency);
         }
+        this.resetEMI = false;
     }
 
     public static LoanScheduleParams createLoanScheduleParamsForPartialUpdate(final int periodNumber, final int instalmentNumber,
@@ -481,5 +483,15 @@ public class LoanScheduleParams {
     
     public void substractTotalCumulativeInterest(final Money adjustedInterestAmount) {
         this.totalCumulativeInterest = this.totalCumulativeInterest.minus(adjustedInterestAmount);
+    }
+
+    
+    public boolean isResetEMI() {
+        return this.resetEMI;
+    }
+
+    
+    public void setResetEMI(boolean resetEMI) {
+        this.resetEMI = resetEMI;
     }
 }

@@ -195,6 +195,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lp.grace_on_principal_periods as graceOnPrincipalPayment, lp.recurring_moratorium_principal_periods as recurringMoratoriumOnPrincipalPeriods, lp.grace_on_interest_periods as graceOnInterestPayment, lp.grace_interest_free_periods as graceOnInterestCharged,lp.grace_on_arrears_ageing as graceOnArrearsAgeing,lp.overdue_days_for_npa as overdueDaysForNPA, "
                     + "lp.min_days_between_disbursal_and_first_repayment As minimumDaysBetweenDisbursalAndFirstRepayment, "
                     + "lp.amortization_method_enum as amortizationMethod, lp.arrearstolerance_amount as tolerance, "
+                    + "lp.pmt_calculated_in_period_enum as installmentCalculationPeriodType,"
                     + "lp.accounting_type as accountingType, lp.include_in_borrower_cycle as includeInBorrowerCycle,lp.use_borrower_cycle as useBorrowerCycle, lp.start_date as startDate, lp.close_date as closeDate,  "
                     + "lp.allow_multiple_disbursals as multiDisburseLoan, lp.max_disbursals as maxTrancheCount, lp.max_outstanding_loan_balance as outstandingLoanBalance, "
                     + "lp.days_in_month_enum as daysInMonth,lp.weeks_in_year_enum as weeksInYearType , lp.days_in_year_enum as daysInYear, lp.interest_recalculation_enabled as isInterestRecalculationEnabled, "
@@ -332,6 +333,12 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final Boolean allowPartialPeriodInterestCalcualtion = rs.getBoolean("allowPartialPeriodInterestCalcualtion");
             final EnumOptionData interestCalculationPeriodType = LoanEnumerations
                     .interestCalculationPeriodType(interestCalculationPeriodTypeId);
+            
+            Integer installmentCalculationPeriodTypeId = JdbcSupport.getInteger(rs, "installmentCalculationPeriodType");
+            EnumOptionData installmentCalculationPeriodType = null;
+            if (installmentCalculationPeriodTypeId != null) {
+                installmentCalculationPeriodType = LoanEnumerations.interestCalculationPeriodType(installmentCalculationPeriodTypeId);
+            }
 
             final boolean includeInBorrowerCycle = rs.getBoolean("includeInBorrowerCycle");
             final boolean useBorrowerCycle = rs.getBoolean("useBorrowerCycle");
@@ -495,7 +502,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                    weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements);
+                    weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType);
         }
     }
 

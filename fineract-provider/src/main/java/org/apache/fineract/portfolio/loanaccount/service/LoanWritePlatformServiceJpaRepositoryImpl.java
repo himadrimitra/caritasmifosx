@@ -977,6 +977,48 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .build();
     } 
     
+    @Override
+    public CommandProcessingResult makeLoanPreRepayment(final Long loanId, final JsonCommand command) {
+
+        this.loanEventApiJsonValidator.validateNewRepaymentTransaction(command.json());
+
+        final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
+        final BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
+        final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
+
+        final Map<String, Object> changes = new LinkedHashMap<>();
+        changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
+        changes.put("transactionAmount", command.stringValueOfParameterNamed("transactionAmount"));
+        changes.put("locale", command.locale());
+        changes.put("dateFormat", command.dateFormat());
+        changes.put("paymentTypeId", command.stringValueOfParameterNamed("paymentTypeId"));
+
+        final String noteText = command.stringValueOfParameterNamed("note");
+        if (StringUtils.isNotBlank(noteText)) {
+            changes.put("note", noteText);
+        }
+        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
+        final Boolean isHolidayValidationDone = false;
+        final HolidayDetailDTO holidayDetailDto = null;
+        boolean isAccountTransfer = false;
+        final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
+        final boolean isLoanToLoanTransfer = false;
+        final boolean isPrepayment = true;
+        final boolean isRecoveryRepayment = false;
+        final LoanTransaction loanTransaction = this.loanAccountDomainService.makeRepayment(loan, commandProcessingResultBuilder,
+                transactionDate, transactionAmount, paymentDetail, noteText, txnExternalId, isRecoveryRepayment, isAccountTransfer,
+                holidayDetailDto, isHolidayValidationDone, isLoanToLoanTransfer, isPrepayment);
+
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT,
+                constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, loanTransaction));
+
+        return commandProcessingResultBuilder.withCommandId(command.commandId()) //
+                .withLoanId(loanId) //
+                .with(changes) //
+                .build();
+    } 
+    
     @Transactional
     @Override
     public CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command){
@@ -2914,7 +2956,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
             loan.repaymentScheduleDetail().setPrincipal(setAmount);
 
-            if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            if (loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
                 changedTransactionDetail = loan.handleRegenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
             } else {
                 loan.regenerateRepaymentSchedule(scheduleGeneratorDTO, currentUser);

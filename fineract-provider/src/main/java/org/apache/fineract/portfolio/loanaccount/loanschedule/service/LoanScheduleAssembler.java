@@ -239,6 +239,7 @@ public class LoanScheduleAssembler {
         }
 
         boolean isEmiBasedOnDisbursements = loanProduct.getLoanProductRelatedDetail().isEmiBasedOnDisbursements();
+        InterestCalculationPeriodMethod pmtCalculationPeriodMethod = loanProduct.getLoanProductRelatedDetail().getPmtCalculationPeriodMethod();
         
         final BigDecimal interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("interestRatePerPeriod", element);
         final PeriodFrequencyType interestRatePeriodFrequencyType = loanProduct.getInterestPeriodFrequencyType();
@@ -498,7 +499,7 @@ public class LoanScheduleAssembler {
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount,
                 loanProduct.getAdjustedInstallmentInMultiplesOf(), loanProduct.adjustFirstEMIAmount(), 
                 considerFutureDisbursmentsInSchedule,considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(), loanProduct.isAdjustInterestForRounding(),
-                isEmiBasedOnDisbursements);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,

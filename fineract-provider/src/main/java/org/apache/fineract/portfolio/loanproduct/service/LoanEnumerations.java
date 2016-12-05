@@ -438,6 +438,10 @@ public class LoanEnumerations {
                 optionData = new LoanTransactionEnumData(LoanTransactionSubType.REALIZATION_SUBSIDY.getValue().longValue(),
                         LoanTransactionSubType.REALIZATION_SUBSIDY.getCode(), "realization");
             break;
+            case PRE_PAYMENT:
+                optionData = new LoanTransactionEnumData(LoanTransactionSubType.PRE_PAYMENT.getValue().longValue(),
+                        LoanTransactionSubType.PRE_PAYMENT.getCode(), "prepayment");
+            break;
             default:
             break;
         }

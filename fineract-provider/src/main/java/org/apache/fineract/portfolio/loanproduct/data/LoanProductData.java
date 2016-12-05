@@ -123,6 +123,7 @@ public class LoanProductData {
     private final Integer adjustedInstallmentInMultiplesOf;
     private final boolean adjustFirstEMIAmount;
     private final boolean adjustInterestForRounding;
+    private final EnumOptionData installmentCalculationPeriodType;
 
     // charges
     private Collection<ProductLoanChargeData> charges;
@@ -288,6 +289,7 @@ public class LoanProductData {
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYear = null;
         final Boolean isEmiBasedOnDisbursements = false ;
+        final EnumOptionData installmentCalculationPeriodType = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -304,7 +306,7 @@ public class LoanProductData {
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
                 maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, 
-                weeksInYear, adjustInterestForRounding, isEmiBasedOnDisbursements);
+                weeksInYear, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType);
 
     }
 
@@ -393,6 +395,7 @@ public class LoanProductData {
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYearType = null;
         final Boolean isEmiBasedOnDisbursements = false ;
+        final EnumOptionData installmentCalculationPeriodType = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -409,7 +412,7 @@ public class LoanProductData {
                 maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap,
                 maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements);
+                weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType);
 
     }
 
@@ -504,6 +507,7 @@ public class LoanProductData {
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYearType = null;
         final Boolean isEmiBasedOnDisbursements = false ;
+        final EnumOptionData installmentCalculationPeriodType = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -521,7 +525,7 @@ public class LoanProductData {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
-                canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements);
+                canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType);
 
     }
 
@@ -566,7 +570,8 @@ public class LoanProductData {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final boolean closeLoanOnOverpayment, 
             final boolean syncExpectedWithDisbursementDate,  final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final EnumOptionData loanTenureFrequencyType, 
-            final boolean canUseForTopup, final EnumOptionData weeksInYearType, final boolean adjustInterestForRounding, final Boolean isEmiBasedOnDisbursements) {
+            final boolean canUseForTopup, final EnumOptionData weeksInYearType, final boolean adjustInterestForRounding, final Boolean isEmiBasedOnDisbursements,
+            final EnumOptionData installmentCalculationPeriodType) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -684,6 +689,7 @@ public class LoanProductData {
         this.weeksInYearType = weeksInYearType;
         this.minimumPeriodsBetweenDisbursalAndFirstRepayment = minimumPeriodsBetweenDisbursalAndFirstRepayment;
         this.isEmiBasedOnDisbursements =  isEmiBasedOnDisbursements; 
+        this.installmentCalculationPeriodType = installmentCalculationPeriodType;
     }
 
     public LoanProductData(final LoanProductData productData, final Collection<ChargeData> chargeOptions,
@@ -833,6 +839,7 @@ public class LoanProductData {
         this.weeksInYearTypeOptions = weeksInYearTypeOptions;
         this.weeksInYearType = productData.weeksInYearType;
         this.isEmiBasedOnDisbursements = productData.isEmiBasedOnDisbursements ;
+        this.installmentCalculationPeriodType = productData.installmentCalculationPeriodType;
     }
     
     public static LoanProductData loanProductWithFloatingRates(final Long id, final String name,
@@ -920,6 +927,7 @@ public class LoanProductData {
         final boolean canUseForTopup = false;
         final EnumOptionData weeksInYearType = null;
         final Boolean isEmiBasedOnDisbursements = false ;
+        final EnumOptionData installmentCalculationPeriodType = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                 minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType, interestRateFrequencyType,
@@ -937,7 +945,7 @@ public class LoanProductData {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, isoverpaymentcloseloan, syncExpectedWithDisbursementDate, 
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, 
-                canUseForTopup,weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements);
+                canUseForTopup,weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType);
     }
 
 
