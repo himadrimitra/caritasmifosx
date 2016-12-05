@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.savings.domain;
 
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.bulkSavingsTransactionsParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.savingsIdParamName;
+import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.transactionDateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountNoParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
@@ -42,9 +45,6 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productI
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.submittedOnDateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
-import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.transactionDateParamName;
-import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.savingsIdParamName;
-import static org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants.bulkSavingsTransactionsParamName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -77,6 +77,7 @@ import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
 import org.apache.fineract.portfolio.group.exception.ClientNotInGroupException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
@@ -246,7 +247,7 @@ public class SavingsAccountAssembler {
         if (command.parameterExists(withdrawalFeeForTransfersParamName)) {
             iswithdrawalFeeApplicableForTransfer = command.booleanPrimitiveValueOfParameterNamed(withdrawalFeeForTransfersParamName);
         }
-
+        
         final Set<SavingsAccountCharge> charges = this.savingsAccountChargeAssembler.fromParsedJson(element, product.currency().getCode());
 
         boolean allowOverdraft = false;
@@ -262,7 +263,7 @@ public class SavingsAccountAssembler {
         } else {
             overdraftLimit = product.overdraftLimit();
         }
-
+        
         BigDecimal nominalAnnualInterestRateOverdraft = BigDecimal.ZERO;
         if (command.parameterExists(nominalAnnualInterestRateOverdraftParamName)) {
             nominalAnnualInterestRateOverdraft = command
@@ -308,14 +309,43 @@ public class SavingsAccountAssembler {
                 overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, nominalAnnualInterestRateOverdraft,
                 minOverdraftForInterestCalculation, withHoldTax);
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
-
+        
         account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), SAVINGS_ACCOUNT_RESOURCE_NAME);
 
         account.validateAccountValuesWithProduct();
+        
+        SavingsAccountDpDetails savingsAccountDpDetails = null;
+        if (allowOverdraft) {
+            savingsAccountDpDetails = assembleSavingsAccountDpDetails(account, command);
+            account.setSavingsAccountDpDetails(savingsAccountDpDetails);
+        }
 
         return account;
     }
 
+    private SavingsAccountDpDetails assembleSavingsAccountDpDetails(SavingsAccount account, JsonCommand command) {
+        
+        SavingsAccountDpDetails savingsAccountDpDetails = null;
+        if (command.parameterExists(SavingsApiConstants.allowDpLimitParamName)) {
+            boolean allowDpLimit = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName);
+            if (allowDpLimit) {
+                BigDecimal dpLimitAmount = command
+                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpLimitAmountParamName);
+                Integer frequencyType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName);
+                Integer dpReductionEvery = command.integerValueOfParameterNamed(SavingsApiConstants.dpLimitReductionEveryParamName);
+                Integer duration = command.integerValueOfParameterNamed(SavingsApiConstants.dpDurationParamName);
+                Integer calculationType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName);
+                BigDecimal amountOrPercentage = command
+                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpCalculateOnAmountParamName);
+                savingsAccountDpDetails = SavingsAccountDpDetails.createNew(account, frequencyType, dpReductionEvery, duration,
+                        dpLimitAmount, calculationType, amountOrPercentage);
+            }
+        }
+        
+        return savingsAccountDpDetails;
+    }
+    
+    
     public SavingsAccount assembleFrom(final Long savingsId) {
         final SavingsAccount account = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsId);
         account.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);

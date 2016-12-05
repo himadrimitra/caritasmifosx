@@ -54,6 +54,7 @@ import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionData;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountChargeReadPlatformService;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountReadPlatformService;
@@ -98,9 +99,9 @@ public class SavingsAccountsApiResource {
             @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
-
+        SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
         final SavingsAccountData savingsAccount = this.savingsAccountReadPlatformService.retrieveTemplate(clientId, groupId, productId,
-                staffInSelectedOfficeOnly);
+                staffInSelectedOfficeOnly, savingsAccountDpDetailsData);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, savingsAccount, SavingsApiConstants.SAVINGS_ACCOUNT_RESPONSE_DATA_PARAMETERS);
@@ -156,10 +157,14 @@ public class SavingsAccountsApiResource {
                 "status", chargeStatus, new Object[] { "all", "active", "inactive" }); }
 
         final SavingsAccountData savingsAccount = this.savingsAccountReadPlatformService.retrieveOne(accountId);
+        SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
+        if (savingsAccount.isAllowOverdraft()) {
+            savingsAccountDpDetailsData = this.savingsAccountReadPlatformService.retrieveSavingsDpDetailsBySavingsId(accountId);
+        }
 
         final Set<String> mandatoryResponseParameters = new HashSet<>();
         final SavingsAccountData savingsAccountTemplate = populateTemplateAndAssociations(accountId, savingsAccount,
-                staffInSelectedOfficeOnly, chargeStatus, uriInfo, mandatoryResponseParameters);
+                staffInSelectedOfficeOnly, chargeStatus, uriInfo, mandatoryResponseParameters, savingsAccountDpDetailsData);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),
                 mandatoryResponseParameters);
@@ -169,7 +174,7 @@ public class SavingsAccountsApiResource {
 
     private SavingsAccountData populateTemplateAndAssociations(final Long accountId, final SavingsAccountData savingsAccount,
             final boolean staffInSelectedOfficeOnly, final String chargeStatus, final UriInfo uriInfo,
-            final Set<String> mandatoryResponseParameters) {
+            final Set<String> mandatoryResponseParameters, SavingsAccountDpDetailsData savingsAccountDpDetailsData) {
 
         Collection<SavingsAccountTransactionData> transactions = null;
         Collection<SavingsAccountChargeData> charges = null;
@@ -204,10 +209,10 @@ public class SavingsAccountsApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         if (settings.isTemplate()) {
             templateData = this.savingsAccountReadPlatformService.retrieveTemplate(savingsAccount.clientId(), savingsAccount.groupId(),
-                    savingsAccount.productId(), staffInSelectedOfficeOnly);
+                    savingsAccount.productId(), staffInSelectedOfficeOnly, savingsAccountDpDetailsData);
         }
 
-        return SavingsAccountData.withTemplateOptions(savingsAccount, templateData, transactions, charges);
+        return SavingsAccountData.withTemplateOptions(savingsAccount, templateData, transactions, charges, savingsAccountDpDetailsData);
     }
 
     @PUT
