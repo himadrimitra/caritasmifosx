@@ -721,6 +721,15 @@ public class CommandWrapperBuilder {
         this.href = "/loans/" + loanId + "/transactions/template?command=repayment";
         return this;
     }
+    
+    public CommandWrapperBuilder loanPrepaymentTransaction(final Long loanId) {
+        this.actionName = "PREPAYMENT";
+        this.entityName = "LOAN";
+        this.entityId = null;
+        this.loanId = loanId;
+        this.href = "/loans/" + loanId + "/transactions?command=prepayment";
+        return this;
+    }
 
     public CommandWrapperBuilder loanSubsidyAddTransaction(final Long loanId) {
         this.actionName = "SUBSIDYADD";

@@ -104,15 +104,17 @@ public interface LoanWritePlatformService {
 
     void recalculateInterest(long loanId);
 
-	CommandProcessingResult undoLastLoanDisbursal(Long loanId, JsonCommand command);
-	
-	CommandProcessingResult addLoanSubsidy(Long loanId, JsonCommand command);
-	
-	CommandProcessingResult revokeLoanSubsidy(Long loanId, JsonCommand command);
+    CommandProcessingResult undoLastLoanDisbursal(Long loanId, JsonCommand command);
+
+    CommandProcessingResult addLoanSubsidy(Long loanId, JsonCommand command);
+
+    CommandProcessingResult revokeLoanSubsidy(Long loanId, JsonCommand command);
 
     CommandProcessingResult forecloseLoan(final Long loanId, JsonCommand command);
-    
-	CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command);
+
+    CommandProcessingResult refundOverPaidLoan(Long loanId, JsonCommand command);
+
+    CommandProcessingResult makeLoanPreRepayment(Long loanId, JsonCommand command);
 
 
 }
