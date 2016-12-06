@@ -47,11 +47,12 @@ public class RescheduleLoansApiConstants {
     public static final String adjustedDueDateParamName = "adjustedDueDate";
     public static final String resheduleForMultiDisbursementNotSupportedErrorCode = "loan.reschedule.multidisbursement.error.code";
     public static final String resheduleWithInterestRecalculationNotSupportedErrorCode = "loan.reschedule.interestrecalculation.error.code";
+    public static final String newInstallmentAmountParamName = "newInstallmentAmount";
     
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
             newInterestRateParamName, rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
-            loanIdParamName, adjustedDueDateParamName, recalculateInterestParamName));
+            loanIdParamName, adjustedDueDateParamName, recalculateInterestParamName, newInstallmentAmountParamName));
 
     // reject action request parameters
     public static final String rejectedOnDateParam = "rejectedOnDate";
