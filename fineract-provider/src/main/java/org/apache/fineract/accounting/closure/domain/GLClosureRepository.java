@@ -29,7 +29,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface GLClosureRepository extends JpaRepository<GLClosure, Long>, JpaSpecificationExecutor<GLClosure> {
 
-    @Query("from GLClosure closure where closure.closingDate = (select max(closure1.closingDate) from GLClosure closure1 where closure1.office.id=:officeId and closure1.deleted=0)  and closure.office.id= :officeId and closure.deleted = 0")
+    @Query("from GLClosure closure where closure.closingDate = (select max(closure1.closingDate) from GLClosure closure1 where closure1.office.id=:officeId)  and closure.office.id= :officeId")
     @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     GLClosure getLatestGLClosureByBranch(@Param("officeId") Long officeId);
    
