@@ -83,7 +83,7 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
             // shouldn't be before an existing accounting closure
             final GLClosure latestGLClosure = this.glClosureRepository.getLatestGLClosureByBranch(officeId);
             if (latestGLClosure != null) {
-                if (!latestGLClosure.getClosingDate().before(closureDate)) { throw new GLClosureInvalidException(
+                if (latestGLClosure.getClosingDate().after(closureDate)) { throw new GLClosureInvalidException(
                         GL_CLOSURE_INVALID_REASON.ACCOUNTING_CLOSED, latestGLClosure.getClosingDate()); }
             }
             final GLClosure glClosure = GLClosure.fromJson(office, command);
