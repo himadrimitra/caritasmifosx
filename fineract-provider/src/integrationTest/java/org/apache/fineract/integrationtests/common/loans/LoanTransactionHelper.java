@@ -51,6 +51,7 @@ public class LoanTransactionHelper {
     private static final String WRITE_OFF_LOAN_COMMAND = "writeoff";
     private static final String WAIVE_INTEREST_COMMAND = "waiveinterest";
     private static final String MAKE_REPAYMENT_COMMAND = "repayment";
+    private static final String MAKE_PREPAYMENT_COMMAND = "prepayment";
     private static final String WITHDRAW_LOAN_APPLICATION_COMMAND = "withdrawnByApplicant";
     private static final String RECOVER_FROM_GUARANTORS_COMMAND = "recoverGuarantees";
     private static final String MAKE_REFUND_BY_CASH_COMMAND = "refundByCash";
@@ -275,6 +276,11 @@ public class LoanTransactionHelper {
 
     public HashMap makeRepayment(final String date, final Float amountToBePaid, final Integer loanID) {
         return (HashMap) performLoanTransaction(createLoanTransactionURL(MAKE_REPAYMENT_COMMAND, loanID),
+                getRepaymentBodyAsJSON(date, amountToBePaid), "");
+    }
+    
+    public HashMap makePrepayment(final String date, final Float amountToBePaid, final Integer loanID) {
+        return (HashMap) performLoanTransaction(createLoanTransactionURL(MAKE_PREPAYMENT_COMMAND, loanID),
                 getRepaymentBodyAsJSON(date, amountToBePaid), "");
     }
     

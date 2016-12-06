@@ -142,6 +142,8 @@ public class LoanProductTestBuilder {
     private Integer maxNumberOfRepayments = null;
     private Integer loanTenureFrequencyType = null;
     private boolean adjustInterestForRounding = false;
+    private boolean isEmiBasedOnDisbursements = false;
+    private Integer installmentCalculationPeriodType = null;
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -257,6 +259,14 @@ public class LoanProductTestBuilder {
 
         if(closeLoanOnOverpayment){
             map.put("closeLoanOnOverpayment", closeLoanOnOverpayment);
+        }
+        
+        if(isEmiBasedOnDisbursements){
+            map.put("isEmiBasedOnDisbursements", isEmiBasedOnDisbursements);
+        }
+        
+        if(installmentCalculationPeriodType != null){
+            map.put("installmentCalculationPeriodType", installmentCalculationPeriodType);
         }
 
         if (syncExpectedWithDisbursementDate) {
@@ -637,6 +647,17 @@ public class LoanProductTestBuilder {
     public LoanProductTestBuilder withLoanTenureFrequencyType(final Integer loanTenureFrequencyType){
     	this.loanTenureFrequencyType = loanTenureFrequencyType;
     	return this;
+    }
+
+    
+    public LoanProductTestBuilder withEmiBasedOnDisbursements(boolean isEmiBasedOnDisbursements) {
+        this.isEmiBasedOnDisbursements = isEmiBasedOnDisbursements;
+        return this;
+    }
+
+    public LoanProductTestBuilder withInstallmentCalculationPeriodType(Integer installmentCalculationPeriodType) {
+        this.installmentCalculationPeriodType = installmentCalculationPeriodType;
+        return this;
     }
     
 }
