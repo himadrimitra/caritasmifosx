@@ -43,12 +43,12 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataVal
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
-import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMapping;
-import com.finflux.workflow.configuration.domain.WorkflowEntityTypeMappingRepository;
-import com.finflux.workflow.execution.data.WorkFlowEntityType;
-import com.finflux.workflow.execution.data.WorkFlowExecutionEntityType;
-import com.finflux.workflow.execution.data.WorkflowConfigKey;
-import com.finflux.workflow.execution.service.WorkflowExecutionService;
+import com.finflux.task.configuration.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.configuration.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.execution.data.TaskConfigEntityType;
+import com.finflux.task.execution.data.TaskConfigKey;
+import com.finflux.task.execution.data.TaskEntityType;
+import com.finflux.task.execution.service.TaskExecutionService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -72,9 +72,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final LoanProductRepository loanProductRepository;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
-    private final WorkflowEntityTypeMappingRepository workflowEntityTypeMappingRepository;
-    private final WorkflowExecutionService workflowExecutionService;
+    private final TaskExecutionService taskExecutionService;
     private final ConfigurationDomainService configurationDomainService;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
 
@@ -87,10 +87,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanRepositoryWrapper loanRepository, final FromJsonHelper fromJsonHelper,
             final LoanScheduleCalculationPlatformService calculationPlatformService, final LoanProductRepository loanProductRepository,
             final LoanProductReadPlatformService loanProductReadPlatformService,
-            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
-            final WorkflowEntityTypeMappingRepository workflowEntityTypeMappingRepository,
-            final WorkflowExecutionService workflowExecutionService,
-            final ConfigurationDomainService configurationDomainService) {
+            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator, final TaskExecutionService taskExecutionService,
+            final ConfigurationDomainService configurationDomainService,
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -105,9 +104,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.loanProductRepository = loanProductRepository;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
-        this.workflowEntityTypeMappingRepository = workflowEntityTypeMappingRepository;
-        this.workflowExecutionService = workflowExecutionService;
+        this.taskExecutionService = taskExecutionService;
         this.configurationDomainService = configurationDomainService;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
     }
 
     @Override
@@ -128,20 +127,25 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
             this.repository.save(loanApplicationReference);
 
-            //create workflow if configured
+            /**
+             * Check work flow configuration enabled or not
+             */
             if (this.configurationDomainService.isWorkFlowEnabled()) {
-                final WorkflowEntityTypeMapping workflowEntityTypeMapping = this.workflowEntityTypeMappingRepository
-                        .findOneByEntityTypeAndEntityId(WorkFlowEntityType.LOAN_PRODUCT.getValue(), loanProductId);
-                if (workflowEntityTypeMapping != null) {
-                    Map<WorkflowConfigKey, String> map = new HashMap<>();
+                /**
+                 * Checking is loan product mapped with task configuration
+                 * entity type LOAN_PRODUCT
+                 */
+                final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOAN_PRODUCT.getValue(), loanProductId);
+                if (taskConfigEntityTypeMapping != null) {
                     final Long loanApplicationId = loanApplicationReference.getId();
-                    final Long clientId = loanApplicationReference.getClient().getOffice().getId();
-                    final Long officeId = loanApplicationReference.getClient().getOffice().getId();
-
-                    map.put(WorkflowConfigKey.CLIENT_ID, String.valueOf(clientId));
-                    map.put(WorkflowConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-                    workflowExecutionService.createWorkflowExecutionForWorkflow(workflowEntityTypeMapping.getWorkflowId(),
-                            WorkFlowExecutionEntityType.LOAN_APPLICATION, loanApplicationId, clientId, officeId, map);
+                    final Long clientId = loanApplicationReference.getClient().getId();
+                    final Map<TaskConfigKey, String> map = new HashMap<>();
+                    map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
+                    map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
+                    this.taskExecutionService.createTaskConfigExecution(taskConfigEntityTypeMapping.getTaskConfigId(),
+                            TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
+                            loanApplicationReference.getClient().getOffice(), map);
                 }
             }
 
@@ -249,7 +253,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final JsonQuery query = JsonQuery.from(validationJsonObject.toString(),
                     this.fromApiJsonHelper.parse(validationJsonObject.toString()), this.fromJsonHelper);
             final boolean considerAllDisbursmentsInSchedule = true;
-            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true, considerAllDisbursmentsInSchedule);
+            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true,
+                    considerAllDisbursmentsInSchedule);
 
             final JsonObject approveJsonObject = jsonObject.getAsJsonObject("formRequestData");
             final JsonElement approveJsonElement = this.fromApiJsonHelper.parse(approveJsonObject.toString());

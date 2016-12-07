@@ -159,7 +159,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                     baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
 
                     BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.amountParamName, jsonElement, locale);
-                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().positiveAmount();
+                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
                     
                     if (fromAmount.compareTo(toAmount) == 1) {
                         baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
@@ -353,7 +353,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Collection<Object> allValidValues = new ArrayList<>(validLoanValues);
             allValidValues.addAll(validSavingsValues);
             allValidValues.addAll(validClientValues);
-            allValidValues.addAll(validShareValues) ;
+            allValidValues.addAll(validShareValues);
             baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType).notNull()
                     .isOneOfTheseValues(allValidValues.toArray(new Object[allValidValues.size()]));
         }
@@ -371,7 +371,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         if (this.fromApiJsonHelper.parameterExists("chargeCalculationType", element)) {
             final Integer chargeCalculationType = this.fromApiJsonHelper.extractIntegerNamed("chargeCalculationType", element,
                     Locale.getDefault());
-            baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType).notNull().inMinMaxRange(1, 6);
+            baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType).notNull().inMinMaxRange(1, 7);
             
             if (ChargeCalculationType.fromInt(chargeCalculationType).isSlabBased()) {
                 JsonArray chargeSlabArray = this.fromApiJsonHelper.extractJsonArrayNamed("slabs", element);
@@ -386,7 +386,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                     baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
 
                     BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed("amount", jsonElement, locale);
-                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().positiveAmount();
+                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
                     
                     if (fromAmount.compareTo(toAmount) == 1) {
                         baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
@@ -483,6 +483,10 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
 
     private void performChargeTimeNCalculationTypeValidation(DataValidatorBuilder baseDataValidator, final Integer chargeTimeType,
             final Integer chargeCalculationType, final boolean isGlimCharge) {
+    	if(!chargeTimeType.equals(ChargeTimeType.OVERDUE_INSTALLMENT.getValue())){
+    		baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+            .isNotOneOfTheseValues(ChargeCalculationType.PERCENT_OF_AMOUNT_INTEREST_AND_FEES.getValue());
+    	}
         if(chargeTimeType.equals(ChargeTimeType.SHAREACCOUNT_ACTIVATION.getValue())){
             baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
             .isOneOfTheseValues(ChargeCalculationType.validValuesForShareAccountActivation());

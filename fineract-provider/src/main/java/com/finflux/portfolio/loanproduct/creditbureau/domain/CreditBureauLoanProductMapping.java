@@ -9,6 +9,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
@@ -17,7 +18,8 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProduct;
 
 @Entity
-@Table(name = "f_creditbureau_loanproduct_mapping")
+@Table(name = "f_creditbureau_loanproduct_mapping", uniqueConstraints = { @UniqueConstraint(columnNames = { "creditbureau_product_id",
+        "loan_product_id" }, name = "uk_f_creditbureau_loanproduct_mapping") })
 public class CreditBureauLoanProductMapping extends AbstractPersistable<Long> {
 
     @ManyToOne

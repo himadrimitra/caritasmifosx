@@ -1,0 +1,1 @@
+ALTER TABLE `f_bank_statement_details` ADD COLUMN `is_manual_reconciled` TINYINT(1) NULL DEFAULT '0';

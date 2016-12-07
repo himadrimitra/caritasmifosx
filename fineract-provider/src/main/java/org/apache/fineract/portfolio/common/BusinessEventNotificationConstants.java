@@ -61,7 +61,7 @@ public class BusinessEventNotificationConstants {
 
     public static enum BUSINESS_ENTITY {
         LOAN("loan"), LOAN_TRANSACTION("loan_transaction"), LOAN_CHARGE("loan_charge"), LOAN_ADJUSTED_TRANSACTION(
-                "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client");
+                "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail");
 
         private final String value;
 

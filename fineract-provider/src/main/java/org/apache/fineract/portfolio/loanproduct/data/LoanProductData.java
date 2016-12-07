@@ -51,7 +51,7 @@ import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.joda.time.LocalDate;
 import org.springframework.util.CollectionUtils;
 
-import com.finflux.workflow.execution.data.LoanProductWorkFlowSummaryData;
+import com.finflux.task.execution.data.LoanProductTaskSummaryData;
 
 /**
  * Immutable data object to represent loan products.
@@ -202,7 +202,7 @@ public class LoanProductData {
     final List<EnumOptionData> weeksInYearTypeOptions;
     private final EnumOptionData weeksInYearType;
     
-    private LoanProductWorkFlowSummaryData loanProductWorkFlowSummary;
+    private LoanProductTaskSummaryData loanProductWorkFlowSummary;
 
     /**
      * Used when returning lookup information about loan product for dropdowns.
@@ -1319,11 +1319,11 @@ public class LoanProductData {
         return this.canUseForTopup;
     }
 
-    public LoanProductWorkFlowSummaryData getLoanProductWorkFlowSummary() {
+    public LoanProductTaskSummaryData getLoanProductWorkFlowSummary() {
         return this.loanProductWorkFlowSummary;
     }
 
-    public void setLoanProductWorkFlowSummary(final LoanProductWorkFlowSummaryData loanProductWorkFlowSummary) {
+    public void setLoanProductWorkFlowSummary(final LoanProductTaskSummaryData loanProductWorkFlowSummary) {
         this.loanProductWorkFlowSummary = loanProductWorkFlowSummary;
     }
 }

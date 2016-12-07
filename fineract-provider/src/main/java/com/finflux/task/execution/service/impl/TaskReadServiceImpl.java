@@ -1,0 +1,456 @@
+package com.finflux.task.execution.service.impl;
+
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.useradministration.domain.Role;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
+import org.springframework.stereotype.Service;
+
+import com.finflux.ruleengine.execution.data.EligibilityResult;
+import com.finflux.task.api.TaskApiConstants;
+import com.finflux.task.execution.data.LoanProductTaskSummaryData;
+import com.finflux.task.execution.data.StepSummaryData;
+import com.finflux.task.execution.data.TaskActionType;
+import com.finflux.task.execution.data.TaskActivityData;
+import com.finflux.task.execution.data.TaskConfigData;
+import com.finflux.task.execution.data.TaskData;
+import com.finflux.task.execution.data.TaskEntityType;
+import com.finflux.task.execution.data.TaskPriority;
+import com.finflux.task.execution.data.TaskStatus;
+import com.finflux.task.execution.data.TaskType;
+import com.finflux.task.execution.data.WorkFlowStepActionData;
+import com.finflux.task.execution.data.WorkFlowSummaryData;
+import com.finflux.task.execution.service.TaskReadService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+@Service
+public class TaskReadServiceImpl implements TaskReadService {
+
+    private final PlatformSecurityContext context;
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public TaskReadServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
+        this.context = context;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
+    }
+
+    @Override
+    public List<Long> getChildTaskConfigIds(final Long taskConfigId) {
+        return this.jdbcTemplate.query("SELECT tc.id FROM f_task_config tc WHERE tc.parent_id = ? ORDER BY tc.task_config_order ASC ",
+                new ParameterizedRowMapper<Long>() {
+
+                    @SuppressWarnings("unused")
+                    @Override
+                    public Long mapRow(ResultSet rs, int arg1) throws SQLException {
+                        return rs.getLong(1);
+                    }
+                }, taskConfigId);
+    }
+
+    @Override
+    public List<TaskData> getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId) {
+        TaskDataMapper rm = new TaskDataMapper();
+        final String sql = "SELECT "+rm.schema()+" WHERE t.entity_type = ? AND t.entity_id = ? ";
+        return this.jdbcTemplate.query(sql, rm, taskEntityType.getValue(), entityId);
+    }
+
+    private static final class TaskDataMapper implements RowMapper<TaskData> {
+
+        public String schema() {
+            final StringBuilder sb = new StringBuilder(400);
+            sb.append("t.id AS taskId ");
+            sb.append(",t.parent_id AS taskParentId ");
+            sb.append(",t.name as taskName ");
+            sb.append(",t.short_name AS taskShortName ");
+            sb.append(",t.entity_type AS taskEntityTypeId ");
+            sb.append(",t.entity_id AS taskEntityId ");
+            sb.append(",t.`status` AS taskStatusId ");
+            sb.append(",t.parent_id AS taskPriorityId ");
+            sb.append(",t.due_date AS taskDueDate ");
+            sb.append(",t.current_action AS taskCurrentActionId ");
+            sb.append(",appuser.id AS taskAssignedToId ");
+            sb.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS taskAssignedTo ");
+            sb.append(",t.task_order AS taskOrder ");
+            sb.append(",t.criteria_id AS taskCriteriaId ");
+            sb.append(",t.approval_logic AS taskApprovalLogic ");
+            sb.append(",t.rejection_logic AS taskRejectionLogic ");
+            sb.append(",t.config_values AS taskConfigValues ");
+            sb.append(",c.id AS taskClientId ");
+            sb.append(",c.display_name AS taskClientName ");
+            sb.append(",o.id AS taskOfficeId ");
+            sb.append(",o.name AS taskOfficeName ");
+            sb.append(",t.action_group_id AS taskActionGroupId ");
+            sb.append(",t.criteria_result AS taskCriteriaResult ");
+            sb.append(",t.criteria_action AS taskCriteriaActionId ");
+            sb.append(",tc.id AS taskConfigId ");
+            sb.append(",tc.parent_id AS taskConfigParentId ");
+            sb.append(",tc.name AS taskConfigName ");
+            sb.append(",tc.short_name AS taskConfigShortName ");
+            sb.append(",tc.task_config_order AS taskConfigOrder ");
+            sb.append(",tc.criteria_id AS taskConfigCriteriaId ");
+            sb.append(",tc.approval_logic AS taskConfigApprovalLogic ");
+            sb.append(",tc.rejection_logic AS taskConfigRejectionLogic ");
+            sb.append(",tc.config_values AS taskConfigConfigValues ");
+            sb.append(",tc.action_group_id AS taskConfigActionGroupId ");
+            sb.append(",ta.id AS taskActivityId ");
+            sb.append(",ta.name AS taskActivityName ");
+            sb.append(",ta.identifier AS taskActivityIdentifier ");
+            sb.append(",ta.config_values AS taskActivityConfigValues ");
+            sb.append(",ta.supported_actions AS taskActivitySupportedActions ");
+            sb.append(",ta.`type` AS taskActivityTypeId ");
+            sb.append("FROM f_task t ");
+            sb.append("JOIN f_task_config tc ON tc.id = t.task_config_id ");
+            sb.append("JOIN f_task_activity ta ON ta.id = tc.task_activity_id ");
+            sb.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
+            sb.append("LEFT JOIN m_client c ON c.id = t.client_id ");
+            sb.append("LEFT JOIN m_office o ON o.id = t.office_id ");
+            return sb.toString();
+        }
+
+        @SuppressWarnings("null")
+        @Override
+        public TaskData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            final Long taskId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskId");
+            if (taskId == null) { return null; }
+            final Long taskParentId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskParentId");
+            final String taskName = rs.getString("taskName");
+            final String taskShortName = rs.getString("taskShortName");
+            final Integer taskEntityTypeId = JdbcSupport.getIntegeActualValue(rs, "taskEntityTypeId");
+            EnumOptionData taskEntityType = null;
+            if (taskEntityTypeId != null && taskEntityTypeId > 0) {
+                taskEntityType = TaskEntityType.taskEntityType(taskEntityTypeId);
+            }
+            final Long taskEntityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskEntityId");
+            final Integer taskStatusId = JdbcSupport.getIntegeActualValue(rs, "taskStatusId");
+            EnumOptionData taskStatus = null;
+            List<EnumOptionData> taskPossibleActions = null;
+            if (taskEntityId != null && taskEntityId > 0) {
+                final TaskStatus obj = TaskStatus.fromInt(taskStatusId);
+                taskStatus = obj.getEnumOptionData();
+                taskPossibleActions = obj.getPossibleActionsEnumOption();
+            }
+            final Integer taskPriorityId = JdbcSupport.getIntegeActualValue(rs, "taskPriorityId");
+            EnumOptionData taskPriority = null;
+            if (taskPriorityId != null && taskPriorityId > 0) {
+                taskPriority = TaskPriority.fromInt(taskPriorityId).getEnumOptionData();
+            }
+            final Date taskDueDate = rs.getDate("taskDueDate");
+            final Integer taskCurrentActionId = JdbcSupport.getIntegeActualValue(rs, "taskCurrentActionId");
+            EnumOptionData taskCurrentAction = null;
+            if (taskCurrentActionId != null && taskCurrentActionId > 0) {
+                taskCurrentAction = TaskActionType.fromInt(taskCurrentActionId).getEnumOptionData();
+            }
+            final Long taskAssignedToId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskAssignedToId");
+            final String taskAssignedTo = rs.getString("taskAssignedTo");
+            final Integer taskOrder = JdbcSupport.getIntegeActualValue(rs, "taskOrder");
+            final Long taskCriteriaId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskCriteriaId");
+            final String taskApprovalLogic = rs.getString("taskApprovalLogic");
+            final String taskRejectionLogic = rs.getString("taskRejectionLogic");
+            final String taskConfigValuesStr = rs.getString("taskConfigValues");
+            Map<String, String> taskConfigValues = null;
+            if (taskConfigValuesStr != null) {
+                taskConfigValues = new Gson().fromJson(taskConfigValuesStr, new TypeToken<HashMap<String, String>>() {}.getType());
+            }
+            final Long taskClientId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskClientId");
+            final String taskClientName = rs.getString("taskClientName");
+            final Long taskOfficeId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskOfficeId");
+            final String taskOfficeName = rs.getString("taskOfficeName");
+            final Long taskActionGroupId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActionGroupId");
+            final String criteriaResultStr = rs.getString("taskCriteriaResult");
+            EligibilityResult taskCriteriaResult = null;
+            if (criteriaResultStr != null) {
+                taskCriteriaResult = new Gson().fromJson(criteriaResultStr, new TypeToken<EligibilityResult>() {}.getType());
+            }
+            final Integer taskCriteriaActionId = JdbcSupport.getIntegeActualValue(rs, "taskCriteriaActionId");
+            final TaskData taskData = TaskData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType, taskEntityId,
+                    taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder, taskCriteriaId,
+                    taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId, taskOfficeName,
+                    taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions);
+
+            final Long taskConfigId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigId");
+            if (taskConfigId != null && taskConfigId > 0) {
+                final Long taskConfigParentId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigParentId");
+                final String taskConfigName = rs.getString("taskConfigName");
+                final String taskConfigShortName = rs.getString("taskConfigShortName");
+                final Integer taskConfigOrder = JdbcSupport.getIntegeActualValue(rs, "taskConfigOrder");
+                final Long taskConfigCriteriaId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigCriteriaId");
+                final String taskConfigApprovalLogic = rs.getString("taskConfigApprovalLogic");
+                final String taskConfigRejectionLogic = rs.getString("taskConfigRejectionLogic");
+                final String taskConfigConfigValuesStr = rs.getString("taskConfigConfigValues");
+                Map<String, String> taskConfigConfigValues = null;
+                if (taskConfigConfigValuesStr != null) {
+                    taskConfigConfigValues = new Gson().fromJson(taskConfigConfigValuesStr,
+                            new TypeToken<HashMap<String, String>>() {}.getType());
+                }
+                final Long taskConfigActionGroupId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigActionGroupId");
+                final TaskConfigData taskConfigData = TaskConfigData.instance(taskConfigId, taskConfigParentId, taskConfigName,
+                        taskConfigShortName, null, taskConfigOrder, taskConfigCriteriaId, taskConfigApprovalLogic,
+                        taskConfigRejectionLogic, taskConfigConfigValues, taskConfigActionGroupId);
+                taskData.setTaskConfig(taskConfigData);
+            }
+
+            final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
+            if (taskActivityId != null && taskConfigId > 0) {
+                final String taskActivityName = rs.getString("taskActivityName");
+                final String taskActivityIdentifier = rs.getString("taskActivityIdentifier");
+                final Integer taskActivityTypeId = JdbcSupport.getIntegeActualValue(rs, "taskActivityTypeId");
+                EnumOptionData taskActivityType = null;
+                if (taskActivityTypeId != null) {
+                    taskActivityType = TaskType.fromInt(taskActivityTypeId).getEnumOptionData();
+                }
+                final TaskActivityData taskActivityData = TaskActivityData.instance(taskActivityId, taskActivityName,
+                        taskActivityIdentifier, taskActivityType);
+                taskData.setTaskActivity(taskActivityData);
+            }
+
+            return taskData;
+        }
+    }
+
+    @SuppressWarnings({ "unused", "null" })
+    @Override
+    public List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId) {
+        final StringBuilder sqlBuilder = new StringBuilder(200);
+        sqlBuilder
+                .append("SELECT DISTINCT co.id, lp.id AS loanProductId,lp.name AS loanProductName,wf.id AS workFlowId, wf.name AS workFlowName ");
+        sqlBuilder.append(",co.id AS officeId, co.name AS officeName, wfes.status AS stepStatus ");
+        sqlBuilder.append(",wfs.id AS stepId, wfs.name AS stepName,wfs.short_name AS stepShortName ");
+        sqlBuilder.append(",SUM(IF(wfes.status BETWEEN 2 AND 6,1,0)) AS noOfCount ");
+        sqlBuilder.append("FROM f_workflow wf ");
+        sqlBuilder.append("JOIN f_workflow_entity_type_mapping wfm ON wfm.workflow_id = wf.id AND wfm.entity_type = 1 ");
+        sqlBuilder.append("JOIN m_product_loan lp ON ");
+        if (loanProductId != null) {
+            sqlBuilder.append("lp.id = ").append(loanProductId).append(" AND ");
+        }
+        sqlBuilder.append("lp.id = wfm.entity_id ");
+        sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.workflow_id = wf.id AND wfe.entity_type = 1 ");
+        sqlBuilder.append("JOIN f_loan_application_reference lar ON lar.id = wfe.entity_id AND lp.id = lar.loan_product_id ");
+        sqlBuilder.append("JOIN m_client c ON c.id = lar.client_id ");
+        sqlBuilder.append("JOIN m_office o ");
+        sqlBuilder.append("JOIN m_office co ON co.hierarchy LIKE CONCAT(o.hierarchy, '%') AND co.id = c.office_id ");
+        sqlBuilder.append("JOIN f_workflow_execution_step wfes ON wfes.workflow_execution_id = wfe.id ");
+        sqlBuilder.append("JOIN f_workflow_step wfs ON wfs.id = wfes.workflow_step_id ");
+        if (officeId != null) {
+            sqlBuilder.append("AND o.id = ").append(officeId).append(" ");
+        }
+        sqlBuilder.append("WHERE wfes.status BETWEEN 1 AND 6 ");
+        sqlBuilder.append("GROUP BY lp.id,wf.id,co.id,wfes.status,wfs.name,co.id,o.id ");
+        sqlBuilder.append("ORDER BY lp.name,wf.name,co.id,wfs.step_order,wfes.status ");
+        final List<Map<String, Object>> list = this.jdbcTemplate.queryForList(sqlBuilder.toString());
+        final List<LoanProductData> loanProducts = new ArrayList<>();
+        if (list != null && !list.isEmpty()) {
+            LoanProductData loanProduct = null;
+            LoanProductTaskSummaryData loanProductWorkFlowSummary = null;
+            List<OfficeData> offices = null;
+            OfficeData office = null;
+            List<WorkFlowSummaryData> workFlowSummaries = null;
+            WorkFlowSummaryData workFlowSummary = null;
+            List<StepSummaryData> stepSummaries = null;
+            StepSummaryData stepSummary = null;
+
+            for (final Map<String, Object> l : list) {
+                final Integer stepStatusId = Integer.parseInt(l.get("stepStatus").toString());
+                if (!(TaskStatus.fromInt(stepStatusId).getValue() > 6)) {
+                    final Long lpId = (Long) l.get("loanProductId");
+                    final String loanProductName = (String) l.get("loanProductName");
+                    final Long oId = (Long) l.get("officeId");
+                    final String officeName = (String) l.get("officeName");
+                    final Long workFlowId = (Long) l.get("workFlowId");
+                    final String workFlowName = (String) l.get("workFlowName");
+                    final Long stepId = (Long) l.get("stepId");
+                    final String stepName = (String) l.get("stepName");
+                    final String stepShortName = (String) l.get("stepShortName");
+                    final Long noOfCount = Long.parseLong(l.get("noOfCount").toString());
+                    final String stepStatus = TaskStatus.fromInt(stepStatusId).toString();
+
+                    /**
+                     * Product
+                     */
+                    Boolean isLoanProductData = false;
+                    for (final LoanProductData lp : loanProducts) {
+                        if (lp.getId() == lpId) {
+                            isLoanProductData = true;
+                            break;
+                        }
+                    }
+                    if (!isLoanProductData) {
+                        loanProductWorkFlowSummary = new LoanProductTaskSummaryData();
+                        loanProduct = LoanProductData.lookup(lpId, loanProductName);
+                        loanProduct.setLoanProductWorkFlowSummary(loanProductWorkFlowSummary);
+                        loanProducts.add(loanProduct);
+                        offices = new ArrayList<OfficeData>();
+                        loanProductWorkFlowSummary.setOfficeSummaries(offices);
+                    }
+
+                    /**
+                     * Office
+                     */
+                    Boolean isOfficeData = false;
+                    for (final OfficeData o : offices) {
+                        if (o.getId() == oId) {
+                            isOfficeData = true;
+                            break;
+                        }
+                    }
+                    if (!isOfficeData) {
+                        workFlowSummaries = new ArrayList<WorkFlowSummaryData>();
+                        office = OfficeData.lookup(oId, officeName);
+                        office.setWorkFlowSummaries(workFlowSummaries);
+                        offices.add(office);
+                    }
+
+                    /**
+                     * work Flow Summary
+                     */
+                    Boolean isWorkFlowData = false;
+                    for (final WorkFlowSummaryData ws : workFlowSummaries) {
+                        if (ws.getStepName().equalsIgnoreCase(stepName)) {
+                            isWorkFlowData = true;
+                            ws.setNoOfCount(ws.getNoOfCount() + noOfCount);
+                            break;
+                        }
+                    }
+                    if (!isWorkFlowData) {
+                        stepSummaries = new ArrayList<StepSummaryData>();
+                        workFlowSummary = new WorkFlowSummaryData(stepName, stepShortName, noOfCount);
+                        workFlowSummary.setStepSummaries(stepSummaries);
+                        workFlowSummaries.add(workFlowSummary);
+                    }
+                    stepSummary = new StepSummaryData(stepStatus, noOfCount);
+                    stepSummaries.add(stepSummary);
+                }
+            }
+        }
+        return loanProducts;
+    }
+
+    @Override
+    public List<WorkFlowStepActionData> retrieveWorkFlowStepActions(final String filterBy) {
+        final WorkFlowStepActionDataMapper dataMapper = new WorkFlowStepActionDataMapper();
+        final Set<Role> loggedInUserRoles = this.context.authenticatedUser().getRoles();
+        final StringBuilder loggedInUserRoleIds = new StringBuilder(10);
+        for (final Role r : loggedInUserRoles) {
+            if (loggedInUserRoleIds.length() == 0) {
+                loggedInUserRoleIds.append(r.getId());
+            } else {
+                loggedInUserRoleIds.append(",").append(r.getId());
+            }
+        }
+        if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.ASSIGNEED)) {
+            return this.jdbcTemplate.query(dataMapper.assigned(), dataMapper, new Object[] { this.context.authenticatedUser().getId(),
+                    loggedInUserRoleIds.toString() });
+        } else if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.UNASSIGNEED)) { return this.jdbcTemplate.query(
+                dataMapper.unAssigned(), dataMapper,
+                new Object[] { this.context.authenticatedUser().getId(), loggedInUserRoleIds.toString() }); }
+        return this.jdbcTemplate.query(dataMapper.all(), dataMapper, new Object[] { loggedInUserRoleIds.toString() });
+    }
+
+    private static final class WorkFlowStepActionDataMapper implements RowMapper<WorkFlowStepActionData> {
+
+        private String schema;
+
+        public WorkFlowStepActionDataMapper() {
+
+        }
+
+        public String all() {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
+            sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
+            sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
+            sqlBuilder.append("FROM f_workflow_execution_step wes ");
+            sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
+            sqlBuilder
+                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
+            sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
+            sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
+            sqlBuilder.append("AND (wsar.role_id IN (?) OR wsar.role_id IS NULL) ");
+            sqlBuilder.append("GROUP BY stepId ");
+            sqlBuilder.append("ORDER BY stepId ");
+            this.schema = sqlBuilder.toString();
+            return this.schema;
+        }
+
+        public String assigned() {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
+            sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
+            sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
+            sqlBuilder.append("FROM f_workflow_execution_step wes ");
+            sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
+            sqlBuilder
+                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
+            sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
+            sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
+            sqlBuilder.append("AND wes.assigned_to = ? AND (wsar.role_id IN (?) OR wsar.role_id IS NULL) ");
+            sqlBuilder.append("GROUP BY stepId ");
+            sqlBuilder.append("ORDER BY stepId ");
+            this.schema = sqlBuilder.toString();
+            return this.schema;
+        }
+
+        public String unAssigned() {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
+            sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
+            sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
+            sqlBuilder.append("FROM f_workflow_execution_step wes ");
+            sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
+            sqlBuilder
+                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
+            sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
+            sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
+            sqlBuilder.append("AND (wes.assigned_to IS NULL OR  wes.assigned_to != ? ) ");
+            sqlBuilder.append("AND (wsar.role_id IN (?) OR wsar.role_id IS NULL) ");
+            sqlBuilder.append("GROUP BY stepId ");
+            sqlBuilder.append("ORDER BY stepId ");
+            this.schema = sqlBuilder.toString();
+            return this.schema;
+        }
+
+        @SuppressWarnings({ "unused" })
+        @Override
+        public WorkFlowStepActionData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
+            final Long stepId = rs.getLong("stepId");
+            final String stepName = rs.getString("stepName");
+            final String stepStatus = TaskStatus.fromInt(rs.getInt("stepStatusId")).toString();
+            final String currentAction = TaskActionType.fromInt(rs.getInt("currentActionId")).toString();
+            final Long assignedId = rs.getLong("assignedId");
+            final String assignedTo = rs.getString("assignedTo");
+            final Integer entityTypeId = rs.getInt("entityTypeId");
+            final String entityType = TaskEntityType.fromInt(entityTypeId).toString();
+            final Long entityId = rs.getLong("entityId");
+            String nextActionUrl = "";
+            if (entityType != null && entityType.equalsIgnoreCase(TaskEntityType.LOAN_APPLICATION.toString())) {
+                nextActionUrl = "/loanapplication/" + entityId + "/workflow";
+            }
+            return WorkFlowStepActionData.instance(stepId, stepName, stepStatus, currentAction, assignedId, assignedTo, entityTypeId,
+                    entityType, entityId, nextActionUrl);
+        }
+    }
+
+}

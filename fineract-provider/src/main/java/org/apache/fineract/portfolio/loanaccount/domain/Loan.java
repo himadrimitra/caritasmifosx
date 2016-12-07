@@ -136,6 +136,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessin
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
@@ -431,6 +432,14 @@ public class Loan extends AbstractPersistable<Long> {
 
     @Column(name = "total_charges_capitalized_at_disbursement_derived", scale = 6, precision = 19, nullable = true)
     private BigDecimal totalCapitalizedCharges;
+    
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name = "expected_disbursal_payment_type_id", nullable = true)
+    private PaymentType expectedDisbursalPaymentType;
+    
+    @ManyToOne(optional = true,fetch=FetchType.LAZY)
+    @JoinColumn(name = "expected_repayment_payment_type_id", nullable = true)
+    private PaymentType expectedRepaymentPaymentType;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -438,14 +447,15 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
             final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
-            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential) {
+            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
+            final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
         final Group group = null;
         final Boolean syncDisbursementWithMeeting = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     public static Loan newGroupLoanApplication(final String accountNo, final Group group, final Integer loanType,
@@ -455,13 +465,13 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
             final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
-            final BigDecimal interestRateDifferential) {
+            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
         final Client client = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     public static Loan newIndividualLoanApplicationFromGroup(final String accountNo, final Client client, final Group group,
@@ -471,12 +481,12 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
             final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
-            final BigDecimal interestRateDifferential) {
+            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
     }
 
     protected Loan() {
@@ -489,7 +499,8 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCharge> loanCharges, final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting,
             final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
-            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential) {
+            final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
+            final PaymentType expectedRepaymentPaymentType) {
 
         this.loanRepaymentScheduleDetail = loanRepaymentScheduleDetail;
         this.loanRepaymentScheduleDetail.validateRepaymentPeriodWithGraceSettings();
@@ -550,6 +561,8 @@ public class Loan extends AbstractPersistable<Long> {
          */
 
         this.proposedPrincipal = this.loanRepaymentScheduleDetail.getPrincipal().getAmount();
+        this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+        this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
     }
 
     private LoanSummary updateSummaryWithTotalFeeChargesDueAtDisbursement(final BigDecimal feeChargesDueAtDisbursement) {
@@ -914,11 +927,15 @@ public class Loan extends AbstractPersistable<Long> {
             break;
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
                 if (loanCharge.getTrancheDisbursementCharge() != null) {
-                    amount = loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().principal();
+                	amount = loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().principal();
                 } else {
                     amount = getPrincpal().getAmount();
                 }
             break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+            	final BigDecimal totalInterestChargd = getTotalInterest();
+                amount = getPrincpal().getAmount().add(totalInterestChargd).add(this.getSummary().getTotalFeeChargesCharged());
+            break;	
             default:
             break;
         }
@@ -972,6 +989,10 @@ public class Loan extends AbstractPersistable<Long> {
             break;
             case PERCENT_OF_DISBURSEMENT_AMOUNT:
                 percentOf = installment.getPrincipal(getCurrency());
+            break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+                percentOf = installment.getPrincipal(getCurrency()).plus(installment.getInterestCharged(getCurrency()))
+                	.plus(installment.getFeeChargesCharged(getCurrency()));
             break;
             default:
             break;
@@ -1299,6 +1320,7 @@ public class Loan extends AbstractPersistable<Long> {
      * unprocessed transactions
      */
     private void applyAccurals(AppUser currentUser) {
+        if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) { return; }
         Collection<LoanTransaction> accruals = retreiveListOfAccrualTransactions();
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
             applyPeriodicAccruals(accruals);
@@ -1669,7 +1691,12 @@ public class Loan extends AbstractPersistable<Long> {
         } else {
             this.fixedEmiAmount = null;
         }
-        
+        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, this.getExpectedDisbursalPaymentType().getId().intValue())){
+        	actualChanges.put(LoanApiConstants.expectedDisbursalPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName));
+        }
+        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, this.getExpectedRepaymentPaymentType().getId().intValue())){
+        	actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
+        }
         return actualChanges;
     }
 
@@ -1756,6 +1783,10 @@ public class Loan extends AbstractPersistable<Long> {
             break;
             case PERCENT_OF_INTEREST:
                 amount = installment.getInterestOutstanding(getCurrency());
+            break;
+            case PERCENT_OF_AMOUNT_INTEREST_AND_FEES:
+            	amount = installment.getPrincipal(getCurrency()).plus(installment.getInterestCharged(getCurrency()))
+                	.plus(installment.getFeeChargesCharged(getCurrency()));
             break;
             default:
             break;
@@ -3249,7 +3280,7 @@ public class Loan extends AbstractPersistable<Long> {
                 }
             }
         }
-        if (this.isGLIMLoan() && adjustedTransaction != null && MathUtility.isZero(loanTransaction.getAmount(getCurrency()).getAmount())) {
+        if (this.isGLIMLoan() && adjustedTransaction != null) {
             List<LoanRepaymentScheduleInstallment> updatePartlyPaidOrPaidInstallments = new ArrayList<>();
             Set<GroupLoanIndividualMonitoringTransaction> removeGlimTransactions = new HashSet<>();
             Set<GroupLoanIndividualMonitoringTransaction> glimTransactions = adjustedTransaction.getGlimTransaction();
@@ -3258,7 +3289,7 @@ public class Loan extends AbstractPersistable<Long> {
                     updatePartlyPaidOrPaidInstallments.add(installment);
                 }
             }
-            Map<Long, BigDecimal> chargeAmountMap = new HashMap<Long, BigDecimal>();
+            Map<Long, BigDecimal> chargeAmountMap = new HashMap<>();
             for (LoanCharge loanCharge : charges()) {
                 chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
             }
@@ -3429,16 +3460,21 @@ public class Loan extends AbstractPersistable<Long> {
             if (!removeGlimTransactions.isEmpty()) {
                 glimTransactions.removeAll(removeGlimTransactions);
             }
-            reprocess = false;
-        }
+            if (MathUtility.isZero(loanTransaction.getAmount(getCurrency()).getAmount())) {
+                reprocess = false;
+            } else {
+                reprocess = true;
+            }
+        } 
+        
         if (reprocess) {
-        	if(adjustedTransaction != null){
-        		for(LoanChargePaidBy chargesPaidBy : adjustedTransaction.getLoanChargesPaid()){
-					if (chargesPaidBy.getLoanCharge().isInstalmentFee() && chargesPaidBy.getLoanCharge().isWaived()) {
-						chargesPaidBy.getLoanCharge().undoWaive();
-					}
-        		}
-        	}
+            if (adjustedTransaction != null) {
+                for (LoanChargePaidBy chargesPaidBy : adjustedTransaction.getLoanChargesPaid()) {
+                    if (chargesPaidBy.getLoanCharge().isInstalmentFee() && chargesPaidBy.getLoanCharge().isWaived()) {
+                        chargesPaidBy.getLoanCharge().undoWaive();
+                    }
+                }
+            }
             if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
                 regenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
             }
@@ -3715,6 +3751,19 @@ public class Loan extends AbstractPersistable<Long> {
                     interestToPost, feeToPost, penaltyToPost);
 
             this.loanTransactions.add(finalIncomeTransaction);
+            if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
+                List<LoanTransaction> updatedAccrualTransactions = retreiveListOfAccrualTransactions();
+                LocalDate lastAccruedDate = this.getDisbursementDate();
+                if (updatedAccrualTransactions != null && updatedAccrualTransactions.size() > 0) {
+                    lastAccruedDate = updatedAccrualTransactions.get(updatedAccrualTransactions.size() - 1).getTransactionDate();
+                }
+                HashMap<String, Object> feeDetails = new HashMap<>();
+                determineFeeDetails(lastAccruedDate, transactionDate, feeDetails);
+                LoanTransaction finalAccrual = LoanTransaction.accrueTransaction(this, this.getOffice(), transactionDate, amountToPost,
+                        interestToPost, feeToPost, penaltyToPost);
+                updateLoanChargesPaidBy(finalAccrual, feeDetails, null);
+                this.loanTransactions.add(finalAccrual);
+            }
         }
         updateLoanOutstandingBalaces();
     }
@@ -3897,9 +3946,18 @@ public class Loan extends AbstractPersistable<Long> {
         }
         
         if (this.isGLIMLoan()) {
-            if (transactionForAdjustment.getTransactionDate().isBefore(getLastUserTransactionDate())) {
-                final String errorMessage = "undo of last transaction is allowed for GLIM loan.";
-                throw new InvalidLoanTransactionTypeException("transaction", "undo.of.last.transaction.is.allowed.for.glim.loan",
+            final int comparsion = transactionForAdjustment.getTransactionDate().compareTo(getLastUserTransactionDate());
+            if (comparsion == 0) {
+                if (transactionForAdjustment.getCreatedDate() != null && getLastUserTransaction() != null) {
+                    if (transactionForAdjustment.getCreatedDate().compareTo(getLastUserTransaction().getCreatedDate()) == -1) {
+                        final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
+                        throw new InvalidLoanTransactionTypeException("transaction",
+                                "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan", errorMessage);
+                    }
+                }
+            } else if (transactionForAdjustment.getTransactionDate().isBefore(getLastUserTransactionDate())) {
+                final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
+                throw new InvalidLoanTransactionTypeException("transaction", "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan",
                         errorMessage);
             }
             if (transactionForAdjustment.isWaiver()) {
@@ -3914,7 +3972,8 @@ public class Loan extends AbstractPersistable<Long> {
         transactionForAdjustment.reverse();
         transactionForAdjustment.manuallyAdjustedOrReversed();
         
-        if (isSubsidyApplicable() && (status().isOverpaid() || status().isClosedObligationsMet() || status().isClosed())) {
+        if (isSubsidyApplicable() && getTotalSubsidyAmount().isGreaterThanZero()
+                && (status().isOverpaid() || status().isClosedObligationsMet() || status().isClosed())) {
             final LoanTransaction realizationLoanTransaction = findRealizationTransaction();
             if(realizationLoanTransaction == null){
                 final String errorMessage = "Only transactions of type realization cannot be adjusted.";
@@ -3945,7 +4004,7 @@ public class Loan extends AbstractPersistable<Long> {
             changedTransactionDetail = handleRepaymentOrRecoveryOrWaiverTransaction(newTransactionDetail, loanLifecycleStateMachine,
                     transactionForAdjustment, scheduleGeneratorDTO, currentUser);
         }
-
+        
         return changedTransactionDetail;
     }
 
@@ -7309,6 +7368,39 @@ public class Loan extends AbstractPersistable<Long> {
     
     public void activateLoan(){
     	this.loanStatus = LoanStatus.ACTIVE.getValue();
+    }
+
+	public PaymentType getExpectedDisbursalPaymentType() {
+		return this.expectedDisbursalPaymentType;
+	}
+
+	public void setExpectedDisbursalPaymentType(
+			PaymentType expectedDisbursalPaymentType) {
+		this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+	}
+
+	public PaymentType getExpectedRepaymentPaymentType() {
+		return this.expectedRepaymentPaymentType;
+	}
+
+	public void setExpectedRepaymentPaymentType(
+			PaymentType expectedRepaymentPaymentType) {
+		this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+	}
+    
+    
+    
+    public LoanTransaction getLastUserTransaction() {
+        LocalDate currentTransactionDate = getDisbursementDate();
+        LoanTransaction lastUserTransaction = null;
+        for (final LoanTransaction previousTransaction : this.loanTransactions) {
+            if (!(previousTransaction.isReversed() || previousTransaction.isAccrual() || previousTransaction.isIncomePosting())) {
+                if (currentTransactionDate.isBefore(previousTransaction.getTransactionDate())) {
+                    lastUserTransaction = previousTransaction;
+                }
+            }
+        }
+        return lastUserTransaction;
     }
     
 }

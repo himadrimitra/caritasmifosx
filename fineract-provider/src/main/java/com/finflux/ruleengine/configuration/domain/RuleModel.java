@@ -1,15 +1,14 @@
 package com.finflux.ruleengine.configuration.domain;
 
-import com.finflux.ruleengine.lib.data.EntityRuleType;
-import com.finflux.ruleengine.lib.data.ValueType;
-import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
-import org.apache.fineract.useradministration.domain.AppUser;
-import org.springframework.data.jpa.domain.AbstractPersistable;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+
+import org.springframework.data.jpa.domain.AbstractPersistable;
+
+import com.finflux.ruleengine.lib.data.EntityRuleType;
+import com.finflux.ruleengine.lib.data.ValueType;
 
 @Entity
 @Table(name = "f_risk_rule", uniqueConstraints = {

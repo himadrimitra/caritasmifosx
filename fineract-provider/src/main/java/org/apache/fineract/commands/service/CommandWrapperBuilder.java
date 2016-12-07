@@ -3134,13 +3134,7 @@ public class CommandWrapperBuilder {
 
     /**
      * Create Address
-<<<<<<< 6740af46bc98df2b0ad4707849d48e48b9ebdb03
      * @param entityTypeId : This parameter is setting to entityId
-=======
-     * 
-     * @param entityTypeId
-     *            : This parameter is setting to entityId
->>>>>>> Risk configuration module
      * @param entityType
      * @param entityId : This parameter is setting to subentityId
      * @return
