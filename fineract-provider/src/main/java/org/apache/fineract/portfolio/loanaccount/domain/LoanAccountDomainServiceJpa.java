@@ -869,8 +869,14 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
 
         final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
-        LoanTransaction newTransactionDetail = LoanTransaction.repayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
-                transactionDate, txnExternalId);
+        LoanTransaction newTransactionDetail = null;
+        if(transactionToAdjust.getTransactionSubTye().isPrePayment()){
+             newTransactionDetail = LoanTransaction.prepayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
+                    transactionDate, txnExternalId);
+        }else{
+            newTransactionDetail = LoanTransaction.repayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
+                    transactionDate, txnExternalId);
+        }
         if (transactionToAdjust.isInterestWaiver()) {
             Money unrecognizedIncome = transactionAmountAsMoney.zero();
             Money interestComponent = transactionAmountAsMoney;

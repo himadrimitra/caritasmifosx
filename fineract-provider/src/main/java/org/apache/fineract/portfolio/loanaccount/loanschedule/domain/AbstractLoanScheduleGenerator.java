@@ -756,20 +756,19 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     if (isPrepay) {
                         LocalDate applicableDate = getNextRestScheduleDate(transactionDate.minusDays(1), loanApplicationTerms,
                                 holidayDetailDTO);
+                        Money amount = detail.getTransaction().getAmount(currency);
+                        currentPeriodParams.plusPrepaymentAmount(amount);
+                        applyEarlyPaymentStrategy(loanApplicationTerms, amount, scheduleParams.getTotalCumulativePrincipal().plus(amount),
+                                scheduleParams.getPeriodNumber(), mc);
+                        checkForOutstanding = false;
+                        scheduleParams.reduceOutstandingBalance(amount);
                         if (applicableDate.isBefore(scheduledDueDate)) {
-                            Money amount = detail.getTransaction().getAmount(currency);
                             updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), amount, applicableDate);
-                            currentPeriodParams.plusPrepaymentAmount(amount);
 
-                            applyEarlyPaymentStrategy(loanApplicationTerms, amount, scheduleParams.getTotalCumulativePrincipal().plus(amount),
-                                    scheduleParams.getPeriodNumber(), mc);
-                            
                             LoanTransaction loanTransaction = LoanTransaction.prepayment(null, amount, null, scheduledDueDate,
                                     null);
                             RecalculationDetail recalculationDetail = new RecalculationDetail(scheduledDueDate, loanTransaction);
                             unprocessedTransactions.add(recalculationDetail);
-                            checkForOutstanding = false;
-                            scheduleParams.reduceOutstandingBalance(amount);
                             detail.setProcessed(true);
                             LocalDate newapplicableDate = getNextRestScheduleDate(scheduledDueDate.minusDays(1), loanApplicationTerms,
                                     holidayDetailDTO);
