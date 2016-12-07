@@ -739,9 +739,11 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     }
     @Override
     public Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
-        
+		final AppUser currentUser = this.context.authenticatedUser();
+		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
         final StringBuilder builder = new StringBuilder(400);
-       final ClientTaskLookupMapper mapper= new ClientTaskLookupMapper();
+		final ClientTaskLookupMapper mapper= new ClientTaskLookupMapper();
+		Boolean whereused =false;
         List<Object> params = new ArrayList<>();
         String sqlSearch = searchParameters.getSqlSearch();
         builder.append("select ");
@@ -749,28 +751,52 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         builder.append("c.fullname as fullname, c.display_name as displayName, ");
         builder.append("c.staff_id as staffId, s.display_name as staffName ");
         builder.append("from m_client c ");
-        builder.append("join m_office o on o.id = c.office_id ");
+        builder.append("join m_office o on o.id = c.office_id and o.hierarchy like ?");
         builder.append("left join m_staff s on s.id = c.staff_id ");
         if((searchParameters.getGroupId() != null) || (searchParameters.getCenterId() != null)){
             builder.append("JOIN m_group_client gc ON c.id = gc.client_id ");
             builder.append("join m_group g on g.id = gc.group_id ");
         } 
-        builder.append("where o.id = ?");
-        params.add(searchParameters.getOfficeId());
-        if(searchParameters.getStaffId() != null){
-            builder.append(" and s.id = ?");
-            params.add(searchParameters.getStaffId());
-        }
+		params.add(hierarchy);
+		if (searchParameters.getOfficeId() != null) {
+			builder.append("where o.id = ?");
+			params.add(searchParameters.getOfficeId());
+			whereused = true;
+		}
+		if (searchParameters.getStaffId() != null) {
+			if (whereused) {
+				builder.append(" and s.id = ?");
+			} else {
+				builder.append(" where s.id = ?");
+				whereused = true;
+			}
+			params.add(searchParameters.getStaffId());
+		}
         if(searchParameters.getGroupId() != null){
-            builder.append(" and g.id = ?");
+        	if (whereused) {
+        		builder.append(" and g.id = ?");
+			} else {
+				builder.append(" where g.id = ?");
+				whereused = true;
+			}
             params.add(searchParameters.getGroupId());
         }
         if(searchParameters.getCenterId() != null){
+        	if (whereused) {
             builder.append(" and g.parent_id = ?" );
+        	}else{
+        		builder.append(" where g.parent_id = ?");
+				whereused = true;
+        	}
             params.add(searchParameters.getCenterId());
         }
         if (sqlSearch != null) {
+        	if (whereused) {
             builder.append(" and (" + sqlSearch + ")");
+        	}else{
+                builder.append(" where (" + sqlSearch + ")");
+				whereused = true;
+        	}
         }
         
         return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
