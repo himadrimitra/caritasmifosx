@@ -171,7 +171,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
                                 existingLoan.setDisbursedDate(ddmmYYYYFormat.parse(loanDetail.getDISBURSEDDT()));
                             }
                             if (loanDetail.getCLOSEDDT() != null) {
-                                existingLoan.setMaturityDate(ddmmYYYYFormat.parse(loanDetail.getCLOSEDDT()));
+                                existingLoan.setClosedDate(ddmmYYYYFormat.parse(loanDetail.getCLOSEDDT()));
                             }
                         } catch (ParseException e1) {
                             e1.printStackTrace();

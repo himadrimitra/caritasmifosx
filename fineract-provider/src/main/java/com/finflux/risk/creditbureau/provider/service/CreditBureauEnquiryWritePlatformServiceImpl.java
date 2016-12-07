@@ -103,8 +103,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
     @SuppressWarnings("unused")
     private void saveCreditBureauExistingLoans(final Long loanApplicationId, final List<CreditBureauExistingLoan> creditBureauExistingLoans) {
         final CodeValue source = this.codeValueRepository.findByCodeNameAndLabel("ExistingLoanSource", "Credit Bureau");
-        final List<ExistingLoan> existingLoans = this.existingLoanRepository
-                .findByLoanApplicationIdAndSource(loanApplicationId, source);
+        final List<ExistingLoan> existingLoans = this.existingLoanRepository.findByLoanApplicationIdAndSource(loanApplicationId, source);
         if (!existingLoans.isEmpty()) {
             this.existingLoanRepository.delete(existingLoans);
         }
@@ -168,6 +167,10 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             final Integer repaymentFrequency = null;
             final Integer repaymentFrequencyMultipleOf = null;
             final LocalDate maturityDate = null;
+            LocalDate closedDate = null;
+            if (creditBureauExistingLoan.getClosedDate() != null) {
+                closedDate = new LocalDate(creditBureauExistingLoan.getClosedDate());
+            }
             final Integer gt0dpd3mths = null;
             final Integer dpd30mths12 = null;
             final Integer dpd30mths24 = null;
@@ -178,8 +181,8 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             final ExistingLoan existingLoan = ExistingLoan.saveExistingLoan(client, loanApplicationId, loanId, source, creditBureauProduct,
                     loanEnquiryId, lender, lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount,
                     loanTenure, loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount,
-                    externalLoanPurpose, status, disbursedDate, maturityDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark,
-                    archive);
+                    externalLoanPurpose, status, disbursedDate, maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24,
+                    dpd60mths24, remark, archive);
             newExistingLoans.add(existingLoan);
         }
 
