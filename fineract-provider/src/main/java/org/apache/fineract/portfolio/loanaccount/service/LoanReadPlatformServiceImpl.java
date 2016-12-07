@@ -1143,9 +1143,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     @Override
     public Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
-    
+		final AppUser currentUser = this.context.authenticatedUser();
+		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
         final StringBuilder builder = new StringBuilder(400);
         final LoanTaskLookupMapper mapper= new LoanTaskLookupMapper();
+		Boolean whereused = false;
          List<Object> params = new ArrayList<>();
          String sqlSearch = searchParameters.getSqlSearch();
          builder.append("select ");
@@ -1161,27 +1163,49 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append(" left join m_loan_disbursement_detail dd on dd.loan_id = ml.id and dd.expected_disburse_date = ml.expected_disbursedon_date ");
          builder.append(" left join f_loan_purpose flp on flp.id = ml.loan_purpose_id  ");
          builder.append(" left join m_client c on ml.client_id = c.id ");
-         builder.append(" left JOIN m_office o ON o.id = c.office_id ");
          builder.append(" left JOIN m_group g ON g.id = ml.group_id ");
-         builder.append(" left JOIN m_office og ON og.id = g.office_id ");
-         
-         builder.append(" WHERE (o.id = ? or og.id =? ) ");
-         params.add(searchParameters.getOfficeId());
-         params.add(searchParameters.getOfficeId());
+         builder.append(" JOIN m_office o ON (o.id = g.office_id or o.id = c.office_id) AND o.hierarchy LIKE ? ");
+         params.add(hierarchy);
+		if (searchParameters.getOfficeId() != null) {
+			builder.append(" WHERE o.id = ? ");
+			params.add(searchParameters.getOfficeId());
+			whereused = true;
+		}
          if(searchParameters.getStaffId() != null){
+			if (whereused) {
              builder.append(" and s.id = ?");
+			} else {
+				builder.append(" where s.id = ?");
+				whereused = true;
+
+			}
              params.add(searchParameters.getStaffId());
          }
          if(searchParameters.getGroupId() != null){
+        	 if (whereused) {
              builder.append(" and g.id = ?");
+			} else {
+				builder.append(" where g.id = ?");
+				whereused = true;
+			}
              params.add(searchParameters.getGroupId());
          }
          if(searchParameters.getCenterId() != null){
+        	 if (whereused) {
              builder.append(" and g.parent_id = ?" );
+			} else {
+				builder.append(" where g.parent_id = ?");
+				whereused = true;
+			}
              params.add(searchParameters.getCenterId());
          }
          if (sqlSearch != null) {
+        	 if (whereused) {
              builder.append(" and (" + sqlSearch + ")");
+			} else {
+				builder.append(" where (" + sqlSearch + ")");
+				whereused = true;
+			}
          }
          
          return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
