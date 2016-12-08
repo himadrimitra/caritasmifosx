@@ -1155,8 +1155,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
          builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
          builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
-         builder.append("ml.principal_amount as principal, dd.principal as firstTrancheAmount, ml.loan_type_enum as loanType ");
-
+         builder.append("ml.principal_amount as principal, dd.principal as firstTrancheAmount, ml.loan_type_enum as loanType, ");
+         builder.append("pt.value as paymentTypeName, ml.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId ");
          builder.append("from m_loan ml ");
          builder.append("join m_product_loan mp on mp.id = ml.product_id ");
          builder.append("LEFT JOIN m_staff s ON s.id = ml.loan_officer_id ");
@@ -1165,48 +1165,58 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append(" left join m_client c on ml.client_id = c.id ");
          builder.append(" left JOIN m_group g ON g.id = ml.group_id ");
          builder.append(" JOIN m_office o ON (o.id = g.office_id or o.id = c.office_id) AND o.hierarchy LIKE ? ");
+         builder.append(" left JOIN m_payment_type pt ON ml.expected_disbursal_payment_type_id = pt.id ");
          params.add(hierarchy);
-		if (searchParameters.getOfficeId() != null) {
-			builder.append(" WHERE o.id = ? ");
-			params.add(searchParameters.getOfficeId());
-			whereused = true;
-		}
-         if(searchParameters.getStaffId() != null){
-			if (whereused) {
-             builder.append(" and s.id = ?");
-			} else {
-				builder.append(" where s.id = ?");
-				whereused = true;
+        if (searchParameters.getOfficeId() != null) {
+            builder.append(" WHERE o.id = ? ");
+            params.add(searchParameters.getOfficeId());
+            whereused = true;
+        }
+        if (searchParameters.getStaffId() != null) {
+            if (whereused) {
+                builder.append(" and s.id = ?");
+            } else {
+                builder.append(" where s.id = ?");
+                whereused = true;
 
-			}
-             params.add(searchParameters.getStaffId());
-         }
-         if(searchParameters.getGroupId() != null){
-        	 if (whereused) {
-             builder.append(" and g.id = ?");
-			} else {
-				builder.append(" where g.id = ?");
-				whereused = true;
-			}
-             params.add(searchParameters.getGroupId());
-         }
-         if(searchParameters.getCenterId() != null){
-        	 if (whereused) {
-             builder.append(" and g.parent_id = ?" );
-			} else {
-				builder.append(" where g.parent_id = ?");
-				whereused = true;
-			}
-             params.add(searchParameters.getCenterId());
-         }
-         if (sqlSearch != null) {
-        	 if (whereused) {
-             builder.append(" and (" + sqlSearch + ")");
-			} else {
-				builder.append(" where (" + sqlSearch + ")");
-				whereused = true;
-			}
-         }
+            }
+            params.add(searchParameters.getStaffId());
+        }
+        if (searchParameters.getGroupId() != null) {
+            if (whereused) {
+                builder.append(" and g.id = ?");
+            } else {
+                builder.append(" where g.id = ?");
+                whereused = true;
+            }
+            params.add(searchParameters.getGroupId());
+        }
+        if (searchParameters.getCenterId() != null) {
+            if (whereused) {
+                builder.append(" and g.parent_id = ?");
+            } else {
+                builder.append(" where g.parent_id = ?");
+                whereused = true;
+            }
+            params.add(searchParameters.getCenterId());
+        }
+        if (searchParameters.getPaymentType() != null) {
+            if (whereused) {
+                builder.append(" and ml.expected_disbursal_payment_type_id = ?");
+            } else {
+                builder.append(" where ml.expected_disbursal_payment_type_id = ?");
+                whereused = true;
+            }
+            params.add(searchParameters.getPaymentType());
+        }
+        if (sqlSearch != null) {
+            if (whereused) {
+                builder.append(" and (" + sqlSearch + ")");
+            } else {
+                builder.append(" where (" + sqlSearch + ")");
+                whereused = true;
+            }
+        }
          
          return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
     }
@@ -1234,10 +1244,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             if(firstTrancheAmount !=null && LoanStatus.fromInt(lifeCycleStatusId).isApproved()){
                 principal = firstTrancheAmount;
             }
-
+            final Long expectedDisbursalPaymentTypeId = JdbcSupport.getLong(rs, "expectedDisbursalPaymentTypeId");
+            final String paymentTypeName = rs.getString("paymentTypeName");
+            PaymentTypeData expectedDisbursalPaymentTypeData = PaymentTypeData.lookUp(expectedDisbursalPaymentTypeId, paymentTypeName);
             return LoanAccountData.loanDetailsForTaskLookup(id,accountNo,status,clientId, clientAccountNo, clientName, loanProductId,
                     loanProductName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, loanType,
-                     principal);
+                     principal, expectedDisbursalPaymentTypeData);
         }
     }
     private static final class MusoniOverdueLoanScheduleMapper implements RowMapper<OverdueLoanScheduleData> {

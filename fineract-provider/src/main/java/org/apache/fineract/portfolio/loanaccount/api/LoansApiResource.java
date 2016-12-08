@@ -372,7 +372,8 @@ public class LoansApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveAllForTaskLookupBySearchParameters(@Context final UriInfo uriInfo, @QueryParam("sqlSearch") final String sqlSearch,
             @QueryParam("officeId") final Long officeId, @QueryParam("staffId") final Long staffId,
-            @QueryParam("groupId") final Long groupId, @QueryParam("centerId") final Long centerId){
+            @QueryParam("groupId") final Long groupId, @QueryParam("centerId") final Long centerId,
+            @QueryParam("paymentTypeId") final Long paymentTypeId){
         
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
         final Integer offset = null;
@@ -380,7 +381,7 @@ public class LoansApiResource {
         final String orderBy = null;
         final String sortOrder = null;
         
-        SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId, offset, limit, orderBy, sortOrder);
+        SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId, offset, limit, orderBy, sortOrder, paymentTypeId);
                 
         final Collection<LoanAccountData> loanAccountData = this.loanReadPlatformService.retrieveAllForTaskLookupBySearchParameters(searchParameters);
 
