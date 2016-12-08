@@ -6036,7 +6036,10 @@ public class Loan extends AbstractPersistable<Long> {
             loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
             this.firstEmiAmount = firstInstallmentEmiAmount;
         }
-
+        if (!this.getDisbursementDate().isBefore(DateUtils.getLocalDateOfTenant()) && this.isInterestRecalculationEnabledForProduct()
+                && this.loanProduct().isAdjustInterestForRounding()) {
+            loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
+        }
         return loanScheduleGenerator.rescheduleNextInstallments(mc, loanApplicationTerms, this, generatorDTO.getHolidayDetailDTO(),
                 retreiveListOfTransactionsPostDisbursementExcludeAccruals(),loanRepaymentScheduleTransactionProcessor, generatorDTO.getRecalculateFrom());
     }
