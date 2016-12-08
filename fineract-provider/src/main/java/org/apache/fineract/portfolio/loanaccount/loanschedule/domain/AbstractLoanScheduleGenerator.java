@@ -217,9 +217,6 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         }
         Money capitalizedAmount= LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0).negated(); 
         processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedAmount, loanApplicationTerms.getExpectedDisbursementDate());
-        if (firstRepaymentdate.isBefore(DateUtils.getLocalDateOfTenant())) {
-            loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(false);
-        }
         while (!scheduleParams.getOutstandingBalance().isZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
             LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
@@ -2522,21 +2519,16 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     loanRepaymentScheduleTransactionProcessor, scheduleTillDate, applyInterestRecalculation);
             if (loanApplicationTerms.isAdjustFirstEMIAmount()) {
                 boolean isFirstRepayment = true;
-                LocalDate actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(loanApplicationTerms.getExpectedDisbursementDate(),
-                        loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
-                
+                LocalDate actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(
+                        loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+
                 LocalDate scheduleDate = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                         holidayDetailDTO).getChangedScheduleDate();
-                for(LoanTermVariationsData loanTermVariationsData : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()){
+                for (LoanTermVariationsData loanTermVariationsData : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
                     if (!loanTermVariationsData.getTermApplicableFrom().isAfter(scheduleDate)) {
                         scheduleDate = loanTermVariationsData.getDateValue();
                     }
                 }
-                if (!scheduleDate.isBefore(DateUtils.getLocalDateOfTenant())) {
-                    loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
-                }
-            }else if(loanApplicationTerms.isAdjustInterestForRounding()){
-            	loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
             }
             periods.clear();
         }
@@ -3125,9 +3117,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 if (loanApplicationTerms.isAdjustInterestForRounding()){
                 	if(loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() != null 
                 			&& loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() > 0){
-                		BigDecimal roundedLastEmiAmount = loanApplicationTerms.roundAdjustedEmiAmount(emiDetails.getEmiAmount());
-                            installment.addInterestAmount(Money.of(currency,
-                            		roundedLastEmiAmount.subtract(emiDetails.getLastEmiAmount())));
+                	    installment.addInterestAmount(Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount()).negate()));
                 	}else{
                 		installment.addInterestAmount(Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount())));
                 	}

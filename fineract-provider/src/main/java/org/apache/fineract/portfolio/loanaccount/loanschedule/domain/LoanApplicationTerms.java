@@ -374,7 +374,7 @@ public final class LoanApplicationTerms {
                 isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfdays, isSkipRepaymentOnFirstDayofMonth, holidayDetailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, 
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, 
-                WeeksInYearType.getWeeksInYear(loanProductRelatedDetail.getWeeksInYearType()), adjustInterestForRounding,
+                loanProductRelatedDetail.getWeeksInYearType(), adjustInterestForRounding,
                 loanProductRelatedDetail.isEmiBasedOnDisbursements(), loanProductRelatedDetail.getPmtCalculationPeriodMethod());
     }
 
