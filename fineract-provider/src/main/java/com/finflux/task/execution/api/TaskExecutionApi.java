@@ -13,6 +13,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import com.finflux.task.execution.data.TaskEntityType;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -24,7 +25,7 @@ import com.finflux.task.execution.data.TaskActionType;
 import com.finflux.task.execution.data.TaskData;
 import com.finflux.task.execution.service.TaskExecutionService;
 
-@Path("/taskexecutions")
+@Path("/taskexecution")
 @Component
 @Scope("singleton")
 public class TaskExecutionApi {
@@ -45,39 +46,61 @@ public class TaskExecutionApi {
 
     /**
      * 
-     * @param taskExecutionId
+     * @param taskId
      * @param uriInfo
      * @return
      */
     @GET
-    @Path("{taskExecutionId}")
+    @Path("{taskId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String getTaskExecutionData(@PathParam("taskExecutionId") final Long taskExecutionId, @Context final UriInfo uriInfo) {
-        final TaskData taskExecutionData = this.taskExecutionService.getTaskExecutionData(taskExecutionId);
+    public String getTaskData(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
+        final TaskData taskExecutionData = this.taskExecutionService.getTaskData(taskId);
         return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 
     @POST
-    @Path("step/{workflowExecutionStepId}")
+    @Path("{taskId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String doActionOnWorkflowExecutionStep(@PathParam("workflowExecutionStepId") final Long workflowExecutionStepId,
-            @QueryParam("action") final Long actionId, @Context final UriInfo uriInfo) {
+    public String doActionOnTask(@PathParam("taskId") final Long taskId,
+                                 @QueryParam("action") final Long actionId, @Context final UriInfo uriInfo) {
         this.context.authenticatedUser();
-        taskExecutionService.doActionOnWorkflowExecutionStep(workflowExecutionStepId, TaskActionType.fromInt(actionId.intValue()));
-        //WorkflowExecutionStepData executionStepData = taskExecutionService.getWorkflowExecutionStepData(workflowExecutionStepId);
-        return this.toApiJsonSerializer.serialize(null);
+        taskExecutionService.doActionOnTask(taskId, TaskActionType.fromInt(actionId.intValue()));
+        TaskData taskData = taskExecutionService.getTaskData(taskId);
+        return this.toApiJsonSerializer.serialize(taskData);
     }
 
     @GET
-    @Path("step/{workflowExecutionStepId}/actions")
+    @Path("{taskId}/actions")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String getNextActions(@PathParam("workflowExecutionStepId") final Long workflowExecutionStepId, @Context final UriInfo uriInfo) {
+    public String getNextActionsOnTask(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
         context.authenticatedUser();
-        List<EnumOptionData> possibleActions = taskExecutionService.getClickableActionsForUser(workflowExecutionStepId, context
-                .authenticatedUser().getId());
+        List<EnumOptionData> possibleActions = taskExecutionService.getClickableActionsOnTask(taskId);
         return this.toApiJsonSerializer.serialize(possibleActions);
+    }
+
+
+    @GET
+    @Path("{taskId}/children")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getChildrenOfTask(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
+        context.authenticatedUser();
+        List<TaskData> possibleActions = taskExecutionService.getChildrenOfTask(taskId);
+        return this.toApiJsonSerializer.serialize(possibleActions);
+    }
+
+
+    @GET
+    @Path("{entityType}/{entityId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getTaskData(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
+                              @Context final UriInfo uriInfo) {
+        TaskEntityType taskEntityType = TaskEntityType.fromString(entityType);
+        final TaskData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType,entityId);
+        return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 }

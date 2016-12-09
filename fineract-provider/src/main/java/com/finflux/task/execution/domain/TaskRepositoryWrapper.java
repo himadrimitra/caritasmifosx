@@ -23,12 +23,12 @@ public class TaskRepositoryWrapper {
         return task;
     }
 
-    public void save(final Task task) {
-        this.repository.save(task);
+    public Task save(final Task task) {
+        return this.repository.save(task);
     }
 
-    public void save(final List<Task> tasks) {
-        this.repository.save(tasks);
+    public List<Task> save(final List<Task> tasks) {
+        return this.repository.save(tasks);
     }
 
     public void saveAndFlush(final Task task) {

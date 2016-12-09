@@ -12,9 +12,15 @@ public interface TaskReadService {
 
     List<Long> getChildTaskConfigIds(final Long taskConfigId);
 
-    List<TaskData> getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId);
+	TaskData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId);
 
-    List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId);
+	TaskData getTaskDetails(final Long taskId);
+
+	List<TaskData> getTaskChildren(Long parentTaskId);
+
+	List<Long> getChildTasksByOrder(Long parentTaskId, int orderId);
+
+	List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId);
 
     List<WorkFlowStepActionData> retrieveWorkFlowStepActions(final String filterBy);
 

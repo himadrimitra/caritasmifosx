@@ -5,16 +5,19 @@ import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
-public enum TaskPriority {
+/**
+ * Created by dhirendra on 06/09/16.
+ */
 
-    LOW(1, "taskPriority.low"), //
-    MEDIUM(2, "taskPriority.medium"), //
-    HIGH(3, "taskPriority.high");//
+public enum TaskActivityType {
+    SURVEY(1, "taskActivityType.survey"), //
+    DATATABLE(2, "taskActivityType.question"), //
+    MASTER(3, "taskActivityType.data");
 
     private final Integer value;
     private final String code;
 
-    private TaskPriority(final Integer value, final String code) {
+    private TaskActivityType(final Integer value, final String code) {
         this.value = value;
         this.code = code;
     }
@@ -27,15 +30,16 @@ public enum TaskPriority {
         return this.code;
     }
 
-    private static final Map<Integer, TaskPriority> intToEnumMap = new HashMap<>();
+    private static final Map<Integer, TaskActivityType> intToEnumMap = new HashMap<>();
     static {
-        for (final TaskPriority type : TaskPriority.values()) {
+        for (final TaskActivityType type : TaskActivityType.values()) {
             intToEnumMap.put(type.value, type);
         }
     }
-    
-    public static TaskPriority fromInt(final int i) {
-        return intToEnumMap.get(Integer.valueOf(i));
+
+    public static TaskActivityType fromInt(final int i) {
+        final TaskActivityType type = intToEnumMap.get(Integer.valueOf(i));
+        return type;
     }
 
     public EnumOptionData getEnumOptionData() {

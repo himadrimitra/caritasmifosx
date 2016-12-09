@@ -59,9 +59,9 @@ public enum TaskActionType {
         return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.toString());
     }
 
-    public TaskStatus getToStatus() {
+    public TaskStatusType getToStatus() {
         if (toStatus == null) { return null; }
-        return TaskStatus.fromInt(toStatus);
+        return TaskStatusType.fromInt(toStatus);
     }
 
     public boolean isClickable() {

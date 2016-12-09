@@ -14,20 +14,18 @@ import com.finflux.task.execution.data.TaskEntityType;
 
 public interface TaskExecutionService {
 
-    public void createTaskConfigExecution(final Long taskConfigId, final TaskEntityType entityType, final Long entityId,
-            final Client client, final Office office, final Map<TaskConfigKey, String> configValues);
+    void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId,
+                              final Client client, final Office office, final Map<TaskConfigKey, String> configValues);
 
-    public TaskData getTaskExecutionData(Long workflowExecutionId);
+    TaskData getTaskData(Long taskId);
 
-    public void doActionOnWorkflowExecutionStep(Long workflowExecutionStepId, TaskActionType stepAction);
+    void doActionOnTask(Long workflowExecutionStepId, TaskActionType stepAction);
 
-    public void addNoteToWorkflowExecution(Long workflowExecutionId);
+//    public void addNoteToTask(Long taskId);
 
-    public void addNoteToWorkflowExecutionStep(Long workflowExecutionId);
+    TaskData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId);
 
-    List<EnumOptionData> getClickableActionsForUser(Long workflowExecutionStepId, Long id);
+    List<EnumOptionData> getClickableActionsOnTask(Long workflowExecutionStepId);
 
-    Long getWorkflowExecution(TaskEntityType entityType, Long entityId);
-
-    Long getTaskExecutionData(TaskEntityType loanApplication, Long entityId);
+    List<TaskData> getChildrenOfTask(Long taskId);
 }

@@ -1,15 +1,17 @@
 package com.finflux.task.execution.service.impl;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.finflux.task.configuration.domain.*;
+import com.finflux.task.execution.data.*;
+import com.finflux.task.execution.domain.TaskActionLog;
+import com.finflux.task.execution.domain.TaskActionLogRepository;
+import com.finflux.task.execution.exception.TaskActionPermissionException;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.service.RoleReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +26,6 @@ import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
 import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
-import com.finflux.task.configuration.domain.TaskConfig;
-import com.finflux.task.configuration.domain.TaskConfigRepositoryWrapper;
-import com.finflux.task.execution.data.TaskActionType;
-import com.finflux.task.execution.data.TaskConfigKey;
-import com.finflux.task.execution.data.TaskData;
-import com.finflux.task.execution.data.TaskEntityType;
-import com.finflux.task.execution.data.TaskPriority;
-import com.finflux.task.execution.data.TaskStatus;
 import com.finflux.task.execution.domain.Task;
 import com.finflux.task.execution.domain.TaskRepositoryWrapper;
 import com.finflux.task.execution.service.TaskExecutionService;
@@ -56,6 +50,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     private final RuleCacheService ruleCacheService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
     private final ExpressionExecutor expressionExecutor;
+    private final TaskActionRepository taskActionRepository;
+    private final TaskActionRoleRepository actionRoleRepository;
+    private final TaskActionLogRepository actionLogRepository;
 
     @Autowired
     public TaskExecutionServiceImpl(final TaskReadService taskReadService, final TaskConfigRepositoryWrapper taskConfigRepository,
@@ -64,7 +61,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             final RuleExecutionService ruleExecutionService, final DataLayerReadPlatformService dataLayerReadPlatformService,
             final RuleCacheService ruleCacheService,
             final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-            final MyExpressionExecutor expressionExecutor) {
+            final MyExpressionExecutor expressionExecutor,
+            final TaskActionRepository taskActionRepository,
+            final TaskActionRoleRepository actionRoleRepository,
+            final TaskActionLogRepository actionLogRepository) {
         this.taskReadService = taskReadService;
         this.taskConfigRepository = taskConfigRepository;
         this.taskRepository = taskRepository;
@@ -75,47 +75,38 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.expressionExecutor = expressionExecutor;
+        this.taskActionRepository = taskActionRepository;
+        this.actionRoleRepository = actionRoleRepository;
+        this.actionLogRepository = actionLogRepository;
     }
 
     @SuppressWarnings("unused")
     @Transactional
     @Override
-    public void createTaskConfigExecution(final Long taskConfigId, final TaskEntityType entityType, final Long entityId,
-            final Client client, final Office office, final Map<TaskConfigKey, String> configValues) {
-        final List<Long> childTaskConfigIds = this.taskReadService.getChildTaskConfigIds(taskConfigId);
+    public void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId,
+                                     final Client client, final Office office, final Map<TaskConfigKey, String> configValues) {
+
         Map<String, String> customConfigMap = new HashMap<>();
         for (Map.Entry<TaskConfigKey, String> config : configValues.entrySet()) {
             customConfigMap.put(config.getKey().getValue(), config.getValue());
         }
+
+        Task parentTask = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, taskConfigId);
+        parentTask = this.taskRepository.save(parentTask);
+
+        final List<Long> childTaskConfigIds = this.taskReadService.getChildTaskConfigIds(taskConfigId);
+
         if (!childTaskConfigIds.isEmpty()) {
             int index = 0;
             final List<Task> tasks = new ArrayList<Task>();
             for (final Long cTaskConfigId : childTaskConfigIds) {
-                final TaskConfig taskConfig = this.taskConfigRepository.findOneWithNotFoundDetection(cTaskConfigId);
-                TaskStatus status = TaskStatus.INACTIVE;
-                Map<String, String> configValueMap = new HashMap<>();
-                if (taskConfig.getConfigValues() != null) {
-                    configValueMap = new Gson().fromJson(taskConfig.getConfigValues(),
-                            new TypeToken<HashMap<String, String>>() {}.getType());
-                }
-                configValueMap.putAll(customConfigMap);
-                final String configValueStr = new Gson().toJson(configValueMap);
-                final Task parent = null;
-                final Integer taskType = 1;
-                final Date dueDate = null;
-                final Integer currentAction = null;
-                AppUser assignedTo = null;
-                final String criteriaResult = null;
-                final Integer criteriaAction = null;
+                Task task = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, cTaskConfigId);
+                task.setParent(parentTask);
                 if (index == 0) {
-                    status = TaskStatus.INITIATED;
-                    assignedTo = this.context.authenticatedUser();
+                    TaskStatusType status = TaskStatusType.INITIATED;
+                    task.setStatus(status.getValue());
+                    updateActionAndAssignedTo(task,status);
                 }
-                final Task task = Task.create(parent, taskConfig.getName(), taskConfig.getShortName(), entityType.getValue(), entityId,
-                        taskType, taskConfig, status.getValue(), TaskPriority.MEDIUM.getValue(), dueDate, currentAction, assignedTo,
-                        taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
-                        taskConfig.getRejectionLogic(), configValueStr, client, office, taskConfig.getActionGroupId(), criteriaResult,
-                        criteriaAction);
                 tasks.add(task);
                 index++;
             }
@@ -125,87 +116,116 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         }
     }
 
+    private Task createTaskFromConfig(TaskEntityType entityType, Long entityId, Client client, Office office, Map<String, String> customConfigMap, Long cTaskConfigId) {
+        final TaskConfig taskConfig = this.taskConfigRepository.findOneWithNotFoundDetection(cTaskConfigId);
+        TaskStatusType status = TaskStatusType.INACTIVE;
+        Map<String, String> configValueMap = new HashMap<>();
+        if (taskConfig.getConfigValues() != null) {
+			configValueMap = new Gson().fromJson(taskConfig.getConfigValues(),
+					new TypeToken<HashMap<String, String>>() {}.getType());
+		}
+        configValueMap.putAll(customConfigMap);
+        final String configValueStr = new Gson().toJson(configValueMap);
+        final Task parent = null;
+        final Date dueDate = null;
+        final Integer currentAction = null;
+        AppUser assignedTo = null;
+        final String criteriaResult = null;
+        final Integer criteriaAction = null;
+
+        return Task.create(parent, taskConfig.getName(), taskConfig.getShortName(), entityType.getValue(), entityId,
+                taskConfig.getTaskType(), taskConfig, status.getValue(), TaskPriority.MEDIUM.getValue(), dueDate, currentAction, assignedTo,
+				taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
+				taskConfig.getRejectionLogic(), configValueStr, client, office, taskConfig.getActionGroupId(), criteriaResult,
+				criteriaAction, taskConfig.getTaskActivity());
+    }
+
    /* @Override
     public TaskExecutionData getWorkflowExecutionData(final Long workflowExecutionId) {
-        return this.taskReadService.getTaskExecutionData(workflowExecutionId);
+        return this.taskReadService.getTaskData(workflowExecutionId);
     }*/
 
-    
-    /*@Override
+
+    @Override
     @Transactional
-    public void doActionOnWorkflowExecutionStep(Long workflowExecutionStepId, TaskActionType stepAction) {
-        WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
-        TaskStatus status = TaskStatus.fromInt(workflowExecutionStep.getStatus());
-        if (stepAction != null && status != null) {
-            if (status.getPossibleActionsEnumOption().contains(stepAction)) {
+    public void doActionOnTask(Long taskId, TaskActionType actionType) {
+        Task task = taskRepository.findOneWithNotFoundDetection(taskId);
+        TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
+        if (actionType != null && status != null) {
+            if (status.getPossibleActionsEnumOption().contains(actionType)) {
                 // not supported action
             }
 
-            if (stepAction.isCheckPermission()) {
-                checkUserhasActionPrivilege(workflowExecutionStep, stepAction);
+            if (actionType.isCheckPermission()) {
+                checkUserhasActionPrivilege(task, actionType);
             }
-            if (TaskActionType.CRITERIACHECK.equals(stepAction)) {
-                runCriteriaCheckAndPopulate(workflowExecutionStep);
+            if (TaskActionType.CRITERIACHECK.equals(actionType)) {
+                runCriteriaCheckAndPopulate(task);
             }
-            if (stepAction.getToStatus() != null) {
-                TaskStatus newStatus = getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(), stepAction.getToStatus());
+            if (actionType.getToStatus() != null) {
+                TaskActionLog actionLog = TaskActionLog.create(task,actionType.getValue(),context.authenticatedUser());
+                TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
                 // StepStatus newStatus = stepAction.getToStatus();
                 if (status.equals(newStatus)) {
                     // do-nothing
                     return;
                 }
-                workflowExecutionStep.setStatus(newStatus.getValue());
+                task.setStatus(newStatus.getValue());
                 // update assigned-to if current user has next action
-                updateAssignedTo(workflowExecutionStep, newStatus);
+                updateActionAndAssignedTo(task, newStatus);
 
-                workflowExecutionStepRepository.save(workflowExecutionStep);
-                notifyWorkflow(workflowExecutionStep.getWorkflowExecutionId(), workflowExecutionStepId, status, newStatus);
+                task = taskRepository.save(task);
+                actionLogRepository.save(actionLog);
+                if(task.getParent()!=null){
+                    notifyParentTask(task.getParent(), task, status, newStatus);
+                }
+
             }
         }
         // do Action Log
-    }*/
+    }
 
-    /*private void updateAssignedTo(final WorkflowExecutionStep workflowExecutionStep, final TaskStatus newStatus) {
-        TaskActionType nextPossibleAction = newStatus.getNextPositiveAction();
-        if (nextPossibleAction != null) {
-            workflowExecutionStep.setCurrentAction(nextPossibleAction.getValue());
+    private void updateActionAndAssignedTo(final Task task, final TaskStatusType newStatus) {
+        TaskActionType nextPossibleActionType = newStatus.getNextPositiveAction();
+        if (nextPossibleActionType != null) {
+            task.setCurrentAction(nextPossibleActionType.getValue());
+            if (nextPossibleActionType != null && canUserDothisAction(task, nextPossibleActionType)) {
+                task.setAssignedTo(context.authenticatedUser());
+            } else {
+                task.setAssignedTo(null);
+            }
+        }else{
+            task.setCurrentAction(null);
         }
-        if (nextPossibleAction != null && canUserDothisAction(workflowExecutionStep, nextPossibleAction)) {
-            workflowExecutionStep.setAssignedTo(context.authenticatedUser().getId());
-        } else {
-            workflowExecutionStep.setAssignedTo(null);
-        }
-    }*/
+    }
 
-    
-
-    /*private void checkUserhasActionPrivilege(WorkflowExecutionStep workflowExecutionStep, TaskActionType stepAction) {
-        if (workflowExecutionStep.getActionGroupId() == null) { return; }
-        WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByActionGroupIdAndAction(
-                workflowExecutionStep.getActionGroupId(), stepAction.getValue());
+    private void checkUserhasActionPrivilege(Task task, TaskActionType actionType) {
+        if (task.getActionGroupId() == null) { return; }
+        TaskAction workflowStepAction = taskActionRepository.findOneByActionGroupIdAndAction(
+                task.getActionGroupId(), actionType.getValue());
         if (workflowStepAction != null) {
             if (canUserDothisAction(workflowStepAction)) { return; }
-            throw new WorkflowStepNoActionPermissionException(stepAction);
+            throw new TaskActionPermissionException(actionType);
         }
-    }*/
+    }
 
-    /*private boolean canUserDothisAction(WorkflowExecutionStep workflowExecutionStep, TaskActionType stepAction) {
-        if (workflowExecutionStep.getActionGroupId() == null) { return true; }
-        WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByActionGroupIdAndAction(
-                workflowExecutionStep.getActionGroupId(), stepAction.getValue());
+    private boolean canUserDothisAction(Task task, TaskActionType taskActionType) {
+        if (task.getActionGroupId() == null) { return true; }
+        TaskAction workflowStepAction = taskActionRepository.findOneByActionGroupIdAndAction(
+                task.getActionGroupId(), taskActionType.getValue());
         return canUserDothisAction(workflowStepAction);
-    }*/
+    }
 
-    /*private boolean canUserDothisAction(WorkflowStepAction workflowStepAction) {
-        if (workflowStepAction == null) { return true; }
-        final TaskActionType stepAction = TaskActionType.fromInt(workflowStepAction.getAction());
-        if (!stepAction.isCheckPermission()) { return true; }
+    private boolean canUserDothisAction(TaskAction taskAction) {
+        if (taskAction == null) { return true; }
+        final TaskActionType taskActionType = TaskActionType.fromInt(taskAction.getAction());
+        if (!taskActionType.isCheckPermission()) { return true; }
 
-        List<WorkflowStepActionRole> actionRoles = workflowStepActionRoleRepository.findByWorkflowStepActionId(workflowStepAction.getId());
+        List<TaskActionRole> actionRoles = actionRoleRepository.findByTaskActionId(taskAction.getId());
         List<Long> roles = new ArrayList<>();
 
         if (actionRoles == null || actionRoles.isEmpty()) { return true; }
-        for (WorkflowStepActionRole actionRole : actionRoles) {
+        for (TaskActionRole actionRole : actionRoles) {
             roles.add(actionRole.getRoleId());
         }
         Collection<RoleData> roleDatas = roleReadPlatformService.retrieveAppUserRoles(context.authenticatedUser().getId());
@@ -213,51 +233,36 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             if (roles.contains(roleData.getId())) { return true; }
         }
         return false;
-    }*/
+    }
 
     @SuppressWarnings("unused")
-    /*private void notifyWorkflow(Long workflowExecutionId, Long workflowExecutionStepId, TaskStatus status, TaskStatus newStatus) {
+    private void notifyParentTask(Task parentTask, Task task, TaskStatusType status, TaskStatusType newStatus) {
 
-        if (TaskStatus.COMPLETED.equals(newStatus) || TaskStatus.SKIPPED.equals(newStatus)) {
-
-            List<Long> nextExecutionStepIds = getNextExecutionStepsByOrder(workflowExecutionId, workflowExecutionStepId);
-            if (nextExecutionStepIds != null && !nextExecutionStepIds.isEmpty()) {
-                for (Long nextExecutionStepId : nextExecutionStepIds) {
-                    WorkflowExecutionStep nextExecutionStep = workflowExecutionStepRepository.findOne(nextExecutionStepId);
-                    if (TaskStatus.INACTIVE.getValue().equals(nextExecutionStep.getStatus())) {
-                        nextExecutionStep.setStatus(TaskStatus.INITIATED.getValue());
-                        updateAssignedTo(nextExecutionStep, TaskStatus.INITIATED);
-                        workflowExecutionStepRepository.save(nextExecutionStep);
+        if(TaskType.WORKFLOW.equals(TaskType.fromInt(parentTask.getTaskType()))){
+            if (TaskStatusType.COMPLETED.equals(newStatus) || TaskStatusType.SKIPPED.equals(newStatus)) {
+                List<Long> nextExecutionTaskIds = getNextExecutionTasks(parentTask, task);
+                if (nextExecutionTaskIds != null && !nextExecutionTaskIds.isEmpty()) {
+                    for (Long nextExecutionTaskId : nextExecutionTaskIds) {
+                        Task nextExecutionTask = taskRepository.findOneWithNotFoundDetection(nextExecutionTaskId);
+                        if (TaskStatusType.INACTIVE.getValue().equals(nextExecutionTask.getStatus())) {
+                            nextExecutionTask.setStatus(TaskStatusType.INITIATED.getValue());
+                            updateActionAndAssignedTo(nextExecutionTask, TaskStatusType.INITIATED);
+                            taskRepository.save(nextExecutionTask);
+                        }
                     }
                 }
+                // set workflow status as all step done
+
+            } else if (TaskStatusType.CANCELLED.equals(newStatus)) {
+                // do some logging or transition steps
             }
-            // set workflow status as all step done
-
-        } else if (TaskStatus.CANCELLED.equals(newStatus)) {
-            // do some logging or transition steps
         }
-    }*/
-
-    /*private List<Long> getNextExecutionStepsByOrder(Long workflowExecutionId, Long workflowExecutionStepId) {
-        WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
-        return taskReadService.getExecutionStepsByOrder(workflowExecutionId, workflowExecutionStep.getStepOrder() + 1);
-    }*/
-
-    @Override
-    public void addNoteToWorkflowExecution(Long workflowExecutionId) {
 
     }
 
-    @Override
-    public void addNoteToWorkflowExecutionStep(Long workflowExecutionStepId) {
-
+    private List<Long> getNextExecutionTasks(Task parentTask, Task task) {
+        return taskReadService.getChildTasksByOrder(parentTask.getId(), task.getTaskOrder() + 1);
     }
-
-    /*@Override
-    public List<EnumOptionData> getClickableActionsForUser(Long workflowExecutionStepId, Long userId) {
-        return getPossibleActions(workflowExecutionStepId, userId, true);
-    }*/
-
     /*@Override
     public Long getWorkflowExecution(TaskEntityType entityType, Long entityId) {
         final WorkflowExecution workflowExecution = this.workflowExecutionRepository.findByEntityTypeAndEntityId(entityType.getValue(),
@@ -266,9 +271,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         return null;
     }*/
 
-    /*private List<EnumOptionData> getPossibleActions(Long workflowExecutionStepId, Long userId, boolean onlyClickable) {
-        WorkflowExecutionStep workflowExecutionStep = workflowExecutionStepRepository.findOne(workflowExecutionStepId);
-        TaskStatus status = TaskStatus.fromInt(workflowExecutionStep.getStatus());
+    private List<EnumOptionData> getPossibleActionsOnTask(Long taskId, boolean onlyClickable) {
+        Task task = taskRepository.findOneWithNotFoundDetection(taskId);
+        TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
         List<EnumOptionData> actionEnums = new ArrayList<>();
         // skip over statuses if no actions been configured
         // workflow_Step_action.
@@ -278,8 +283,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         // StepStatus nextEquivalentStatus =
         // getNextEquivalentStatus(workflowExecutionStep.getWorkflowStepId(),
         // status);
-        if (workflowExecutionStep.getCriteriaId() != null && TaskStatus.UNDERREVIEW.equals(status)) {
-            TaskActionType stepAction = TaskActionType.fromInt(workflowExecutionStep.getCriteriaAction());
+        if (task.getCriteria() != null && TaskStatusType.UNDERREVIEW.equals(status)) {
+            TaskActionType stepAction = TaskActionType.fromInt(task.getCriteriaAction());
             if (stepAction != null) {
                 actionEnums.add(stepAction.getEnumOptionData());
                 return actionEnums;
@@ -287,68 +292,119 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         }
         List<TaskActionType> actions = status.getPossibleActionEnums();
         for (TaskActionType action : actions) {
-            WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByActionGroupIdAndAction(
-                    workflowExecutionStep.getActionGroupId(), action.getValue());
+            if(task.getActionGroupId() ==null){
+                continue;
+            }
+            TaskAction taskAction = taskActionRepository.findOneByActionGroupIdAndAction(
+                    task.getActionGroupId(), action.getValue());
 
-            if (workflowStepAction == null && action.isCheckPermission()) {
+            if (taskAction == null && action.isCheckPermission()) {
                 continue;
             }
 
             if (onlyClickable) {
-                if (action.isClickable() && canUserDothisAction(workflowStepAction)) {
+                if (action.isClickable() && canUserDothisAction(taskAction)) {
                     actionEnums.add(action.getEnumOptionData());
                 }
             } else {
-                if (canUserDothisAction(workflowStepAction)) {
+                if (canUserDothisAction(taskAction)) {
                     actionEnums.add(action.getEnumOptionData());
                 }
             }
 
         }
         return actionEnums;
-    }*/
+    }
 
-   /* private TaskStatus getNextEquivalentStatus(Long workflowStepId, TaskStatus status) {
+   private TaskStatusType getNextEquivalentStatus(Task task, TaskStatusType status) {
         while (status.getNextPositiveAction() != null) {
             TaskActionType nextAction = status.getNextPositiveAction();
-            WorkflowStepAction workflowStepAction = workflowStepActionRepository.findOneByActionGroupIdAndAction(workflowStepId,
-                    nextAction.getValue());
-            if (workflowStepAction == null) {
+            TaskAction taskAction = null;
+            if(task.getActionGroupId()!=null) {
+                taskAction = taskActionRepository.findOneByActionGroupIdAndAction(task.getActionGroupId(),
+                        nextAction.getValue());
+            }
+            if (taskAction == null) {
                 status = nextAction.getToStatus();
             } else {
                 return status;
             }
         }
         return status;
-    }*/
-
-    @Override
-    public TaskData getTaskExecutionData(Long workflowExecutionId) {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     @Override
-    public Long getTaskExecutionData(TaskEntityType loanApplication, Long entityId) {
-        // TODO Auto-generated method stub
-        return null;
+    public TaskData getTaskData(Long taskId) {
+        return taskReadService.getTaskDetails(taskId);
     }
 
     @Override
-    public void doActionOnWorkflowExecutionStep(Long workflowExecutionStepId, TaskActionType stepAction) {
+    public TaskData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId) {
         // TODO Auto-generated method stub
-        
+        return taskReadService.getTaskDetailsByEntityTypeAndEntityId(taskEntityType, entityId);
     }
 
     @Override
-    public List<EnumOptionData> getClickableActionsForUser(Long workflowExecutionStepId, Long id) {
-        // TODO Auto-generated method stub
-        return null;
+    public List<EnumOptionData> getClickableActionsOnTask(Long taskId) {
+        return getPossibleActionsOnTask(taskId,true);
     }
 
     @Override
-    public Long getWorkflowExecution(TaskEntityType entityType, Long entityId) {
-        // TODO Auto-generated method stub
-        return null;
+    public List<TaskData> getChildrenOfTask(Long taskId) {
+        return taskReadService.getTaskChildren(taskId);
+    }
+
+    @SuppressWarnings({ })
+    private void runCriteriaCheckAndPopulate(final Task task) {
+        /**
+         * We will reuse this code in future
+         */
+        /*final WorkflowStep workflowStep = workflowStepRepository.findOne(workflowExecutionStep.getWorkflowStepId());
+        Long loanApplicationId = loanApplicationWorkflowExecution.getLoanApplicationId();
+        LoanApplicationReferenceData loanApplicationReference = loanApplicationReferenceReadPlatformService.retrieveOne(loanApplicationId);
+        Long clientId = loanApplicationReference.getClientId();
+        LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(loanApplicationId, clientId, dataLayerReadPlatformService,
+                ruleCacheService);
+        RuleResult ruleResult = ruleExecutionService.executeCriteria(workflowStep.getCriteriaId(), dataLayer);
+        EligibilityResult eligibilityResult = new EligibilityResult();
+        eligibilityResult.setStatus(EligibilityStatus.TO_BE_REVIEWED);
+        eligibilityResult.setCriteriaOutput(ruleResult);
+        ExpressionNode approvalLogic = new Gson().fromJson(workflowStep.getApprovalLogic(), new TypeToken<ExpressionNode>() {}.getType());
+        ExpressionNode rejectionLogic = new Gson().fromJson(workflowStep.getRejectionLogic(), new TypeToken<ExpressionNode>() {}.getType());
+        if (ruleResult != null && ruleResult.getOutput().getValue() != null) {
+            Map<String, Object> map = new HashMap();
+            map.put("criteria", ruleResult.getOutput().getValue());
+            boolean rejectionResult = false;
+            boolean approvalResult = false;
+            try {
+                rejectionResult = expressionExecutor.executeExpression(rejectionLogic, map);
+            } catch (FieldUndefinedException e) {
+                e.printStackTrace();
+            } catch (InvalidExpressionException e) {
+                e.printStackTrace();
+            }
+            if (rejectionResult) {
+                eligibilityResult.setStatus(EligibilityStatus.REJECTED);
+            } else {
+                try {
+                    approvalResult = expressionExecutor.executeExpression(approvalLogic, map);
+                } catch (FieldUndefinedException e) {
+                    e.printStackTrace();
+                } catch (InvalidExpressionException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (approvalResult) {
+                eligibilityResult.setStatus(EligibilityStatus.APPROVED);
+            }
+        }
+        StepAction nextEligibleAction = StepAction.REVIEW;
+        if (EligibilityStatus.APPROVED.equals(eligibilityResult.getStatus())) {
+            nextEligibleAction = StepAction.APPROVE;
+        } else if (EligibilityStatus.REJECTED.equals(eligibilityResult.getStatus())) {
+            nextEligibleAction = StepAction.REJECT;
+        }
+        workflowExecutionStep.setCriteriaAction(nextEligibleAction.getValue());
+        workflowExecutionStep.setCriteriaResult(new Gson().toJson(eligibilityResult));*/
     }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.finflux.task.execution.data.*;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -24,18 +25,6 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.task.api.TaskApiConstants;
-import com.finflux.task.execution.data.LoanProductTaskSummaryData;
-import com.finflux.task.execution.data.StepSummaryData;
-import com.finflux.task.execution.data.TaskActionType;
-import com.finflux.task.execution.data.TaskActivityData;
-import com.finflux.task.execution.data.TaskConfigData;
-import com.finflux.task.execution.data.TaskData;
-import com.finflux.task.execution.data.TaskEntityType;
-import com.finflux.task.execution.data.TaskPriority;
-import com.finflux.task.execution.data.TaskStatus;
-import com.finflux.task.execution.data.TaskType;
-import com.finflux.task.execution.data.WorkFlowStepActionData;
-import com.finflux.task.execution.data.WorkFlowSummaryData;
 import com.finflux.task.execution.service.TaskReadService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -45,6 +34,7 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     private final PlatformSecurityContext context;
     private final JdbcTemplate jdbcTemplate;
+    private final TaskIdMapper taskIdMapper = new TaskIdMapper();
 
     @Autowired
     public TaskReadServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource) {
@@ -66,10 +56,51 @@ public class TaskReadServiceImpl implements TaskReadService {
     }
 
     @Override
-    public List<TaskData> getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId) {
+    public TaskData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId) {
         TaskDataMapper rm = new TaskDataMapper();
-        final String sql = "SELECT "+rm.schema()+" WHERE t.entity_type = ? AND t.entity_id = ? ";
-        return this.jdbcTemplate.query(sql, rm, taskEntityType.getValue(), entityId);
+        if(entityId != null) {
+            final String sql = "SELECT " + rm.schema() + " WHERE t.entity_type = ? AND t.entity_id = ?  AND t.parent_id is null";
+            return this.jdbcTemplate.queryForObject(sql, rm, taskEntityType.getValue(), entityId);
+        }else{
+            return  null;
+        }
+    }
+
+    @Override
+    public TaskData getTaskDetails(Long taskId) {
+        TaskDataMapper rm = new TaskDataMapper();
+        final String sql = "SELECT "+rm.schema()+" WHERE t.id = ? ";
+        return this.jdbcTemplate.queryForObject(sql, rm, taskId);
+    }
+
+    @Override
+    public List<TaskData> getTaskChildren(final Long parentTaskId) {
+        TaskDataMapper rm = new TaskDataMapper();
+        final String sql = "SELECT "+rm.schema()+" WHERE t.parent_id = ? order by t.task_order ASC ";
+        return this.jdbcTemplate.query(sql, rm, parentTaskId);
+    }
+
+    @Override
+    public List<Long> getChildTasksByOrder(Long parentTaskId, int orderId) {
+        String sql = "SELECT " + taskIdMapper.schema() + "  WHERE task.parent_id = ? and task.task_order = ? ";
+        return this.jdbcTemplate.query(sql, taskIdMapper,parentTaskId, orderId);
+    }
+
+    private static final class TaskIdMapper implements RowMapper<Long> {
+
+        public String schema() {
+            final StringBuilder sqlBuilder = new StringBuilder(400);
+            sqlBuilder.append("task.id AS taskId ");
+            sqlBuilder.append("FROM f_task task  ");
+
+            return sqlBuilder.toString();
+        }
+
+        @Override
+        public Long mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            final Long id = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskId");
+            return id;
+        }
     }
 
     private static final class TaskDataMapper implements RowMapper<TaskData> {
@@ -83,8 +114,9 @@ public class TaskReadServiceImpl implements TaskReadService {
             sb.append(",t.entity_type AS taskEntityTypeId ");
             sb.append(",t.entity_id AS taskEntityId ");
             sb.append(",t.`status` AS taskStatusId ");
-            sb.append(",t.parent_id AS taskPriorityId ");
+            sb.append(",t.priority AS taskPriorityId ");
             sb.append(",t.due_date AS taskDueDate ");
+            sb.append(",t.task_type AS taskType ");
             sb.append(",t.current_action AS taskCurrentActionId ");
             sb.append(",appuser.id AS taskAssignedToId ");
             sb.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS taskAssignedTo ");
@@ -100,16 +132,9 @@ public class TaskReadServiceImpl implements TaskReadService {
             sb.append(",t.action_group_id AS taskActionGroupId ");
             sb.append(",t.criteria_result AS taskCriteriaResult ");
             sb.append(",t.criteria_action AS taskCriteriaActionId ");
-            sb.append(",tc.id AS taskConfigId ");
-            sb.append(",tc.parent_id AS taskConfigParentId ");
-            sb.append(",tc.name AS taskConfigName ");
-            sb.append(",tc.short_name AS taskConfigShortName ");
-            sb.append(",tc.task_config_order AS taskConfigOrder ");
-            sb.append(",tc.criteria_id AS taskConfigCriteriaId ");
-            sb.append(",tc.approval_logic AS taskConfigApprovalLogic ");
-            sb.append(",tc.rejection_logic AS taskConfigRejectionLogic ");
-            sb.append(",tc.config_values AS taskConfigConfigValues ");
-            sb.append(",tc.action_group_id AS taskConfigActionGroupId ");
+            sb.append(",t.task_config_id AS taskConfigId ");
+            sb.append(",t.parent_id AS parentTaskId ");
+            sb.append(",t.action_group_id AS taskActionGroupId ");
             sb.append(",ta.id AS taskActivityId ");
             sb.append(",ta.name AS taskActivityName ");
             sb.append(",ta.identifier AS taskActivityIdentifier ");
@@ -117,8 +142,8 @@ public class TaskReadServiceImpl implements TaskReadService {
             sb.append(",ta.supported_actions AS taskActivitySupportedActions ");
             sb.append(",ta.`type` AS taskActivityTypeId ");
             sb.append("FROM f_task t ");
-            sb.append("JOIN f_task_config tc ON tc.id = t.task_config_id ");
-            sb.append("JOIN f_task_activity ta ON ta.id = tc.task_activity_id ");
+            sb.append("LEFT JOIN f_task_config tc ON tc.id = t.task_config_id ");
+            sb.append("LEFT JOIN f_task_activity ta ON ta.id = tc.task_activity_id ");
             sb.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
             sb.append("LEFT JOIN m_client c ON c.id = t.client_id ");
             sb.append("LEFT JOIN m_office o ON o.id = t.office_id ");
@@ -136,23 +161,29 @@ public class TaskReadServiceImpl implements TaskReadService {
             final Integer taskEntityTypeId = JdbcSupport.getIntegeActualValue(rs, "taskEntityTypeId");
             EnumOptionData taskEntityType = null;
             if (taskEntityTypeId != null && taskEntityTypeId > 0) {
-                taskEntityType = TaskEntityType.taskEntityType(taskEntityTypeId);
+                taskEntityType = TaskEntityType.fromInt(taskEntityTypeId).getEnumOptionData();
             }
             final Long taskEntityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskEntityId");
             final Integer taskStatusId = JdbcSupport.getIntegeActualValue(rs, "taskStatusId");
             EnumOptionData taskStatus = null;
             List<EnumOptionData> taskPossibleActions = null;
             if (taskEntityId != null && taskEntityId > 0) {
-                final TaskStatus obj = TaskStatus.fromInt(taskStatusId);
+                final TaskStatusType obj = TaskStatusType.fromInt(taskStatusId);
                 taskStatus = obj.getEnumOptionData();
                 taskPossibleActions = obj.getPossibleActionsEnumOption();
             }
+
             final Integer taskPriorityId = JdbcSupport.getIntegeActualValue(rs, "taskPriorityId");
             EnumOptionData taskPriority = null;
             if (taskPriorityId != null && taskPriorityId > 0) {
                 taskPriority = TaskPriority.fromInt(taskPriorityId).getEnumOptionData();
             }
             final Date taskDueDate = rs.getDate("taskDueDate");
+            final Integer taskTypeId = JdbcSupport.getIntegeActualValue(rs, "taskType");
+            EnumOptionData taskType = null;
+            if (taskTypeId != null && taskTypeId >= 0) {
+                taskType = TaskType.fromInt(taskTypeId).getEnumOptionData();
+            }
             final Integer taskCurrentActionId = JdbcSupport.getIntegeActualValue(rs, "taskCurrentActionId");
             EnumOptionData taskCurrentAction = null;
             if (taskCurrentActionId != null && taskCurrentActionId > 0) {
@@ -183,40 +214,18 @@ public class TaskReadServiceImpl implements TaskReadService {
             final TaskData taskData = TaskData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType, taskEntityId,
                     taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder, taskCriteriaId,
                     taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId, taskOfficeName,
-                    taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions);
-
-            final Long taskConfigId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigId");
-            if (taskConfigId != null && taskConfigId > 0) {
-                final Long taskConfigParentId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigParentId");
-                final String taskConfigName = rs.getString("taskConfigName");
-                final String taskConfigShortName = rs.getString("taskConfigShortName");
-                final Integer taskConfigOrder = JdbcSupport.getIntegeActualValue(rs, "taskConfigOrder");
-                final Long taskConfigCriteriaId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigCriteriaId");
-                final String taskConfigApprovalLogic = rs.getString("taskConfigApprovalLogic");
-                final String taskConfigRejectionLogic = rs.getString("taskConfigRejectionLogic");
-                final String taskConfigConfigValuesStr = rs.getString("taskConfigConfigValues");
-                Map<String, String> taskConfigConfigValues = null;
-                if (taskConfigConfigValuesStr != null) {
-                    taskConfigConfigValues = new Gson().fromJson(taskConfigConfigValuesStr,
-                            new TypeToken<HashMap<String, String>>() {}.getType());
-                }
-                final Long taskConfigActionGroupId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskConfigActionGroupId");
-                final TaskConfigData taskConfigData = TaskConfigData.instance(taskConfigId, taskConfigParentId, taskConfigName,
-                        taskConfigShortName, null, taskConfigOrder, taskConfigCriteriaId, taskConfigApprovalLogic,
-                        taskConfigRejectionLogic, taskConfigConfigValues, taskConfigActionGroupId);
-                taskData.setTaskConfig(taskConfigData);
-            }
+                    taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType);
 
             final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
-            if (taskActivityId != null && taskConfigId > 0) {
+            if (taskActivityId != null) {
                 final String taskActivityName = rs.getString("taskActivityName");
                 final String taskActivityIdentifier = rs.getString("taskActivityIdentifier");
                 final Integer taskActivityTypeId = JdbcSupport.getIntegeActualValue(rs, "taskActivityTypeId");
                 EnumOptionData taskActivityType = null;
                 if (taskActivityTypeId != null) {
-                    taskActivityType = TaskType.fromInt(taskActivityTypeId).getEnumOptionData();
+                    taskActivityType = TaskActivityType.fromInt(taskActivityTypeId).getEnumOptionData();
                 }
-                final TaskActivityData taskActivityData = TaskActivityData.instance(taskActivityId, taskActivityName,
+                final TaskActivityData   taskActivityData = TaskActivityData.instance(taskActivityId, taskActivityName,
                         taskActivityIdentifier, taskActivityType);
                 taskData.setTaskActivity(taskActivityData);
             }
@@ -268,7 +277,7 @@ public class TaskReadServiceImpl implements TaskReadService {
 
             for (final Map<String, Object> l : list) {
                 final Integer stepStatusId = Integer.parseInt(l.get("stepStatus").toString());
-                if (!(TaskStatus.fromInt(stepStatusId).getValue() > 6)) {
+                if (!(TaskStatusType.fromInt(stepStatusId).getValue() > 6)) {
                     final Long lpId = (Long) l.get("loanProductId");
                     final String loanProductName = (String) l.get("loanProductName");
                     final Long oId = (Long) l.get("officeId");
@@ -279,7 +288,7 @@ public class TaskReadServiceImpl implements TaskReadService {
                     final String stepName = (String) l.get("stepName");
                     final String stepShortName = (String) l.get("stepShortName");
                     final Long noOfCount = Long.parseLong(l.get("noOfCount").toString());
-                    final String stepStatus = TaskStatus.fromInt(stepStatusId).toString();
+                    final String stepStatus = TaskStatusType.fromInt(stepStatusId).toString();
 
                     /**
                      * Product
@@ -437,7 +446,7 @@ public class TaskReadServiceImpl implements TaskReadService {
         public WorkFlowStepActionData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
             final Long stepId = rs.getLong("stepId");
             final String stepName = rs.getString("stepName");
-            final String stepStatus = TaskStatus.fromInt(rs.getInt("stepStatusId")).toString();
+            final String stepStatus = TaskStatusType.fromInt(rs.getInt("stepStatusId")).toString();
             final String currentAction = TaskActionType.fromInt(rs.getInt("currentActionId")).toString();
             final Long assignedId = rs.getLong("assignedId");
             final String assignedTo = rs.getString("assignedTo");

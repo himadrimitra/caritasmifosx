@@ -11,6 +11,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import com.finflux.task.configuration.domain.TaskActivity;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.client.domain.Client;
@@ -63,6 +64,10 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
     @JoinColumn(name = "assigned_to")
     private AppUser assignedTo;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_activity_id")
+    private TaskActivity taskActivity;
+
     @Column(name = "task_order", length = 3)
     private Integer taskOrder;
 
@@ -102,7 +107,7 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
             final Integer taskType, final TaskConfig taskConfig, final Integer status, final Integer priority, final Date dueDate,
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
-            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction) {
+            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity) {
 
         this.parent = parent;
         this.name = name;
@@ -126,16 +131,17 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
         this.actionGroupId = actionGroupId;
         this.criteriaResult = criteriaResult;
         this.criteriaAction = criteriaAction;
+        this.taskActivity = taskActivity;
     }
 
     public static Task create(final Task parent, final String name, final String shortName, final Integer entityType, final Long entityId,
             final Integer taskType, final TaskConfig taskConfig, final Integer status, final Integer priority, final Date dueDate,
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
-            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction) {
+            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction,final TaskActivity taskActivity) {
         return new Task(parent, name, shortName, entityType, entityId, taskType, taskConfig, status, priority, dueDate, currentAction,
                 assignedTo, taskOrder, criteria, approvalLogic, rejectionLogic, configValues, client, office, actionGroupId,
-                criteriaResult, criteriaAction);
+                criteriaResult, criteriaAction, taskActivity);
     }
 
     public Task getParent() {
@@ -312,5 +318,13 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
 
     public void setCriteriaAction(Integer criteriaAction) {
         this.criteriaAction = criteriaAction;
+    }
+
+    public TaskActivity getTaskActivity() {
+        return taskActivity;
+    }
+
+    public void setTaskActivity(TaskActivity taskActivity) {
+        this.taskActivity = taskActivity;
     }
 }

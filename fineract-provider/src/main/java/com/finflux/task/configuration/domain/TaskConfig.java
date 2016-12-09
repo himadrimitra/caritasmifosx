@@ -56,6 +56,9 @@ public class TaskConfig extends AbstractPersistable<Long> {
     @Column(name = "action_group_id")
     private Long actionGroupId;
 
+    @Column(name = "task_type")
+    private Integer taskType;
+
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "taskConfig", orphanRemoval = true)
     private Set<TaskConfigEntityTypeMapping> taskConfigEntityTypeMappings = new HashSet<>();
@@ -162,4 +165,11 @@ public class TaskConfig extends AbstractPersistable<Long> {
         this.tasks = tasks;
     }
 
+    public Integer getTaskType() {
+        return taskType;
+    }
+
+    public void setTaskType(Integer taskType) {
+        this.taskType = taskType;
+    }
 }

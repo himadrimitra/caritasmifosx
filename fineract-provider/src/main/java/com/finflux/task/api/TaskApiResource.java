@@ -76,18 +76,4 @@ public class TaskApiResource {
 
         return this.toApiJsonSerializer.serialize(settings, workFlowStepActions);
     }
-
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("{entityType}/{entityId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String getTaskDetailsByEntityTypeAndEntityId(@PathParam("entityType") final Integer entityType,
-            @PathParam("entityId") final Long entityId, @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser();
-        final TaskEntityType taskEntityType = TaskEntityType.fromInt(entityType);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final List<TaskData> taskDatas = this.taskReadService.getTaskDetailsByEntityTypeAndEntityId(taskEntityType, entityId);
-        return this.toApiJsonSerializer.serialize(settings, taskDatas);
-    }
 }

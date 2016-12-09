@@ -37,13 +37,15 @@ public class TaskData {
     private List<EnumOptionData> possibleActions;
     private TaskConfigData taskConfig;
     private TaskActivityData taskActivity;
+    private EnumOptionData taskType;
 
     private TaskData(final Long id, final Long parentId, final String name, final String shortName, final EnumOptionData entityType,
             final Long entityId, final EnumOptionData status, final EnumOptionData priority, final Date dueDate,
             final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
             final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
             final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
-            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions) {
+            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
+            final EnumOptionData taskType) {
         this.id = id;
         this.parentId = parentId;
         this.name = name;
@@ -69,17 +71,19 @@ public class TaskData {
         this.criteriaResult = criteriaResult;
         this.criteriaActionId = criteriaActionId;
         this.possibleActions = possibleActions;
+        this.taskType = taskType;
     }
 
     public static TaskData instance(final Long id, final Long parentId, final String name, final String shortName,
-            final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
-            final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
-            final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
-            final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
-            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions) {
+                                    final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
+                                    final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
+                                    final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
+                                    final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
+                                    final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
+                                    EnumOptionData taskType) {
         return new TaskData(id, parentId, name, shortName, entityType, entityId, status, priority, dueDate, currentAction, assignedToId,
                 assignedTo, order, criteriaId, approvalLogic, rejectionLogic, configValues, clientId, clientName, officeId, officeName,
-                actionGroupId, criteriaResult, criteriaActionId, possibleActions);
+                actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType);
     }
 
     public Long getId() {

@@ -58,7 +58,7 @@ public class TaskCreationServiceImpl implements TaskCreationService {
             final Office office = this.officeRepository.findOneWithNotFoundDetection(officeId);
             map.put(TaskConfigKey.TITLE, form.getTitle());
             map.put(TaskConfigKey.BODY, form.getBody());
-            this.taskExecutionService.createTaskConfigExecution(taskConfigEntityTypeMapping.getTaskConfig().getId(), TaskEntityType.ADHOC,
+            this.taskExecutionService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfig().getId(), TaskEntityType.ADHOC,
                     null, null, office, map);
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//

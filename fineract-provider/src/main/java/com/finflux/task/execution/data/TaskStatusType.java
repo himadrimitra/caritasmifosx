@@ -11,7 +11,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
  * Created by dhirendra on 06/09/16.
  */
 
-public enum TaskStatus {
+public enum TaskStatusType {
     INACTIVE(1, null, "taskStatus.inactive"), //
     INITIATED(2, TaskActionType.ACTIVITYCOMPLETE, "taskStatus.initiated", TaskActionType.SKIP, TaskActionType.ACTIVITYCOMPLETE), //
     UNDERCRITERIACHECK(3, TaskActionType.CRITERIACHECK, "taskStatus.undercriteriacheck", TaskActionType.CRITERIACHECK), //
@@ -27,7 +27,7 @@ public enum TaskStatus {
     private final List<TaskActionType> possibleActionEnums;
     private final List<EnumOptionData> possibleActionsEnumOption;
 
-    TaskStatus(final Integer value, TaskActionType nextPositiveAction, final String code, TaskActionType... nextActions) {
+    TaskStatusType(final Integer value, TaskActionType nextPositiveAction, final String code, TaskActionType... nextActions) {
         this.value = value;
         this.code = code;
         this.nextPositiveAction = nextPositiveAction;
@@ -47,19 +47,19 @@ public enum TaskStatus {
         return this.code;
     }
 
-    private static final Map<Integer, TaskStatus> intToEnumMap = new HashMap<>();
+    private static final Map<Integer, TaskStatusType> intToEnumMap = new HashMap<>();
     static {
-        for (final TaskStatus type : TaskStatus.values()) {
+        for (final TaskStatusType type : TaskStatusType.values()) {
             intToEnumMap.put(type.value, type);
         }
     }
 
-    public static TaskStatus fromInt(final int i) {
+    public static TaskStatusType fromInt(final int i) {
         return intToEnumMap.get(Integer.valueOf(i));
     }
 
     public EnumOptionData getEnumOptionData() {
-        return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.toString());
+        return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.name());
     }
 
     public List<EnumOptionData> getPossibleActionsEnumOption() {

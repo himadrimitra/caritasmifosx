@@ -143,7 +143,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     final Map<TaskConfigKey, String> map = new HashMap<>();
                     map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
                     map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-                    this.taskExecutionService.createTaskConfigExecution(taskConfigEntityTypeMapping.getTaskConfigId(),
+                    this.taskExecutionService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                             TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
                             loanApplicationReference.getClient().getOffice(), map);
                 }

@@ -10,9 +10,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
  */
 
 public enum TaskType {
-    SURVEY(1, "taskType.survey"), //
-    DATATABLE(2, "taskType.question"), //
-    MASTER(3, "taskType.data");
+    WORKFLOW(1, "taskType.workflow"), //
+    SINGLE(2, "taskType.single");
 
     private final Integer value;
     private final String code;
