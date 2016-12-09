@@ -8,7 +8,6 @@ package org.apache.fineract.portfolio.charge.domain;
 import java.util.Collection;
 
 import org.apache.fineract.portfolio.charge.exception.GroupLoanIndividualMonitoringChargeNotFoundException;
-import org.apache.fineract.portfolio.collaterals.domain.Collaterals;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -30,7 +30,7 @@ public class CreditBureauExistingLoan {
     private Long externalLoanPurposeId;
     private LoanStatus loanStatus;
     private Date disbursedDate;
-    private Date maturityDate;
+    private Date closedDate;
     private String remark;
 
     public CreditBureauExistingLoan(final Long clientId, final Long loanApplicationId, Long loanId, Long creditBureauProductId,
@@ -162,12 +162,12 @@ public class CreditBureauExistingLoan {
         this.disbursedDate = disbursedDate;
     }
 
-    public Date getMaturityDate() {
-        return maturityDate;
+    public Date getClosedDate() {
+        return closedDate;
     }
 
-    public void setMaturityDate(Date maturityDate) {
-        this.maturityDate = maturityDate;
+    public void setClosedDate(Date closedDate) {
+        this.closedDate = closedDate;
     }
 
     public String getRemark() {

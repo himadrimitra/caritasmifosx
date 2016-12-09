@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -49,6 +50,8 @@ import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
+import org.apache.fineract.portfolio.savings.SavingsDpLimitCalculationType;
+import org.apache.fineract.portfolio.savings.SavingsDpLimitFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
@@ -56,6 +59,7 @@ import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountApplicationTimelineData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountChargeData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
+import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountStatusEnumData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountSubStatusEnumData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountSummaryData;
@@ -575,7 +579,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 
     @Override
     public SavingsAccountData retrieveTemplate(final Long clientId, final Long groupId, final Long productId,
-            final boolean staffInSelectedOfficeOnly) {
+            final boolean staffInSelectedOfficeOnly, SavingsAccountDpDetailsData savingsAccountDpDetailsData) {
 
         final AppUser loggedInUser = this.context.authenticatedUser();
         Long officeId = loggedInUser.getOffice().getId();
@@ -617,6 +621,9 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
                     .retrieveLockinPeriodFrequencyTypeOptions();
 
             final Collection<EnumOptionData> withdrawalFeeTypeOptions = this.dropdownReadPlatformService.retrievewithdrawalFeeTypeOptions();
+            
+            final Collection<EnumOptionData> savingsDpLimitCalculationTypeOptions = this.dropdownReadPlatformService.retrieveSavingsDpLimitCalculationTypeOptions();
+            final Collection<EnumOptionData> savingsDpLimitFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveSavingsDpLimitFrequencyTypeOptions();
 
             final Collection<SavingsAccountTransactionData> transactions = null;
             final Collection<ChargeData> productCharges = this.chargeReadPlatformService.retrieveSavingsProductCharges(productId);
@@ -656,7 +663,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             template = SavingsAccountData.withTemplateOptions(template, productOptions, fieldOfficerOptions,
                     interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions, interestCalculationTypeOptions,
                     interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, transactions,
-                    charges, chargeOptions);
+                    charges, chargeOptions, savingsDpLimitCalculationTypeOptions, savingsDpLimitFrequencyTypeOptions, savingsAccountDpDetailsData);
         } else {
 
             String clientName = null;
@@ -681,6 +688,8 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 
             final Collection<SavingsAccountTransactionData> transactions = null;
             final Collection<SavingsAccountChargeData> charges = null;
+            final Collection<EnumOptionData> savingsDpLimitCalculationTypeOptions = null;
+            final Collection<EnumOptionData> savingsDpLimitFrequencyTypeOptions = null;
 
             final boolean feeChargesOnly = false;
             final Collection<ChargeData> chargeOptions = this.chargeReadPlatformService
@@ -689,7 +698,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             template = SavingsAccountData.withTemplateOptions(template, productOptions, fieldOfficerOptions,
                     interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions, interestCalculationTypeOptions,
                     interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, transactions,
-                    charges, chargeOptions);
+                    charges, chargeOptions, savingsDpLimitCalculationTypeOptions, savingsDpLimitFrequencyTypeOptions, savingsAccountDpDetailsData);
         }
 
         return template;
@@ -1212,4 +1221,71 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
      * return SavingsAccountAnnualFeeData.instance(id, accountNo,
      * annualFeeNextDueDate); } }
      */
+
+    @Override
+    public Collection<SavingsAccountDpDetailsData> retriveSavingsAccountDpDetailsDatas() {
+
+        SavingAccountDpDetailsDataMapper rm = new SavingAccountDpDetailsDataMapper();
+        final String sql = "SELECT " +rm.schema()+ " where sa.status_enum = 300 ";
+        return this.jdbcTemplate.query(sql, new Object[] {}, rm);
+    }
+    
+    private static final class SavingAccountDpDetailsDataMapper implements RowMapper<SavingsAccountDpDetailsData> {
+
+        private final String schemaSql;
+
+        public SavingAccountDpDetailsDataMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(400);
+            sqlBuilder.append("sdp.id as id, sa.id as savingsAccountId, sdp.frequency as frequencyTypeId, sdp.dp_reduction_every as dpReductionEvery, ");
+            sqlBuilder.append("sdp.duration as duration, sdp.amount as amount, sdp.dp_amount as dpAmount, sdp.calculation_type as calculationTypeId, ");
+            sqlBuilder.append("sdp.amount_or_percentage as amountOrPercentage, sa.activatedon_date as savingsActivatedonDate ");
+            sqlBuilder.append("from f_savings_account_dp_details sdp ");
+            sqlBuilder.append("join m_savings_account sa ON sdp.savings_id = sa.id ");
+
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public SavingsAccountDpDetailsData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final Long savingsAccountId = rs.getLong("savingsAccountId");
+            final Integer frequencyTypeId = JdbcSupport.getInteger(rs, "frequencyTypeId");
+            final SavingsDpLimitFrequencyType frequencyType = SavingsDpLimitFrequencyType.fromInt(frequencyTypeId);
+
+            final Integer dpReductionEvery = JdbcSupport.getInteger(rs, "dpReductionEvery");
+            final Integer duration = JdbcSupport.getInteger(rs, "duration");
+            final BigDecimal amount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "amount");
+            final BigDecimal dpAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "dpAmount");
+            final Integer calculationTypeId = JdbcSupport.getInteger(rs, "calculationTypeId");
+            final SavingsDpLimitCalculationType calculationType = SavingsDpLimitCalculationType.fromInt(calculationTypeId);
+            final BigDecimal amountOrPercentage = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "amountOrPercentage");
+            final Date savingsActivatedonDate = rs.getDate("savingsActivatedonDate");
+
+            return SavingsAccountDpDetailsData.createNew(id, savingsAccountId, frequencyType, dpReductionEvery, duration, amount, dpAmount, calculationType, amountOrPercentage, savingsActivatedonDate);
+        }
+    }
+
+    @Override
+    public void updateSavingsAccountDpLimit(BigDecimal dpLimitAmount, Long savingsAccountId) {
+        String updateSql = "UPDATE m_savings_account sa SET sa.overdraft_limit = "+dpLimitAmount+" WHERE sa.id = "+savingsAccountId+"";
+        this.jdbcTemplate.execute(updateSql);
+        
+    }
+
+    @Override
+    public SavingsAccountDpDetailsData retrieveSavingsDpDetailsBySavingsId(Long accountId) {
+        SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
+        SavingAccountDpDetailsDataMapper rm = new SavingAccountDpDetailsDataMapper();
+        final String sql = "SELECT " + rm.schema() + " WHERE sdp.savings_id = ? ";
+        List<SavingsAccountDpDetailsData> savingsAccountDpDetailsDatas = this.jdbcTemplate.query(sql, new Object[] { accountId }, rm);
+        if (savingsAccountDpDetailsDatas.size() > 0) {
+            savingsAccountDpDetailsData = savingsAccountDpDetailsDatas.get(0);
+        }
+        return savingsAccountDpDetailsData;
+    }
 }

@@ -33,20 +33,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
+import com.finflux.portfolio.bank.service.BankAccountDetailsWriteService;
+import com.finflux.portfolio.external.data.ExternalServicesReadService;
+
 @Service
 public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
 
     private final PaymentTypeRepository repository;
     private final PaymentTypeRepositoryWrapper repositoryWrapper;
     private final PaymentTypeDataValidator fromApiJsonDeserializer;
+    private final ExternalServicesReadService externalServicesReadService;
+    private final BankAccountDetailsWriteService bankAccountDetailsWriteService;
 
     @Autowired
     public PaymentTypeWriteServiceImpl(PaymentTypeRepository repository, PaymentTypeRepositoryWrapper repositoryWrapper,
-            PaymentTypeDataValidator fromApiJsonDeserializer) {
+            PaymentTypeDataValidator fromApiJsonDeserializer, final ExternalServicesReadService externalServicesReadService,
+            final BankAccountDetailsWriteService bankAccountDetailsWriteService) {
         this.repository = repository;
         this.repositoryWrapper = repositoryWrapper;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
-
+        this.externalServicesReadService = externalServicesReadService;
+        this.bankAccountDetailsWriteService = bankAccountDetailsWriteService;
     }
 
     @Override
@@ -56,9 +64,21 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
         String description = command.stringValueOfParameterNamed(PaymentTypeApiResourceConstants.DESCRIPTION);
         Boolean isCashPayment = command.booleanObjectValueOfParameterNamed(PaymentTypeApiResourceConstants.ISCASHPAYMENT);
         Long position = command.longValueOfParameterNamed(PaymentTypeApiResourceConstants.POSITION);
-
-        PaymentType newPaymentType = PaymentType.create(name, description, isCashPayment, position);
+        Long externalServiceId = null;
+        if (command.hasParameter(PaymentTypeApiResourceConstants.externalServiceIdParamName)) {
+            externalServiceId = command.longValueOfParameterNamed(PaymentTypeApiResourceConstants.externalServiceIdParamName);
+            if (externalServiceId != null) {
+                this.externalServicesReadService.findOneWithNotFoundException(externalServiceId);
+            }
+        }
+        final String bankDetails = command.jsonFragment(PaymentTypeApiResourceConstants.bankAccountDetailsParamName);
+        PaymentType newPaymentType = PaymentType.create(name, description, isCashPayment, position, externalServiceId);
         this.repository.save(newPaymentType);
+        if (externalServiceId != null && bankDetails != null && !bankDetails.isEmpty()) {
+            this.bankAccountDetailsWriteService.createBankAccountDetailAssociation(BankAccountDetailEntityType.PAYMENTTYPES,
+                    newPaymentType.getId(), bankDetails);
+        }
+
         return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withEntityId(newPaymentType.getId()).build();
     }
 
@@ -68,6 +88,26 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
         this.fromApiJsonDeserializer.validateForUpdate(command.json());
         final PaymentType paymentType = this.repositoryWrapper.findOneWithNotFoundDetection(paymentTypeId);
         final Map<String, Object> changes = paymentType.update(command);
+        Long previousExternalServiceId = paymentType.getExternalServiceId();
+        if (command.isChangeInLongParameterNamed(PaymentTypeApiResourceConstants.externalServiceIdParamName,
+                paymentType.getExternalServiceId())) {
+            final Long externalServiceId = command.longValueOfParameterNamed(PaymentTypeApiResourceConstants.externalServiceIdParamName);
+            this.externalServicesReadService.findOneWithNotFoundException(externalServiceId);
+            paymentType.setExternalServiceId(externalServiceId);
+        }
+
+        if (previousExternalServiceId != null && paymentType.getExternalServiceId() == null) {
+            this.bankAccountDetailsWriteService.deleteBankDetailAssociation(BankAccountDetailEntityType.PAYMENTTYPES, paymentTypeId);
+        } else if (command.hasParameter(PaymentTypeApiResourceConstants.bankAccountDetailsParamName)) {
+            final String bankDetails = command.jsonFragment(PaymentTypeApiResourceConstants.bankAccountDetailsParamName);
+            if (previousExternalServiceId == null) {
+                this.bankAccountDetailsWriteService.createBankAccountDetailAssociation(BankAccountDetailEntityType.PAYMENTTYPES,
+                        paymentTypeId, bankDetails);
+            } else {
+                changes.putAll(this.bankAccountDetailsWriteService.updateBankAccountDetail(BankAccountDetailEntityType.PAYMENTTYPES,
+                        paymentTypeId, bankDetails));
+            }
+        }
 
         if (!changes.isEmpty()) {
             this.repository.save(paymentType);
@@ -80,6 +120,9 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
     public CommandProcessingResult deletePaymentType(Long paymentTypeId) {
         final PaymentType paymentType = this.repositoryWrapper.findOneWithNotFoundDetection(paymentTypeId);
         try {
+            if (paymentType.getExternalServiceId() != null) {
+                this.bankAccountDetailsWriteService.deleteBankDetailAssociation(BankAccountDetailEntityType.PAYMENTTYPES, paymentTypeId);
+            }
             this.repository.delete(paymentType);
             this.repository.flush();
         } catch (final DataIntegrityViolationException e) {

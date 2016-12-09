@@ -92,6 +92,22 @@ public class LoanApplicationReferenceDataValidator {
             baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.groupIdParamName).value(groupId).ignoreIfNull()
                     .longGreaterThanZero();
         }
+        
+		final String expectedDisbursalPaymentTypeParameterName = LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName;
+		if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+			final Long expectedDisbursalPaymentTypeId = this.fromApiJsonHelper
+					.extractLongNamed(expectedDisbursalPaymentTypeParameterName, element);
+			baseDataValidator.reset().parameter(expectedDisbursalPaymentTypeParameterName)
+					.value(expectedDisbursalPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
+		}
+
+		final String expectedRepaymentPaymentTypeParameterName = LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName;
+		if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+			final Long expectedRepaymentPaymentTypeId = this.fromApiJsonHelper
+					.extractLongNamed(expectedRepaymentPaymentTypeParameterName, element);
+			baseDataValidator.reset().parameter(expectedRepaymentPaymentTypeParameterName)
+					.value(expectedRepaymentPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
+		}
 
         final Long loanProductId = this.fromApiJsonHelper.extractLongNamed(LoanApplicationReferenceApiConstants.loanProductIdParamName,
                 element);
@@ -329,6 +345,21 @@ public class LoanApplicationReferenceDataValidator {
         final LocalDate submittedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(
                 LoanApplicationReferenceApiConstants.submittedOnDateParamName, element);
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.submittedOnDateParamName).value(submittedOnDate).notNull();
+		
+        final String expectedDisbursalPaymentTypeParameterName = LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName;
+		if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+			final Long expectedDisbursalPaymentTypeId = this.fromApiJsonHelper
+					.extractLongNamed(expectedDisbursalPaymentTypeParameterName, element);
+			baseDataValidator.reset().parameter(expectedDisbursalPaymentTypeParameterName)
+					.value(expectedDisbursalPaymentTypeId).ignoreIfNull();
+		}
+		final String expectedRepaymentPaymentTypeParameterName = LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName;
+		if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
+			final Long expectedRepaymentPaymentTypeId = this.fromApiJsonHelper
+					.extractLongNamed(expectedRepaymentPaymentTypeParameterName, element);
+			baseDataValidator.reset().parameter(expectedRepaymentPaymentTypeParameterName)
+					.value(expectedRepaymentPaymentTypeId).ignoreIfNull();
+		}
 
         // charges
         final String chargesParameterName = "charges";

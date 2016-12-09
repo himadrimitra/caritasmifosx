@@ -28,11 +28,12 @@ public class CommandWrapperBuilder {
     private Long productId;
     private Long templateId;
     private String option;
+    private Integer entityTypeId;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
                 this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
-                this.templateId, this.option);
+                this.templateId, this.option, this.entityTypeId);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -179,7 +180,7 @@ public class CommandWrapperBuilder {
         this.href = "/transaction/authentications/" + transactionAuthenticationServiceId;
         return this;
     }
-    
+
     public CommandWrapperBuilder activateCreditBureau(Long creditBureauId) {
         this.actionName = "ACTIVATE";
         this.entityName = "CREDITBUREAU";
@@ -237,6 +238,22 @@ public class CommandWrapperBuilder {
         this.entityId = bureauId;
         this.productId = productId;
         this.href = "/loanproducts/" + productId + "/creditbureau/" + bureauId ;
+        return this;
+    }
+
+    public CommandWrapperBuilder submitBankTransaction(Long transactionId) {
+        this.actionName = "SUBMIT";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=submit&template=true";
+        return this;
+    }
+
+    public CommandWrapperBuilder initiateBankTransaction(Long transactionId) {
+        this.actionName = "INITIATE";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=inititate&template=true";
         return this;
     }
 }

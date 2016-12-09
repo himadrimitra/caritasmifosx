@@ -41,19 +41,22 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
 
     @Override
     public List<LoanEnquiryData> getEnquiryRequestDataForAll() {
-        String dataQuery = "SELECT mc.display_name AS clientName, mc.date_of_birth AS clientDOB, mc.office_id AS branchId,"
-                + "mci.document_type_id AS clientIdentificationType,mci.document_key AS clientIdentification, "
-                + "IFNULL(mc.mobile_no, IFNULL(ad.Mobile,'')) AS clientMobileNo, CONCAT(IFNULL(ad.`House No / Name`,''), "
-                + "IFNULL(ad.`Cross/Street/Phase/Socity`,''), IFNULL(ad.`Village Name`,''), IFNULL(ad.Taluk,''), "
-                + "IFNULL(ad.District,'')) AS clientAddress, IFNULL(ad.`Village Name`,'') AS clientCity,ad.State AS clientState,"
-                + " IFNULL(ad.Pincode,'') AS clientPin,ml.id AS loanId,ml.approved_principal AS loanAmount,mc.id AS clientId "
-                + "FROM m_loan ml INNER JOIN m_client mc ON mc.id = ml.client_id "
-                + "LEFT JOIN ct_credit_req_client_details ccrd ON ml.id = ccrd.loan_id "
-                + "LEFT JOIN ct_credit_request_response ccr ON ccr.id = ccrd.request_response_id "
-                + "LEFT JOIN address ad ON mc.id = ad.client_id LEFT JOIN m_client_identifier mci ON mc.id = mci.client_id "
-                + "WHERE mc.status_enum = 100 AND "
-                + "mc.id NOT IN ( SELECT ccrd.client_id FROM ct_credit_req_client_details ccrd) GROUP BY mc.id";
-        return this.jdbcTemplate.query(dataQuery, this.enquiryRequestDataExtractor, new Object[] {});
+        final StringBuilder sb = new StringBuilder(200);
+        sb.append("SELECT mc.display_name AS clientName, mc.date_of_birth AS clientDOB, mc.office_id AS branchId ");
+        sb.append(",mcicv.id AS clientIdentificationTypeId,mcicv.m_code_value AS clientIdentificationType,mci.document_key AS clientIdentification ");
+        sb.append(",IFNULL(mc.mobile_no, IFNULL(ad.Mobile,'')) AS clientMobileNo, CONCAT(IFNULL(ad.`House No / Name`,'') ");
+        sb.append(",IFNULL(ad.`Cross/Street/Phase/Socity`,''), IFNULL(ad.`Village Name`,''), IFNULL(ad.Taluk,'') ");
+        sb.append(",IFNULL(ad.District,'')) AS clientAddress, IFNULL(ad.`Village Name`,'') AS clientCity,ad.State AS clientState ");
+        sb.append(",IFNULL(ad.Pincode,'') AS clientPin,ml.id AS loanId,ml.approved_principal AS loanAmount,mc.id AS clientId ");
+        sb.append("FROM m_loan ml INNER JOIN m_client mc ON mc.id = ml.client_id ");
+        sb.append("LEFT JOIN ct_credit_req_client_details ccrd ON ml.id = ccrd.loan_id ");
+        sb.append("LEFT JOIN ct_credit_request_response ccr ON ccr.id = ccrd.request_response_id ");
+        sb.append("LEFT JOIN address ad ON mc.id = ad.client_id ");
+        sb.append("LEFT JOIN m_client_identifier mci ON mc.id = mci.client_id ");
+        sb.append("LEFT JOIN m_code_value mcicv ON mcicv.id = mci.document_type_id ");
+        sb.append("WHERE mc.status_enum = 100 AND ");
+        sb.append("mc.id NOT IN ( SELECT ccrd.client_id FROM ct_credit_req_client_details ccrd) GROUP BY mc.id ");
+        return this.jdbcTemplate.query(sb.toString(), this.enquiryRequestDataExtractor, new Object[] {});
     }
 
     @Override
@@ -69,27 +72,34 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
     }
 
     @Override
-    public List<EnquiryAddressData> getClientAddressData(Long clientId) {
-        String dataQuery = "SELECT CONCAT(IFNULL(ad.house_no,''), ' ', IFNULL(ad.street_no,''),  ' ', "
-                + "IFNULL(ad.village_town,''),  ' ', IFNULL(taluka.taluka_name,''),  ' ', " + "IFNULL(dist.district_name,'')) AS clientAddress, "
-                + "IFNULL(ad.village_town,dist.district_name) AS clientCity,  state.state_name AS clientState, "
-                + "state.iso_state_code As stateShortCode,  IFNULL(ad.postal_code,'') AS clientPin,  mc.id AS clientId "
-                + "FROM m_client mc  LEFT JOIN f_address_entity ea ON ea.entity_id  = mc.id and ea.entity_type_enum = 1 "
-                + "LEFT JOIN f_address ad ON ad.id = ea.address_id  LEFT JOIN f_district dist ON dist.id = ad.district_id "
-                + "LEFT JOIN f_taluka taluka ON taluka.id = ad.taluka_id "
-                + "LEFT JOIN f_state state on state.id = ad.state_id  WHERE mc.id = ? ";
-        List<EnquiryAddressData> enquiryAddressDataList = this.jdbcTemplate.query(dataQuery, this.clientAddressDataExtractor,
-                new Object[] { clientId });
-        return enquiryAddressDataList;
+    public List<EnquiryAddressData> getClientAddressData(final Long clientId) {
+        final StringBuilder sb = new StringBuilder(250);
+        sb.append("SELECT CONCAT(IFNULL(ad.house_no,''), ' ', IFNULL(ad.street_no,''),  ' ' ");
+        sb.append(",IFNULL(ad.village_town,''),  ' ', IFNULL(taluka.taluka_name,''),  ' ' ");
+        sb.append(",IFNULL(dist.district_name,'')) AS clientAddress ");
+        sb.append(",IFNULL(ad.village_town,dist.district_name) AS clientCity ");
+        sb.append(",state.state_name AS clientState ");
+        sb.append(",state.iso_state_code As stateShortCode,  IFNULL(ad.postal_code,'') AS clientPin,  mc.id AS clientId ");
+        sb.append(",addresstypecv.id AS clientAddressTypeId,addresstypecv.code_value AS clientAddressType ");
+        sb.append("FROM m_client mc  ");
+        sb.append("LEFT JOIN f_address_entity ea ON ea.entity_id  = mc.id and ea.entity_type_enum = 1 ");
+        sb.append("LEFT JOIN f_address ad ON ad.id = ea.address_id  ");
+        sb.append("LEFT JOIN m_code_value addresstypecv ON addresstypecv.id = ea.address_type  ");
+        sb.append("LEFT JOIN f_district dist ON dist.id = ad.district_id ");
+        sb.append("LEFT JOIN f_taluka taluka ON taluka.id = ad.taluka_id ");
+        sb.append("LEFT JOIN f_state state on state.id = ad.state_id  WHERE mc.id = ? ");
+        return this.jdbcTemplate.query(sb.toString(), this.clientAddressDataExtractor, new Object[] { clientId });
     }
 
     @Override
-    public List<EnquiryDocumentData> getClientDocumentData(Long clientId) {
-        String dataQuery = "SELECT        mci.document_type_id AS clientIdentificationType, "
-                + "mci.document_key AS clientIdentification  FROM m_client_identifier mci  WHERE mci.client_id = ?";
-        List<EnquiryDocumentData> enquiryDocumentDataList = this.jdbcTemplate.query(dataQuery, this.clientDocumentDataExtractor,
-                new Object[] { clientId });
-        return enquiryDocumentDataList;
+    public List<EnquiryDocumentData> getClientDocumentData(final Long clientId) {
+        final StringBuilder sb = new StringBuilder(150);
+        sb.append("SELECT mcicv.id AS clientIdentificationTypeId,mcicv.code_value AS clientIdentificationType ");
+        sb.append(",mci.document_key AS clientIdentification  ");
+        sb.append("FROM m_client_identifier mci  ");
+        sb.append("LEFT JOIN m_code_value mcicv ON mcicv.id = mci.document_type_id ");
+        sb.append("WHERE mci.client_id = ? ");
+        return this.jdbcTemplate.query(sb.toString(), this.clientDocumentDataExtractor, new Object[] { clientId });
     }
 
     @Override
@@ -188,24 +198,25 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
             final BigDecimal loanAmount = rs.getBigDecimal(ClientDataRequestConstants.loanAmount);
             final Long clientId = rs.getLong(ClientDataRequestConstants.clientId);
             final Long branchId = rs.getLong(ClientDataRequestConstants.branchId);
-            return new LoanEnquiryData(clientName, clientDOB, clientMobileNo, loanProductId, loanAmount, clientId, branchId,
-                    clientFirstName, clientMiddleName, clientLastName);
-        }
+            final String gender = rs.getString(ClientDataRequestConstants.gender);
+            final String genderId = rs.getString(ClientDataRequestConstants.genderId);
 
+            return new LoanEnquiryData(clientName, clientDOB, clientMobileNo, loanProductId, loanAmount, clientId, branchId,
+                    clientFirstName, clientMiddleName, clientLastName, gender, genderId);
+        }
     }
 
     private static final class ClientAddressDataExtractor implements RowMapper<EnquiryAddressData> {
 
         @Override
         public EnquiryAddressData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
-            // final String clientAddressType =
-            // rs.getString(ClientDataRequestConstants.clientAddressType);
-            final String clientAddressType = "D04";
+            final String clientAddressTypeId = rs.getString(ClientDataRequestConstants.clientAddressTypeId);
+            final String clientAddressType = rs.getString(ClientDataRequestConstants.clientAddressType);
             final String clientAddress = rs.getString(ClientDataRequestConstants.clientAddress);
             final String clientCity = rs.getString(ClientDataRequestConstants.clientCity);
             final String clientStateCode = rs.getString(ClientDataRequestConstants.clientStateShortCode);
             final String clientPin = rs.getString(ClientDataRequestConstants.clientPin);
-            return new EnquiryAddressData(clientAddressType, clientAddress, clientCity, clientStateCode, clientPin);
+            return new EnquiryAddressData(clientAddressTypeId, clientAddressType, clientAddress, clientCity, clientStateCode, clientPin);
         }
     }
 
@@ -213,9 +224,10 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
 
         @Override
         public EnquiryDocumentData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            final String clientIdentificationTypeId = rs.getString(ClientDataRequestConstants.clientIdentificationTypeId);
             final String clientIdentificationType = rs.getString(ClientDataRequestConstants.clientIdentificationType);
             final String clientIdentification = rs.getString(ClientDataRequestConstants.clientIdentification);
-            return new EnquiryDocumentData(clientIdentificationType, clientIdentification);
+            return new EnquiryDocumentData(clientIdentificationType, clientIdentificationTypeId, clientIdentification);
         }
     }
 
@@ -249,8 +261,10 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         sb.append("SELECT mc.display_name AS clientName, mc.firstname AS firstname, mc.middlename AS middlename ");
         sb.append(",mc.lastname AS lastname, mc.date_of_birth AS clientDOB, mc.office_id AS branchId ");
         sb.append(",mc.mobile_no AS clientMobileNo, lar.loan_product_id AS loanProductId, lar.loan_amount_requested AS loanAmount,mc.id AS clientId ");
+        sb.append(",cv.id AS genderId, cv.code_value AS gender ");
         sb.append("FROM f_loan_application_reference lar ");
         sb.append("INNER JOIN m_client mc ON mc.id = lar.client_id ");
+        sb.append("LEFT JOIN m_code_value cv ON cv.id = mc.gender_cv_id ");
         sb.append("WHERE lar.id = ? ");
         return this.jdbcTemplate.queryForObject(sb.toString(), this.enquiryRequestDataExtractor, new Object[] { loanApplicationId });
     }
@@ -259,5 +273,38 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
     public void inActivePreviousLoanApplicationCreditbureauEnquiries(final Long loanApplicationId) {
         final String sql = "UPDATE f_loan_creditbureau_enquiry l SET l.is_active = '0' WHERE l.loan_application_id = " + loanApplicationId;
         this.jdbcTemplate.execute(sql);
+    }
+
+    @Override
+    public List<EnquiryClientRelationshipData> getClientRelationshipData(final Long clientId) {
+        final ClientRelationshipDataExtractor dataMapper = new ClientRelationshipDataExtractor();
+        final StringBuilder sb = new StringBuilder(200);
+        sb.append("SELECT fd.firstname AS firstname, fd.middlename AS middlename, fd.lastname AS lastname ");
+        sb.append(",cv.id AS relationshipTypeId,cv.code_value AS relationship ");
+        sb.append("FROM f_family_details fd ");
+        sb.append("INNER JOIN m_client mc ON mc.id = fd.client_id AND fd.relationship_cv_id IS NOT NULL ");
+        sb.append("INNER JOIN m_code_value cv ON cv.id = fd.relationship_cv_id ");
+        sb.append("WHERE fd.client_id = ? ");
+        return this.jdbcTemplate.query(sb.toString(), dataMapper, new Object[] { clientId });
+    }
+
+    private static final class ClientRelationshipDataExtractor implements RowMapper<EnquiryClientRelationshipData> {
+
+        @Override
+        public EnquiryClientRelationshipData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            final String firstname = rs.getString("firstname");
+            final String middlename = rs.getString("middlename");
+            final String lastname = rs.getString("lastname");
+            final String relationshipTypeId = rs.getString("relationshipTypeId");
+            final String relationship = rs.getString("relationship");
+            String name = firstname;
+            if (middlename != null && middlename.length() > 0) {
+                name += " " + middlename;
+            }
+            if (lastname != null && lastname.length() > 0) {
+                name += " " + lastname;
+            }
+            return new EnquiryClientRelationshipData(relationshipTypeId, relationship, name);
+        }
     }
 }

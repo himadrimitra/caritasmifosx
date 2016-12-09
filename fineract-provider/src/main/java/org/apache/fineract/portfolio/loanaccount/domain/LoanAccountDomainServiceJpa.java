@@ -151,7 +151,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.standingInstructionRepository = standingInstructionRepository;
     }
 
-    @Transactional
     @Override
     public LoanTransaction makeRepayment(final Loan loan, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
@@ -161,12 +160,22 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 txnExternalId, isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone, false);
     }
 
-    @Transactional
     @Override
     public LoanTransaction makeRepayment(final Loan loan, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
             final String txnExternalId, final boolean isRecoveryRepayment, boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto,
             Boolean isHolidayValidationDone, final boolean isLoanToLoanTransfer) {
+        
+        final boolean isPrepayment = false;
+        return makeRepayment(loan, builderResult, transactionDate, transactionAmount, paymentDetail, noteText, txnExternalId,
+                isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone, isLoanToLoanTransfer, isPrepayment);
+    }
+
+    @Override
+    public LoanTransaction makeRepayment(final Loan loan, final CommandProcessingResultBuilder builderResult,
+            final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
+            final String txnExternalId, final boolean isRecoveryRepayment, boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto,
+            Boolean isHolidayValidationDone, final boolean isLoanToLoanTransfer, final boolean isPrepayment) {
         AppUser currentUser = getAppUserIfPresent();
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_MAKE_REPAYMENT,
@@ -192,6 +201,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         LoanTransaction newRepaymentTransaction = null;
         if (isRecoveryRepayment) {
             newRepaymentTransaction = LoanTransaction.recoveryRepayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
+                    txnExternalId);
+        } else if (isPrepayment) {
+            newRepaymentTransaction = LoanTransaction.prepayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
                     txnExternalId);
         } else {
             newRepaymentTransaction = LoanTransaction.repayment(loan.getOffice(), repaymentAmount, paymentDetail, transactionDate,
@@ -499,16 +511,18 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     @Override
     public LoanTransaction makeRefund(final Long accountId, final CommandProcessingResultBuilder builderResult,
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail, final String noteText,
-            final String txnExternalId) {
-        boolean isAccountTransfer = true;
+            final String txnExternalId,final Boolean isAccountTransfer) {
+        
         final Loan loan = this.loanAccountAssembler.assembleFrom(accountId);
         checkClientOrGroupActive(loan);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_REFUND,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
-
-        final Money refundAmount = Money.of(loan.getCurrency(), transactionAmount);
+        Money refundAmount = Money.of(loan.getCurrency(), transactionAmount);
+        if(refundAmount.isZero()){
+        	refundAmount = refundAmount.plus(loan.getTotalOverpaid());
+        }
         final LoanTransaction newRefundTransaction = LoanTransaction.refund(loan.getOffice(), refundAmount, paymentDetail, transactionDate,
                 txnExternalId);
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
@@ -538,6 +552,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         return newRefundTransaction;
     }
+    
 
     @Transactional
     @Override
@@ -854,8 +869,14 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
 
         final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
-        LoanTransaction newTransactionDetail = LoanTransaction.repayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
-                transactionDate, txnExternalId);
+        LoanTransaction newTransactionDetail = null;
+        if(transactionToAdjust.getTransactionSubTye().isPrePayment()){
+             newTransactionDetail = LoanTransaction.prepayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
+                    transactionDate, txnExternalId);
+        }else{
+            newTransactionDetail = LoanTransaction.repayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
+                    transactionDate, txnExternalId);
+        }
         if (transactionToAdjust.isInterestWaiver()) {
             Money unrecognizedIncome = transactionAmountAsMoney.zero();
             Money interestComponent = transactionAmountAsMoney;

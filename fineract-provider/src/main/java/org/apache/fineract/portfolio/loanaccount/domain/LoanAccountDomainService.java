@@ -39,7 +39,7 @@ public interface LoanAccountDomainService {
             final boolean isRecoveryRepayment, boolean isAccountTransfer, HolidayDetailDTO holidatDetailDto, Boolean isHolidayValidationDone);
 
     LoanTransaction makeRefund(Long accountId, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
-            BigDecimal transactionAmount, PaymentDetail paymentDetail, String noteText, String txnExternalId);
+            BigDecimal transactionAmount, PaymentDetail paymentDetail, String noteText, String txnExternalId, Boolean isAccountTransfer);
 
     LoanTransaction makeDisburseTransaction(Long loanId, LocalDate transactionDate, BigDecimal transactionAmount,
             PaymentDetail paymentDetail, String noteText, String txnExternalId, boolean isLoanToLoanTransfer);
@@ -95,5 +95,10 @@ public interface LoanAccountDomainService {
 
     LoanTransaction writeOffForGlimLoan(JsonCommand command, Loan loan, CommandProcessingResultBuilder builderResult, String noteText, Map<String, Object> changes,
             List<Long> existingTransactionIds, List<Long> existingReversedTransactionIds);
+
+    LoanTransaction makeRepayment(Loan loan, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
+            BigDecimal transactionAmount, PaymentDetail paymentDetail, String noteText, String txnExternalId, boolean isRecoveryRepayment,
+            boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto, Boolean isHolidayValidationDone, boolean isLoanToLoanTransfer,
+            boolean isPrepayment);
 
 }

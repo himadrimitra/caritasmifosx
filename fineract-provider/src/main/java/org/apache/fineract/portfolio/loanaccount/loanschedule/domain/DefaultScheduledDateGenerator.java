@@ -22,6 +22,7 @@ package org.apache.fineract.portfolio.loanaccount.loanschedule.domain;
 import java.util.ArrayList;
 
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.service.HolidayUtil;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
@@ -129,7 +130,6 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     	AdjustedDateDetailsDTO adjustedDateDetailsDTO = null;
     	LocalDate nextRepaymentDateAsPerSchedule = null;
         LocalDate adjustedDate = dueRepaymentPeriodDate;
-        LocalDate newadjustedDate = null;
         adjustedDateDetailsDTO = getadjustedDate(dueRepaymentPeriodDate, loanApplicationTerms, holidayDetailDTO, adjustedDate);
         LocalDate originalAdjustDate = adjustedDateDetailsDTO.getChangedScheduleDate();
 
@@ -212,25 +212,35 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
         }
         adjustedDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(adjustedDate, nextDueRepaymentPeriodDate,
                 holidayDetailDTO.getWorkingDays());
+        AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = null;
         if (holidayDetailDTO.isHolidayEnabled()) {
-            adjustedDate = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays());
+        	newAdjustedDateDetailsDTO = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays());
         }
         
-        AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = null;
-        if(HolidayUtil.isExtendSchduleToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays())){
+        Holiday applicableHolidayForAjustedDate = HolidayUtil.getApplicableHoliday(adjustedDate, holidayDetailDTO.getHolidays());
+		if (applicableHolidayForAjustedDate != null
+				&& applicableHolidayForAjustedDate.getReScheduleType().isResheduleToNextRepaymentDate()) {
         	LocalDate newAdjustedDate = dueRepaymentPeriodDate;
+        	Holiday applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(newAdjustedDate, holidayDetailDTO.getHolidays());
             do{
-            	if(!HolidayUtil.isExtendSchduleToIfHoliday(newAdjustedDate, holidayDetailDTO.getHolidays())){
-            		newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(HolidayUtil.getRepaymentRescheduleDateToIfHoliday(newAdjustedDate, 
-            				holidayDetailDTO.getHolidays()), newAdjustedDate);
+            	
+				if (applicableHolidayForNewAdjustedDate != null
+						&& applicableHolidayForNewAdjustedDate.isExtendRepaymentReschedule()) {
+					newAdjustedDateDetailsDTO = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(newAdjustedDate, holidayDetailDTO.getHolidays());
             	}
             	newAdjustedDate = generateNextRepaymentDate(newAdjustedDate, loanApplicationTerms, false, holidayDetailDTO);
-            }while(HolidayUtil.isHoliday(newAdjustedDate, holidayDetailDTO.getHolidays()));
+            	applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(newAdjustedDate, holidayDetailDTO.getHolidays());
+            }while(applicableHolidayForNewAdjustedDate != null);
+
             if(newAdjustedDateDetailsDTO == null){
             	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDate, newAdjustedDate);
             }
+            	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDate, dueRepaymentPeriodDate);
         } else {
         	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, dueRepaymentPeriodDate);
+        }
+		if (applicableHolidayForAjustedDate != null && applicableHolidayForAjustedDate.isExtendRepaymentReschedule()) {
+        	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDateDetailsDTO.getChangedScheduleDate(), newAdjustedDateDetailsDTO.getChangedScheduleDate());
         }
         return newAdjustedDateDetailsDTO;
 	}

@@ -64,28 +64,29 @@ public final class JsonCommand {
     private final String transactionId;
     private final String url;
     private final Long productId;
+    private final Integer entityTypeId;
 
     public static JsonCommand from(final String jsonCommand, final JsonElement parsedCommand, final FromJsonHelper fromApiJsonHelper,
             final String entityName, final Long resourceId, final Long subresourceId, final Long groupId, final Long clientId,
-            final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId) {
+            final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId, Integer entityTypeId) {
         return new JsonCommand(null, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId);
 
     }
 
     public static JsonCommand fromExistingCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
-            final String url, final Long productId) {
+            final String url, final Long productId, Integer entityTypeId) {
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, null, null,
-                null, null, null, url, productId);
+                null, null, null, url, productId, entityTypeId);
     }
 
     public static JsonCommand fromExistingCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
-            final Long productId) {
+            final Long productId, Integer entityTypeId) {
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId);
 
     }
 
@@ -93,13 +94,30 @@ public final class JsonCommand {
         final String jsonCommand = command.fromApiJsonHelper.toJson(parsedCommand);
         return new JsonCommand(command.commandId, jsonCommand, parsedCommand, command.fromApiJsonHelper, command.entityName,
                 command.resourceId, command.subresourceId, command.groupId, command.clientId, command.loanId, command.savingsId,
-                command.transactionId, command.url, command.productId);
+                command.transactionId, command.url, command.productId, command.entityTypeId);
+    }
+    
+    public static JsonCommand from(FromJsonHelper fromApiJsonHelper, final JsonElement parsedCommand, final Long resourceId) {
+        final String jsonCommand = fromApiJsonHelper.toJson(parsedCommand);
+        final Long commandId = null;
+        final Long subresourceId = null;
+        final Long groupId = null;
+        final Long clientId = null;
+        final Long loanId = null;
+        final Long savingsId = null;
+        final String entityName = null;
+        final String transactionId = null;
+        final String url = null;
+        final Long productId = null;
+        final Integer entityTypeId = null;
+        return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId);
     }
 
     public JsonCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
-            final Long productId) {
+            final Long productId, final Integer entityTypeId) {
 
         this.commandId = commandId;
         this.jsonCommand = jsonCommand;
@@ -115,6 +133,7 @@ public final class JsonCommand {
         this.transactionId = transactionId;
         this.url = url;
         this.productId = productId;
+        this.entityTypeId = entityTypeId;
     }
 
     public String json() {
@@ -567,6 +586,11 @@ public final class JsonCommand {
 
     public void checkForUnsupportedParameters(final Type typeOfMap, final String json, final Set<String> requestDataParameters) {
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, requestDataParameters);
+    }
+
+    
+    public Integer getEntityTypeId() {
+        return this.entityTypeId;
     }
 
 }

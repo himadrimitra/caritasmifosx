@@ -48,10 +48,8 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.account.service.AccountTransfersWritePlatformService;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
-import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarHistoryRepository;
-import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
@@ -221,6 +219,9 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             // get the recalculate interest option
             final Boolean recalculateInterest = jsonCommand
                     .booleanObjectValueOfParameterNamed(RescheduleLoansApiConstants.recalculateInterestParamName);
+            
+            final BigDecimal installmentAmount = jsonCommand
+                    .bigDecimalValueOfParameterNamed(RescheduleLoansApiConstants.newInstallmentAmountParamName);
 
             // initialize set the value to null
             Date submittedOnDate = null;
@@ -287,7 +288,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             // create term variations for flat and declining balance loans
             createLoanTermVariationsForRegularLoans(loan, graceOnPrincipal, graceOnInterest, extraTerms, interestRate, rescheduleFromDate,
                     adjustedDueDate, loanRescheduleRequest, loanRescheduleRequestToTermVariationMappings, isActive,
-                    isSpecificToInstallment, decimalValue, dueDate);
+                    isSpecificToInstallment, decimalValue, dueDate, installmentAmount);
 
             // create a new entry in the m_loan_reschedule_request table
             this.loanRescheduleRequestRepository.save(loanRescheduleRequest);
@@ -310,7 +311,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             final Integer extraTerms, final BigDecimal interestRate, Date rescheduleFromDate, Date adjustedDueDate,
             final LoanRescheduleRequest loanRescheduleRequest,
             List<LoanRescheduleRequestToTermVariationMapping> loanRescheduleRequestToTermVariationMappings, final Boolean isActive,
-            final boolean isSpecificToInstallment, BigDecimal decimalValue, Date dueDate) {
+            final boolean isSpecificToInstallment, BigDecimal decimalValue, Date dueDate, BigDecimal installmentAmount) {
 
         if (rescheduleFromDate != null && adjustedDueDate != null) {
             LoanTermVariations parent = null;
@@ -350,6 +351,13 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             final Integer termType = LoanTermVariationType.EXTEND_REPAYMENT_PERIOD.getValue();
             createLoanTermVariations(termType, loan, rescheduleFromDate, dueDate, loanRescheduleRequestToTermVariationMappings, isActive,
                     isSpecificToInstallment, BigDecimal.valueOf(extraTerms), parent);
+        }
+        
+        if (rescheduleFromDate != null && installmentAmount != null) {
+            LoanTermVariations parent = null;
+            final Integer termType = LoanTermVariationType.EMI_AMOUNT.getValue();
+            createLoanTermVariations(termType, loan, rescheduleFromDate, dueDate, loanRescheduleRequestToTermVariationMappings, isActive,
+                    isSpecificToInstallment, installmentAmount, parent);
         }
         loanRescheduleRequest.updateLoanRescheduleRequestToTermVariationMappings(loanRescheduleRequestToTermVariationMappings);
     }

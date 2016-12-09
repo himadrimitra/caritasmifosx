@@ -128,10 +128,14 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lar.fixed_emi_amount AS fixedEmiAmount ");
             sqlBuilder.append(",lar.no_of_tranche AS noOfTranche ");
             sqlBuilder.append(",lar.submittedon_date AS submittedOnDate ");
+            sqlBuilder.append(",lar.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId, pt_disburse.value as disbursementPaymentTypeName ");
+            sqlBuilder.append(",lar.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
             sqlBuilder.append("LEFT JOIN m_staff sf ON sf.id = lar.loan_officer_id ");
             sqlBuilder.append("LEFT JOIN f_loan_purpose loanPurpose ON loanPurpose.id = lar.loan_purpose_id ");
+            sqlBuilder.append("LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = lar.expected_disbursal_payment_type_id ");
+            sqlBuilder.append(" LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = lar.expected_repayment_payment_type_id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -167,11 +171,26 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final BigDecimal fixedEmiAmount = rs.getBigDecimal("fixedEmiAmount");
             final Integer noOfTranche = JdbcSupport.getIntegeActualValue(rs, "noOfTranche");
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
+			PaymentTypeData expectedDisbursalPaymentType = null;
+			final Integer expectedDisbursalPaymentTypeId = rs.getInt("expectedDisbursalPaymentTypeId");
+			if (expectedDisbursalPaymentTypeId != null) {
+				final String disbursementPaymentTypeName = rs.getString("disbursementPaymentTypeName");
+				expectedDisbursalPaymentType = PaymentTypeData.instance(expectedDisbursalPaymentTypeId.longValue(),
+						disbursementPaymentTypeName);
+			}
+			PaymentTypeData expectedRepaymentPaymentType = null;
+			final Integer expectedRepaymentPaymentTypeId = rs.getInt("expectedRepaymentPaymentTypeId");
+			if (expectedRepaymentPaymentTypeId != null) {
+				final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
+				expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(),
+						repaymenPaymentTypeName);
+			} 
 
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
-                    repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate);
+                    repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType);
         }
     }
 

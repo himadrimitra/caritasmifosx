@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.rescheduleloan.data;
 
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -117,6 +118,13 @@ public class LoanRescheduleRequestDataValidator {
         dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleReasonIdParamName).value(rescheduleReasonId).notNull()
                 .integerGreaterThanZero();
 
+        final BigDecimal emiAmount = this.fromJsonHelper.extractBigDecimalWithLocaleNamed(RescheduleLoansApiConstants.newInstallmentAmountParamName,
+                jsonElement);
+        dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.newInstallmentAmountParamName).value(emiAmount).ignoreIfNull().positiveAmount();
+        if(emiAmount != null && (loan.repaymentScheduleDetail().getAmortizationMethod().isEqualPrincipal() || !loan.loanProduct().canDefineInstallmentAmount())){
+            dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.newInstallmentAmountParamName).value(emiAmount).failWithCode("not.supported");
+        }
+        
         final String rescheduleReasonComment = this.fromJsonHelper.extractStringNamed(
                 RescheduleLoansApiConstants.rescheduleReasonCommentParamName, jsonElement);
         dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleReasonCommentParamName).value(rescheduleReasonComment)
@@ -139,7 +147,8 @@ public class LoanRescheduleRequestDataValidator {
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.graceOnInterestParamName, jsonElement)
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.extraTermsParamName, jsonElement)
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.newInterestRateParamName, jsonElement)
-                && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.adjustedDueDateParamName, jsonElement)) {
+                && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.adjustedDueDateParamName, jsonElement)
+                && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.newInstallmentAmountParamName, jsonElement)) {
             dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.graceOnPrincipalParamName).notNull();
         }
         LoanRepaymentScheduleInstallment installment = null;
@@ -158,15 +167,6 @@ public class LoanRescheduleRequestDataValidator {
 
         }
 
-        if(loan.isMultiDisburmentLoan()) {
-            dataValidatorBuilder.reset().failWithCodeNoParameterAddedToErrorCode(RescheduleLoansApiConstants.resheduleForMultiDisbursementNotSupportedErrorCode,
-                    "Loan rescheduling is not supported for multidisbursement loans");
-        }
-        
-        if(loan.isInterestRecalculationEnabledForProduct()) {
-            dataValidatorBuilder.reset().failWithCodeNoParameterAddedToErrorCode(RescheduleLoansApiConstants.resheduleWithInterestRecalculationNotSupportedErrorCode,
-                    "Loan rescheduling is not supported for the loan product with interest recalculation enabled");
-        }
         validateForOverdueCharges(dataValidatorBuilder, loan, installment);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }

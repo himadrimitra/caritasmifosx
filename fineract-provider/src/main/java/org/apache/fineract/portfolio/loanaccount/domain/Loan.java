@@ -1691,11 +1691,23 @@ public class Loan extends AbstractPersistable<Long> {
         } else {
             this.fixedEmiAmount = null;
         }
-        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, this.getExpectedDisbursalPaymentType().getId().intValue())){
-        	actualChanges.put(LoanApiConstants.expectedDisbursalPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName));
+        Long expectedDisbursalTypeId = null;
+        if(this.getExpectedDisbursalPaymentType() != null){
+            expectedDisbursalTypeId = this.getExpectedDisbursalPaymentType().getId();
         }
-        if(command.isChangeInIntegerParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, this.getExpectedRepaymentPaymentType().getId().intValue())){
-        	actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName, command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
+        
+        Long expectedRepaymentPaymentTypeId = null;
+        if(this.getExpectedRepaymentPaymentType() != null){
+            expectedRepaymentPaymentTypeId = this.getExpectedRepaymentPaymentType().getId();   
+        }
+        
+        if (command.isChangeInLongParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, expectedDisbursalTypeId)) {
+            actualChanges.put(LoanApiConstants.expectedDisbursalPaymentTypeParamName,
+                    command.integerValueOfParameterNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName));
+        }
+        if (command.isChangeInLongParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName, expectedRepaymentPaymentTypeId)) {
+            actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName,
+                    command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
         }
         return actualChanges;
     }
@@ -3088,6 +3100,9 @@ public class Loan extends AbstractPersistable<Long> {
         }        
         validateActivityNotBeforeClientOrGroupTransferDate(event, repaymentTransaction.getTransactionDate());
         validateActivityNotBeforeLastTransactionDate(event, repaymentTransaction.getTransactionDate());
+        if(repaymentTransaction.getTransactionSubTye().isPrePayment()){
+            validatePrepayment(repaymentTransaction);
+        }
         if (!isHolidayValidationDone) {
             validateRepaymentDateIsOnHoliday(repaymentTransaction.getTransactionDate(), holidayDetailDTO.isAllowTransactionsOnHoliday(),
                     holidayDetailDTO.getHolidays());
@@ -3257,14 +3272,14 @@ public class Loan extends AbstractPersistable<Long> {
                 .getTransactionDate());
         boolean reprocess = true;
 
-        if (!isForeclosure() && isTransactionChronologicallyLatest && adjustedTransaction == null
+        if (isTransactionChronologicallyLatest && adjustedTransaction == null && !isFullProcessingRequired(loanTransaction)
                 && loanTransaction.getTransactionDate().isEqual(DateUtils.getLocalDateOfTenant()) && currentInstallment != null
                 && currentInstallment.getTotalOutstanding(getCurrency()).isEqualTo(loanTransaction.getAmount(getCurrency()))) {
             reprocess = false;
         }
 
-        if (isTransactionChronologicallyLatest && adjustedTransaction == null
-                && (!reprocess || !this.repaymentScheduleDetail().isInterestRecalculationEnabled()) && !isForeclosure()) {
+        if (isTransactionChronologicallyLatest && adjustedTransaction == null && !isFullProcessingRequired(loanTransaction)
+                && (!reprocess || !this.repaymentScheduleDetail().isInterestRecalculationEnabled())) {
             loanRepaymentScheduleTransactionProcessor.handleTransaction(loanTransaction, getCurrency(), this.repaymentScheduleInstallments,
                     charges());
             reprocess = false;
@@ -3520,6 +3535,10 @@ public class Loan extends AbstractPersistable<Long> {
             this.loanTransactions.removeAll(changedTransactionDetail.getNewTransactionMappings().values());
         }
         return changedTransactionDetail;
+    }
+    
+    private boolean isFullProcessingRequired(final LoanTransaction loanTransaction){
+        return isForeclosure() && loanTransaction.getTransactionSubTye().isPrePayment();
     }
 
     private void undoGlimLoanChargesPaid(Map<Long, BigDecimal> chargeAmountMap, final Set<LoanCharge> charges,
@@ -5304,6 +5323,37 @@ public class Loan extends AbstractPersistable<Long> {
             throw new InvalidLoanStateTransitionException(action, postfix, errorMessage, clientOfficeJoiningDate);
         }
     }
+    
+    private void validatePrepayment(final LoanTransaction loanTransaction) {
+        if(!this.isInterestRecalculationEnabledForProduct()){
+            String action = "prepayment";
+            String errorMessage = "Must be interest reclculation product for prepayment";
+            String postfix = "must.be.interest.recalution.product";
+            throw new InvalidLoanStateTransitionException(action, postfix, errorMessage);
+        }
+        
+        Money totalOutstanding = Money.zero(getCurrency()); 
+        for (LoanRepaymentScheduleInstallment installment : getRepaymentScheduleInstallments()) {
+            if (!loanTransaction.getTransactionDate().isBefore(installment.getDueDate())) {
+                if (installment.isNotFullyPaidOff()) {
+                    String action = "prepayment";
+                    String errorMessage = "Must clear dues before prepayment";
+                    String postfix = "cannot.be.made.before.dues.cleared";
+                    throw new InvalidLoanStateTransitionException(action, postfix, errorMessage);
+                }
+            } else {
+                totalOutstanding = totalOutstanding.plus(installment.getPrincipalOutstanding(getCurrency()));
+            }
+        }
+        if(loanTransaction.getAmount(getCurrency()).isGreaterThan(totalOutstanding)){
+            String action = "prepayment";
+            String errorMessage = "Must be equal or less than principal outstanding";
+            String postfix = "cannot.be.more.than.principal.due";
+            throw new InvalidLoanStateTransitionException(action, postfix, errorMessage);
+        }
+        
+    }
+    
 
     public LocalDate getLastUserTransactionDate() {
         LocalDate currentTransactionDate = getDisbursementDate();
@@ -6145,7 +6195,7 @@ public class Loan extends AbstractPersistable<Long> {
         Money outstanding = Money.zero(getCurrency());
         List<LoanTransaction> loanTransactions = retreiveListOfTransactionsExcludeAccruals();
         for (LoanTransaction loanTransaction : loanTransactions) {
-            if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting()) {
+            if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting() || loanTransaction.isRefund()) {
                 outstanding = outstanding.plus(loanTransaction.getAmount(getCurrency()));
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
             } else {
@@ -7370,26 +7420,22 @@ public class Loan extends AbstractPersistable<Long> {
     	this.loanStatus = LoanStatus.ACTIVE.getValue();
     }
 
-	public PaymentType getExpectedDisbursalPaymentType() {
-		return this.expectedDisbursalPaymentType;
-	}
+    public PaymentType getExpectedDisbursalPaymentType() {
+        return this.expectedDisbursalPaymentType;
+    }
 
-	public void setExpectedDisbursalPaymentType(
-			PaymentType expectedDisbursalPaymentType) {
-		this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
-	}
+    public void setExpectedDisbursalPaymentType(PaymentType expectedDisbursalPaymentType) {
+        this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+    }
 
-	public PaymentType getExpectedRepaymentPaymentType() {
-		return this.expectedRepaymentPaymentType;
-	}
+    public PaymentType getExpectedRepaymentPaymentType() {
+        return this.expectedRepaymentPaymentType;
+    }
 
-	public void setExpectedRepaymentPaymentType(
-			PaymentType expectedRepaymentPaymentType) {
-		this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
-	}
-    
-    
-    
+    public void setExpectedRepaymentPaymentType(PaymentType expectedRepaymentPaymentType) {
+        this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+    }
+
     public LoanTransaction getLastUserTransaction() {
         LocalDate currentTransactionDate = getDisbursementDate();
         LoanTransaction lastUserTransaction = null;

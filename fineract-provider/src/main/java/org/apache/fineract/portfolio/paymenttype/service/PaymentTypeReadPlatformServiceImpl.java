@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
@@ -67,7 +68,8 @@ public class PaymentTypeReadPlatformServiceImpl implements PaymentTypeReadPlatfo
     private static final class PaymentTypeMapper implements RowMapper<PaymentTypeData> {
 
         public String schema() {
-            return " pt.id as id, pt.value as name, pt.description as description,pt.is_cash_payment as isCashPayment,pt.order_position as position from m_payment_type pt ";
+            return " pt.id as id, pt.value as name, pt.description as description,pt.is_cash_payment as isCashPayment,pt.order_position as position, "
+                    + "pt.external_service_id as externalServiceId from m_payment_type pt ";
         }
 
         @Override
@@ -78,8 +80,9 @@ public class PaymentTypeReadPlatformServiceImpl implements PaymentTypeReadPlatfo
             final String description = rs.getString("description");
             final boolean isCashPayment = rs.getBoolean("isCashPayment");
             final Long position = rs.getLong("position");
+            final Long externalServiceId = JdbcSupport.getLongDefaultToNullIfZero(rs, "externalServiceId");
 
-            return PaymentTypeData.instance(id, name, description, isCashPayment, position);
+            return PaymentTypeData.instance(id, name, description, isCashPayment, position, externalServiceId);
         }
 
     }

@@ -43,11 +43,12 @@ public class CommandWrapperBuilder {
     private Long productId;
     private Long templateId;
     private String option;
+    private Integer entityTypeId;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
-                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId, this.templateId,
-                this.option);
+                this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
+                this.templateId, this.option, entityTypeId);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -718,6 +719,15 @@ public class CommandWrapperBuilder {
         this.entityId = null;
         this.loanId = loanId;
         this.href = "/loans/" + loanId + "/transactions/template?command=repayment";
+        return this;
+    }
+    
+    public CommandWrapperBuilder loanPrepaymentTransaction(final Long loanId) {
+        this.actionName = "PREPAYMENT";
+        this.entityName = "LOAN";
+        this.entityId = null;
+        this.loanId = loanId;
+        this.href = "/loans/" + loanId + "/transactions?command=prepayment";
         return this;
     }
 
@@ -1665,6 +1675,65 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder createCgt() {
+        this.actionName = "CREATE";
+        this.entityName = "CGT";
+        this.entityId = null;
+        this.href = "/cgt";
+        return this;
+    }
+    
+    public CommandWrapperBuilder rejectCgt(final Long cgtId) {
+        this.actionName = "REJECT";
+        this.entityName = "CGT";
+        this.entityId = cgtId;
+        this.href = "/cgt/" + cgtId + "?action=reject";
+        return this;
+    }
+    
+    public CommandWrapperBuilder completeCgt(final Long cgtId) {
+        this.actionName = "COMPLETE";
+        this.entityName = "CGT";
+        this.entityId = cgtId;
+        this.href = "/cgt/" + cgtId + "?action=complete";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateCgt(final Long cgtId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CGT";
+        this.entityId = cgtId;
+        this.href = "/cgt/" + cgtId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder createCgtDay(final Long cgtId) {
+        this.actionName = "CREATE";
+        this.entityName = "CGTDAY";
+        this.entityId = null;
+        this.subentityId = cgtId;
+        this.href = "/cgt/" + cgtId + "/cgtSub";
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateCgtDay(final Long cgtId, final Long cgtDayId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CGTDAY";
+        this.entityId = cgtDayId;
+        this.subentityId = cgtId;
+        this.href = "/cgt/" + cgtId + "/cgtSub" + cgtDayId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder completeCgtDay(final Long cgtId, final Long cgtDayId) {
+        this.actionName = "COMPLETE";
+        this.entityName = "CGTDAY";
+        this.entityId = cgtDayId;
+        this.subentityId = cgtId;
+        this.href = "/cgt/" + cgtId + "/cgtSub" + cgtDayId + "?action=complete";
+        return this;
+    }
+    
     public CommandWrapperBuilder createCenter() {
         this.actionName = "CREATE";
         this.entityName = "CENTER";
@@ -2372,6 +2441,16 @@ public class CommandWrapperBuilder {
         this.entityName = "ACCOUNTTRANSFER";
         this.entityId = null;
         this.href = "/refundByTransfer";
+        return this;
+    }
+    
+    public CommandWrapperBuilder refundOverPaidLoan(final Long loanId) {
+        this.actionName = "REFUND";
+        this.entityName = "LOAN";
+        this.entityId = null;
+        this.href = "/refund";
+        this.loanId = loanId;
+        this.entityId = loanId;
         return this;
     }
 
@@ -3613,6 +3692,34 @@ public class CommandWrapperBuilder {
         this.actionName = "CREATE";
         this.entityName = "ADHOCTASK";
         this.href = "/task/adhoc";
+        return this;
+    }
+    
+    public CommandWrapperBuilder createBankAccountDetail(final String supportedEntityType, final Long supportedEntityId,
+            final Integer entityTypeId) {
+        this.actionName = "CREATE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateBankAccountDetail(final String supportedEntityType, final Long supportedEntityId, final Integer entityTypeId) {
+        this.actionName = "UPDATE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteBankAccountDetail(final String supportedEntityType, final Long supportedEntityId, final Integer entityTypeId) {
+        this.actionName = "DELETE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
         return this;
     }
 }

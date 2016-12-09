@@ -38,9 +38,14 @@ import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDoma
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.AccountTransferDTO;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
@@ -54,6 +59,7 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.AccountNumberGenerator;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.DepositAccountOnClosureType;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
@@ -81,6 +87,8 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
     private final ConfigurationDomainService configurationDomainService;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final CalendarInstanceRepository calendarInstanceRepository;
+    private final WorkingDaysRepositoryWrapper workingDaysRepository;
+    private final HolidayRepositoryWrapper holidayRepository;
 
     @Autowired
     public DepositAccountDomainServiceJpa(final SavingsAccountRepositoryWrapper savingsAccountRepository,
@@ -90,7 +98,9 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
             final AccountTransfersWritePlatformService accountTransfersWritePlatformService,
             final ConfigurationDomainService configurationDomainService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository,
-            final CalendarInstanceRepository calendarInstanceRepository) {
+            final CalendarInstanceRepository calendarInstanceRepository,
+            final WorkingDaysRepositoryWrapper workingDaysRepository,
+            final HolidayRepositoryWrapper holidayRepository) {
         this.savingsAccountRepository = savingsAccountRepository;
         this.applicationCurrencyRepositoryWrapper = applicationCurrencyRepositoryWrapper;
         this.journalEntryWritePlatformService = journalEntryWritePlatformService;
@@ -101,6 +111,8 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
         this.configurationDomainService = configurationDomainService;
         this.accountNumberFormatRepository = accountNumberFormatRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
+        this.workingDaysRepository = workingDaysRepository;
+        this.holidayRepository = holidayRepository;
     }
 
     @Transactional
@@ -230,6 +242,15 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
     @Override
     public Long handleRDAccountClosure(final RecurringDepositAccount account, final PaymentDetail paymentDetail, final AppUser user,
             final JsonCommand command, final LocalDate tenantsTodayDate, final Map<String, Object> changes) {
+    	
+    	final WorkingDays workingDays = this.workingDaysRepository.findOne();
+    	
+    	final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+    	
+    	final List<WorkingDayExemptionsData> workingDayExemptions = null;
+    	
+    	final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(account.getClient().getOffice().getId(), account.getSubmittedOnDate().toDate());
+        final HolidayDetailDTO holidayDetails = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
 
         final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
                 .isSavingsInterestPostingAtCurrentPeriodEnd();
@@ -264,7 +285,7 @@ public class DepositAccountDomainServiceJpa implements DepositAccountDomainServi
             final PeriodFrequencyType frequencyType = CalendarFrequencyType.from(CalendarUtils.getFrequency(calendar.getRecurrence()));
             Integer frequency = CalendarUtils.getInterval(calendar.getRecurrence());
             frequency = frequency == -1 ? 1 : frequency;
-            reinvestedDeposit.generateSchedule(frequencyType, frequency, calendar);
+            reinvestedDeposit.generateSchedule(frequencyType, frequency, calendar, holidayDetails);
             reinvestedDeposit.processAccountUponActivation(fmt, user);
             reinvestedDeposit.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
                     financialYearBeginningMonth);

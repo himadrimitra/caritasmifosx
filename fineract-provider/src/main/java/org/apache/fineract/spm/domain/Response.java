@@ -26,7 +26,7 @@ import javax.persistence.*;
 @Table(name = "m_survey_responses")
 public class Response extends AbstractPersistable<Long> {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "question_id")
     private Question question;
 

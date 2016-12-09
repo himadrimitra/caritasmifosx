@@ -126,11 +126,14 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final List<CodeValueData> clientNonPersonMainBusinessLineOptions = new ArrayList<>(
                 this.codeValueReadPlatformService.retrieveCodeValuesByCode(ClientApiConstants.CLIENT_NON_PERSON_MAIN_BUSINESS_LINE));
         
+		final List<CodeValueData> closureReasons = new ArrayList<>(
+				this.codeValueReadPlatformService.retrieveCodeValuesByCode(ClientApiConstants.CLIENT_CLOSURE_REASON));
+
         final List<EnumOptionData> clientLegalFormOptions = ClientEnumerations.legalForm(LegalForm.values());
 
         return ClientData.template(defaultOfficeId, DateUtils.getLocalDateOfTenant(), offices, staffOptions, null, genderOptions, savingsProductDatas,
                 clientTypeOptions, clientClassificationOptions, clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions,
-                clientLegalFormOptions);
+                clientLegalFormOptions, closureReasons);
     }
 
     @Override
@@ -432,7 +435,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final String savingsProductName = rs.getString("savingsProductName");
 
             final Long savingsAccountId = JdbcSupport.getLong(rs, "savingsAccountId");
+			CodeValueData closurereason = null;
 
+            
             final LocalDate closedOnDate = JdbcSupport.getLocalDate(rs, "closedOnDate");
             final String closedByUsername = rs.getString("closedByUsername");
             final String closedByFirstname = rs.getString("closedByFirstname");
@@ -471,7 +476,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.instance(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id,
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
-                    classification, legalForm, clientNonPerson);
+                    classification, legalForm, clientNonPerson, closurereason);
 
         }
     }
@@ -513,6 +518,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             builder.append("c.client_classification_cv_id as classificationId, ");
             builder.append("cvclassification.code_value as classificationValue, ");
             builder.append("c.legal_form_enum as legalFormEnum, ");
+			builder.append("c.closure_reason_cv_id as closurereasonId, ");
+		    builder.append("cvclosurereason.code_value as closurereasonValue, ");
 
             builder.append("c.submittedon_date as submittedOnDate, ");
             builder.append("sbu.username as submittedByUsername, ");
@@ -552,6 +559,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             builder.append("left join m_appuser clu on clu.id = c.closedon_userid ");
             builder.append("left join m_code_value cv on cv.id = c.gender_cv_id ");
             builder.append("left join m_code_value cvclienttype on cvclienttype.id = c.client_type_cv_id ");
+			builder.append("left join m_code_value cvclosurereason on cvclosurereason.id = c.closure_reason_cv_id ");
             builder.append("left join m_code_value cvclassification on cvclassification.id = c.client_classification_cv_id ");
             builder.append("left join m_code_value cvSubStatus on cvSubStatus.id = c.sub_status ");
             builder.append("left join m_code_value cvConstitution on cvConstitution.id = cnp.constitution_cv_id ");
@@ -601,6 +609,13 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final Long clienttypeId = JdbcSupport.getLong(rs, "clienttypeId");
             final String clienttypeValue = rs.getString("clienttypeValue");
             final CodeValueData clienttype = CodeValueData.instance(clienttypeId, clienttypeValue);
+            
+			CodeValueData closurereason = null;
+			final Long closurereasonId = JdbcSupport.getLong(rs, "closurereasonId");
+			if (closurereasonId != null) {
+				final String closurereasonValue = rs.getString("closurereasonValue");
+				closurereason = CodeValueData.instance(closurereasonId, closurereasonValue);
+			}
 
             final Long classificationId = JdbcSupport.getLong(rs, "classificationId");
             final String classificationValue = rs.getString("classificationValue");
@@ -653,7 +668,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             return ClientData.instance(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id,
                     firstname, middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
                     imageId, staffId, staffName, timeline, savingsProductId, savingsProductName, savingsAccountId, clienttype,
-                    classification, legalForm, clientNonPerson);
+                    classification, legalForm, clientNonPerson, closurereason);
 
         }
     }
@@ -724,9 +739,11 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     }
     @Override
     public Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
-        
+		final AppUser currentUser = this.context.authenticatedUser();
+		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
         final StringBuilder builder = new StringBuilder(400);
-       final ClientTaskLookupMapper mapper= new ClientTaskLookupMapper();
+		final ClientTaskLookupMapper mapper= new ClientTaskLookupMapper();
+		Boolean whereused =false;
         List<Object> params = new ArrayList<>();
         String sqlSearch = searchParameters.getSqlSearch();
         builder.append("select ");
@@ -734,28 +751,52 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         builder.append("c.fullname as fullname, c.display_name as displayName, ");
         builder.append("c.staff_id as staffId, s.display_name as staffName ");
         builder.append("from m_client c ");
-        builder.append("join m_office o on o.id = c.office_id ");
+        builder.append("join m_office o on o.id = c.office_id and o.hierarchy like ?");
         builder.append("left join m_staff s on s.id = c.staff_id ");
         if((searchParameters.getGroupId() != null) || (searchParameters.getCenterId() != null)){
             builder.append("JOIN m_group_client gc ON c.id = gc.client_id ");
             builder.append("join m_group g on g.id = gc.group_id ");
         } 
-        builder.append("where o.id = ?");
-        params.add(searchParameters.getOfficeId());
-        if(searchParameters.getStaffId() != null){
-            builder.append(" and s.id = ?");
-            params.add(searchParameters.getStaffId());
-        }
+		params.add(hierarchy);
+		if (searchParameters.getOfficeId() != null) {
+			builder.append("where o.id = ?");
+			params.add(searchParameters.getOfficeId());
+			whereused = true;
+		}
+		if (searchParameters.getStaffId() != null) {
+			if (whereused) {
+				builder.append(" and s.id = ?");
+			} else {
+				builder.append(" where s.id = ?");
+				whereused = true;
+			}
+			params.add(searchParameters.getStaffId());
+		}
         if(searchParameters.getGroupId() != null){
-            builder.append(" and g.id = ?");
+        	if (whereused) {
+        		builder.append(" and g.id = ?");
+			} else {
+				builder.append(" where g.id = ?");
+				whereused = true;
+			}
             params.add(searchParameters.getGroupId());
         }
         if(searchParameters.getCenterId() != null){
+        	if (whereused) {
             builder.append(" and g.parent_id = ?" );
+        	}else{
+        		builder.append(" where g.parent_id = ?");
+				whereused = true;
+        	}
             params.add(searchParameters.getCenterId());
         }
         if (sqlSearch != null) {
+        	if (whereused) {
             builder.append(" and (" + sqlSearch + ")");
+        	}else{
+                builder.append(" where (" + sqlSearch + ")");
+				whereused = true;
+        	}
         }
         
         return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
@@ -819,8 +860,26 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final Collection<CodeValueData> clientNonPersonConstitutionOptions = null;
         final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
         final List<EnumOptionData> clientLegalFormOptions = null;
+        final List<CodeValueData> closureReasons = null;
         return ClientData.template(null, null, null, null, narrations, null, null, clientTypeOptions, clientClassificationOptions, 
-        		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions);
+        		clientNonPersonConstitutionOptions, clientNonPersonMainBusinessLineOptions, clientLegalFormOptions, closureReasons);
     }
+
+    @Override
+    public Long retrieveDefaultStaffIdFromGroup(final Long clientId) {
+        final StringBuilder builder = new StringBuilder(400);
+
+    	builder.append("SELECT IFNULL(pg.staff_id,g.staff_id) ");
+    	builder.append("FROM m_group_client gc "); 
+    	builder.append("LEFT JOIN m_group g ON g.id=gc.group_id ");
+    	builder.append("LEFT JOIN m_group pg ON pg.id = g.parent_id ");
+    	builder.append("where gc.client_id=? ");
+    	try{
+            return this.jdbcTemplate.queryForObject(builder.toString(), Long.class, clientId);
+    }catch (final EmptyResultDataAccessException e) {
+        return null;
+    }
+  }
+
 
 }

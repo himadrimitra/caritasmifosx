@@ -36,7 +36,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Cacheable
-@Cache(usage=CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="PaymentType")
+@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "PaymentType")
 @Table(name = "m_payment_type")
 public class PaymentType extends AbstractPersistable<Long> {
 
@@ -52,17 +52,22 @@ public class PaymentType extends AbstractPersistable<Long> {
     @Column(name = "order_position")
     private Long position;
 
+    @Column(name = "external_service_id")
+    private Long externalServiceId;
+
     protected PaymentType() {}
 
-    public PaymentType(final String name, final String description, final Boolean isCashPayment, final Long position) {
+    public PaymentType(final String name, final String description, final Boolean isCashPayment, final Long position,
+            final Long externalServiceId) {
         this.name = name;
         this.description = description;
         this.isCashPayment = isCashPayment;
         this.position = position;
+        this.externalServiceId = externalServiceId;
     }
 
-    public static PaymentType create(String name, String description, Boolean isCashPayment, Long position) {
-        return new PaymentType(name, description, isCashPayment, position);
+    public static PaymentType create(String name, String description, Boolean isCashPayment, Long position, Long externalServiceId) {
+        return new PaymentType(name, description, isCashPayment, position, externalServiceId);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -98,5 +103,13 @@ public class PaymentType extends AbstractPersistable<Long> {
 
     public PaymentTypeData toData() {
         return PaymentTypeData.instance(getId(), this.name, this.description, this.isCashPayment, this.position);
+    }
+
+    public void setExternalServiceId(Long externalServiceId) {
+        this.externalServiceId = externalServiceId;
+    }
+
+    public Long getExternalServiceId() {
+        return this.externalServiceId;
     }
 }

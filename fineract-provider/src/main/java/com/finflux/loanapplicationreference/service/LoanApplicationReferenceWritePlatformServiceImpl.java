@@ -31,6 +31,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductBusinessRuleV
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final TaskExecutionService taskExecutionService;
     private final ConfigurationDomainService configurationDomainService;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
 
@@ -89,7 +91,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator, final TaskExecutionService taskExecutionService,
             final ConfigurationDomainService configurationDomainService,
-            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
+            final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -107,6 +110,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.taskExecutionService = taskExecutionService;
         this.configurationDomainService = configurationDomainService;
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
+        this.paymentTypeRepository = paymentTypeRepository;
     }
 
     @Override
@@ -347,6 +351,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final Long loanId = result.resourceId();
             final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
             loan.updateProposedPrincipal(loanApplicationReference.getLoanAmountRequested());
+            loan.setExpectedDisbursalPaymentType(loanApplicationReference.getExpectedDisbursalPaymentType());
+            loan.setExpectedRepaymentPaymentType(loanApplicationReference.getExpectedRepaymentPaymentType());
             this.loanRepository.save(loan);
 
             result = approveLoan(loanApplicationReference, loanId, submitCommand);

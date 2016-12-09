@@ -51,6 +51,7 @@ public class LoanTransactionHelper {
     private static final String WRITE_OFF_LOAN_COMMAND = "writeoff";
     private static final String WAIVE_INTEREST_COMMAND = "waiveinterest";
     private static final String MAKE_REPAYMENT_COMMAND = "repayment";
+    private static final String MAKE_PREPAYMENT_COMMAND = "prepayment";
     private static final String WITHDRAW_LOAN_APPLICATION_COMMAND = "withdrawnByApplicant";
     private static final String RECOVER_FROM_GUARANTORS_COMMAND = "recoverGuarantees";
     private static final String MAKE_REFUND_BY_CASH_COMMAND = "refundByCash";
@@ -58,6 +59,8 @@ public class LoanTransactionHelper {
     private static final String REVOKE_SUBSIDY_COMMAND = "revokesubsidy";
     private static final String UNDO_REPAYMENT = "undo";
     private static final String FORECLOSURE_COMMAND = "foreclosure";
+    private static final String REFUND_COMMAND = "refund";
+
 
     public LoanTransactionHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         this.requestSpec = requestSpec;
@@ -276,6 +279,11 @@ public class LoanTransactionHelper {
                 getRepaymentBodyAsJSON(date, amountToBePaid), "");
     }
     
+    public HashMap makePrepayment(final String date, final Float amountToBePaid, final Integer loanID) {
+        return (HashMap) performLoanTransaction(createLoanTransactionURL(MAKE_PREPAYMENT_COMMAND, loanID),
+                getRepaymentBodyAsJSON(date, amountToBePaid), "");
+    }
+    
     public HashMap addSubsidy(final String date, final Float amountToBePaid, final Integer loanID) {
         return (HashMap) performLoanTransaction(createLoanTransactionURL(ADD_SUBSIDY_COMMAND, loanID),
                 getAddSubsidyBodyAsJSON(date, amountToBePaid), "");
@@ -283,6 +291,10 @@ public class LoanTransactionHelper {
     
     public HashMap revokeSubsidy(final String date, final Integer loanID) {
         return (HashMap) performLoanTransaction(createLoanTransactionURL(REVOKE_SUBSIDY_COMMAND, loanID), getAddRevokeBodyAsJSON(date), "");
+    }
+    public HashMap makeRefund(final String date, final Float amountToBePaid, final Integer loanID) {
+        return (HashMap) performLoanTransaction(createLoanTransactionURL(REFUND_COMMAND, loanID),
+        		getRefundBodyAsJSON(date), "");
     }
 
     public HashMap forecloseLoan(final String transactionDate, final Integer loanID) {
@@ -428,6 +440,14 @@ public class LoanTransactionHelper {
         map.put("dateFormat", "dd MMMM yyyy");
         map.put("subsidyReleaseDate", transactionDate);
         map.put("subsidyAmountReleased", transactionAmount.toString());
+        return new Gson().toJson(map);
+}
+    private String getRefundBodyAsJSON(final String transactionDate) {
+        final HashMap<String, String> map = new HashMap<>();
+        map.put("locale", "en");
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("transactionDate", transactionDate);
+        map.put("note", "Refund Made!!!");
         return new Gson().toJson(map);
     }
 

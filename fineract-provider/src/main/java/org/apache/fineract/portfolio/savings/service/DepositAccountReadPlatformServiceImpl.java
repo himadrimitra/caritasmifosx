@@ -1501,6 +1501,8 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
     
 	@Override
 	public Collection<DepositAccountData> getRDAccountsForTaskLookup(final SearchParameters searchParameters) {
+		final AppUser currentUser = this.context.authenticatedUser();
+		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
 		final StringBuilder builder = new StringBuilder(400);
 		RDLookUpMapper mapper = new RDLookUpMapper();
 		List<Object> params = new ArrayList<>();
@@ -1519,16 +1521,17 @@ public class DepositAccountReadPlatformServiceImpl implements DepositAccountRead
 		builder.append("from m_savings_account msa ");
 		builder.append("join m_savings_product msp on msp.id = msa.product_id ");
 		builder.append("join m_client mc on mc.id = msa.client_id ");
-		builder.append("join m_office mo on mo.id = mc.office_id ");
 		builder.append("left join m_staff ms on ms.id = msa.field_officer_id ");
 		builder.append("left join m_group mg on mg.id = msa.group_id ");
-		builder.append("left join m_office mog on mog.id = mg.office_id ");
+		builder.append("join m_office mo on (mo.id = mg.office_id or mo.id = mc.office_id) AND mo.hierarchy LIKE ? ");
 		builder.append("left join m_deposit_account_recurring_detail mdard on mdard.savings_account_id = msa.id ");
 		builder.append("where msa.deposit_type_enum = ? ");
+		params.add(hierarchy);
 		params.add(DepositAccountType.RECURRING_DEPOSIT.getValue());
-		builder.append(" and (mo.id = ? or mog.id = ?)");
-		params.add(searchParameters.getOfficeId());
-		params.add(searchParameters.getOfficeId());
+		if (searchParameters.getOfficeId() != null) {
+			builder.append(" and mo.id = ? ");
+			params.add(searchParameters.getOfficeId());
+		}
 		if(searchParameters.getStaffId() != null){
             builder.append(" and ms.id = ?");
             params.add(searchParameters.getStaffId());
