@@ -24,6 +24,8 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
+import org.apache.fineract.portfolio.savings.SavingsDpLimitCalculationType;
+import org.apache.fineract.portfolio.savings.SavingsDpLimitFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
@@ -107,5 +109,26 @@ public class SavingsDropdownReadPlatformServiceImpl implements SavingsDropdownRe
                 );
 
         return allowedOptions;
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrieveSavingsDpLimitFrequencyTypeOptions() {
+        final List<EnumOptionData> allowedSavingsDpLimitFrequencyTypeOptions = Arrays.asList( //
+                SavingsDpLimitFrequencyType.savingsDpLimitFrequencyType(SavingsDpLimitFrequencyType.DAYS), //
+                SavingsDpLimitFrequencyType.savingsDpLimitFrequencyType(SavingsDpLimitFrequencyType.WEEKS), //
+                SavingsDpLimitFrequencyType.savingsDpLimitFrequencyType(SavingsDpLimitFrequencyType.MONTHS), //
+                SavingsDpLimitFrequencyType.savingsDpLimitFrequencyType(SavingsDpLimitFrequencyType.YEARS) //
+                );
+        return allowedSavingsDpLimitFrequencyTypeOptions;
+    }
+
+    @Override
+    public Collection<EnumOptionData> retrieveSavingsDpLimitCalculationTypeOptions() {
+        final List<EnumOptionData> allowedSavingsDpLimitCalculationTypeOptions = Arrays.asList( //
+                SavingsDpLimitCalculationType.savingsDpLimitCalculationType(SavingsDpLimitCalculationType.FLAT), //
+                SavingsDpLimitCalculationType.savingsDpLimitCalculationType(SavingsDpLimitCalculationType.PERCENT_OF_AMOUNT) //
+                );
+
+        return allowedSavingsDpLimitCalculationTypeOptions;
     }
 }

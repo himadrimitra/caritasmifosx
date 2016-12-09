@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import org.junit.Assert;
+
 import com.google.gson.Gson;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
@@ -123,5 +125,20 @@ public class GlobalConfigurationHelper {
         System.out.println("map : " + map);
         return new Gson().toJson(map);
     }
+    
+    public void setConfiguration(String configurationName, boolean enabled, final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
+		// Retrieving All Global Configuration details
+		final ArrayList<HashMap> globalConfig = getAllGlobalConfigurations(requestSpec, responseSpec);
+		Assert.assertNotNull(globalConfig);
+		for (Integer configIndex = 0; configIndex < (globalConfig.size()); configIndex++) {
+			if (globalConfig.get(configIndex).get("name").equals(configurationName)) {
+				String configId = (globalConfig.get(configIndex).get("id")).toString();
+				Integer updateConfigId = updateEnabledFlagForGlobalConfiguration(
+						requestSpec, responseSpec, configId.toString(), enabled);
+				Assert.assertNotNull(updateConfigId);
+				break;
+			}
+		}
+	}
 
 }

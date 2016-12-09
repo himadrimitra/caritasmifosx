@@ -131,21 +131,28 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     @Column(name = "weeks_in_year_enum")
     private Integer weeksInYearType;
 
+    @Column(name = "emi_based_on_disbursements" , nullable = false)
+    private boolean isEmiBasedOnDisbursements ;
+    
+    @Column(name = "pmt_calculated_in_period_enum" , nullable = true)
+    private Integer pmtCalculationPeriodMethod;
+    
     public static LoanProductRelatedDetail createFrom(final MonetaryCurrency currency, final BigDecimal principal,
             final BigDecimal nominalInterestRatePerPeriod, final PeriodFrequencyType interestRatePeriodFrequencyType,
             final BigDecimal nominalAnnualInterestRate, final InterestMethod interestMethod,
             final InterestCalculationPeriodMethod interestCalculationPeriodMethod, final boolean allowPartialPeriodInterestCalcualtion,
             final Integer repaymentEvery, final PeriodFrequencyType repaymentPeriodFrequencyType, final Integer numberOfRepayments,
-            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods, final Integer graceOnInterestPayment, final Integer graceOnInterestCharged,
-            final AmortizationMethod amortizationMethod, final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing,
-            final Integer daysInMonthType, final Integer daysInYearType, final boolean isInterestRecalculationEnabled,
-            final Integer weeksInYearType) {
+            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
+            final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
+            final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
+            final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod) {
 
         return new LoanProductRelatedDetail(currency, principal, nominalInterestRatePerPeriod, interestRatePeriodFrequencyType,
                 nominalAnnualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion,
                 repaymentEvery, repaymentPeriodFrequencyType, numberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment,
                 graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType,
-                isInterestRecalculationEnabled, weeksInYearType);
+                isInterestRecalculationEnabled, weeksInYearType, isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
     }
 
     protected LoanProductRelatedDetail() {
@@ -160,7 +167,8 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
             final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
             final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
-            final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType) {
+            final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
+            final boolean isEmiBasedOnDisbursements, final Integer pmtCalculationPeriodMethod) {
         this.currency = currency;
         this.principal = defaultPrincipal;
         this.nominalInterestRatePerPeriod = defaultNominalInterestRatePerPeriod;
@@ -187,6 +195,8 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         this.daysInYearType = daysInYearType;
         this.isInterestRecalculationEnabled = isInterestRecalculationEnabled;
         this.weeksInYearType = weeksInYearType;
+        this.isEmiBasedOnDisbursements = isEmiBasedOnDisbursements ;
+        this.pmtCalculationPeriodMethod = pmtCalculationPeriodMethod;
     }
 
     private Integer defaultToNullIfZero(final Integer value) {
@@ -507,6 +517,21 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             this.isInterestRecalculationEnabled = newValue;
         }
 
+        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isEmiBasedOnDisbursements,
+                this.isEmiBasedOnDisbursements)) {
+            final boolean newValue = command
+                    .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isEmiBasedOnDisbursements);
+            actualChanges.put(LoanProductConstants.isEmiBasedOnDisbursements, newValue);
+            this.isEmiBasedOnDisbursements = newValue;
+        }
+        
+        if (command.isChangeInIntegerParameterNamed(LoanProductConstants.installmentCalculationPeriodTypeParamName, this.pmtCalculationPeriodMethod)) {
+            final Integer newValue = command.integerValueOfParameterNamed(LoanProductConstants.installmentCalculationPeriodTypeParamName);
+            actualChanges.put(LoanProductConstants.installmentCalculationPeriodTypeParamName, newValue);
+            actualChanges.put("locale", localeAsInput);
+            this.pmtCalculationPeriodMethod = newValue;
+        }
+        
         validateRepaymentPeriodWithGraceSettings();
 
         return actualChanges;
@@ -668,5 +693,15 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     }
     
     
-
+    public boolean isEmiBasedOnDisbursements() {
+    	return this.isEmiBasedOnDisbursements ;
+    }
+    
+    public InterestCalculationPeriodMethod getPmtCalculationPeriodMethod() {
+        InterestCalculationPeriodMethod pmtCalculationMethod = null;
+        if (this.pmtCalculationPeriodMethod != null) {
+            pmtCalculationMethod = InterestCalculationPeriodMethod.fromInt(this.pmtCalculationPeriodMethod);
+        }
+        return pmtCalculationMethod;
+    }
 }

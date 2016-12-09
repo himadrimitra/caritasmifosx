@@ -168,6 +168,16 @@ public class SavingsApiConstants {
     public static final String daysToDormancyParamName = "daysToDormancy";
     public static final String daysToEscheatParamName = "daysToEscheat";
     
+    // Savings DP Limit
+    public static final String allowDpLimitParamName = "allowDpLimit";
+    public static final String dpLimitAmountParamName = "dpLimitAmount";
+    public static final String savingsDpLimitFrequencyTypeParamName = "savingsDpLimitFrequencyType";
+    public static final String savingsDpLimitCalculationTypeParamName = "savingsDpLimitCalculationType";
+    public static final String dpLimitReductionEveryParamName = "dpLimitReductionEvery";
+    public static final String dpCalculateOnAmountParamName = "dpCalculateOnAmount";
+    public static final String dpDurationParamName = "dpDuration";
+    
+    
 
     public static final Set<String> SAVINGS_PRODUCT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             monthDayFormatParamName, nameParamName, shortNameParamName, descriptionParamName, currencyCodeParamName,
@@ -220,7 +230,9 @@ public class SavingsApiConstants {
             // withdrawalFeeAmountParamName, withdrawalFeeTypeParamName,
             withdrawalFeeForTransfersParamName, feeAmountParamName, feeOnMonthDayParamName, chargesParamName, allowOverdraftParamName,
             overdraftLimitParamName, minRequiredBalanceParamName, enforceMinRequiredBalanceParamName,
-            nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, withHoldTaxParamName));
+            nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, withHoldTaxParamName,
+            allowDpLimitParamName, dpCalculateOnAmountParamName, dpLimitAmountParamName, dpLimitReductionEveryParamName,
+            savingsDpLimitFrequencyTypeParamName, savingsDpLimitCalculationTypeParamName, dpDurationParamName));
 
     public static final Set<String> SAVINGS_ACCOUNT_CREATE_OR_ACTIVATE_DATA_PARAMETER = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, monthDayFormatParamName, staffIdParamName, accountNoParamName, clientIdParamName, productIdParamName,

@@ -59,8 +59,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.joda.time.LocalDateTime;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 /**
  * All monetary transactions against a loan are modelled through this entity.
@@ -192,6 +190,11 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public static LoanTransaction realizationLoanSubsidy(final Office office, final Money amount, final PaymentDetail paymentDetail,
             final LocalDate paymentDate, final String externalId) {
         return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.REALIZATION_SUBSIDY.getValue(), paymentDetail, amount.getAmount(), paymentDate, externalId);
+    }
+    
+    public static LoanTransaction prepayment(final Office office, final Money amount, final PaymentDetail paymentDetail,
+            final LocalDate paymentDate, final String externalId) {
+        return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.PRE_PAYMENT.getValue(), paymentDetail, amount.getAmount(), paymentDate, externalId);
     }
 
     public static LoanTransaction recoveryRepayment(final Office office, final Money amount, final PaymentDetail paymentDetail,
@@ -902,6 +905,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return this.subTypeOf;
     }
     
+    public LoanTransactionSubType getTransactionSubTye() {
+        LoanTransactionSubType type = LoanTransactionSubType.INVALID;
+        if(this.subTypeOf != null){
+            type = LoanTransactionSubType.fromInt(this.subTypeOf);
+        }
+        return type;
+    }
+    
     public Date getSubmittedOnDate() {
         return this.submittedOnDate;
     }
@@ -925,5 +936,15 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     public Set<GroupLoanIndividualMonitoringTransaction> getGlimTransaction() {
         return this.groupLoanIndividualMonitoringTransactions;
+    }
+
+    
+    public PaymentDetail getPaymentDetail() {
+        return this.paymentDetail;
+    }
+
+    
+    public BigDecimal getAmount() {
+        return this.amount;
     }
 }

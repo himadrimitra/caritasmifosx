@@ -356,6 +356,20 @@ public class RecurringDepositAccountHelper {
 				"------------------------ RETRIEVING RECURRING DEPOSIT ACCOUNT BY ID -------------------------");
 		return Utils.performServerGet(requestSpec, responseSpec, GET_RECURRING_DEPOSIT_BY_ID_URL, "");
 	}
+	
+	public static HashMap depositIntoRecurringDeposit(final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final Integer accountID, final String transactionAmount, final String transactionDate) {
+		HashMap<String, String> map = new HashMap<String, String>();
+		map.put("transactionAmount", transactionAmount);
+		map.put("transactionDate", transactionDate);
+		map.put("locale", "en");
+		map.put("dateFormat", "dd MMMM yyyy");
+		final String GET_RECURRING_DEPOSIT_BY_ID_URL = RECURRING_DEPOSIT_ACCOUNT_URL + "/" + accountID
+				+ "/transactions?" + Utils.TENANT_IDENTIFIER + "&command=deposit";
+		System.out.println(
+				"------------------------ RETRIEVING RECURRING DEPOSIT ACCOUNT BY ID -------------------------");
+		return Utils.performServerPost(requestSpec, responseSpec, GET_RECURRING_DEPOSIT_BY_ID_URL, new Gson().toJson(map), "");
+	}
     
     private String getApproveRecurringDepositAccountAsJSON(final String approvedOnDate) {
         final HashMap<String, Object> map = new HashMap<>();

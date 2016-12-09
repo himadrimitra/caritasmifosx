@@ -105,6 +105,10 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "maturity_date")
     private Date maturityDate;
 
+    @Temporal(TemporalType.DATE)
+    @Column(name = "closed_date")
+    private Date closedDate;
+
     @Column(name = "gt_0_dpd_3_mths")
     private Integer gt0dpd3mths;
 
@@ -129,12 +133,12 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             final BigDecimal currentOutstanding, final BigDecimal amtOverdue, final BigDecimal writtenoffamount, final Integer loanTenure,
             final Integer loanTenurePeriodType, final Integer repaymentFrequency, final Integer repaymentFrequencyMultipleOf,
             final BigDecimal installmentAmount, final CodeValue externalLoanPurpose, final Integer status, final LocalDate disbursedDate,
-            final LocalDate maturityDate, final Integer gt0dpd3mths, final Integer dpd30mths12, final Integer dpd30mths24,
-            final Integer dpd60mths24, final String remark, final Integer archive) {
+            final LocalDate maturityDate, final LocalDate closedDate, final Integer gt0dpd3mths, final Integer dpd30mths12,
+            final Integer dpd30mths24, final Integer dpd60mths24, final String remark, final Integer archive) {
         return new ExistingLoan(client, loanId, loanApplicationId, source, creditBureauProduct, loanCreditBureauEnquiryId, lender,
                 lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure, loanTenurePeriodType,
                 repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, disbursedDate,
-                maturityDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
+                maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -394,8 +398,8 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             CodeValue loanType, BigDecimal amountBorrowed, BigDecimal currentOutstanding, BigDecimal amtOverdue,
             BigDecimal writtenOffAmount, Integer loanTenure, Integer loanTenurePeriodType, Integer repaymentFrequency,
             Integer repaymentFrequencyMultipleOf, BigDecimal installmentAmount, CodeValue externalLoanPurposeCvId, Integer loanStatusId,
-            LocalDate disbursedDate, LocalDate maturityDate, Integer gt0dpd3mths, Integer dpd30mths12, Integer dpd30mths24,
-            Integer dpd60mths24, String remark, Integer archive) {
+            LocalDate disbursedDate, LocalDate maturityDate, final LocalDate closedDate, Integer gt0dpd3mths, Integer dpd30mths12,
+            Integer dpd30mths24, Integer dpd60mths24, String remark, Integer archive) {
         this.client = client;
         this.loanId = loanId;
         this.loanApplicationId = loanApplicationId;
@@ -422,6 +426,9 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
         if (maturityDate != null) {
             this.maturityDate = maturityDate.toDate();
         }
+        if (closedDate != null) {
+            this.closedDate = closedDate.toDate();
+        }
         this.gt0dpd3mths = gt0dpd3mths;
         this.dpd30mths12 = dpd30mths12;
         this.dpd30mths24 = dpd30mths24;
@@ -436,5 +443,13 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
 
     public void updateLender(final CodeValue lender) {
         this.lender = lender;
+    }
+
+    public Date getClosedDate() {
+        return this.closedDate;
+    }
+
+    public void setClosedDate(Date closedDate) {
+        this.closedDate = closedDate;
     }
 }

@@ -76,7 +76,7 @@ public class ExistingLoanReadPlatformServiceImpl implements ExistingLoanReadPlat
     }
 
     @Override
-    public List<ExistingLoanData> retriveAll(Long clientId) {
+    public List<ExistingLoanData> retriveAll(final Long clientId) {
         this.clientRepository.findOneWithNotFoundDetection(clientId);
         final ExistingLoanMapper rm = new ExistingLoanMapper();
         final String sql = rm.schema() + " WHERE el.client_id= ? ";
@@ -112,7 +112,7 @@ public class ExistingLoanReadPlatformServiceImpl implements ExistingLoanReadPlat
             builder.append(",el.written_off_amount AS writtenOffAmount ,el.loan_tenure AS loanTenure ,el.loan_tenure_period_type AS loanTenurePeriodTypeId ");
             builder.append(",el.repayment_frequency AS repaymentFrequencyId ,el.repayment_frequency_multiple_of AS repaymentFrequencyMultipleOf ,el.installment_amount AS installmentAmount ");
             builder.append(",externalLoanPurpose.id AS externalLoanPurposeId, externalLoanPurpose.code_value AS externalLoanPurposeName,externalLoanPurpose.is_active AS externalLoanPurposeIsActive ");
-            builder.append(",el.loan_status_id AS loanStatusId,el.disbursed_date AS disbursedDate,el.maturity_date as maturityDate ");
+            builder.append(",el.loan_status_id AS loanStatusId,el.disbursed_date AS disbursedDate,el.maturity_date as maturityDate,el.closed_date as closedDate ");
             builder.append(",el.gt_0_dpd_3_mths AS gt0dpd3mths, el.30_dpd_12_mths AS dpd30mths12, el.30_dpd_24_mths AS dpd30mths24, el.60_dpd_24_mths AS dpd60mths24 ");
             builder.append(",el.remark AS remark, el.archive AS archive ");
             builder.append("FROM f_existing_loan el ");
@@ -200,6 +200,7 @@ public class ExistingLoanReadPlatformServiceImpl implements ExistingLoanReadPlat
             }
             final LocalDate disbursedDate = JdbcSupport.getLocalDate(rs, "disbursedDate");
             final LocalDate maturityDate = JdbcSupport.getLocalDate(rs, "maturityDate");
+            final LocalDate closedDate = JdbcSupport.getLocalDate(rs, "closedDate");
             final Integer gt0Dpd3Mths = JdbcSupport.getInteger(rs, "gt0dpd3mths");
             final Integer dpd30Mths12 = JdbcSupport.getInteger(rs, "dpd30mths12");
             final Integer dpd30Mths24 = JdbcSupport.getInteger(rs, "dpd30mths24");
@@ -210,8 +211,8 @@ public class ExistingLoanReadPlatformServiceImpl implements ExistingLoanReadPlat
             return ExistingLoanData.instance(id, clientId, loanApplicationId, loanId, source, creditBureauProductData,
                     loanCreditBureauEnquiryId, lender, lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue,
                     writtenOffAmount, loanTenure, loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf,
-                    installmentAmount, externalLoanPurpose, loanStatus, disbursedDate, maturityDate, gt0Dpd3Mths, dpd30Mths12, dpd30Mths24,
-                    dpd60Mths24, remark, archive);
+                    installmentAmount, externalLoanPurpose, loanStatus, disbursedDate, maturityDate, closedDate, gt0Dpd3Mths, dpd30Mths12,
+                    dpd30Mths24, dpd60Mths24, remark, archive);
 
         }
     }

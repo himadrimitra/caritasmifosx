@@ -375,10 +375,15 @@ public class LoanProduct extends AbstractPersistable<Long> {
         final Integer loanTermFrequencyTypeEnum = command.integerValueOfParameterNamed(LoanProductConstants.loanTenureFrequencyType);
         final PeriodFrequencyType loanTenureFrequencyType = PeriodFrequencyType.fromInt(loanTermFrequencyTypeEnum);
         
-		final boolean canUseForTopup = command.parameterExists(LoanProductConstants.canUseForTopup)
-				? command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canUseForTopup)
-				: false;
+        final boolean canUseForTopup = command.parameterExists(LoanProductConstants.canUseForTopup) ? command
+                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canUseForTopup) : false;
 
+        final boolean isEmiBasedOnDisbursements = command.parameterExists(LoanProductConstants.isEmiBasedOnDisbursements) ? command
+                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isEmiBasedOnDisbursements) : false;
+
+        final Integer pmtCalculationPeriodMethod = command
+                .integerValueOfParameterNamed(LoanProductConstants.installmentCalculationPeriodTypeParamName);
+				
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
                 annualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion, repaymentEvery,
@@ -394,7 +399,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
                 maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
-                loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding);
+                loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
 
     }
 
@@ -629,7 +635,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment, 
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
-            final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding) {
+            final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -661,7 +668,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 interestPeriodFrequencyType, defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod,
                 considerPartialPeriodInterest, repayEvery, repaymentFrequencyType, defaultNumberOfInstallments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods,
                 graceOnInterestPayment, graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing,
-                daysInMonthType.getValue(), daysInYearType.getValue(), isInterestRecalculationEnabled, weeksInYearType.getValue());
+                daysInMonthType.getValue(), daysInYearType.getValue(), isInterestRecalculationEnabled, weeksInYearType.getValue(),
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
 
         this.loanProductRelatedDetail.validateRepaymentPeriodWithGraceSettings();
 

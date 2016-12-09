@@ -182,7 +182,7 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
             final Loan fromLoanAccount = this.loanAccountAssembler.assembleFrom(fromLoanAccountId);
 
             final LoanTransaction loanRefundTransaction = this.loanAccountDomainService.makeRefund(fromLoanAccountId,
-                    new CommandProcessingResultBuilder(), transactionDate, transactionAmount, paymentDetail, null, null);
+                    new CommandProcessingResultBuilder(), transactionDate, transactionAmount, paymentDetail, null, null, isAccountTransfer);
 
             final Long toSavingsAccountId = command.longValueOfParameterNamed(toAccountIdParamName);
             final SavingsAccount toSavingsAccount = this.savingsAccountAssembler.assembleFrom(toSavingsAccountId);
@@ -431,7 +431,7 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
                 loanTransaction = this.loanAccountDomainService.makeRefund(accountTransferDTO.getFromAccountId(),
                         new CommandProcessingResultBuilder(), accountTransferDTO.getTransactionDate(),
                         accountTransferDTO.getTransactionAmount(), accountTransferDTO.getPaymentDetail(), accountTransferDTO.getNoteText(),
-                        accountTransferDTO.getTxnExternalId());
+                        accountTransferDTO.getTxnExternalId(), isAccountTransfer);
             }
 
             final SavingsAccountTransaction deposit = this.savingsAccountDomainService.handleDeposit(toSavingsAccount,

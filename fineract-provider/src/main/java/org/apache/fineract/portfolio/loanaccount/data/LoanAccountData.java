@@ -793,7 +793,7 @@ public class LoanAccountData {
      * defaulted.
      */
     public static LoanAccountData clientDefaults(final Long clientId, final String clientAccountNo, final String clientName,
-            final Long clientOfficeId, final LocalDate expectedDisbursementDate) {
+            final Long clientOfficeId, final LocalDate expectedDisbursementDate, final Collection<PaymentTypeData> paymentOptions) {
         final Long id = null;
         final String accountNo = null;
         final LoanStatusEnumData status = null;
@@ -907,7 +907,6 @@ public class LoanAccountData {
         final String closureLoanAccountNo = null;
         final BigDecimal topupAmount = null;
         final EnumOptionData weeksInYearType = null;
-        final Collection<PaymentTypeData> paymentOptions = null;
         final PaymentTypeData expectedDisbursalPaymentType = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
@@ -1157,7 +1156,7 @@ public class LoanAccountData {
             final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions,
             final Collection<LoanPurposeData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions,
             final Integer loanCycleNumber, final Collection<PledgeData> loanProductCollateralPledgesOptions,
-            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final Collection<PaymentTypeData> paymentOptions) {
+            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final Collection<PaymentTypeData> paymentOptions, Long loanOfficerId) {
 
         final Long id = null;
         final String accountNo = null;
@@ -1172,7 +1171,6 @@ public class LoanAccountData {
         final EnumOptionData loanType = null;
         final Long loanPurposeId = null;
         final String loanPurposeName = null;
-        final Long loanOfficerId = null;
         final String loanOfficerName = null;
         final Long pledgeId = null;
 

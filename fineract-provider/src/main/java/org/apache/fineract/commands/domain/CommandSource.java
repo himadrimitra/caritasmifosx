@@ -100,10 +100,13 @@ public class CommandSource extends AbstractPersistable<Long> {
     
     @Column(name = "option_type")
     private String option;
+    
+    @Column(name = "entity_type_id", nullable = false)
+    private Integer entityTypeId;
 
     public static CommandSource fullEntryFrom(final CommandWrapper wrapper, final JsonCommand command, final AppUser maker) {
         return new CommandSource(wrapper.actionName(), wrapper.entityName(), wrapper.getHref(), command.entityId(), command.subentityId(),
-                command.json(), maker, DateUtils.getLocalDateTimeOfTenant().toDateTime(), wrapper.getOption());
+                command.json(), maker, DateUtils.getLocalDateTimeOfTenant().toDateTime(), wrapper.getOption(), wrapper.getEntityTypeId());
     }
 
     protected CommandSource() {
@@ -112,7 +115,7 @@ public class CommandSource extends AbstractPersistable<Long> {
 
     private CommandSource(final String actionName, final String entityName, final String href, final Long resourceId,
             final Long subresourceId, final String commandSerializedAsJson, final AppUser maker, final DateTime madeOnDateTime,
-            final String option) {
+            final String option, Integer entityTypeId) {
         this.actionName = actionName;
         this.entityName = entityName;
         this.resourceGetUrl = href;
@@ -123,6 +126,7 @@ public class CommandSource extends AbstractPersistable<Long> {
         this.madeOnDate = madeOnDateTime.toDate();
         this.processingResult = CommandProcessingResultType.PROCESSED.getValue();
         this.option = option;
+        this.entityTypeId = entityTypeId;
     }
 
     public void markAsChecked(final AppUser checker, final DateTime checkedOnDate) {
@@ -262,6 +266,11 @@ public class CommandSource extends AbstractPersistable<Long> {
     
     public String getOption() {
         return this.option;
+    }
+
+    
+    public Integer getEntityTypeId() {
+        return this.entityTypeId;
     }
 
 }

@@ -34,6 +34,7 @@ public class ExistingLoanData {
     private final LoanStatusEnumData loanStatus;
     private final LocalDate disbursedDate;
     private final LocalDate maturityDate;
+    private final LocalDate closedDate;
     private final Integer gt0Dpd3Mths;
     private final Integer dpd30Mths12;
     private final Integer dpd30Mths24;
@@ -47,8 +48,8 @@ public class ExistingLoanData {
             final BigDecimal currentOutstanding, final BigDecimal amtOverdue, final BigDecimal writtenOffAmount, final Integer loanTenure,
             final EnumOptionData loanTenurePeriodType, final EnumOptionData repaymentFrequency, final Integer repaymentFrequencyMultipleOf,
             final BigDecimal installmentAmount, final CodeValueData externalLoanPurpose, final LoanStatusEnumData loanStatus,
-            final LocalDate disbursedDate, final LocalDate maturityDate, final Integer gt0Dpd3Mths, final Integer dpd30Mths12,
-            final Integer dpd30Mths24, final Integer dpd60Mths24, final String remark, final Integer archive) {
+            final LocalDate disbursedDate, final LocalDate maturityDate, final LocalDate closedDate, final Integer gt0Dpd3Mths,
+            final Integer dpd30Mths12, final Integer dpd30Mths24, final Integer dpd60Mths24, final String remark, final Integer archive) {
         this.id = id;
         this.clientId = clientId;
         this.loanApplicationId = loanApplicationId;
@@ -72,6 +73,7 @@ public class ExistingLoanData {
         this.loanStatus = loanStatus;
         this.disbursedDate = disbursedDate;
         this.maturityDate = maturityDate;
+        this.closedDate = closedDate;
         this.gt0Dpd3Mths = gt0Dpd3Mths;
         this.dpd30Mths12 = dpd30Mths12;
         this.dpd30Mths24 = dpd30Mths24;
@@ -86,12 +88,12 @@ public class ExistingLoanData {
             final BigDecimal currentOutstanding, final BigDecimal amtOverdue, final BigDecimal writtenOffAmount, final Integer loanTenure,
             final EnumOptionData loanTenurePeriodType, final EnumOptionData repaymentFrequency, final Integer repaymentFrequencyMultipleOf,
             final BigDecimal installmentAmount, final CodeValueData externalLoanPurpose, final LoanStatusEnumData loanStatus,
-            final LocalDate disbursedDate, final LocalDate maturityDate, final Integer gt0Dpd3Mths, final Integer dpd30Mths12,
-            final Integer dpd30Mths24, final Integer dpd60Mths24, final String remark, final Integer archive) {
+            final LocalDate disbursedDate, final LocalDate maturityDate, final LocalDate closedDate, final Integer gt0Dpd3Mths,
+            final Integer dpd30Mths12, final Integer dpd30Mths24, final Integer dpd60Mths24, final String remark, final Integer archive) {
         return new ExistingLoanData(id, clientId, loanApplicationId, loanId, source, creditBureauProductData, loanCreditBureauEnquiryId,
                 lender, lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenOffAmount, loanTenure,
                 loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, loanStatus,
-                disbursedDate, maturityDate, gt0Dpd3Mths, dpd30Mths12, dpd30Mths24, dpd60Mths24, remark, archive);
+                disbursedDate, maturityDate, closedDate, gt0Dpd3Mths, dpd30Mths12, dpd30Mths24, dpd60Mths24, remark, archive);
     }
 
     public Long getId() {
@@ -208,5 +210,9 @@ public class ExistingLoanData {
 
     public Integer getArchive() {
         return this.archive;
+    }
+
+    public LocalDate getClosedDate() {
+        return this.closedDate;
     }
 }

@@ -82,7 +82,6 @@ import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlat
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
-import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
@@ -239,6 +238,9 @@ public class LoanScheduleAssembler {
             allowPartialPeriodInterestCalcualtion = loanProduct.getLoanProductRelatedDetail().isAllowPartialPeriodInterestCalcualtion();
         }
 
+        boolean isEmiBasedOnDisbursements = loanProduct.getLoanProductRelatedDetail().isEmiBasedOnDisbursements();
+        InterestCalculationPeriodMethod pmtCalculationPeriodMethod = loanProduct.getLoanProductRelatedDetail().getPmtCalculationPeriodMethod();
+        
         final BigDecimal interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("interestRatePerPeriod", element);
         final PeriodFrequencyType interestRatePeriodFrequencyType = loanProduct.getInterestPeriodFrequencyType();
 
@@ -496,7 +498,8 @@ public class LoanScheduleAssembler {
                 loanTermVariations, isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfDays, isSkipMeetingOnFirstDay, detailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount,
                 loanProduct.getAdjustedInstallmentInMultiplesOf(), loanProduct.adjustFirstEMIAmount(), 
-                considerFutureDisbursmentsInSchedule,considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(), loanProduct.isAdjustInterestForRounding());
+                considerFutureDisbursmentsInSchedule,considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(), loanProduct.isAdjustInterestForRounding(),
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,

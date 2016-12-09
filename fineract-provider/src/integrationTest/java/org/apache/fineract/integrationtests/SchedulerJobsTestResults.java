@@ -255,9 +255,11 @@ public class SchedulerJobsTestResults {
     
     @Test
     public void testApplyHolidays() throws InterruptedException {
-        
+    	
+    	this.globalConfigurationHelper = new GlobalConfigurationHelper(requestSpec, responseSpec);
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         this.holidayHelper = new HolidayHelper(this.requestSpec, this.responseSpec);
+        this.globalConfigurationHelper.setConfiguration("reschedule-repayments-on-holidays", true, requestSpec, responseSpec);
         
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         System.out.println("clientID..."+clientID);
@@ -320,7 +322,7 @@ public class SchedulerJobsTestResults {
         ArrayList<Integer> rescheduleDueDate10 = (ArrayList<Integer>) repaymentScheduleData.get(10).get("dueDate");
         Integer rescheduleDaysInPeriod10 = (Integer) repaymentScheduleData.get(10).get("daysInPeriod");
         ArrayList<Integer> rescheduleDueDat10 = new ArrayList<Integer>();
-        rescheduleDueDat10.add(31);
+        rescheduleDueDat10.add(21);
         rescheduleDueDat10.add(12);
         rescheduleDueDat10.add(2013);
         rescheduleDueDate10.removeAll(rescheduleDueDat10);
@@ -329,8 +331,8 @@ public class SchedulerJobsTestResults {
         ArrayList<Integer> rescheduleDueDate11 = (ArrayList<Integer>) repaymentScheduleData.get(11).get("dueDate");
         Integer rescheduleDaysInPeriod11 = (Integer) repaymentScheduleData.get(11).get("daysInPeriod");
         ArrayList<Integer> rescheduleDueDat11 = new ArrayList<Integer>();
+        rescheduleDueDat11.add(28);
         rescheduleDueDat11.add(12);
-        rescheduleDueDat11.add(31);
         rescheduleDueDat11.add(2013);
         rescheduleDueDate11.removeAll(rescheduleDueDat11);
         Assert.assertTrue(rescheduleDueDate11.isEmpty());
@@ -344,6 +346,9 @@ public class SchedulerJobsTestResults {
         rescheduleDueDate12.removeAll(rescheduleDueDat12);
         Assert.assertTrue(rescheduleDueDate12.isEmpty());
         
+        this.globalConfigurationHelper.setConfiguration("reschedule-repayments-on-holidays", false, requestSpec, responseSpec); 
+        this.holidayHelper.deleteHolidays(requestSpec, responseSpec, christmasHolidayId.toString());
+        this.holidayHelper.deleteHolidays(requestSpec, responseSpec, dusseraHolidayId2.toString());
     }
 
     @Test
@@ -351,7 +356,8 @@ public class SchedulerJobsTestResults {
         this.schedulerJobHelper = new SchedulerJobHelper(this.requestSpec, this.responseSpec);
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         this.holidayHelper = new HolidayHelper(this.requestSpec, this.responseSpec);
-        this.globalConfigurationHelper = new GlobalConfigurationHelper(this.requestSpec, this.responseSpec);
+        this.globalConfigurationHelper = new GlobalConfigurationHelper(requestSpec, responseSpec);
+        this.globalConfigurationHelper.setConfiguration("reschedule-repayments-on-holidays", true, requestSpec, responseSpec); 
 
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
         Assert.assertNotNull(clientID);
@@ -373,28 +379,7 @@ public class SchedulerJobsTestResults {
 
         loanStatusHashMap = this.loanTransactionHelper.disburseLoan(AccountTransferTest.LOAN_DISBURSAL_DATE, loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
-
-        // Retrieving All Global Configuration details
-        final ArrayList<HashMap> globalConfig = this.globalConfigurationHelper.getAllGlobalConfigurations(this.requestSpec,
-                this.responseSpec);
-        Assert.assertNotNull(globalConfig);
-
-        // Updating Value for reschedule-repayments-on-holidays Global
-        // Configuration
-        Integer configId = (Integer) globalConfig.get(3).get("id");
-        Assert.assertNotNull(configId);
-
-        HashMap configData = this.globalConfigurationHelper.getGlobalConfigurationById(this.requestSpec, this.responseSpec,
-                configId.toString());
-        Assert.assertNotNull(configData);
-
-        Boolean enabled = (Boolean) globalConfig.get(3).get("enabled");
-
-        if (enabled == false) {
-            enabled = true;
-            configId = this.globalConfigurationHelper.updateEnabledFlagForGlobalConfiguration(this.requestSpec, this.responseSpec,
-                    configId.toString(), enabled);
-        }
+        
         final ArrayList<HashMap> repaymentScheduleDataBeforeJob = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
                 this.responseSpec, loanID);
 
@@ -414,6 +399,9 @@ public class SchedulerJobsTestResults {
 
         Assert.assertEquals("Verifying Repayment Rescheduled Date after Running Apply Holidays to Loans Scheduler Job",
                 repaymentsRescheduledDate, repaymentsRescheduledDate);
+        
+        this.globalConfigurationHelper.setConfiguration("reschedule-repayments-on-holidays", false, requestSpec, responseSpec); 
+        this.holidayHelper.deleteHolidays(requestSpec, responseSpec, holidayId.toString());
 
     }
 

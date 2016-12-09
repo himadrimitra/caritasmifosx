@@ -377,8 +377,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         final ClientData clientAccount = this.clientReadPlatformService.retrieveOne(clientId);
         final LocalDate expectedDisbursementDate = DateUtils.getLocalDateOfTenant();
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         LoanAccountData loanTemplateDetails = LoanAccountData.clientDefaults(clientAccount.id(), clientAccount.accountNo(),
-                clientAccount.displayName(), clientAccount.officeId(), expectedDisbursementDate);
+                clientAccount.displayName(), clientAccount.officeId(), expectedDisbursementDate, paymentOptions);
 
         if (productId != null) {
             final LoanProductData selectedProduct = this.loanProductReadPlatformService.retrieveLoanProduct(productId);
@@ -1142,9 +1143,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     @Override
     public Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(final SearchParameters searchParameters) {
-    
+		final AppUser currentUser = this.context.authenticatedUser();
+		String hierarchy = currentUser.getOffice().getHierarchy() + "%";
         final StringBuilder builder = new StringBuilder(400);
         final LoanTaskLookupMapper mapper= new LoanTaskLookupMapper();
+		Boolean whereused = false;
          List<Object> params = new ArrayList<>();
          String sqlSearch = searchParameters.getSqlSearch();
          builder.append("select ");
@@ -1160,27 +1163,49 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append(" left join m_loan_disbursement_detail dd on dd.loan_id = ml.id and dd.expected_disburse_date = ml.expected_disbursedon_date ");
          builder.append(" left join f_loan_purpose flp on flp.id = ml.loan_purpose_id  ");
          builder.append(" left join m_client c on ml.client_id = c.id ");
-         builder.append(" left JOIN m_office o ON o.id = c.office_id ");
          builder.append(" left JOIN m_group g ON g.id = ml.group_id ");
-         builder.append(" left JOIN m_office og ON og.id = g.office_id ");
-         
-         builder.append(" WHERE (o.id = ? or og.id =? ) ");
-         params.add(searchParameters.getOfficeId());
-         params.add(searchParameters.getOfficeId());
+         builder.append(" JOIN m_office o ON (o.id = g.office_id or o.id = c.office_id) AND o.hierarchy LIKE ? ");
+         params.add(hierarchy);
+		if (searchParameters.getOfficeId() != null) {
+			builder.append(" WHERE o.id = ? ");
+			params.add(searchParameters.getOfficeId());
+			whereused = true;
+		}
          if(searchParameters.getStaffId() != null){
+			if (whereused) {
              builder.append(" and s.id = ?");
+			} else {
+				builder.append(" where s.id = ?");
+				whereused = true;
+
+			}
              params.add(searchParameters.getStaffId());
          }
          if(searchParameters.getGroupId() != null){
+        	 if (whereused) {
              builder.append(" and g.id = ?");
+			} else {
+				builder.append(" where g.id = ?");
+				whereused = true;
+			}
              params.add(searchParameters.getGroupId());
          }
          if(searchParameters.getCenterId() != null){
+        	 if (whereused) {
              builder.append(" and g.parent_id = ?" );
+			} else {
+				builder.append(" where g.parent_id = ?");
+				whereused = true;
+			}
              params.add(searchParameters.getCenterId());
          }
          if (sqlSearch != null) {
+        	 if (whereused) {
              builder.append(" and (" + sqlSearch + ")");
+			} else {
+				builder.append(" where (" + sqlSearch + ")");
+				whereused = true;
+			}
          }
          
          return this.jdbcTemplate.query(builder.toString(), mapper, params.toArray());
@@ -1321,7 +1346,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 }
                 for(DisbursementData data : disbursementData){
                     if(data.getChargeAmount() != null){
+                    	if(incluedeAllDisbursements || data.isDisbursed()){
                         disbursementChargeAmount = disbursementChargeAmount.subtract(data.getChargeAmount());
+                    	}
                     }
                 }
                 this.outstandingLoanPrincipalBalance = BigDecimal.ZERO;
@@ -1363,11 +1390,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                                 principal = principal.add(data.amount());
                                 if (data.getChargeAmount() == null) {
                                     final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                                            data.disbursementDate(), data.amount(), BigDecimal.ZERO, data.isDisbursed());
+                                            data.disbursementDate(), data.amount(), disbursementChargeAmount, data.isDisbursed());
                                     periods.add(periodData);
                                 } else {
                                     final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                                            data.disbursementDate(), data.amount(), data.getChargeAmount(), data.isDisbursed());
+                                            data.disbursementDate(), data.amount(), disbursementChargeAmount.add(data.getChargeAmount()), data.isDisbursed());
                                     periods.add(periodData);
                                 }
                                 this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(data.amount());
@@ -1641,6 +1668,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 true);
         final Collection<CodeValueData> loanCollateralOptions = this.codeValueReadPlatformService
                 .retrieveCodeValuesByCode("LoanCollateral");
+        Long loanOfficerId = null;
+        if(clientId!= null){
+        loanOfficerId = this.clientReadPlatformService.retrieveDefaultStaffIdFromGroup(clientId);
+        }
         final Collection<PledgeData> loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(clientId, productId, null);
         Collection<ChargeData> chargeOptions = null;
         if (loanProduct.getMultiDisburseLoan()) {
@@ -1670,7 +1701,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 repaymentFrequencyNthDayTypeOptions, repaymentFrequencyDaysOfWeekTypeOptions, repaymentStrategyOptions,
                 interestRateFrequencyTypeOptions, amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions,
                 fundOptions, chargeOptions, loanPurposeOptions, loanCollateralOptions, loanCycleCounter, loanProductCollateralPledgesOptions,
-                clientActiveLoanOptions, paymentOptions);
+                clientActiveLoanOptions, paymentOptions, loanOfficerId);
     }
 
     @Override
@@ -1680,9 +1711,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         final ClientData clientAccount = this.clientReadPlatformService.retrieveOne(clientId);
         final LocalDate expectedDisbursementDate = DateUtils.getLocalDateOfTenant();
-
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         return LoanAccountData.clientDefaults(clientAccount.id(), clientAccount.accountNo(), clientAccount.displayName(),
-                clientAccount.officeId(), expectedDisbursementDate);
+                clientAccount.officeId(), expectedDisbursementDate, paymentOptions);
     }
 
     @Override
@@ -1824,6 +1855,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final LoanDisbursementDetailMapper rm = new LoanDisbursementDetailMapper();
         final String sql = "select " + rm.schema() + " where dd.loan_id=? and dd.id=?";
         return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanId, disbursementId });
+    }
+    
+    @Override
+    public LoanTransactionData refundTemplate(Long loanId) {
+        final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REFUND);
+        final LocalDate refundDate = DateUtils.getLocalDateOfTenant();
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+        final String sql = "select total_overpaid_derived from m_loan ml where ml.id=?";
+        final BigDecimal overPaidAmount = this.jdbcTemplate.queryForObject(sql, BigDecimal.class, loanId);
+        return LoanTransactionData.LoanTransactionRefundData(transactionType, refundDate, overPaidAmount, paymentOptions);
     }
 
     @Override

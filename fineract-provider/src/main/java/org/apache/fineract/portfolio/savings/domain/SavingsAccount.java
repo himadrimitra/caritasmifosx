@@ -60,6 +60,7 @@ import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -326,6 +327,10 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @ManyToOne
     @JoinColumn(name = "tax_group_id")
     private TaxGroup taxGroup;
+    
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsAccount", optional = true, orphanRemoval = true)
+    private SavingsAccountDpDetails savingsAccountDpDetails;
 
     protected SavingsAccount() {
         //
@@ -1346,13 +1351,72 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             actualChanges.put(localeParamName, localeAsInput);
             this.minOverdraftForInterestCalculation = newValue;
         }
+        
+        if (command.parameterExists(SavingsApiConstants.allowDpLimitParamName)) {
+            boolean allowDpLimit = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName);
+            if (!allowDpLimit) {
+                this.savingsAccountDpDetails = null;
+            }
+        }
+        
+        if (this.savingsAccountDpDetails != null) {
+            boolean  isRecalculateDpReducationAmount = false;
+            BigDecimal dpAmount = this.savingsAccountDpDetails.getDpAmount();
+            if (command.isChangeInBigDecimalParameterNamedDefaultingZeroToNull(SavingsApiConstants.dpLimitAmountParamName,
+                    dpAmount)) {
+                dpAmount = command
+                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpLimitAmountParamName);
+                this.savingsAccountDpDetails.setDpAmount(dpAmount);
+                isRecalculateDpReducationAmount = true;
+            }
+
+            if (command.isChangeInIntegerParameterNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName,
+                    this.savingsAccountDpDetails.getFrequencyType())) {
+                final Integer newValue = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName);
+                this.savingsAccountDpDetails.setFrequencyType(newValue);
+            }
+
+            Integer calculationType = this.savingsAccountDpDetails.getCalculationType();
+            if (command.isChangeInIntegerParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName,
+                    calculationType)) {
+                calculationType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName);
+                this.savingsAccountDpDetails.setCalculationType(calculationType);
+                isRecalculateDpReducationAmount = true;
+            }
+
+            if (command.isChangeInIntegerParameterNamed(SavingsApiConstants.dpLimitReductionEveryParamName,
+                    this.savingsAccountDpDetails.getDpReductionEvery())) {
+                final Integer newValue = command.integerValueOfParameterNamed(SavingsApiConstants.dpLimitReductionEveryParamName);
+                this.savingsAccountDpDetails.setDpReductionEvery(newValue);
+            }
+
+            if (command
+                    .isChangeInIntegerParameterNamed(SavingsApiConstants.dpDurationParamName, this.savingsAccountDpDetails.getDuration())) {
+                final Integer newValue = command.integerValueOfParameterNamed(SavingsApiConstants.dpDurationParamName);
+                this.savingsAccountDpDetails.setDuration(newValue);
+            }
+
+            BigDecimal amountOrPercentage = this.savingsAccountDpDetails.getAmountOrPercentage();
+            if (command.isChangeInBigDecimalParameterNamedDefaultingZeroToNull(SavingsApiConstants.dpCalculateOnAmountParamName,
+                    amountOrPercentage)) {
+                amountOrPercentage = command
+                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpCalculateOnAmountParamName);
+                this.savingsAccountDpDetails.setAmountOrPercentage(amountOrPercentage);
+                isRecalculateDpReducationAmount = true;
+            }
+            
+            if (isRecalculateDpReducationAmount) {
+                this.savingsAccountDpDetails.setAmount(this.savingsAccountDpDetails.populateDerivedFields(calculationType, amountOrPercentage, dpAmount));
+            }
+        }
 
         if (!this.allowOverdraft) {
             this.overdraftLimit = null;
             this.nominalAnnualInterestRateOverdraft = null;
             this.minOverdraftForInterestCalculation = null;
+            this.savingsAccountDpDetails = null;
         }
-
+        
         if (command.isChangeInBooleanParameterNamed(enforceMinRequiredBalanceParamName, this.enforceMinRequiredBalance)) {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(enforceMinRequiredBalanceParamName);
             actualChanges.put(enforceMinRequiredBalanceParamName, newValue);
@@ -2834,4 +2898,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         recalculateDailyBalances(Money.zero(this.currency), transactionDate);
 		this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
 	}
+	
+    public void setSavingsAccountDpDetails(final SavingsAccountDpDetails savingsAccountDpDetails) {
+        this.savingsAccountDpDetails = savingsAccountDpDetails;
+    }
 }

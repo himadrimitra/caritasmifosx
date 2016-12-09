@@ -129,6 +129,7 @@ public class ExistingLoanAssembler {
         final Integer loanStatus = this.fromApiJsonHelper.extractIntegerNamed("loanStatusId", element, locale);
         final LocalDate disbursedDate = this.fromApiJsonHelper.extractLocalDateNamed("disbursedDate", element);
         final LocalDate maturityDate = this.fromApiJsonHelper.extractLocalDateNamed("maturityDate", element);
+        final LocalDate closedDate = null;
         this.existingLoanDataValidator.validateMaturityOnDate(disbursedDate, maturityDate);
         final Integer gt0dpd3mths = this.fromApiJsonHelper.extractIntegerNamed("gt0dpd3mths", element, locale);
         final Integer dpd30mths12 = this.fromApiJsonHelper.extractIntegerNamed("dpd30mths12", element, locale);
@@ -141,7 +142,7 @@ public class ExistingLoanAssembler {
         return ExistingLoan.saveExistingLoan(client, loanApplicationId, loanId, source, creditBureauProduct, loanCreditBureauEnquiryId,
                 lender, lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure,
                 loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, loanStatus,
-                disbursedDate, maturityDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
+                disbursedDate, maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
     }
 
     public Map<String, Object> assembleForUpdate(final ExistingLoan existingLoan, final JsonCommand command) {
