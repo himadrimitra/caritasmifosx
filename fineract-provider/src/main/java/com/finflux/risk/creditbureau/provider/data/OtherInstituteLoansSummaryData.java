@@ -6,6 +6,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class OtherInstituteLoansSummaryData {
 
+    private Long loanApplicationReferenceId;
+    private Long loanId;
     private EnumOptionData cbStatus;
     private byte[] cbResponse;
     private byte[] cbLoanEnqResponse;
@@ -16,9 +18,11 @@ public class OtherInstituteLoansSummaryData {
     private BigDecimal totalInstallmentAmount;
     private String cbInitiatedDateTime;
 
-    public OtherInstituteLoansSummaryData(final EnumOptionData cbStatus, final byte[] cbResponse, byte[] cbLoanEnqResponse,
-            final BigDecimal totalAmountBorrowed, final BigDecimal totalCurrentOutstanding, final BigDecimal totalAmtOverdue,
-            final BigDecimal totalInstallmentAmount, final EnumOptionData reportFileType, final String cbInitiatedDateTime) {
+    public OtherInstituteLoansSummaryData(final Long loanId, final EnumOptionData cbStatus, final byte[] cbResponse,
+            byte[] cbLoanEnqResponse, final BigDecimal totalAmountBorrowed, final BigDecimal totalCurrentOutstanding,
+            final BigDecimal totalAmtOverdue, final BigDecimal totalInstallmentAmount, final EnumOptionData reportFileType,
+            final String cbInitiatedDateTime) {
+        this.loanId = loanId;
         this.cbStatus = cbStatus;
         this.cbResponse = cbResponse;
         this.cbLoanEnqResponse = cbLoanEnqResponse;

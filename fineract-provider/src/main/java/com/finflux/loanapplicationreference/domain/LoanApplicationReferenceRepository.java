@@ -7,9 +7,12 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface LoanApplicationReferenceRepository extends JpaRepository<LoanApplicationReference, Long>, JpaSpecificationExecutor<LoanApplicationReference> {
-	
-	@Query("from LoanApplicationReference loan where loan.client.id = :clientId")
+public interface LoanApplicationReferenceRepository extends JpaRepository<LoanApplicationReference, Long>,
+        JpaSpecificationExecutor<LoanApplicationReference> {
+
+    @Query("from LoanApplicationReference loan where loan.client.id = :clientId")
     List<LoanApplicationReference> findLoanByClientId(@Param("clientId") Long clientId);
 
+    @Query("SELECT lar FROM LoanApplicationReference lar WHERE lar.loan.id = :loanId")
+    LoanApplicationReference findOneByLoanId(@Param("loanId") Long loanId);
 }

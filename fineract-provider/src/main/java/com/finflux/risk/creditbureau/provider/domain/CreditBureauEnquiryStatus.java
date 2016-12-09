@@ -115,7 +115,7 @@ public enum CreditBureauEnquiryStatus {
     }
 
     public boolean isInValid() {
-        if (this.equals(CreditBureauEnquiryStatus.SUCCESS)) { return false; }
+        if (isSuccess() || isPending()) { return false; }
         return true;
     }
 

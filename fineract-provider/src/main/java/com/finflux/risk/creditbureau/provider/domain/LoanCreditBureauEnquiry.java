@@ -1,5 +1,7 @@
 package com.finflux.risk.creditbureau.provider.domain;
 
+import java.util.Date;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
@@ -8,21 +10,19 @@ import javax.persistence.Table;
 
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
-import java.util.Date;
-
 @Entity
 @Table(name = "f_loan_creditbureau_enquiry")
 public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "creditbureau_enquiry_id")
+    @ManyToOne
+    @JoinColumn(name = "creditbureau_enquiry_id", nullable = false)
     CreditBureauEnquiry creditBureauEnquiry;
 
     @Column(name = "reference_num", nullable = false)
     String referenceNum;
 
     @Column(name = "client_id", nullable = false)
-    Long ClientId;
+    Long clientId;
 
     @Column(name = "cb_report_id", nullable = true)
     String cbReportId;
@@ -33,8 +33,14 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     @Column(name = "loan_application_id")
     Long loanApplicationId;
 
+    @Column(name = "tranche_disbursal_id")
+    Long trancheDisbursalId;
+
     @Column(name = "status")
     Integer status;
+
+    @Column(name = "request")
+    String request;
 
     @Column(name = "response")
     String response;
@@ -57,13 +63,15 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     public LoanCreditBureauEnquiry() {}
 
     public LoanCreditBureauEnquiry(CreditBureauEnquiry creditBureauEnquiry, String refNumber, Long clientId, Long loanId,
-            Long loanApplicationId, Integer status) {
+            Long loanApplicationId, Long trancheDisbursalId, Integer status) {
         this.creditBureauEnquiry = creditBureauEnquiry;
         this.referenceNum = refNumber;
-        this.ClientId = clientId;
+        this.clientId = clientId;
         this.loanId = loanId;
         this.loanApplicationId = loanApplicationId;
+        this.trancheDisbursalId = trancheDisbursalId;
         this.status = status;
+        this.isActive = true;
     }
 
     public CreditBureauEnquiry getCreditBureauEnquiry() {
@@ -75,11 +83,11 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     }
 
     public Long getClientId() {
-        return this.ClientId;
+        return this.clientId;
     }
 
     public void setClientId(Long clientId) {
-        this.ClientId = clientId;
+        this.clientId = clientId;
     }
 
     public Long getLoanId() {
@@ -160,5 +168,24 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
+    }
+
+    public void update(final String refNumber, final Long clientId, final Long loanId, final Long loanApplicationId,
+            final Long trancheDisbursalId, final Integer status) {
+        this.referenceNum = refNumber;
+        this.clientId = clientId;
+        this.loanId = loanId;
+        this.loanApplicationId = loanApplicationId;
+        this.trancheDisbursalId = trancheDisbursalId;
+        this.status = status;
+        this.isActive = true;
+    }
+
+    public String getRequest() {
+        return this.request;
+    }
+
+    public void setRequest(String request) {
+        this.request = request;
     }
 }

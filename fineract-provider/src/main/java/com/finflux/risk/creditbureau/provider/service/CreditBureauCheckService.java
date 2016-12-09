@@ -1,16 +1,14 @@
 package com.finflux.risk.creditbureau.provider.service;
 
 import com.finflux.risk.creditbureau.provider.data.CreditBureauFileContentData;
-import com.finflux.risk.creditbureau.provider.data.CreditBureauReportData;
 import com.finflux.risk.creditbureau.provider.data.OtherInstituteLoansSummaryData;
 
 public interface CreditBureauCheckService {
 
-    CreditBureauReportData getCreditBureauDataForLoan(Long loanId);
+    OtherInstituteLoansSummaryData getCreditBureauEnquiryData(final String entityType, final Long entityId);
 
-    OtherInstituteLoansSummaryData getCreditBureauDataForLoanApplication(final Long loanApplicationId);
+    OtherInstituteLoansSummaryData getOtherInstituteLoansSummary(final String entityType, final Long entityId, final Long trancheDisbursalId);
 
-    OtherInstituteLoansSummaryData getOtherInstituteLoansSummary(final Long loanApplicationReferenceId, final Long sourceId);
+    CreditBureauFileContentData getCreditBureauReportFileContent(final String entityType, final Long entityId);
 
-    CreditBureauFileContentData getCreditBureauReportFileContent(final Long loanApplicationReferenceId);
 }

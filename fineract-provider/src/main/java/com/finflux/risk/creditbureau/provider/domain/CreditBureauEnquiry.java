@@ -13,6 +13,8 @@ import javax.persistence.Table;
 
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProduct;
 
@@ -39,37 +41,17 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
     @Column(name = "acknowledgement_num")
     private String acknowledgementNumber;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "creditBureauEnquiry")
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "creditBureauEnquiry", orphanRemoval = true)
     List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries = new ArrayList<>();
 
-    public CreditBureauEnquiry() {}
+    protected CreditBureauEnquiry() {}
 
-    //
-    public CreditBureauEnquiry(CreditBureauProduct creditBureauProduct, String type, Integer status,
-            List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries) {
+    public CreditBureauEnquiry(final CreditBureauProduct creditBureauProduct, final String type, final Integer status) {
         this.creditBureauProduct = creditBureauProduct;
         this.type = type;
         this.status = status;
-        this.loanCreditBureauEnquiries = loanCreditBureauEnquiries;
     }
-
-    //
-    // public CreditBureauEnquiry(String type, String request, Date dateTime,
-    // String status, Date statusDateTime,
-    // String lastRequestType, Date lastRequestDateTime, String batchId, String
-    // enquiryRefNumber, String fileName, String response) {
-    // this.type = type;
-    // this.request = request;
-    // this.dateTime = dateTime;
-    // this.status = status;
-    // this.statusDateTime = statusDateTime;
-    // this.lastRequestType = lastRequestType;
-    // this.lastRequestDateTime = lastRequestDateTime;
-    // this.batchId = batchId;
-    // this.enquiryRefNumber = enquiryRefNumber;
-    // this.fileName = fileName;
-    // this.response = response;
-    // }
 
     public String getType() {
         return this.type;
@@ -100,7 +82,8 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
     }
 
     public void setLoanCreditBureauEnquiries(List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries) {
-        this.loanCreditBureauEnquiries = loanCreditBureauEnquiries;
+        this.loanCreditBureauEnquiries.clear();
+        this.loanCreditBureauEnquiries.addAll(loanCreditBureauEnquiries);
     }
 
     public CreditBureauProduct getCreditBureauProduct() {

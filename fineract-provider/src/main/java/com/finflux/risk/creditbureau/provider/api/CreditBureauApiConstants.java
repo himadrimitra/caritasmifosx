@@ -1,10 +1,10 @@
-package com.finflux.risk.creditbureau.provider.highmark.data;
+package com.finflux.risk.creditbureau.provider.api;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HighmarkApiConstants {
+public class CreditBureauApiConstants {
 
     public static final String HIGHMARKRESOUCENAME = "HIGHMARK";
     public static final String ACTIVELOANCOUNTPARAMNAME = "activeLoanCount";
