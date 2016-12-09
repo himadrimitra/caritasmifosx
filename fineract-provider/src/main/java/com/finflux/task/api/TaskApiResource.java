@@ -5,7 +5,6 @@ import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
@@ -21,9 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.finflux.task.execution.data.TaskData;
-import com.finflux.task.execution.data.TaskEntityType;
-import com.finflux.task.execution.data.WorkFlowStepActionData;
+import com.finflux.task.execution.data.TaskInfoData;
 import com.finflux.task.execution.service.TaskReadService;
 
 @Path("/tasks")
@@ -70,7 +67,7 @@ public class TaskApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @Context final UriInfo uriInfo) {
 
-        final List<WorkFlowStepActionData> workFlowStepActions = this.taskReadService.retrieveWorkFlowStepActions(filterBy);
+        final List<TaskInfoData> workFlowStepActions = this.taskReadService.retrieveWorkFlowStepActions(filterBy);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 

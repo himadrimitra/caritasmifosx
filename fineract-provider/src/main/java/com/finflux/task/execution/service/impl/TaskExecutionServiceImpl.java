@@ -334,12 +334,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @Override
-    public TaskData getTaskData(Long taskId) {
+    public TaskExecutionData getTaskData(Long taskId) {
         return taskReadService.getTaskDetails(taskId);
     }
 
     @Override
-    public TaskData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId) {
+    public TaskExecutionData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId) {
         // TODO Auto-generated method stub
         return taskReadService.getTaskDetailsByEntityTypeAndEntityId(taskEntityType, entityId);
     }
@@ -350,7 +350,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @Override
-    public List<TaskData> getChildrenOfTask(Long taskId) {
+    public List<TaskExecutionData> getChildrenOfTask(Long taskId) {
         return taskReadService.getTaskChildren(taskId);
     }
 

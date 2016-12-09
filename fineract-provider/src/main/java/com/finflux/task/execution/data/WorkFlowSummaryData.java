@@ -7,7 +7,7 @@ public class WorkFlowSummaryData {
     private String stepName;
     private String stepShortName;
     private Long noOfCount;
-    private List<StepSummaryData> stepSummaries;
+    private List<TaskSummaryData> stepSummaries;
 
     public WorkFlowSummaryData() {}
 
@@ -41,11 +41,11 @@ public class WorkFlowSummaryData {
         this.noOfCount = noOfCount;
     }
 
-    public List<StepSummaryData> getStepSummaries() {
+    public List<TaskSummaryData> getStepSummaries() {
         return this.stepSummaries;
     }
 
-    public void setStepSummaries(List<StepSummaryData> stepSummaries) {
+    public void setStepSummaries(List<TaskSummaryData> stepSummaries) {
         this.stepSummaries = stepSummaries;
     }
 }
