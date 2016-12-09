@@ -1,10 +1,9 @@
 package com.finflux.risk.creditbureau.provider.data;
 
-import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
-
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
+
+import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 
 public class EnquiryReferenceData {
 

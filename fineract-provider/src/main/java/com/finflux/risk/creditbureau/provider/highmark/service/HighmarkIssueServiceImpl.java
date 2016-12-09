@@ -1,6 +1,33 @@
 package com.finflux.risk.creditbureau.provider.highmark.service;
 
-import com.finflux.risk.creditbureau.provider.data.*;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+
+import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoan;
+import com.finflux.risk.creditbureau.provider.data.CreditBureauReportFile;
+import com.finflux.risk.creditbureau.provider.data.CreditBureauResponse;
+import com.finflux.risk.creditbureau.provider.data.EnquiryResponse;
+import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
+import com.finflux.risk.creditbureau.provider.data.ReportFileType;
 import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 import com.finflux.risk.creditbureau.provider.highmark.data.HighmarkConstants;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.issue.HEADERSEGMENT;
@@ -10,24 +37,6 @@ import com.finflux.risk.creditbureau.provider.highmark.xsd.issue.REQUESTREQUESTF
 import com.finflux.risk.creditbureau.provider.highmark.xsd.response.INDVREPORTFILE;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.response.INDVRESPONSES;
 import com.finflux.risk.creditbureau.provider.highmark.xsd.response.PRINTABLEREPORT;
-
-import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
-import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 @Service
 public class HighmarkIssueServiceImpl implements HighmarkIssueService {
@@ -111,9 +120,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
             requestString = requestString.replace("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>", "");
             requestString = requestString.replace("\r\n", " ").replace("\n", " ");
             headersMap.put("requestXML", requestString);
-
             responseString = httpSendService.sendRequest(requestURL, headersMap, "");
-
             StringReader responseReader = new StringReader(responseString);
             JAXBContext reponseContext;
             reponseContext = JAXBContext.newInstance("com.finflux.risk.creditbureau.provider.highmark.xsd.response");
@@ -146,6 +153,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
         EnquiryResponse enquiryResponse = null;
         List<CreditBureauExistingLoan> loanList = null;
         CreditBureauReportFile reportFile = null;
+        CreditBureauEnquiryStatus creditBureauEnquiryStatus = CreditBureauEnquiryStatus.INVALID;
         if (reportfile != null && reportfile.getINDVREPORTS() != null && reportfile.getINDVREPORTS().getINDVREPORT() != null) {
             INDVRESPONSES individualResponses = reportfile.getINDVREPORTS().getINDVREPORT().getINDVRESPONSES();
             if (individualResponses.getINDVRESPONSELIST() != null && individualResponses.getINDVRESPONSELIST().getINDVRESPONSE() != null
@@ -182,19 +190,20 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
                         loanList.add(existingLoan);
                     }
                 }
-                if (reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT() != null) {
-                    PRINTABLEREPORT printableReport = reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT();
-                    reportFile = new CreditBureauReportFile(printableReport.getFILENAME(), printableReport.getCONTENT().getBytes(),
-                            ReportFileType.HTML);
-                }
             }
-
-            enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
-                    null, CreditBureauEnquiryStatus.SUCCESS, loanEnquiryReferenceData.getCbReportId());
-        } else {
-            enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
-                    null, CreditBureauEnquiryStatus.ERROR, loanEnquiryReferenceData.getCbReportId());
+            if (reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT() != null) {
+                PRINTABLEREPORT printableReport = reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT();
+                reportFile = new CreditBureauReportFile(printableReport.getFILENAME(), printableReport.getCONTENT().getBytes(),
+                        ReportFileType.HTML);
+            }
+            creditBureauEnquiryStatus = CreditBureauEnquiryStatus.SUCCESS;
+        } else if (reportfile != null && reportfile.getINQUIRYSTATUS() != null && reportfile.getINQUIRYSTATUS().getINQUIRY() != null) {
+            final com.finflux.risk.creditbureau.provider.highmark.xsd.response.INQUIRY inquiry = reportfile.getINQUIRYSTATUS().getINQUIRY();
+            final String inquiryStatus = inquiry.getRESPONSETYPE();
+            creditBureauEnquiryStatus = convertStatus(inquiryStatus);
         }
+        enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
+                null, creditBureauEnquiryStatus, loanEnquiryReferenceData.getCbReportId());
         CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, loanList, reportFile);
         return creditBureauResponse;
     }
@@ -230,6 +239,8 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
         } else if ("ERROR".equalsIgnoreCase(responseType)) {
             return CreditBureauEnquiryStatus.ERROR;
         } else if ("AWAITED".equalsIgnoreCase(responseType)) {
+            return CreditBureauEnquiryStatus.PENDING;
+        } else if ("INPROCESS".equalsIgnoreCase(responseType)) {
             return CreditBureauEnquiryStatus.PENDING;
         } else if ("COMPLETED".equalsIgnoreCase(responseType)) {
             return CreditBureauEnquiryStatus.SUCCESS;

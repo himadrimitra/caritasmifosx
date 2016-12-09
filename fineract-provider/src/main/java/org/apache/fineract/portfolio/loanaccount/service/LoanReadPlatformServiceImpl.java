@@ -569,25 +569,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public LoanTransactionData retrieveDisbursalTemplate(final Long loanId, boolean paymentDetailsRequired) {
 
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
-        sql.append("FROM m_loan l");
-        sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
-        sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
-        sql.append(" left join (select ltemp.id loanId, Max(temptv.applicable_date) as maxemidate  from m_loan ltemp join m_loan_term_variations temptv on temptv.loan_id = ltemp.id and temptv.is_active = 1 and temptv.term_type = :termtype where ltemp.id = :loanId  group by ltemp.id) y on y.loanId = l.id");
-        sql.append(" left join m_loan_term_variations tv on tv.loan_id = l.id and tv.is_active = 1 and tv.term_type = :termtype and tv.applicable_date = y.maxemidate");
-        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date),DATE_ADD(IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date), INTERVAL 1 DAY))");
-        sql.append(" WHERE l.id = :loanId group by l.id");
-
-        final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService
-                .isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
-        Map<String, Object> paramMap = new HashMap<>(3);
-        paramMap.put("loanId", loanId);
-        paramMap.put("termtype", LoanTermVariationType.EMI_AMOUNT.getValue());
-        paramMap.put("changeEmi", isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
+        
         try {
-            Map<String, Object> data = this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap);
-
+            final Map<String, Object> data = retrieveDisbursalDataMap(loanId);
+            
             final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.DISBURSEMENT);
             Collection<PaymentTypeData> paymentOptions = null;
             if (paymentDetailsRequired) {
@@ -625,6 +610,26 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanNotFoundException(loanId);
         }
+    }
+
+    public Map<String, Object> retrieveDisbursalDataMap(final Long loanId) {
+        final StringBuilder sql = new StringBuilder(200);
+        sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
+        sql.append("FROM m_loan l");
+        sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
+        sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
+        sql.append(" left join (select ltemp.id loanId, Max(temptv.applicable_date) as maxemidate  from m_loan ltemp join m_loan_term_variations temptv on temptv.loan_id = ltemp.id and temptv.is_active = 1 and temptv.term_type = :termtype where ltemp.id = :loanId  group by ltemp.id) y on y.loanId = l.id");
+        sql.append(" left join m_loan_term_variations tv on tv.loan_id = l.id and tv.is_active = 1 and tv.term_type = :termtype and tv.applicable_date = y.maxemidate");
+        sql.append(" join m_loan_repayment_schedule rs on rs.loan_id = l.id and rs.duedate >=  if(:changeEmi, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date),DATE_ADD(IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date), INTERVAL 1 DAY))");
+        sql.append(" WHERE l.id = :loanId group by l.id");
+
+        final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService
+                .isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
+        Map<String, Object> paramMap = new HashMap<>(3);
+        paramMap.put("loanId", loanId);
+        paramMap.put("termtype", LoanTermVariationType.EMI_AMOUNT.getValue());
+        paramMap.put("changeEmi", isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
+        return this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap);
     }
 
     @Override

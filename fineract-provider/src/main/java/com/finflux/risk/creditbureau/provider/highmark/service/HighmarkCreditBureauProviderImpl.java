@@ -33,13 +33,13 @@ public class HighmarkCreditBureauProviderImpl implements CreditBureauProvider {
     }
 
     @Override
-    public CreditBureauResponse enquireCreditBureau(EnquiryReferenceData enquiryReferenceData) {
+    public CreditBureauResponse enquireCreditBureau(final EnquiryReferenceData enquiryReferenceData) {
         return highmarkRequestService.sendHighmarkEnquiry(enquiryReferenceData,
                 this.externalServicesPropertiesReadPlatformService.getHighmarkCredentials());
     }
 
     @Override
-    public CreditBureauResponse fetchCreditBureauReport(LoanEnquiryReferenceData enquiryData) {
+    public CreditBureauResponse fetchCreditBureauReport(final LoanEnquiryReferenceData enquiryData) {
         return highmarkIssueService.sendHighmarkIssue(enquiryData,
                 this.externalServicesPropertiesReadPlatformService.getHighmarkCredentials());
     }

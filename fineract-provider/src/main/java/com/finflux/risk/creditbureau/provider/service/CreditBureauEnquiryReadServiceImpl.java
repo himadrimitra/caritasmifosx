@@ -60,18 +60,6 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
     }
 
     @Override
-    public LoanEnquiryData getEnquiryRequestDataForLoan(Long loanId) {
-        String dataQuery = "SELECT mc.display_name AS clientName, mc.firstname AS firstname, mc.middlename AS middlename, "
-                + "mc.lastname AS lastname, mc.date_of_birth AS clientDOB, mc.office_id AS branchId, "
-                + "mc.mobile_no AS clientMobileNo,  ml.product_id AS loanProductId,  ml.approved_principal AS loanAmount, "
-                + " mc.id AS clientId  FROM m_loan ml  INNER JOIN m_client mc ON mc.id = ml.client_id "
-                + " WHERE mc.status_enum = 300  AND ml.id = ?";
-        LoanEnquiryData enquiryData = this.jdbcTemplate
-                .queryForObject(dataQuery, this.enquiryRequestDataExtractor, new Object[] { loanId });
-        return enquiryData;
-    }
-
-    @Override
     public List<EnquiryAddressData> getClientAddressData(final Long clientId) {
         final StringBuilder sb = new StringBuilder(250);
         sb.append("SELECT CONCAT(IFNULL(ad.house_no,''), ' ', IFNULL(ad.street_no,''),  ' ' ");
@@ -117,18 +105,28 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
     }
 
     @Override
-    public LoanEnquiryReferenceData getLatestCreditBureauEnquiryForLoanApplicationReference(final Long loanApplicationId,
-            final Long creditBureauProductId) {
-        final StringBuilder sb = new StringBuilder(200);
+    public LoanEnquiryReferenceData getLatestCreditBureauEnquiryDetails(final Long loanApplicationId, final Long creditBureauProductId,
+            final Long loanId, final Long trancheDisbursalId) {
+        final StringBuilder sb = new StringBuilder(500);
         sb.append("SELECT lce.id AS id, lce.creditbureau_enquiry_id AS enquiryId, lce.client_id AS clientId, lce.loan_id AS loanId ");
         sb.append(",lce.loan_application_id AS loanApplicationId,  lce.reference_num AS refNumber ");
         sb.append(",lce.cb_report_id AS cbReportId,  ce.acknowledgement_num AS acknowledgementNumber ");
         sb.append(",ce.creditbureau_product_id AS cbProductId,  ce.created_date AS requestedDate, lce.status AS status ");
         sb.append("FROM f_loan_creditbureau_enquiry lce ");
         sb.append("LEFT JOIN f_creditbureau_enquiry ce ON lce.creditbureau_enquiry_id  = ce.id ");
-        sb.append("WHERE lce.loan_application_id = ? AND ce.creditbureau_product_id = ? order by id desc limit 1 ");
-        final List<LoanEnquiryReferenceData> l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor,
-                new Object[] { loanApplicationId, creditBureauProductId });
+        sb.append("WHERE lce.loan_application_id = ? AND ce.creditbureau_product_id = ? ");
+        if (loanId != null && trancheDisbursalId != null) {
+            sb.append("AND lce.loan_id = ? AND lce.tranche_disbursal_id = ? ");
+        }
+        sb.append("order by id desc limit 1 ");
+        List<LoanEnquiryReferenceData> l = null;
+        if (loanId != null && trancheDisbursalId != null) {
+            l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor, new Object[] { loanApplicationId,
+                    creditBureauProductId, loanId, trancheDisbursalId });
+        } else {
+            l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor, new Object[] { loanApplicationId,
+                    creditBureauProductId });
+        }
         if (!l.isEmpty()) { return l.get(0); }
         return null;
     }
@@ -253,6 +251,20 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
             final String inquiryNumber = rs.getString("inquiryno");
             return new ReportRequestData(batchId, inquiryNumber);
         }
+    }
+
+    @Override
+    public LoanEnquiryData getEnquiryRequestDataForLoan(final Long loanId) {
+        final StringBuilder sb = new StringBuilder(200);
+        sb.append("SELECT mc.display_name AS clientName, mc.firstname AS firstname, mc.middlename AS middlename ");
+        sb.append(",mc.lastname AS lastname, mc.date_of_birth AS clientDOB, mc.office_id AS branchId ");
+        sb.append(",mc.mobile_no AS clientMobileNo, l.product_id AS loanProductId, lar.loan_amount_requested AS loanAmount,mc.id AS clientId ");
+        sb.append(",cv.id AS genderId, cv.code_value AS gender ");
+        sb.append("FROM m_loan l ");
+        sb.append("INNER JOIN m_client mc ON mc.id = l.client_id ");
+        sb.append("LEFT JOIN m_code_value cv ON cv.id = mc.gender_cv_id ");
+        sb.append("WHERE l.id = ? ");
+        return this.jdbcTemplate.queryForObject(sb.toString(), this.enquiryRequestDataExtractor, new Object[] { loanId });
     }
 
     @Override

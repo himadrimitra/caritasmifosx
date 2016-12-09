@@ -296,28 +296,27 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             actualChanges.put(LoanApplicationReferenceApiConstants.noOfTrancheParamName, newValue);
             this.noOfTranche = newValue;
         }
-        
-		
-		Long expectedDisbursalTypeId = null;
-		if (this.getExpectedDisbursalPaymentType() != null) {
-			expectedDisbursalTypeId = this.getExpectedDisbursalPaymentType().getId();
-		}
-		if (command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName,
-				expectedDisbursalTypeId)) {
-			actualChanges.put(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName,
-					command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName));
-		}
-		
-		Long expectedRepaymentPaymentTypeId = null;
-		if (this.getExpectedRepaymentPaymentType() != null) {
-			expectedRepaymentPaymentTypeId = this.getExpectedRepaymentPaymentType().getId();
-		}
-		
-		if (command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName,
-				expectedRepaymentPaymentTypeId)) {
-			actualChanges.put(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName,
-					command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName));
-		}
+
+        Long expectedDisbursalTypeId = null;
+        if (this.getExpectedDisbursalPaymentType() != null) {
+            expectedDisbursalTypeId = this.getExpectedDisbursalPaymentType().getId();
+        }
+        if (command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName,
+                expectedDisbursalTypeId)) {
+            actualChanges.put(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName,
+                    command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName));
+        }
+
+        Long expectedRepaymentPaymentTypeId = null;
+        if (this.getExpectedRepaymentPaymentType() != null) {
+            expectedRepaymentPaymentTypeId = this.getExpectedRepaymentPaymentType().getId();
+        }
+
+        if (command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName,
+                expectedRepaymentPaymentTypeId)) {
+            actualChanges.put(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName,
+                    command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName));
+        }
 
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
@@ -403,19 +402,23 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
         return this.loanAmountRequested;
     }
 
-	public PaymentType getExpectedDisbursalPaymentType() {
-		return this.expectedDisbursalPaymentType;
-	}
-	
-	public void setExpectedDisbursalPaymentType(PaymentType expectedDisbursalPaymentType) {
-		this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
-	}
+    public PaymentType getExpectedDisbursalPaymentType() {
+        return this.expectedDisbursalPaymentType;
+    }
 
-	public PaymentType getExpectedRepaymentPaymentType() {
-		return this.expectedRepaymentPaymentType;
-	}
-    
-	public void setExpectedRepaymentPaymentType(PaymentType expectedRepaymentPaymentType) {
-		this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
-	}
+    public void setExpectedDisbursalPaymentType(PaymentType expectedDisbursalPaymentType) {
+        this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
+    }
+
+    public PaymentType getExpectedRepaymentPaymentType() {
+        return this.expectedRepaymentPaymentType;
+    }
+
+    public void setExpectedRepaymentPaymentType(PaymentType expectedRepaymentPaymentType) {
+        this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+    }
+
+    public Loan getLoan() {
+        return this.loan;
+    }
 }
