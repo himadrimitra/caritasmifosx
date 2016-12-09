@@ -9,7 +9,7 @@ import org.apache.fineract.portfolio.client.domain.Client;
 
 import com.finflux.task.execution.data.TaskActionType;
 import com.finflux.task.execution.data.TaskConfigKey;
-import com.finflux.task.execution.data.TaskData;
+import com.finflux.task.execution.data.TaskExecutionData;
 import com.finflux.task.execution.data.TaskEntityType;
 
 public interface TaskExecutionService {
@@ -17,15 +17,15 @@ public interface TaskExecutionService {
     void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId,
                               final Client client, final Office office, final Map<TaskConfigKey, String> configValues);
 
-    TaskData getTaskData(Long taskId);
+    TaskExecutionData getTaskData(Long taskId);
 
     void doActionOnTask(Long workflowExecutionStepId, TaskActionType stepAction);
 
 //    public void addNoteToTask(Long taskId);
 
-    TaskData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId);
+    TaskExecutionData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId);
 
     List<EnumOptionData> getClickableActionsOnTask(Long workflowExecutionStepId);
 
-    List<TaskData> getChildrenOfTask(Long taskId);
+    List<TaskExecutionData> getChildrenOfTask(Long taskId);
 }

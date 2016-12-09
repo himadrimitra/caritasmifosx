@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.finflux.task.execution.data.TaskActionType;
-import com.finflux.task.execution.data.TaskData;
+import com.finflux.task.execution.data.TaskExecutionData;
 import com.finflux.task.execution.service.TaskExecutionService;
 
 @Path("/taskexecution")
@@ -55,7 +55,7 @@ public class TaskExecutionApi {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getTaskData(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
-        final TaskData taskExecutionData = this.taskExecutionService.getTaskData(taskId);
+        final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskData(taskId);
         return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 
@@ -67,7 +67,7 @@ public class TaskExecutionApi {
                                  @QueryParam("action") final Long actionId, @Context final UriInfo uriInfo) {
         this.context.authenticatedUser();
         taskExecutionService.doActionOnTask(taskId, TaskActionType.fromInt(actionId.intValue()));
-        TaskData taskData = taskExecutionService.getTaskData(taskId);
+        TaskExecutionData taskData = taskExecutionService.getTaskData(taskId);
         return this.toApiJsonSerializer.serialize(taskData);
     }
 
@@ -88,7 +88,7 @@ public class TaskExecutionApi {
     @Produces({ MediaType.APPLICATION_JSON })
     public String getChildrenOfTask(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
         context.authenticatedUser();
-        List<TaskData> possibleActions = taskExecutionService.getChildrenOfTask(taskId);
+        List<TaskExecutionData> possibleActions = taskExecutionService.getChildrenOfTask(taskId);
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 
@@ -100,7 +100,7 @@ public class TaskExecutionApi {
     public String getTaskData(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
                               @Context final UriInfo uriInfo) {
         TaskEntityType taskEntityType = TaskEntityType.fromString(entityType);
-        final TaskData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType,entityId);
+        final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType,entityId);
         return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 }

@@ -56,7 +56,7 @@ public class TaskReadServiceImpl implements TaskReadService {
     }
 
     @Override
-    public TaskData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId) {
+    public TaskExecutionData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId) {
         TaskDataMapper rm = new TaskDataMapper();
         if(entityId != null) {
             final String sql = "SELECT " + rm.schema() + " WHERE t.entity_type = ? AND t.entity_id = ?  AND t.parent_id is null";
@@ -67,14 +67,14 @@ public class TaskReadServiceImpl implements TaskReadService {
     }
 
     @Override
-    public TaskData getTaskDetails(Long taskId) {
+    public TaskExecutionData getTaskDetails(Long taskId) {
         TaskDataMapper rm = new TaskDataMapper();
         final String sql = "SELECT "+rm.schema()+" WHERE t.id = ? ";
         return this.jdbcTemplate.queryForObject(sql, rm, taskId);
     }
 
     @Override
-    public List<TaskData> getTaskChildren(final Long parentTaskId) {
+    public List<TaskExecutionData> getTaskChildren(final Long parentTaskId) {
         TaskDataMapper rm = new TaskDataMapper();
         final String sql = "SELECT "+rm.schema()+" WHERE t.parent_id = ? order by t.task_order ASC ";
         return this.jdbcTemplate.query(sql, rm, parentTaskId);
@@ -103,7 +103,7 @@ public class TaskReadServiceImpl implements TaskReadService {
         }
     }
 
-    private static final class TaskDataMapper implements RowMapper<TaskData> {
+    private static final class TaskDataMapper implements RowMapper<TaskExecutionData> {
 
         public String schema() {
             final StringBuilder sb = new StringBuilder(400);
@@ -152,7 +152,7 @@ public class TaskReadServiceImpl implements TaskReadService {
 
         @SuppressWarnings("null")
         @Override
-        public TaskData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+        public TaskExecutionData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long taskId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskId");
             if (taskId == null) { return null; }
             final Long taskParentId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskParentId");
@@ -211,7 +211,7 @@ public class TaskReadServiceImpl implements TaskReadService {
                 taskCriteriaResult = new Gson().fromJson(criteriaResultStr, new TypeToken<EligibilityResult>() {}.getType());
             }
             final Integer taskCriteriaActionId = JdbcSupport.getIntegeActualValue(rs, "taskCriteriaActionId");
-            final TaskData taskData = TaskData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType, taskEntityId,
+            final TaskExecutionData taskData = TaskExecutionData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType, taskEntityId,
                     taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder, taskCriteriaId,
                     taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId, taskOfficeName,
                     taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType);
@@ -239,30 +239,28 @@ public class TaskReadServiceImpl implements TaskReadService {
     public List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId) {
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder
-                .append("SELECT DISTINCT co.id, lp.id AS loanProductId,lp.name AS loanProductName,wf.id AS workFlowId, wf.name AS workFlowName ");
-        sqlBuilder.append(",co.id AS officeId, co.name AS officeName, wfes.status AS stepStatus ");
-        sqlBuilder.append(",wfs.id AS stepId, wfs.name AS stepName,wfs.short_name AS stepShortName ");
-        sqlBuilder.append(",SUM(IF(wfes.status BETWEEN 2 AND 6,1,0)) AS noOfCount ");
-        sqlBuilder.append("FROM f_workflow wf ");
-        sqlBuilder.append("JOIN f_workflow_entity_type_mapping wfm ON wfm.workflow_id = wf.id AND wfm.entity_type = 1 ");
-        sqlBuilder.append("JOIN m_product_loan lp ON ");
-        if (loanProductId != null) {
-            sqlBuilder.append("lp.id = ").append(loanProductId).append(" AND ");
-        }
-        sqlBuilder.append("lp.id = wfm.entity_id ");
-        sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.workflow_id = wf.id AND wfe.entity_type = 1 ");
-        sqlBuilder.append("JOIN f_loan_application_reference lar ON lar.id = wfe.entity_id AND lp.id = lar.loan_product_id ");
-        sqlBuilder.append("JOIN m_client c ON c.id = lar.client_id ");
-        sqlBuilder.append("JOIN m_office o ");
+                .append("SELECT DISTINCT co.id, lp.id AS loanProductId,lp.name AS loanProductName,tc.id AS workFlowId, tc.name AS workFlowName ");
+        sqlBuilder.append(",co.id AS officeId, co.name AS officeName, st.status AS taskStatus ");
+        sqlBuilder.append(",st.id AS taskId, st.name AS taskName,st.short_name AS taskShortName ");
+        sqlBuilder.append(",SUM(IF(st.status BETWEEN 2 AND 6,1,0)) AS noOfCount ");
+        sqlBuilder.append("FROM f_task_config tc ");
+        sqlBuilder.append("JOIN f_task_config_entity_type_mapping tcm ON tcm.task_config_id = tc.id AND tcm.entity_type = 1 ");
+        sqlBuilder.append("JOIN m_product_loan lp ON lp.id = tcm.entity_id ");
+        sqlBuilder.append("JOIN f_task pt ON pt.task_config_id = tc.id AND pt.entity_type = 1 ");
+        sqlBuilder.append("JOIN f_loan_application_reference lar ON lar.id = pt.entity_id AND lp.id = lar.loan_product_id ");
+        sqlBuilder.append("JOIN m_client c ON c.id = pt.client_id ");
+        sqlBuilder.append("JOIN m_office o ON o.id = pt.office_id ");
         sqlBuilder.append("JOIN m_office co ON co.hierarchy LIKE CONCAT(o.hierarchy, '%') AND co.id = c.office_id ");
-        sqlBuilder.append("JOIN f_workflow_execution_step wfes ON wfes.workflow_execution_id = wfe.id ");
-        sqlBuilder.append("JOIN f_workflow_step wfs ON wfs.id = wfes.workflow_step_id ");
+        sqlBuilder.append("JOIN f_task st ON st.parent_id = pt.id ");
+        sqlBuilder.append("WHERE st.status BETWEEN 1 AND 6 ");
         if (officeId != null) {
-            sqlBuilder.append("AND o.id = ").append(officeId).append(" ");
+            sqlBuilder.append(" AND o.id = ").append(officeId).append(" ");
         }
-        sqlBuilder.append("WHERE wfes.status BETWEEN 1 AND 6 ");
-        sqlBuilder.append("GROUP BY lp.id,wf.id,co.id,wfes.status,wfs.name,co.id,o.id ");
-        sqlBuilder.append("ORDER BY lp.name,wf.name,co.id,wfs.step_order,wfes.status ");
+        if (loanProductId != null) {
+            sqlBuilder.append("AND lp.id = ").append(loanProductId).append(" ");
+        }
+        sqlBuilder.append("GROUP BY lp.id,tc.id,co.id,st.status,st.name,co.id,o.id ");
+        sqlBuilder.append("ORDER BY lp.name,tc.id,co.id,st.task_order,st.status ");
         final List<Map<String, Object>> list = this.jdbcTemplate.queryForList(sqlBuilder.toString());
         final List<LoanProductData> loanProducts = new ArrayList<>();
         if (list != null && !list.isEmpty()) {
@@ -272,23 +270,23 @@ public class TaskReadServiceImpl implements TaskReadService {
             OfficeData office = null;
             List<WorkFlowSummaryData> workFlowSummaries = null;
             WorkFlowSummaryData workFlowSummary = null;
-            List<StepSummaryData> stepSummaries = null;
-            StepSummaryData stepSummary = null;
+            List<TaskSummaryData> taskSummaries = null;
+            TaskSummaryData taskSummary = null;
 
             for (final Map<String, Object> l : list) {
-                final Integer stepStatusId = Integer.parseInt(l.get("stepStatus").toString());
-                if (!(TaskStatusType.fromInt(stepStatusId).getValue() > 6)) {
+                final Integer taskStatusId = Integer.parseInt(l.get("taskStatus").toString());
+                if (!(TaskStatusType.fromInt(taskStatusId).getValue() > 6)) {
                     final Long lpId = (Long) l.get("loanProductId");
                     final String loanProductName = (String) l.get("loanProductName");
                     final Long oId = (Long) l.get("officeId");
                     final String officeName = (String) l.get("officeName");
                     final Long workFlowId = (Long) l.get("workFlowId");
                     final String workFlowName = (String) l.get("workFlowName");
-                    final Long stepId = (Long) l.get("stepId");
-                    final String stepName = (String) l.get("stepName");
-                    final String stepShortName = (String) l.get("stepShortName");
+                    final Long taskId = (Long) l.get("taskId");
+                    final String taskName = (String) l.get("taskName");
+                    final String taskShortName = (String) l.get("taskShortName");
                     final Long noOfCount = Long.parseLong(l.get("noOfCount").toString());
-                    final String stepStatus = TaskStatusType.fromInt(stepStatusId).toString();
+                    final String taskStatus = TaskStatusType.fromInt(taskStatusId).toString();
 
                     /**
                      * Product
@@ -331,20 +329,20 @@ public class TaskReadServiceImpl implements TaskReadService {
                      */
                     Boolean isWorkFlowData = false;
                     for (final WorkFlowSummaryData ws : workFlowSummaries) {
-                        if (ws.getStepName().equalsIgnoreCase(stepName)) {
+                        if (ws.getStepName().equalsIgnoreCase(taskName)) {
                             isWorkFlowData = true;
                             ws.setNoOfCount(ws.getNoOfCount() + noOfCount);
                             break;
                         }
                     }
                     if (!isWorkFlowData) {
-                        stepSummaries = new ArrayList<StepSummaryData>();
-                        workFlowSummary = new WorkFlowSummaryData(stepName, stepShortName, noOfCount);
-                        workFlowSummary.setStepSummaries(stepSummaries);
+                        taskSummaries = new ArrayList<TaskSummaryData>();
+                        workFlowSummary = new WorkFlowSummaryData(taskName, taskShortName, noOfCount);
+                        workFlowSummary.setStepSummaries(taskSummaries);
                         workFlowSummaries.add(workFlowSummary);
                     }
-                    stepSummary = new StepSummaryData(stepStatus, noOfCount);
-                    stepSummaries.add(stepSummary);
+                    taskSummary = new TaskSummaryData(taskStatus, noOfCount);
+                    taskSummaries.add(taskSummary);
                 }
             }
         }
@@ -352,7 +350,7 @@ public class TaskReadServiceImpl implements TaskReadService {
     }
 
     @Override
-    public List<WorkFlowStepActionData> retrieveWorkFlowStepActions(final String filterBy) {
+    public List<TaskInfoData> retrieveWorkFlowStepActions(final String filterBy) {
         final WorkFlowStepActionDataMapper dataMapper = new WorkFlowStepActionDataMapper();
         final Set<Role> loggedInUserRoles = this.context.authenticatedUser().getRoles();
         final StringBuilder loggedInUserRoleIds = new StringBuilder(10);
@@ -372,7 +370,7 @@ public class TaskReadServiceImpl implements TaskReadService {
         return this.jdbcTemplate.query(dataMapper.all(), dataMapper, new Object[] { loggedInUserRoleIds.toString() });
     }
 
-    private static final class WorkFlowStepActionDataMapper implements RowMapper<WorkFlowStepActionData> {
+    private static final class WorkFlowStepActionDataMapper implements RowMapper<TaskInfoData> {
 
         private String schema;
 
@@ -382,71 +380,71 @@ public class TaskReadServiceImpl implements TaskReadService {
 
         public String all() {
             final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
-            sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append("SELECT st.id AS taskId,st.name AS taskName, st.status AS taskStatusId ");
+            sqlBuilder.append(",st.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
-            sqlBuilder.append("FROM f_workflow_execution_step wes ");
-            sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
+            sqlBuilder.append(",st.entity_type AS entityTypeId,st.entity_id AS entityId ");
+            sqlBuilder.append("FROM f_task st ");
             sqlBuilder
-                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
-            sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
-            sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (wsar.role_id IN (?) OR wsar.role_id IS NULL) ");
-            sqlBuilder.append("GROUP BY stepId ");
-            sqlBuilder.append("ORDER BY stepId ");
+                    .append("LEFT JOIN f_task_action ta ON ta.action_group_id = st.action_group_id AND st.current_action = ta.action ");
+            sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = st.assigned_to ");
+            sqlBuilder.append("WHERE st.`status` BETWEEN 2 AND  6 AND st.current_action IS NOT NULL ");
+            sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
+            sqlBuilder.append("GROUP BY taskId ");
+            sqlBuilder.append("ORDER BY taskId ");
             this.schema = sqlBuilder.toString();
             return this.schema;
         }
 
         public String assigned() {
             final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
-            sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append("SELECT st.id AS taskId,st.name AS taskName, st.status AS taskStatusId ");
+            sqlBuilder.append(",st.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
-            sqlBuilder.append("FROM f_workflow_execution_step wes ");
-            sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
+            sqlBuilder.append(",st.entity_type AS entityTypeId,st.entity_id AS entityId ");
+            sqlBuilder.append("FROM f_task st ");
             sqlBuilder
-                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
-            sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
-            sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
-            sqlBuilder.append("AND wes.assigned_to = ? AND (wsar.role_id IN (?) OR wsar.role_id IS NULL) ");
-            sqlBuilder.append("GROUP BY stepId ");
-            sqlBuilder.append("ORDER BY stepId ");
+                    .append("LEFT JOIN f_task_action ta ON ta.action_group_id = st.action_group_id AND st.current_action = ta.action ");
+            sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = st.assigned_to ");
+            sqlBuilder.append("WHERE st.`status` BETWEEN 2 AND  6 AND st.current_action IS NOT NULL ");
+            sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
+            sqlBuilder.append("AND st.assigned_to = ? ");
+            sqlBuilder.append("GROUP BY taskId ");
+            sqlBuilder.append("ORDER BY taskId ");
             this.schema = sqlBuilder.toString();
             return this.schema;
         }
 
         public String unAssigned() {
             final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT wes.id AS stepId,wes.name AS stepName, wes.status AS stepStatusId ");
-            sqlBuilder.append(",wes.current_action AS currentActionId, wsar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append("SELECT st.id AS taskId,st.name AS taskName, st.status AS taskStatusId ");
+            sqlBuilder.append(",st.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",wfe.entity_type AS entityTypeId,wfe.entity_id AS entityId ");
-            sqlBuilder.append("FROM f_workflow_execution_step wes ");
-            sqlBuilder.append("JOIN f_workflow_execution wfe ON wfe.id = wes.workflow_execution_id ");
+            sqlBuilder.append(",st.entity_type AS entityTypeId,st.entity_id AS entityId ");
+            sqlBuilder.append("FROM f_task st ");
             sqlBuilder
-                    .append("LEFT JOIN f_workflow_step_action wsa ON wsa.action_group_id = wes.action_group_id AND wes.current_action = wsa.action ");
-            sqlBuilder.append("LEFT JOIN f_workflow_step_action_role wsar ON wsar.workflow_step_action_id = wsa.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = wes.assigned_to ");
-            sqlBuilder.append("WHERE wes.`status` BETWEEN 2 AND  6 AND wes.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (wes.assigned_to IS NULL OR  wes.assigned_to != ? ) ");
-            sqlBuilder.append("AND (wsar.role_id IN (?) OR wsar.role_id IS NULL) ");
-            sqlBuilder.append("GROUP BY stepId ");
-            sqlBuilder.append("ORDER BY stepId ");
+                    .append("LEFT JOIN f_task_action ta ON ta.action_group_id = st.action_group_id AND st.current_action = ta.action ");
+            sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = st.assigned_to ");
+            sqlBuilder.append("WHERE st.`status` BETWEEN 2 AND  6 AND st.current_action IS NOT NULL ");
+            sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
+            sqlBuilder.append("AND (st.assigned_to IS NULL OR  st.assigned_to != ? ) ");
+            sqlBuilder.append("GROUP BY taskId ");
+            sqlBuilder.append("ORDER BY taskId ");
+
+
             this.schema = sqlBuilder.toString();
             return this.schema;
         }
 
         @SuppressWarnings({ "unused" })
         @Override
-        public WorkFlowStepActionData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
-            final Long stepId = rs.getLong("stepId");
-            final String stepName = rs.getString("stepName");
-            final String stepStatus = TaskStatusType.fromInt(rs.getInt("stepStatusId")).toString();
+        public TaskInfoData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
+            final Long taskId = rs.getLong("taskId");
+            final String taskName = rs.getString("taskName");
+            final String taskStatus = TaskStatusType.fromInt(rs.getInt("taskStatusId")).toString();
             final String currentAction = TaskActionType.fromInt(rs.getInt("currentActionId")).toString();
             final Long assignedId = rs.getLong("assignedId");
             final String assignedTo = rs.getString("assignedTo");
@@ -457,7 +455,7 @@ public class TaskReadServiceImpl implements TaskReadService {
             if (entityType != null && entityType.equalsIgnoreCase(TaskEntityType.LOAN_APPLICATION.toString())) {
                 nextActionUrl = "/loanapplication/" + entityId + "/workflow";
             }
-            return WorkFlowStepActionData.instance(stepId, stepName, stepStatus, currentAction, assignedId, assignedTo, entityTypeId,
+            return TaskInfoData.instance(taskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
                     entityType, entityId, nextActionUrl);
         }
     }

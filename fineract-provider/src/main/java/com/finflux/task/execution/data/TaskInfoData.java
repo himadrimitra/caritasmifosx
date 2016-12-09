@@ -1,6 +1,6 @@
 package com.finflux.task.execution.data;
 
-public class WorkFlowStepActionData {
+public class TaskInfoData {
 
     private Long stepId;
     private String stepName;
@@ -13,9 +13,9 @@ public class WorkFlowStepActionData {
     private Long entityId;
     private String nextActionUrl;
 
-    private WorkFlowStepActionData(final Long stepId, final String stepName, final String stepStatus, final String currentAction,
-            final Long assignedId, final String assignedTo, final Integer entityTypeId, final String entityType, final Long entityId,
-            final String nextActionUrl) {
+    private TaskInfoData(final Long stepId, final String stepName, final String stepStatus, final String currentAction,
+						 final Long assignedId, final String assignedTo, final Integer entityTypeId, final String entityType, final Long entityId,
+						 final String nextActionUrl) {
         this.stepId = stepId;
         this.stepName = stepName;
         this.stepStatus = stepStatus;
@@ -28,10 +28,10 @@ public class WorkFlowStepActionData {
         this.nextActionUrl = nextActionUrl;
     }
 
-    public static WorkFlowStepActionData instance(final Long stepId, final String stepName, final String stepStatus,
-            final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
-            final String entityType, final Long entityId, final String nextActionUrl) {
-        return new WorkFlowStepActionData(stepId, stepName, stepStatus, currentAction, assignedId, assignedTo, entityTypeId, entityType,
+    public static TaskInfoData instance(final Long stepId, final String stepName, final String stepStatus,
+										final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
+										final String entityType, final Long entityId, final String nextActionUrl) {
+        return new TaskInfoData(stepId, stepName, stepStatus, currentAction, assignedId, assignedTo, entityTypeId, entityType,
                 entityId, nextActionUrl);
     }
 
