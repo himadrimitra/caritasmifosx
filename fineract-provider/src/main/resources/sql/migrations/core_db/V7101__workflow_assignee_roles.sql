@@ -140,3 +140,7 @@ CREATE TABLE `f_task_action_log` (
 	CONSTRAINT `FK_f_task_action_log_task_id` FOREIGN KEY (`task_id`) REFERENCES `f_task` (`id`),
 	CONSTRAINT `FK_f_task_action_log_action_user` FOREIGN KEY (`action_by`) REFERENCES `m_appuser` (`id`)
 );
+
+ALTER TABLE `c_external_service_properties`
+	DROP INDEX `UQ_c_external_service_properties`,
+	ADD UNIQUE INDEX `UQ_c_external_service_properties` (`name`, `external_service_id`);

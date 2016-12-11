@@ -1,2 +1,37 @@
 ALTER TABLE `c_external_service_properties`
-	ADD UNIQUE INDEX `UQ_c_external_service_properties` (`name`, `value`, `external_service_id`);
+	ADD UNIQUE INDEX `UQ_c_external_service_properties` (`name`, `external_service_id`);
+
+INSERT IGNORE INTO `c_external_service_properties` (`name`, `value`, `external_service_id`) 
+VALUES 
+('DOCUMENT_TYPE_ID01_PASSPORT', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('DOCUMENT_TYPE_ID02_VOTER_ID', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('DOCUMENT_TYPE_ID03_UID', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('DOCUMENT_TYPE_ID04_OTHER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('DOCUMENT_TYPE_ID05_RATION_CARD', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('DOCUMENT_TYPE_ID06_DRIVING_CARD', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('DOCUMENT_TYPE_ID07_PAN', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D01_RESIDENCE', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D02_COMPANY', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D03_RESCUMOFF', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D04_PERMANENT', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D05_CURRENT', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D06_FOREIGN', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D07_MILITARY', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('ADDRESS_TYPE_D08_OTHER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('GENDER_TYPE_MALE', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('GENDER_TYPE_FEMALE', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_SPOUSE', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K01_FATHER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K02_HUSBAND', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K03_MOTHER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K04_SON', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K05_DAUGHTER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K06_WIFE', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K07_BROTHER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K08_MOTHER_IN_LAW', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K09_FATHER_IN_LAW', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K10_DAUGHTER_IN_LAW', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K11_SISTER_IN_LAW', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K12_SON_IN_LAW', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK')),
+('RELATIONSHIP_TYPE_K15_OTHER', null, (SELECT es.id FROM c_external_service es WHERE es.name = 'HIGHMARK'));

@@ -67,7 +67,7 @@ public class TaskApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @Context final UriInfo uriInfo) {
 
-        final List<TaskInfoData> workFlowStepActions = this.taskReadService.retrieveWorkFlowStepActions(filterBy);
+        final List<TaskInfoData> workFlowStepActions = this.taskReadService.retrieveTaskInformations(filterBy);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 

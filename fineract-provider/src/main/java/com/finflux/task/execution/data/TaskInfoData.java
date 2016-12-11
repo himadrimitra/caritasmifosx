@@ -1,10 +1,14 @@
 package com.finflux.task.execution.data;
 
+import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.client.data.ClientData;
+
 public class TaskInfoData {
 
-    private Long stepId;
-    private String stepName;
-    private String stepStatus;
+    private Long taskId;
+    private Long parentTaskId;
+    private String taskName;
+    private String taskStatus;
     private String currentAction;
     private Long assignedId;
     private String assignedTo;
@@ -12,13 +16,17 @@ public class TaskInfoData {
     private String entityType;
     private Long entityId;
     private String nextActionUrl;
+    private ClientData clientData;
+    private OfficeData officeData;
 
-    private TaskInfoData(final Long stepId, final String stepName, final String stepStatus, final String currentAction,
-						 final Long assignedId, final String assignedTo, final Integer entityTypeId, final String entityType, final Long entityId,
-						 final String nextActionUrl) {
-        this.stepId = stepId;
-        this.stepName = stepName;
-        this.stepStatus = stepStatus;
+    private TaskInfoData(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
+            final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
+            final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
+            final OfficeData officeData) {
+        this.taskId = taskId;
+        this.parentTaskId = parentTaskId;
+        this.taskName = taskName;
+        this.taskStatus = taskStatus;
         this.currentAction = currentAction;
         this.assignedId = assignedId;
         this.assignedTo = assignedTo;
@@ -26,37 +34,48 @@ public class TaskInfoData {
         this.entityType = entityType;
         this.entityId = entityId;
         this.nextActionUrl = nextActionUrl;
+        this.clientData = clientData;
+        this.officeData = officeData;
     }
 
-    public static TaskInfoData instance(final Long stepId, final String stepName, final String stepStatus,
-										final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
-										final String entityType, final Long entityId, final String nextActionUrl) {
-        return new TaskInfoData(stepId, stepName, stepStatus, currentAction, assignedId, assignedTo, entityTypeId, entityType,
-                entityId, nextActionUrl);
+    public static TaskInfoData instance(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
+            final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
+            final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
+            final OfficeData officeData) {
+        return new TaskInfoData(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
+                entityType, entityId, nextActionUrl, clientData, officeData);
     }
 
-    public Long getStepId() {
-        return this.stepId;
+    public Long getTaskId() {
+        return this.taskId;
     }
 
-    public void setStepId(Long stepId) {
-        this.stepId = stepId;
+    public void setTaskId(Long taskId) {
+        this.taskId = taskId;
     }
 
-    public String getStepName() {
-        return this.stepName;
+    public Long getParentTaskId() {
+        return this.parentTaskId;
     }
 
-    public void setStepName(String stepName) {
-        this.stepName = stepName;
+    public void setParentTaskId(Long parentTaskId) {
+        this.parentTaskId = parentTaskId;
     }
 
-    public String getStepStatus() {
-        return this.stepStatus;
+    public String getTaskName() {
+        return this.taskName;
     }
 
-    public void setStepStatus(String stepStatus) {
-        this.stepStatus = stepStatus;
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+
+    public String getTaskStatus() {
+        return this.taskStatus;
+    }
+
+    public void setTaskStatus(String taskStatus) {
+        this.taskStatus = taskStatus;
     }
 
     public String getCurrentAction() {
@@ -114,4 +133,21 @@ public class TaskInfoData {
     public void setNextActionUrl(String nextActionUrl) {
         this.nextActionUrl = nextActionUrl;
     }
+
+    public ClientData getClientData() {
+        return this.clientData;
+    }
+
+    public void setClientData(ClientData clientData) {
+        this.clientData = clientData;
+    }
+
+    public OfficeData getOfficeData() {
+        return this.officeData;
+    }
+
+    public void setOfficeData(OfficeData officeData) {
+        this.officeData = officeData;
+    }
+
 }
