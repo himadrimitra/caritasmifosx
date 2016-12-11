@@ -9,15 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.finflux.task.execution.data.*;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.domain.Role;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
@@ -25,6 +26,18 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.task.api.TaskApiConstants;
+import com.finflux.task.execution.data.LoanProductTaskSummaryData;
+import com.finflux.task.execution.data.TaskActionType;
+import com.finflux.task.execution.data.TaskActivityData;
+import com.finflux.task.execution.data.TaskActivityType;
+import com.finflux.task.execution.data.TaskEntityType;
+import com.finflux.task.execution.data.TaskExecutionData;
+import com.finflux.task.execution.data.TaskInfoData;
+import com.finflux.task.execution.data.TaskPriority;
+import com.finflux.task.execution.data.TaskStatusType;
+import com.finflux.task.execution.data.TaskSummaryData;
+import com.finflux.task.execution.data.TaskType;
+import com.finflux.task.execution.data.WorkFlowSummaryData;
 import com.finflux.task.execution.service.TaskReadService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -57,33 +70,34 @@ public class TaskReadServiceImpl implements TaskReadService {
 
     @Override
     public TaskExecutionData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId) {
-        TaskDataMapper rm = new TaskDataMapper();
-        if(entityId != null) {
-            final String sql = "SELECT " + rm.schema() + " WHERE t.entity_type = ? AND t.entity_id = ?  AND t.parent_id is null";
-            return this.jdbcTemplate.queryForObject(sql, rm, taskEntityType.getValue(), entityId);
-        }else{
-            return  null;
-        }
+        try {
+            TaskDataMapper rm = new TaskDataMapper();
+            if (entityId != null) {
+                final String sql = "SELECT " + rm.schema() + " WHERE t.entity_type = ? AND t.entity_id = ?  AND t.parent_id is null";
+                return this.jdbcTemplate.queryForObject(sql, rm, taskEntityType.getValue(), entityId);
+            }
+        } catch (final EmptyResultDataAccessException e) {}
+        return null;
     }
 
     @Override
     public TaskExecutionData getTaskDetails(Long taskId) {
         TaskDataMapper rm = new TaskDataMapper();
-        final String sql = "SELECT "+rm.schema()+" WHERE t.id = ? ";
+        final String sql = "SELECT " + rm.schema() + " WHERE t.id = ? ";
         return this.jdbcTemplate.queryForObject(sql, rm, taskId);
     }
 
     @Override
     public List<TaskExecutionData> getTaskChildren(final Long parentTaskId) {
         TaskDataMapper rm = new TaskDataMapper();
-        final String sql = "SELECT "+rm.schema()+" WHERE t.parent_id = ? order by t.task_order ASC ";
+        final String sql = "SELECT " + rm.schema() + " WHERE t.parent_id = ? order by t.task_order ASC ";
         return this.jdbcTemplate.query(sql, rm, parentTaskId);
     }
 
     @Override
     public List<Long> getChildTasksByOrder(Long parentTaskId, int orderId) {
         String sql = "SELECT " + taskIdMapper.schema() + "  WHERE task.parent_id = ? and task.task_order = ? ";
-        return this.jdbcTemplate.query(sql, taskIdMapper,parentTaskId, orderId);
+        return this.jdbcTemplate.query(sql, taskIdMapper, parentTaskId, orderId);
     }
 
     private static final class TaskIdMapper implements RowMapper<Long> {
@@ -150,7 +164,6 @@ public class TaskReadServiceImpl implements TaskReadService {
             return sb.toString();
         }
 
-        @SuppressWarnings("null")
         @Override
         public TaskExecutionData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long taskId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskId");
@@ -211,10 +224,10 @@ public class TaskReadServiceImpl implements TaskReadService {
                 taskCriteriaResult = new Gson().fromJson(criteriaResultStr, new TypeToken<EligibilityResult>() {}.getType());
             }
             final Integer taskCriteriaActionId = JdbcSupport.getIntegeActualValue(rs, "taskCriteriaActionId");
-            final TaskExecutionData taskData = TaskExecutionData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType, taskEntityId,
-                    taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder, taskCriteriaId,
-                    taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId, taskOfficeName,
-                    taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType);
+            final TaskExecutionData taskData = TaskExecutionData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType,
+                    taskEntityId, taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder,
+                    taskCriteriaId, taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId,
+                    taskOfficeName, taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType);
 
             final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
             if (taskActivityId != null) {
@@ -225,7 +238,7 @@ public class TaskReadServiceImpl implements TaskReadService {
                 if (taskActivityTypeId != null) {
                     taskActivityType = TaskActivityType.fromInt(taskActivityTypeId).getEnumOptionData();
                 }
-                final TaskActivityData   taskActivityData = TaskActivityData.instance(taskActivityId, taskActivityName,
+                final TaskActivityData taskActivityData = TaskActivityData.instance(taskActivityId, taskActivityName,
                         taskActivityIdentifier, taskActivityType);
                 taskData.setTaskActivity(taskActivityData);
             }
@@ -350,7 +363,7 @@ public class TaskReadServiceImpl implements TaskReadService {
     }
 
     @Override
-    public List<TaskInfoData> retrieveWorkFlowStepActions(final String filterBy) {
+    public List<TaskInfoData> retrieveTaskInformations(final String filterBy) {
         final WorkFlowStepActionDataMapper dataMapper = new WorkFlowStepActionDataMapper();
         final Set<Role> loggedInUserRoles = this.context.authenticatedUser().getRoles();
         final StringBuilder loggedInUserRoleIds = new StringBuilder(10);
@@ -379,17 +392,20 @@ public class TaskReadServiceImpl implements TaskReadService {
         }
 
         public String all() {
-            final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT st.id AS taskId,st.name AS taskName, st.status AS taskStatusId ");
-            sqlBuilder.append(",st.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
+            final StringBuilder sqlBuilder = new StringBuilder(500);
+            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId ");
+            sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",st.entity_type AS entityTypeId,st.entity_id AS entityId ");
-            sqlBuilder.append("FROM f_task st ");
-            sqlBuilder
-                    .append("LEFT JOIN f_task_action ta ON ta.action_group_id = st.action_group_id AND st.current_action = ta.action ");
+            sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId ");
+            sqlBuilder.append(",c.id AS clientId,c.display_name AS clientName ");
+            sqlBuilder.append(",o.id AS officeId,o.name AS officeName ");
+            sqlBuilder.append("FROM f_task t ");
+            sqlBuilder.append("LEFT JOIN m_client c ON c.id = t.client_id ");
+            sqlBuilder.append("LEFT JOIN m_office o ON o.id = t.office_id ");
+            sqlBuilder.append("LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
             sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = st.assigned_to ");
-            sqlBuilder.append("WHERE st.`status` BETWEEN 2 AND  6 AND st.current_action IS NOT NULL ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
+            sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
             sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
             sqlBuilder.append("GROUP BY taskId ");
             sqlBuilder.append("ORDER BY taskId ");
@@ -398,19 +414,22 @@ public class TaskReadServiceImpl implements TaskReadService {
         }
 
         public String assigned() {
-            final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT st.id AS taskId,st.name AS taskName, st.status AS taskStatusId ");
-            sqlBuilder.append(",st.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
+            final StringBuilder sqlBuilder = new StringBuilder(500);
+            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId ");
+            sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",st.entity_type AS entityTypeId,st.entity_id AS entityId ");
-            sqlBuilder.append("FROM f_task st ");
-            sqlBuilder
-                    .append("LEFT JOIN f_task_action ta ON ta.action_group_id = st.action_group_id AND st.current_action = ta.action ");
+            sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId ");
+            sqlBuilder.append(",c.id AS clientId,c.display_name AS clientName ");
+            sqlBuilder.append(",o.id AS officeId,o.name AS officeName ");
+            sqlBuilder.append("FROM f_task t ");
+            sqlBuilder.append("LEFT JOIN m_client c ON c.id = t.client_id ");
+            sqlBuilder.append("LEFT JOIN m_office o ON o.id = t.office_id ");
+            sqlBuilder.append("LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
             sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = st.assigned_to ");
-            sqlBuilder.append("WHERE st.`status` BETWEEN 2 AND  6 AND st.current_action IS NOT NULL ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
+            sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
             sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("AND st.assigned_to = ? ");
+            sqlBuilder.append("AND t.assigned_to = ? ");
             sqlBuilder.append("GROUP BY taskId ");
             sqlBuilder.append("ORDER BY taskId ");
             this.schema = sqlBuilder.toString();
@@ -418,22 +437,24 @@ public class TaskReadServiceImpl implements TaskReadService {
         }
 
         public String unAssigned() {
-            final StringBuilder sqlBuilder = new StringBuilder(200);
-            sqlBuilder.append("SELECT st.id AS taskId,st.name AS taskName, st.status AS taskStatusId ");
-            sqlBuilder.append(",st.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
+            final StringBuilder sqlBuilder = new StringBuilder(500);
+            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId ");
+            sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",st.entity_type AS entityTypeId,st.entity_id AS entityId ");
-            sqlBuilder.append("FROM f_task st ");
-            sqlBuilder
-                    .append("LEFT JOIN f_task_action ta ON ta.action_group_id = st.action_group_id AND st.current_action = ta.action ");
+            sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId ");
+            sqlBuilder.append(",c.id AS clientId,c.display_name AS clientName ");
+            sqlBuilder.append(",o.id AS officeId,o.name AS officeName ");
+            sqlBuilder.append("FROM f_task t ");
+            sqlBuilder.append("LEFT JOIN m_client c ON c.id = t.client_id ");
+            sqlBuilder.append("LEFT JOIN m_office o ON o.id = t.office_id ");
+            sqlBuilder.append("LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
             sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = st.assigned_to ");
-            sqlBuilder.append("WHERE st.`status` BETWEEN 2 AND  6 AND st.current_action IS NOT NULL ");
+            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
+            sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
             sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("AND (st.assigned_to IS NULL OR  st.assigned_to != ? ) ");
+            sqlBuilder.append("AND (t.assigned_to IS NULL OR  t.assigned_to != ? ) ");
             sqlBuilder.append("GROUP BY taskId ");
             sqlBuilder.append("ORDER BY taskId ");
-
 
             this.schema = sqlBuilder.toString();
             return this.schema;
@@ -443,6 +464,7 @@ public class TaskReadServiceImpl implements TaskReadService {
         @Override
         public TaskInfoData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
             final Long taskId = rs.getLong("taskId");
+            final Long parentTaskId = JdbcSupport.getLongActualValue(rs, "parentTaskId");
             final String taskName = rs.getString("taskName");
             final String taskStatus = TaskStatusType.fromInt(rs.getInt("taskStatusId")).toString();
             final String currentAction = TaskActionType.fromInt(rs.getInt("currentActionId")).toString();
@@ -451,12 +473,24 @@ public class TaskReadServiceImpl implements TaskReadService {
             final Integer entityTypeId = rs.getInt("entityTypeId");
             final String entityType = TaskEntityType.fromInt(entityTypeId).toString();
             final Long entityId = rs.getLong("entityId");
+            final Long clientId = rs.getLong("clientId");
+            ClientData clientData = null;
+            if (clientId != null) {
+                final String clientName = rs.getString("clientName");
+                clientData = ClientData.lookup(clientId, clientName, null, null);
+            }
+            final Long officeId = rs.getLong("officeId");
+            OfficeData officeData = null;
+            if (officeId != null) {
+                final String officeName = rs.getString("officeName");
+                officeData = OfficeData.lookup(officeId, officeName);
+            }
             String nextActionUrl = "";
             if (entityType != null && entityType.equalsIgnoreCase(TaskEntityType.LOAN_APPLICATION.toString())) {
-                nextActionUrl = "/loanapplication/" + entityId + "/workflow";
+                nextActionUrl = "/viewtask/" + taskId;
             }
-            return TaskInfoData.instance(taskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                    entityType, entityId, nextActionUrl);
+            return TaskInfoData.instance(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
+                    entityType, entityId, nextActionUrl, clientData, officeData);
         }
     }
 

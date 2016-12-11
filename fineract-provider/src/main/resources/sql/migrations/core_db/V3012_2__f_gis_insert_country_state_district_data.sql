@@ -1957,7 +1957,7 @@ INSERT INTO `f_state` (`id`, `country_id`, `iso_state_code`, `state_name`) VALUE
 	(874, 54, NULL, 'Karlovac'),
 	(919, 57, NULL, 'Karlovarsky'),
 	(2571, 153, NULL, 'Karnali'),
-	(17, 101, NULL, 'Karnataka'),
+	(17, 101, 'KA', 'Karnataka'),
 	(282, 14, NULL, 'Karnten'),
 	(2287, 131, NULL, 'Karonga'),
 	(3502, 215, NULL, 'Karotegin'),
