@@ -137,4 +137,6 @@ public interface LoanReadPlatformService {
     LoanTransactionData retrieveLoanForeclosureTemplate(final Long loanId, final LocalDate transactionDate);
 
 	LoanTransactionData refundTemplate(Long loanId);
+	
+	boolean isAnyActiveJLGLoanForClient(Long clientid, Long groupId);
 }
