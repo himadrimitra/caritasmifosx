@@ -84,7 +84,8 @@ public final class LoanEventApiJsonValidator {
 							"paymentTypeId", "accountNumber", "checkNumber", "routingCode", "receiptNumber",
 							"bankNumber", "adjustRepaymentDate", LoanApiConstants.principalDisbursedParameterName,
 							LoanApiConstants.emiAmountParameterName, "authenticationRuleId", "authenticationType",
-							"clientAuthData", "location", "locationType", "pincode", "longitude", "latitude", LoanApiConstants.clientMembersParamName));
+							"clientAuthData", "location", "locationType", "pincode", "longitude", "latitude", 
+							LoanApiConstants.clientMembersParamName, LoanApiConstants.skipAuthenticationRule));
         }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
