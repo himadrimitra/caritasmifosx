@@ -532,13 +532,13 @@ public final class LoanEventApiJsonValidator {
         if (!reschedulebasedOnMeetingDates) {
             List<Long> activeLoanIds = new ArrayList<>();
             for (final Loan loan : loans) {
-                if (loan.isDisbursed() || loan.isApproved() || loan.isSubmittedAndPendingApproval()) {
+                if (loan.isDisbursed()) {
                     activeLoanIds.add(loan.getId());
                 }
             }
             if (!activeLoanIds.isEmpty()) {
-                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has  submitted and pending for approval, approved and active loans";
-                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.submitted.or.approved.or.active.loans (" + activeLoanIds + ") ",
+                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has active loans";
+                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.active.loans",
                         defaultUserMessage, presentMeetingDate);
             }
         }
