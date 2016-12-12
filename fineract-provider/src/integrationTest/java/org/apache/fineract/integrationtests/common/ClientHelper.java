@@ -76,6 +76,12 @@ public class ClientHelper {
                 "clientId");
     }
     
+    public static Integer createClientWithMobileAndSavings(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
+            final String activationDate, final String officeId, final String mobileno,final Integer savingsProductId) {
+        System.out.println("---------------------------------CREATING A CLIENT---------------------------------------------");
+        return Utils.performServerPost(requestSpec, responseSpec, CREATE_CLIENT_URL, getClientAsJSONWithMobileNo(activationDate, officeId, mobileno, savingsProductId),
+                "clientId");
+    }
     
     
     public static Integer createClientPending(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
@@ -171,6 +177,23 @@ public class ClientHelper {
 		return new Gson().toJson(map);
     }
     
+    public static String getClientAsJSONWithMobileNo(final String dateOfJoining, final String officeId, final String mobileno, final Integer savingsProductId ) {
+        final HashMap<String, Object> map = new HashMap<>();
+        map.put("officeId", officeId);
+        map.put("firstname", Utils.randomNameGenerator("Client_FirstName_", 5));
+        map.put("lastname", Utils.randomNameGenerator("Client_LastName_", 4));
+        map.put("dateFormat", DATE_FORMAT);
+        map.put("mobileNo",mobileno);
+		map.put("locale", "en");
+		map.put("active", "true");
+		map.put("savingsProductId",savingsProductId);
+		map.put("activationDate", dateOfJoining);
+		map.put("submittedOnDate",dateOfJoining);
+		map.put("legalFormId", 1);
+		System.out.println("map : " + map);
+		return new Gson().toJson(map);
+    }
+    
     public static String getTestClientAsJSONPending(final String submittedOnDate, final String officeId) {
         final HashMap<String, String> map = new HashMap<>();
         map.put("officeId", officeId);
@@ -184,9 +207,6 @@ public class ClientHelper {
 		System.out.println("map : " + map);
 		return new Gson().toJson(map);
     }
-    
-    
-    
     
     public static String getTestPersonClientAsJSON(final String dateOfJoining, final String officeId) {
         final HashMap<String, Object> map = new HashMap<>();

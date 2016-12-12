@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.self.savings.api;
 
+import java.util.Date;
+
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -76,15 +78,19 @@ public class SelfSavingsApiResource {
 	public String retrieveSavings(
 			@PathParam("accountId") final Long accountId,
 			@DefaultValue("all") @QueryParam("chargeStatus") final String chargeStatus,
-			@Context final UriInfo uriInfo) {
+			@Context final UriInfo uriInfo,@QueryParam("sqlSearch") final String sqlSearch,
+			@QueryParam("transactionsCount") final Integer transactionsCount,
+			@QueryParam("fromDate") final Date fromDate, @QueryParam("toDate") final Date toDate,
+			@QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+			@QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder) {
 
 		this.dataValidator.validateRetrieveSavings(uriInfo);
 
 		validateAppuserSavingsAccountMapping(accountId);
 
 		final boolean staffInSelectedOfficeOnly = false;
-		return this.savingsAccountsApiResource.retrieveOne(accountId,
-				staffInSelectedOfficeOnly, chargeStatus, uriInfo);
+		return this.savingsAccountsApiResource.retrieveOne(accountId, staffInSelectedOfficeOnly, chargeStatus, uriInfo, transactionsCount, 
+				fromDate, toDate, offset, limit, orderBy, sortOrder, sqlSearch);
 	}
 
 	@GET
