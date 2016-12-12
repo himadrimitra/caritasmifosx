@@ -429,6 +429,14 @@ public class DataValidatorBuilder {
         }
         return this;
     }
+    public void failWithCodeValidator(final String errorCode,final Object... defaultUserMessageArgs)
+    {
+    	 final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(errorCode);
+         final StringBuilder defaultEnglishMessage = new StringBuilder("Failed data validation due to: ").append(errorCode).append(".");
+         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
+                 this.parameter, this.value, defaultUserMessageArgs);
+         this.dataValidationErrors.add(error);
+    }
 
     public DataValidatorBuilder integerSameAsNumber(Integer number) {
         if (this.value == null && this.ignoreNullValue) { return this; }

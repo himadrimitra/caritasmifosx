@@ -36,6 +36,8 @@ import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.exception.ClientIdentifierNotFoundException;
 import org.apache.fineract.portfolio.client.exception.DuplicateClientIdentifierException;
 import org.apache.fineract.portfolio.client.serialization.ClientIdentifierCommandFromApiJsonDeserializer;
+import org.apache.fineract.portfolio.validations.domain.EntityValiDationType;
+import org.apache.fineract.portfolio.validations.service.FieldRegexValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,9 +55,10 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
     private final ClientIdentifierRepository clientIdentifierRepository;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final ClientIdentifierCommandFromApiJsonDeserializer clientIdentifierCommandFromApiJsonDeserializer;
+    private final FieldRegexValidator fieldRegexValidator;
 
     @Autowired
-    public ClientIdentifierWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
+    public ClientIdentifierWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,final FieldRegexValidator fieldRegexValidator,
             final ClientRepositoryWrapper clientRepository, final ClientIdentifierRepository clientIdentifierRepository,
             final CodeValueRepositoryWrapper codeValueRepository,
             final ClientIdentifierCommandFromApiJsonDeserializer clientIdentifierCommandFromApiJsonDeserializer) {
@@ -64,6 +67,7 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
         this.clientIdentifierRepository = clientIdentifierRepository;
         this.codeValueRepository = codeValueRepository;
         this.clientIdentifierCommandFromApiJsonDeserializer = clientIdentifierCommandFromApiJsonDeserializer;
+        this.fieldRegexValidator=fieldRegexValidator;
     }
 
     @Transactional
@@ -85,7 +89,7 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
                     .getDocumentTypeId());
             documentTypeId = documentType.getId();
             documentTypeLabel = documentType.label();
-
+            fieldRegexValidator.validateForFieldName(EntityValiDationType.CLIENTIDENTIFIER.getValue(), command);
             final ClientIdentifier clientIdentifier = ClientIdentifier.fromJson(client, documentType, command);
 
             this.clientIdentifierRepository.save(clientIdentifier);
