@@ -40,6 +40,7 @@ public class SavingsAccountHelper {
     private final ResponseSpecification responseSpec;
 
     private static final String SAVINGS_ACCOUNT_URL = "/fineract-provider/api/v1/savingsaccounts";
+    private static final String WALLET_URL = "/fineract-provider/api/v1/wallet";
     private static final String APPROVE_SAVINGS_COMMAND = "approve";
     private static final String UNDO_APPROVAL_SAVINGS_COMMAND = "undoApproval";
     private static final String ACTIVATE_SAVINGS_COMMAND = "activate";
@@ -54,6 +55,8 @@ public class SavingsAccountHelper {
     private static final String WITHDRAW_SAVINGS_COMMAND = "withdrawal";
     private static final String MODIFY_TRASACTION_COMMAND = "modify";
     private static final String UNDO_TRASACTION_COMMAND = "undo";
+    private static final String DEPOSIT_WALLET_COMMAND = "deposit";
+    private static final String WITHDRAW_WALLET_COMMAND = "withdrawal";
 
     public static final String CREATED_DATE = "08 January 2013";
     public static final String CREATED_DATE_PLUS_ONE = "09 January 2013";
@@ -167,6 +170,12 @@ public class SavingsAccountHelper {
         return performSavingActions(createSavingsTransactionURL(DEPOSIT_SAVINGS_COMMAND, savingsID),
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
     }
+    
+    public Object depositToWalletAccount(final String mobileno, final String amount, String date, String jsonAttributeToGetback) {
+        System.out.println("--------------------------------- WALLET TRANSACTION DEPOSIT --------------------------------");
+        return performSavingActions(createWalletTransactionURL(DEPOSIT_WALLET_COMMAND, mobileno),
+                getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
+    }
 
     public Object withdrawalFromSavingsAccount(final Integer savingsId, final String amount, String date, String jsonAttributeToGetback) {
         System.out.println("\n--------------------------------- SAVINGS TRANSACTION WITHDRAWAL --------------------------------");
@@ -174,12 +183,18 @@ public class SavingsAccountHelper {
                 getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
     }
 
+    public Object withdrawalFromWalletAccount(final String mobileno, final String amount, String date, String jsonAttributeToGetback) {
+        System.out.println("\n--------------------------------- SAVINGS TRANSACTION WITHDRAWAL --------------------------------");
+        return performSavingActions(createWalletTransactionURL(WITHDRAW_WALLET_COMMAND, mobileno),
+                getSavingsTransactionJSON(amount, date), jsonAttributeToGetback);
+    }
+    
     public Integer updateSavingsAccountTransaction(final Integer savingsId, final Integer transactionId, final String amount) {
         System.out.println("\n--------------------------------- MODIFY SAVINGS TRANSACTION  --------------------------------");
         return (Integer) performSavingActions(createAdjustTransactionURL(MODIFY_TRASACTION_COMMAND, savingsId, transactionId),
                 getSavingsTransactionJSON(amount, LAST_TRANSACTION_DATE), CommonConstants.RESPONSE_RESOURCE_ID);
     }
-
+    
     public Integer undoSavingsAccountTransaction(final Integer savingsId, final Integer transactionId) {
         System.out.println("\n--------------------------------- UNDO SAVINGS TRANSACTION  --------------------------------");
         return (Integer) performSavingActions(createAdjustTransactionURL(UNDO_TRASACTION_COMMAND, savingsId, transactionId),
@@ -191,7 +206,7 @@ public class SavingsAccountHelper {
         performSavingActions(createSavingsCalculateInterestURL(CALCULATE_INTEREST_SAVINGS_COMMAND, savingsId),
                 getCalculatedInterestForSavingsApplicationAsJSON(), "");
     }
-
+    
     public void postInterestForSavings(final Integer savingsId) {
         System.out.println("--------------------------------- POST INTEREST FOR SAVINGS --------------------------------");
         performSavingActions(createSavingsCalculateInterestURL(POST_INTEREST_SAVINGS_COMMAND, savingsId),
@@ -388,11 +403,15 @@ public class SavingsAccountHelper {
         return SAVINGS_ACCOUNT_URL + "/" + savingsID + "/transactions?command=" + command + "&" + Utils.TENANT_IDENTIFIER;
     }
 
+    private String createWalletTransactionURL(final String command, final String mobileno) {
+        return WALLET_URL + "/" + mobileno + "?command=" + command + "&" + Utils.TENANT_IDENTIFIER;
+    }
+    
     private String createAdjustTransactionURL(final String command, final Integer savingsID, final Integer transactionId) {
         return SAVINGS_ACCOUNT_URL + "/" + savingsID + "/transactions/" + transactionId + "?command=" + command + "&"
                 + Utils.TENANT_IDENTIFIER;
     }
-
+    
     private String createSavingsCalculateInterestURL(final String command, final Integer savingsID) {
         return SAVINGS_ACCOUNT_URL + "/" + savingsID + "?command=" + command + "&" + Utils.TENANT_IDENTIFIER;
     }
@@ -428,6 +447,16 @@ public class SavingsAccountHelper {
 
     public HashMap getSavingsTransaction(final Integer savingsID, final Integer savingsTransactionId) {
         final String URL = SAVINGS_ACCOUNT_URL + "/" + savingsID + "/transactions/" + savingsTransactionId + "?" + Utils.TENANT_IDENTIFIER;
+        return Utils.performServerGet(requestSpec, responseSpec, URL, "");
+    }
+    
+    public ArrayList getWalletTransactionsByLimit(final String mobileno, final String transactionsLimit) {
+        final String URL = WALLET_URL + "/" + mobileno+"/transactions/" + "?" + Utils.TENANT_IDENTIFIER + "&transactionsCount="+transactionsLimit;
+        return Utils.performServerGet(requestSpec, responseSpec, URL, "");
+    }
+    
+    public ArrayList getWalletTransactionsByDateRange(final String mobileno, final String fromDate, final String toDate) {
+        final String URL = WALLET_URL + "/" + mobileno+"/transactions/" + "?" + Utils.TENANT_IDENTIFIER + "&fromDate="+fromDate+"&toDate="+toDate;
         return Utils.performServerGet(requestSpec, responseSpec, URL, "");
     }
 

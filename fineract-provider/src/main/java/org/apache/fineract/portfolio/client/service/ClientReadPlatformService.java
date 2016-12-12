@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.client.service;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -49,4 +50,6 @@ public interface ClientReadPlatformService {
     Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
 
 	Long retrieveDefaultStaffIdFromGroup(Long clientId);
+
+	Long retrieveSavingsAccountIdByMobileNo(String mobileno);
 }
