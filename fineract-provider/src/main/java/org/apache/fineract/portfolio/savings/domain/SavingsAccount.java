@@ -1367,6 +1367,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                 dpAmount = command
                         .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpLimitAmountParamName);
                 this.savingsAccountDpDetails.setDpAmount(dpAmount);
+                updateOverDraftLimit(dpAmount);
                 isRecalculateDpReducationAmount = true;
             }
 
@@ -2901,5 +2902,9 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 	
     public void setSavingsAccountDpDetails(final SavingsAccountDpDetails savingsAccountDpDetails) {
         this.savingsAccountDpDetails = savingsAccountDpDetails;
+    }
+    
+    public void updateOverDraftLimit(BigDecimal dpLimitAmount) {
+        this.overdraftLimit = dpLimitAmount;
     }
 }
