@@ -14,14 +14,14 @@ import com.finflux.task.execution.data.TaskEntityType;
 
 public interface TaskExecutionService {
 
-    void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId,
-                              final Client client, final Office office, final Map<TaskConfigKey, String> configValues);
+    void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,
+            final Office office, final Map<TaskConfigKey, String> configValues);
 
     TaskExecutionData getTaskData(Long taskId);
 
     void doActionOnTask(Long workflowExecutionStepId, TaskActionType stepAction);
 
-//    public void addNoteToTask(Long taskId);
+    // public void addNoteToTask(Long taskId);
 
     TaskExecutionData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId);
 
