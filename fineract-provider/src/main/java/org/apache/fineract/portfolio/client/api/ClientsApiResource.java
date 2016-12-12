@@ -167,7 +167,8 @@ public class ClientsApiResource {
         final Integer limit = null;
         final String orderBy = null;
         final String sortOrder = null;
-        SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId, offset, limit, orderBy, sortOrder);
+        final Long paymentTypeId = null;
+        SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId, offset, limit, orderBy, sortOrder, paymentTypeId);
                 
         final Collection<ClientData> clientData = this.clientReadPlatformService.retrieveAllForTaskLookupBySearchParameters(searchParameters);
 

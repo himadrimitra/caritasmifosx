@@ -109,4 +109,15 @@ public class PaymentTypeData {
     public Long getExternalServiceId() {
         return this.externalServiceId;
     }
+
+    public static PaymentTypeData lookUp(Long paymentTypeId, String paymentTypeName) {
+        String description = null;
+        Boolean isCashPayment = null;
+        Long position = null;
+        Long externalServiceId = null;
+        BankAccountDetailData bankAccountDetails = null;
+        final Collection<ExternalServicesData> externalServiceOptions = null;
+        return new PaymentTypeData(paymentTypeId, paymentTypeName, description, isCashPayment, position, externalServiceId,
+                bankAccountDetails, externalServiceOptions);
+    }
 }
