@@ -412,8 +412,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         } else {
             expectedFirstRepaymentDate = nextPossibleRepaymentDate;
         }
+        
+        if(loan.getExpectedFirstRepaymentOnDate() != null){
         this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(expectedFirstRepaymentDate, loan,
                 actualDisbursementDate);
+        }
         
         // validate first repayment date with meeting date
         if (rescheduledRepaymentDate != null) {
