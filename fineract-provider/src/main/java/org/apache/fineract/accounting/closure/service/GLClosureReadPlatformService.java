@@ -34,4 +34,6 @@ public interface GLClosureReadPlatformService {
 
     GLClosureData retrieveGLClosureById(long glClosureId);
 
+	GLClosureData retrieveGLClosureByOfficeId(Long officeId);
+
 }
