@@ -69,14 +69,16 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
         }
         
         public String latestGLClosureOfOfficeSchema() {
-            return " glClosure.id as id, ounder.id as officeId,ounder.name as officeName ,max(glClosure.closing_date) as closingDate,"
+            return " glClosure.id as id, ounder.id as officeId,ounder.name as officeName , glClosure.closing_date as closingDate,"
                     + " glClosure.is_deleted as isDeleted, creatingUser.id as creatingUserId,creatingUser.username as creatingUserName,"
-                    + " updatingUser.id as updatingUserId,updatingUser.username as updatingUserName, max(glClosure.created_date) as createdDate,"
-                    + " max(glClosure.lastmodified_date) as updatedDate, glClosure.comments as comments "
+                    + " updatingUser.id as updatingUserId,updatingUser.username as updatingUserName, glClosure.created_date as createdDate,"
+                    + " glClosure.lastmodified_date as updatedDate, glClosure.comments as comments "
                     + " from m_office office "
                     + " join m_office ounder on ounder.hierarchy like "
                     + " concat(office.hierarchy, '%') and ounder.hierarchy like concat('.', '%')" 
-                    + " join acc_gl_closure glClosure on glClosure.office_id=ounder.id"
+					+ " join (select max(glc.closing_date) as closingDate, glc.office_id "
+					+ " from acc_gl_closure glc where glc.is_deleted = 0 group by glc.office_id) x ON x.office_id = ounder.id"
+                    + " join acc_gl_closure glClosure on glClosure.office_id=ounder.id and x.closingDate = glClosure.closing_date and glClosure.is_deleted = 0"
                     + " join m_appuser creatingUser on glClosure.createdby_id=creatingUser.id"
                     + " join m_appuser updatingUser on glClosure.lastmodifiedby_id=updatingUser.id"
                     + " where ";
@@ -91,7 +93,19 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
                     + " where glClosure.createdby_id=creatingUser.id and "
                     + " glClosure.lastmodifiedby_id=updatingUser.id and glClosure.office_id=office.id";
         }
-
+        
+        public String glClosureByOfficeIdSchema() {
+			return "glClosure.id as id, glClosure.office_id as officeId,office.name as officeName ,glClosure.closing_date as closingDate,"
+                    + " glClosure.is_deleted as isDeleted, creatingUser.id as creatingUserId,creatingUser.username as creatingUserName,"
+                    + " updatingUser.id as updatingUserId,updatingUser.username as updatingUserName, glClosure.created_date as createdDate,"
+                    + " glClosure.lastmodified_date as updatedDate, glClosure.comments as comments "
+					+ " from m_office office Join (select  max(glc.closing_date) as closingDate , glc.office_id from acc_gl_closure glc "
+					+ "where glc.is_deleted = 0 group by glc.office_id) x on x.office_id = office.id "
+					+ "JOIN acc_gl_closure glClosure ON glClosure.office_id=office.id and x.closingDate = glClosure.closing_date "
+					+ "JOIN m_appuser creatingUser ON glClosure.createdby_id=creatingUser.id "
+					+ "JOIN m_appuser updatingUser ON glClosure.lastmodifiedby_id=updatingUser.id"
+					+ "	where" ;
+		}
         @Override
         public GLClosureData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
@@ -111,6 +125,7 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
             return new GLClosureData(id, officeId, officeName, closingDate, deleted, createdDate, lastUpdatedDate, creatingByUserId,
                     createdByUserName, lastUpdatedByUserId, lastUpdatedByUserName, comments);
         }
+
     }
 
     @Override
@@ -130,7 +145,7 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
             objectArray[arrayPos] = officeId;
             arrayPos = arrayPos + 1;
             if(limitToOne){
-            sqlForSingleClosure = " group by ounder.name ";
+            sqlForSingleClosure = " group by ounder.id ";
             }
         }
 
@@ -185,5 +200,19 @@ public class GLClosureReadPlatformServiceImpl implements GLClosureReadPlatformSe
             throw new GLClosureNotFoundException(glClosureId);
         }
     }
+
+	@Override
+	public GLClosureData retrieveGLClosureByOfficeId(final Long officeId) {
+	        try {
+
+	            final String sql = "select " + rm.glClosureByOfficeIdSchema() + " office.id = ?";
+
+	            final GLClosureData glAccountData = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { officeId });
+
+	            return glAccountData;
+	        } catch (final EmptyResultDataAccessException e) {
+	        	return null;
+	    }
+	}
 
 }
