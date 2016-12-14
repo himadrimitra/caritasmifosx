@@ -1293,7 +1293,7 @@ public class Loan extends AbstractPersistable<Long> {
                         scheduledLoanInstallment.periodDueDate(), scheduledLoanInstallment.principalDue(),
                         scheduledLoanInstallment.interestDue(), scheduledLoanInstallment.feeChargesDue(),
                         scheduledLoanInstallment.penaltyChargesDue(), scheduledLoanInstallment.isRecalculatedInterestComponent(),
-                        scheduledLoanInstallment.getLoanCompoundingDetails());
+                        scheduledLoanInstallment.getLoanCompoundingDetails(), scheduledLoanInstallment.advancePayment());
                 addRepaymentScheduleInstallment(installment);
             }
         }

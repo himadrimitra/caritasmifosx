@@ -42,20 +42,30 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     private Money feeChargesDue;
     private Money penaltyChargesDue;
     private Money totalDue;
+    private Money advancePayment;
     private final boolean recalculatedInterestComponent;
     private final List<LoanInterestRecalcualtionAdditionalDetails> loanCompoundingDetails = new ArrayList<>();
 
     public static LoanScheduleModelRepaymentPeriod repayment(final int periodNumber, final LocalDate startDate,
             final LocalDate scheduledDueDate, final Money principalDue, final Money outstandingLoanBalance, final Money interestDue,
             final Money feeChargesDue, final Money penaltyChargesDue, final Money totalDue, boolean recalculatedInterestComponent) {
+        final Money advancePayment = null;
+        return new LoanScheduleModelRepaymentPeriod(periodNumber, startDate, scheduledDueDate, principalDue, outstandingLoanBalance,
+                interestDue, feeChargesDue, penaltyChargesDue, totalDue, recalculatedInterestComponent, advancePayment);
+    }
+    
+    public static LoanScheduleModelRepaymentPeriod repayment(final int periodNumber, final LocalDate startDate,
+            final LocalDate scheduledDueDate, final Money principalDue, final Money outstandingLoanBalance, final Money interestDue,
+            final Money feeChargesDue, final Money penaltyChargesDue, final Money totalDue, boolean recalculatedInterestComponent,
+            final Money advancePayment) {
 
         return new LoanScheduleModelRepaymentPeriod(periodNumber, startDate, scheduledDueDate, principalDue, outstandingLoanBalance,
-                interestDue, feeChargesDue, penaltyChargesDue, totalDue, recalculatedInterestComponent);
+                interestDue, feeChargesDue, penaltyChargesDue, totalDue, recalculatedInterestComponent,advancePayment);
     }
 
     public LoanScheduleModelRepaymentPeriod(final int periodNumber, final LocalDate fromDate, final LocalDate dueDate,
             final Money principalDue, final Money outstandingLoanBalance, final Money interestDue, final Money feeChargesDue,
-            final Money penaltyChargesDue, final Money totalDue, final boolean recalculatedInterestComponent) {
+            final Money penaltyChargesDue, final Money totalDue, final boolean recalculatedInterestComponent, final Money advancePayment) {
         this.periodNumber = periodNumber;
         this.fromDate = fromDate;
         this.dueDate = dueDate;
@@ -66,6 +76,7 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
         this.penaltyChargesDue = penaltyChargesDue;
         this.totalDue = totalDue;
         this.recalculatedInterestComponent = recalculatedInterestComponent;
+        this.advancePayment = advancePayment;
     }
 
     @Override
@@ -167,5 +178,23 @@ public final class LoanScheduleModelRepaymentPeriod implements LoanScheduleModel
     public void adjustInterestForCurrentPeriod(Money adjustedInterestForCurrentPeriod) {
         this.interestDue = adjustedInterestForCurrentPeriod;
         
+    }
+
+    @Override
+    public BigDecimal advancePayment() {
+        BigDecimal value = null;
+        if (this.recalculatedInterestComponent) {
+            if (this.principalDue != null && this.principalDue.isGreaterThanZero()) {
+                value = this.principalDue.getAmount();
+            }
+        } else if (this.advancePayment != null && this.advancePayment.isGreaterThanZero()) {
+            value = this.advancePayment.getAmount();
+        }
+        return value;
+    }
+
+    @Override
+    public void setAdvancePayment(Money advancePayment) {
+        this.advancePayment = advancePayment;
     }
 }

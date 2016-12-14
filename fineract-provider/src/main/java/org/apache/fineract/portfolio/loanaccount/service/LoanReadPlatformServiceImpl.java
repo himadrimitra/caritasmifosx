@@ -1331,7 +1331,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " ls.interest_amount as interestDue, ls.interest_completed_derived as interestPaid, ls.interest_waived_derived as interestWaived, ls.interest_writtenoff_derived as interestWrittenOff, "
                     + " ls.fee_charges_amount as feeChargesDue, ls.fee_charges_completed_derived as feeChargesPaid, ls.fee_charges_waived_derived as feeChargesWaived, ls.fee_charges_writtenoff_derived as feeChargesWrittenOff, "
                     + " ls.penalty_charges_amount as penaltyChargesDue, ls.penalty_charges_completed_derived as penaltyChargesPaid, ls.penalty_charges_waived_derived as penaltyChargesWaived, ls.penalty_charges_writtenoff_derived as penaltyChargesWrittenOff, "
-                    + " ls.total_paid_in_advance_derived as totalPaidInAdvanceForPeriod, ls.total_paid_late_derived as totalPaidLateForPeriod "
+                    + " ls.total_paid_in_advance_derived as totalPaidInAdvanceForPeriod, ls.total_paid_late_derived as totalPaidLateForPeriod, ls.advance_payment_amount as advancePaymentAmount "
                     + " from m_loan_repayment_schedule ls ";
         }
 
@@ -1376,6 +1376,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             Money totalRepaymentExpected = Money.zero(monCurrency);
             Money totalRepayment = Money.zero(monCurrency);
             Money totalPaidInAdvance = Money.zero(monCurrency);
+            Money totalAdvancePayment = Money.zero(monCurrency);
             Money totalPaidLate = Money.zero(monCurrency);
             Money totalOutstanding = Money.zero(monCurrency);
 
@@ -1470,6 +1471,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
                 final BigDecimal totalPaidInAdvanceForPeriod = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs,
                         "totalPaidInAdvanceForPeriod");
+                final BigDecimal advancedPayment = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs,
+                        "advancePaymentAmount");
                 final BigDecimal totalPaidLateForPeriod = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalPaidLateForPeriod");
 
                 final BigDecimal penaltyChargesActualDue = penaltyChargesExpectedDue.subtract(penaltyChargesWaived).subtract(
@@ -1494,6 +1497,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 totalRepaymentExpected = totalRepaymentExpected.plus(totalDueForPeriod);
                 totalRepayment = totalRepayment.plus(totalPaidForPeriod);
                 totalPaidInAdvance = totalPaidInAdvance.plus(totalPaidInAdvanceForPeriod);
+                totalAdvancePayment = totalAdvancePayment.plus(advancedPayment);
                 totalPaidLate = totalPaidLate.plus(totalPaidLateForPeriod);
                 totalOutstanding = totalOutstanding.plus(totalOutstandingForPeriod);
 
@@ -1513,7 +1517,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                         feeChargesOutstanding, penaltyChargesExpectedDue, penaltyChargesPaid, penaltyChargesWaived,
                         penaltyChargesWrittenOff, penaltyChargesOutstanding, totalDueForPeriod, totalPaidForPeriod,
                         totalPaidInAdvanceForPeriod, totalPaidLateForPeriod, totalWaivedForPeriod, totalWrittenOffForPeriod,
-                        totalOutstandingForPeriod, totalActualCostOfLoanForPeriod, totalInstallmentAmount);
+                        totalOutstandingForPeriod, totalActualCostOfLoanForPeriod, totalInstallmentAmount, advancedPayment);
 
                 periods.add(periodData);
             }
@@ -1522,7 +1526,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     totalPrincipalExpected.getAmount(), totalPrincipalPaid.getAmount(), totalInterestCharged.getAmount(),
                     totalFeeChargesCharged.getAmount(), totalPenaltyChargesCharged.getAmount(), totalWaived.getAmount(),
                     totalWrittenOff.getAmount(), totalRepaymentExpected.getAmount(), totalRepayment.getAmount(),
-                    totalPaidInAdvance.getAmount(), totalPaidLate.getAmount(), totalOutstanding.getAmount());
+                    totalPaidInAdvance.getAmount(), totalPaidLate.getAmount(), totalOutstanding.getAmount(),
+                    totalAdvancePayment.getAmount());
         }
 
     }
@@ -2314,6 +2319,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final BigDecimal totalOutstanding = null;
             final BigDecimal totalPaid = null;
             final BigDecimal totalInstallmentAmount = null;
+            final BigDecimal advancePaymentAmount = null;
 
             return LoanSchedulePeriodData.repaymentPeriodWithPayments(loanId, period, fromDate, dueDate, obligationsMetOnDate, complete,
                     principalOriginalDue, principalPaid, principalWrittenOff, principalOutstanding, outstandingPrincipalBalanceOfLoan,
@@ -2321,7 +2327,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     feeChargesDue, feeChargesPaid, feeChargesWaived, feeChargesWrittenOff, feeChargesOutstanding, penaltyChargesDue,
                     penaltyChargesPaid, penaltyChargesWaived, penaltyChargesWrittenOff, penaltyChargesOutstanding, totalDueForPeriod,
                     totalPaid, totalPaidInAdvanceForPeriod, totalPaidLateForPeriod, totalWaived, totalWrittenOff, totalOutstanding,
-                    totalActualCostOfLoanForPeriod, totalInstallmentAmount);
+                    totalActualCostOfLoanForPeriod, totalInstallmentAmount, advancePaymentAmount);
         }
     }
 
