@@ -3965,16 +3965,20 @@ public class Loan extends AbstractPersistable<Long> {
         }
         
         if (this.isGLIMLoan()) {
-            final int comparsion = transactionForAdjustment.getTransactionDate().compareTo(getLastUserTransactionDate());
+            LoanTransaction currentTransaction = transactionForAdjustment;
+            if (MathUtility.isGreaterThanZero(newTransactionDetail.getAmount())) {
+                currentTransaction = newTransactionDetail;
+            }
+            final int comparsion = currentTransaction.getTransactionDate().compareTo(getLastUserTransactionDate());
             if (comparsion == 0) {
-                if (transactionForAdjustment.getCreatedDate() != null && getLastUserTransaction() != null) {
-                    if (transactionForAdjustment.getCreatedDate().compareTo(getLastUserTransaction().getCreatedDate()) == -1) {
+                if (currentTransaction.getCreatedDate() != null && getLastUserTransaction() != null) {
+                    if (currentTransaction.getCreatedDate().compareTo(getLastUserTransaction().getCreatedDate()) == -1) {
                         final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
                         throw new InvalidLoanTransactionTypeException("transaction",
                                 "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan", errorMessage);
                     }
                 }
-            } else if (transactionForAdjustment.getTransactionDate().isBefore(getLastUserTransactionDate())) {
+            } else if (currentTransaction.getTransactionDate().isBefore(getLastUserTransactionDate())) {
                 final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
                 throw new InvalidLoanTransactionTypeException("transaction", "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan",
                         errorMessage);
