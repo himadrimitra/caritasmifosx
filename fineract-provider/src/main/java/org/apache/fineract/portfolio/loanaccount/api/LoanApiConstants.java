@@ -154,4 +154,5 @@ public interface LoanApiConstants {
     public static final String paymentOptionsParamName = "paymentOptions";
     
     public static final String skipAuthenticationRule = "skipAuthenticationRule";
+    public static final String syncRepaymentsWithMeeting = "syncRepaymentsWithMeeting";
 }
