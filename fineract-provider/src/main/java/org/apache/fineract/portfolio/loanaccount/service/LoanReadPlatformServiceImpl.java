@@ -2215,6 +2215,20 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final String sql = "select pl.hold_guarantee_funds from m_loan ml inner join m_product_loan pl on pl.id = ml.product_id where ml.id=?";
         return this.jdbcTemplate.queryForObject(sql, Boolean.class, loanId);
     }
+    
+	@Override
+	public boolean isAnyActiveJLGLoanForClient(final Long clientid, final Long groupId) {
+		final String sql = "SELECT COUNT(loan.id) from m_loan loan where loan.client_id = ? and loan.group_id= ? "
+				+ "and (loan.loan_status_id = ?)";
+		Integer activeLoanCount = this.jdbcTemplate.queryForInt(sql, clientid, groupId, LoanStatus.ACTIVE.getValue());
+		if (activeLoanCount > 0) {
+			return true;
+		} else {
+			return false;
+		}
+
+	}
+     
 
     private static final class LoanTransactionDerivedComponentMapper implements RowMapper<LoanTransactionData> {
 

@@ -337,6 +337,8 @@ public class SavingsAccountAssembler {
                 Integer calculationType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName);
                 BigDecimal amountOrPercentage = command
                         .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpCalculateOnAmountParamName);
+                // update overdraft amount 
+                account.updateOverDraftLimit(dpLimitAmount);
                 savingsAccountDpDetails = SavingsAccountDpDetails.createNew(account, frequencyType, dpReductionEvery, duration,
                         dpLimitAmount, calculationType, amountOrPercentage);
             }

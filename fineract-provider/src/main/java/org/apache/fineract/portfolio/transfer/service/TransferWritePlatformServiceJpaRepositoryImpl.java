@@ -52,6 +52,7 @@ import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
 import org.apache.fineract.portfolio.note.service.NoteWritePlatformService;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -88,6 +89,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     private final StaffRepositoryWrapper staffRepositoryWrapper;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final BusinessEventNotifierService businessEventNotifierService;
+    private final LoanReadPlatformService loanReadPlatformService;
 
     @Autowired
     public TransferWritePlatformServiceJpaRepositoryImpl(final ClientRepositoryWrapper clientRepository,
@@ -97,7 +99,8 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
             final NoteWritePlatformService noteWritePlatformService, final StaffRepositoryWrapper staffRepositoryWrapper,
             final SavingsAccountRepository savingsAccountRepository,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-            final LoanRepositoryWrapper loanRepositoryWrapper, final BusinessEventNotifierService businessEventNotifierService) {
+            final LoanRepositoryWrapper loanRepositoryWrapper, final BusinessEventNotifierService businessEventNotifierService,
+            final LoanReadPlatformService loanReadPlatformService) {
         this.clientRepository = clientRepository;
         this.officeRepository = officeRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
@@ -111,6 +114,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.businessEventNotifierService = businessEventNotifierService;
+        this.loanReadPlatformService = loanReadPlatformService;
     }
 
     @Override
@@ -185,6 +189,9 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         // get all customer loans synced with this group calendar Instance
         final List<CalendarInstance> activeLoanCalendarInstances = this.calendarInstanceRepository
                 .findCalendarInstancesForActiveLoansByGroupIdAndClientId(sourceGroup.getId(), client.getId());
+        
+		boolean isAnyActiveJLGLoanForClient = loanReadPlatformService.isAnyActiveJLGLoanForClient(client.getId(),
+				sourceGroup.getId());
 
         /**
          * if a calendar is present in the source group along with loans synced
@@ -207,7 +214,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
                     TRANSFER_NOT_SUPPORTED_REASON.DESTINATION_GROUP_HAS_NO_MEETING, destinationGroup.getId());
 
             }
-			if (!sourceGroupCalendarInstance.equals(destinationGroupCalendarInstance)) {
+			if (isAnyActiveJLGLoanForClient && !sourceGroupCalendarInstance.equals(destinationGroupCalendarInstance)) {
 				final Calendar sourceGroupCalendar = sourceGroupCalendarInstance.getCalendar();
 				final Calendar destinationGroupCalendar = destinationGroupCalendarInstance.getCalendar();
 

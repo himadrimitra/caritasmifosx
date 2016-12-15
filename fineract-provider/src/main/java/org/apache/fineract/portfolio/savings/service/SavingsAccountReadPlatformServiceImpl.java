@@ -467,7 +467,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             final boolean withdrawalFeeForTransfers = rs.getBoolean("withdrawalFeeForTransfers");
 
             final boolean allowOverdraft = rs.getBoolean("allowOverdraft");
-            final BigDecimal overdraftLimit = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "overdraftLimit");
+            final BigDecimal overdraftLimit = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "overdraftLimit");
             final BigDecimal nominalAnnualInterestRateOverdraft = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs,
                     "nominalAnnualInterestRateOverdraft");
             final BigDecimal minOverdraftForInterestCalculation = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs,

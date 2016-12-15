@@ -19,7 +19,6 @@
 package org.apache.fineract.portfolio.client.data;
 
 import java.lang.reflect.Type;
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,6 +40,8 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.deduplication.service.DeDuplicationService;
+import org.apache.fineract.portfolio.validations.domain.EntityValiDationType;
+import org.apache.fineract.portfolio.validations.service.FieldRegexValidator;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,19 +55,25 @@ public final class ClientDataValidator {
     private final FromJsonHelper fromApiJsonHelper;
     private final ConfigurationDomainService configurationDomainService;
     private final DeDuplicationService deDuplicationService;
+    private final FieldRegexValidator fieldRegexValidator;
     
     @Autowired
     public ClientDataValidator(final FromJsonHelper fromApiJsonHelper,
     		final ConfigurationDomainService configurationDomainService,
-    		final DeDuplicationService deDuplicationService) {
+    		final DeDuplicationService deDuplicationService,
+    		final FieldRegexValidator fieldRegexValidator) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.configurationDomainService =  configurationDomainService;
         this.deDuplicationService = deDuplicationService;
+        this.fieldRegexValidator = fieldRegexValidator;
     }
 
-    public void validateForCreate(final String json) {
-
+    public void validateForCreate(final JsonCommand command) {
+    	
+    	final String json = command.json();
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+        
+        boolean isRegexValidationRequiredForClentFields = false;
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, ClientApiConstants.CLIENT_CREATE_REQUEST_DATA_PARAMETERS);
@@ -154,12 +161,14 @@ public final class ClientDataValidator {
         }
 
         if (this.fromApiJsonHelper.parameterExists(ClientApiConstants.mobileNoParamName, element)) {
+        	isRegexValidationRequiredForClentFields = true;
             final String mobileNo = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.mobileNoParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.mobileNoParamName).value(mobileNo).ignoreIfNull()
                     .notExceedingLengthOf(50);
         }
         
         if (this.fromApiJsonHelper.parameterExists(ClientApiConstants.alternateMobileNoParamName, element)) {
+        	isRegexValidationRequiredForClentFields = true;
             final String alternateMobileNo = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.alternateMobileNoParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.alternateMobileNoParamName).value(alternateMobileNo).ignoreIfNull()
                     .notExceedingLengthOf(50);
@@ -209,6 +218,10 @@ public final class ClientDataValidator {
         if (this.fromApiJsonHelper.parameterExists(ClientApiConstants.legalFormIdParamName, element)) {
         	final Integer legalFormId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(ClientApiConstants.legalFormIdParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.legalFormIdParamName).value(legalFormId).ignoreIfNull().inMinMaxRange(1, 2);
+        }
+        
+        if(isRegexValidationRequiredForClentFields){
+        this.fieldRegexValidator.validateForFieldName(EntityValiDationType.CLIENT.getValue(), command);
         }
         
         List<ApiParameterError> dataValidationErrorsForClientNonPerson = getDataValidationErrorsForCreateOnClientNonPerson(element.getAsJsonObject().get(ClientApiConstants.clientNonPersonDetailsParamName));        
@@ -322,9 +335,12 @@ public final class ClientDataValidator {
         return StringUtils.isNotBlank(fullname);
     }
 
-    public void validateForUpdate(final String json) {
-
+    public void validateForUpdate(final JsonCommand command) {
+    	
+    	final String json = command.json();
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+        
+        boolean isRegexValidationRequiredForClentFields = false;
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, ClientApiConstants.CLIENT_UPDATE_REQUEST_DATA_PARAMETERS);
@@ -409,12 +425,14 @@ public final class ClientDataValidator {
         }
 
         if (this.fromApiJsonHelper.parameterExists(ClientApiConstants.mobileNoParamName, element)) {
+        	isRegexValidationRequiredForClentFields = true;
             atLeastOneParameterPassedForUpdate = true;
             final String mobileNo = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.mobileNoParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.mobileNoParamName).value(mobileNo).notExceedingLengthOf(50);
         }
         
         if (this.fromApiJsonHelper.parameterExists(ClientApiConstants.alternateMobileNoParamName, element)) {
+        	isRegexValidationRequiredForClentFields = true;
             atLeastOneParameterPassedForUpdate = true;
             final String alternateMobileNo = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.alternateMobileNoParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.alternateMobileNoParamName).value(alternateMobileNo).notExceedingLengthOf(50);
@@ -491,6 +509,10 @@ public final class ClientDataValidator {
             final Object forceError = null;
             baseDataValidator.reset().anyOfNotNull(forceError);
         }
+        
+		if (isRegexValidationRequiredForClentFields) {
+			this.fieldRegexValidator.validateForFieldName(EntityValiDationType.CLIENT.getValue(), command);
+		}
         
         @SuppressWarnings("unchecked")
 		List<ApiParameterError> dataValidationErrorsForClientNonPerson = (List<ApiParameterError>) parameterUpdateStatusDetails.get("dataValidationErrors");        
