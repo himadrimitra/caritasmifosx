@@ -99,7 +99,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName,
             LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName,
             LoanApiConstants.upfrontChargesAmountParamName,LoanApiConstants.expectedDisbursalPaymentTypeParamName,LoanApiConstants.expectedRepaymentPaymentTypeParamName,
-            LoanApiConstants.skipAuthenticationRule));
+            LoanApiConstants.skipAuthenticationRule, LoanApiConstants.syncRepaymentsWithMeeting));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
