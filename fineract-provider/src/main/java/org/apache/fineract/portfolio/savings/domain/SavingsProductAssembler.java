@@ -48,6 +48,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDorman
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToInactiveParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToDormancyParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToEscheatParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.externalIdParamName;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -90,6 +91,7 @@ public class SavingsProductAssembler {
         final String name = command.stringValueOfParameterNamed(nameParamName);
         final String shortName = command.stringValueOfParameterNamed(shortNameParamName);
         final String description = command.stringValueOfParameterNamed(descriptionParamName);
+        final String externalId = command.stringValueOfParameterNamed(externalIdParamName);
 
         final String currencyCode = command.stringValueOfParameterNamed(currencyCodeParamName);
         final Integer digitsAfterDecimal = command.integerValueOfParameterNamed(digitsAfterDecimalParamName);
@@ -188,7 +190,7 @@ public class SavingsProductAssembler {
                 lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, accountingRuleType, charges,
                 allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, minBalanceForInterestCalculation,
                 nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax, taxGroup,
-                isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat);
+                isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
     }
 
     public Set<Charge> assembleListOfSavingsProductCharges(final JsonCommand command, final String savingsProductCurrencyCode) {

@@ -132,7 +132,7 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
 
         public DepositProductMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("sp.id as id, sp.name as name, sp.short_name as shortName, sp.description as description, ");
+            sqlBuilder.append("sp.id as id, sp.name as name, sp.short_name as shortName, sp.description as description,sp.external_id as externalId, ");
             sqlBuilder
                     .append("sp.currency_code as currencyCode, sp.currency_digits as currencyDigits, sp.currency_multiplesof as inMultiplesOf, ");
             sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ");
@@ -161,6 +161,7 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
             final String name = rs.getString("name");
             final String shortName = rs.getString("shortName");
             final String description = rs.getString("description");
+            final String externalId = rs.getString("externalId");
 
             final String currencyCode = rs.getString("currencyCode");
             final String currencyName = rs.getString("currencyName");
@@ -211,7 +212,7 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
             return DepositProductData.instance(id, name, shortName, description, currency, nominalAnnualInterestRate,
                     compoundingInterestPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     lockinPeriodFrequency, lockinPeriodFrequencyType, accountingRuleType, minBalanceForInterestCalculation, withHoldTax,
-                    taxGroupData);
+                    taxGroupData, externalId);
         }
     }
 
@@ -343,11 +344,12 @@ public class DepositProductReadPlatformServiceImpl implements DepositProductRead
             final Integer inMultiplesOfDepositTermTypeId = JdbcSupport.getInteger(rs, "inMultiplesOfDepositTermTypeId");
             final EnumOptionData inMultiplesOfDepositTermType = (inMultiplesOfDepositTermTypeId == null) ? null : SavingsEnumerations
                     .depositTermFrequencyType(inMultiplesOfDepositTermTypeId);
+            final String externalId = rs.getString("externalId");
 
             return RecurringDepositProductData.instance(depositProductData, preClosurePenalApplicable, preClosurePenalInterest,
                     preClosurePenalInterestOnType, minDepositTerm, maxDepositTerm, minDepositTermType, maxDepositTermType,
                     inMultiplesOfDepositTerm, inMultiplesOfDepositTermType, isMandatoryDeposit, allowWithdrawal,
-                    adjustAdvanceTowardsFuturePayments, minDepositAmount, depositAmount, maxDepositAmount);
+                    adjustAdvanceTowardsFuturePayments, minDepositAmount, depositAmount, maxDepositAmount, externalId);
         }
     }
 

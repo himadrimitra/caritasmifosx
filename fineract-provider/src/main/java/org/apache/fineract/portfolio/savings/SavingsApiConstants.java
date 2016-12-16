@@ -177,7 +177,6 @@ public class SavingsApiConstants {
     public static final String dpCalculateOnAmountParamName = "dpCalculateOnAmount";
     public static final String dpDurationParamName = "dpDuration";
     
-    
 
     public static final Set<String> SAVINGS_PRODUCT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             monthDayFormatParamName, nameParamName, shortNameParamName, descriptionParamName, currencyCodeParamName,
@@ -201,7 +200,7 @@ public class SavingsApiConstants {
             isDormancyTrackingActiveParamName, daysToDormancyParamName, daysToInactiveParamName, daysToEscheatParamName,
             allowOverdraftParamName, overdraftLimitParamName,
             nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, minRequiredBalanceParamName,
-            enforceMinRequiredBalanceParamName, minBalanceForInterestCalculationParamName, withHoldTaxParamName, taxGroupIdParamName));
+            enforceMinRequiredBalanceParamName, minBalanceForInterestCalculationParamName, withHoldTaxParamName, taxGroupIdParamName,externalIdParamName));
 
     /**
      * These parameters will match the class level parameters of
