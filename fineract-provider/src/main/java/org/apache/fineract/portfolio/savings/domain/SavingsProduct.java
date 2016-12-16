@@ -50,6 +50,8 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDorman
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToInactiveParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToDormancyParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToEscheatParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.externalIdParamName;
+
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -109,6 +111,9 @@ public class SavingsProduct extends AbstractPersistable<Long> {
 
     @Column(name = "description", length = 500, nullable = false)
     protected String description;
+
+    @Column(name = "external_id", length = 50, nullable = true, unique = true)
+    private String externalId;
 
     @Embedded
     protected MonetaryCurrency currency;
@@ -218,14 +223,14 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final BigDecimal minRequiredBalance, final BigDecimal minBalanceForInterestCalculation,
             final BigDecimal nominalAnnualInterestRateOverdraft, final BigDecimal minOverdraftForInterestCalculation,
             boolean withHoldTax, TaxGroup taxGroup, 
-            final Boolean isDormancyTrackingActive, final Long daysToInactive, final Long daysToDormancy, final Long daysToEscheat) {
+            final Boolean isDormancyTrackingActive, final Long daysToInactive, final Long daysToDormancy, final Long daysToEscheat, final String externalId) {
 
         return new SavingsProduct(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
                 lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges,
                 allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, minBalanceForInterestCalculation,
                 nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax, taxGroup,
-                isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat);
+                isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
     }
 
     protected SavingsProduct() {
@@ -240,11 +245,11 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final Integer lockinPeriodFrequency, final SavingsPeriodFrequencyType lockinPeriodFrequencyType,
             final boolean withdrawalFeeApplicableForTransfer, final AccountingRuleType accountingRuleType, final Set<Charge> charges,
             final boolean allowOverdraft, final BigDecimal overdraftLimit, BigDecimal minBalanceForInterestCalculation,
-            boolean withHoldTax, TaxGroup taxGroup) {
+            boolean withHoldTax, TaxGroup taxGroup, final String externalId) {
         this(name, shortName, description, currency, interestRate, interestCompoundingPeriodType, interestPostingPeriodType,
                 interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance, lockinPeriodFrequency,
                 lockinPeriodFrequencyType, withdrawalFeeApplicableForTransfer, accountingRuleType, charges, allowOverdraft, overdraftLimit,
-                false, null, minBalanceForInterestCalculation, null, null, withHoldTax, taxGroup, null, null, null, null);
+                false, null, minBalanceForInterestCalculation, null, null, withHoldTax, taxGroup, null, null, null, null, externalId);
     }
 
     protected SavingsProduct(final String name, final String shortName, final String description, final MonetaryCurrency currency,
@@ -257,11 +262,12 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final BigDecimal minRequiredBalance, BigDecimal minBalanceForInterestCalculation,
             final BigDecimal nominalAnnualInterestRateOverdraft, final BigDecimal minOverdraftForInterestCalculation,
             final boolean withHoldTax, final TaxGroup taxGroup,
-            final Boolean isDormancyTrackingActive, final Long daysToInactive, final Long daysToDormancy, final Long daysToEscheat) {
+            final Boolean isDormancyTrackingActive, final Long daysToInactive, final Long daysToDormancy, final Long daysToEscheat,final String externalId) {
 
         this.name = name;
         this.shortName = shortName;
         this.description = description;
+        this.externalId = externalId;
 
         this.currency = currency;
         this.nominalAnnualInterestRate = interestRate;
@@ -391,6 +397,12 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             final String newValue = command.stringValueOfParameterNamed(descriptionParamName);
             actualChanges.put(descriptionParamName, newValue);
             this.description = newValue;
+        }
+        
+        if (command.isChangeInStringParameterNamed(externalIdParamName, this.externalId)) {
+            final String newValue = command.stringValueOfParameterNamed(externalIdParamName);
+            actualChanges.put(externalIdParamName, newValue);
+            this.externalId = newValue;
         }
 
         Integer digitsAfterDecimal = this.currency.getDigitsAfterDecimal();
