@@ -1,11 +1,7 @@
 package com.finflux.loanapplicationreference.service;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -44,12 +40,12 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataVal
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
-import com.finflux.task.configuration.domain.TaskConfigEntityTypeMapping;
-import com.finflux.task.configuration.domain.TaskConfigEntityTypeMappingRepository;
-import com.finflux.task.execution.data.TaskConfigEntityType;
-import com.finflux.task.execution.data.TaskConfigKey;
-import com.finflux.task.execution.data.TaskEntityType;
-import com.finflux.task.execution.service.TaskExecutionService;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskConfigKey;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.TaskPlatformWriteService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -73,7 +69,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final LoanProductRepository loanProductRepository;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
-    private final TaskExecutionService taskExecutionService;
+    private final TaskPlatformWriteService taskPlatformWriteService;
     private final ConfigurationDomainService configurationDomainService;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
@@ -89,7 +85,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanRepositoryWrapper loanRepository, final FromJsonHelper fromJsonHelper,
             final LoanScheduleCalculationPlatformService calculationPlatformService, final LoanProductRepository loanProductRepository,
             final LoanProductReadPlatformService loanProductReadPlatformService,
-            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator, final TaskExecutionService taskExecutionService,
+            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator, final TaskPlatformWriteService taskPlatformWriteService,
             final ConfigurationDomainService configurationDomainService,
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
             final PaymentTypeRepositoryWrapper paymentTypeRepository) {
@@ -107,7 +103,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.loanProductRepository = loanProductRepository;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
-        this.taskExecutionService = taskExecutionService;
+        this.taskPlatformWriteService = taskPlatformWriteService;
         this.configurationDomainService = configurationDomainService;
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
         this.paymentTypeRepository = paymentTypeRepository;
@@ -147,7 +143,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     final Map<TaskConfigKey, String> map = new HashMap<>();
                     map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
                     map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-                    this.taskExecutionService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
+                    this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                             TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
                             loanApplicationReference.getClient().getOffice(), map);
                 }
