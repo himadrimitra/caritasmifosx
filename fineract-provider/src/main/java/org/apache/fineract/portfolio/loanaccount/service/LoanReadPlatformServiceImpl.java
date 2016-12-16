@@ -675,7 +675,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     + " l.amortization_method_enum as amortizationType, l.interest_method_enum as interestType, l.interest_calculated_in_period_enum as interestCalculationPeriodType,"
                     + " l.allow_partial_period_interest_calcualtion as allowPartialPeriodInterestCalcualtion,"
                     + " l.loan_status_id as lifeCycleStatusId, l.loan_transaction_strategy_id as transactionStrategyId, "
-                    + " lps.name as transactionStrategyName, "
+                    + " lps.name as transactionStrategyName, lps.code as transactionStrategyCode,"
                     + " l.currency_code as currencyCode, l.currency_digits as currencyDigits, l.currency_multiplesof as inMultiplesOf, rc.`name` as currencyName, rc.display_symbol as currencyDisplaySymbol, rc.internationalized_name_code as currencyNameCode, "
                     + " l.loan_officer_id as loanOfficerId, s.display_name as loanOfficerName, "
                     + " l.principal_disbursed_derived as principalDisbursed,"
@@ -898,6 +898,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             final Long transactionStrategyId = JdbcSupport.getLong(rs, "transactionStrategyId");
             final String transactionStrategyName = rs.getString("transactionStrategyName");
+            final String transactionStrategyCode = rs.getString("transactionStrategyCode");
 
             final int amortizationTypeInt = JdbcSupport.getInteger(rs, "amortizationType");
             final int interestTypeInt = JdbcSupport.getInteger(rs, "interestType");
@@ -1082,16 +1083,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     isLoanProductLinkedToFloatingRate, fundId, fundName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName,
                     currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid, inArrearsTolerance, termFrequency,
                     termPeriodFrequencyType, numberOfRepayments, repaymentEvery, repaymentFrequencyType, null, null, transactionStrategyId,
-                    transactionStrategyName, amortizationType, interestRatePerPeriod, interestRateFrequencyType, annualInterestRate,
-                    interestType, isFloatingInterestRate, interestRateDifferential, interestCalculationPeriodType,
-                    allowPartialPeriodInterestCalcualtion, expectedFirstRepaymentOnDate, graceOnPrincipalPayment,
-                    recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, interestChargedFromDate,
-                    timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting, loanCounter,
-                    loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance, inArrears,
-                    graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
-                    interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed, minimumGap,
-                    maximumGap,loanSubStatus,canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
-                    weeksInYearType, expectedDisbursalPaymentType,expectedRepaymentPaymentType);
+                    transactionStrategyCode, transactionStrategyName, amortizationType, interestRatePerPeriod, interestRateFrequencyType,
+                    annualInterestRate, interestType, isFloatingInterestRate, interestRateDifferential,
+                    interestCalculationPeriodType, allowPartialPeriodInterestCalcualtion, expectedFirstRepaymentOnDate,
+                    graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
+                    interestChargedFromDate, timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting,
+                    loanCounter, loanProductCounter, multiDisburseLoan, canDefineInstallmentAmount, fixedEmiAmount, outstandingLoanBalance,
+                    inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType,
+                    isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
+                    minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
+                    topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType);
         }
     }
     
