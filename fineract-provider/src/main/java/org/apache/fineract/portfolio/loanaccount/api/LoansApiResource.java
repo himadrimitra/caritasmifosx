@@ -92,7 +92,9 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.PaidInAdvanceData;
 import org.apache.fineract.portfolio.loanaccount.data.RepaymentScheduleRelatedLoanData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
+import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanTemplateTypeRequiredException;
 import org.apache.fineract.portfolio.loanaccount.exception.NotSupportedLoanTemplateTypeException;
 import org.apache.fineract.portfolio.loanaccount.guarantor.data.GuarantorData;
@@ -107,6 +109,7 @@ import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.note.data.NoteData;
@@ -178,6 +181,7 @@ public class LoansApiResource {
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
+    private final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory;
 
     @Autowired
     public LoansApiResource(final PlatformSecurityContext context, final LoanReadPlatformService loanReadPlatformService,
@@ -198,7 +202,8 @@ public class LoansApiResource {
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
             final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService, final PledgeReadPlatformService pledgeReadPlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
-            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService, final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
+            final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService, final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory) {
         this.context = context;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
@@ -226,6 +231,7 @@ public class LoansApiResource {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.loanPurposeGroupReadPlatformService = loanPurposeGroupReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+        this.loanRepaymentScheduleTransactionProcessorFactory = loanRepaymentScheduleTransactionProcessorFactory;
     }
 
     /*
@@ -509,17 +515,24 @@ public class LoansApiResource {
                 final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedData = loanBasicDetails.repaymentScheduleRelatedData();
                 repaymentSchedule = this.loanReadPlatformService.retrieveRepaymentSchedule(loanId, repaymentScheduleRelatedData,
                         disbursementData, loanBasicDetails.getTotalPaidFeeCharges());
-                if (associationParameters.contains("futureSchedule") && loanBasicDetails.isInterestRecalculationEnabled()) {
-                    mandatoryResponseParameters.add("futureSchedule");
-                    this.calculationPlatformService.updateFutureSchedule(repaymentSchedule, loanId);
-                }
+                if (loanBasicDetails.isInterestRecalculationEnabled() && loanBasicDetails.isActive()) {
+                    if (associationParameters.contains("futureSchedule")) {
+                        final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = loanRepaymentScheduleTransactionProcessorFactory
+                                .determineProcessor(new LoanTransactionProcessingStrategy(loanBasicDetails
+                                        .getTransactionProcessingStrategyCode()));
+                        if (!loanBasicDetails.isNPA()
+                                && loanRepaymentScheduleTransactionProcessor.isInterestFirstRepaymentScheduleTransactionProcessor()) {
+                            mandatoryResponseParameters.add("futureSchedule");
+                            this.calculationPlatformService.updateFutureSchedule(repaymentSchedule, loanId);
+                        }
+                    }
 
-                if (associationParameters.contains("originalSchedule") && loanBasicDetails.isInterestRecalculationEnabled()
-                        && loanBasicDetails.isActive()) {
-                    mandatoryResponseParameters.add("originalSchedule");
-                    LoanScheduleData loanScheduleData = this.loanScheduleHistoryReadPlatformService.retrieveRepaymentArchiveSchedule(   
-                            loanId, repaymentScheduleRelatedData, disbursementData);
-                    loanBasicDetails = LoanAccountData.withOriginalSchedule(loanBasicDetails, loanScheduleData);
+                    if (associationParameters.contains("originalSchedule")) {
+                        mandatoryResponseParameters.add("originalSchedule");
+                        LoanScheduleData loanScheduleData = this.loanScheduleHistoryReadPlatformService.retrieveRepaymentArchiveSchedule(
+                                loanId, repaymentScheduleRelatedData, disbursementData);
+                        loanBasicDetails = LoanAccountData.withOriginalSchedule(loanBasicDetails, loanScheduleData);
+                    }
                 }
             }
 
