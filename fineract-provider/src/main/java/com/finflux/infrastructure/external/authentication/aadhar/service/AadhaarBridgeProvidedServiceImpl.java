@@ -107,22 +107,19 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 		String otpCaptureRequestJson = this.aadharServiceDataAssembler.otpRequestDataAssembler(aadhaarNumber,
 				this.certificateType);
 		String url = urlBuilder(endpoint, generateOtpPath);
-		try {
-			String response = this.httpConnectivity.performServerPost(url, otpCaptureRequestJson, String.class);
-			if (response != null) {
-				try {
-					OtpResponse otpResponse = new Gson().fromJson(response, OtpResponse.class);
-					return otpResponse;
-				} catch (JsonSyntaxException jpe) {
-					throw new AadhaarServiceResponseParserException();
-				}
-			} else {
-				throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+
+		String response = this.httpConnectivity.performServerPost(url, otpCaptureRequestJson, String.class);
+		if (response != null) {
+			try {
+				OtpResponse otpResponse = new Gson().fromJson(response, OtpResponse.class);
+				return otpResponse;
+			} catch (JsonSyntaxException jpe) {
+				throw new AadhaarServiceResponseParserException();
 			}
-		} catch (Exception ce) {
-			throw new ConnectionFailedException(
-					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+		} else {
+			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
 		}
+
 	}
 
 	@Override
@@ -131,21 +128,17 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 		String authenticateUserByOtpJson = this.aadharServiceDataAssembler
 				.authenticateUserUsingOtpDataAssembler(aadhaarNumber, otp, this.certificateType, location);
 		String url = urlBuilder(endpoint, authRaw);
-		try {
-			String response = this.httpConnectivity.performServerPost(url, authenticateUserByOtpJson, String.class);
-			if (response != null) {
-				try {
-					AuthResponse authResponse = new Gson().fromJson(response, AuthResponse.class);
-					return authResponse;
-				} catch (JsonSyntaxException jpe) {
-					throw new AadhaarServiceResponseParserException();
-				}
-			} else {
-				throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+
+		String response = this.httpConnectivity.performServerPost(url, authenticateUserByOtpJson, String.class);
+		if (response != null) {
+			try {
+				AuthResponse authResponse = new Gson().fromJson(response, AuthResponse.class);
+				return authResponse;
+			} catch (JsonSyntaxException jpe) {
+				throw new AadhaarServiceResponseParserException();
 			}
-		} catch (Exception ce) {
-			throw new ConnectionFailedException(
-					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+		} else {
+			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
 		}
 	}
 
@@ -158,24 +151,19 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 						location);
 		String url = urlBuilder(endpoint, auth);
 
-		try {
-			String response = this.httpConnectivity.performServerPost(url, authenticateUserByFingerprintJson,
-					String.class);
+		String response = this.httpConnectivity.performServerPost(url, authenticateUserByFingerprintJson, String.class);
 
-			if (response != null) {
-				try {
-					AuthResponse authResponse = new Gson().fromJson(response, AuthResponse.class);
-					return authResponse;
-				} catch (JsonSyntaxException jpe) {
-					throw new AadhaarServiceResponseParserException();
-				}
-			} else {
-				throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+		if (response != null) {
+			try {
+				AuthResponse authResponse = new Gson().fromJson(response, AuthResponse.class);
+				return authResponse;
+			} catch (JsonSyntaxException jpe) {
+				throw new AadhaarServiceResponseParserException();
 			}
-		} catch (Exception ce) {
-			throw new ConnectionFailedException(
-					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+		} else {
+			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
 		}
+	
 	}
 
 	public String obtainEKycByOtpUsingAadhaarService(final String aadhaarNumber, final String otp,
@@ -185,24 +173,19 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 				certificateType, location, AadhaarApiConstants.OTP);
 		String url = urlBuilder(endpoint, kyc);
 
-		try {
-			String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
+		String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
 
-			if (response != null) {
-				JsonElement element = this.fromJsonHelper.parse(response);
-				boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
-				if (isSuccess) {
-					return response;
-				} else {
-					throw new UnableToGetKycDetails(aadhaarNumber, "Fingerprint");
-				}
-
+		if (response != null) {
+			JsonElement element = this.fromJsonHelper.parse(response);
+			boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
+			if (isSuccess) {
+				return response;
 			} else {
-				throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+				throw new UnableToGetKycDetails(aadhaarNumber, "Fingerprint");
 			}
-		} catch (Exception ce) {
-			throw new ConnectionFailedException(
-					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+
+		} else {
+			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
 		}
 	}
 
@@ -213,24 +196,19 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 				certificateType, location, AadhaarApiConstants.FINGERPRINT);
 		String url = urlBuilder(endpoint, kyc);
 
-		try {
-			String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
+		String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
 
-			if (response != null) {
-				JsonElement element = this.fromJsonHelper.parse(response);
-				boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
-				if (isSuccess) {
-					return response;
-				} else {
-					throw new UnableToGetKycDetails(aadhaarNumber, "Fingerprint");
-				}
-
+		if (response != null) {
+			JsonElement element = this.fromJsonHelper.parse(response);
+			boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
+			if (isSuccess) {
+				return response;
 			} else {
-				throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+				throw new UnableToGetKycDetails(aadhaarNumber, "Fingerprint");
 			}
-		} catch (Exception ce) {
-			throw new ConnectionFailedException(
-					"Unable to communicate with Aadhaar server. Please Conntact your Support team.");
+
+		} else {
+			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
 		}
 	}
 
