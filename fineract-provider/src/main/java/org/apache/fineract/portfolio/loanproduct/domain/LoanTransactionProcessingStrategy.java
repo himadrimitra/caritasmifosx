@@ -41,6 +41,10 @@ public class LoanTransactionProcessingStrategy extends AbstractPersistable<Long>
     protected LoanTransactionProcessingStrategy() {
         //
     }
+    
+    public LoanTransactionProcessingStrategy(final String code) {
+        this.code = code;
+    }
 
     public TransactionProcessingStrategyData toData() {
         return new TransactionProcessingStrategyData(getId(), this.code, this.name);
