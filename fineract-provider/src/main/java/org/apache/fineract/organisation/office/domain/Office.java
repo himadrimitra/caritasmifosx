@@ -76,7 +76,11 @@ public class Office extends AbstractPersistable<Long> {
     @Column(name = "external_id", length = 100)
     private String externalId;
 
-    public static Office headOffice(final String name, final LocalDate openingDate, final String externalId) {
+    public String getExternalId() {
+		return this.externalId;
+	}
+
+	public static Office headOffice(final String name, final LocalDate openingDate, final String externalId) {
         return new Office(null, name, openingDate, externalId);
     }
 

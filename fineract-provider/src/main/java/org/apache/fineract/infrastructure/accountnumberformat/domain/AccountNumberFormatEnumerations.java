@@ -44,7 +44,7 @@ public class AccountNumberFormatEnumerations {
     public enum AccountNumberPrefixType {
         OFFICE_NAME(1, "accountNumberPrefixType.officeName"), CLIENT_TYPE(101, "accountNumberPrefixType.clientType"), LOAN_PRODUCT_SHORT_NAME(
                 201, "accountNumberPrefixType.loanProductShortName"), SAVINGS_PRODUCT_SHORT_NAME(301,
-                "accountNumberPrefixType.savingsProductShortName");
+                "accountNumberPrefixType.savingsProductShortName"), CUSTOM(701,"accountNumberPrefixType.custom");
 
         private final Integer value;
         private final String code;
@@ -96,6 +96,34 @@ public class AccountNumberFormatEnumerations {
         }
 
     }
+    
+    public enum AccountNumberCustomPrefixType {
+        NCC(1);
+
+        private final Integer value;
+
+        private AccountNumberCustomPrefixType(final Integer value) {
+            this.value = value;
+        }
+
+        public Integer getValue() {
+            return this.value;
+        }
+
+         private static final Map<Integer, AccountNumberCustomPrefixType> intToEnumMap = new HashMap<>();
+        static {
+            for (final AccountNumberCustomPrefixType type : AccountNumberCustomPrefixType.values()) {
+                intToEnumMap.put(type.value, type);
+            }
+        }
+
+        public static AccountNumberCustomPrefixType fromInt(final int i) {
+            final AccountNumberCustomPrefixType type = intToEnumMap.get(Integer.valueOf(i));
+            return type;
+        }
+
+    }
+
 
     public static EnumOptionData entityAccountType(final Integer accountTypeId) {
         return AccountNumberFormatEnumerations.entityAccountType(EntityAccountType.fromInt(accountTypeId));
