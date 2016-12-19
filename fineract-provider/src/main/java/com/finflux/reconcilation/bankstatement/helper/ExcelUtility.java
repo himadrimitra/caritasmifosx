@@ -14,6 +14,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.ss.util.NumberToTextConverter;
 
+import com.finflux.reconcilation.bankstatement.exception.InvalidCifFileFormatException;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -119,6 +121,6 @@ public class ExcelUtility {
             columnHeaderName = columnHeaderName.replaceAll("(\\s|\\n)", "");
             if (cellValue.equalsIgnoreCase(columnHeaderName)) { return i; }
         }
-        return null;
+        throw new InvalidCifFileFormatException();
     }
 }
