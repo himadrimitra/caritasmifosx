@@ -25,8 +25,8 @@ import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringChargeRepository;
-import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
@@ -248,11 +248,11 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         MonetaryCurrency currency = loan.getCurrency();
         List<GroupLoanIndividualMonitoring> listForAdujustment = loan.getDefautGlimMembers();
         Long adjustedGlimId = (listForAdujustment.get(listForAdujustment.size() - 1)).getId();
-        if (adjustedGlimId != glimId) { return MathUtility.getShare(amount, glimAmount, totalAmount, currency); }
+        if (!adjustedGlimId.equals(glimId)) { return MathUtility.getShare(amount, glimAmount, totalAmount, currency); }
         BigDecimal othersShare = BigDecimal.ZERO;
-        for (GroupLoanIndividualMonitoring indGlim : listForAdujustment) {
-            if (indGlim.getId() != adjustedGlimId) {
-                othersShare = othersShare.add(MathUtility.getShare(amount, indGlim.getInterestAmount(), totalAmount, currency));
+        for (GroupLoanIndividualMonitoring glim : listForAdujustment) {
+            if (!glim.getId().equals(adjustedGlimId)) {
+                othersShare = othersShare.add(MathUtility.getShare(amount, glim.getInterestAmount(), totalAmount, currency));
             }
         }
         return amount.subtract(othersShare);
