@@ -218,7 +218,7 @@ public class DepositApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             this.fixedDepositAccountRepository.save(account);
 
             if (account.isAccountNumberRequiresAutoGeneration()) {
-                AccountNumberFormat accountNumberFormat = this.accountNumberFormatRepository.findByAccountType(EntityAccountType.CLIENT);
+                AccountNumberFormat accountNumberFormat = this.accountNumberFormatRepository.findByAccountType(EntityAccountType.SAVINGS);
                 account.updateAccountNo(this.accountNumberGenerator.generate(account, accountNumberFormat));
 
                 this.savingAccountRepository.save(account);

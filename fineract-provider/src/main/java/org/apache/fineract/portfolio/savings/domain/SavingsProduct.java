@@ -115,7 +115,7 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @Column(name = "external_id", length = 50, nullable = true, unique = true)
     private String externalId;
 
-    @Embedded
+	@Embedded
     protected MonetaryCurrency currency;
 
     @Column(name = "nominal_annual_interest_rate", scale = 6, precision = 19, nullable = false)
@@ -761,6 +761,10 @@ public class SavingsProduct extends AbstractPersistable<Long> {
 
 	public Long getDaysToEscheat() {
 		return this.daysToEscheat;
+	}
+
+	public String getExternalId() {
+		return this.externalId;
 	}
 
 }
