@@ -24,4 +24,9 @@ public class BankData {
     public static BankData instance(final Long id, final String name, final Long glAccount, final String glCode, boolean supportSimplifiedStatement) {
         return new BankData(id, name, glAccount, glCode, supportSimplifiedStatement);
     }
+
+	public String getName() {
+		return this.name;
+	}    
+    
 }
