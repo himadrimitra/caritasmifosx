@@ -2,11 +2,7 @@ package com.finflux.task.api;
 
 import java.util.List;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -20,8 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.finflux.task.execution.data.TaskInfoData;
-import com.finflux.task.execution.service.TaskReadService;
+import com.finflux.task.data.TaskInfoData;
+import com.finflux.task.data.TaskTemplateData;
+import com.finflux.task.service.TaskPlatformReadService;
+import com.finflux.task.service.TaskPlatformReadServiceImpl;
 
 @Path("/tasks")
 @Component
@@ -32,16 +30,19 @@ public class TaskApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     @SuppressWarnings("rawtypes")
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
-    private final TaskReadService taskReadService;
+    private final TaskPlatformReadService taskPlatformReadService;
+    private final TaskPlatformReadServiceImpl taskConfigurationReadService;
 
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskApiResource(final PlatformSecurityContext context, final ApiRequestParameterHelper apiRequestParameterHelper,
-            final DefaultToApiJsonSerializer toApiJsonSerializer, final TaskReadService taskReadService) {
+                           final DefaultToApiJsonSerializer toApiJsonSerializer, final TaskPlatformReadService taskPlatformReadService,
+                           final TaskPlatformReadServiceImpl taskConfigurationReadService) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.toApiJsonSerializer = toApiJsonSerializer;
-        this.taskReadService = taskReadService;
+        this.taskPlatformReadService = taskPlatformReadService;
+        this.taskConfigurationReadService = taskConfigurationReadService;
     }
 
     @SuppressWarnings("unchecked")
@@ -52,7 +53,7 @@ public class TaskApiResource {
     public String retrieveLoanProductWorkFlowSummary(@QueryParam("loanProductId") final Long loanProductId,
             @QueryParam("officeId") final Long officeId, @Context final UriInfo uriInfo) {
 
-        final List<LoanProductData> loanProductWorkFlowSummaries = this.taskReadService.retrieveLoanProductWorkFlowSummary(loanProductId,
+        final List<LoanProductData> loanProductWorkFlowSummaries = this.taskPlatformReadService.retrieveLoanProductWorkFlowSummary(loanProductId,
                 officeId);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
@@ -67,10 +68,26 @@ public class TaskApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @Context final UriInfo uriInfo) {
 
-        final List<TaskInfoData> workFlowStepActions = this.taskReadService.retrieveTaskInformations(filterBy);
+        final List<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
         return this.toApiJsonSerializer.serialize(settings, workFlowStepActions);
+    }
+
+    @GET
+    @Path("template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveTemplate(@Context final UriInfo uriInfo, @QueryParam("officeId") final Long officeId,
+                                   @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly) {
+
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASK_RESOURCE_NAME);
+
+        TaskTemplateData taskTemplateData = null;
+        taskTemplateData = this.taskConfigurationReadService.retrieveTemplate(officeId, staffInSelectedOfficeOnly);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, taskTemplateData);
     }
 }

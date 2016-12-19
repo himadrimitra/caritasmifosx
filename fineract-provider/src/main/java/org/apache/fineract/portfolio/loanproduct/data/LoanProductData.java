@@ -51,7 +51,7 @@ import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.joda.time.LocalDate;
 import org.springframework.util.CollectionUtils;
 
-import com.finflux.task.execution.data.LoanProductTaskSummaryData;
+import com.finflux.task.data.LoanProductTaskSummaryData;
 
 /**
  * Immutable data object to represent loan products.

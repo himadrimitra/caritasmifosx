@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.joda.time.LocalDate;
 
-import com.finflux.task.execution.data.WorkFlowSummaryData;
+import com.finflux.task.data.WorkFlowSummaryData;
 
 /**
  * Immutable data object for office data.

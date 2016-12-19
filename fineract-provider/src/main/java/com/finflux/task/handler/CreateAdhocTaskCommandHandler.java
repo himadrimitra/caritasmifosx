@@ -1,5 +1,6 @@
 package com.finflux.task.handler;
 
+import com.finflux.task.service.TaskCreationService;
 import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -11,18 +12,18 @@ import com.finflux.ruleengine.configuration.service.RiskConfigWritePlatformServi
 import com.finflux.ruleengine.lib.data.EntityRuleType;
 
 @Service
-@CommandType(entity = "RISKFACTOR", action = "CREATE")
+@CommandType(entity = "ADHOCTASK", action = "CREATE")
 public class CreateAdhocTaskCommandHandler implements NewCommandSourceHandler {
 
-    private final RiskConfigWritePlatformService writePlatformService;
+    private final TaskCreationService taskCreationService;
 
     @Autowired
-    public CreateAdhocTaskCommandHandler(final RiskConfigWritePlatformService writePlatformService) {
-        this.writePlatformService = writePlatformService;
+    public CreateAdhocTaskCommandHandler(final TaskCreationService taskCreationService) {
+        this.taskCreationService = taskCreationService;
     }
 
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.writePlatformService.createRule(EntityRuleType.FACTOR,command);
+        return this.taskCreationService.createAdhocTask(command);
     }
 }
