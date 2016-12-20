@@ -40,13 +40,26 @@ public class GroupLoanIndividualMonitoringDataValidator {
                 JsonObject member = clientMember.getAsJsonObject();
                 if (member.has(LoanApiConstants.isClientSelectedParamName)
                         && member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean()) {
-                    totalAmount = totalAmount.add(member.get(LoanApiConstants.amountParamName).getAsBigDecimal());
+                    totalAmount = totalAmount.add(member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal());
                 }
             }
             if (command.bigDecimalValueOfParameterNamed(totalAmountType).doubleValue() != totalAmount.doubleValue()) { throw new ClientSharesNotEqualToPrincipalAmountException(); }
         } else {
             throw new InvalidClientShareInGroupLoanException();
         }
+
+    }
+    
+    public static void validateForGroupLoanIndividualMonitoringTransaction(final JsonCommand command, String totalAmountType) {
+        JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        for (JsonElement clientMember : clientMembers) {
+            JsonObject member = clientMember.getAsJsonObject();
+            if (member.has(LoanApiConstants.transactionAmountParamName)) {
+                totalAmount = totalAmount.add(member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal());
+            }
+        }
+        if (command.bigDecimalValueOfParameterNamed(totalAmountType).doubleValue() != totalAmount.doubleValue()) { throw new ClientSharesNotEqualToPrincipalAmountException(); }
 
     }
 
@@ -56,7 +69,7 @@ public class GroupLoanIndividualMonitoringDataValidator {
             JsonObject member = clientMember.getAsJsonObject();
             if (member.has(LoanApiConstants.isClientSelectedParamName)
                     && member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean()) {
-                if (!(member.has(LoanApiConstants.amountParamName) && member.get(LoanApiConstants.amountParamName).getAsBigDecimal()
+                if (!(member.has(LoanApiConstants.transactionAmountParamName) && member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal()
                         .doubleValue() > 0)) {
                     isValidAmount = false;
                 }
@@ -71,7 +84,7 @@ public class GroupLoanIndividualMonitoringDataValidator {
             JsonObject member = clientMember.getAsJsonObject();
             if (member.has(LoanApiConstants.isClientSelectedParamName)
                     && member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean()) {
-                if (member.has(LoanApiConstants.amountParamName)) {
+                if (member.has(LoanApiConstants.transactionAmountParamName)) {
                     isAmountNotPresent = false;
                     break;
                 }

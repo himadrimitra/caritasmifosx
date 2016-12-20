@@ -310,7 +310,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
             }
         
         for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
-                if (glimMember.isClientSelected() && glimMember.getTransactionAmount().compareTo(BigDecimal.ZERO) > 0) {
+                if (glimMember.getTransactionAmount().compareTo(BigDecimal.ZERO) > 0) {
                     Money transactionAmountPerClient = Money.of(currency, glimMember.getTransactionAmount());
                     Money penaltyPortion = Money.zero(currency);
 

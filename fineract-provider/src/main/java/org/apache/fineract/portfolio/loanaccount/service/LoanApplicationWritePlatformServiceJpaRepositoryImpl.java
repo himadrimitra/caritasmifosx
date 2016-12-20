@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +93,7 @@ import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataValidator;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
@@ -1326,7 +1328,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         
         // validate for GLIM application
         if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
-        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoring(command, LoanApiConstants.approvedLoanAmountParameterName);
+        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command, LoanApiConstants.approvedLoanAmountParameterName);
         }
 
         checkClientOrGroupActive(loan);
@@ -1360,13 +1362,15 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     || changes.containsKey("expectedDisbursementDate")) {
                 if (loan.isGLIMLoan()) {
                     // update approved amount in glim
+                    final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
                     List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.updateFromJson(command
                             .parsedJson(), "approvedAmount", loan, loan.fetchNumberOfInstallmensAfterExceptions(), loan
-                            .getLoanProductRelatedDetail().getAnnualNominalInterestRate());
+                            .getLoanProductRelatedDetail().getAnnualNominalInterestRate(), clientMembers);
                     loan.updateGlim(glimList);
                     loan.updateDefautGlimMembers(glimList);
                     this.groupLoanIndividualMonitoringAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(),
                             loan.fetchNumberOfInstallmensAfterExceptions(), glimList);
+                    changes.put("clientMembers", clientMembers);
                 }
                 LocalDate recalculateFrom = null;
                 ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
