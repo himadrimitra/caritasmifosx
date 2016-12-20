@@ -30,5 +30,9 @@ public interface AppUserWritePlatformService {
 
     CommandProcessingResult deleteUser(Long userId);
     
-    void updateLastLogindate(AppUser user);
+    CommandProcessingResult unlockUser(Long userId);
+
+    void updateFailedLoginStatus(String username);
+
+    void updateSuccessLoginStatus(AppUser appuser);
 }

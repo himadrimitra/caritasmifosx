@@ -41,9 +41,9 @@ import org.apache.fineract.useradministration.domain.AppUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -84,7 +84,7 @@ public class TenantAwareBasicAuthenticationFilter extends BasicAuthenticationFil
     private final boolean exceptionIfHeaderMissing = true;
 
     @Autowired
-    public TenantAwareBasicAuthenticationFilter(final AuthenticationManager authenticationManager,
+    public TenantAwareBasicAuthenticationFilter(@Qualifier("org.springframework.security.authenticationManager") final AuthenticationManager authenticationManager,
             final AuthenticationEntryPoint authenticationEntryPoint, final BasicAuthTenantDetailsService basicAuthTenantDetailsService,
             final ToApiJsonSerializer<PlatformRequestLog> toApiJsonSerializer, final ConfigurationDomainService configurationDomainService,
             final CacheWritePlatformService cacheWritePlatformService) {

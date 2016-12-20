@@ -119,4 +119,8 @@ public interface ConfigurationDomainService {
     Long getMinCgtDays();
     
     Long getMaxCgtDays();
+
+    boolean isMaxLoginAttemptsEnable();
+
+    Integer retrieveMaxLoginAttempts();
 }

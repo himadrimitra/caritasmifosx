@@ -40,9 +40,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
@@ -74,45 +76,53 @@ public class AuthenticationApiResource {
     @POST
     @Produces({ MediaType.APPLICATION_JSON })
     public String authenticate(@QueryParam("username") final String username, @QueryParam("password") final String password) {
+        AuthenticatedUserData authenticatedUserData = null; 
+        try {
+            final Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
+            final Authentication authenticationCheck = this.customAuthenticationProvider.authenticate(authentication);
 
-        final Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
-        final Authentication authenticationCheck = this.customAuthenticationProvider.authenticate(authentication);
+            final Collection<String> permissions = new ArrayList<>();
+            authenticatedUserData = new AuthenticatedUserData(username, permissions);
 
-        final Collection<String> permissions = new ArrayList<>();
-        AuthenticatedUserData authenticatedUserData = new AuthenticatedUserData(username, permissions);
-        
-        if (authenticationCheck.isAuthenticated()) {
-            final Collection<GrantedAuthority> authorities = new ArrayList<>(authenticationCheck.getAuthorities());
-            for (final GrantedAuthority grantedAuthority : authorities) {
-                permissions.add(grantedAuthority.getAuthority());
+            if (authenticationCheck.isAuthenticated()) {
+                final Collection<GrantedAuthority> authorities = new ArrayList<>(authenticationCheck.getAuthorities());
+                for (final GrantedAuthority grantedAuthority : authorities) {
+                    permissions.add(grantedAuthority.getAuthority());
+                }
+
+                final byte[] base64EncodedAuthenticationKey = Base64.encode(username + ":" + password);
+
+                final AppUser principal = (AppUser) authenticationCheck.getPrincipal();
+                this.appUserWritePlatformService.updateSuccessLoginStatus(principal);
+                final Collection<RoleData> roles = new ArrayList<>();
+                final Set<Role> userRoles = principal.getRoles();
+                for (final Role role : userRoles) {
+                    roles.add(role.toData());
+                }
+
+                final Long officeId = principal.getOffice().getId();
+                final String officeName = principal.getOffice().getName();
+
+                final Long staffId = principal.getStaffId();
+                final String staffDisplayName = principal.getStaffDisplayName();
+
+                final EnumOptionData organisationalRole = principal.organisationalRoleData();
+
+                if (this.springSecurityPlatformSecurityContext.doesPasswordHasToBeRenewed(principal)) {
+                    authenticatedUserData = new AuthenticatedUserData(username, principal.getId(), new String(
+                            base64EncodedAuthenticationKey));
+                } else {
+
+                    authenticatedUserData = new AuthenticatedUserData(username, officeId, officeName, staffId, staffDisplayName,
+                            organisationalRole, roles, permissions, principal.getId(), new String(base64EncodedAuthenticationKey));
+                }
+
             }
-
-            final byte[] base64EncodedAuthenticationKey = Base64.encode(username + ":" + password);
-
-            final AppUser principal = (AppUser) authenticationCheck.getPrincipal();
-            this.appUserWritePlatformService.updateLastLogindate(principal);
-            final Collection<RoleData> roles = new ArrayList<>();
-            final Set<Role> userRoles = principal.getRoles();
-            for (final Role role : userRoles) {
-                roles.add(role.toData());
+        } catch (AuthenticationException e) {
+            if (e instanceof BadCredentialsException) {
+                this.appUserWritePlatformService.updateFailedLoginStatus(username);
             }
-
-            final Long officeId = principal.getOffice().getId();
-            final String officeName = principal.getOffice().getName();
-
-            final Long staffId = principal.getStaffId();
-            final String staffDisplayName = principal.getStaffDisplayName();
-
-            final EnumOptionData organisationalRole = principal.organisationalRoleData();
-
-            if (this.springSecurityPlatformSecurityContext.doesPasswordHasToBeRenewed(principal)) {
-                authenticatedUserData = new AuthenticatedUserData(username, principal.getId(), new String(base64EncodedAuthenticationKey));
-            } else {
-
-                authenticatedUserData = new AuthenticatedUserData(username, officeId, officeName, staffId, staffDisplayName,
-                        organisationalRole, roles, permissions, principal.getId(), new String(base64EncodedAuthenticationKey));
-            }
-
+            throw e;
         }
 
         return this.apiJsonSerializerService.serialize(authenticatedUserData);

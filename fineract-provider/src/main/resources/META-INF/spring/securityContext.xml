@@ -74,11 +74,22 @@
 			<beans:property name="passwordEncoder" ref="passwordEncoder" />
 			<beans:property name="saltSource" ref="saltSource" />
 		</beans:bean>
+		
+		<beans:bean id="org.springframework.security.authenticationManager" class="org.springframework.security.authentication.ProviderManager">
+		    <beans:property name="providers">
+		        <beans:list>
+		        <beans:ref bean="customAuthenticationProvider"/>
+		        </beans:list>
+		    </beans:property>
+		    <beans:property name="authenticationEventPublisher" ref="defaultAuthenticationEventPublisher" />
+		</beans:bean>
+
+		<beans:bean id="defaultAuthenticationEventPublisher" class="org.springframework.security.authentication.DefaultAuthenticationEventPublisher" />
 	
-		<authentication-manager alias="authenticationManager"
+		<!-- authentication-manager alias="authenticationManager"
 			erase-credentials="false">
 			<authentication-provider ref="customAuthenticationProvider" />
-		</authentication-manager>
+		</authentication-manager-->
 	</beans:beans> 
 	<beans:beans profile="oauth">
 		<http create-session="stateless" use-expressions="true" pattern="/api/v1/**"
@@ -131,7 +142,6 @@
 			class="org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter">
 			<beans:constructor-arg value="/api/oauth/token" />
 			<beans:property name="authenticationManager" ref="clientAuthenticationManager" />
-	
 		</beans:bean>
 	
 		<beans:bean id="accessDecisionManager"
@@ -156,10 +166,10 @@
 			<authentication-provider user-service-ref="clientDetailsUserService" />
 		</authentication-manager>
 	
-		<authentication-manager alias="authenticationManager"
+		<!-- authentication-manager alias="authenticationManager"
 			erase-credentials="false">
 			<authentication-provider ref="customAuthenticationProvider" />
-		</authentication-manager>
+		</authentication-manager-->
 	
 		<beans:bean id="clientDetailsUserService"
 			class="org.springframework.security.oauth2.provider.client.ClientDetailsUserDetailsService">
@@ -183,6 +193,17 @@
 			<beans:property name="passwordEncoder" ref="passwordEncoder" />
 			<beans:property name="saltSource" ref="saltSource" />
 		</beans:bean>
+		
+		<beans:bean id="org.springframework.security.authenticationManager" class="org.springframework.security.authentication.ProviderManager">
+		    <beans:property name="providers">
+		        <beans:list>
+		        <beans:ref bean="customAuthenticationProvider"/>
+		        </beans:list>
+		    </beans:property>
+		    <beans:property name="authenticationEventPublisher" ref="defaultAuthenticationEventPublisher" />
+		</beans:bean>
+
+		<beans:bean id="defaultAuthenticationEventPublisher" class="org.springframework.security.authentication.DefaultAuthenticationEventPublisher" />
 	
 	
 	
