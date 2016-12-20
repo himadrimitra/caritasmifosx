@@ -392,4 +392,9 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return longValue(property.getValue());
 	}
+	
+	@Override
+	public boolean isLoanOfficerToCenterHierarchyEnabled() {
+		return getGlobalConfigurationPropertyData("apply-loan-officer-to-center-hierarchy").isEnabled();
+	}
 }
