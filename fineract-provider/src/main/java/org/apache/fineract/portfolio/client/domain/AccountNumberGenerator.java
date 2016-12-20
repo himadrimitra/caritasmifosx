@@ -68,34 +68,33 @@ private CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
     }
 
     public String generate(Loan loan, AccountNumberFormat accountNumberFormat) {
-		AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType
-				.fromInt(accountNumberFormat.getPrefixEnum());
-		if (accountNumberPrefixType.getValue().equals(AccountNumberPrefixType.CUSTOM.getValue())) {
-			return this.customAccountNumberGeneratorFactory.determineGenerator(accountNumberFormat.getCustomTypeEnum())
-					.generateAccountNumberForLoans(loan, accountNumberFormat);
-		} else {
+        if (accountNumberFormat != null && accountNumberFormat.getPrefixEnum() != null) {
+            AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType.fromInt(accountNumberFormat.getPrefixEnum());
+            if (accountNumberPrefixType.getValue().equals(AccountNumberPrefixType.CUSTOM.getValue())) { return this.customAccountNumberGeneratorFactory
+                    .determineGenerator(accountNumberFormat.getCustomTypeEnum()).generateAccountNumberForLoans(loan, accountNumberFormat); }
+        }
         Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, loan.getId().toString());
         propertyMap.put(OFFICE_NAME, loan.getOffice().getName());
         propertyMap.put(LOAN_PRODUCT_SHORT_NAME, loan.loanProduct().getShortName());
         return generateAccountNumber(propertyMap, accountNumberFormat);
+
     }
-  }
 
     public String generate(SavingsAccount savingsAccount, AccountNumberFormat accountNumberFormat) {
-		AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType
-				.fromInt(accountNumberFormat.getPrefixEnum());
-		if (accountNumberPrefixType.getValue().equals(AccountNumberPrefixType.CUSTOM.getValue())) {
-			return this.customAccountNumberGeneratorFactory.determineGenerator(accountNumberFormat.getCustomTypeEnum())
-					.generateAccountNumberForSavings(savingsAccount, accountNumberFormat);
-		} else {
-			Map<String, String> propertyMap = new HashMap<>();
-			propertyMap.put(ID, savingsAccount.getId().toString());
-			propertyMap.put(OFFICE_NAME, savingsAccount.office().getName());
-			propertyMap.put(SAVINGS_PRODUCT_SHORT_NAME, savingsAccount.savingsProduct().getShortName());
-			return generateAccountNumber(propertyMap, accountNumberFormat);
-		}
-	}
+        if (accountNumberFormat != null && accountNumberFormat.getPrefixEnum() != null) {
+            AccountNumberPrefixType accountNumberPrefixType = AccountNumberPrefixType.fromInt(accountNumberFormat.getPrefixEnum());
+            if (accountNumberPrefixType.getValue().equals(AccountNumberPrefixType.CUSTOM.getValue())) { return this.customAccountNumberGeneratorFactory
+                    .determineGenerator(accountNumberFormat.getCustomTypeEnum()).generateAccountNumberForSavings(savingsAccount,
+                            accountNumberFormat); }
+        }
+        Map<String, String> propertyMap = new HashMap<>();
+        propertyMap.put(ID, savingsAccount.getId().toString());
+        propertyMap.put(OFFICE_NAME, savingsAccount.office().getName());
+        propertyMap.put(SAVINGS_PRODUCT_SHORT_NAME, savingsAccount.savingsProduct().getShortName());
+        return generateAccountNumber(propertyMap, accountNumberFormat);
+
+    }
     public String generate(ShareAccount shareaccount, AccountNumberFormat accountNumberFormat) {
     	Map<String, String> propertyMap = new HashMap<>();
     	propertyMap.put(ID, shareaccount.getId().toString());

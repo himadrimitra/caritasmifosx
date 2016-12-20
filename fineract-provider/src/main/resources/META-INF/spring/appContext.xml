@@ -92,7 +92,7 @@
 
 	<import resource="cache.xml" />
 
-	<bean id="applicationEventMulticaster" class="org.springframework.context.event.SimpleApplicationEventMulticaster">
+	<bean id="applicationEventMulticaster" class="org.apache.fineract.infrastructure.security.service.FinfluxApplicationEventMulticaster">
 		<property name="taskExecutor">
 			<bean class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
 		</property>

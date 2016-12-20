@@ -31,7 +31,6 @@ import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -55,11 +54,8 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.service.AppUserConstants;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
-import org.hibernate.annotations.WhereJoinTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -94,7 +90,7 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     private boolean accountNonExpired;
 
     @Column(name = "nonlocked", nullable = false)
-    private final boolean accountNonLocked;
+    private boolean accountNonLocked;
 
     @Column(name = "nonexpired_credentials", nullable = false)
     private final boolean credentialsNonExpired;
@@ -140,6 +136,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     @Column(name = "latest_successful_login")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLoginDate;
+    
+    @Column(name = "failed_login_attempt")
+    private Integer failedLoginAttempt;
 
 	public static AppUser fromJson(final Office userOffice, final Staff linkedStaff, final Set<Role> allRoles, 
 			final Collection<Client> clients, final JsonCommand command) {
@@ -205,6 +204,7 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         this.passwordNeverExpires = passwordNeverExpire;
         this.isSelfServiceUser = isSelfServiceUser;
         this.appUserClientMappings = createAppUserClientMappings(clients);
+        this.failedLoginAttempt = 0;
     }
 
     public EnumOptionData organisationalRoleData() {
@@ -683,5 +683,25 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
 	}
     
     
+    public void updateFailure(int maxCount){
+        this.failedLoginAttempt++;
+        if(this.failedLoginAttempt >= maxCount){
+            this.accountNonLocked = false;
+        }
+    }
+    
+    public void unLockAccount(){
+        this.accountNonLocked = true;
+        this.failedLoginAttempt = 0;
+    }
+    
+    public void resetFailureAttempts(){
+        this.failedLoginAttempt = 0;
+    }
 
+    
+    public Integer getFailedLoginAttempts() {
+        return this.failedLoginAttempt;
+    }
+	
 }

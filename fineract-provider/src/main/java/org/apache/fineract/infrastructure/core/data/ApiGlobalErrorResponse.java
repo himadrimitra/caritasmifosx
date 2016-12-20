@@ -69,6 +69,17 @@ public class ApiGlobalErrorResponse {
 
         return globalErrorResponse;
     }
+    
+    public static ApiGlobalErrorResponse accountLocked() {
+
+        final ApiGlobalErrorResponse globalErrorResponse = new ApiGlobalErrorResponse();
+        globalErrorResponse.setHttpStatusCode("401");
+        globalErrorResponse.setDeveloperMessage("User account is locked");
+        globalErrorResponse.setUserMessageGlobalisationCode("error.msg.user.account.locked");
+        globalErrorResponse.setDefaultUserMessage("User account is locked. Please contact admin.");
+
+        return globalErrorResponse;
+    }
 
     public static ApiGlobalErrorResponse invalidTenantIdentifier() {
 
