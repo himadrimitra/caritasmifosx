@@ -2,16 +2,18 @@ package com.finflux.task.service.impl;
 
 import java.util.*;
 
-import com.finflux.task.data.*;
-import com.finflux.task.domain.*;
-import com.finflux.task.exception.TaskActionPermissionException;
+import com.finflux.ruleengine.execution.data.EligibilityResult;
+import com.finflux.ruleengine.execution.data.EligibilityStatus;
+import com.finflux.ruleengine.lib.FieldUndefinedException;
+import com.finflux.ruleengine.lib.InvalidExpressionException;
+import com.finflux.ruleengine.lib.data.ExpressionNode;
+import com.finflux.ruleengine.lib.data.RuleResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.organisation.office.domain.Office;
-import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.data.RoleData;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.service.RoleReadPlatformService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -20,16 +22,16 @@ import org.springframework.transaction.annotation.Transactional;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
 import com.finflux.ruleengine.configuration.service.RuleCacheService;
+import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
 import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
-import com.finflux.task.service.TaskPlatformReadService;
-import com.finflux.task.domain.Task;
-import com.finflux.task.domain.TaskActionLog;
-import com.finflux.task.domain.TaskActionLogRepository;
-import com.finflux.task.domain.TaskRepositoryWrapper;
+import com.finflux.task.data.*;
+import com.finflux.task.domain.*;
+import com.finflux.task.exception.TaskActionPermissionException;
 import com.finflux.task.service.TaskExecutionService;
+import com.finflux.task.service.TaskPlatformReadService;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -40,6 +42,7 @@ import com.google.gson.reflect.TypeToken;
 @Scope("singleton")
 public class TaskExecutionServiceImpl implements TaskExecutionService {
 
+    private final static Logger logger = LoggerFactory.getLogger(TaskExecutionServiceImpl.class);
     private final TaskPlatformReadService taskReadService;
     private final TaskConfigRepositoryWrapper taskConfigRepository;
     private final TaskRepositoryWrapper taskRepository;
@@ -53,6 +56,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     private final TaskActionRepository taskActionRepository;
     private final TaskActionRoleRepository actionRoleRepository;
     private final TaskActionLogRepository actionLogRepository;
+    private final TaskNoteRepository noteRepository;
+    private final Gson gson = new Gson();
+    private Map<DataLayerKey, Long> dataLayerKeyLongMap;
 
     @Autowired
     public TaskExecutionServiceImpl(final TaskPlatformReadService taskReadService, final TaskConfigRepositoryWrapper taskConfigRepository,
@@ -62,7 +68,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             final RuleCacheService ruleCacheService,
             final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
             final MyExpressionExecutor expressionExecutor, final TaskActionRepository taskActionRepository,
-            final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository) {
+            final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository,
+            final TaskNoteRepository noteRepository) {
         this.taskReadService = taskReadService;
         this.taskConfigRepository = taskConfigRepository;
         this.taskRepository = taskRepository;
@@ -76,6 +83,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.taskActionRepository = taskActionRepository;
         this.actionRoleRepository = actionRoleRepository;
         this.actionLogRepository = actionLogRepository;
+        this.noteRepository = noteRepository;
     }
     /*
      * @Override public TaskExecutionData getWorkflowExecutionData(final Long
@@ -96,25 +104,27 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             if (actionType.isCheckPermission()) {
                 checkUserhasActionPrivilege(task, actionType);
             }
-            if (TaskActionType.CRITERIACHECK.equals(actionType)) {
-                runCriteriaCheckAndPopulate(task);
-            }
             if (actionType.getToStatus() != null) {
                 TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), context.authenticatedUser());
-                TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
-                // StepStatus newStatus = stepAction.getToStatus();
-                if (status.equals(newStatus)) {
-                    // do-nothing
-                    return;
+                if (TaskActionType.CRITERIACHECK.equals(actionType)) {
+                    runCriteriaCheckAndPopulate(task);
+                    task.setStatus(TaskActionType.CRITERIACHECK.getToStatus().getValue());
+                    updateAssignedTo(task,TaskActionType.fromInt(task.getCurrentAction()));
+                }else {
+                    TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
+                    // StepStatus newStatus = stepAction.getToStatus();
+                    if (status.equals(newStatus)) {
+                        // do-nothing
+                        return;
+                    }
+                    task.setStatus(newStatus.getValue());
+                    updateActionAndAssignedTo(task, newStatus);
                 }
-                task.setStatus(newStatus.getValue());
                 // update assigned-to if current user has next action
-                updateActionAndAssignedTo(task, newStatus);
-
                 task = taskRepository.save(task);
                 actionLogRepository.save(actionLog);
                 if (task.getParent() != null) {
-                    notifyParentTask(task.getParent(), task, status, newStatus);
+                    notifyParentTask(task.getParent(), task, status, TaskStatusType.fromInt(task.getStatus()));
                 }
 
             }
@@ -134,6 +144,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             }
         } else {
             task.setCurrentAction(null);
+        }
+    }
+
+    private void updateAssignedTo(final Task task, final TaskActionType nextPossibleActionType) {
+        if (nextPossibleActionType != null) {
+            task.setCurrentAction(nextPossibleActionType.getValue());
+            if (nextPossibleActionType != null && canUserDothisAction(task, nextPossibleActionType)) {
+                task.setAssignedTo(context.authenticatedUser());
+            } else {
+                task.setAssignedTo(null);
+            }
         }
     }
 
@@ -293,57 +314,88 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         return taskReadService.getTaskChildren(taskId);
     }
 
+    @Override
+    public List<TaskNoteData> getTaskNotes(Long taskId) {
+        return taskReadService.getTaskNotes(taskId);
+    }
+
+    @Override
+    public Long addNoteToTask(Long taskId, TaskNoteForm noteForm) {
+        Task task = taskRepository.findOneWithNotFoundDetection(taskId);
+        TaskNote taskNote = TaskNote.create(task,noteForm.getNote());
+        taskNote = noteRepository.save(taskNote);
+        return taskNote.getId();
+    }
+
     @SuppressWarnings({})
     private void runCriteriaCheckAndPopulate(final Task task) {
         /**
          * We will reuse this code in future
          */
-        /*
-         * final WorkflowStep workflowStep =
-         * workflowStepRepository.findOne(workflowExecutionStep
-         * .getWorkflowStepId()); Long loanApplicationId =
-         * loanApplicationWorkflowExecution.getLoanApplicationId();
-         * LoanApplicationReferenceData loanApplicationReference =
-         * loanApplicationReferenceReadPlatformService
-         * .retrieveOne(loanApplicationId); Long clientId =
-         * loanApplicationReference.getClientId(); LoanApplicationDataLayer
-         * dataLayer = new LoanApplicationDataLayer(loanApplicationId, clientId,
-         * dataLayerReadPlatformService, ruleCacheService); RuleResult
-         * ruleResult =
-         * ruleExecutionService.executeCriteria(workflowStep.getCriteriaId(),
-         * dataLayer); EligibilityResult eligibilityResult = new
-         * EligibilityResult();
-         * eligibilityResult.setStatus(EligibilityStatus.TO_BE_REVIEWED);
-         * eligibilityResult.setCriteriaOutput(ruleResult); ExpressionNode
-         * approvalLogic = new Gson().fromJson(workflowStep.getApprovalLogic(),
-         * new TypeToken<ExpressionNode>() {}.getType()); ExpressionNode
-         * rejectionLogic = new
-         * Gson().fromJson(workflowStep.getRejectionLogic(), new
-         * TypeToken<ExpressionNode>() {}.getType()); if (ruleResult != null &&
-         * ruleResult.getOutput().getValue() != null) { Map<String, Object> map
-         * = new HashMap(); map.put("criteria",
-         * ruleResult.getOutput().getValue()); boolean rejectionResult = false;
-         * boolean approvalResult = false; try { rejectionResult =
-         * expressionExecutor.executeExpression(rejectionLogic, map); } catch
-         * (FieldUndefinedException e) { e.printStackTrace(); } catch
-         * (InvalidExpressionException e) { e.printStackTrace(); } if
-         * (rejectionResult) {
-         * eligibilityResult.setStatus(EligibilityStatus.REJECTED); } else { try
-         * { approvalResult =
-         * expressionExecutor.executeExpression(approvalLogic, map); } catch
-         * (FieldUndefinedException e) { e.printStackTrace(); } catch
-         * (InvalidExpressionException e) { e.printStackTrace(); } } if
-         * (approvalResult) {
-         * eligibilityResult.setStatus(EligibilityStatus.APPROVED); } }
-         * StepAction nextEligibleAction = StepAction.REVIEW; if
-         * (EligibilityStatus.APPROVED.equals(eligibilityResult.getStatus())) {
-         * nextEligibleAction = StepAction.APPROVE; } else if
-         * (EligibilityStatus.REJECTED.equals(eligibilityResult.getStatus())) {
-         * nextEligibleAction = StepAction.REJECT; }
-         * workflowExecutionStep.setCriteriaAction
-         * (nextEligibleAction.getValue());
-         * workflowExecutionStep.setCriteriaResult(new
-         * Gson().toJson(eligibilityResult));
-         */
+        Map<DataLayerKey, Long> dataLayerKeyLongMap = new HashMap<>();
+        Map<String,String> configValueMap = null;
+
+        if(task.getConfigValues()!=null){
+            configValueMap = new Gson().fromJson(task.getConfigValues(),
+                    new TypeToken<HashMap<String, String>>() {}.getType());
+        }
+
+        if(configValueMap!=null){
+            if(configValueMap.get(TaskConfigKey.CLIENT_ID.getValue())!=null){
+                dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,
+                        Long.valueOf(configValueMap.get(TaskConfigKey.CLIENT_ID.getValue())));
+            }
+            if(configValueMap.get(TaskConfigKey.LOANAPPLICATION_ID.getValue())!=null){
+                dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,
+                        Long.valueOf(configValueMap.get(TaskConfigKey.LOANAPPLICATION_ID.getValue())));
+            }
+        }
+
+        TaskDataLayer dataLayer = new TaskDataLayer(dataLayerReadPlatformService);
+        dataLayer.build(dataLayerKeyLongMap);
+
+        RuleResult ruleResult = ruleExecutionService.executeCriteria(task.getCriteria().getId(), dataLayer);
+        EligibilityResult eligibilityResult = new EligibilityResult();
+        eligibilityResult.setStatus(EligibilityStatus.TO_BE_REVIEWED);
+        eligibilityResult.setCriteriaOutput(ruleResult);
+        ExpressionNode approvalLogic = gson.fromJson(task.getApprovalLogic(),
+                new TypeToken<ExpressionNode>() {}.getType());
+        ExpressionNode rejectionLogic = gson.fromJson(task.getRejectionLogic(),
+                new TypeToken<ExpressionNode>() {}.getType());
+        if (ruleResult != null && ruleResult.getOutput().getValue() != null) {
+            Map<String, Object> map = new HashMap();
+            map.put("criteria", ruleResult.getOutput().getValue());
+            boolean rejectionResult = false;
+            boolean approvalResult = false;
+            try {
+                rejectionResult = expressionExecutor.executeExpression(rejectionLogic, map);
+            } catch (FieldUndefinedException e) {
+                logger.warn("Field is undefined in Rejection Logic for task:"+task.getId(),e);
+            } catch (InvalidExpressionException e) {
+                logger.warn("Rejection Logic Expression is invalid for task:"+task.getId(),e);
+            }
+            if (rejectionResult) {
+                eligibilityResult.setStatus(EligibilityStatus.REJECTED);
+            }else {
+                try {
+                    approvalResult = expressionExecutor.executeExpression(approvalLogic, map);
+                } catch (FieldUndefinedException e) {
+                    logger.warn("Field is undefined in Approval Logic for task:"+task.getId(),e);
+                } catch (InvalidExpressionException e) {
+                    logger.warn("Approval Logic Expression is invalid for task:"+task.getId(),e);
+                }
+            }
+            if (approvalResult) {
+                eligibilityResult.setStatus(EligibilityStatus.APPROVED);
+            }
+        }
+        TaskActionType nextEligibleAction = TaskActionType.REVIEW;
+        if (EligibilityStatus.APPROVED.equals(eligibilityResult.getStatus())) {
+            nextEligibleAction = TaskActionType.APPROVE;
+        } else if (EligibilityStatus.REJECTED.equals(eligibilityResult.getStatus())) {
+            nextEligibleAction = TaskActionType.REJECT;
+        }
+        task.setCriteriaAction(nextEligibleAction.getValue());
+        task.setCriteriaResult(gson.toJson(eligibilityResult));
     }
 }

@@ -2,10 +2,7 @@ package com.finflux.task.service;
 
 import java.util.List;
 
-import com.finflux.task.data.TaskActionType;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.data.TaskExecutionData;
-import com.finflux.task.data.TaskStatusType;
+import com.finflux.task.data.*;
 import com.finflux.task.domain.Task;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
@@ -25,4 +22,7 @@ public interface TaskExecutionService {
 
     List<TaskExecutionData> getChildrenOfTask(Long taskId);
 
+	List<TaskNoteData> getTaskNotes(Long taskId);
+
+    Long addNoteToTask(Long taskId, TaskNoteForm noteForm);
 }

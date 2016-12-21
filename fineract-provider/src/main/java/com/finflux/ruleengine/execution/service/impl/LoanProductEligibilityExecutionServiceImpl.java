@@ -6,6 +6,7 @@ import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityCriteriaData;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityData;
 import com.finflux.ruleengine.eligibility.service.LoanProductEligibilityReadPlatformService;
+import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.ruleengine.execution.data.EligibilityStatus;
 import com.finflux.ruleengine.execution.service.*;
@@ -70,8 +71,11 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
             List<LoanProductEligibilityCriteriaData> criterias = loanProductEligibilityData.getCriterias();
             for(LoanProductEligibilityCriteriaData criteria: criterias){
                 if(loanAmount >= criteria.getMinAmount() && loanAmount <=criteria.getMaxAmount()){
-                    LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(loanApplicationId,clientId,
-                            dataLayerReadPlatformService, ruleCacheService);
+                    LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(dataLayerReadPlatformService);
+                    Map<DataLayerKey,Long> dataLayerKeyLongMap = new HashMap<>();
+                    dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,clientId);
+                    dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,loanApplicationId);
+                    dataLayer.build(dataLayerKeyLongMap);
                     RuleResult ruleResult = ruleExecutionService.executeCriteria(criteria.getRiskCriteriaId(),dataLayer);
                     eligibilityResult.setCriteriaOutput(ruleResult);
                     if(ruleResult !=null && ruleResult.getOutput().getValue()!=null){

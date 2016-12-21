@@ -8,7 +8,7 @@ public enum TaskConfigKey {
     OFFICE_ID("officeId"), //
     LOANAPPLICATION_ID("loanApplicationId"), //
     DATATABLE_NAME("datatablename"), //
-    SURVEY_NAME("surveyname"), //
+    SURVEY_ID("surveyId"), //
     TITLE("title"), //
     BODY("body");
 

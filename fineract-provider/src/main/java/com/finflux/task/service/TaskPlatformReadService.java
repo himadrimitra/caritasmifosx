@@ -1,9 +1,6 @@
 package com.finflux.task.service;
 
-import com.finflux.task.data.TaskTemplateData;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.data.TaskExecutionData;
-import com.finflux.task.data.TaskInfoData;
+import com.finflux.task.data.*;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 
 import java.util.List;
@@ -25,4 +22,6 @@ public interface TaskPlatformReadService {
 	List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId);
 
 	List<TaskInfoData> retrieveTaskInformations(final String filterBy);
+
+	List<TaskNoteData> getTaskNotes(Long taskId);
 }

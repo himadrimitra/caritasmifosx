@@ -1,5 +1,7 @@
 package com.finflux.ruleengine.execution.service;
 
+import com.finflux.ruleengine.execution.data.DataLayerKey;
+
 import java.util.List;
 import java.util.Map;
 
@@ -11,4 +13,6 @@ public interface DataLayer {
     public Map<String,Object> getValues(List<String> keys);
 
     public Object getValue(String key);
+
+    public void build(Map<DataLayerKey,Long> dataLayerEntities);
 }

@@ -14,7 +14,8 @@ public enum SurveyEntityType {
     GROUPS(2, "surveyEntityType.groups"), //
     CENTERS(3, "surveyEntityType.centers"), //
     OFFICES(4, "surveyEntityType.offices"), //
-    STAFFS(5, "surveyEntityType.staffs");//
+    STAFFS(5, "surveyEntityType.staffs"),//
+    LOANAPPLICATION(6, "surveyEntityType.loanapplication"); //
 
     private final Integer value;
     private final String code;
