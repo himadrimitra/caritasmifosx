@@ -7,21 +7,21 @@ import java.util.List;
 
 public interface TaskPlatformReadService {
 
-	TaskTemplateData retrieveTemplate(Long officeId, boolean staffInSelectedOfficeOnly);
+    TaskTemplateData retrieveTemplate(Long officeId, boolean staffInSelectedOfficeOnly);
 
-	List<Long> getChildTaskConfigIds(Long taskConfigId);
+    List<Long> getChildTaskConfigIds(Long taskConfigId);
 
-	TaskExecutionData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId);
+    TaskExecutionData getTaskDetailsByEntityTypeAndEntityId(final TaskEntityType taskEntityType, final Long entityId);
 
-	TaskExecutionData getTaskDetails(final Long taskId);
+    TaskExecutionData getTaskDetails(final Long taskId);
 
-	List<TaskExecutionData> getTaskChildren(Long parentTaskId);
+    List<TaskExecutionData> getTaskChildren(Long parentTaskId);
 
-	List<Long> getChildTasksByOrder(Long parentTaskId, int orderId);
+    List<Long> getChildTasksByOrder(Long parentTaskId, int orderId);
 
-	List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId);
+    List<LoanProductData> retrieveLoanProductTaskSummary(final Long loanProductId, final Long officeId);
 
-	List<TaskInfoData> retrieveTaskInformations(final String filterBy);
+    List<TaskInfoData> retrieveTaskInformations(final String filterBy);
 
-	List<TaskNoteData> getTaskNotes(Long taskId);
+    List<TaskNoteData> getTaskNotes(Long taskId);
 }

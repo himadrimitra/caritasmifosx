@@ -20,12 +20,12 @@ public class TaskInfoData {
     private String nextActionUrl;
     private ClientData clientData;
     private OfficeData officeData;
-    private Map<String,String> configValues;
+    private Map<String, String> configValues;
 
     private TaskInfoData(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
             final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
             final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
-            final OfficeData officeData, final Map<String,String> configValues) {
+            final OfficeData officeData, final Map<String, String> configValues) {
         this.taskId = taskId;
         this.parentTaskId = parentTaskId;
         this.taskName = taskName;
@@ -45,7 +45,7 @@ public class TaskInfoData {
     public static TaskInfoData instance(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
             final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
             final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
-            final OfficeData officeData, final Map<String,String> configValues) {
+            final OfficeData officeData, final Map<String, String> configValues) {
         return new TaskInfoData(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
                 entityType, entityId, nextActionUrl, clientData, officeData, configValues);
     }

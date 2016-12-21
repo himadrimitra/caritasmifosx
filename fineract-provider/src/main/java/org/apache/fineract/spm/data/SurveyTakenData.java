@@ -46,7 +46,7 @@ public class SurveyTakenData {
     }
 
     public SurveyTakenData(final Long id, final Long surveyId, final String surveyName, final Long surveyedBy, final String surveyedByName,
-            final Date surveyedOn, final Integer totalScore) {
+            final Date surveyedOn, final Integer totalScore, final List<ScorecardValue> scorecardValues) {
         this.id = id;
         this.surveyId = surveyId;
         this.surveyName = surveyName;
@@ -54,6 +54,7 @@ public class SurveyTakenData {
         this.surveyedByName = surveyedByName;
         this.surveyedOn = surveyedOn;
         this.totalScore = totalScore;
+        this.scorecardValues = scorecardValues;
     }
 
     public Long getEntityId() {

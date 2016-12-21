@@ -1,7 +1,10 @@
 package org.apache.fineract.spm.domain;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -17,13 +20,18 @@ import javax.persistence.TemporalType;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
+
+import com.finflux.kyc.address.domain.AddressEntity;
 
 @Entity
 @Table(name = "f_survey_taken")
 public class SurveyTaken extends AbstractAuditableCustom<AppUser, Long> {
 
-    @OneToMany(mappedBy = "surveyTaken", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Scorecard> scorecards;
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "surveyTaken", orphanRemoval = true)
+    private List<Scorecard> scorecards = new ArrayList<>();
 
     @Column(name = "entity_type")
     private Integer entityType;
@@ -90,7 +98,10 @@ public class SurveyTaken extends AbstractAuditableCustom<AppUser, Long> {
     }
 
     public void setScorecards(List<Scorecard> scorecards) {
-        this.scorecards = scorecards;
+        if (this.scorecards != null && !this.scorecards.isEmpty()) {
+            this.scorecards.clear();
+        }
+        this.scorecards.addAll(scorecards);
     }
 
     public Integer getTotalScore() {

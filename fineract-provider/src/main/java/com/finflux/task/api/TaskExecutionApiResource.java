@@ -39,7 +39,11 @@ public class TaskExecutionApiResource {
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskExecutionApiResource(final PlatformSecurityContext context, final TaskExecutionService taskExecutionService,
+<<<<<<< 7424b3b497adafcee016f906f7d3d628a04e0541
 									final DefaultToApiJsonSerializer toApiJsonSerializer,final FromJsonHelper fromJsonHelper) {
+=======
+            final DefaultToApiJsonSerializer toApiJsonSerializer) {
+>>>>>>> RM:2898 - Work flow task config for survey and loan disbursal
         this.context = context;
         this.taskExecutionService = taskExecutionService;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -65,8 +69,8 @@ public class TaskExecutionApiResource {
     @Path("{taskId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String doActionOnTask(@PathParam("taskId") final Long taskId,
-                                 @QueryParam("action") final Long actionId, @Context final UriInfo uriInfo) {
+    public String doActionOnTask(@PathParam("taskId") final Long taskId, @QueryParam("action") final Long actionId,
+            @Context final UriInfo uriInfo) {
         this.context.authenticatedUser();
         taskExecutionService.doActionOnTask(taskId, TaskActionType.fromInt(actionId.intValue()));
         TaskExecutionData taskData = taskExecutionService.getTaskData(taskId);
@@ -83,7 +87,6 @@ public class TaskExecutionApiResource {
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 
-
     @GET
     @Path("{taskId}/children")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -94,15 +97,14 @@ public class TaskExecutionApiResource {
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 
-
     @GET
     @Path("{entityType}/{entityId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getTaskData(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
-                              @Context final UriInfo uriInfo) {
+            @Context final UriInfo uriInfo) {
         TaskEntityType taskEntityType = TaskEntityType.fromString(entityType);
-        final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType,entityId);
+        final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType, entityId);
         return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 

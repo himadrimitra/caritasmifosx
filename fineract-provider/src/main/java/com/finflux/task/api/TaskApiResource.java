@@ -36,8 +36,8 @@ public class TaskApiResource {
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskApiResource(final PlatformSecurityContext context, final ApiRequestParameterHelper apiRequestParameterHelper,
-                           final DefaultToApiJsonSerializer toApiJsonSerializer, final TaskPlatformReadService taskPlatformReadService,
-                           final TaskPlatformReadServiceImpl taskConfigurationReadService) {
+            final DefaultToApiJsonSerializer toApiJsonSerializer, final TaskPlatformReadService taskPlatformReadService,
+            final TaskPlatformReadServiceImpl taskConfigurationReadService) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -50,15 +50,15 @@ public class TaskApiResource {
     @Path("summary")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveLoanProductWorkFlowSummary(@QueryParam("loanProductId") final Long loanProductId,
+    public String retrieveLoanProductTasksSummary(@QueryParam("loanProductId") final Long loanProductId,
             @QueryParam("officeId") final Long officeId, @Context final UriInfo uriInfo) {
 
-        final List<LoanProductData> loanProductWorkFlowSummaries = this.taskPlatformReadService.retrieveLoanProductWorkFlowSummary(loanProductId,
+        final List<LoanProductData> loanProductTaskSummaries = this.taskPlatformReadService.retrieveLoanProductTaskSummary(loanProductId,
                 officeId);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
-        return this.toApiJsonSerializer.serialize(settings, loanProductWorkFlowSummaries);
+        return this.toApiJsonSerializer.serialize(settings, loanProductTaskSummaries);
     }
 
     @SuppressWarnings("unchecked")
@@ -80,7 +80,7 @@ public class TaskApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTemplate(@Context final UriInfo uriInfo, @QueryParam("officeId") final Long officeId,
-                                   @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly) {
+            @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly) {
 
         this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASK_RESOURCE_NAME);
 

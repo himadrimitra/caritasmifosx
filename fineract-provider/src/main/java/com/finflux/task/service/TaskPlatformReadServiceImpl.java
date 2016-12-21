@@ -1,21 +1,17 @@
 package com.finflux.task.service;
 
-import java.lang.reflect.Type;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import com.finflux.ruleengine.execution.data.EligibilityResult;
-import com.finflux.ruleengine.lib.data.KeyValue;
-import com.finflux.ruleengine.lib.data.ValueType;
-import com.finflux.task.api.TaskApiConstants;
-import com.finflux.task.data.*;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
-import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
@@ -36,6 +32,25 @@ import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.ruleengine.execution.data.EligibilityResult;
+import com.finflux.task.api.TaskApiConstants;
+import com.finflux.task.data.LoanProductTaskSummaryData;
+import com.finflux.task.data.TaskActionType;
+import com.finflux.task.data.TaskActivityData;
+import com.finflux.task.data.TaskActivityType;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.TaskInfoData;
+import com.finflux.task.data.TaskNoteData;
+import com.finflux.task.data.TaskPriority;
+import com.finflux.task.data.TaskStatusType;
+import com.finflux.task.data.TaskSummaryData;
+import com.finflux.task.data.TaskTemplateData;
+import com.finflux.task.data.TaskType;
+import com.finflux.task.data.WorkFlowSummaryData;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 @Service
 public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
@@ -49,10 +64,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     private final TaskNoteDataMapper noteDataMapper = new TaskNoteDataMapper();
 
     @Autowired
-    public TaskPlatformReadServiceImpl(final RoutingDataSource dataSource,
-                                       final PlatformSecurityContext context,
-                                       final OfficeReadPlatformService officeReadPlatformService,
-                                       final StaffReadPlatformService staffReadPlatformService) {
+    public TaskPlatformReadServiceImpl(final RoutingDataSource dataSource, final PlatformSecurityContext context,
+            final OfficeReadPlatformService officeReadPlatformService, final StaffReadPlatformService staffReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.context = context;
         this.officeReadPlatformService = officeReadPlatformService;
@@ -79,7 +92,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         if (CollectionUtils.isEmpty(staffOptions)) {
             staffOptions = null;
         }
-        return TaskTemplateData.template(defaultOfficeId,offices,staffOptions);
+        return TaskTemplateData.template(defaultOfficeId, offices, staffOptions);
     }
 
     private Long defaultToUsersOfficeIfNull(final Long officeId) {
@@ -167,7 +180,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sb.append(",t.due_date AS taskDueDate ");
             sb.append(",t.task_type AS taskType ");
             sb.append(",t.current_action AS taskCurrentActionId ");
-			sb.append(",t.created_date AS taskCreatedOn ");
+            sb.append(",t.created_date AS taskCreatedOn ");
             sb.append(",appuser.id AS taskAssignedToId ");
             sb.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS taskAssignedTo ");
             sb.append(",t.task_order AS taskOrder ");
@@ -192,8 +205,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sb.append(",ta.supported_actions AS taskActivitySupportedActions ");
             sb.append(",ta.`type` AS taskActivityTypeId ");
             sb.append("FROM f_task t ");
-            sb.append("LEFT JOIN f_task_config tc ON tc.id = t.task_config_id ");
-            sb.append("LEFT JOIN f_task_activity ta ON ta.id = tc.task_activity_id ");
+            sb.append("LEFT JOIN f_task_activity ta ON ta.id = t.task_activity_id ");
             sb.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
             sb.append("LEFT JOIN m_client c ON c.id = t.client_id ");
             sb.append("LEFT JOIN m_office o ON o.id = t.office_id ");
@@ -260,12 +272,12 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 taskCriteriaResult = new Gson().fromJson(criteriaResultStr, new TypeToken<EligibilityResult>() {}.getType());
             }
             final Integer taskCriteriaActionId = JdbcSupport.getIntegeActualValue(rs, "taskCriteriaActionId");
-			final LocalDate taskCreatedOn = JdbcSupport.getLocalDate(rs, "taskCreatedOn");
+            final LocalDate taskCreatedOn = JdbcSupport.getLocalDate(rs, "taskCreatedOn");
             final TaskExecutionData taskData = TaskExecutionData.instance(taskId, taskParentId, taskName, taskShortName, taskEntityType,
                     taskEntityId, taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder,
                     taskCriteriaId, taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId,
                     taskOfficeName, taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType,
-					taskCreatedOn);
+                    taskCreatedOn);
 
             final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
             if (taskActivityId != null) {
@@ -287,7 +299,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
     @SuppressWarnings({ "unused", "null" })
     @Override
-    public List<LoanProductData> retrieveLoanProductWorkFlowSummary(final Long loanProductId, final Long officeId) {
+    public List<LoanProductData> retrieveLoanProductTaskSummary(final Long loanProductId, final Long officeId) {
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder
                 .append("SELECT DISTINCT co.id, lp.id AS loanProductId,lp.name AS loanProductName,tc.id AS workFlowId, tc.name AS workFlowName ");
@@ -303,7 +315,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         sqlBuilder.append("JOIN m_office o ON o.id = pt.office_id ");
         sqlBuilder.append("JOIN m_office co ON co.hierarchy LIKE CONCAT(o.hierarchy, '%') AND co.id = c.office_id ");
         sqlBuilder.append("JOIN f_task st ON st.parent_id = pt.id ");
-        sqlBuilder.append("WHERE st.status BETWEEN 1 AND 6 ");
+        sqlBuilder.append("WHERE st.status BETWEEN 1 AND 7 ");
         if (officeId != null) {
             sqlBuilder.append(" AND o.id = ").append(officeId).append(" ");
         }
@@ -326,7 +338,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
             for (final Map<String, Object> l : list) {
                 final Integer taskStatusId = Integer.parseInt(l.get("taskStatus").toString());
-                if (!(TaskStatusType.fromInt(taskStatusId).getValue() > 6)) {
+                if (!(TaskStatusType.fromInt(taskStatusId).getValue() > 7)) {
                     final Long lpId = (Long) l.get("loanProductId");
                     final String loanProductName = (String) l.get("loanProductName");
                     final Long oId = (Long) l.get("officeId");
@@ -433,12 +445,9 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         public TaskNoteDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append("tn.id as id, tn.task_id as taskId, ")
-                    .append("tn.note as note, ")
-                    .append("CONCAT(appuser.firstname,' ',appuser.lastname) AS createdBy, ")
-                    .append("tn.created_date as createdOn ")
-                    .append("from f_task_note tn ")
-                    .append("LEFT JOIN m_appuser appuser ON appuser.id = tn.createdby_id ");
+            sqlBuilder.append("tn.id as id, tn.task_id as taskId, ").append("tn.note as note, ")
+                    .append("CONCAT(appuser.firstname,' ',appuser.lastname) AS createdBy, ").append("tn.created_date as createdOn ")
+                    .append("from f_task_note tn ").append("LEFT JOIN m_appuser appuser ON appuser.id = tn.createdby_id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -455,7 +464,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final String createdBy = rs.getString("createdBy");
             final LocalDate createdOn = JdbcSupport.getLocalDate(rs, "createdOn");
 
-            return TaskNoteData.instance(id, taskId,note,createdBy,createdOn);
+            return TaskNoteData.instance(id, taskId, note, createdBy, createdOn);
         }
 
     }
@@ -567,12 +576,12 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 nextActionUrl = "/viewtask/" + taskId;
             }
             final String configValues = rs.getString("configValues");
-			Map<String,String> configValueMap = new HashMap<>();
-			if(configValues!=null){
-				configValueMap = new Gson().fromJson(configValues, new TypeToken<HashMap<String, String>>() {}.getType());
-			}
+            Map<String, String> configValueMap = new HashMap<>();
+            if (configValues != null) {
+                configValueMap = new Gson().fromJson(configValues, new TypeToken<HashMap<String, String>>() {}.getType());
+            }
             return TaskInfoData.instance(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                    entityType, entityId, nextActionUrl, clientData, officeData,configValueMap);
+                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap);
         }
     }
 }
