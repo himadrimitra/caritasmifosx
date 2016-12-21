@@ -17,7 +17,8 @@ public class LoanEnquiryData {
     final String clientMobileNo;
     final Long loanProductId;
     String loanApplicationId;
-    final BigDecimal loanAmount;
+    Long loanId;
+    BigDecimal loanAmount;
     final Long clientId;
     final Long branchId;
     List<EnquiryClientRelationshipData> relationshipList;
@@ -27,7 +28,6 @@ public class LoanEnquiryData {
     public LoanEnquiryData(final String clientName, final Date clientDOB, final String clientMobileNo, final Long loanProductId,
             final BigDecimal loanAmount, final Long clientId, Long branchId, final String firstName, final String middlename,
             final String lastName, final String gender, final String genderId) {
-        super();
         this.clientName = clientName;
         this.clientDOB = clientDOB;
         this.clientMobileNo = clientMobileNo;
@@ -123,5 +123,17 @@ public class LoanEnquiryData {
 
     public String getGenderId() {
         return this.genderId;
+    }
+
+    public Long getLoanId() {
+        return this.loanId;
+    }
+
+    public void setLoanId(Long loanId) {
+        this.loanId = loanId;
+    }
+
+    public void setLoanAmount(BigDecimal loanAmount) {
+        this.loanAmount = loanAmount;
     }
 }

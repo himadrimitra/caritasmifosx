@@ -30,7 +30,12 @@ public class EnquiryResponse {
     }
 
     public String getRequest() {
-        return request;
+        return replacePasswordInRequest();
+    }
+
+    private String replacePasswordInRequest() {
+        if (request != null) { return request.replace(request.substring(request.indexOf("<PWD>") + 5, request.indexOf("</PWD>")), "XXXXX"); }
+        return null;
     }
 
     public String getResponse() {

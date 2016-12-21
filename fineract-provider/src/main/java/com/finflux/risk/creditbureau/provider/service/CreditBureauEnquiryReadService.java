@@ -22,8 +22,8 @@ public interface CreditBureauEnquiryReadService {
 
     LoanEnquiryData getEnquiryRequestDataForLoanApplication(final Long loanApplicationId);
 
-    LoanEnquiryReferenceData getLatestCreditBureauEnquiryForLoanApplicationReference(final Long loanApplicationId,
-            final Long creditBureauProductId);
+    LoanEnquiryReferenceData getLatestCreditBureauEnquiryDetails(final Long loanApplicationId, final Long creditBureauProductId,
+            final Long loanId, final Long trancheDisbursalId);
 
     void inActivePreviousLoanApplicationCreditbureauEnquiries(final Long loanApplicationId);
 

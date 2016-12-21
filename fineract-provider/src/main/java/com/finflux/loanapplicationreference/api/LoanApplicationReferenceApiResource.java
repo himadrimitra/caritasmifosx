@@ -33,9 +33,6 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
 import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
-import com.finflux.risk.creditbureau.provider.data.CreditBureauFileContentData;
-import com.finflux.risk.creditbureau.provider.data.OtherInstituteLoansSummaryData;
-import com.finflux.risk.creditbureau.provider.service.CreditBureauCheckService;
 import com.finflux.workflow.execution.data.WorkflowExecutionData;
 import com.finflux.workflow.execution.service.WorkflowExecutionService;
 
@@ -50,7 +47,6 @@ public class LoanApplicationReferenceApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
-    private final CreditBureauCheckService creditBureauCheckService;
     private final WorkflowExecutionService workflowExecutionService;
 
     @SuppressWarnings("rawtypes")
@@ -59,13 +55,11 @@ public class LoanApplicationReferenceApiResource {
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-            final CreditBureauCheckService creditBureauCheckService,
             final WorkflowExecutionService workflowExecutionService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
-        this.creditBureauCheckService = creditBureauCheckService;
         this.workflowExecutionService = workflowExecutionService;
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
     }
@@ -173,62 +167,17 @@ public class LoanApplicationReferenceApiResource {
 
     @SuppressWarnings("unchecked")
     @GET
-    @Path("{loanApplicationReferenceId}/initiatecreditbureauenquiry")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String creditBureauReport(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
-            @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(
-                LoanApplicationReferenceApiConstants.INITIATECREDITBUREAUENQUIRY_RESOURCE_NAME);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final OtherInstituteLoansSummaryData otherInstituteLoansSummaryData = this.creditBureauCheckService
-                .getCreditBureauDataForLoanApplication(loanApplicationReferenceId);
-        return this.toApiJsonSerializer.serialize(settings, otherInstituteLoansSummaryData);
-    }
-
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("{loanApplicationReferenceId}/creditbureaucheck")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String creditBureauReportFileContant(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
-            @QueryParam("sourceId") final Long sourceId, @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(
-                LoanApplicationReferenceApiConstants.CREDITBUREAUCHECK_RESOURCE_NAME);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final OtherInstituteLoansSummaryData otherInstituteLoansSummaryData = this.creditBureauCheckService.getOtherInstituteLoansSummary(
-                loanApplicationReferenceId, sourceId);
-        return this.toApiJsonSerializer.serialize(settings, otherInstituteLoansSummaryData);
-    }
-
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("{loanApplicationReferenceId}/creditbureaureport")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String getCreditBureauReportFileContent(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
-            @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(
-                LoanApplicationReferenceApiConstants.CREDITBUREAUREPORT_RESOURCE_NAME);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        final CreditBureauFileContentData creditBureauFileContentData = this.creditBureauCheckService
-                .getCreditBureauReportFileContent(loanApplicationReferenceId);
-        return this.toApiJsonSerializer.serialize(settings, creditBureauFileContentData);
-    }
-
-    @SuppressWarnings("unchecked")
-    @GET
     @Path("{loanApplicationReferenceId}/workflow")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getLoanApplicationWorkflow(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
-                                                   @Context final UriInfo uriInfo) {
+            @Context final UriInfo uriInfo) {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
         final Long workflowExecutionId = this.workflowExecutionService
                 .getOrCreateWorkflowExecutionForLoanApplication(loanApplicationReferenceId);
-        if(workflowExecutionId !=null){
-            final WorkflowExecutionData workflowExecutionData = workflowExecutionService.getWorkflowExecutionData(workflowExecutionId);
+        if (workflowExecutionId != null) {
+            final WorkflowExecutionData workflowExecutionData = this.workflowExecutionService.getWorkflowExecutionData(workflowExecutionId);
             return this.toApiJsonSerializer.serialize(settings, workflowExecutionData);
         }
         return this.toApiJsonSerializer.serialize(settings, workflowExecutionId);

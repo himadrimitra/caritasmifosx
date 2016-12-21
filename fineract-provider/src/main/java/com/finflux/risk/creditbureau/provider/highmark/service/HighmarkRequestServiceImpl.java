@@ -146,7 +146,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         HEADERSEGMENT.MFI mfi = requestFactory.createHEADERSEGMENTMFI();
         mfi.setINDV(true);
         mfi.setGROUP(true);
-        mfi.setSCORE(true);
+        mfi.setSCORE(false);
         headerSegment.setMFI(mfi);
         HEADERSEGMENT.CONSUMER consumer = requestFactory.createHEADERSEGMENTCONSUMER();
         consumer.setINDV(false);
