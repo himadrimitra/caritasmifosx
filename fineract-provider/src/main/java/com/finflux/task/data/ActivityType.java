@@ -12,8 +12,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
  */
 public enum ActivityType {
     SURVEY(1, "activityType.survey"), //
-    DATATABLE(2, "activityType.question"), //
-    MASTER(3, "activityType.data");
+    DATATABLE(2, "activityType.datatable"), //
+    MASTER(3, "activityType.master");
 
     private final Integer value;
     private final String code;

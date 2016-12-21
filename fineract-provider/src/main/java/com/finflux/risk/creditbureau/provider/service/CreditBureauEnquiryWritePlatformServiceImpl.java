@@ -33,7 +33,7 @@ import com.finflux.risk.existingloans.domain.ExistingLoanRepositoryWrapper;
 public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureauEnquiryWritePlatformService {
 
     private final CreditBureauEnquiryRepository creditBureauEnquiryRepository;
-    private final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryMappingRepository;
+    private final LoanCreditBureauEnquiryRepository loanCreditBureauEnquiryRepository;
     private final ExistingLoanRepositoryWrapper existingLoanRepository;
     private final CodeValueRepository codeValueRepository;
     private final ClientRepositoryWrapper clientRepository;
@@ -45,7 +45,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             final ExistingLoanRepositoryWrapper existingLoanRepository, final CodeValueRepository codeValueRepository,
             final ClientRepositoryWrapper clientRepository, final CreditBureauProductRepositoryWrapper creditBureauProductRepository) {
         this.creditBureauEnquiryRepository = creditBureauEnquiryRepository;
-        this.loanCreditBureauEnquiryMappingRepository = creditBureauRequestDetailsRepository;
+        this.loanCreditBureauEnquiryRepository = creditBureauRequestDetailsRepository;
         this.existingLoanRepository = existingLoanRepository;
         this.codeValueRepository = codeValueRepository;
         this.clientRepository = clientRepository;
@@ -60,6 +60,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
         CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(enquiryReferenceData.getEnquiryId());
         creditBureauEnquiry.setAcknowledgementNumber(response.getAcknowledgementNumber());
         creditBureauEnquiry.setStatus(response.getStatus().getValue());
+        creditBureauEnquiry.setRequest(response.getRequest());
         creditBureauEnquiry.setResponse(response.getResponse());
 
         List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
@@ -74,8 +75,8 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
 
     @Transactional
     @Override
-    public void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData) {
-
+    public void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData,
+            final Long loanId, final Long trancheDisbursalId) {
         EnquiryResponse response = responseData.getEnquiryResponse();
         CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(loanEnquiryReferenceData.getEnquiryId());
         creditBureauEnquiry.setStatus(response.getStatus().getValue());
@@ -84,6 +85,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
         List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
         if (creditBureauLoanEnquiries != null && !creditBureauLoanEnquiries.isEmpty()) {
             LoanCreditBureauEnquiry loanEnquiry = creditBureauLoanEnquiries.get(0);
+            loanEnquiry.setRequest(response.getRequest());
             loanEnquiry.setResponse(response.getResponse());
             loanEnquiry.setStatus(response.getStatus().getValue());
 
@@ -93,18 +95,35 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
                 loanEnquiry.setFileType(reportFile.getFileType().getValue());
                 loanEnquiry.setFileContent(reportFile.getFileContent());
             }
-            this.loanCreditBureauEnquiryMappingRepository.save(loanEnquiry);
+            this.loanCreditBureauEnquiryRepository.save(loanEnquiry);
         }
         if (responseData.getCreditBureauExistingLoans() != null) {
-            saveCreditBureauExistingLoans(loanEnquiryReferenceData.getLoanApplicationId(), responseData.getCreditBureauExistingLoans());
+            saveCreditBureauExistingLoans(loanEnquiryReferenceData.getLoanApplicationId(), responseData.getCreditBureauExistingLoans(),
+                    loanId, trancheDisbursalId);
         }
     }
 
-    @SuppressWarnings("unused")
-    private void saveCreditBureauExistingLoans(final Long loanApplicationId, final List<CreditBureauExistingLoan> creditBureauExistingLoans) {
+    @SuppressWarnings({ "unused" })
+    private void saveCreditBureauExistingLoans(final Long loanApplicationId,
+            final List<CreditBureauExistingLoan> creditBureauExistingLoans, final Long loanId, final Long trancheDisbursalId) {
+        final CreditBureauExistingLoan cbel = creditBureauExistingLoans.get(0);
+        final CreditBureauProduct cbProduct = this.creditBureauProductRepository.findOneWithNotFoundDetection(cbel
+                .getCreditBureauProductId());
         final CodeValue source = this.codeValueRepository.findByCodeNameAndLabel("ExistingLoanSource", "Credit Bureau");
-        final List<ExistingLoan> existingLoans = this.existingLoanRepository.findByLoanApplicationIdAndSource(loanApplicationId, source);
-        if (!existingLoans.isEmpty()) {
+        List<ExistingLoan> existingLoans = null;
+        if (loanId != null && trancheDisbursalId != null) {
+            final LoanCreditBureauEnquiry loanCreditBureauEnquiry = this.loanCreditBureauEnquiryRepository
+                    .findOneByLoanApplicationIdAndLoanIdAndTrancheDisbursalId(loanApplicationId, loanId, trancheDisbursalId);
+            if (loanCreditBureauEnquiry != null) {
+                existingLoans = this.existingLoanRepository
+                        .findByLoanApplicationIdAndLoanIdAndSourceAndCreditBureauProductAndLoanCreditBureauEnquiryId(loanApplicationId,
+                                loanId, source, cbProduct, loanCreditBureauEnquiry.getId());
+            }
+        } else if (loanId == null && trancheDisbursalId == null) {
+            existingLoans = this.existingLoanRepository.findByLoanApplicationIdAndSourceAndCreditBureauProductAndLoanCreditBureauEnquiryId(
+                    loanApplicationId, source, cbProduct, cbel.getLoanEnquiryId());
+        }
+        if (existingLoans != null && !existingLoans.isEmpty()) {
             this.existingLoanRepository.delete(existingLoans);
         }
         final List<ExistingLoan> newExistingLoans = new ArrayList<ExistingLoan>();
@@ -119,7 +138,6 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             if (client == null || client.getId() != clientId) {
                 client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             }
-            final Long loanId = creditBureauExistingLoan.getLoanId();
             final Long creditBureauProductId = creditBureauExistingLoan.getCreditBureauProductId();
             final CreditBureauProduct creditBureauProduct = this.creditBureauProductRepository
                     .findOneWithNotFoundDetection(creditBureauProductId);

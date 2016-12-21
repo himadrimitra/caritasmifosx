@@ -1,7 +1,11 @@
 package com.finflux.loanapplicationreference.service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -85,8 +89,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanRepositoryWrapper loanRepository, final FromJsonHelper fromJsonHelper,
             final LoanScheduleCalculationPlatformService calculationPlatformService, final LoanProductRepository loanProductRepository,
             final LoanProductReadPlatformService loanProductReadPlatformService,
-            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator, final TaskPlatformWriteService taskPlatformWriteService,
-            final ConfigurationDomainService configurationDomainService,
+            final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
+            final TaskPlatformWriteService taskPlatformWriteService, final ConfigurationDomainService configurationDomainService,
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
             final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.context = context;
@@ -130,6 +134,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             /**
              * Check work flow configuration enabled or not
              */
+            Boolean isProductMappedToWorkFlow = false;
             if (this.configurationDomainService.isWorkFlowEnabled()) {
                 /**
                  * Checking is loan product mapped with task configuration
@@ -138,6 +143,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                 final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
                         .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOAN_PRODUCT.getValue(), loanProductId);
                 if (taskConfigEntityTypeMapping != null) {
+                    isProductMappedToWorkFlow = true;
                     final Long loanApplicationId = loanApplicationReference.getId();
                     final Long clientId = loanApplicationReference.getClient().getId();
                     final Map<TaskConfigKey, String> map = new HashMap<>();
@@ -149,9 +155,13 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                 }
             }
 
+            final Map<String, Object> changes = new LinkedHashMap<>(5);
+            changes.put("isProductMappedToWorkFlow", isProductMappedToWorkFlow);
+
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//
                     .withEntityId(loanApplicationReference.getId())//
+                    .with(changes) //
                     .build();
 
         } catch (final DataIntegrityViolationException dve) {
@@ -369,6 +379,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         final Map<String, Object> changes = new LinkedHashMap<>(1);
         final Integer statusEnum = LoanApplicationReferenceStatus.APPLICATION_ACTIVE.getValue();
         changes.put("statusEnum", statusEnum);
+        changes.put("loanId", loanApplicationReference.getLoan().getId());
         loanApplicationReference.updateStatusEnum(statusEnum);
         this.repository.saveAndFlush(loanApplicationReference);
 

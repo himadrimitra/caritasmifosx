@@ -6,6 +6,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProduct;
 import com.finflux.risk.existingloans.exception.ExistingLoanNotFoundException;
 
 @Service
@@ -43,8 +44,27 @@ public class ExistingLoanRepositoryWrapper {
     public void delete(final List<ExistingLoan> existingLoans) {
         this.repository.delete(existingLoans);
     }
-    
+
     public List<ExistingLoan> findByLoanApplicationIdAndSource(final Long loanApplicationId, final CodeValue source) {
         return this.repository.findByLoanApplicationIdAndSource(loanApplicationId, source);
+    }
+
+    public List<ExistingLoan> findByCreditBureauProductAndLoanApplicationIdAndSource(final CreditBureauProduct creditBureauProduct,
+            final Long loanApplicationId, final CodeValue source, final Long loanCreditBureauEnquiryId) {
+        return this.repository.findByCreditBureauProductAndLoanApplicationIdAndSourceAndLoanCreditBureauEnquiryId(creditBureauProduct,
+                loanApplicationId, source, loanCreditBureauEnquiryId);
+    }
+
+    public List<ExistingLoan> findByLoanApplicationIdAndSourceAndCreditBureauProductAndLoanCreditBureauEnquiryId(
+            final Long loanApplicationId, final CodeValue source, final CreditBureauProduct creditBureauProduct,
+            final Long loanCreditBureauEnquiryId) {
+        return this.repository.findByLoanApplicationIdAndSourceAndCreditBureauProductAndLoanCreditBureauEnquiryId(loanApplicationId,
+                source, creditBureauProduct, loanCreditBureauEnquiryId);
+    }
+
+    public List<ExistingLoan> findByLoanApplicationIdAndLoanIdAndSourceAndCreditBureauProductAndLoanCreditBureauEnquiryId(
+            Long loanApplicationId, Long loanId, CodeValue source, CreditBureauProduct creditBureauProduct, Long loanCreditBureauEnquiryId) {
+        return this.repository.findByLoanApplicationIdAndLoanIdAndSourceAndCreditBureauProductAndLoanCreditBureauEnquiryId(
+                loanApplicationId, loanId, source, creditBureauProduct, loanCreditBureauEnquiryId);
     }
 }

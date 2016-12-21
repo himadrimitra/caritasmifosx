@@ -14,8 +14,14 @@ public enum SurveyEntityType {
     GROUPS(2, "surveyEntityType.groups"), //
     CENTERS(3, "surveyEntityType.centers"), //
     OFFICES(4, "surveyEntityType.offices"), //
+<<<<<<< 7424b3b497adafcee016f906f7d3d628a04e0541
     STAFFS(5, "surveyEntityType.staffs"),//
     LOANAPPLICATION(6, "surveyEntityType.loanapplication"); //
+=======
+    STAFFS(5, "surveyEntityType.staffs"), //
+    LOANAPPLICATIONS(6, "surveyEntityType.loanApplications"), //
+    LOANS(7, "surveyEntityType.loans");//
+>>>>>>> RM:2898 - Work flow task config for survey and loan disbursal
 
     private final Integer value;
     private final String code;
@@ -51,6 +57,12 @@ public enum SurveyEntityType {
                 break;
                 case 5:
                     surveyEntityType = SurveyEntityType.STAFFS;
+                break;
+                case 6:
+                    surveyEntityType = SurveyEntityType.LOANAPPLICATIONS;
+                break;
+                case 7:
+                    surveyEntityType = SurveyEntityType.LOANS;
                 break;
             }
         }
@@ -105,6 +117,12 @@ public enum SurveyEntityType {
             break;
             case STAFFS:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), SurveyApiConstants.enumTypeStaffs);
+            break;
+            case LOANAPPLICATIONS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), SurveyApiConstants.enumTypeLoanApplications);
+            break;
+            case LOANS:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), SurveyApiConstants.enumTypeLoans);
             break;
             default:
             break;

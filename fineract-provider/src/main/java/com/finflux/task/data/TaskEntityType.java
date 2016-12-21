@@ -10,7 +10,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 public enum TaskEntityType {
 
     INVALID(0, "taskEntityType.invalid","invalid"), //
-    LOAN_APPLICATION(1, "taskEntityType.loan.application", "loanApplication"), //
+    LOAN_APPLICATION(1, "taskEntityType.loanapplication", "loanApplication"), //
     ADHOC(2, "taskEntityType.adhoc","adhoc");//
 
     private final Integer value;

@@ -20,6 +20,7 @@ package org.apache.fineract.spm.data;
 
 public class ScorecardValue {
 
+    private Long id;
     private Long questionId;
     private Long responseId;
     private Integer value;
@@ -56,6 +57,13 @@ public class ScorecardValue {
         this.answerName = answerName;
     }
 
+    public ScorecardValue(final Long id, final Long questionId, final Long responseId, final Integer value) {
+        this.id = id;
+        this.questionId = questionId;
+        this.responseId = responseId;
+        this.value = value;
+    }
+
     public Long getQuestionId() {
         return questionId;
     }
@@ -78,5 +86,13 @@ public class ScorecardValue {
 
     public void setValue(Integer value) {
         this.value = value;
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }
