@@ -1,17 +1,21 @@
 package com.finflux.task.service;
 
+import java.lang.reflect.Type;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
+import com.finflux.ruleengine.lib.data.KeyValue;
+import com.finflux.ruleengine.lib.data.ValueType;
 import com.finflux.task.api.TaskApiConstants;
 import com.finflux.task.data.*;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
@@ -42,6 +46,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     private final OfficeReadPlatformService officeReadPlatformService;
     private final StaffReadPlatformService staffReadPlatformService;
     private final TaskIdMapper taskIdMapper = new TaskIdMapper();
+    private final TaskNoteDataMapper noteDataMapper = new TaskNoteDataMapper();
 
     @Autowired
     public TaskPlatformReadServiceImpl(final RoutingDataSource dataSource,
@@ -414,6 +419,45 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 dataMapper.unAssigned(), dataMapper,
                 new Object[] { this.context.authenticatedUser().getId(), loggedInUserRoleIds.toString() }); }
         return this.jdbcTemplate.query(dataMapper.all(), dataMapper, new Object[] { loggedInUserRoleIds.toString() });
+    }
+
+    @Override
+    public List<TaskNoteData> getTaskNotes(Long taskId) {
+        final String sql = "SELECT " + noteDataMapper.schema() + " WHERE tn.task_id = ? order by tn.created_date DESC ";
+        return this.jdbcTemplate.query(sql, noteDataMapper, taskId);
+    }
+
+    private static final class TaskNoteDataMapper implements RowMapper<TaskNoteData> {
+
+        private final String schemaSql;
+
+        public TaskNoteDataMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder();
+            sqlBuilder.append("tn.id as id, tn.task_id as taskId, ")
+                    .append("tn.note as note, ")
+                    .append("CONCAT(appuser.firstname,' ',appuser.lastname) AS createdBy, ")
+                    .append("tn.created_date as createdOn ")
+                    .append("from f_task_note tn ")
+                    .append("LEFT JOIN m_appuser appuser ON appuser.id = tn.createdby_id ");
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public TaskNoteData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final Long taskId = rs.getLong("taskId");
+            final String note = rs.getString("note");
+            final String createdBy = rs.getString("createdBy");
+            final LocalDate createdOn = JdbcSupport.getLocalDate(rs, "createdOn");
+
+            return TaskNoteData.instance(id, taskId,note,createdBy,createdOn);
+        }
+
     }
 
     private static final class WorkFlowStepActionDataMapper implements RowMapper<TaskInfoData> {

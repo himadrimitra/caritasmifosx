@@ -13,16 +13,16 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
-import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.*;
+import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.finflux.task.data.TaskActionType;
-import com.finflux.task.data.TaskExecutionData;
 import com.finflux.task.service.TaskExecutionService;
 
 @Path("/taskexecution")
@@ -34,14 +34,16 @@ public class TaskExecutionApiResource {
     private final TaskExecutionService taskExecutionService;
     @SuppressWarnings("rawtypes")
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
+    private final FromJsonHelper fromJsonHelper;
 
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskExecutionApiResource(final PlatformSecurityContext context, final TaskExecutionService taskExecutionService,
-									final DefaultToApiJsonSerializer toApiJsonSerializer) {
+									final DefaultToApiJsonSerializer toApiJsonSerializer,final FromJsonHelper fromJsonHelper) {
         this.context = context;
         this.taskExecutionService = taskExecutionService;
         this.toApiJsonSerializer = toApiJsonSerializer;
+        this.fromJsonHelper = fromJsonHelper;
     }
 
     /**
@@ -103,4 +105,28 @@ public class TaskExecutionApiResource {
         final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType,entityId);
         return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
+
+    @GET
+    @Path("{taskId}/notes")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getTaskNotes(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
+        context.authenticatedUser();
+        List<TaskNoteData> taskNotes = taskExecutionService.getTaskNotes(taskId);
+        return this.toApiJsonSerializer.serialize(taskNotes);
+    }
+
+    @POST
+    @Path("{taskId}/notes")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String createTaskNote(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo,
+                                 final String apiRequestBodyAsJson) {
+        context.authenticatedUser().validateHasThesePermission(TaskApiConstants.TASK_NOTE_RESOURCE_NAME_CREATE_PERMISSION);
+        TaskNoteForm noteForm = fromJsonHelper.fromJson(apiRequestBodyAsJson, TaskNoteForm.class);
+        Long taskNoteId = taskExecutionService.addNoteToTask(taskId, noteForm);
+        return this.toApiJsonSerializer.serialize(taskNoteId);
+    }
+
+
 }

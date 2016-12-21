@@ -15,7 +15,7 @@ public enum TaskStatusType {
     INACTIVE(1, null, "taskStatus.inactive"), //
     INITIATED(2, TaskActionType.ACTIVITYCOMPLETE, "taskStatus.initiated", TaskActionType.SKIP, TaskActionType.ACTIVITYCOMPLETE), //
     UNDERCRITERIACHECK(3, TaskActionType.CRITERIACHECK, "taskStatus.undercriteriacheck", TaskActionType.CRITERIACHECK), //
-    UNDERREVIEW(4, TaskActionType.REVIEW, "taskStatus.underreview", TaskActionType.REVIEW, TaskActionType.REJECT, TaskActionType.TASKEDIT), //
+    UNDERREVIEW(4, TaskActionType.REVIEW, "taskStatus.underreview", TaskActionType.REVIEW, TaskActionType.REJECT, TaskActionType.APPROVE,TaskActionType.TASKEDIT), //
     UNDERAPPROVAL(5, TaskActionType.APPROVE, "taskStatus.underapproval", TaskActionType.APPROVE, TaskActionType.REJECT), //
     COMPLETED(7, null, "taskStatus.completed"), //
     CANCELLED(8, null, "taskStatus.cancelled"), //
