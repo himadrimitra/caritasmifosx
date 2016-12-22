@@ -66,29 +66,29 @@ public interface ConfigurationDomainService {
     int getRoundingMode();
 
     boolean isBackdatePenaltiesEnabled();
-    
+
     boolean isOrganisationstartDateEnabled();
-    
+
     Date retrieveOrganisationStartDate();
-    
+
     boolean isPaymnetypeApplicableforDisbursementCharge();
 
     boolean isInterestChargedFromDateSameAsDisbursementDate();
 
     boolean isSkippingMeetingOnFirstDayOfMonthEnabled();
-    
+
     Long retreivePeroidInNumberOfDaysForSkipMeetingDate();
-    
+
     boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
-    
+
     boolean isDailyTPTLimitEnabled();
-    
+
     Long getDailyTPTLimit();
 
     int getAdjustedAmountRoundingMode();
-    
+
     boolean isDefaultCurrencyEnabled();
-    
+
     String retreiveDefaultCurrency();
 
     boolean isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled();
@@ -96,31 +96,32 @@ public interface ConfigurationDomainService {
     boolean isShowLoanDetailsInCenterPageEnabled();
 
     boolean isSavingAccountsInculdedInCollectionSheet();
-    
+
     boolean isWithDrawForSavingsIncludedInCollectionSheet();
-    
+
     boolean isSearchIncludeGroupInfo();
 
-	GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(
-			String propertyName);
-    
+    GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(String propertyName);
+
     boolean isCustomerDeDuplicationEnabled();
 
     boolean isJlgLoansIncludedInIndividualCollectionSheet();
-    
+
     boolean isGlimLoanInClientProfileShown();
 
     boolean isCgtEnabled();
-    
+
     boolean isMaxCgtDaysEnabled();
-    
+
     boolean isMinCgtDaysEnabled();
-    
+
     Long getMinCgtDays();
-    
+
     Long getMaxCgtDays();
 
     boolean isMaxLoginAttemptsEnable();
 
     Integer retrieveMaxLoginAttempts();
+
+    boolean isLoanOfficerToCenterHierarchyEnabled();
 }

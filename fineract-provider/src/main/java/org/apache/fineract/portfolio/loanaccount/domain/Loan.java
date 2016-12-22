@@ -1220,6 +1220,12 @@ public class Loan extends AbstractPersistable<Long> {
         }
         this.loanOfficer = newLoanOfficer;
     }
+    
+	public void updateLoanOfficer(final Staff newLoanOfficer) {
+		if(newLoanOfficer != null){
+		this.loanOfficer = newLoanOfficer;
+		}
+	}
 
     public void updateTransactionProcessingStrategy(final LoanTransactionProcessingStrategy strategy) {
         this.transactionProcessingStrategy = strategy;

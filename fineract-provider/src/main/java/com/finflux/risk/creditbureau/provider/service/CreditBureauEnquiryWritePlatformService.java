@@ -9,7 +9,8 @@ public interface CreditBureauEnquiryWritePlatformService {
 
     void saveEnquiryResponseDetails(EnquiryReferenceData enquiryReferenceData, CreditBureauResponse responseData);
 
-    void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData);
+    void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData, final Long loanId,
+            final Long trancheDisbursalId);
 
     CreditBureauEnquiry createNewEnquiry(CreditBureauEnquiry creditBureauEnquiry);
 }

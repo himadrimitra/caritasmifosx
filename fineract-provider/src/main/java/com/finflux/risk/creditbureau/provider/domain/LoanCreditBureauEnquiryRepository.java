@@ -18,4 +18,7 @@ public interface LoanCreditBureauEnquiryRepository extends JpaRepository<LoanCre
     @Query("from LoanCreditBureauEnquiry ccrd where ccrd.loanApplicationId = :loanApplicationId and ccrd.creditBureauEnquiry.status = :status")
     List<LoanCreditBureauEnquiry> findWithLoanApplicationId(@Param("loanApplicationId") Long loanApplicationId);
 
+    LoanCreditBureauEnquiry findOneByLoanApplicationIdAndLoanIdAndTrancheDisbursalId(Long loanApplicationId, Long loanId,
+            Long trancheDisbursalId);
+
 }
