@@ -1527,5 +1527,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
     public Integer getWeeksInYearType() {
         return this.loanProductRelatedDetail.getWeeksInYearType();
     }
+    
+    public String getProductName() {
+        return this.name;
+    }
 
 }

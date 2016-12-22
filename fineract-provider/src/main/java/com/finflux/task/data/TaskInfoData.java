@@ -21,11 +21,12 @@ public class TaskInfoData {
     private ClientData clientData;
     private OfficeData officeData;
     private Map<String, String> configValues;
+    private final String description;
 
     private TaskInfoData(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
             final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
             final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
-            final OfficeData officeData, final Map<String, String> configValues) {
+            final OfficeData officeData, final Map<String, String> configValues, final String description) {
         this.taskId = taskId;
         this.parentTaskId = parentTaskId;
         this.taskName = taskName;
@@ -40,14 +41,15 @@ public class TaskInfoData {
         this.clientData = clientData;
         this.officeData = officeData;
         this.configValues = configValues;
+        this.description = description;
     }
 
     public static TaskInfoData instance(final Long taskId, final Long parentTaskId, final String taskName, final String taskStatus,
             final String currentAction, final Long assignedId, final String assignedTo, final Integer entityTypeId,
             final String entityType, final Long entityId, final String nextActionUrl, final ClientData clientData,
-            final OfficeData officeData, final Map<String, String> configValues) {
+            final OfficeData officeData, final Map<String, String> configValues, final String description) {
         return new TaskInfoData(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                entityType, entityId, nextActionUrl, clientData, officeData, configValues);
+                entityType, entityId, nextActionUrl, clientData, officeData, configValues, description);
     }
 
     public Long getTaskId() {
@@ -152,6 +154,11 @@ public class TaskInfoData {
 
     public void setOfficeData(OfficeData officeData) {
         this.officeData = officeData;
+    }
+
+    
+    public String getDescription() {
+        return this.description;
     }
 
 }
