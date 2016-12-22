@@ -2,13 +2,6 @@ package com.finflux.task.service.impl;
 
 import java.util.*;
 
-import com.finflux.ruleengine.execution.data.EligibilityResult;
-import com.finflux.ruleengine.execution.data.EligibilityStatus;
-import com.finflux.ruleengine.lib.FieldUndefinedException;
-import com.finflux.ruleengine.lib.InvalidExpressionException;
-import com.finflux.ruleengine.lib.data.ExpressionNode;
-import com.finflux.ruleengine.lib.data.RuleResult;
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.service.RoleReadPlatformService;
@@ -23,8 +16,14 @@ import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepos
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
 import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.execution.data.DataLayerKey;
+import com.finflux.ruleengine.execution.data.EligibilityResult;
+import com.finflux.ruleengine.execution.data.EligibilityStatus;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
+import com.finflux.ruleengine.lib.FieldUndefinedException;
+import com.finflux.ruleengine.lib.InvalidExpressionException;
+import com.finflux.ruleengine.lib.data.ExpressionNode;
+import com.finflux.ruleengine.lib.data.RuleResult;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
 import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
 import com.finflux.task.data.*;
@@ -144,6 +143,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             }
         } else {
             task.setCurrentAction(null);
+            task.setAssignedTo(null);
         }
     }
 
@@ -232,10 +232,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
      * null; }
      */
 
-    private List<EnumOptionData> getPossibleActionsOnTask(Long taskId, boolean onlyClickable) {
+    private List<TaskActionData> getPossibleActionsOnTask(Long taskId, boolean onlyClickable) {
         Task task = taskRepository.findOneWithNotFoundDetection(taskId);
         TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
-        List<EnumOptionData> actionEnums = new ArrayList<>();
+        List<TaskActionData> actionDatas = new ArrayList<>();
+        List<TaskActionType> actionEnums = new ArrayList<>();
         // skip over statuses if no actions been configured
         // workflow_Step_action.
         // Example if Approval is not assigned to a step. After Review it will
@@ -247,14 +248,28 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         if (task.getCriteria() != null && TaskStatusType.UNDERREVIEW.equals(status)) {
             TaskActionType stepAction = TaskActionType.fromInt(task.getCriteriaAction());
             if (stepAction != null) {
-                actionEnums.add(stepAction.getEnumOptionData());
-                return actionEnums;
+                actionEnums.add(stepAction);
+                if(TaskActionType.REVIEW.equals(stepAction)){
+                    //auto approval/rejection
+                    actionEnums.add(TaskActionType.REJECT);
+                }
+            }
+        }else{
+            List<TaskActionType> actions = status.getPossibleActionEnums();
+            for (TaskActionType action : actions) {
+
+                if (onlyClickable) {
+                    if (action.isClickable()) {
+                        actionEnums.add(action);
+                    }
+                } else {
+                    actionEnums.add(action);
+                }
+
             }
         }
-        List<TaskActionType> actions = status.getPossibleActionEnums();
-        for (TaskActionType action : actions) {
+        for(TaskActionType action: actionEnums){
             TaskAction taskAction= null;
-
             if (task.getActionGroupId() != null) {
                 taskAction = taskActionRepository.findOneByActionGroupIdAndAction(task.getActionGroupId(), action.getValue());
             }
@@ -262,19 +277,13 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             if (taskAction == null && !action.isEnableByDefault()) {
                 continue;
             }
-
-            if (onlyClickable) {
-                if (action.isClickable() && canUserDothisAction(taskAction)) {
-                    actionEnums.add(action.getEnumOptionData());
-                }
-            } else {
-                if (canUserDothisAction(taskAction)) {
-                    actionEnums.add(action.getEnumOptionData());
-                }
+            if (canUserDothisAction(taskAction)) {
+                actionDatas.add(new TaskActionData(action,true,null));
+            }else{
+//                actionDatas.add(new TaskActionData(action,false,null));
             }
-
         }
-        return actionEnums;
+        return actionDatas;
     }
 
     private TaskStatusType getNextEquivalentStatus(Task task, TaskStatusType status) {
@@ -305,7 +314,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @Override
-    public List<EnumOptionData> getClickableActionsOnTask(Long taskId) {
+    public List<TaskActionData> getClickableActionsOnTask(Long taskId) {
         return getPossibleActionsOnTask(taskId, true);
     }
 
@@ -325,6 +334,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         TaskNote taskNote = TaskNote.create(task,noteForm.getNote());
         taskNote = noteRepository.save(taskNote);
         return taskNote.getId();
+    }
+
+    @Override
+    public List<TaskActionLogData> getActionLogs(Long taskId) {
+        return taskReadService.getActionLogs(taskId);
     }
 
     @SuppressWarnings({})

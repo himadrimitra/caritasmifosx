@@ -18,11 +18,13 @@ public interface TaskExecutionService {
 
     TaskExecutionData getTaskIdByEntity(TaskEntityType taskEntityType, Long entityId);
 
-    List<EnumOptionData> getClickableActionsOnTask(Long workflowExecutionStepId);
+    List<TaskActionData> getClickableActionsOnTask(Long workflowExecutionStepId);
 
     List<TaskExecutionData> getChildrenOfTask(Long taskId);
 
 	List<TaskNoteData> getTaskNotes(Long taskId);
 
     Long addNoteToTask(Long taskId, TaskNoteForm noteForm);
+
+    List<TaskActionLogData> getActionLogs(Long taskId);
 }

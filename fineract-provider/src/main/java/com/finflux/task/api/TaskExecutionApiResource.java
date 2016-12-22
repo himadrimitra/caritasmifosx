@@ -2,18 +2,11 @@ package com.finflux.task.api;
 
 import java.util.List;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -21,11 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.finflux.task.data.TaskActionType;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.data.TaskExecutionData;
-import com.finflux.task.data.TaskNoteData;
-import com.finflux.task.data.TaskNoteForm;
+import com.finflux.task.data.*;
 import com.finflux.task.service.TaskExecutionService;
 
 @Path("/taskexecution")
@@ -82,7 +71,7 @@ public class TaskExecutionApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String getNextActionsOnTask(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
         context.authenticatedUser();
-        List<EnumOptionData> possibleActions = taskExecutionService.getClickableActionsOnTask(taskId);
+        List<TaskActionData> possibleActions = taskExecutionService.getClickableActionsOnTask(taskId);
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 
@@ -116,6 +105,17 @@ public class TaskExecutionApiResource {
         List<TaskNoteData> taskNotes = taskExecutionService.getTaskNotes(taskId);
         return this.toApiJsonSerializer.serialize(taskNotes);
     }
+
+    @GET
+    @Path("{taskId}/actionlog")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getTaskActionLogs(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
+        context.authenticatedUser();
+        List<TaskActionLogData> taskActionLogs = taskExecutionService.getActionLogs(taskId);
+        return this.toApiJsonSerializer.serialize(taskActionLogs);
+    }
+
 
     @POST
     @Path("{taskId}/notes")

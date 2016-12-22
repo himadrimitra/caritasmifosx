@@ -24,4 +24,6 @@ public interface TaskPlatformReadService {
     List<TaskInfoData> retrieveTaskInformations(final String filterBy);
 
     List<TaskNoteData> getTaskNotes(Long taskId);
+
+    List<TaskActionLogData> getActionLogs(Long taskId);
 }
