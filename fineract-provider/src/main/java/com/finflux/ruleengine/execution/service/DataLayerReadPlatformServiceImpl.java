@@ -202,7 +202,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         final String questionSql = "SELECT " + surveyQuestionDataLayerMapper.schema()
                 + " WHERE st.entity_type = ? AND st.entity_id = ? order by st.id asc";
         try {
-            final SurveyEntityType surveyEntityType = SurveyEntityType.LOANAPPLICATION;
+            final SurveyEntityType surveyEntityType = SurveyEntityType.LOANAPPLICATIONS;
             List<Map<String, Object>> questionDataList = this.jdbcTemplate.query(questionSql, surveyQuestionDataLayerMapper, new Object[] {
                     surveyEntityType.getValue(), loanApplicationId });
             if (questionDataList != null) {
@@ -216,7 +216,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         final String surveySql = "SELECT " + surveyScorecardDataLayerMapper.schema()
                 + " WHERE st.entity_type = ? AND st.entity_id = ? group by ss.survey_id, st.id order by st.id asc";
         try {
-            final SurveyEntityType surveyEntityType = SurveyEntityType.LOANAPPLICATION;
+            final SurveyEntityType surveyEntityType = SurveyEntityType.LOANAPPLICATIONS;
             List<Map<String, Object>> surveyScoreCards = this.jdbcTemplate.query(surveySql, surveyScorecardDataLayerMapper, new Object[] {
                     surveyEntityType.getValue(), loanApplicationId });
             if (surveyScoreCards != null) {

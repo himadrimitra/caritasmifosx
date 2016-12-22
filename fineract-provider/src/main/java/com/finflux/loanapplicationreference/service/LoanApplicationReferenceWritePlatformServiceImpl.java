@@ -15,6 +15,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
@@ -146,12 +147,14 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     isProductMappedToWorkFlow = true;
                     final Long loanApplicationId = loanApplicationReference.getId();
                     final Long clientId = loanApplicationReference.getClient().getId();
+                    Client client = loanApplicationReference.getClient();
                     final Map<TaskConfigKey, String> map = new HashMap<>();
                     map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
                     map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
+                    String description = constructDescription(loanProduct.getProductName(), loanApplicationReference.getLoanApplicationReferenceNo(), client);
                     this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                             TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
-                            loanApplicationReference.getClient().getOffice(), map);
+                            loanApplicationReference.getClient().getOffice(), map, description);
                 }
             }
 
@@ -168,6 +171,12 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             handleDataIntegrityIssues(dve);
             return CommandProcessingResult.empty();
         }
+    }
+
+    private String constructDescription(String productName, String loanApplicationReferenceNo, Client client) {
+        String description = productName + " Application #" + loanApplicationReferenceNo + " for "
+                + client.getDisplayName().toUpperCase() + " in Office (" + client.getOfficeName() + ")";
+        return description;
     }
 
     @Override

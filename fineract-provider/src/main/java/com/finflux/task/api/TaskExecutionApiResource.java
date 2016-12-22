@@ -13,8 +13,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
-import com.finflux.task.data.*;
-import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
@@ -23,6 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.task.data.TaskActionType;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.TaskNoteData;
+import com.finflux.task.data.TaskNoteForm;
 import com.finflux.task.service.TaskExecutionService;
 
 @Path("/taskexecution")
@@ -39,11 +42,7 @@ public class TaskExecutionApiResource {
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskExecutionApiResource(final PlatformSecurityContext context, final TaskExecutionService taskExecutionService,
-<<<<<<< 7424b3b497adafcee016f906f7d3d628a04e0541
-									final DefaultToApiJsonSerializer toApiJsonSerializer,final FromJsonHelper fromJsonHelper) {
-=======
-            final DefaultToApiJsonSerializer toApiJsonSerializer) {
->>>>>>> RM:2898 - Work flow task config for survey and loan disbursal
+            final DefaultToApiJsonSerializer toApiJsonSerializer, final FromJsonHelper fromJsonHelper) {
         this.context = context;
         this.taskExecutionService = taskExecutionService;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -122,13 +121,11 @@ public class TaskExecutionApiResource {
     @Path("{taskId}/notes")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String createTaskNote(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo,
-                                 final String apiRequestBodyAsJson) {
+    public String createTaskNote(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
         context.authenticatedUser().validateHasThesePermission(TaskApiConstants.TASK_NOTE_RESOURCE_NAME_CREATE_PERMISSION);
         TaskNoteForm noteForm = fromJsonHelper.fromJson(apiRequestBodyAsJson, TaskNoteForm.class);
         Long taskNoteId = taskExecutionService.addNoteToTask(taskId, noteForm);
         return this.toApiJsonSerializer.serialize(taskNoteId);
     }
-
 
 }

@@ -76,14 +76,14 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     @Transactional
     @Override
     public void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,
-                                     final Office office, final Map<TaskConfigKey, String> configValues) {
+                                     final Office office, final Map<TaskConfigKey, String> configValues, String description) {
 
         Map<String, String> customConfigMap = new HashMap<>();
         for (Map.Entry<TaskConfigKey, String> config : configValues.entrySet()) {
             customConfigMap.put(config.getKey().getValue(), config.getValue());
         }
 
-        Task parentTask = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, taskConfigId);
+        Task parentTask = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, taskConfigId, description);
         parentTask = this.taskRepository.save(parentTask);
 
         final List<Long> childTaskConfigIds = this.taskPlatformReadService.getChildTaskConfigIds(taskConfigId);
@@ -92,7 +92,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
             int index = 0;
             final List<Task> tasks = new ArrayList<Task>();
             for (final Long cTaskConfigId : childTaskConfigIds) {
-                Task task = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, cTaskConfigId);
+                Task task = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, cTaskConfigId, description);
                 task.setParent(parentTask);
                 if (index == 0) {
                     TaskStatusType status = TaskStatusType.INITIATED;
@@ -109,7 +109,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     }
 
     private Task createTaskFromConfig(TaskEntityType entityType, Long entityId, Client client, Office office,
-            Map<String, String> customConfigMap, Long cTaskConfigId) {
+            Map<String, String> customConfigMap, Long cTaskConfigId, String description) {
         final TaskConfig taskConfig = this.taskConfigRepository.findOneWithNotFoundDetection(cTaskConfigId);
         TaskStatusType status = TaskStatusType.INACTIVE;
         Map<String, String> configValueMap = new HashMap<>();
@@ -129,7 +129,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 taskConfig.getTaskType(), taskConfig, status.getValue(), TaskPriority.MEDIUM.getValue(), dueDate, currentAction,
                 assignedTo, taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
                 taskConfig.getRejectionLogic(), configValueStr, client, office, taskConfig.getActionGroupId(), criteriaResult,
-                criteriaAction, taskConfig.getTaskActivity());
+                criteriaAction, taskConfig.getTaskActivity(), description);
     }
 
     /*
@@ -153,7 +153,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 TaskType.SINGLE.getValue(), null, null, TaskPriority.MEDIUM.getValue(), null,
                 null, null, null, null, null,
                 null, configValueStr, null, office, actionGroupId, null,
-                null, taskActivity);
+                null, taskActivity, null);
         TaskStatusType status = TaskStatusType.INITIATED;
         task.setStatus(status.getValue());
         taskExecutionService.updateActionAndAssignedTo(task, status);

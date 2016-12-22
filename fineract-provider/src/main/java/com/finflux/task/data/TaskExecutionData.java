@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
+
 import org.joda.time.LocalDate;
 
 public class TaskExecutionData {
@@ -40,14 +41,15 @@ public class TaskExecutionData {
     private TaskActivityData taskActivity;
     private EnumOptionData taskType;
     private LocalDate createdOn;
+    private String description;
 
-    private TaskExecutionData(final Long id, final Long parentId, final String name, final String shortName, final EnumOptionData entityType,
-							  final Long entityId, final EnumOptionData status, final EnumOptionData priority, final Date dueDate,
-							  final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
-							  final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
-							  final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
-							  final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
-							  final EnumOptionData taskType, final LocalDate createdOn) {
+    private TaskExecutionData(final Long id, final Long parentId, final String name, final String shortName,
+            final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
+            final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
+            final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
+            final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
+            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
+            final EnumOptionData taskType, final LocalDate createdOn, final String description) {
         this.id = id;
         this.parentId = parentId;
         this.name = name;
@@ -75,18 +77,19 @@ public class TaskExecutionData {
         this.possibleActions = possibleActions;
         this.taskType = taskType;
         this.createdOn = createdOn;
+        this.description = description;
     }
 
     public static TaskExecutionData instance(final Long id, final Long parentId, final String name, final String shortName,
-											 final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
-											 final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
-											 final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
-											 final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
-											 final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
-											 EnumOptionData taskType, final LocalDate createdOn) {
-        return new TaskExecutionData(id, parentId, name, shortName, entityType, entityId, status, priority, dueDate, currentAction, assignedToId,
-                assignedTo, order, criteriaId, approvalLogic, rejectionLogic, configValues, clientId, clientName, officeId, officeName,
-                actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType, createdOn);
+            final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
+            final Date dueDate, final EnumOptionData currentAction, final Long assignedToId, final String assignedTo, final Integer order,
+            final Long criteriaId, final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues,
+            final Long clientId, final String clientName, final Long officeId, final String officeName, final Long actionGroupId,
+            final EligibilityResult criteriaResult, final Integer criteriaActionId, final List<EnumOptionData> possibleActions,
+            EnumOptionData taskType, final LocalDate createdOn, String description) {
+        return new TaskExecutionData(id, parentId, name, shortName, entityType, entityId, status, priority, dueDate, currentAction,
+                assignedToId, assignedTo, order, criteriaId, approvalLogic, rejectionLogic, configValues, clientId, clientName, officeId,
+                officeName, actionGroupId, criteriaResult, criteriaActionId, possibleActions, taskType, createdOn, description);
     }
 
     public Long getId() {

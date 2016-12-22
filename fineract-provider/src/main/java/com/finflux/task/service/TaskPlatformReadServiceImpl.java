@@ -198,6 +198,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sb.append(",t.task_config_id AS taskConfigId ");
             sb.append(",t.parent_id AS parentTaskId ");
             sb.append(",t.action_group_id AS taskActionGroupId ");
+            sb.append(",t.description AS description ");
             sb.append(",ta.id AS taskActivityId ");
             sb.append(",ta.name AS taskActivityName ");
             sb.append(",ta.identifier AS taskActivityIdentifier ");
@@ -257,6 +258,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final String taskApprovalLogic = rs.getString("taskApprovalLogic");
             final String taskRejectionLogic = rs.getString("taskRejectionLogic");
             final String taskConfigValuesStr = rs.getString("taskConfigValues");
+            final String description = rs.getString("description");
             Map<String, String> taskConfigValues = null;
             if (taskConfigValuesStr != null) {
                 taskConfigValues = new Gson().fromJson(taskConfigValuesStr, new TypeToken<HashMap<String, String>>() {}.getType());
@@ -277,7 +279,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                     taskEntityId, taskStatus, taskPriority, taskDueDate, taskCurrentAction, taskAssignedToId, taskAssignedTo, taskOrder,
                     taskCriteriaId, taskApprovalLogic, taskRejectionLogic, taskConfigValues, taskClientId, taskClientName, taskOfficeId,
                     taskOfficeName, taskActionGroupId, taskCriteriaResult, taskCriteriaActionId, taskPossibleActions, taskType,
-                    taskCreatedOn);
+                    taskCreatedOn, description);
 
             final Long taskActivityId = JdbcSupport.getLongDefaultToNullIfZero(rs, "taskActivityId");
             if (taskActivityId != null) {
@@ -479,7 +481,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         public String all() {
             final StringBuilder sqlBuilder = new StringBuilder(500);
-            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId ");
+            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description As description ");
             sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
@@ -501,7 +503,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         public String assigned() {
             final StringBuilder sqlBuilder = new StringBuilder(500);
-            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId ");
+            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description As description ");
             sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
@@ -524,7 +526,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         public String unAssigned() {
             final StringBuilder sqlBuilder = new StringBuilder(500);
-            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId ");
+            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description as description ");
             sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
             sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
@@ -560,6 +562,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final String entityType = TaskEntityType.fromInt(entityTypeId).toString();
             final Long entityId = rs.getLong("entityId");
             final Long clientId = rs.getLong("clientId");
+            final String description  = rs.getString("description");
             ClientData clientData = null;
             if (clientId != null) {
                 final String clientName = rs.getString("clientName");
@@ -581,7 +584,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 configValueMap = new Gson().fromJson(configValues, new TypeToken<HashMap<String, String>>() {}.getType());
             }
             return TaskInfoData.instance(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap);
+                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description);
         }
     }
 }

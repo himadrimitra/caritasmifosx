@@ -98,6 +98,9 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "criteria_action", length = 3)
     private Integer criteriaAction;
+    
+    @Column(name = "description")
+    private String description;
 
     protected Task() {}
 
@@ -105,7 +108,8 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
             final Integer taskType, final TaskConfig taskConfig, final Integer status, final Integer priority, final Date dueDate,
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
-            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity) {
+            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction, final TaskActivity taskActivity,
+            final String description) {
 
         this.parent = parent;
         this.name = name;
@@ -130,16 +134,17 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
         this.criteriaResult = criteriaResult;
         this.criteriaAction = criteriaAction;
         this.taskActivity = taskActivity;
+        this.description = description;
     }
 
     public static Task create(final Task parent, final String name, final String shortName, final Integer entityType, final Long entityId,
             final Integer taskType, final TaskConfig taskConfig, final Integer status, final Integer priority, final Date dueDate,
             final Integer currentAction, final AppUser assignedTo, final Integer taskOrder, final RuleModel criteria,
             final String approvalLogic, final String rejectionLogic, final String configValues, final Client client, final Office office,
-            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction,final TaskActivity taskActivity) {
+            final Long actionGroupId, final String criteriaResult, final Integer criteriaAction,final TaskActivity taskActivity, String description) {
         return new Task(parent, name, shortName, entityType, entityId, taskType, taskConfig, status, priority, dueDate, currentAction,
                 assignedTo, taskOrder, criteria, approvalLogic, rejectionLogic, configValues, client, office, actionGroupId,
-                criteriaResult, criteriaAction, taskActivity);
+                criteriaResult, criteriaAction, taskActivity, description);
     }
 
     public Task getParent() {
@@ -324,5 +329,9 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
 
     public void setTaskActivity(TaskActivity taskActivity) {
         this.taskActivity = taskActivity;
+    }
+    
+    public void setDescription(final String description) {
+        this.description = description;
     }
 }
