@@ -81,90 +81,6 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         } catch (final EmptyResultDataAccessException e) {}
 
         /**
-         * Client Details From Other Lenders Loans
-         */
-        final List<Map<String, Object>> clientLoanDetailsFromOtherLendersList = getClientLoanDetailsFromOtherLenders(clientId);
-        final BigDecimal clienttotaloutstandingamount = BigDecimal.ZERO;
-        Integer clientActiveMFILoansCount = 0;
-        final BigDecimal clienttotalwrittenoffamount = BigDecimal.ZERO;
-        Integer clientnumberofwrittenoffloans = 0;
-        final BigDecimal clienttotalmonthlydueamount = BigDecimal.ZERO;
-        if (clientLoanDetailsFromOtherLendersList != null && !clientLoanDetailsFromOtherLendersList.isEmpty()) {
-            for (final Map<String, Object> clientLoanDetailsFromOtherLenders : clientLoanDetailsFromOtherLendersList) {
-                if (clientLoanDetailsFromOtherLenders.get("clientwrittenoffamount") != null) {
-                    final BigDecimal clientwrittenoffamount = (BigDecimal) clientLoanDetailsFromOtherLenders.get("clientwrittenoffamount");
-                    clientLoanDetailsFromOtherLenders.remove("clientwrittenoffamount");
-                    if (clientwrittenoffamount.doubleValue() > BigDecimal.ZERO.doubleValue()) {
-                        clientnumberofwrittenoffloans++;
-                        clienttotalwrittenoffamount.add(clientwrittenoffamount);
-                    }
-                }
-                if (clientLoanDetailsFromOtherLenders.get("loanstatus") != null
-                        && Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loanstatus").toString()) == 300) {
-                    clientLoanDetailsFromOtherLenders.remove("loanstatus");
-                    allClientData.putAll(clientLoanDetailsFromOtherLenders);
-                    clienttotaloutstandingamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientoutstandingamount"));
-                    clientActiveMFILoansCount++;
-
-                    if (clientLoanDetailsFromOtherLenders.get("loantenureperiodtype") != null) {
-                        if (Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loantenureperiodtype").toString()) == 1) {
-
-                        } else if (Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loantenureperiodtype").toString()) == 2) {
-                            clienttotalmonthlydueamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientinstallmentamount"));
-                        }
-                        clientLoanDetailsFromOtherLenders.remove("loantenureperiodtype");
-                    }
-                }
-            }
-        }
-
-        /**
-         * Client total amount monthly due
-         */
-        try {
-            final Map<String, Object> clienttotalmonthlydueamountMap = new HashMap<String, Object>();
-            clienttotalmonthlydueamountMap.put("clienttotalmonthlydueamount", clienttotalmonthlydueamount);
-            allClientData.putAll(clienttotalmonthlydueamountMap);
-        }catch (final EmptyResultDataAccessException e) {}
-
-        /**
-         * Client total written off amount from other lenders
-         */
-        try {
-            final Map<String, Object> clienttotalwrittenoffamountMap = new HashMap<String, Object>();
-            clienttotalwrittenoffamountMap.put("clienttotalwrittenoffamount", clienttotalwrittenoffamount);
-            allClientData.putAll(clienttotalwrittenoffamountMap);
-        }catch (final EmptyResultDataAccessException e) {}
-
-        /**
-         * Client number of written off loans
-         */
-        try {
-            final Map<String, Object> clientnumberofwrittenoffloansMap = new HashMap<String, Object>();
-            clientnumberofwrittenoffloansMap.put("clientnumberofwrittenoffloans", clientnumberofwrittenoffloans);
-            allClientData.putAll(clientnumberofwrittenoffloansMap);
-        }catch (final EmptyResultDataAccessException e) {}
-
-        /**
-         * Client total outstanding amount from other lenders
-         */
-        try {
-        final Map<String, Object> clientTotalOutstandingAmount = new HashMap<String, Object>();
-        clientTotalOutstandingAmount.put("clienttotaloutstandingamount", clienttotaloutstandingamount);
-        allClientData.putAll(clientTotalOutstandingAmount);
-        }catch (final EmptyResultDataAccessException e) {}
-
-        /**
-         * Client number of active MFI loans
-         */
-		try {
-			final Map<String, Object> clientActiveMFILoansCountMap = new HashMap<String, Object>();
-			clientActiveMFILoansCountMap.put("clientactiveloanscount",
-					clientActiveMFILoansCount);
-			allClientData.putAll(clientActiveMFILoansCountMap);
-		} catch (final EmptyResultDataAccessException e) {
-		}
-        /**
          * Client % Income from high stability
          */
                 try {
@@ -226,6 +142,91 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             }
         } catch (final EmptyResultDataAccessException e) {}
 
+        /**
+         * Client Details From Other Lenders Loans
+         */
+        final List<Map<String, Object>> clientLoanDetailsFromOtherLendersList = getLoanDetailsFromOtherLendersForLoanApplication(loanApplicationId);
+        final BigDecimal clienttotaloutstandingamount = BigDecimal.ZERO;
+        Integer clientActiveMFILoansCount = 0;
+        final BigDecimal clienttotalwrittenoffamount = BigDecimal.ZERO;
+        Integer clientnumberofwrittenoffloans = 0;
+        final BigDecimal clienttotalmonthlydueamount = BigDecimal.ZERO;
+        if (clientLoanDetailsFromOtherLendersList != null && !clientLoanDetailsFromOtherLendersList.isEmpty()) {
+            for (final Map<String, Object> clientLoanDetailsFromOtherLenders : clientLoanDetailsFromOtherLendersList) {
+                if (clientLoanDetailsFromOtherLenders.get("clientwrittenoffamount") != null) {
+                    final BigDecimal clientwrittenoffamount = (BigDecimal) clientLoanDetailsFromOtherLenders.get("clientwrittenoffamount");
+                    clientLoanDetailsFromOtherLenders.remove("clientwrittenoffamount");
+                    if (clientwrittenoffamount.doubleValue() > BigDecimal.ZERO.doubleValue()) {
+                        clientnumberofwrittenoffloans++;
+                        clienttotalwrittenoffamount.add(clientwrittenoffamount);
+                    }
+                }
+                if (clientLoanDetailsFromOtherLenders.get("loanstatus") != null
+                        && Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loanstatus").toString()) == 300) {
+                    clientLoanDetailsFromOtherLenders.remove("loanstatus");
+                    allLoanApplicationData.putAll(clientLoanDetailsFromOtherLenders);
+                    clienttotaloutstandingamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientoutstandingamount"));
+                    clientActiveMFILoansCount++;
+
+                    if (clientLoanDetailsFromOtherLenders.get("loantenureperiodtype") != null) {
+                        if (Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loantenureperiodtype").toString()) == 1) {
+
+                        } else if (Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loantenureperiodtype").toString()) == 2) {
+                            clienttotalmonthlydueamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientinstallmentamount"));
+                        }
+                        clientLoanDetailsFromOtherLenders.remove("loantenureperiodtype");
+                    }
+                }
+            }
+        }
+
+        /**
+         * Client total amount monthly due
+         */
+        try {
+            final Map<String, Object> clienttotalmonthlydueamountMap = new HashMap<String, Object>();
+            clienttotalmonthlydueamountMap.put("clienttotalmonthlydueamount", clienttotalmonthlydueamount);
+            allLoanApplicationData.putAll(clienttotalmonthlydueamountMap);
+        }catch (final EmptyResultDataAccessException e) {}
+
+        /**
+         * Client total written off amount from other lenders
+         */
+        try {
+            final Map<String, Object> clienttotalwrittenoffamountMap = new HashMap<String, Object>();
+            clienttotalwrittenoffamountMap.put("clienttotalwrittenoffamount", clienttotalwrittenoffamount);
+            allLoanApplicationData.putAll(clienttotalwrittenoffamountMap);
+        }catch (final EmptyResultDataAccessException e) {}
+
+        /**
+         * Client number of written off loans
+         */
+        try {
+            final Map<String, Object> clientnumberofwrittenoffloansMap = new HashMap<String, Object>();
+            clientnumberofwrittenoffloansMap.put("clientnumberofwrittenoffloans", clientnumberofwrittenoffloans);
+            allLoanApplicationData.putAll(clientnumberofwrittenoffloansMap);
+        }catch (final EmptyResultDataAccessException e) {}
+
+        /**
+         * Client total outstanding amount from other lenders
+         */
+        try {
+            final Map<String, Object> clientTotalOutstandingAmount = new HashMap<String, Object>();
+            clientTotalOutstandingAmount.put("clienttotaloutstandingamount", clienttotaloutstandingamount);
+            allLoanApplicationData.putAll(clientTotalOutstandingAmount);
+        }catch (final EmptyResultDataAccessException e) {}
+
+        /**
+         * Client number of active MFI loans
+         */
+        try {
+            final Map<String, Object> clientActiveMFILoansCountMap = new HashMap<String, Object>();
+            clientActiveMFILoansCountMap.put("clientactiveloanscount",
+                    clientActiveMFILoansCount);
+            allLoanApplicationData.putAll(clientActiveMFILoansCountMap);
+        } catch (final EmptyResultDataAccessException e) {
+        }
+
         return allLoanApplicationData;
     }
 
@@ -250,6 +251,18 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         sql.append("FROM f_existing_loan el ");
         sql.append("WHERE el.client_id = ? ");
         return this.jdbcTemplate.queryForList(sql.toString(), new Object[] { clientId });
+    }
+
+    private List<Map<String, Object>> getLoanDetailsFromOtherLendersForLoanApplication(final Long loanApplicationId) {
+        final StringBuilder sql = new StringBuilder(100);
+        sql.append("SELECT el.loan_status_id AS loanstatus ");
+        sql.append(",IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
+        sql.append(",IFNULL(el.installment_amount, 0) clientinstallmentamount ");
+        sql.append(",IFNULL(el.written_off_amount, 0) clientwrittenoffamount ");
+        sql.append(",IFNULL(el.loan_tenure_period_type, 0) loantenureperiodtype ");
+        sql.append("FROM f_existing_loan el ");
+        sql.append("WHERE el.loan_application_id = ? ");
+        return this.jdbcTemplate.queryForList(sql.toString(), new Object[] { loanApplicationId });
     }
 
     private Map<String, Object> getClientIncomeFromHighStabilityPercentage(final Long clientId) {

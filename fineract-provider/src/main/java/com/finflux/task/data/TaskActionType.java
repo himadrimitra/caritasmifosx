@@ -16,7 +16,7 @@ public enum TaskActionType {
     REVIEW(3, "taskActionType.review", 5, true, true, false), //
     APPROVE(4, "taskActionType.approve", 7, true, true, false), //
     // NEXT(5, "taskActionType.next",null,true, false),
-    REJECT(6, "taskActionType.reject", 8, true, true,false), //
+    REJECT(6, "taskActionType.reject", 8, true, true,true), //
     SKIP(7, "taskActionType.skip", 9, true, true,false), //
     STARTOVER(8, "taskActionType.startover", 2, false, true,false), //
     TASKEDIT(9, "taskActionType.taskedit", 2, false, true,false), //
