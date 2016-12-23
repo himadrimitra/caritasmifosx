@@ -24,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -45,11 +47,13 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     private final TaskIdMapper taskIdMapper = new TaskIdMapper();
     private final TaskNoteDataMapper noteDataMapper = new TaskNoteDataMapper();
     private final TaskActionLogDataMapper actionLogDataMapper = new TaskActionLogDataMapper();
+    private final NamedParameterJdbcTemplate namedParameterjdbcTemplate;
 
     @Autowired
     public TaskPlatformReadServiceImpl(final RoutingDataSource dataSource, final PlatformSecurityContext context,
             final OfficeReadPlatformService officeReadPlatformService, final StaffReadPlatformService staffReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.context = context;
         this.officeReadPlatformService = officeReadPlatformService;
         this.staffReadPlatformService = staffReadPlatformService;
@@ -405,21 +409,21 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     public List<TaskInfoData> retrieveTaskInformations(final String filterBy) {
         final WorkFlowStepActionDataMapper dataMapper = new WorkFlowStepActionDataMapper();
         final Set<Role> loggedInUserRoles = this.context.authenticatedUser().getRoles();
-        final StringBuilder loggedInUserRoleIds = new StringBuilder(10);
+        final List<Long> loggedInUserRoleIds = new ArrayList<>();
         for (final Role r : loggedInUserRoles) {
-            if (loggedInUserRoleIds.length() == 0) {
-                loggedInUserRoleIds.append(r.getId());
-            } else {
-                loggedInUserRoleIds.append(",").append(r.getId());
-            }
+            loggedInUserRoleIds.add(r.getId());
         }
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("roles",loggedInUserRoleIds);
         if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.ASSIGNEED)) {
-            return this.jdbcTemplate.query(dataMapper.assigned(), dataMapper, new Object[] { this.context.authenticatedUser().getId(),
-                    loggedInUserRoleIds.toString() });
-        } else if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.UNASSIGNEED)) { return this.jdbcTemplate.query(
-                dataMapper.unAssigned(), dataMapper,
-                new Object[] { this.context.authenticatedUser().getId(), loggedInUserRoleIds.toString() }); }
-        return this.jdbcTemplate.query(dataMapper.all(), dataMapper, new Object[] { loggedInUserRoleIds.toString() });
+            params.addValue("assignedTo",this.context.authenticatedUser().getId());
+            return this.namedParameterjdbcTemplate.query(dataMapper.assigned(), params,dataMapper);
+        } else if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.UNASSIGNEED)) {
+            return this.namedParameterjdbcTemplate.query(
+                dataMapper.unAssigned(), params,dataMapper);
+        }else {
+            return this.namedParameterjdbcTemplate.query(dataMapper.all(), params,dataMapper);
+        }
     }
 
     @Override
@@ -521,11 +525,10 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
             sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
             sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
+            sqlBuilder.append("AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
             sqlBuilder.append("GROUP BY taskId ");
             sqlBuilder.append("ORDER BY taskId ");
-            this.schema = sqlBuilder.toString();
-            return this.schema;
+            return sqlBuilder.toString();
         }
 
         public String assigned() {
@@ -543,12 +546,11 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
             sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
             sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("AND t.assigned_to = ? ");
+            sqlBuilder.append("AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
+            sqlBuilder.append("AND t.assigned_to = :assignedTo ");
             sqlBuilder.append("GROUP BY taskId ");
             sqlBuilder.append("ORDER BY taskId ");
-            this.schema = sqlBuilder.toString();
-            return this.schema;
+            return sqlBuilder.toString();
         }
 
         public String unAssigned() {
@@ -566,13 +568,11 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
             sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
             sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (tar.role_id IN (?) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("AND (t.assigned_to IS NULL OR  t.assigned_to != ? ) ");
+            sqlBuilder.append("AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
+            sqlBuilder.append("AND t.assigned_to IS NULL ");
             sqlBuilder.append("GROUP BY taskId ");
             sqlBuilder.append("ORDER BY taskId ");
-
-            this.schema = sqlBuilder.toString();
-            return this.schema;
+            return sqlBuilder.toString();
         }
 
         @SuppressWarnings({ "unused" })
