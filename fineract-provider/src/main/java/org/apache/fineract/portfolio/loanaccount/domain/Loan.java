@@ -3577,7 +3577,7 @@ public class Loan extends AbstractPersistable<Long> {
             if (isPaidOrPartiallyPaid && !loanCharge.isDueAtDisbursement()) {
                 if (loanCharge.isInstalmentFee()) {
                     LoanInstallmentCharge paidLoanChargePerInstallment = loanCharge
-                            .getLastPaidOrPartiallyPaidInstallmentLoanCharge(currency);
+                            .getLastPaidOrPartiallyPaidInstallmentLoanChargeForGlim(currency);
                     if (chargePerInstallment == null
                             || (paidLoanChargePerInstallment != null && chargePerInstallment.getRepaymentInstallment().getDueDate()
                                     .isBefore(paidLoanChargePerInstallment.getRepaymentInstallment().getDueDate()))) {
