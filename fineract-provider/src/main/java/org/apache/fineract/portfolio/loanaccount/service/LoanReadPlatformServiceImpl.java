@@ -1072,13 +1072,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final String closureLoanAccountNo = rs.getString("closureLoanAccountNo");
             final BigDecimal topupAmount = rs.getBigDecimal("topupAmount");
             PaymentTypeData expectedDisbursalPaymentType = null;
-            final Integer expectedDisbursalPaymentTypeId = rs.getInt("expectedDisbursalPaymentTypeId");
+            final Integer expectedDisbursalPaymentTypeId = JdbcSupport.getInteger(rs,"expectedDisbursalPaymentTypeId");
             if(expectedDisbursalPaymentTypeId != null){
                 final String disbursementPaymentTypeName = rs.getString("disbursementPaymentTypeName");
                 expectedDisbursalPaymentType = PaymentTypeData.instance(expectedDisbursalPaymentTypeId.longValue(), disbursementPaymentTypeName);            	
             }
             PaymentTypeData expectedRepaymentPaymentType = null;
-            final Integer expectedRepaymentPaymentTypeId = rs.getInt("expectedRepaymentPaymentTypeId");
+            final Integer expectedRepaymentPaymentTypeId = JdbcSupport.getInteger(rs,"expectedRepaymentPaymentTypeId");
             if(expectedRepaymentPaymentTypeId != null){
             	final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
             	expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);            	
