@@ -429,13 +429,15 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 this.accountAssociationsRepository.save(accountAssociations);
             }
             
-            // save GroupLoanIndividualMonitoring clients
-            final List<GroupLoanIndividualMonitoring> glimList = newLoanApplication.getGroupLoanIndividualMonitoringList();
-            this.groupLoanIndividualMonitoringRepository.save(glimList);
-            
             attachLoanAccountToPledge(command, newLoanApplication);
-            if(newLoanApplication.isGLIMLoan()){
-            	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(newLoanApplication);
+            if (newLoanApplication.isGLIMLoan()) {
+                // validate submitted on date with glim client activation date
+                GroupLoanIndividualMonitoringDataValidator.validateGlimClientActivationDate(newLoanApplication.getSubmittedOnDate(),
+                        newLoanApplication.getGroupLoanIndividualMonitoringList());
+                // save GroupLoanIndividualMonitoring clients
+                final List<GroupLoanIndividualMonitoring> glimList = newLoanApplication.getGroupLoanIndividualMonitoringList();
+                this.groupLoanIndividualMonitoringRepository.save(glimList);
+                this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(newLoanApplication);
             }
             
             return new CommandProcessingResultBuilder() //
@@ -1006,16 +1008,20 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 	
 	            final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
 	            final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
-                    existingLoanApplication.updateGlim(glimList);
-                    existingLoanApplication.updateDefautGlimMembers(glimList);
 	            final boolean considerAllDisbursmentsInSchedule = true;
 	            final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false, considerAllDisbursmentsInSchedule);
 	            existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
 	            existingLoanApplication.recalculateAllCharges();
 	            // save GroupLoanIndividualMonitoring clients
-	            if(glimList.size()>0){
-	            	this.groupLoanIndividualMonitoringRepository.save(glimList);
-	            }
+                    if (glimList.size() > 0) {
+                        existingLoanApplication.updateGlim(glimList);
+                        existingLoanApplication.updateDefautGlimMembers(glimList);
+                        // validate submitted on date with glim client activation
+                        // date
+                        GroupLoanIndividualMonitoringDataValidator.validateGlimClientActivationDate(
+                                existingLoanApplication.getSubmittedOnDate(), glimList);
+                        this.groupLoanIndividualMonitoringRepository.save(glimList);
+                    }
 	            
 	        }
 
