@@ -6,15 +6,17 @@
 package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
-import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.exception.ClientSharesNotEqualToPrincipalAmountException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidClientShareInGroupLoanException;
+import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -91,6 +93,20 @@ public class GroupLoanIndividualMonitoringDataValidator {
             }
         }
         return isAmountNotPresent;
+    }
+    
+    public static void validateGlimClientActivationDate(LocalDate submittedOnDate, List<GroupLoanIndividualMonitoring> glimMembers) {
+        List<String> clientNames = new ArrayList<>();
+        for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
+            if (submittedOnDate.isBefore(glimMember.getClient().getActivationLocalDate())) {
+                clientNames.add(glimMember.getClient().getDisplayName());
+            }
+        }
+        if (!clientNames.isEmpty()) {
+            String defaultUserMessage = "Submitted on date cannot be before the client activation date.";
+            throw new LoanApplicationDateException("submitted.on.date.cannot.be.before.the.client.activation.date", defaultUserMessage,
+                    submittedOnDate.toString(), clientNames);
+        }
     }
 
 }
