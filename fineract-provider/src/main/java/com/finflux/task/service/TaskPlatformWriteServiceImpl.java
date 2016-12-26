@@ -45,14 +45,15 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     private final TaskActionLogRepository actionLogRepository;
 
     @Autowired
-    public TaskPlatformWriteServiceImpl(final TaskPlatformReadService taskPlatformReadService, final TaskConfigRepositoryWrapper taskConfigRepository,
-										final TaskRepositoryWrapper taskRepository, final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
-										final RoleReadPlatformService roleReadPlatformService, final PlatformSecurityContext context,
-										final RuleExecutionService ruleExecutionService, final DataLayerReadPlatformService dataLayerReadPlatformService,
-										final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-										final MyExpressionExecutor expressionExecutor, final TaskActionRepository taskActionRepository,
-										final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository,
-                                        final TaskExecutionService taskExecutionService) {
+    public TaskPlatformWriteServiceImpl(final TaskPlatformReadService taskPlatformReadService,
+            final TaskConfigRepositoryWrapper taskConfigRepository, final TaskRepositoryWrapper taskRepository,
+            final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
+            final RoleReadPlatformService roleReadPlatformService, final PlatformSecurityContext context,
+            final RuleExecutionService ruleExecutionService, final DataLayerReadPlatformService dataLayerReadPlatformService,
+            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
+            final MyExpressionExecutor expressionExecutor, final TaskActionRepository taskActionRepository,
+            final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository,
+            final TaskExecutionService taskExecutionService) {
         this.taskPlatformReadService = taskPlatformReadService;
         this.taskConfigRepository = taskConfigRepository;
         this.taskRepository = taskRepository;
@@ -72,7 +73,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     @Transactional
     @Override
     public void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,
-                                     final Office office, final Map<TaskConfigKey, String> configValues, String description) {
+            final Office office, final Map<TaskConfigKey, String> configValues, String description) {
 
         Map<String, String> customConfigMap = new HashMap<>();
         for (Map.Entry<TaskConfigKey, String> config : configValues.entrySet()) {
@@ -109,7 +110,8 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         final TaskConfig taskConfig = this.taskConfigRepository.findOneWithNotFoundDetection(cTaskConfigId);
         TaskStatusType status = TaskStatusType.INACTIVE;
         Map<String, String> configValueMap = new HashMap<>();
-        if (taskConfig.getConfigValues() != null) {
+        final String configValues = taskConfig.getConfigValues();
+        if (configValues != null && configValues.trim().length() > 0 && configValues.startsWith("{") && configValues.endsWith("}")) {
             configValueMap = new Gson().fromJson(taskConfig.getConfigValues(), new TypeToken<HashMap<String, String>>() {}.getType());
         }
         configValueMap.putAll(customConfigMap);
@@ -135,21 +137,18 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
      */
 
     @Override
-    public Long createSingleTask(TaskActivity taskActivity, String title, Office office, Map<TaskConfigKey, String> map,
-                                 Long actionGroupId) {
+    public Long createSingleTask(TaskActivity taskActivity, String title, Office office, Map<TaskConfigKey, String> map, Long actionGroupId) {
         Map<String, String> customConfigMap = new HashMap<>();
-        if(map!=null) {
+        if (map != null) {
             for (Map.Entry<TaskConfigKey, String> config : map.entrySet()) {
                 customConfigMap.put(config.getKey().getValue(), config.getValue());
             }
         }
 
         final String configValueStr = new Gson().toJson(map);
-        Task task = Task.create(null, title, taskActivity.getIdentifier().substring(0,3), null, null,
-                TaskType.SINGLE.getValue(), null, null, TaskPriority.MEDIUM.getValue(), null,
-                null, null, null, null, null,
-                null, configValueStr, null, office, actionGroupId, null,
-                null, taskActivity, null);
+        Task task = Task.create(null, title, taskActivity.getIdentifier().substring(0, 3), null, null, TaskType.SINGLE.getValue(), null,
+                null, TaskPriority.MEDIUM.getValue(), null, null, null, null, null, null, null, configValueStr, null, office,
+                actionGroupId, null, null, taskActivity, null);
         TaskStatusType status = TaskStatusType.INITIATED;
         task.setStatus(status.getValue());
         taskExecutionService.updateActionAndAssignedTo(task, status);
