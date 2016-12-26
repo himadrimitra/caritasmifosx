@@ -4,11 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.service.DataLayer;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
-import org.springframework.stereotype.Service;
 
 /**
  * Created by dhirendra on 22/09/16.
