@@ -132,7 +132,7 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
     private void validateClientHasActiveGlimLoan(Client client, String action) {
         final List<GroupLoanIndividualMonitoring> glimMembers = this.glimRepositoryWrapper.findByClientId(client.getId());
         for (GroupLoanIndividualMonitoring glim : glimMembers) {
-            if (!glim.isOutstandingBalanceZero()) {
+            if (glim.getLoan()!= null && !glim.getLoan().isClosed() && !glim.isOutstandingBalanceZero()) {
                 final String errorMessage = "Client cannot be " + action + " because of active glim loans.";
                 throw new InvalidClientStateTransitionException(action, "client cannot. " + action + " because.client.has.active.glim.loan", errorMessage);
             }
