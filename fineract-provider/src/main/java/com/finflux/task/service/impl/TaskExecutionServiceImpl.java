@@ -410,6 +410,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             nextEligibleAction = TaskActionType.REJECT;
         }
         task.setCriteriaAction(nextEligibleAction.getValue());
+        task.setCurrentAction(nextEligibleAction.getValue());
         task.setCriteriaResult(gson.toJson(eligibilityResult));
     }
 }
