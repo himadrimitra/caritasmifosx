@@ -122,6 +122,7 @@ import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.command.LoanUpdateCommand;
 import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataValidator;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
@@ -386,7 +387,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         
         // validate for glim application
         if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
-        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoring(command, LoanApiConstants.principalDisbursedParameterName);
+        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command, LoanApiConstants.principalDisbursedParameterName);
         }
         
         LocalDate recalculateFrom = null;
@@ -501,12 +502,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             
             //update disbursed amount for each client in glim
             if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
+                final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
             	List<GroupLoanIndividualMonitoring> glimList = this.glimAssembler.updateFromJson(command.parsedJson(), "disbursedAmount", 
-                        loan, loan.fetchNumberOfInstallmensAfterExceptions(), loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate());
+                        loan, loan.fetchNumberOfInstallmensAfterExceptions(), loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate(), clientMembers);
                 loan.updateGlim(glimList);
                 loan.updateDefautGlimMembers(glimList);
                 this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(), loan.fetchNumberOfInstallmensAfterExceptions(),
                         glimList);
+                changes.put("clientMembers", clientMembers);
             }
             
             regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate, rescheduledRepaymentDate);
@@ -1180,6 +1183,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanEventApiJsonValidator.validateTransaction(command.json());
         Loan loan = this.loanAssembler.assembleFrom(loanId);
         Map<String, Object> changes = new LinkedHashMap<>();
+        Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
         final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
         final BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
@@ -1223,9 +1227,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         LoanTransaction newLoanTransaction = changedLoanTransactionDetails.getNewTransactionDetail();
         if (loan.isGLIMLoan() && MathUtility.isGreaterThanZero(newLoanTransaction.getAmount(loan.getCurrency()))) {
             Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.assembleGLIMTransactions(
-                    command, newLoanTransaction);
+                    command, newLoanTransaction, clientMembers);
             this.glimAssembler.updateGLIMAfterRepayment(glimTransactions, isRecoveryRepayment);
             this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
+            changes.put("clientMember", clientMembers);
         }
         
         

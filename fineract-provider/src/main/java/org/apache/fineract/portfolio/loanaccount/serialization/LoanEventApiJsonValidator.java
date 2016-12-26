@@ -584,15 +584,6 @@ public final class LoanEventApiJsonValidator {
                 final Long glimId = this.fromApiJsonHelper.extractLongNamed("id", innerElement);
                 baseDataValidator.reset().parameter("id").value(glimId).notNull().longGreaterThanZero();
                 
-                final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", innerElement);
-                baseDataValidator.reset().parameter("clientId").value(clientId).notNull().longGreaterThanZero();
-
-                final String clientName = this.fromApiJsonHelper.extractStringNamed("clientName", innerElement);
-                baseDataValidator.reset().parameter("clientName").value(clientName).notNull().notBlank();
-
-                final String remainigInterestAmount = this.fromApiJsonHelper.extractStringNamed("remainingTransactionAmount", innerElement);
-                baseDataValidator.reset().parameter("remainingTransactionAmount").value(remainigInterestAmount).notNull();
-
                 final String transactionAmount = this.fromApiJsonHelper.extractStringNamed("transactionAmount", innerElement);
                 baseDataValidator.reset().parameter("transactionAmount").value(transactionAmount).notNull().zeroOrPositiveAmount();
             }
@@ -619,12 +610,6 @@ public final class LoanEventApiJsonValidator {
                 final Long glimId = this.fromApiJsonHelper.extractLongNamed("id", innerElement);
                 baseDataValidator.reset().parameter("id").value(glimId).notNull().longGreaterThanZero();
                 
-                final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", innerElement);
-                baseDataValidator.reset().parameter("clientId").value(clientId).notNull().longGreaterThanZero();
-
-                final String clientName = this.fromApiJsonHelper.extractStringNamed("clientName", innerElement);
-                baseDataValidator.reset().parameter("clientName").value(clientName).notNull().notBlank();
-
                 final String transactionAmount = this.fromApiJsonHelper.extractStringNamed("transactionAmount", innerElement);
                 baseDataValidator.reset().parameter("transactionAmount").value(transactionAmount).notNull().zeroOrPositiveAmount();
             }
@@ -657,22 +642,12 @@ public final class LoanEventApiJsonValidator {
         
         if (clients != null) {
             for (JsonElement innerElement : clients) {
-                final boolean isClientSelected = this.fromApiJsonHelper.extractBooleanNamed("isClientSelected", innerElement);
-                if (isClientSelected) {
-                    final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", innerElement);
-                    baseDataValidator.reset().parameter("clientId").value(clientId).notNull().longGreaterThanZero();
+                final Long glimId = this.fromApiJsonHelper.extractLongNamed("id", innerElement);
+                baseDataValidator.reset().parameter("id").value(glimId).notNull().longGreaterThanZero();
 
-                    final String clientName = this.fromApiJsonHelper.extractStringNamed("clientName", innerElement);
-                    baseDataValidator.reset().parameter("clientName").value(clientName).notNull().notBlank();
-
-                    final BigDecimal remainigInterestAmount = this.fromApiJsonHelper.extractBigDecimalNamed("remainingTransactionAmount",
-                            innerElement, locale);
-                    baseDataValidator.reset().parameter("remainingTransactionAmount").value(remainigInterestAmount).notNull();
-
-                    final BigDecimal indTransactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed("transactionAmount",
-                            innerElement, locale);
-                    baseDataValidator.reset().parameter("transactionAmount").value(indTransactionAmount).notNull();
-                }
+                final BigDecimal indTransactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed("transactionAmount",
+                        innerElement, locale);
+                baseDataValidator.reset().parameter("transactionAmount").value(indTransactionAmount).notNull();
             }
         }
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

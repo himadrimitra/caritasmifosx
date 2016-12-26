@@ -1107,8 +1107,6 @@ public class Loan extends AbstractPersistable<Long> {
         
         Money amountWaived = loanCharge.waiveForGlim(loanCurrency(), clientcharge, loanInstallmentNumber);
 
-        changes.put("amount", amountWaived.getAmount());
-        
         Money unrecognizedIncome = amountWaived.zero();
         Money chargeComponent = amountWaived;
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
