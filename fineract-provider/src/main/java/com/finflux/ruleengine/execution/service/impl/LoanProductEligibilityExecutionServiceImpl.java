@@ -2,7 +2,6 @@ package com.finflux.ruleengine.execution.service.impl;
 
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityCriteriaData;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityData;
 import com.finflux.ruleengine.eligibility.service.LoanProductEligibilityReadPlatformService;
@@ -37,7 +36,6 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
     private final EligibilityCheckReadPlatformService eligibilityCheckReadPlatformService;
     private final EligibilityCheckWritePlatformService eligibilityCheckWritePlatformService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
-    private final RuleCacheService ruleCacheService;
 
     @Autowired
     public LoanProductEligibilityExecutionServiceImpl(final RuleExecutionService ruleExecutionService,
@@ -45,7 +43,6 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
                                                       final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
                                                       final LoanProductEligibilityReadPlatformService loanProductEligibilityReadPlatformService,
                                                       final DataLayerReadPlatformService dataLayerReadPlatformService,
-                                                      final RuleCacheService ruleCacheService,
                                                       final EligibilityCheckWritePlatformService eligibilityCheckWritePlatformService,
                                                       final EligibilityCheckReadPlatformService eligibilityCheckReadPlatformService){
         this.ruleExecutionService = ruleExecutionService;
@@ -53,7 +50,6 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.loanProductEligibilityReadPlatformService = loanProductEligibilityReadPlatformService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
-        this.ruleCacheService = ruleCacheService;
         this.eligibilityCheckReadPlatformService = eligibilityCheckReadPlatformService;
         this.eligibilityCheckWritePlatformService = eligibilityCheckWritePlatformService;
     }
@@ -76,7 +72,7 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
                     dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,clientId);
                     dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,loanApplicationId);
                     dataLayer.build(dataLayerKeyLongMap);
-                    RuleResult ruleResult = ruleExecutionService.executeCriteria(criteria.getRiskCriteriaId(),dataLayer);
+                    RuleResult ruleResult = ruleExecutionService.executeARule(criteria.getRiskCriteriaId(),dataLayer);
                     eligibilityResult.setCriteriaOutput(ruleResult);
                     if(ruleResult !=null && ruleResult.getOutput().getValue()!=null){
                         Map<String, Object> map = new HashMap();

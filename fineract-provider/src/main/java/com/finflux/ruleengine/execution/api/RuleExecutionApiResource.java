@@ -1,8 +1,6 @@
 package com.finflux.ruleengine.execution.api;
 
 import com.finflux.ruleengine.configuration.service.RiskConfigReadPlatformService;
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
-import com.finflux.ruleengine.eligibility.domain.LoanProductEligibility;
 import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
@@ -45,7 +43,6 @@ public class RuleExecutionApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final RuleExecutionService ruleExecutionService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
-    private final RuleCacheService ruleCacheService;
     private final LoanProductEligibilityExecutionService loanProductEligibilityExecutionService;
 
     @Autowired
@@ -57,7 +54,6 @@ public class RuleExecutionApiResource {
                                     final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
                                     final RuleExecutionService ruleExecutionService,
                                     final DataLayerReadPlatformService dataLayerReadPlatformService,
-                                    final RuleCacheService ruleCacheService,
                                     LoanProductEligibilityExecutionService loanProductEligibilityExecutionService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -66,7 +62,6 @@ public class RuleExecutionApiResource {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.ruleExecutionService = ruleExecutionService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
-        this.ruleCacheService = ruleCacheService;
         this.loanProductEligibilityExecutionService = loanProductEligibilityExecutionService;
         this.toApiEligibilityJsonSerializer = toApiEligibilityJsonSerializer;
      }
@@ -84,7 +79,7 @@ public class RuleExecutionApiResource {
         dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,1L);
         dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,1L);
         dataLayer.build(dataLayerKeyLongMap);
-        final RuleResult ruleResult = this.ruleExecutionService.executeCriteria(ruleId,dataLayer);
+        final RuleResult ruleResult = this.ruleExecutionService.executeARule(ruleId,dataLayer);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, ruleResult);
     }

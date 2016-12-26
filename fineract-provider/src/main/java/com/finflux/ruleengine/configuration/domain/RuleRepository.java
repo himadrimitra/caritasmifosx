@@ -7,7 +7,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface RuleRepository extends JpaRepository<RuleModel, Long>, JpaSpecificationExecutor<RuleModel> {
 
-    @Query("from RuleModel aa where aa.id= :id and aa.entityType = :entityType")
     RuleModel findOneByIdAndEntityType(@Param("id") Long id, @Param("entityType") Integer entityType);
+
+    RuleModel findOneByUname(@Param("uname") String uname);
 
 }

@@ -1,14 +1,17 @@
 package com.finflux.ruleengine.lib;
 
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
-import com.finflux.ruleengine.lib.data.*;
-import com.finflux.ruleengine.lib.service.impl.BasicRuleExecutor;
-import com.finflux.ruleengine.lib.service.impl.MyExpressionExecutor;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import com.finflux.ruleengine.configuration.data.RuleData;
+import com.finflux.ruleengine.configuration.service.RiskConfigReadPlatformService;
+import com.finflux.ruleengine.lib.data.*;
 
 /**
  * Created by dhirendra on 06/09/16.
@@ -17,11 +20,11 @@ import java.util.*;
 @Service
 public class RuleUtils {
 
-    private final RuleCacheService ruleCacheService;
+    private final RiskConfigReadPlatformService riskConfigReadPlatformService;
 
     @Autowired
-    public RuleUtils(RuleCacheService ruleCacheService){
-        this.ruleCacheService = ruleCacheService;
+    public RuleUtils(RiskConfigReadPlatformService riskConfigReadPlatformService){
+        this.riskConfigReadPlatformService = riskConfigReadPlatformService;
     }
 
     public String buildExpression(ExpressionNode expressionNode) throws InvalidExpressionException {
@@ -94,6 +97,10 @@ public class RuleUtils {
     }
 
     public Rule getRule(String childRule) {
-        return ruleCacheService.getRuleByUname(childRule);
+        RuleData ruleData =  riskConfigReadPlatformService.retrieveRuleByUname(childRule);
+        if(ruleData!=null){
+            return ruleData.getRule();
+        }
+        return null;
     }
 }

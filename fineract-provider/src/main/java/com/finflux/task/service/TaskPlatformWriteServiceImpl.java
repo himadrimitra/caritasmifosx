@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
 import com.finflux.ruleengine.lib.service.ExpressionExecutor;
@@ -39,7 +38,6 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     private final PlatformSecurityContext context;
     private final RuleExecutionService ruleExecutionService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
-    private final RuleCacheService ruleCacheService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
     private final ExpressionExecutor expressionExecutor;
     private final TaskActionRepository taskActionRepository;
@@ -51,7 +49,6 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
 										final TaskRepositoryWrapper taskRepository, final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
 										final RoleReadPlatformService roleReadPlatformService, final PlatformSecurityContext context,
 										final RuleExecutionService ruleExecutionService, final DataLayerReadPlatformService dataLayerReadPlatformService,
-										final RuleCacheService ruleCacheService,
 										final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
 										final MyExpressionExecutor expressionExecutor, final TaskActionRepository taskActionRepository,
 										final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository,
@@ -61,7 +58,6 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         this.taskRepository = taskRepository;
         this.roleReadPlatformService = roleReadPlatformService;
         this.context = context;
-        this.ruleCacheService = ruleCacheService;
         this.ruleExecutionService = ruleExecutionService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;

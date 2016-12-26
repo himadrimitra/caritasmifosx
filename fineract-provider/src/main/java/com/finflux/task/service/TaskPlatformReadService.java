@@ -2,6 +2,7 @@ package com.finflux.task.service;
 
 import com.finflux.task.data.*;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.useradministration.data.RoleData;
 
 import java.util.List;
 
@@ -26,4 +27,6 @@ public interface TaskPlatformReadService {
     List<TaskNoteData> getTaskNotes(Long taskId);
 
     List<TaskActionLogData> getActionLogs(Long taskId);
+
+	List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId);
 }

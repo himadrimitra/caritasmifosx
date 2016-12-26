@@ -2,6 +2,7 @@ package com.finflux.ruleengine.configuration.service;
 
 import com.finflux.ruleengine.configuration.data.FieldData;
 import com.finflux.ruleengine.configuration.data.RuleData;
+import com.finflux.ruleengine.lib.data.Rule;
 
 import java.util.List;
 
@@ -25,4 +26,8 @@ public interface RiskConfigReadPlatformService {
     RuleData retrieveOneCriteria(Long criteriaId);
 
     List<RuleData> getAllRules();
+
+	RuleData retrieveRuleByUname(String uname);
+
+	Rule getRuleById(Long ruleId);
 }

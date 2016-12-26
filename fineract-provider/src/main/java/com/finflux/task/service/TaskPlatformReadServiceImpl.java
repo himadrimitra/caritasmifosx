@@ -16,6 +16,7 @@ import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.Role;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     private final TaskIdMapper taskIdMapper = new TaskIdMapper();
     private final TaskNoteDataMapper noteDataMapper = new TaskNoteDataMapper();
     private final TaskActionLogDataMapper actionLogDataMapper = new TaskActionLogDataMapper();
+    private final RoleDataMapper roleDataMapper = new RoleDataMapper();
     private final NamedParameterJdbcTemplate namedParameterjdbcTemplate;
 
     @Autowired
@@ -438,6 +440,12 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         return this.jdbcTemplate.query(sql, actionLogDataMapper, taskId);
     }
 
+    @Override
+    public List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId) {
+        final String sql = "SELECT " + roleDataMapper.schema() + " WHERE ta.action_group_id = ? and ta.action = ?";
+        return this.jdbcTemplate.query(sql, roleDataMapper, actionGroupId,actionId);
+    }
+
     private static final class TaskNoteDataMapper implements RowMapper<TaskNoteData> {
 
         private final String schemaSql;
@@ -498,6 +506,35 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final Date actionOn = rs.getTimestamp("actionOn");
 
             return TaskActionLogData.instance(id, actionEnumData, actionOn, actionBy);
+        }
+
+    }
+
+    private static final class RoleDataMapper implements RowMapper<RoleData> {
+
+        private final String schemaSql;
+
+        public RoleDataMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder();
+            sqlBuilder.append(" r.id as id, r.name as name, r.description as description, r.is_disabled as isDisabled ")
+                    .append(" from f_task_action_role tar ")
+                    .append(" LEFT JOIN m_role r ON tar.role_id = r.id ")
+                    .append(" LEFT JOIN f_task_action ta ON tar.task_action_id = ta.id ");
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public RoleData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final String name = rs.getString("name");
+            final String description = rs.getString("description");
+            final Boolean isDisabled = rs.getBoolean("isDisabled");
+            return new RoleData(id,name,description, isDisabled, null);
         }
 
     }
