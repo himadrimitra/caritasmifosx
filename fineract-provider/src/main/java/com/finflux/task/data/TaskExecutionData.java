@@ -8,6 +8,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 
+import org.apache.fineract.useradministration.data.RoleData;
 import org.joda.time.LocalDate;
 
 public class TaskExecutionData {
@@ -24,6 +25,7 @@ public class TaskExecutionData {
     private EnumOptionData currentAction;
     private Long assignedToId;
     private String assignedTo;
+    private List<RoleData> assignedRoles;
     private Integer order;
     private Long criteriaId;
     private String approvalLogic;
@@ -308,4 +310,11 @@ public class TaskExecutionData {
         this.taskActivity = taskActivity;
     }
 
+    public List<RoleData> getAssignedRoles() {
+        return assignedRoles;
+    }
+
+    public void setAssignedRoles(List<RoleData> assignedRoles) {
+        this.assignedRoles = assignedRoles;
+    }
 }

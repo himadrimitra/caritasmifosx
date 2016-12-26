@@ -1,6 +1,6 @@
 package com.finflux.ruleengine.execution.service.impl;
 
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
+import com.finflux.ruleengine.configuration.service.RiskConfigReadPlatformService;
 import com.finflux.ruleengine.execution.service.DataLayer;
 import com.finflux.ruleengine.execution.service.RuleExecutionService;
 import com.finflux.ruleengine.lib.data.Rule;
@@ -22,18 +22,18 @@ import java.util.Map;
 public class RuleExecutionServiceImpl implements RuleExecutionService {
 
     private final RuleExecutor ruleExecutor;
-    private final RuleCacheService ruleCacheService;
+    private final RiskConfigReadPlatformService riskConfigReadPlatformService;
 
     @Autowired
     public RuleExecutionServiceImpl(final BasicRuleExecutor ruleExecutor,
-                                    final RuleCacheService ruleCacheService){
+                                    final RiskConfigReadPlatformService riskConfigReadPlatformService){
         this.ruleExecutor = ruleExecutor;
-        this.ruleCacheService = ruleCacheService;
+        this.riskConfigReadPlatformService = riskConfigReadPlatformService;
     }
 
     @Override
-    public RuleResult executeCriteria(Long ruleId, DataLayer dataLayer) {
-        Rule rule = ruleCacheService.getRuleById(ruleId);
+    public RuleResult executeARule(Long ruleId, DataLayer dataLayer) {
+        Rule rule = riskConfigReadPlatformService.getRuleById(ruleId);
         List<String> requiredKeys = ruleExecutor.getRequiredFields(rule);
         Map<String, Object> keyValueMap = dataLayer.getValues(requiredKeys);
         return ruleExecutor.executeRule(rule,keyValueMap);

@@ -26,18 +26,15 @@ public class RiskConfigWritePlatformServiceImpl implements RiskConfigWritePlatfo
     private final RiskDataValidator validator;
     private final RiskConfigDataAssembler assembler;
     private final RuleRepository ruleRepository;
-    private final RuleCacheService ruleCacheService;
 
     @Autowired
     public RiskConfigWritePlatformServiceImpl(final PlatformSecurityContext context, final RiskDataValidator validator,
                                               RiskConfigDataAssembler riskConfigDataAssembler,
-                                              RuleRepository ruleRepository,
-                                              final RuleCacheService ruleCacheService) {
+                                              RuleRepository ruleRepository) {
         this.context = context;
         this.validator = validator;
         this.assembler = riskConfigDataAssembler;
         this.ruleRepository = ruleRepository;
-        this.ruleCacheService = ruleCacheService;
     }
 
     @Transactional
@@ -48,7 +45,6 @@ public class RiskConfigWritePlatformServiceImpl implements RiskConfigWritePlatfo
             this.validator.validateForCreateRulePurpose(command.json());
             final RuleModel ruleModel = this.assembler.assembleCreateRule(ruleType,command);
             this.ruleRepository.save(ruleModel);
-            ruleCacheService.clearCache();
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//
                     .withEntityId(ruleModel.getId())//
@@ -69,7 +65,6 @@ public class RiskConfigWritePlatformServiceImpl implements RiskConfigWritePlatfo
             this.validator.validateForUpdateRulePurpose(command.json());
             this.assembler.assembleUpdateRule(ruleModel,ruleType,command);
             this.ruleRepository.save(ruleModel);
-            ruleCacheService.clearCache();
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//
                     .withEntityId(ruleModel.getId())//

@@ -7,5 +7,5 @@ import com.finflux.ruleengine.lib.data.RuleResult;
  */
 public interface RuleExecutionService {
 
-    public RuleResult executeCriteria(Long ruleId, DataLayer dataLayerService);
+    public RuleResult executeARule(Long ruleId, DataLayer dataLayerService);
 }

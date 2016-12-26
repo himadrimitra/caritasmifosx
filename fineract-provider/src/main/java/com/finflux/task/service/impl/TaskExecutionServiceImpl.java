@@ -12,9 +12,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
-import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.ruleengine.execution.data.EligibilityStatus;
@@ -43,14 +40,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     private final static Logger logger = LoggerFactory.getLogger(TaskExecutionServiceImpl.class);
     private final TaskPlatformReadService taskReadService;
-    private final TaskConfigRepositoryWrapper taskConfigRepository;
     private final TaskRepositoryWrapper taskRepository;
     private final RoleReadPlatformService roleReadPlatformService;
     private final PlatformSecurityContext context;
     private final RuleExecutionService ruleExecutionService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
-    private final RuleCacheService ruleCacheService;
-    private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
     private final ExpressionExecutor expressionExecutor;
     private final TaskActionRepository taskActionRepository;
     private final TaskActionRoleRepository actionRoleRepository;
@@ -61,23 +55,17 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     @Autowired
     public TaskExecutionServiceImpl(final TaskPlatformReadService taskReadService, final TaskConfigRepositoryWrapper taskConfigRepository,
-            final TaskRepositoryWrapper taskRepository, final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
-            final RoleReadPlatformService roleReadPlatformService, final PlatformSecurityContext context,
+            final TaskRepositoryWrapper taskRepository, final RoleReadPlatformService roleReadPlatformService, final PlatformSecurityContext context,
             final RuleExecutionService ruleExecutionService, final DataLayerReadPlatformService dataLayerReadPlatformService,
-            final RuleCacheService ruleCacheService,
-            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
             final MyExpressionExecutor expressionExecutor, final TaskActionRepository taskActionRepository,
             final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository,
             final TaskNoteRepository noteRepository) {
         this.taskReadService = taskReadService;
-        this.taskConfigRepository = taskConfigRepository;
         this.taskRepository = taskRepository;
         this.roleReadPlatformService = roleReadPlatformService;
         this.context = context;
-        this.ruleCacheService = ruleCacheService;
         this.ruleExecutionService = ruleExecutionService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
-        this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.expressionExecutor = expressionExecutor;
         this.taskActionRepository = taskActionRepository;
         this.actionRoleRepository = actionRoleRepository;
@@ -109,8 +97,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                     runCriteriaCheckAndPopulate(task);
                     task.setStatus(TaskActionType.CRITERIACHECK.getToStatus().getValue());
                     updateAssignedTo(task,TaskActionType.fromInt(task.getCurrentAction()));
-                }else {
+                }else{
                     TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
+
                     // StepStatus newStatus = stepAction.getToStatus();
                     if (status.equals(newStatus)) {
                         // do-nothing
@@ -280,14 +269,14 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             if (canUserDothisAction(taskAction)) {
                 actionDatas.add(new TaskActionData(action,true,null));
             }else{
-//                actionDatas.add(new TaskActionData(action,false,null));
+                actionDatas.add(new TaskActionData(action,false,null));
             }
         }
         return actionDatas;
     }
 
     private TaskStatusType getNextEquivalentStatus(Task task, TaskStatusType status) {
-        while (status.getNextPositiveAction() != null) {
+        while (status.getNextPositiveAction() != null && !TaskStatusType.INITIATED.equals(status)) {
             TaskActionType nextAction = status.getNextPositiveAction();
             TaskAction taskAction = null;
             if (task.getActionGroupId() != null) {
@@ -304,7 +293,13 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     @Override
     public TaskExecutionData getTaskData(Long taskId) {
-        return taskReadService.getTaskDetails(taskId);
+        TaskExecutionData taskExecutionData =  taskReadService.getTaskDetails(taskId);
+        if(taskExecutionData.getActionGroupId()!=null && taskExecutionData.getCurrentAction()!=null){
+            taskExecutionData.setAssignedRoles(taskReadService.getRolesForAnAction(taskExecutionData.getActionGroupId(),
+                    taskExecutionData.getCurrentAction().getId()));
+        }
+        return taskExecutionData;
+
     }
 
     @Override
@@ -368,7 +363,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         TaskDataLayer dataLayer = new TaskDataLayer(dataLayerReadPlatformService);
         dataLayer.build(dataLayerKeyLongMap);
 
-        RuleResult ruleResult = ruleExecutionService.executeCriteria(task.getCriteria().getId(), dataLayer);
+        RuleResult ruleResult = ruleExecutionService.executeARule(task.getCriteria().getId(), dataLayer);
         EligibilityResult eligibilityResult = new EligibilityResult();
         eligibilityResult.setStatus(EligibilityStatus.TO_BE_REVIEWED);
         eligibilityResult.setCriteriaOutput(ruleResult);
