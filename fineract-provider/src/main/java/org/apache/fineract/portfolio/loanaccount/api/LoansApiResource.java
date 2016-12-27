@@ -39,6 +39,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang.StringUtils;
@@ -404,6 +405,9 @@ public class LoansApiResource {
             @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
+        final Set<String> mandatoryResponseParameters = new HashSet<>();
+        final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
+        final MultivaluedMap<String, String> queryParams = uriInfo.getQueryParameters();
 
         LoanAccountData loanBasicDetails = null;
 
@@ -446,7 +450,15 @@ public class LoansApiResource {
         Collection<EnumOptionData> repaymentFrequencyDayOfWeekTypeOptions = null;
         Collection<LoanAccountSummaryData> clientActiveLoanOptions = null;
         
-        loanBasicDetails = this.loanReadPlatformService.retrieveOne(loanId);
+        if (!associationParameters.isEmpty()) {
+            if (ApiParameterHelper.isExcludeAssociationsForResponseContains(queryParams, "loanBasicDetails")) {
+                loanBasicDetails = LoanAccountData.initializeWithId(loanId);
+            }else{
+                loanBasicDetails = this.loanReadPlatformService.retrieveOne(loanId);
+            }
+        }else{
+            loanBasicDetails = this.loanReadPlatformService.retrieveOne(loanId);
+        }
         
         if(!isFetchSpecificData){
         	if (loanBasicDetails.isInterestRecalculationEnabled()) {
@@ -470,9 +482,6 @@ public class LoansApiResource {
             }
         }
         
-        final Set<String> mandatoryResponseParameters = new HashSet<>();
-        final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
-        
         if (!associationParameters.isEmpty()) {
 
             if (associationParameters.contains("all")) {
@@ -480,7 +489,7 @@ public class LoansApiResource {
                         "charges", "guarantors", "collateral", "notes", "linkedAccount", "multiDisburseDetails", "interestRatesPeriods","meeting"));
             }
 
-            ApiParameterHelper.excludeAssociationsForResponseIfProvided(uriInfo.getQueryParameters(), associationParameters);
+            ApiParameterHelper.excludeAssociationsForResponseIfProvided(queryParams, associationParameters);
 
             if (associationParameters.contains("guarantors")) {
                 mandatoryResponseParameters.add("guarantors");
@@ -576,6 +585,11 @@ public class LoansApiResource {
                 interestRatesPeriods = this.loanReadPlatformService.retrieveLoanInterestRatePeriodData(loanBasicDetails);
             }
             
+            if (associationParameters.contains("loanApplicationReferenceId")) {
+                mandatoryResponseParameters.add("loanApplicationReferenceId");
+                final Long loanApplicationReferenceId = this.loanReadPlatformService.retrieveLoanApplicationReferenceId(loanBasicDetails);
+                loanBasicDetails.setLoanApplicationReferenceId(loanApplicationReferenceId);
+            }
         }
         
         if(!isFetchSpecificData){
@@ -655,6 +669,7 @@ public class LoansApiResource {
                 calendarOptions, notes, accountLinkingOptions, linkedAccount, disbursementData, emiAmountVariations,
                 overdueCharges, paidInAdvanceTemplate, loanProductCollateralPledgesOptions, pledgeId, interestRatesPeriods,
                 clientActiveLoanOptions);
+        loanAccount.setLoanApplicationReferenceId(loanBasicDetails.getLoanApplicationReferenceId());
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),
                 mandatoryResponseParameters);
