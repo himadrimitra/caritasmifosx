@@ -2,12 +2,15 @@ package com.finflux.task.data;
 
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 public class TaskConfigData {
 
     private Long id;
     private Long parentId;
     private String name;
     private String shortName;
+    private EnumOptionData type;
     private TaskActivityData taskActivity;
     private Integer order;
     private Long criteriaId;
@@ -16,13 +19,14 @@ public class TaskConfigData {
     private Map<String, String> configValues;
     private Long actionGroupId;
 
-    private TaskConfigData(final Long id, final Long parentId, final String name, final String shortName,
+    private TaskConfigData(final Long id, final Long parentId, final String name, final String shortName, final EnumOptionData taskType,
             final TaskActivityData taskActivity, final Integer order, final Long criteriaId, final String approvalLogic,
             final String rejectionLogic, final Map<String, String> configValues, final Long actionGroupId) {
         this.id = id;
         this.parentId = parentId;
         this.name = name;
         this.shortName = shortName;
+        this.type = taskType;
         this.taskActivity = taskActivity;
         this.order = order;
         this.criteriaId = criteriaId;
@@ -33,9 +37,22 @@ public class TaskConfigData {
     }
 
     public static TaskConfigData instance(final Long id, final Long parentId, final String name, final String shortName,
-            final TaskActivityData taskActivity, final Integer order, final Long criteriaId, final String approvalLogic,
-            final String rejectionLogic, final Map<String, String> configValues, final Long actionGroupId) {
-        return new TaskConfigData(id, parentId, name, shortName, taskActivity, order, criteriaId, approvalLogic, rejectionLogic,
+            final EnumOptionData type, final TaskActivityData taskActivity, final Integer order, final Long criteriaId,
+            final String approvalLogic, final String rejectionLogic, final Map<String, String> configValues, final Long actionGroupId) {
+        return new TaskConfigData(id, parentId, name, shortName, type, taskActivity, order, criteriaId, approvalLogic, rejectionLogic,
+                configValues, actionGroupId);
+    }
+
+    public static TaskConfigData lookup(final Long id, final Long parentId, final String name, final EnumOptionData type) {
+        final String shortName = null;
+        final TaskActivityData taskActivity = null;
+        final Integer order = null;
+        final Long criteriaId = null;
+        final String approvalLogic = null;
+        final String rejectionLogic = null;
+        final Map<String, String> configValues = null;
+        final Long actionGroupId = null;
+        return new TaskConfigData(id, parentId, name, shortName, type, taskActivity, order, criteriaId, approvalLogic, rejectionLogic,
                 configValues, actionGroupId);
     }
 
@@ -69,6 +86,14 @@ public class TaskConfigData {
 
     public void setShortName(String shortName) {
         this.shortName = shortName;
+    }
+
+    public EnumOptionData getType() {
+        return this.type;
+    }
+
+    public void setType(EnumOptionData type) {
+        this.type = type;
     }
 
     public TaskActivityData getTaskActivity() {

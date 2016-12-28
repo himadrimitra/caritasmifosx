@@ -2,13 +2,20 @@ package com.finflux.task.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import com.finflux.task.data.*;
-import com.finflux.task.exception.TaskNotFoundException;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
@@ -33,6 +40,22 @@ import org.springframework.util.CollectionUtils;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.task.api.TaskApiConstants;
+import com.finflux.task.data.LoanProductTaskSummaryData;
+import com.finflux.task.data.TaskActionLogData;
+import com.finflux.task.data.TaskActionType;
+import com.finflux.task.data.TaskActivityData;
+import com.finflux.task.data.TaskActivityType;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.TaskInfoData;
+import com.finflux.task.data.TaskNoteData;
+import com.finflux.task.data.TaskPriority;
+import com.finflux.task.data.TaskStatusType;
+import com.finflux.task.data.TaskSummaryData;
+import com.finflux.task.data.TaskTemplateData;
+import com.finflux.task.data.TaskType;
+import com.finflux.task.data.WorkFlowSummaryData;
+import com.finflux.task.exception.TaskNotFoundException;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -50,6 +73,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     private final TaskActionLogDataMapper actionLogDataMapper = new TaskActionLogDataMapper();
     private final RoleDataMapper roleDataMapper = new RoleDataMapper();
     private final NamedParameterJdbcTemplate namedParameterjdbcTemplate;
+    private final PaginationHelper<TaskInfoData> paginationHelper = new PaginationHelper<>();;
 
     @Autowired
     public TaskPlatformReadServiceImpl(final RoutingDataSource dataSource, final PlatformSecurityContext context,
@@ -408,24 +432,53 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     }
 
     @Override
-    public List<TaskInfoData> retrieveTaskInformations(final String filterBy) {
+    public Page<TaskInfoData> retrieveTaskInformations(final String filterBy, SearchParameters searchParameters, final Long parentConfigId,
+            final Long childConfigId) {
         final WorkFlowStepActionDataMapper dataMapper = new WorkFlowStepActionDataMapper();
         final Set<Role> loggedInUserRoles = this.context.authenticatedUser().getRoles();
         final List<Long> loggedInUserRoleIds = new ArrayList<>();
+        final String hierarchy = this.context.authenticatedUser().getOffice().getHierarchy();
+        final String hierarchySearchString = hierarchy + "%";
+        final StringBuilder sqlBuilder = new StringBuilder(500);
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
         for (final Role r : loggedInUserRoles) {
             loggedInUserRoleIds.add(r.getId());
         }
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("roles",loggedInUserRoleIds);
-        if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.ASSIGNEED)) {
-            params.addValue("assignedTo",this.context.authenticatedUser().getId());
-            return this.namedParameterjdbcTemplate.query(dataMapper.assigned(), params,dataMapper);
-        } else if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.UNASSIGNEED)) {
-            return this.namedParameterjdbcTemplate.query(
-                dataMapper.unAssigned(), params,dataMapper);
-        }else {
-            return this.namedParameterjdbcTemplate.query(dataMapper.all(), params,dataMapper);
+        params.addValue("roles", loggedInUserRoleIds);
+        params.addValue("hierarchy", hierarchySearchString);
+        sqlBuilder.append("SELECT SQL_CALC_FOUND_ROWS ");
+        sqlBuilder.append(dataMapper.schema(parentConfigId));
+        if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.ASSIGNED)) {
+            params.addValue("assignedTo", this.context.authenticatedUser().getId());
+            sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
+        } else if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.UNASSIGNED)) {
+            sqlBuilder.append(" AND t.assigned_to IS NULL ");
         }
+        if (null != searchParameters.getOfficeId()) {
+            sqlBuilder.append(" AND t.office_id = :officeId ");
+            params.addValue("officeId", searchParameters.getOfficeId());
+        }
+
+        if (null != parentConfigId) {
+            sqlBuilder.append(" AND t.parent_id = :parentConfigId ");
+            params.addValue("parentConfigId", parentConfigId);
+        }
+
+        if (null != childConfigId) {
+            sqlBuilder.append(" AND t.id = :childConfigId ");
+            params.addValue("childConfigId", childConfigId);
+        }
+
+        sqlBuilder.append("GROUP BY taskId ");
+        sqlBuilder.append("ORDER BY taskId ");
+        if (searchParameters.isLimited()) {
+            sqlBuilder.append(" limit ").append(searchParameters.getLimit());
+            if (searchParameters.isOffset()) {
+                sqlBuilder.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+        return this.paginationHelper.fetchPage(this.namedParameterjdbcTemplate, sqlCountRows, sqlBuilder.toString(), params, dataMapper);
     }
 
     @Override
@@ -547,68 +600,26 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         }
 
-        public String all() {
+        public String schema(Long parentConfigId) {
             final StringBuilder sqlBuilder = new StringBuilder(500);
-            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description As description ");
-            sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
-            sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
-            sqlBuilder.append(",c.id AS clientId,c.display_name AS clientName ");
-            sqlBuilder.append(",o.id AS officeId,o.name AS officeName ");
-            sqlBuilder.append("FROM f_task t ");
-            sqlBuilder.append("LEFT JOIN m_client c ON c.id = t.client_id ");
-            sqlBuilder.append("LEFT JOIN m_office o ON o.id = t.office_id ");
-            sqlBuilder.append("LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
-            sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
-            sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("GROUP BY taskId ");
-            sqlBuilder.append("ORDER BY taskId ");
-            return sqlBuilder.toString();
-        }
-
-        public String assigned() {
-            final StringBuilder sqlBuilder = new StringBuilder(500);
-            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description As description ");
-            sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
-            sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
-            sqlBuilder.append(",c.id AS clientId,c.display_name AS clientName ");
-            sqlBuilder.append(",o.id AS officeId,o.name AS officeName ");
-            sqlBuilder.append("FROM f_task t ");
-            sqlBuilder.append("LEFT JOIN m_client c ON c.id = t.client_id ");
-            sqlBuilder.append("LEFT JOIN m_office o ON o.id = t.office_id ");
-            sqlBuilder.append("LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
-            sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
-            sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("AND t.assigned_to = :assignedTo ");
-            sqlBuilder.append("GROUP BY taskId ");
-            sqlBuilder.append("ORDER BY taskId ");
-            return sqlBuilder.toString();
-        }
-
-        public String unAssigned() {
-            final StringBuilder sqlBuilder = new StringBuilder(500);
-            sqlBuilder.append("SELECT t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description as description ");
-            sqlBuilder.append(",t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
-            sqlBuilder.append(",CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
-            sqlBuilder.append(",t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
-            sqlBuilder.append(",c.id AS clientId,c.display_name AS clientName ");
-            sqlBuilder.append(",o.id AS officeId,o.name AS officeName ");
-            sqlBuilder.append("FROM f_task t ");
-            sqlBuilder.append("LEFT JOIN m_client c ON c.id = t.client_id ");
-            sqlBuilder.append("LEFT JOIN m_office o ON o.id = t.office_id ");
-            sqlBuilder.append("LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
-            sqlBuilder.append("LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append("LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
-            sqlBuilder.append("WHERE t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append("AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
-            sqlBuilder.append("AND t.assigned_to IS NULL ");
-            sqlBuilder.append("GROUP BY taskId ");
-            sqlBuilder.append("ORDER BY taskId ");
+            sqlBuilder
+                    .append(" t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description As description ");
+            sqlBuilder.append(" ,t.current_action AS currentActionId, tar.role_id AS roleId,appuser.id AS assignedId ");
+            sqlBuilder.append(" ,CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
+            sqlBuilder.append(" ,t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
+            sqlBuilder.append(" ,c.id AS clientId,c.display_name AS clientName ");
+            sqlBuilder.append(" ,o.id AS officeId,o.name AS officeName ");
+            sqlBuilder.append(" FROM f_task t ");
+            if (null != parentConfigId) {
+                sqlBuilder.append(" LEFT JOIN f_task pt ON pt.parent_id = t.id ");
+            }
+            sqlBuilder.append(" LEFT JOIN m_client c ON c.id = t.client_id ");
+            sqlBuilder.append(" LEFT JOIN m_office o ON o.id = t.office_id ");
+            sqlBuilder.append(" LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
+            sqlBuilder.append(" LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
+            sqlBuilder.append(" LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
+            sqlBuilder.append(" WHERE o.hierarchy like :hierarchy AND t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
+            sqlBuilder.append(" AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
             return sqlBuilder.toString();
         }
 
