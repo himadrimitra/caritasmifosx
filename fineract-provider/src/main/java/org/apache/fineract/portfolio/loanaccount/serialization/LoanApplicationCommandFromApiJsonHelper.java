@@ -42,7 +42,7 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleAssembler;
+import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -103,14 +103,14 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
-    private final LoanScheduleAssembler loanScheduleAssembler;
+    private final LoanUtilService loanUtilService;
 
     @Autowired
     public LoanApplicationCommandFromApiJsonHelper(final FromJsonHelper fromApiJsonHelper,
-            final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper, final LoanScheduleAssembler loanScheduleAssembler) {
+            final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper, final LoanUtilService loanUtilService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.apiJsonHelper = apiJsonHelper;
-        this.loanScheduleAssembler = loanScheduleAssembler;
+        this.loanUtilService = loanUtilService;
     }
 
     public void validateForCreate(final String json, final boolean isMeetingMandatoryForJLGLoans, final LoanProduct loanProduct) {
@@ -1346,7 +1346,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
     private Integer calculateLoanTermInDays(final LocalDate disbursalDate, final PeriodFrequencyType loanTermPeriodFrequencyType,
             final Integer repaymentEvery, Integer nthDay, DayOfWeekType dayOfWeek, Integer numberOfRepaymentPeriods) {
-        return this.loanScheduleAssembler.calculateNumberOfDaysBetweenDisbursalRepaymentDateWithRepaymentPeriod(disbursalDate,
+        return this.loanUtilService.calculateNumberOfDaysBetweenDisbursalRepaymentDateWithRepaymentPeriod(disbursalDate,
                 loanTermPeriodFrequencyType, repaymentEvery, nthDay, dayOfWeek, numberOfRepaymentPeriods);
     }
     

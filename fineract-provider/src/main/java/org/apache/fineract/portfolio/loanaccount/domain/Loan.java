@@ -7462,4 +7462,8 @@ public class Loan extends AbstractPersistable<Long> {
         return lastUserTransaction;
     }
     
+    public void setActualDisbursementDate(Date actualDisbursementDate) {
+        this.actualDisbursementDate = actualDisbursementDate;
+    }
+    
 }
