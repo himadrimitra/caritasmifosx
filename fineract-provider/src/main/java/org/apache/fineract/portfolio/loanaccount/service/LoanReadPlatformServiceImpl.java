@@ -2457,4 +2457,22 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                         currency).getAmount(), null, unrecognizedIncomePortion, paymentTypeOptions, null, null, null,
                 outstandingLoanBalance, isReversed);
     }
+    
+    @Override
+    public Collection<Long> retrieveLoansByOfficesAndDate(final Long officeId, final LocalDate date, final Collection<Integer> status) {
+        final StringBuilder sql = new StringBuilder();
+        sql.append("SELECT DISTINCT(ml.id) ");
+        sql.append("FROM m_office mo ");
+        sql.append("LEFT JOIN m_client mc ON mc.office_id = mo.id ");
+        sql.append("LEFT JOIN m_group mg ON mg.office_id = mo.id ");
+        sql.append("JOIN m_loan ml ON (ml.client_id = mc.id OR ml.group_id = mg.id) ");
+        sql.append("AND ml.maturedon_date > :date ");
+        sql.append(" AND ml.loan_status_id in (:status) ");
+        sql.append("WHERE mo.id = :officeId ");
+        Map<String, Object> paramMap = new HashMap<>(4);
+        paramMap.put("date", formatter.print(date));
+        paramMap.put("status", status);
+        paramMap.put("officeId", officeId);
+        return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
+    }
 }
