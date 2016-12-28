@@ -210,9 +210,14 @@ public class LoanUtilService {
     }
 
     public HolidayDetailDTO constructHolidayDTO(final Loan loan) {
-        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(), loan
                 .getDisbursementDate().toDate(), HolidayStatusType.ACTIVE.getValue());
+        HolidayDetailDTO holidayDetailDTO = constructHolidayDTO(holidays);
+        return holidayDetailDTO;
+    }
+
+    public HolidayDetailDTO constructHolidayDTO(final List<Holiday> holidays) {
+        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
         final boolean allowTransactionsOnNonWorkingDay = this.configurationDomainService.allowTransactionsOnNonWorkingDayEnabled();

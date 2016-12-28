@@ -135,4 +135,6 @@ public interface LoanReadPlatformService {
     Collection<LoanAccountData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
 	
     LoanTransactionData retrieveLoanForeclosureTemplate(final Long loanId, final LocalDate transactionDate);
+
+    Collection<Long> retrieveLoansByOfficesAndDate(Long officeId, LocalDate date, Collection<Integer> status);
 }

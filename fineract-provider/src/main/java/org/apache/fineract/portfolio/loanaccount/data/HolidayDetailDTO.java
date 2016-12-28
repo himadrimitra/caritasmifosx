@@ -26,55 +26,64 @@ import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 
 public class HolidayDetailDTO {
 
-	final boolean isHolidayEnabled;
-	final List<Holiday> holidays;
-	final WorkingDays workingDays;
-	final boolean allowTransactionsOnHoliday;
-	final boolean allowTransactionsOnNonWorkingDay;
-	final List<WorkingDayExemptionsData> workingDayExemptions;
+    final boolean isHolidayEnabled;
+    final List<Holiday> holidays;
+    final WorkingDays workingDays;
+    final boolean allowTransactionsOnHoliday;
+    final boolean allowTransactionsOnNonWorkingDay;
+    final List<WorkingDayExemptionsData> workingDayExemptions;
 
-	public HolidayDetailDTO(final boolean isHolidayEnabled, final List<Holiday> holidays, final WorkingDays workingDays,
-			final List<WorkingDayExemptionsData> workingDayExumptions) {
-		this.isHolidayEnabled = isHolidayEnabled;
-		this.holidays = holidays;
-		this.workingDays = workingDays;
-		this.allowTransactionsOnHoliday = false;
-		this.allowTransactionsOnNonWorkingDay = false;
-		this.workingDayExemptions = workingDayExumptions;
-	}
+    public HolidayDetailDTO(final boolean isHolidayEnabled, final List<Holiday> holidays, final WorkingDays workingDays,
+            final List<WorkingDayExemptionsData> workingDayExumptions) {
+        this.isHolidayEnabled = isHolidayEnabled;
+        this.holidays = holidays;
+        this.workingDays = workingDays;
+        this.allowTransactionsOnHoliday = false;
+        this.allowTransactionsOnNonWorkingDay = false;
+        this.workingDayExemptions = workingDayExumptions;
+    }
 
-	public HolidayDetailDTO(final boolean isHolidayEnabled, final List<Holiday> holidays, final WorkingDays workingDays,
-			final boolean allowTransactionsOnHoliday, final boolean allowTransactionsOnNonWorkingDay,
-			final List<WorkingDayExemptionsData> workingDayExumptions) {
-		this.isHolidayEnabled = isHolidayEnabled;
-		this.holidays = holidays;
-		this.workingDays = workingDays;
-		this.allowTransactionsOnHoliday = allowTransactionsOnHoliday;
-		this.allowTransactionsOnNonWorkingDay = allowTransactionsOnNonWorkingDay;
-		this.workingDayExemptions = workingDayExumptions;
-	}
+    public HolidayDetailDTO(final boolean isHolidayEnabled, final List<Holiday> holidays, final WorkingDays workingDays,
+            final boolean allowTransactionsOnHoliday, final boolean allowTransactionsOnNonWorkingDay,
+            final List<WorkingDayExemptionsData> workingDayExumptions) {
+        this.isHolidayEnabled = isHolidayEnabled;
+        this.holidays = holidays;
+        this.workingDays = workingDays;
+        this.allowTransactionsOnHoliday = allowTransactionsOnHoliday;
+        this.allowTransactionsOnNonWorkingDay = allowTransactionsOnNonWorkingDay;
+        this.workingDayExemptions = workingDayExumptions;
+    }
 
-	public boolean isHolidayEnabled() {
-		return this.isHolidayEnabled;
-	}
+    public HolidayDetailDTO(final HolidayDetailDTO holidayDetailDTO, final List<Holiday> holidays) {
+        this.isHolidayEnabled = holidayDetailDTO.isHolidayEnabled;
+        this.holidays = holidays;
+        this.workingDays = holidayDetailDTO.workingDays;
+        this.allowTransactionsOnHoliday = holidayDetailDTO.allowTransactionsOnHoliday;
+        this.allowTransactionsOnNonWorkingDay = holidayDetailDTO.allowTransactionsOnNonWorkingDay;
+        this.workingDayExemptions = holidayDetailDTO.workingDayExemptions;
+    }
 
-	public List<Holiday> getHolidays() {
-		return this.holidays;
-	}
+    public boolean isHolidayEnabled() {
+        return this.isHolidayEnabled;
+    }
 
-	public WorkingDays getWorkingDays() {
-		return this.workingDays;
-	}
+    public List<Holiday> getHolidays() {
+        return this.holidays;
+    }
 
-	public boolean isAllowTransactionsOnHoliday() {
-		return this.allowTransactionsOnHoliday;
-	}
+    public WorkingDays getWorkingDays() {
+        return this.workingDays;
+    }
 
-	public boolean isAllowTransactionsOnNonWorkingDay() {
-		return this.allowTransactionsOnNonWorkingDay;
-	}
+    public boolean isAllowTransactionsOnHoliday() {
+        return this.allowTransactionsOnHoliday;
+    }
 
-	public List<WorkingDayExemptionsData> getWorkingDayExemptions() {
-		return this.workingDayExemptions;
-	}
+    public boolean isAllowTransactionsOnNonWorkingDay() {
+        return this.allowTransactionsOnNonWorkingDay;
+    }
+
+    public List<WorkingDayExemptionsData> getWorkingDayExemptions() {
+        return this.workingDayExemptions;
+    }
 }
