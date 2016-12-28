@@ -46,4 +46,10 @@ public class GroupLoanIndividualMonitoringRepositoryWrapper {
         return entity;
     }
     
+    public List<GroupLoanIndividualMonitoring> findByLoanId(final Long loanId) {
+        final List<GroupLoanIndividualMonitoring> entity = this.groupLoanIndividualMonitoringRepository.findByLoanId(loanId);
+        if (entity == null) { throw new GroupLoanIndividualMonitoringNotFoundException(loanId); }
+        return entity;
+    }
+    
 }

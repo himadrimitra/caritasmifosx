@@ -294,7 +294,7 @@ public class LoanChargeAssembler {
             JsonObject jsonCharge = jsonElement.getAsJsonObject();
             if(jsonCharge.has(LoanApiConstants.isClientSelectedParamName) && jsonCharge.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean()){
                 Charge charge = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
-                BigDecimal clientAmount = jsonCharge.get(LoanApiConstants.amountParamName).getAsBigDecimal();
+                BigDecimal clientAmount = jsonCharge.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
                 BigDecimal feeCharge = GroupLoanIndividualMonitoringAssembler.percentageOf(clientAmount, amount);
                 BigDecimal totalChargeAmount = feeCharge;
                 TaxGroup taxGroup = charge.getTaxGroup();

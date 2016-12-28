@@ -38,6 +38,7 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
@@ -130,6 +131,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
 
         final Map<String, Object> changes = new LinkedHashMap<>();
+        final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
         changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
         changes.put("transactionAmount", command.stringValueOfParameterNamed("transactionAmount"));
         changes.put("locale", command.locale());
@@ -157,7 +159,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 holidayDetailDto, isHolidayValidationDone);
         // FinanceLib.pmt(r, n, p, f, t);
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.assembleGLIMTransactions(
-                command, loanTransaction);
+                command, loanTransaction, clientMembers);
+        changes.put("clientMembers", clientMembers);
         this.glimAssembler.updateGLIMAfterRepayment(glimTransactions, isRecoveryRepayment);
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
         this.glimTransactionAssembler.updateLoanWriteOffStatusForGLIM(loan);
@@ -187,7 +190,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         checkClientOrGroupActive(loan);
         this.loanEventApiJsonValidator.validateGLIMWaiveChargeTransaction(command.json());
         MonetaryCurrency currency = loan.getCurrency();
-        final Map<String, Object> changes = new LinkedHashMap<>(3);
+        final Map<String, Object> changes = new LinkedHashMap<>();
+        final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
         LocalDate recalculateFrom = null;
@@ -201,78 +205,79 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
         final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
         validateGlimTransaction(transactionDate, loan);
+        changes.put("transactionDate", transactionDate);
+        changes.put("transactionAmount", transactionAmount);
+        changes.put("locale", command.locale());
+        changes.put("dateFormat", command.dateFormat());
 
         if (glimList != null) {
             for (GroupLoanIndividualMonitoring glim : glimMembers) {
-                if (glim.isClientSelected()) {
+                Money transactionAmountPerClient = Money.of(currency, glim.getTransactionAmount());
+                Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
+                installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
+                installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
+                installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
+                installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
+                clientMembers.add(GroupLoanIndividualMonitoringDataChanges.createNew(glim.getId(),
+                        transactionAmountPerClient.getAmount()));
 
-                    Money transactionAmountPerClient = Money.of(currency, glim.getTransactionAmount());
-                    Map<String, BigDecimal> installmentPaidMap = new HashMap<String, BigDecimal>();
-                    installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
-                    installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
-                    installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
-                    installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
+                Money accruedCharge = Money.zero(loan.getCurrency());
+                Map<Long, BigDecimal> feeChargesWaiveOffPerInstallments = new HashMap<>();
 
-                    Money accruedCharge = Money.zero(loan.getCurrency());
-                    Map<Long, BigDecimal> feeChargesWaiveOffPerInstallments = new HashMap<Long, BigDecimal>();
+                final LoanTransaction waiveLoanChargeTransaction = LoanTransaction.waiveGlimCharge(loan, loan.getOffice(),
+                        DateUtils.getLocalDateOfTenant(), null);
 
-                    final LoanTransaction waiveLoanChargeTransaction = LoanTransaction.waiveGlimCharge(loan, loan.getOffice(),
-                            DateUtils.getLocalDateOfTenant(), null);
+                // determine how much is written off in total and breakdown
+                // for
+                // principal, interest and charges
+                for (final LoanRepaymentScheduleInstallment currentInstallment : loan.getRepaymentScheduleInstallments()) {
+                    if (transactionAmountPerClient.isGreaterThanZero()) {
+                        Map<String, BigDecimal> paidInstallmentMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glim,
+                                transactionAmountPerClient.getAmount(), loan, currentInstallment.getInstallmentNumber(),
+                                installmentPaidMap, waiveLoanChargeTransaction, null);
 
-                    // determine how much is written off in total and breakdown
-                    // for
-                    // principal, interest and charges
-                    for (final LoanRepaymentScheduleInstallment currentInstallment : loan.getRepaymentScheduleInstallments()) {
-                        if (transactionAmountPerClient.isGreaterThanZero()) {
-                            Map<String, BigDecimal> paidInstallmentMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glim,
-                                    transactionAmountPerClient.getAmount(), loan, currentInstallment.getInstallmentNumber(),
-                                    installmentPaidMap, waiveLoanChargeTransaction, null);
+                        if (!(paidInstallmentMap.get("installmentTransactionAmount").compareTo(BigDecimal.ZERO) == 0 && glim
+                                .getTotalPaidAmount().compareTo(BigDecimal.ZERO) > 0)) {
+                            if (currentInstallment.isNotFullyPaidOff()) {
 
-                            if (!(paidInstallmentMap.get("installmentTransactionAmount").compareTo(BigDecimal.ZERO) == 0 && glim
-                                    .getTotalPaidAmount().compareTo(BigDecimal.ZERO) > 0)) {
-                                if (currentInstallment.isNotFullyPaidOff()) {
+                                Map<String, BigDecimal> splitMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glim,
+                                        transactionAmountPerClient.getAmount(), loan, currentInstallment.getInstallmentNumber(),
+                                        installmentPaidMap, waiveLoanChargeTransaction, null);
 
-                                    Map<String, BigDecimal> splitMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glim,
-                                            transactionAmountPerClient.getAmount(), loan, currentInstallment.getInstallmentNumber(),
-                                            installmentPaidMap, waiveLoanChargeTransaction, null);
+                                Money feePortionForCurrentInstallment = Money.of(currency, splitMap.get("unpaidCharge"));
+                                Money interestPortionForCurrentInstallment = Money.of(currency, splitMap.get("unpaidInterest"));
+                                Money principalPortionForCurrentInstallment = Money.of(currency, splitMap.get("unpaidPrincipal"));
+                                Money totalAmountForCurrentInstallment = Money.of(currency, splitMap.get("installmentTransactionAmount"));
+                                transactionAmountPerClient = transactionAmountPerClient.minus(totalAmountForCurrentInstallment);
 
-                                    Money feePortionForCurrentInstallment = Money.of(currency, splitMap.get("unpaidCharge"));
-                                    Money interestPortionForCurrentInstallment = Money.of(currency, splitMap.get("unpaidInterest"));
-                                    Money principalPortionForCurrentInstallment = Money.of(currency, splitMap.get("unpaidPrincipal"));
-                                    Money totalAmountForCurrentInstallment = Money.of(currency,
-                                            splitMap.get("installmentTransactionAmount"));
-                                    transactionAmountPerClient = transactionAmountPerClient.minus(totalAmountForCurrentInstallment);
+                                installmentPaidMap.put("unpaidCharge",
+                                        installmentPaidMap.get("unpaidCharge").add(feePortionForCurrentInstallment.getAmount()));
+                                installmentPaidMap.put("unpaidInterest",
+                                        installmentPaidMap.get("unpaidInterest").add(interestPortionForCurrentInstallment.getAmount()));
+                                installmentPaidMap.put("unpaidPrincipal",
+                                        installmentPaidMap.get("unpaidPrincipal").add(principalPortionForCurrentInstallment.getAmount()));
+                                installmentPaidMap.put(
+                                        "installmentTransactionAmount",
+                                        installmentPaidMap.get("installmentTransactionAmount").add(
+                                                totalAmountForCurrentInstallment.getAmount()));
 
-                                    installmentPaidMap.put("unpaidCharge",
-                                            installmentPaidMap.get("unpaidCharge").add(feePortionForCurrentInstallment.getAmount()));
-                                    installmentPaidMap.put("unpaidInterest",
-                                            installmentPaidMap.get("unpaidInterest").add(interestPortionForCurrentInstallment.getAmount()));
-                                    installmentPaidMap.put("unpaidPrincipal",
-                                            installmentPaidMap.get("unpaidPrincipal")
-                                                    .add(principalPortionForCurrentInstallment.getAmount()));
-                                    installmentPaidMap.put(
-                                            "installmentTransactionAmount",
-                                            installmentPaidMap.get("installmentTransactionAmount").add(
-                                                    totalAmountForCurrentInstallment.getAmount()));
+                                feeChargesWaiveOffPerInstallments = loan.waiveLoanChargeForGlim(currentInstallment,
+                                        feePortionForCurrentInstallment.getAmount(), glim, feeChargesWaiveOffPerInstallments,
+                                        existingTransactionIds, existingReversedTransactionIds, accruedCharge, currentUser,
+                                        scheduleGeneratorDTO, changes);
 
-                                    feeChargesWaiveOffPerInstallments = loan.waiveLoanChargeForGlim(currentInstallment,
-                                            feePortionForCurrentInstallment.getAmount(), glim, feeChargesWaiveOffPerInstallments,
-                                            existingTransactionIds, existingReversedTransactionIds, accruedCharge, currentUser,
-                                            scheduleGeneratorDTO, changes);
-
-                                }
                             }
                         }
                     }
-                    Money totalChargeWaived = Money.zero(loan.getCurrency());
-                    for (BigDecimal amountWaived : feeChargesWaiveOffPerInstallments.values()) {
-                        totalChargeWaived = totalChargeWaived.plus(amountWaived);
-                    }
-
-                    glim.setWaivedChargeAmount(totalChargeWaived.getAmount().add(MathUtility.zeroIfNull(glim.getWaivedChargeAmount())));
-                    this.glimRepository.save(glim);
-
                 }
+                Money totalChargeWaived = Money.zero(loan.getCurrency());
+                for (BigDecimal amountWaived : feeChargesWaiveOffPerInstallments.values()) {
+                    totalChargeWaived = totalChargeWaived.plus(amountWaived);
+                }
+
+                glim.setWaivedChargeAmount(totalChargeWaived.getAmount().add(MathUtility.zeroIfNull(glim.getWaivedChargeAmount())));
+                this.glimRepository.save(glim);
+
             }
             final LoanTransaction waiveLoanChargeTransaction = LoanTransaction.waiveLoanCharge(loan, loan.getOffice(),
                     Money.of(loan.getCurrency(), transactionAmount), transactionDate,
@@ -294,6 +299,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
             
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_WAIVE_CHARGE,
                     constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, waiveLoanChargeTransaction));
+            changes.put("clientMembers", clientMembers);
             
         }
 
@@ -302,6 +308,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 .withOfficeId(loan.getOfficeId()) //
                 .withClientId(loan.getClientId()) //
                 .withGroupId(loan.getGroupId()) //
+                .with(changes) //
                 .withLoanId(loanId).build();
     }
 
@@ -377,6 +384,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
 
         final Map<String, Object> changes = new LinkedHashMap<>();
+        final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
         changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
         changes.put("transactionAmount", command.stringValueOfParameterNamed("transactionAmount"));
         changes.put("locale", command.locale());
@@ -394,7 +402,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         LoanTransaction loanTransaction = this.loanAccountDomainService.waiveInterest(loan, builderResult, transactionDate,
                 transactionAmount, noteText, changes, existingTransactionIds, existingReversedTransactionIds);
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.waiveInterestForClients(
-                command, loanTransaction);
+                command, loanTransaction, clientMembers);
+        changes.put("clientMembers", clientMembers);
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
 
         return builderResult.withCommandId(command.commandId()) //
@@ -409,6 +418,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         this.loanEventApiJsonValidator.validateGlimForWriteOff(command.json());
 
         final Map<String, Object> changes = new LinkedHashMap<>();
+        final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
         changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
         changes.put("locale", command.locale());
         changes.put("dateFormat", command.dateFormat());
@@ -435,7 +445,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         LoanTransaction loanTransaction = this.loanAccountDomainService.writeOffForGlimLoan(command, loan, builderResult, noteText,
                 changes, existingTransactionIds, existingReversedTransactionIds);
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.writeOffForClients(
-                loanTransaction, glimMembers, writeoffReason);
+                loanTransaction, glimMembers, writeoffReason, clientMembers);
+        changes.put("clientMembers", clientMembers);
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
         this.glimTransactionAssembler.updateLoanWriteOffStatusForGLIM(loan);
 
