@@ -27,6 +27,7 @@ import org.apache.fineract.infrastructure.codes.domain.Code;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.data.AllowedValueOptions;
 import org.apache.fineract.infrastructure.dataqueries.data.GenericResultsetData;
@@ -228,9 +229,9 @@ public class GenericDataServiceImpl implements GenericDataService {
             final String isPrimaryKey = columnDefinitions.getString("COLUMN_KEY");
             final String columnType = columnDefinitions.getString("DATA_TYPE");
             final Long columnLength = columnDefinitions.getLong("CHARACTER_MAXIMUM_LENGTH");
-            String displayName = null;
+            String displayName = columnDefinitions.getString("COLUMN_NAME");
             Integer dependsOn = null;
-            Long orderPosition = null;
+            Long orderPosition =columnDefinitions.getLong("ORDINAL_POSITION");
             Boolean visible = null;
             Boolean mandatoryIfVisible = null;
             Integer watchColumn = null;
@@ -417,7 +418,7 @@ public class GenericDataServiceImpl implements GenericDataService {
     
     private SqlRowSet getDatatableMetaData(final String datatable) {
 
-        final String sql = "select COLUMN_NAME, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, COLUMN_KEY"
+        final String sql = "select COLUMN_NAME, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, COLUMN_KEY, ORDINAL_POSITION"
                 + " from INFORMATION_SCHEMA.COLUMNS " + " where TABLE_SCHEMA = schema() and TABLE_NAME = '" + datatable
                 + "'order by ORDINAL_POSITION";
 
