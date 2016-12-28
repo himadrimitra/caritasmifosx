@@ -186,6 +186,9 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
                         }
                         existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
                         existingLoan.setLoanStatus(convertToLoanStatus(loanDetail.getSTATUS()));
+                        if(loanDetail.getFREQ() != null && "BIWEEKLY".equalsIgnoreCase(loanDetail.getFREQ())){
+                            existingLoan.setRepaymentMultiple((long) 2);
+                        }
                         existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanDetail.getFREQ()));
                         loanList.add(existingLoan);
                     }
@@ -214,6 +217,8 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
         } else if ("DAILY".equalsIgnoreCase(freq)) {
             return CalendarFrequencyType.DAILY;
         } else if ("WEEKLY".equalsIgnoreCase(freq)) {
+            return CalendarFrequencyType.WEEKLY;
+        } else if ("BIWEEKLY".equalsIgnoreCase(freq)) {
             return CalendarFrequencyType.WEEKLY;
         } else if ("MONTHLY".equalsIgnoreCase(freq)) {
             return CalendarFrequencyType.MONTHLY;

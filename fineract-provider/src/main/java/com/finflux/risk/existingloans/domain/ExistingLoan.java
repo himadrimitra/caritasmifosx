@@ -40,6 +40,9 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "loan_id", nullable = true)
     private Long loanId;
+    
+    @Column(name = "tranche_disbursal_id", nullable = true)
+    private Long trancheDisbursalId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_id", nullable = true)
@@ -451,5 +454,13 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
 
     public void setClosedDate(Date closedDate) {
         this.closedDate = closedDate;
+    }
+
+    public Long getTrancheDisbursalId() {
+        return this.trancheDisbursalId;
+    }
+
+    public void setTrancheDisbursalId(Long trancheDisbursalId) {
+        this.trancheDisbursalId = trancheDisbursalId;
     }
 }

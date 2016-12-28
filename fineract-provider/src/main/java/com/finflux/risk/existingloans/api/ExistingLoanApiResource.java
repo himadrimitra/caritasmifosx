@@ -10,6 +10,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -84,11 +85,13 @@ public class ExistingLoanApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retriveAllExistingLoan(@Context final UriInfo uriInfo,@PathParam("clientId") final Long clientId) {
+    public String retriveAllExistingLoan(@PathParam("clientId") final Long clientId,
+            @QueryParam("loanApplicationId") final Long loanApplicationId, @QueryParam("loanId") final Long loanId,
+            @QueryParam("trancheDisbursalId") final Long trancheDisbursalId, @Context final UriInfo uriInfo) {
         /* parameter to be added for filteriing the record */
         this.context.authenticatedUser().validateHasReadPermission(ExistingLoanApiConstants.EXISTINGLOAN_RESOURCE_NAME);
-        List<ExistingLoanData> existingLoanData = this.existingLoanReadPlatformService.retriveAll(clientId);
-
+        List<ExistingLoanData> existingLoanData = this.existingLoanReadPlatformService.retriveAll(clientId, loanApplicationId, loanId,
+                trancheDisbursalId);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, existingLoanData,
                 ExistingLoanApiConstants.EXISTING_LOAN_RESPONSE_DATA_PARAMETERS);
