@@ -188,4 +188,12 @@ public class LoanCreditBureauEnquiry extends AbstractPersistable<Long> {
     public void setRequest(String request) {
         this.request = request;
     }
+
+    public Long getTrancheDisbursalId() {
+        return this.trancheDisbursalId;
+    }
+
+    public void setTrancheDisbursalId(Long trancheDisbursalId) {
+        this.trancheDisbursalId = trancheDisbursalId;
+    }
 }
