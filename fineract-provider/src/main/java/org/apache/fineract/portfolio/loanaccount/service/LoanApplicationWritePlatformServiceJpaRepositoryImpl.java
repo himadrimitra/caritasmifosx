@@ -56,16 +56,17 @@ import org.apache.fineract.portfolio.account.domain.AccountAssociationType;
 import org.apache.fineract.portfolio.account.domain.AccountAssociations;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationsRepository;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarType;
 import org.apache.fineract.portfolio.calendar.exception.CalendarNotFoundException;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
-import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeCalculationType;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
@@ -205,6 +206,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
+    private final LoanScheduleValidator loanScheduleValidator;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -233,7 +235,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler, final ChargeRepositoryWrapper chargeRepositoryWrapper,
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl, final PaymentTypeRepositoryWrapper paymentTypeRepository,
-            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository) {
+            final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
+            final LoanScheduleValidator loanScheduleValidator) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -278,6 +281,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
         this.paymentTypeRepository = paymentTypeRepository;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
+        this.loanScheduleValidator = loanScheduleValidator;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -494,7 +498,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
         final Loan newLoanApplication = this.loanAssembler.assembleFrom(command, currentUser);
 
-        validateSubmittedOnDate(newLoanApplication.getSubmittedOnDate(), newLoanApplication.getExpectedFirstRepaymentOnDate(),
+        this.loanScheduleValidator.validateSubmittedOnDate(newLoanApplication.getSubmittedOnDate(), newLoanApplication.getExpectedFirstRepaymentOnDate(),
                 newLoanApplication.loanProduct(), newLoanApplication.client());
 
         final LoanProductRelatedDetail productRelatedDetail = newLoanApplication.repaymentScheduleDetail();
@@ -858,7 +862,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             }
             existingLoanApplication.updateIsInterestRecalculationEnabled();
 
-            validateSubmittedOnDate(existingLoanApplication.getSubmittedOnDate(),
+            this.loanScheduleValidator.validateSubmittedOnDate(existingLoanApplication.getSubmittedOnDate(),
                     existingLoanApplication.getExpectedFirstRepaymentOnDate(), existingLoanApplication.loanProduct(),
                     existingLoanApplication.client());
 
@@ -1209,24 +1213,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
 
             }
+            
+            this.loanScheduleValidator.validateRepaymentFrequencyAsMeetingFrequencyAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                    existingLoanApplication, calendar);
 
-            final AccountType loanType = AccountType.fromInt(existingLoanApplication.getLoanType());
-            if ((loanType.isJLGAccount() || loanType.isGroupAccount()) && calendar != null) {
-                final PeriodFrequencyType meetingPeriodFrequency = CalendarUtils.getMeetingPeriodFrequencyType(calendar.getRecurrence());
-                final Integer repaymentFrequencyType = existingLoanApplication.getLoanProductRelatedDetail()
-                        .getRepaymentPeriodFrequencyType().getValue();
-                final Integer repaymentEvery = existingLoanApplication.getLoanProductRelatedDetail().getRepayEvery();
-                this.loanScheduleAssembler.validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(),
-                        repaymentFrequencyType, CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
-            }
-            
-            LocalDate repaymentsStartingFromDate = existingLoanApplication.getExpectedFirstRepaymentOnDate();
-            if (repaymentsStartingFromDate != null) {
-                LocalDate expectedDisbursementDate = existingLoanApplication.getExpectedDisbursedOnLocalDate();
-                this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(repaymentsStartingFromDate,
-                        existingLoanApplication, expectedDisbursementDate);
-            }
-            
             if(existingLoanApplication.isGLIMLoan()){
             	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(existingLoanApplication);
             }
@@ -1338,25 +1328,25 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
 
         checkClientOrGroupActive(loan);
-        Boolean isSkipRepaymentOnFirstMonth = false;
-        Integer numberOfDays = 0;
-        // validate expected disbursement date against meeting date
-        if (loan.isSyncDisbursementWithMeeting() && (loan.isGroupLoan() || loan.isJLGLoan())) {
-            final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
-                    CalendarEntityType.LOANS.getValue());
-            final Calendar calendar = calendarInstance.getCalendar();
-            boolean isSkipRepaymentOnFirstMonthEnabled = this.configurationDomainService.isSkippingMeetingOnFirstDayOfMonthEnabled();
-            if (isSkipRepaymentOnFirstMonthEnabled) {
-                isSkipRepaymentOnFirstMonth = this.loanUtilService.isLoanRepaymentsSyncWithMeeting(loan.group(), calendar);
-                if (isSkipRepaymentOnFirstMonth) {
-                    numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue();
-                }
-            }
-            this.loanScheduleAssembler.validateDisbursementDateWithMeetingDates(expectedDisbursementDate, calendar,
-                    isSkipRepaymentOnFirstMonth, numberOfDays);
-
+        final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
+                CalendarEntityType.LOANS.getValue());
+        Calendar calendar = null;
+        CalendarHistoryDataWrapper calendarHistoryDataWrapper = null;
+        if (calendarInstance != null) {
+            calendar = calendarInstance.getCalendar();
+            Set<CalendarHistory> calendarHistory = calendar.getActiveCalendarHistory();
+            calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(calendarHistory);
         }
-
+        Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
+                expectedDisbursementDate,loan, null, null);
+        LocalDate calculatedRepaymentsStartingFromDate = this.loanUtilService.getCalculatedRepaymentsStartingFromDate(expectedDisbursementDate, loan,
+                calendarInstance, calendarHistoryDataWrapper);
+        // validate expected disbursement date and repayment date against meeting date ,
+        //validate minimum days between first repayment and disbursement date
+        this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                calculatedRepaymentsStartingFromDate, expectedDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
+                AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
+        
         final Map<String, Object> changes = loan.loanApplicationApproval(currentUser, command, disbursementDataArray,
                 defaultLoanLifecycleStateMachine());
 
@@ -1573,47 +1563,6 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         final Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(loanId);
         loan.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper, this.loanRepaymentScheduleTransactionProcessorFactory);
         return loan;
-    }
-
-    public void validateSubmittedOnDate(final LocalDate submittedOnDate, final LocalDate expectedFirstRepaymentOnDate,
-            final LoanProduct loanProduct, final Client client) {
-
-        final LocalDate startDate = loanProduct.getStartDate();
-        final LocalDate closeDate = loanProduct.getCloseDate();
-        String defaultUserMessage = "";
-
-        if (client != null) {
-            final LocalDate activationDate = client.getActivationLocalDate();
-
-            if (activationDate == null) {
-                defaultUserMessage = "Client is not activated.";
-                throw new LoanApplicationDateException("client.is.not.activated", defaultUserMessage);
-            }
-
-            if (submittedOnDate.isBefore(activationDate)) {
-                defaultUserMessage = "Submitted on date cannot be before the client activation date.";
-                throw new LoanApplicationDateException("submitted.on.date.cannot.be.before.the.client.activation.date", defaultUserMessage,
-                        submittedOnDate.toString(), activationDate.toString());
-            }
-        }
-
-        if (startDate != null && submittedOnDate.isBefore(startDate)) {
-            defaultUserMessage = "submittedOnDate cannot be before the loan product startDate.";
-            throw new LoanApplicationDateException("submitted.on.date.cannot.be.before.the.loan.product.start.date", defaultUserMessage,
-                    submittedOnDate.toString(), startDate.toString());
-        }
-
-        if (closeDate != null && submittedOnDate.isAfter(closeDate)) {
-            defaultUserMessage = "submittedOnDate cannot be after the loan product closeDate.";
-            throw new LoanApplicationDateException("submitted.on.date.cannot.be.after.the.loan.product.close.date", defaultUserMessage,
-                    submittedOnDate.toString(), closeDate.toString());
-        }
-
-        if (expectedFirstRepaymentOnDate != null && submittedOnDate.isAfter(expectedFirstRepaymentOnDate)) {
-            defaultUserMessage = "submittedOnDate cannot be after the loans  expectedFirstRepaymentOnDate.";
-            throw new LoanApplicationDateException("submitted.on.date.cannot.be.after.the.loan.expected.first.repayment.date",
-                    defaultUserMessage, submittedOnDate.toString(), expectedFirstRepaymentOnDate.toString());
-        }
     }
 
     private void checkClientOrGroupActive(final Loan loan) {
