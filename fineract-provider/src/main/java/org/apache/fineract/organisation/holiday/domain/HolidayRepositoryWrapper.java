@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.organisation.holiday.domain;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -70,7 +73,9 @@ public class HolidayRepositoryWrapper {
     }
 
     public List<Holiday> findUnprocessed() {
-        return this.repository.findUnprocessed(HolidayStatusType.ACTIVE.getValue());
+        final Collection<Integer> Statuses = new ArrayList<>(Arrays.asList(HolidayStatusType.ACTIVE.getValue(),
+                HolidayStatusType.DELETED.getValue()));
+        return this.repository.findUnprocessed(Statuses);
     }
 
     public boolean isHoliday(Long officeId, LocalDate transactionDate) {

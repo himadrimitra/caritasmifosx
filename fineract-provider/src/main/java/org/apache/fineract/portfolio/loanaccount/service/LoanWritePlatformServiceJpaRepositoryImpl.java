@@ -42,6 +42,7 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
@@ -2508,87 +2509,67 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanRepository.save(loansToUpdate);
     }
 
-    @Transactional
     @Override
-    @CronTarget(jobName = JobName.APPLY_HOLIDAYS_TO_LOANS)
-    public void applyHolidaysToLoans() {
-
-        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
-
-        if (!isHolidayEnabled) { return; }
-
-        final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
-                LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue()));
-        // Get all Holidays which are active and not processed
-        final List<Holiday> holidays = this.holidayRepository.findUnprocessed();
-
-        // Loop through all holidays
-        for (final Holiday holiday : holidays) {
-            // All offices to which holiday is applied
-            final Set<Office> offices = holiday.getOffices();
-            final Collection<Long> officeIds = new ArrayList<>(offices.size());
-            for (final Office office : offices) {
-                officeIds.add(office.getId());
-            }
-
-            // get all loans
-            final List<Loan> loans = new ArrayList<>();
-            // get all individual and jlg loans
-            loans.addAll(this.loanRepository.findByClientOfficeIdsAndLoanStatus(officeIds, loanStatuses));
-            // FIXME: AA optimize to get all client and group loans belongs to a
-            // office id
-            // get all group loans
-            loans.addAll(this.loanRepository.findByGroupOfficeIdsAndLoanStatus(officeIds, loanStatuses));
-            
-            final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
-            final boolean allowTransactionsOnNonWorkingDay = this.configurationDomainService.allowTransactionsOnNonWorkingDayEnabled();
-
-            for (final Loan loan : loans) {
-                // apply holiday
-            	
-            	final List<Holiday> holidaysToBeProcessForLoan = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(),
-            			DateUtils.getLocalDateOfTenant().toDate());
-                final WorkingDays workingDays = this.workingDaysRepository.findOne();
-            	LocalDate recalculateFrom = null;
-                final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.
-                		getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
-                HolidayDetailDTO holidayDetailDTO = new HolidayDetailDTO(isHolidayEnabled, holidaysToBeProcessForLoan, workingDays, 
-                		allowTransactionsOnHoliday, allowTransactionsOnNonWorkingDay, workingDayExemptions);
-                
-                ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
-                		holidayDetailDTO);
-            	
-                final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
-                LocalDate currentDate = DateUtils.getLocalDateOfTenant();
-                LocalDate actualRepaymentDate = loanApplicationTerms.getExpectedDisbursementDate();
-                LocalDate lastActualRepaymentDate = actualRepaymentDate;
-                LocalDate lastScheduledDate = actualRepaymentDate;
-                boolean isFirstRepayment = true;
-                for (LoanRepaymentScheduleInstallment installment : loan.getRepaymentScheduleInstallments()) {
-                    // this will generate the next schedule due date and allows to
-                    // process the installment only if recalculate from date is
-                    // greater than due date
-                    
-                	isFirstRepayment = installment.getInstallmentNumber() == 1 ? true : false;
-                	LocalDate previousRepaymentDate = lastActualRepaymentDate;
-                    actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(previousRepaymentDate, loanApplicationTerms,
-                            isFirstRepayment, holidayDetailDTO);                        
-                    AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
-                            holidayDetailDTO);
-                    lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();  
-                    if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
-	                    installment.updateFromDate(lastScheduledDate);
-	                    lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
-	                    installment.updateDueDate(lastScheduledDate);                                              
-                    } else {
-                    	lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
-                    }
+    @Transactional
+    public void updateScheduleDates(Long loanId, HolidayDetailDTO holidayDetailDTO, LocalDate recalculateFrom) {
+        Loan loan = this.loanAssembler.assembleFrom(loanId);
+        final List<Holiday> holidaysToBeProcessForLoan = this.holidayRepository.findByOfficeIdAndGreaterThanDate(loan.getOfficeId(),
+                loan.getDisbursementDate().toDate());
+        holidayDetailDTO = new HolidayDetailDTO(holidayDetailDTO, holidaysToBeProcessForLoan);
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                holidayDetailDTO);
+        final List<Long> existingTransactionIds = new ArrayList<>();
+        final List<Long> existingReversedTransactionIds = new ArrayList<>();
+        final AppUser currentUser = getAppUserIfPresent();
+        if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            loan.setHelpers(null, this.loanSummaryWrapper, this.transactionProcessingStrategy);
+            ChangedTransactionDetail changedTransactionDetail = loan.recalculateScheduleFromLastTransaction(scheduleGeneratorDTO,
+                    existingTransactionIds, existingReversedTransactionIds, currentUser);
+            if (changedTransactionDetail != null) {
+                for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings()
+                        .entrySet()) {
+                    this.loanTransactionRepository.save(mapEntry.getValue());
+                    // update loan with references to the newly created
+                    // transactions
+                    loan.getLoanTransactions().add(mapEntry.getValue());
+                    this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
                 }
             }
-            this.loanRepository.save(loans);
-            holiday.processed();
+            createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
+        } else {
+            updateScheduleDates(loan, scheduleGeneratorDTO);
         }
-        this.holidayRepository.save(holidays);
+        saveLoanWithDataIntegrityViolationChecks(loan);
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+    }
+
+    private void updateScheduleDates(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO) {
+        final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
+        LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+        LocalDate actualRepaymentDate = loanApplicationTerms.getExpectedDisbursementDate();
+        LocalDate lastActualRepaymentDate = actualRepaymentDate;
+        LocalDate lastScheduledDate = actualRepaymentDate;
+        boolean isFirstRepayment = true;
+        for (LoanRepaymentScheduleInstallment installment : loan.getRepaymentScheduleInstallments()) {
+            // this will generate the next schedule due date and allows to
+            // process the installment only if recalculate from date is
+            // greater than due date
+            
+        	isFirstRepayment = installment.getInstallmentNumber() == 1 ? true : false;
+        	LocalDate previousRepaymentDate = lastActualRepaymentDate;
+            actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(previousRepaymentDate, loanApplicationTerms,
+                    isFirstRepayment, scheduleGeneratorDTO.getHolidayDetailDTO());                        
+            AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
+                    scheduleGeneratorDTO.getHolidayDetailDTO());
+            lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();  
+            if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
+                installment.updateFromDate(lastScheduledDate);
+                lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+                installment.updateDueDate(lastScheduledDate);                                              
+            } else {
+            	lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+            }
+        }
     }
 
     private void checkForProductMixRestrictions(final Loan loan) {

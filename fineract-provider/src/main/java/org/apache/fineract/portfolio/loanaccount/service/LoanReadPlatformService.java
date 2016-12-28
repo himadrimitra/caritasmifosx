@@ -141,4 +141,6 @@ public interface LoanReadPlatformService {
     boolean isAnyActiveJLGLoanForClient(Long clientid, Long groupId);
 
     Long retrieveLoanApplicationReferenceId(final LoanAccountData loanBasicDetails);
+
+    Collection<Long> retrieveLoansByOfficesAndDate(Long officeId, LocalDate date, Collection<Integer> status);
 }
