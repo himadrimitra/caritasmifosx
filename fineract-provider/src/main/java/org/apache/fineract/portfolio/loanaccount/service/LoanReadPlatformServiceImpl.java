@@ -44,6 +44,7 @@ import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
@@ -2456,20 +2457,49 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     
     @Override
-    public Collection<Long> retrieveLoansByOfficesAndDate(final Long officeId, final LocalDate date, final Collection<Integer> status) {
+    public Collection<Long> retrieveLoansByOfficesAndHoliday(final Long officeId, final List<Holiday> holidays, final Collection<Integer> status, LocalDate recalculateFrom) {
         final StringBuilder sql = new StringBuilder();
+
         sql.append("SELECT DISTINCT(ml.id) ");
         sql.append("FROM m_office mo ");
-        sql.append("LEFT JOIN m_client mc ON mc.office_id = mo.id ");
-        sql.append("LEFT JOIN m_group mg ON mg.office_id = mo.id ");
-        sql.append("JOIN m_loan ml ON (ml.client_id = mc.id OR ml.group_id = mg.id) ");
-        sql.append("AND ml.maturedon_date > :date ");
-        sql.append(" AND ml.loan_status_id in (:status) ");
-        sql.append("WHERE mo.id = :officeId ");
+        sql.append("JOIN m_client mc ON mc.office_id = mo.id ");
+        sql.append("JOIN m_loan ml ON  ml.group_id is null and ml.client_id = mc.id  AND ml.maturedon_date >= :date AND ml.loan_status_id in (:status) ");
+        sql.append("JOIN m_loan_repayment_schedule rs on rs.loan_id = ml.id and (");
+        
+        generateConditionBasedOnHoliday(holidays, sql);
+        sql.append( ") ");
+        sql.append("WHERE mo.id = :officeId  ");
+
+        sql.append(" union ");
+
+        sql.append("SELECT DISTINCT(ml.id) ");
+        sql.append("FROM m_office mo ");
+        sql.append("JOIN m_group mg ON mg.office_id = mo.id ");
+        sql.append("JOIN m_loan ml ON ml.group_id = mg.id AND ml.maturedon_date >= :date AND ml.loan_status_id in (:status) ");
+        sql.append("JOIN m_loan_repayment_schedule rs on rs.loan_id = ml.id and (");
+        generateConditionBasedOnHoliday(holidays, sql);
+        sql.append( ") ");
+        sql.append("WHERE mo.id = :officeId  ");
+      
         Map<String, Object> paramMap = new HashMap<>(4);
-        paramMap.put("date", formatter.print(date));
+        paramMap.put("date", formatter.print(recalculateFrom));
         paramMap.put("status", status);
         paramMap.put("officeId", officeId);
         return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
+    }
+
+    private void generateConditionBasedOnHoliday(final List<Holiday> holidays, final StringBuilder sql) {
+        boolean isFirstTime = true;
+        for (Holiday holiday : holidays) {
+            if (!isFirstTime) {
+                sql.append(" or ");
+            }
+            sql.append("rs.duedate BETWEEN '");
+            sql.append(formatter.print(holiday.getFromDateLocalDate()));
+            sql.append("' and '");
+            sql.append(formatter.print(holiday.getToDateLocalDate()));
+            sql.append("'");
+            isFirstTime = false;
+        }
     }
 }
