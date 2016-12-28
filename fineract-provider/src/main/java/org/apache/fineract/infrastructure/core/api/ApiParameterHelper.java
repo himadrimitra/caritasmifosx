@@ -77,6 +77,21 @@ public class ApiParameterHelper {
             }
         }
     }
+    
+    public static boolean isExcludeAssociationsForResponseContains(final MultivaluedMap<String, String> queryParams, final String excludeParameterName) {
+        Boolean isContains = false;
+        String commaSerperatedParameters = "";
+        if (queryParams.getFirst("exclude") != null) {
+            commaSerperatedParameters = queryParams.getFirst("exclude");
+            if (StringUtils.isNotBlank(commaSerperatedParameters)) {
+                Set<String> excludeParameterSet = new HashSet<>(Arrays.asList(commaSerperatedParameters.split("\\s*,\\s*")));
+                if(excludeParameterSet.contains(excludeParameterName)){
+                    isContains = true;
+                }
+            }
+        }
+        return isContains;
+    }
 
     public static boolean prettyPrint(final MultivaluedMap<String, String> queryParams) {
         boolean prettyPrint = false;
