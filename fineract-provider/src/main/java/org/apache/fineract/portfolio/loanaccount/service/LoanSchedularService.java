@@ -27,4 +27,6 @@ public interface LoanSchedularService {
 
     void recalculateInterest() throws JobExecutionException;
 
+    void applyHolidaysToLoans() throws JobExecutionException;
+
 }
