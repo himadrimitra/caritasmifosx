@@ -368,7 +368,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
-        loan.setActualDisbursementDate(actualDisbursementDate.toDate());
         // validate ActualDisbursement Date Against Expected Disbursement Date
         LoanProduct loanProduct = loan.loanProduct();
         if(loanProduct.isSyncExpectedWithDisbursementDate()){
@@ -395,10 +394,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
         final boolean considerFutureDisbursmentsInSchedule = false;
         final boolean considerAllDisbursmentsInSchedule =false;
-        
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
-                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
-        
         
 
         // validate actual disbursement date against meeting date
@@ -443,6 +438,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         LoanTransaction disbursementTransaction = null;
         if (canDisburse) {
             Money disburseAmount = loan.adjustDisburseAmount(command, actualDisbursementDate);
+            ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                    considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
             Money amountToDisburse = disburseAmount.copy();
             boolean recalculateSchedule = amountBeforeAdjust.isNotEqualTo(loan.getPrincpal());
             final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
@@ -762,7 +759,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 LocalDate recalculateFrom = null;
                 final boolean considerFutureDisbursmentsInSchedule = false;
                 final boolean considerAllDisbursmentsInSchedule =false;
-                loan.setActualDisbursementDate(actualDisbursementDate.toDate());
                 final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                         considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
                 regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate,
@@ -856,7 +852,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final LocalDate recalculateFrom = null;
         final boolean considerFutureDisbursmentsInSchedule = true;
         final boolean considerAllDisbursmentsInSchedule =true;
-        loan.setActualDisbursementDate(null);
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
         if (loan.isGLIMLoan()) {
