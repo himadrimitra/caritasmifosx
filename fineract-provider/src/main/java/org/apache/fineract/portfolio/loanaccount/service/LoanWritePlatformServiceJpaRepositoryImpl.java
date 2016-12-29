@@ -3367,7 +3367,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private void checkOtherDisbursementDetailsWithDate(final Loan loan, final Long disbursementId, final Date updatedDisbursementDate) {
         for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
             if (loanDisbursementDetails.expectedDisbursementDate().equals(updatedDisbursementDate)
-                    && loanDisbursementDetails.getId() != disbursementId) { throw new LoanDisbursementDateException(
+                    && !loanDisbursementDetails.getId().equals(disbursementId)) { throw new LoanDisbursementDateException(
                     "Loan disbursement details with date - " + updatedDisbursementDate + " for loan - " + loan.getId() + " already exists.",
                     loan.getId(), updatedDisbursementDate.toString()); }
         }
