@@ -5656,7 +5656,9 @@ public class Loan extends AbstractPersistable<Long> {
     private List<Long> fetchAllLoanChargeIds() {
         List<Long> list = new ArrayList<>();
         for (LoanCharge loanCharge : this.charges) {
-            list.add(loanCharge.getId());
+            if (loanCharge.getId() != null) {
+                list.add(loanCharge.getId());
+            }
         }
         return list;
     }
