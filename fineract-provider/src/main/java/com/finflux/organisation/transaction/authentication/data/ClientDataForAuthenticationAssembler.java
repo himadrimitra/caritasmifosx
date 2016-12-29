@@ -54,7 +54,8 @@ public class ClientDataForAuthenticationAssembler {
 	}
 
 	public ClientDataForAuthentication validateAndAssembleClientDataForAuthentication(JsonCommand command,
-			final Integer productType, final Integer transactionType, final SecondaryAuthenticationService secondaryAuthenticationService) {
+			final Integer productType, final Integer transactionType, final SecondaryAuthenticationService secondaryAuthenticationService,
+			final Long productId) {
 
 		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 		final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
@@ -120,7 +121,7 @@ public class ClientDataForAuthenticationAssembler {
 		}
 
 		final TransactionAuthenticationData transactionAuthenticationData = this.transactionAuthenticationReadPlatformService
-				.retriveTransactionAuthenticationDetails(productType, transactionType, paymentTypeId, amount);
+				.retriveTransactionAuthenticationDetails(productType, transactionType, paymentTypeId, amount, productId);
 
 		if (transactionAuthenticationData == null
 				|| !transactionAuthenticationData.getId().equals(transactionAuthenticationId)) {

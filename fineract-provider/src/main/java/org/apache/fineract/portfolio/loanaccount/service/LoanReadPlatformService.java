@@ -143,4 +143,6 @@ public interface LoanReadPlatformService {
     Long retrieveLoanApplicationReferenceId(final LoanAccountData loanBasicDetails);
 
     Collection<Long> retrieveLoansByOfficesAndDate(Long officeId, LocalDate date, Collection<Integer> status);
+    
+    Long retrieveLoanProductIdByLoanId(final Long loanId);
 }

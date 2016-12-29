@@ -11,6 +11,8 @@ import java.util.List;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 	private final TransactionAuthenticationDropdownReadPlatformService transactionAuthenticationDropdownReadPlatformService;
 	private final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService;
 	private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
+	private final LoanProductReadPlatformService loanProductReadPlatformService;
 	private final TransactionAuthenticationServiceMapper transactionAuthenticationServiceMapper = new TransactionAuthenticationServiceMapper();
 	private final TransactionAuthenticationDataMapper dataMapper = new TransactionAuthenticationDataMapper();
 
@@ -44,11 +47,13 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 			final TransactionAuthenticationDropdownReadPlatformService transactionAuthenticationDropdownReadPlatformService,
 			final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
 			final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-			final SecondaryAuthenticationServiceRepository secondaryAuthenticationServiceRepository) {
+			final SecondaryAuthenticationServiceRepository secondaryAuthenticationServiceRepository,
+			final LoanProductReadPlatformService loanProductReadPlatformService) {
 		this.jdbcTemplate = new JdbcTemplate(dataSourc);
 		this.transactionAuthenticationDropdownReadPlatformService = transactionAuthenticationDropdownReadPlatformService;
 		this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
 		this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+		this.loanProductReadPlatformService = loanProductReadPlatformService;
 	}
 
 	@Override
@@ -59,18 +64,19 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 				.getOnlyActiveExternalAuthenticationServices();
 		final Collection<EnumOptionData> appliesToOptions = this.transactionAuthenticationDropdownReadPlatformService
 				.retrieveApplicableToTypes();
+		final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(true);
 		final Collection<EnumOptionData> loansTypeOptions = this.transactionAuthenticationDropdownReadPlatformService
 				.retrieveLoanTransactionTypes();
 		final Collection<EnumOptionData> savingsTypeOptions = this.transactionAuthenticationDropdownReadPlatformService
 				.retrieveSavingTransactionTypes();
 		return TransactionAuthenticationData.retriveTemplate(appliesToOptions, PaymentTypeData, loansTypeOptions,
-				savingsTypeOptions, authenticationData);
+				savingsTypeOptions, productOptions, authenticationData);
 	}
 
 	@Override
 	public List<TransactionAuthenticationData> findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmount(
 			final Integer portfolioType, final Integer transactionTypeId, final Long paymentTypeId,
-			final BigDecimal amountGreaterThan) {
+			final BigDecimal amountGreaterThan, final Long productId) {
 		try {
 			StringBuilder sqlBuilder = new StringBuilder();
 			sqlBuilder.append("select " + this.dataMapper.schema());
@@ -78,10 +84,10 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 			sqlBuilder.append("where ");
 			sqlBuilder.append("a.portfolio_type = ? ");
 			sqlBuilder.append("and a.transaction_type_enum = ? and a.payment_type_id = ? ");
-			sqlBuilder.append("and a.amount = ?");
+			sqlBuilder.append("and a.amount = ? and product_id = ?");
 			String sql = sqlBuilder.toString();
 			return this.jdbcTemplate.query(sql, this.dataMapper,
-					new Object[] { portfolioType, transactionTypeId, paymentTypeId, amountGreaterThan });
+					new Object[] { portfolioType, transactionTypeId, paymentTypeId, amountGreaterThan, productId });
 		} catch (final EmptyResultDataAccessException e) {
 			return new ArrayList<TransactionAuthenticationData>();
 		}
@@ -111,7 +117,8 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 		public TransactionAuthenticationServiceMapper() {
 			final StringBuilder sqlBuilder = new StringBuilder(200);
 			sqlBuilder.append(
-					"a.id as id, a.portfolio_type as portfolioType, a.transaction_type_enum as transactionTypeId, a.payment_type_id as PaymentTypeId, a.amount as amount, a.second_app_user_role_id as secondAppUserRoleId, a.is_second_app_user_enabled as isSecondAppUserEnabled, a.authentication_id as authenticationTypeId");
+					"a.id as id, a.portfolio_type as portfolioType, a.transaction_type_enum as transactionTypeId, a.payment_type_id as PaymentTypeId, a.amount as amount, a.second_app_user_role_id as secondAppUserRoleId, a.is_second_app_user_enabled as isSecondAppUserEnabled, a.authentication_id as authenticationTypeId,");
+			sqlBuilder.append(" product_id as productId ");
 			this.schema = sqlBuilder.toString();
 		}
 
@@ -128,7 +135,8 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 					TransactionAuthenticationApiConstants.AUTHENTICATION_TYPE_ID);
 			final Long secondAppUserRoleId = JdbcSupport.getLong(rs,
 					TransactionAuthenticationApiConstants.SECOUND_APP_USER_ROLE_ID);
-			return TransactionAuthenticationData.instance(id, portfolioTypeId, transactionTypeId, paymentTypeId, amount,
+			final Long productId = JdbcSupport.getLong(rs, TransactionAuthenticationApiConstants.PRODUCT_ID);
+			return TransactionAuthenticationData.instance(id, portfolioTypeId, productId, transactionTypeId, paymentTypeId, amount,
 					secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId);
 		}
 	}
@@ -136,7 +144,7 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 	@Override
 	public List<TransactionAuthenticationData> findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmountAndAuthenticationTypeId(
 			Integer portfolioType, Integer transactionTypeId, Long paymentTypeId, BigDecimal amountGreaterThan,
-			Long authenticationId) {
+			Long authenticationId, final Long productId) {
 		try {
 			StringBuilder sqlBuilder = new StringBuilder();
 			sqlBuilder.append("select " + this.dataMapper.schema());
@@ -145,10 +153,10 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 			sqlBuilder.append("a.portfolio_type = ? ");
 			sqlBuilder.append("and a.transaction_type_enum = ? and a.payment_type_id = ? ");
 			sqlBuilder.append("and a.amount = ? ");
-			sqlBuilder.append("and a.authentication_id = ? ;");
+			sqlBuilder.append("and a.authentication_id = ? and product_id = ?;");
 			String sql = sqlBuilder.toString();
 			return this.jdbcTemplate.query(sql, this.dataMapper, new Object[] { portfolioType, transactionTypeId,
-					paymentTypeId, amountGreaterThan, authenticationId });
+					paymentTypeId, amountGreaterThan, authenticationId, productId });
 		} catch (final EmptyResultDataAccessException e) {
 			return new ArrayList<TransactionAuthenticationData>();
 		}
@@ -156,22 +164,22 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 
 	@Override
 	public TransactionAuthenticationData retriveTransactionAuthenticationDetails(final Integer portfolioType,
-			final Integer transactionTypeId, final Long paymentTypeId, final BigDecimal amount) {
+			final Integer transactionTypeId, final Long paymentTypeId, final BigDecimal amount, final Long productId) {
 		StringBuilder sqlBuilder = new StringBuilder();
 		sqlBuilder.append("select " + this.dataMapper.schema());
 		sqlBuilder.append(" from f_transaction_authentication a ");
 		sqlBuilder.append("where a.amount <= ? ");
 		sqlBuilder.append("and a.portfolio_type = ? ");
-		sqlBuilder.append("and a.transaction_type_enum = ? and a.payment_type_id = ? ");
+		sqlBuilder.append("and a.transaction_type_enum = ? and a.payment_type_id = ? and a.product_id = ? ");
 		sqlBuilder.append("and a.amount in ");
 		sqlBuilder.append("( select max(fa.amount) from f_transaction_authentication fa where fa.amount <= ? ");
 		sqlBuilder.append("and fa.portfolio_type = ? and ");
-		sqlBuilder.append(" fa.transaction_type_enum = ? and fa.payment_type_id = ?);");
+		sqlBuilder.append(" fa.transaction_type_enum = ? and fa.payment_type_id = ? and fa.product_id = ?);");
 		String sql = sqlBuilder.toString();
 		try {
 			TransactionAuthenticationData transactionAuthenticationDatas = this.jdbcTemplate.queryForObject(sql,
-					new Object[] { amount, portfolioType, transactionTypeId, paymentTypeId, amount, portfolioType,
-							transactionTypeId, paymentTypeId },
+					new Object[] { amount, portfolioType, transactionTypeId, paymentTypeId, productId, amount, portfolioType,
+							transactionTypeId, paymentTypeId, productId },
 					this.dataMapper);
 			return transactionAuthenticationDatas;
 		} catch (EmptyResultDataAccessException e) {
@@ -190,7 +198,8 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 		public TransactionAuthenticationDataMapper() {
 			final StringBuilder sqlBuilder = new StringBuilder(200);
 			sqlBuilder.append(
-					"a.id, a.portfolio_type as portfolioType, a.transaction_type_enum as transactionId, a.payment_type_id as paymentTypeId, a.amount, a.authentication_id as authenticationTypeId ");
+					"a.id, a.portfolio_type as portfolioType, a.transaction_type_enum as transactionId, a.payment_type_id as paymentTypeId, a.amount, a.authentication_id as authenticationTypeId ,"
+					+ "a.product_id as productId");
 			this.schema = sqlBuilder.toString();
 		}
 
@@ -202,8 +211,9 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 			final Long paymentTypeId = rs.getLong("paymentTypeId");
 			final BigDecimal amount = rs.getBigDecimal("amount");
 			final Long authenticationTypeId = rs.getLong("authenticationTypeId");
+			final Long productId = rs.getLong("productId");
 
-			return TransactionAuthenticationData.instance(id, portfolioType, transactionId, paymentTypeId, amount,
+			return TransactionAuthenticationData.instance(id, portfolioType, productId, transactionId, paymentTypeId, amount,
 					authenticationTypeId);
 		}
 
@@ -211,21 +221,17 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 
 	@Override
 	public Collection<TransactionAuthenticationData> retriveTransactionAuthenticationDetails(Integer productTypeId,
-			Integer transactionTypeId, BigDecimal approvedPrincipal) {
+			Integer transactionTypeId, BigDecimal approvedPrincipal, final Long productId) {
 		StringBuilder sqlBuilder = new StringBuilder();
 		sqlBuilder.append("select " + this.dataMapper.schema());
 		sqlBuilder.append(" from f_transaction_authentication a ");
 		sqlBuilder.append("where a.amount <= ? ");
 		sqlBuilder.append("and a.portfolio_type = ? ");
-		sqlBuilder.append("and a.transaction_type_enum = ? ");
-		sqlBuilder.append("and a.amount in ");
-		sqlBuilder.append("( select max(fa.amount) from f_transaction_authentication fa where fa.amount <= ? ");
-		sqlBuilder.append("and fa.portfolio_type = ? and ");
-		sqlBuilder.append(" fa.transaction_type_enum = ? );");
+		sqlBuilder.append("and a.transaction_type_enum = ? and a.product_id = ? ;");
 		String sql = sqlBuilder.toString();
 		try {
 			return this.jdbcTemplate.query(sql, this.dataMapper, new Object[] { approvedPrincipal, productTypeId,
-					transactionTypeId, approvedPrincipal, productTypeId, transactionTypeId });
+					transactionTypeId, productId});
 		} catch (EmptyResultDataAccessException e) {
 			return new ArrayList<>();
 		}
@@ -233,10 +239,11 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 
 	@Override
 	public Collection<TransactionAuthenticationData> retiveTransactionAuthenticationDetailsForTemplate(
-			Integer productTypeId, Integer transactionTypeId, BigDecimal approvedPrincipal) {
-		Collection<TransactionAuthenticationData> transactionAuthenticationDatas = retriveTransactionAuthenticationDetails(
-				productTypeId, transactionTypeId, approvedPrincipal);
-		Collection<TransactionAuthenticationData> transactionAuthenticatioDatasForTemplare = new LinkedList<>();
+			Integer productTypeId, Integer transactionTypeId, BigDecimal approvedPrincipal, final Long loanId,
+			final Long productId) {
+		final Collection<TransactionAuthenticationData> transactionAuthenticationDatas = retriveTransactionAuthenticationDetails(
+				productTypeId, transactionTypeId, approvedPrincipal, productId);
+		final Collection<TransactionAuthenticationData> transactionAuthenticatioDatasForTemplare = new LinkedList<>();
 		for (TransactionAuthenticationData transactionAuthenticationData : transactionAuthenticationDatas) {
 			final ExternalAuthenticationServiceData externalAuthenticationServiceData = this.externalAuthenticationServicesReadPlatformService
 					.retrieveOneExternalAuthenticationService(transactionAuthenticationData.getAuthenticationTypeId());
@@ -276,8 +283,9 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 						.retrieveOneExternalAuthenticationService(
 								aTransactionAuthenticationData.getAuthenticationTypeId())
 						.getName();
+				final String productName = getTheProductData(aTransactionAuthenticationData);
 				final TransactionAuthenticationData transactionAuthenticationData = TransactionAuthenticationData
-						.newInstance(id, portfolioType, transactionType, amount, paymentType, authenticationType);
+						.newInstance(id, portfolioType, productName, transactionType, amount, paymentType, authenticationType);
 				newDatas.add(transactionAuthenticationData);
 			}
 			return newDatas;
@@ -286,4 +294,16 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 		}
 	}
 
+	
+	private String getTheProductData(final TransactionAuthenticationData transactionAuthenticationData) {
+		Integer portfolioId = transactionAuthenticationData.getPortfolioTypeId();
+		String productName = null;
+		switch(portfolioId){
+		case 1:
+			productName = this.loanProductReadPlatformService
+					.retrieveLoanProductNameById(transactionAuthenticationData.getProductId()).getName();
+			break;
+		}
+		return productName;
+	}
 }

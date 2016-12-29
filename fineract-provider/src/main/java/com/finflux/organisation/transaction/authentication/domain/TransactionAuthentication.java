@@ -17,6 +17,7 @@ import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.Role;
@@ -62,20 +63,25 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "lastmodifiedby_id", nullable = false)
 	private AppUser lastModifiedById;
+	
+	@Column(name = "product_id", nullable = false)
+	private Long loanProductId;
 
 	public static TransactionAuthentication newTransactionAuthentication(final Integer productTypeId,
 			final Integer transationTypeId, final PaymentType paymentTypeId, final BigDecimal amountGreaterThan,
 			final Role secondAppUserRoleId, final boolean isSecondAppUserEnabled,
-			final SecondaryAuthenticationService authenticationTypeId, final AppUser lastModifiedById) {
+			final SecondaryAuthenticationService authenticationTypeId, final AppUser lastModifiedById, 
+			final Long loanProduct) {
 		final Date lastModifiedDate = DateUtils.getLocalDateTimeOfTenant().toDate();
 		return new TransactionAuthentication(productTypeId, transationTypeId, paymentTypeId, amountGreaterThan,
-				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, lastModifiedDate, lastModifiedById);
+				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, lastModifiedDate, lastModifiedById,
+				loanProduct);
 	}
 
 	private TransactionAuthentication(final Integer portfolioType, final Integer transactionTypeId,
 			PaymentType pamentTypeId, final BigDecimal amountGreaterThan, final Role secondAppUserRoleId,
 			final boolean isSecondAppUserEnabled, final SecondaryAuthenticationService authenticationTypeId,
-			final Date lastModifiedDate, final AppUser lastModifiedById) {
+			final Date lastModifiedDate, final AppUser lastModifiedById, final Long loanProductId) {
 		this.portfolioType = portfolioType;
 		this.transactionTypeId = transactionTypeId;
 		this.paymentTypeId = pamentTypeId;
@@ -85,10 +91,12 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 		this.authenticationTypeId = authenticationTypeId;
 		this.lastModifiedDate = lastModifiedDate;
 		this.lastModifiedById = lastModifiedById;
+		this.loanProductId = loanProductId;
 	}
 
 	public Map<String, Object> update(final JsonCommand command, final AppUser modifiedUser,
-			final SecondaryAuthenticationService secondaryAuthenticationType, final PaymentType paymentType) {
+			final SecondaryAuthenticationService secondaryAuthenticationType, final PaymentType paymentType,
+			final Long loanProductId) {
 		final Map<String, Object> actualChanges = new LinkedHashMap<>(5);
 
 		if (command.hasParameter(TransactionAuthenticationApiConstants.AMOUNT)) {
@@ -107,6 +115,16 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 						.integerValueOfParameterNamed(TransactionAuthenticationApiConstants.PORTFOLIO_TYPE_ID);
 				actualChanges.put(TransactionAuthenticationApiConstants.PORTFOLIO_TYPE_ID, newValue);
 				this.portfolioType = newValue;
+			}
+		}
+		
+		if (command.hasParameter(TransactionAuthenticationApiConstants.PRODUCT_ID)) {
+			if (command.isChangeInLongParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID,
+					this.loanProductId)) {
+				final Long newValue = command
+						.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID);
+				actualChanges.put(TransactionAuthenticationApiConstants.PRODUCT_ID, newValue);
+				this.loanProductId = loanProductId;
 			}
 		}
 
@@ -176,6 +194,10 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 
 	public Long getAuthenticationTypeId() {
 		return this.authenticationTypeId.getId();
+	}
+	
+	public Long getProductId(){
+		return this.loanProductId;
 	}
 
 }

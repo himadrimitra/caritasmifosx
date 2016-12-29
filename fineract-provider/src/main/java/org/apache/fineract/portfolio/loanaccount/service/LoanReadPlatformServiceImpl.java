@@ -109,6 +109,7 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
@@ -569,7 +570,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public LoanTransactionData retrieveDisbursalTemplate(final Long loanId, boolean paymentDetailsRequired) {
 
-        
+
         try {
             final Map<String, Object> data = retrieveDisbursalDataMap(loanId);
             
@@ -591,10 +592,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     			throw new LoanNotFoundException(loanId);
     		}
             BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedPrincipal");
+            Long productId = (Long) data.get("productId");
             Collection<TransactionAuthenticationData> transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
     				.retiveTransactionAuthenticationDetailsForTemplate(
     						SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
-    						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal);
+    						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal,
+    						loanId, productId);
             final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService.getOnlyActiveExternalAuthenticationServices();
     		if (externalServices.size() > 0 && !externalServices.isEmpty()) {
     			for(ExternalAuthenticationServiceData services :externalServices){
@@ -615,6 +618,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public Map<String, Object> retrieveDisbursalDataMap(final Long loanId) {
         final StringBuilder sql = new StringBuilder(200);
         sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
+        sql.append(" , l.product_id as productId ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -2593,4 +2597,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         paramMap.put("officeId", officeId);
         return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
     }
+
+	@Override
+	public Long retrieveLoanProductIdByLoanId(Long loanId) {
+		try {
+			final String sql = "Select product_id from m_loan where id = ?";
+
+			return this.jdbcTemplate.queryForObject(sql, new Object[] { loanId }, Long.class);
+
+		} catch (final EmptyResultDataAccessException e) {
+			throw new LoanNotFoundException(loanId);
+		}
+	}
 }
