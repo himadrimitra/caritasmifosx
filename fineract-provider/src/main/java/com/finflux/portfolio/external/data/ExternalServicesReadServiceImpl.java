@@ -3,6 +3,9 @@ package com.finflux.portfolio.external.data;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -18,6 +21,7 @@ import com.finflux.portfolio.external.exception.ExternalServicesNotFoundExceptio
 public class ExternalServicesReadServiceImpl implements ExternalServicesReadService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final ExternalServicesPropertiesMapper propertiesMapper = new ExternalServicesPropertiesMapper();
 
     @Autowired
     public ExternalServicesReadServiceImpl(final RoutingDataSource dataSource) {
@@ -44,6 +48,12 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
         return this.jdbcTemplate.query(sql, externalServicesMapper, type);
     }
 
+    @Override
+    public List<ExternalServicePropertyData> findPropertiesForExternalServices(Long id) {
+        String sql = "select " + propertiesMapper.schema() + " where esp.external_service_id = ?";
+        return this.jdbcTemplate.query(sql, propertiesMapper, id);
+    }
+
     private class ExternalServicesMapper implements RowMapper<ExternalServicesData> {
 
         public String schema() {
@@ -60,6 +70,26 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
             final String displayCode = rs.getString("displayCode");
             final Integer type = JdbcSupport.getInteger(rs, "type");
             return new ExternalServicesData(id, name, displayCode, type);
+        }
+
+    }
+
+    private class ExternalServicesPropertiesMapper implements RowMapper<ExternalServicePropertyData> {
+
+        public String schema() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(" esp.name as name, esp.value as value, esp.is_encrypted as isEncrypted ");
+            sb.append(" from f_external_service_properties esp ");
+            return sb.toString();
+        }
+
+        @Override
+        public ExternalServicePropertyData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            Map<String,String> hashMap = new HashMap<>();
+            final String name = rs.getString("name");
+            final String value = rs.getString("value");
+            final Boolean isEncrypted = rs.getBoolean( "isEncrypted");
+            return new ExternalServicePropertyData(name, value, isEncrypted);
         }
 
     }

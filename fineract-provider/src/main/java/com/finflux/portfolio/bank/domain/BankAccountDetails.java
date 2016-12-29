@@ -33,29 +33,37 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "email", length = 100)
     private String email;
 
+    @Column(name = "bank_name", length = 20)
+    private String bankName;
+
+    @Column(name = "bank_city", length = 20)
+    private String bankCity;
+
     @Column(name = "status_id", nullable = false)
     private Integer status;
 
     protected BankAccountDetails() {}
 
     private BankAccountDetails(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
-            final String email) {
+            final String email, final String bankName, final String bankCity) {
         this.name = name;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;
         this.mobileNumber = mobileNumber;
         this.email = email;
         this.status = BankAccountDetailStatus.INITIATED.getValue();
+        this.bankName = bankName;
+        this.bankCity = bankCity;
     }
 
     public static BankAccountDetails create(final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email) {
-        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email);
+            final String mobileNumber, final String email, final String bankName, final String bankCity) {
+        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity);
     }
 
     public static BankAccountDetails copy(BankAccountDetails bankAccountDetails) {
         return new BankAccountDetails(bankAccountDetails.name, bankAccountDetails.accountNumber, bankAccountDetails.ifscCode,
-                bankAccountDetails.mobileNumber, bankAccountDetails.email);
+                bankAccountDetails.mobileNumber, bankAccountDetails.email, bankAccountDetails.bankName, bankAccountDetails.bankCity);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -123,4 +131,11 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
         return this.status;
     }
 
+    public String getBankName() {
+        return bankName;
+    }
+
+    public String getBankCity() {
+        return bankCity;
+    }
 }

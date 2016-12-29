@@ -90,9 +90,11 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
 			sb.append(" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
+			sb.append(" debbad.bank_name as debBankName, debbad.bank_city as debBankCity, ");
 			sb.append(" benbad.id as benAccountid, benbad.name as benAccountName, ");
 			sb.append(" benbad.account_number as benAccountNumber,  benbad.ifsc_code as benIfscCode, ");
 			sb.append(" benbad.mobile_number as benMobile, benbad.email as benEmail, benbad.status_id as benStatus, ");
+			sb.append(" benbad.bank_name as benBankName, benbad.bank_city as benBankCity, ");
 			sb.append(" bat.reference_number as referenceNumber ");
 			sb.append(" from f_bank_account_transaction bat ");
 			sb.append(" left join f_bank_account_details debbad on bat.debit_account = debbad.id ");
@@ -120,10 +122,12 @@ public class BankTransactionReadPlatformServiceImpl
 			final String debitMobile = rs.getString("debitMobile");
 			final String debitEmail = rs.getString("debitEmail");
 			final Integer debitStatus = rs.getInt("debitStatus");
+			final String debBankCity = rs.getString("debBankCity");
+			final String debBankName = rs.getString("debBankName");
 
 			final BankAccountDetailData debitAccount = new BankAccountDetailData(
 					debitAccountid, debitAccountName, debitAccountNumber,
-					debitIfscCode, debitMobile, debitEmail,
+					debitIfscCode, debitMobile, debitEmail,debBankName, debBankCity,
 					BankAccountDetailStatus
 							.bankAccountDetailStatusEnumDate(debitStatus));
 
@@ -134,10 +138,12 @@ public class BankTransactionReadPlatformServiceImpl
 			final String benMobile = rs.getString("benMobile");
 			final String benEmail = rs.getString("benEmail");
 			final Integer benStatus = rs.getInt("benStatus");
+			final String benBankCity = rs.getString("benBankCity");
+			final String benBankName = rs.getString("benBankName");
 
 			final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(
 					benAccountid, benAccountName, benAccountNumber,
-					benIfscCode, benMobile, benEmail,
+					benIfscCode, benMobile, benEmail,benBankName, benBankCity,
 					BankAccountDetailStatus
 							.bankAccountDetailStatusEnumDate(benStatus));
 

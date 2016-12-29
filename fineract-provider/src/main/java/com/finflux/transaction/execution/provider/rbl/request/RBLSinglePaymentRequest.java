@@ -201,6 +201,9 @@ public class RBLSinglePaymentRequest {
 				this.beneficiaryAddress = "INDIA";
 			}
 			this.beneficiaryBankName = beneficiaryBankName;
+			if(!StringUtils.isNotEmpty(this.beneficiaryBankName)){
+				this.beneficiaryBankName = beneficiaryIFSC.substring(0,4);
+			}
 			this.beneficiaryEmail = beneficiaryEmail;
 			this.beneficiaryMobile = beneficiaryMobile;
 			this.beneficiaryTxnParticulars = beneficiaryTxnParticulars;

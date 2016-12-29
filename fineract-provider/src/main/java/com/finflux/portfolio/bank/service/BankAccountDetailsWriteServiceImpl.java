@@ -69,8 +69,11 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
                 .extractStringNamed(BankAccountDetailConstants.mobileNumberParameterName, element);
 
         final String email = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.emailParameterName, element);
+        final String bankName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankNameParameterName, element);
+        final String bankCity = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankCityParameterName, element);
 
-        BankAccountDetails accountDetails = BankAccountDetails.create(name, accountNumber, ifscCode, mobileNumber, email);
+        BankAccountDetails accountDetails = BankAccountDetails.create(name, accountNumber, ifscCode, mobileNumber, email,
+                bankName, bankCity);
         accountDetails.updateStatus(BankAccountDetailStatus.ACTIVE.getValue());
         return accountDetails;
     }
