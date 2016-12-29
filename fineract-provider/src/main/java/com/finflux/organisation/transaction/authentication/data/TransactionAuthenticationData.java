@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
@@ -14,6 +15,8 @@ public class TransactionAuthenticationData {
 	// portfolio type id
 	private final Integer portfolioTypeId;
 	private final Integer transactionTypeId;
+	private final Long productId;
+	private final String productName;
 	private final Long paymentTypeId;
 	private final BigDecimal amount;
 	private final Long secondAppUserRoleId;
@@ -31,10 +34,11 @@ public class TransactionAuthenticationData {
 	private final Collection<PaymentTypeData> paymentOptions;//
 	private final Collection<EnumOptionData> loanTransactionTypeOptions;
 	private final Collection<EnumOptionData> savingsTransactionTypeoptions;
+	final Collection<LoanProductData> productOptions;
 	private final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices;
 
-	private TransactionAuthenticationData(final Long id, final Integer portfolioTypeId, final Integer transactionTypeId,
-			final Long paymentTypeId, final BigDecimal amount, final Long secondAppUserRoleId,
+	private TransactionAuthenticationData(final Long id, final Integer portfolioTypeId, final String productName, final Integer transactionTypeId,
+			final Long productTypeId, final Long paymentTypeId, final BigDecimal amount, final Long secondAppUserRoleId,
 			final boolean isSecondAppUserEnabled, Long authenticationTypeId,
 			final Collection<EnumOptionData> transactionAuthenticationAppliesTo,
 			final Collection<PaymentTypeData> paymentOptions,
@@ -42,10 +46,12 @@ public class TransactionAuthenticationData {
 			final Collection<EnumOptionData> savingsTransactionTypeoptions,
 			final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices,
 			final String authenticationType, final PaymentTypeData paymentType, final String portfolioType,
-			final String transactionType) {
+			final String transactionType, final Collection<LoanProductData> productOptions) {
 		this.authenticationRuleId = id;
 		this.portfolioTypeId = portfolioTypeId;
 		this.transactionTypeId = transactionTypeId;
+		this.productId = productTypeId;
+		this.productName = productName;
 		this.paymentTypeId = paymentTypeId;
 		this.amount = amount;
 		this.secondAppUserRoleId = secondAppUserRoleId;
@@ -59,6 +65,7 @@ public class TransactionAuthenticationData {
 		this.authenticationType = authenticationType;
 		this.paymentType = paymentType;
 		this.transactionType = transactionType;
+		this.productOptions = productOptions;
 		this.portfolioType = portfolioType;
 	}
 
@@ -67,10 +74,13 @@ public class TransactionAuthenticationData {
 			final Collection<PaymentTypeData> paymentOptions,
 			final Collection<EnumOptionData> loanTransactionTypeOptions,
 			final Collection<EnumOptionData> savingsTransactionTypeoptions,
+			final Collection<LoanProductData> productOptions,
 			final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices) {
 		final Long id = null;
 		final Integer portfolioTypeId = null;
 		final Integer transactionTypeId = null;
+		final Long productTypeid = null;
+		final String productName = null;
 		final Long paymentTypeId = null;
 		final BigDecimal amount = null;
 		final Long secondAppUserRoleId = null;
@@ -80,13 +90,14 @@ public class TransactionAuthenticationData {
 		final PaymentTypeData paymentType = null;
 		final String portfolioType = null;
 		final String transactionType = null;
-		return new TransactionAuthenticationData(id, portfolioTypeId, transactionTypeId, paymentTypeId, amount,
-				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, transactionAuthenticationAppliesTo,
-				paymentOptions, loanTransactionTypeOptions, savingsTransactionTypeoptions,
-				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType);
+		return new TransactionAuthenticationData(id, portfolioTypeId, productName, transactionTypeId, productTypeid,
+				paymentTypeId, amount, secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, 
+				transactionAuthenticationAppliesTo, paymentOptions, loanTransactionTypeOptions, savingsTransactionTypeoptions,
+				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType,
+				productOptions);
 	}
 
-	public static TransactionAuthenticationData instance(final Long id, final Integer portfolioTypeId,
+	public static TransactionAuthenticationData instance(final Long id, final Integer portfolioTypeId, final Long productId,
 			final Integer transactionTypeId, final Long paymentTypeId, final BigDecimal amount,
 			final Long secondAppUserRoleId, final boolean isSecondAppUserEnabled, final Long authenticationTypeId) {
 		final Collection<EnumOptionData> transactionAuthenticationAppliesTo = null;//
@@ -97,14 +108,17 @@ public class TransactionAuthenticationData {
 		final PaymentTypeData paymentType = null;
 		final String portfolioType = null;
 		final String transactionType = null;
+		final Collection<LoanProductData> productOptions = null;
 		final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices = null;
-		return new TransactionAuthenticationData(id, portfolioTypeId, transactionTypeId, paymentTypeId, amount,
-				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, transactionAuthenticationAppliesTo,
+		final String productName = null ;
+		return new TransactionAuthenticationData(id, portfolioTypeId, productName, transactionTypeId, productId,
+				paymentTypeId, amount, secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, transactionAuthenticationAppliesTo,
 				paymentOptions, loanTransactionTypeOptions, savingsTransactionTypeoptions,
-				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType);
+				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType,
+				productOptions);
 	}
 
-	public static TransactionAuthenticationData instance(final Long id, final Integer portfolioTypeId,
+	public static TransactionAuthenticationData instance(final Long id, final Integer portfolioTypeId, final Long productId,
 			final Integer transactionTypeId, final Long paymentTypeId, final BigDecimal amount,
 			final Long authenticationTypeId) {
 		final Collection<EnumOptionData> transactionAuthenticationAppliesTo = null;//
@@ -118,10 +132,13 @@ public class TransactionAuthenticationData {
 		final String portfolioType = null;
 		final String transactionType = null;
 		final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices = null;
-		return new TransactionAuthenticationData(id, portfolioTypeId, transactionTypeId, paymentTypeId, amount,
+		final Collection<LoanProductData> productOptions = null;
+		final String productName = null;
+		return new TransactionAuthenticationData(id, portfolioTypeId, productName, transactionTypeId, productId, paymentTypeId, amount,
 				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, transactionAuthenticationAppliesTo,
 				paymentOptions, loanTransactionTypeOptions, savingsTransactionTypeoptions,
-				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType);
+				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType,
+				productOptions);
 	}
 
 	public static TransactionAuthenticationData instance(final Long id, final Integer portfolioTypeId,
@@ -138,13 +155,17 @@ public class TransactionAuthenticationData {
 		final String portfolioType = null;
 		final String transactionType = null;
 		final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices = null;
-		return new TransactionAuthenticationData(id, portfolioTypeId, transactionTypeId, paymentTypeId, amount,
+		final Collection<LoanProductData> productOptions = null;
+		final Long productTypeId = null;
+		final String productName = null;
+		return new TransactionAuthenticationData(id, portfolioTypeId, productName, transactionTypeId, productTypeId, paymentTypeId, amount,
 				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, transactionAuthenticationAppliesTo,
 				paymentOptions, loanTransactionTypeOptions, savingsTransactionTypeoptions,
-				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType);
+				availableAuthenticationServices, authenticationType, paymentType, portfolioType, transactionType,
+				productOptions);
 	}
 
-	public static TransactionAuthenticationData newInstance(final Long id, final String portfolioType,
+	public static TransactionAuthenticationData newInstance(final Long id, final String portfolioType, final String productName,
 			final String transactionType, final BigDecimal amount, final PaymentTypeData paymentTypeData,
 			final String authenticationType) {
 		final Collection<EnumOptionData> transactionAuthenticationAppliesTo = null;//
@@ -157,11 +178,14 @@ public class TransactionAuthenticationData {
 		final Integer portfolioTypeId = null;
 		final Integer transactionTypeId = null;
 		final Long paymentTypeId = null;
+		final Collection<LoanProductData> productOptions = null;
 		final Collection<ExternalAuthenticationServiceData> availableAuthenticationServices = null;
-		return new TransactionAuthenticationData(id, portfolioTypeId, transactionTypeId, paymentTypeId, amount,
+		final Long productTypeId = null;
+		return new TransactionAuthenticationData(id, portfolioTypeId, productName, transactionTypeId, productTypeId, paymentTypeId, amount,
 				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, transactionAuthenticationAppliesTo,
 				paymentOptions, loanTransactionTypeOptions, savingsTransactionTypeoptions,
-				availableAuthenticationServices, authenticationType, paymentTypeData, portfolioType, transactionType);
+				availableAuthenticationServices, authenticationType, paymentTypeData, portfolioType, transactionType,
+				productOptions);
 	}
 
 	public Long getId() {
@@ -178,6 +202,10 @@ public class TransactionAuthenticationData {
 
 	public Long getPaymentTypeId() {
 		return this.paymentTypeId;
+	}
+	
+	public Long getProductId() {
+		return productId;
 	}
 
 	public BigDecimal getAmount() {

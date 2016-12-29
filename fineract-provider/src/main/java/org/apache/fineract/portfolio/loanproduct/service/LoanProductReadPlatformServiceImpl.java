@@ -21,8 +21,11 @@ package org.apache.fineract.portfolio.loanproduct.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +50,7 @@ import org.apache.fineract.portfolio.loanproduct.data.ProductLoanChargeData;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductParamType;
 import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductInactiveException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -750,5 +754,63 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         chargeIdList.addAll(this.jdbcTemplate.queryForList(sql));
         return chargeIdList;
     }
+    
+    @Override
+    	public void checkLoanProductByIdExists(final Long productId) {
+    
+    		try {
+    			final String sql = "Select id from m_product_loan where id = ?";
+    
+    			this.jdbcTemplate.queryForObject(sql, new Object[] { productId }, Long.class);
+    
+    		} catch (final EmptyResultDataAccessException e) {
+    			throw new LoanProductNotFoundException(productId);
+    		}
+    	}
+    
+    	@Override
+    	public void checkLoanProductByIdIsActive(final Long productId, final boolean activeOnly) {
+    		try {
+    			final String sql = "Select close_date from m_product_loan where id = ? ";
+    
+    			String closeDate = this.jdbcTemplate.queryForObject(sql, new Object[] { productId }, String.class);
+    			if (closeDate != null && activeOnly) {
+    				checkIfLoanProductIsClosed(closeDate, productId);
+    			}
+    
+    		} catch (final EmptyResultDataAccessException e) {
+    			throw new LoanProductNotFoundException(productId);
+    		}
+    	}
+    
+    	private void checkIfLoanProductIsClosed(final String closeDate, final Long productId) {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		try {
+			Date closingDate = dateFormat.parse(closeDate);
+
+			LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+			LocalDate closinDate = new LocalDate(closingDate);
+
+			if (currentDate.isAfter(closinDate)) {
+				throw new LoanProductInactiveException(productId);
+			}
+		} catch (ParseException e) {
+			
+		}
+    
+    	
+    	}
+    
+    	@Override
+    	public LoanProductData retrieveLoanProductNameById(Long productId) {
+    		try {
+    			final LoanProductLookupMapper rm = new LoanProductLookupMapper();
+    			String sql = "select " + rm.schema() + " where lp.id = ?";
+    			return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { productId });
+    		} catch (final EmptyResultDataAccessException e) {
+    			throw new LoanProductNotFoundException(productId);
+    		}
+    	}
 
 }

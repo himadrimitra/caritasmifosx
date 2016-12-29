@@ -11,22 +11,23 @@ public interface TransactionAuthenticationReadPlatformService {
 
 	List<TransactionAuthenticationData> findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmount(
 			final Integer productTypeId, final Integer transactionTypeId, final Long paymentTypeId,
-			final BigDecimal amountGreaterThan);
+			final BigDecimal amountGreaterThan, final Long productId);
 
 	List<TransactionAuthenticationData> findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmountAndAuthenticationTypeId(
 			final Integer productTypeId, final Integer transactionTypeId, final Long paymentTypeId,
-			final BigDecimal amountGreaterThan, final Long authenticationId);
+			final BigDecimal amountGreaterThan, final Long authenticationId, final Long productId);
 
 	TransactionAuthenticationData retrieveOneById(final Long id);
 
 	TransactionAuthenticationData retriveTransactionAuthenticationDetails(final Integer productTypeId,
-			final Integer transactionTypeId, final Long paymentTypeId, BigDecimal amount);
+			final Integer transactionTypeId, final Long paymentTypeId, BigDecimal amount, final Long productId);
 
 	Collection<TransactionAuthenticationData> retriveTransactionAuthenticationDetails(final Integer productTypeId,
-			final Integer transactionTypeId, final BigDecimal approvedPrincipal);
+			final Integer transactionTypeId, final BigDecimal approvedPrincipal, final Long productId);
 
 	Collection<TransactionAuthenticationData> retiveTransactionAuthenticationDetailsForTemplate(
-			final Integer productTypeId, final Integer transactionTypeId, final BigDecimal approvedPrincipal);
+			final Integer productTypeId, final Integer transactionTypeId, final BigDecimal approvedPrincipal, 
+			final Long loanId, final Long productId);
 
 	Collection<TransactionAuthenticationData> retriveAllTransactionAuthenticationDeatails();
 }

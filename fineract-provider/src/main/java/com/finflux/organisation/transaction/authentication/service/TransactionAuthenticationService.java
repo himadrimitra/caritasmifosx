@@ -16,12 +16,13 @@ import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.B
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventListner;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.aadhaarconnect.bridge.capture.model.common.Location;
 import com.aadhaarconnect.bridge.capture.model.common.LocationType;
-import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.finflux.infrastructure.external.authentication.domain.SecondaryAuthenticationService;
 import com.finflux.infrastructure.external.authentication.domain.SecondaryAuthenticationServiceRepositoryWrapper;
 import com.finflux.infrastructure.external.authentication.service.GenerateOtpFactory;
@@ -53,6 +54,7 @@ public class TransactionAuthenticationService {
 	private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
 	private final TransactionAuthenticationDataValidator transactionAuthenticationDataValidator;
 	private final GenerateOtpFactory generateOtpFactory;
+	private final LoanReadPlatformService loanReadPlatformService;
 
 	@Autowired
 	public TransactionAuthenticationService(final BusinessEventNotifierService businessEventNotifierService,
@@ -62,7 +64,7 @@ public class TransactionAuthenticationService {
 			final ClientDataForAuthenticationAssembler clientData,
 			final TransactionAuthenticationDataValidator transactionAuthenticationDataValidator,
 			final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
-			final GenerateOtpFactory generateOtpFactory) {
+			final GenerateOtpFactory generateOtpFactory, final LoanReadPlatformService loanReadPlatformService) {
 		this.businessEventNotifierService = businessEventNotifierService;
 		this.secondaryAuthenticationFactory = secondaryAuthenticationFactory;
 		this.fromJsonHelper = fromJsonHelper;
@@ -72,6 +74,7 @@ public class TransactionAuthenticationService {
 		this.transactionAuthenticationDataValidator = transactionAuthenticationDataValidator;
 		this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
 		this.generateOtpFactory = generateOtpFactory;
+		this.loanReadPlatformService = loanReadPlatformService;
 	}
 
 	@PostConstruct
@@ -149,15 +152,18 @@ public class TransactionAuthenticationService {
 					.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID);
 			final BigDecimal amountGreaterThan = command
 					.bigDecimalValueOfParameterNamed(TransactionAuthenticationApiConstants.TRANSACTION_AMOUNT);
+			final Long productId = this.loanReadPlatformService.retrieveLoanProductIdByLoanId(command.getLoanId());
 			final TransactionAuthenticationData transactionAuthentication = this.transactionAuthenticationReadPlatformService
 					.retriveTransactionAuthenticationDetails(portfolioTypeId, transactionTypeId, paymentTypeId,
-							amountGreaterThan);
+							amountGreaterThan, productId);
 
 			if (transactionAuthentication != null) {
+				
+				this.transactionAuthenticationDataValidator.checkForAuthenticationRuleId(command);
 				final Long authenticationRuleId = command
 						.longValueOfParameterNamed(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID);
 
-				if (authenticationRuleId != transactionAuthentication.getId()) {
+				if (!authenticationRuleId.equals(transactionAuthentication.getId())) {
 					throw new TransactionAuthenticationMismatchException(authenticationRuleId);
 				}
 				final SecondaryAuthenticationService secondaryAuthenticationService = this.repository
@@ -168,7 +174,7 @@ public class TransactionAuthenticationService {
 							.validateAndAssembleClientDataForAuthentication(command,
 									SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
 									SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(),
-									secondaryAuthenticationService);
+									secondaryAuthenticationService, productId);
 
 					final String aadhaarNumber = clientDataForAuthentication.getClientAadhaarNumber();
 					final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory

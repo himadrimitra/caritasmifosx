@@ -92,7 +92,7 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		Long authenticationTypeId = new Long(1);
 		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
 				requestSpec, responseSpec, locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
-				authenticationTypeId);
+				authenticationTypeId, loanProductID);
 		Assert.assertNotNull(transactionAuthenticationId);
 		System.out.println("--------------------------------CREATE CODE VALUE-------------------");
 		String aadhaar = "Aadhaar";
@@ -243,6 +243,8 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		String description = PaymentTypeHelper.randomNameGenerator("PT_Desc", 15);
 		Boolean isCashPayment = true;
 		Integer position = 1;
+		final Integer loanProductID = createLoanProduct(false, NONE);
+		
 		System.out.println("----------------CREATE PAYMENT TYPE-----------------");
 		Integer paymentTypeId = PaymentTypeHelper.createPaymentType(requestSpec, responseSpec, name, description,
 				isCashPayment, position);
@@ -257,7 +259,7 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		Long authenticationTypeId = new Long(3);
 		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
 				requestSpec, responseSpec, locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
-				authenticationTypeId);
+				authenticationTypeId, loanProductID );
 		Assert.assertNotNull(transactionAuthenticationId);
 
 		System.out.println(
@@ -265,7 +267,7 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 
 		final Integer clientId = ClientHelper.createClient(this.requestSpec, this.responseSpec);
 		ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientId);
-		final Integer loanProductID = createLoanProduct(false, NONE);
+		
 		System.out.println("-------------------------------Apply for loan-----------------------------");
 		Integer loanId = applyForLoanApplication(clientId, loanProductID, null, null, "12,000.00");
 		ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,

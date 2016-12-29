@@ -11,6 +11,9 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -41,6 +44,7 @@ public class TransactionAuthenticationDataAssembler {
 	private final SecondaryAuthenticationServiceRepositoryWrapper secondaryAuthenticationServiceRepository;
 	private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 	private final TransactionAuthenticationReadPlatformService readPlatformService;
+	private final LoanProductReadPlatformService loanProductReadPlatformService;
 
 	@Autowired
 	public TransactionAuthenticationDataAssembler(final FromJsonHelper fromJsonHelper,
@@ -48,12 +52,14 @@ public class TransactionAuthenticationDataAssembler {
 			final SecondaryAuthenticationServiceRepositoryWrapper secondaryAuthenticationServiceRepository,
 			final PaymentTypeRepositoryWrapper paymentTypeRepository,
 			final TransactionAuthenticationReadPlatformService readPlatformService,
-			final TransactionAuthenticationRepositoryWrapper transactionAuthenticationRepositoryWrapper) {
+			final TransactionAuthenticationRepositoryWrapper transactionAuthenticationRepositoryWrapper,
+			final LoanProductReadPlatformService loanProductReadPlatformService) {
 		this.fromJsonHelper = fromJsonHelper;
 		this.context = context;
 		this.secondaryAuthenticationServiceRepository = secondaryAuthenticationServiceRepository;
 		this.paymentTypeRepository = paymentTypeRepository;
 		this.readPlatformService = readPlatformService;
+		this.loanProductReadPlatformService = loanProductReadPlatformService;
 	}
 
 	public TransactionAuthentication transactionAuthenticationDataAssembler(final JsonCommand command) {
@@ -62,6 +68,8 @@ public class TransactionAuthenticationDataAssembler {
 		final Locale locale = this.fromJsonHelper.extractLocaleParameter(element.getAsJsonObject());
 		final Integer portfolioTypeId = this.fromJsonHelper
 				.extractIntegerNamed(TransactionAuthenticationApiConstants.PORTFOLIO_TYPE_ID, element, locale);
+		final Long productId = this.fromJsonHelper.extractLongNamed(TransactionAuthenticationApiConstants.PRODUCT_ID,
+				element);
 		final Integer transactionTypeId = this.fromJsonHelper
 				.extractIntegerNamed(TransactionAuthenticationApiConstants.TRANSACTION_TYPE_ID, element, locale);
 		final Long paymentTypeId = this.fromJsonHelper
@@ -89,8 +97,9 @@ public class TransactionAuthenticationDataAssembler {
 		final Long authenticationTypeId = this.fromJsonHelper
 				.extractLongNamed(TransactionAuthenticationApiConstants.AUTHENTICATION_TYPE_ID, element);
 		final SecondaryAuthenticationService secondaryAuthenticationType = this.secondaryAuthenticationServiceRepository.findOneWithNotFoundDetection(authenticationTypeId);
+		this.loanProductReadPlatformService.checkLoanProductByIdExists(productId);
 		return TransactionAuthentication.newTransactionAuthentication(portfolioTypeId, transactionTypeId, paymentType,
-				amountGreaterThan, role, isSecondAppUserEnabled, secondaryAuthenticationType, currentUser);
+				amountGreaterThan, role, isSecondAppUserEnabled, secondaryAuthenticationType, currentUser, productId);
 
 	}
 	
@@ -130,6 +139,8 @@ public class TransactionAuthenticationDataAssembler {
 			final Locale locale = this.fromJsonHelper.extractLocaleParameter(element.getAsJsonObject());
 			final Integer productTypeId = this.fromJsonHelper
 					.extractIntegerNamed(TransactionAuthenticationApiConstants.PORTFOLIO_TYPE_ID, element, locale);
+			final Long productId = this.fromJsonHelper.extractLongNamed(TransactionAuthenticationApiConstants.PRODUCT_ID,
+				element);
 			final Integer transactionTypeId = this.fromJsonHelper
 					.extractIntegerNamed(TransactionAuthenticationApiConstants.TRANSACTION_TYPE_ID, element, locale);
 			final Long paymentTypeId = this.fromJsonHelper
@@ -137,14 +148,15 @@ public class TransactionAuthenticationDataAssembler {
 			final BigDecimal amountGreaterThan = this.fromJsonHelper
 					.extractBigDecimalNamed(TransactionAuthenticationApiConstants.AMOUNT, element, locale);
 			findByProductTypeIdAndTransactionTypeIdAndPaymentTypeIdAndAmount(productTypeId, transactionTypeId,
-					paymentTypeId, amountGreaterThan);
+					paymentTypeId, amountGreaterThan, productId);
 		}
 		
-		public void findByProductTypeIdAndTransactionTypeIdAndPaymentTypeIdAndAmount(final Integer potfolioType,
-				final Integer transactionTypeId, final Long paymentTypeId, final BigDecimal amountGreaterThan) {
+	public void findByProductTypeIdAndTransactionTypeIdAndPaymentTypeIdAndAmount(final Integer potfolioType,
+			final Integer transactionTypeId, final Long paymentTypeId, final BigDecimal amountGreaterThan,
+			final Long productId) {
 			final List<TransactionAuthenticationData> transactionAuthentication = this.readPlatformService
 					.findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmount(potfolioType, transactionTypeId,
-							paymentTypeId, amountGreaterThan);
+							paymentTypeId, amountGreaterThan, productId);
 
 			if (transactionAuthentication != null && transactionAuthentication.size() > 0) {
 
@@ -154,7 +166,7 @@ public class TransactionAuthenticationDataAssembler {
 
 				throw new TransactionAuthenticationRuleAlreadyExistException(
 						"ProductType :" + appliesTo + ", Transaction Type :" + supportedAuthenticaionTransactionTypes + ", payment Type ID : "
-								+ paymentTypeId + ", Amount :" + amountGreaterThan);
+								+ paymentTypeId + ", Amount :" + amountGreaterThan + " Product ID : "+ productId);
 			}
 		}
 
@@ -175,6 +187,13 @@ public class TransactionAuthenticationDataAssembler {
 				productTypeId = this.fromJsonHelper.extractIntegerNamed("productTypeId", element, locale);
 			} else {
 				productTypeId = transactionAuthentication.getPortfolioType();
+			}
+			
+			Long productId = command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID);
+			if (command.hasParameter(TransactionAuthenticationApiConstants.PRODUCT_ID)) {
+				productId = this.fromJsonHelper.extractLongNamed("productId", element);
+			} else {
+				productId = transactionAuthentication.getProductId();
 			}
 
 			Long paymentTypeId;
@@ -202,15 +221,16 @@ public class TransactionAuthenticationDataAssembler {
 			}
 
 			findByProductTypeIdAndTransactionTypeIdAndPaymentTypeIdAndAmountAndAuthenticationTypeId(productTypeId,
-					transactionTypeId, paymentTypeId, amountGreaterThan, authenticationTypeId);
+					transactionTypeId, paymentTypeId, amountGreaterThan, authenticationTypeId, productId);
 
 		}
 		
 		public void findByProductTypeIdAndTransactionTypeIdAndPaymentTypeIdAndAmountAndAuthenticationTypeId(
 				final Integer productTypeId, final Integer transactionTypeId, final Long paymentTypeId,
-				final BigDecimal amountGreaterThan, final Long authenticationTypeId) {
+				final BigDecimal amountGreaterThan, final Long authenticationTypeId, final Long productId) {
 			final List<TransactionAuthenticationData> transactionAuthentications = this.readPlatformService
-					.findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmountAndAuthenticationTypeId(productTypeId, transactionTypeId, paymentTypeId, amountGreaterThan, authenticationTypeId);
+				.findByPortfolioTypeAndTransactionTypeIdAndPaymentTypeIdAndAmountAndAuthenticationTypeId(productTypeId,
+						transactionTypeId, paymentTypeId, amountGreaterThan, authenticationTypeId, productId);
 			if (transactionAuthentications != null && transactionAuthentications.size() > 0) {
 				final SupportedAuthenticationPortfolioTypes appliesTo = SupportedAuthenticationPortfolioTypes
 						.fromInt(productTypeId);
@@ -218,7 +238,7 @@ public class TransactionAuthenticationDataAssembler {
 
 				throw new TransactionAuthenticationRuleAlreadyExistException("ProductType :" + appliesTo
 						+ ", Transaction Type :" + supportedAuthenticaionTransactionTypes + ", payment Type ID : " + paymentTypeId + ", Amount :"
-						+ amountGreaterThan + " Authentication Type " + authenticationTypeId);
+						+ amountGreaterThan + " Authentication Type " + authenticationTypeId + " Product Id : "+productId);
 			}
 		}
 		

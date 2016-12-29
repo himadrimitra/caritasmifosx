@@ -7,6 +7,8 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -32,19 +34,22 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 	private final PlatformSecurityContext context;
 	private final SecondaryAuthenticationServiceRepositoryWrapper secondaryAuthenticationServiceRepository;
 	private final PaymentTypeRepositoryWrapper PaymentTypeRepository;
+	private final LoanProductReadPlatformService loanProductReadPlatformService;
 
 	@Autowired
 	public TransactionAuthenticationWritePlatformServiceImpl(final TransactionAuthenticationDataValidator dataValidator,
 			final TransactionAuthenticationDataAssembler dataAssembler,
 			final TransactionAuthenticationRepositoryWrapper repository, final PlatformSecurityContext context,
 			final SecondaryAuthenticationServiceRepositoryWrapper secondaryAuthenticationServiceRepository,
-			final PaymentTypeRepositoryWrapper PaymentTypeRepository) {
+			final PaymentTypeRepositoryWrapper PaymentTypeRepository,
+			final LoanProductReadPlatformService loanProductReadPlatformService) {
 		this.dataValidator = dataValidator;
 		this.dataAssembler = dataAssembler;
 		this.repository = repository;
 		this.context = context;
 		this.secondaryAuthenticationServiceRepository = secondaryAuthenticationServiceRepository;
 		this.PaymentTypeRepository = PaymentTypeRepository;
+		this.loanProductReadPlatformService = loanProductReadPlatformService;
 	}
 
 	@Override
@@ -52,6 +57,7 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 		this.dataValidator.validateForCreate(command.json());
 		this.dataAssembler.isAuthenticationServiceActive(command);
 		this.dataAssembler.isValidPaymentType(command);
+		this.dataValidator.checkForActiveLoanProduct(command);
 		this.dataAssembler.isUniqueRule(command);
 		final TransactionAuthentication transactionAuthentication = this.dataAssembler
 				.transactionAuthenticationDataAssembler(command);
@@ -81,6 +87,7 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 					.findOneWithNotFoundDetection(transactionAuthenticationId);
 			this.dataValidator.validateTransactionTypeForUpdate(command, transactionAuthentication);
 			this.dataAssembler.isValidPaymentType(command);
+			this.dataValidator.checkForActiveLoanProduct(command);
 			this.dataAssembler.isUniqueRuleForUpdate(command, transactionAuthentication);
 			this.dataAssembler.validateAuthenticationType(command);
 			final SecondaryAuthenticationService secondaryAuthenticationType = this.secondaryAuthenticationServiceRepository
@@ -88,8 +95,11 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 							.longValueOfParameterNamed(TransactionAuthenticationApiConstants.AUTHENTICATION_TYPE_ID));
 			final PaymentType paymentType = this.PaymentTypeRepository.findOneWithNotFoundDetection(
 					command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID));
+			final Long loanProductId = command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID);
+			this.loanProductReadPlatformService
+					.checkLoanProductByIdExists(loanProductId);
 			final Map<String, Object> actualChanges = transactionAuthentication.update(command, currentUser,
-					secondaryAuthenticationType, paymentType);
+					secondaryAuthenticationType, paymentType, loanProductId);
 			return new CommandProcessingResultBuilder() //
 					.withEntityId(transactionAuthentication.getId()).with(actualChanges) //
 					.build();
