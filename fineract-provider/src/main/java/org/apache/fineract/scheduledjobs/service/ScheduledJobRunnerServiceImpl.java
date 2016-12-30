@@ -787,9 +787,9 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 							+ transaction.getId()
 							+ " with message " + e.getLocalizedMessage());
 						errorMsg.append(
-							"Status update failed for transaction Id:")
-							.append(transaction.getId())
-							.append(e.getLocalizedMessage());
+							"| Status update failed for transaction Id: ")
+							.append(transaction.getId()).append(" with error:")
+							.append(e.getMessage());
 					}
 				}
 			}

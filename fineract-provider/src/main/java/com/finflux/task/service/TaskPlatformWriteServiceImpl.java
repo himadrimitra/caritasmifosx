@@ -81,6 +81,8 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         }
 
         Task parentTask = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, taskConfigId, description);
+
+        parentTask.setStatus(TaskStatusType.INITIATED.getValue());
         parentTask = this.taskRepository.save(parentTask);
 
         final List<Long> childTaskConfigIds = this.taskPlatformReadService.getChildTaskConfigIds(taskConfigId);
