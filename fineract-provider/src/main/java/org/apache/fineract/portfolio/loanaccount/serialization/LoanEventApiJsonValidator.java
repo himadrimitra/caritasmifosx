@@ -84,7 +84,8 @@ public final class LoanEventApiJsonValidator {
 							"paymentTypeId", "accountNumber", "checkNumber", "routingCode", "receiptNumber",
 							"bankNumber", "adjustRepaymentDate", LoanApiConstants.principalDisbursedParameterName,
 							LoanApiConstants.emiAmountParameterName, "authenticationRuleId", "authenticationType",
-							"clientAuthData", "location", "locationType", "pincode", "longitude", "latitude", LoanApiConstants.clientMembersParamName));
+							"clientAuthData", "location", "locationType", "pincode", "longitude", "latitude", 
+							LoanApiConstants.clientMembersParamName, LoanApiConstants.skipAuthenticationRule));
         }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
@@ -532,13 +533,13 @@ public final class LoanEventApiJsonValidator {
         if (!reschedulebasedOnMeetingDates) {
             List<Long> activeLoanIds = new ArrayList<>();
             for (final Loan loan : loans) {
-                if (loan.isDisbursed() || loan.isApproved() || loan.isSubmittedAndPendingApproval()) {
+                if (loan.isDisbursed()) {
                     activeLoanIds.add(loan.getId());
                 }
             }
             if (!activeLoanIds.isEmpty()) {
-                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has  submitted and pending for approval, approved and active loans";
-                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.submitted.or.approved.or.active.loans (" + activeLoanIds + ") ",
+                final String defaultUserMessage = "Meeting calendar date cannot be updated since it has active loans";
+                throw new CalendarDateException("meeting.cannot.be.updated.since.it.has.active.loans",
                         defaultUserMessage, presentMeetingDate);
             }
         }
@@ -583,15 +584,6 @@ public final class LoanEventApiJsonValidator {
                 final Long glimId = this.fromApiJsonHelper.extractLongNamed("id", innerElement);
                 baseDataValidator.reset().parameter("id").value(glimId).notNull().longGreaterThanZero();
                 
-                final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", innerElement);
-                baseDataValidator.reset().parameter("clientId").value(clientId).notNull().longGreaterThanZero();
-
-                final String clientName = this.fromApiJsonHelper.extractStringNamed("clientName", innerElement);
-                baseDataValidator.reset().parameter("clientName").value(clientName).notNull().notBlank();
-
-                final String remainigInterestAmount = this.fromApiJsonHelper.extractStringNamed("remainingTransactionAmount", innerElement);
-                baseDataValidator.reset().parameter("remainingTransactionAmount").value(remainigInterestAmount).notNull();
-
                 final String transactionAmount = this.fromApiJsonHelper.extractStringNamed("transactionAmount", innerElement);
                 baseDataValidator.reset().parameter("transactionAmount").value(transactionAmount).notNull().zeroOrPositiveAmount();
             }
@@ -618,12 +610,6 @@ public final class LoanEventApiJsonValidator {
                 final Long glimId = this.fromApiJsonHelper.extractLongNamed("id", innerElement);
                 baseDataValidator.reset().parameter("id").value(glimId).notNull().longGreaterThanZero();
                 
-                final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", innerElement);
-                baseDataValidator.reset().parameter("clientId").value(clientId).notNull().longGreaterThanZero();
-
-                final String clientName = this.fromApiJsonHelper.extractStringNamed("clientName", innerElement);
-                baseDataValidator.reset().parameter("clientName").value(clientName).notNull().notBlank();
-
                 final String transactionAmount = this.fromApiJsonHelper.extractStringNamed("transactionAmount", innerElement);
                 baseDataValidator.reset().parameter("transactionAmount").value(transactionAmount).notNull().zeroOrPositiveAmount();
             }
@@ -656,22 +642,12 @@ public final class LoanEventApiJsonValidator {
         
         if (clients != null) {
             for (JsonElement innerElement : clients) {
-                final boolean isClientSelected = this.fromApiJsonHelper.extractBooleanNamed("isClientSelected", innerElement);
-                if (isClientSelected) {
-                    final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", innerElement);
-                    baseDataValidator.reset().parameter("clientId").value(clientId).notNull().longGreaterThanZero();
+                final Long glimId = this.fromApiJsonHelper.extractLongNamed("id", innerElement);
+                baseDataValidator.reset().parameter("id").value(glimId).notNull().longGreaterThanZero();
 
-                    final String clientName = this.fromApiJsonHelper.extractStringNamed("clientName", innerElement);
-                    baseDataValidator.reset().parameter("clientName").value(clientName).notNull().notBlank();
-
-                    final BigDecimal remainigInterestAmount = this.fromApiJsonHelper.extractBigDecimalNamed("remainingTransactionAmount",
-                            innerElement, locale);
-                    baseDataValidator.reset().parameter("remainingTransactionAmount").value(remainigInterestAmount).notNull();
-
-                    final BigDecimal indTransactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed("transactionAmount",
-                            innerElement, locale);
-                    baseDataValidator.reset().parameter("transactionAmount").value(indTransactionAmount).notNull();
-                }
+                final BigDecimal indTransactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed("transactionAmount",
+                        innerElement, locale);
+                baseDataValidator.reset().parameter("transactionAmount").value(indTransactionAmount).notNull();
             }
         }
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

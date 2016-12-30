@@ -10,6 +10,7 @@ import org.apache.fineract.integrationtests.common.CenterDomain;
 import org.apache.fineract.integrationtests.common.CenterHelper;
 import org.apache.fineract.integrationtests.common.CgtHelper;
 import org.apache.fineract.integrationtests.common.ClientHelper;
+import org.apache.fineract.integrationtests.common.GlobalConfigurationHelper;
 import org.apache.fineract.integrationtests.common.OfficeHelper;
 import org.apache.fineract.integrationtests.common.Utils;
 import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
@@ -31,6 +32,7 @@ public class CgtIntegrationTest {
     private ResponseSpecification responseSpec;
     private RequestSpecification requestSpec;
     private CgtHelper cgtHelper;
+    private GlobalConfigurationHelper globalConfigurationHelper;
 
     @Before
     public void setup() {
@@ -65,6 +67,32 @@ public class CgtIntegrationTest {
         String entityId = center.getId().toString();
 
         Assert.assertNotNull(center);
+        this.globalConfigurationHelper = new GlobalConfigurationHelper(this.requestSpec, this.responseSpec);
+        
+        // Retrieving All Global Configuration details
+        final ArrayList<HashMap> globalConfig = this.globalConfigurationHelper.getAllGlobalConfigurations(this.requestSpec,
+                this.responseSpec);
+        Assert.assertNotNull(globalConfig);
+        String []configNames = {"enable-cgt", "min-cgt-days", "max-cgt-days"}; 
+        
+        for (int i = 0; i < configNames.length; i++) {
+            for (Integer configIndex = 0; configIndex < globalConfig.size(); configIndex++) {
+                if (globalConfig.get(configIndex).get("name").equals(configNames[i])) {
+                    Integer configId = (Integer) globalConfig.get(configIndex).get("id");
+                    Assert.assertNotNull(configId);
+                    Boolean enabled = (Boolean) globalConfig.get(configIndex).get("enabled");
+                    if (!enabled) {
+                        enabled = true;
+                    }
+                    configId = this.globalConfigurationHelper.updateEnabledFlagForGlobalConfiguration(this.requestSpec, this.responseSpec,
+                            configId.toString(), enabled);
+                    break;
+                }
+            }
+        }
+       
+        
+        
         this.cgtHelper = new CgtHelper(this.requestSpec, this.responseSpec);
         String cgtId = CgtHelper.createCgt(requestSpec, responseSpec, entityId, String.valueOf(staffId), clientIds);
         Assert.assertNotNull(cgtId);

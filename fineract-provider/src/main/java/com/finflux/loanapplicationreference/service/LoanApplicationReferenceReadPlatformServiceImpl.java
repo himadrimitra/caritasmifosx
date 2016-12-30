@@ -172,14 +172,14 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final Integer noOfTranche = JdbcSupport.getIntegeActualValue(rs, "noOfTranche");
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
 			PaymentTypeData expectedDisbursalPaymentType = null;
-			final Integer expectedDisbursalPaymentTypeId = rs.getInt("expectedDisbursalPaymentTypeId");
+			final Integer expectedDisbursalPaymentTypeId = JdbcSupport.getInteger(rs,"expectedDisbursalPaymentTypeId");
 			if (expectedDisbursalPaymentTypeId != null) {
 				final String disbursementPaymentTypeName = rs.getString("disbursementPaymentTypeName");
 				expectedDisbursalPaymentType = PaymentTypeData.instance(expectedDisbursalPaymentTypeId.longValue(),
 						disbursementPaymentTypeName);
 			}
 			PaymentTypeData expectedRepaymentPaymentType = null;
-			final Integer expectedRepaymentPaymentTypeId = rs.getInt("expectedRepaymentPaymentTypeId");
+			final Integer expectedRepaymentPaymentTypeId = JdbcSupport.getInteger(rs,"expectedRepaymentPaymentTypeId");
 			if (expectedRepaymentPaymentTypeId != null) {
 				final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
 				expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(),

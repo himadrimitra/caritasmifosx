@@ -1107,8 +1107,6 @@ public class Loan extends AbstractPersistable<Long> {
         
         Money amountWaived = loanCharge.waiveForGlim(loanCurrency(), clientcharge, loanInstallmentNumber);
 
-        changes.put("amount", amountWaived.getAmount());
-        
         Money unrecognizedIncome = amountWaived.zero();
         Money chargeComponent = amountWaived;
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
@@ -1220,6 +1218,12 @@ public class Loan extends AbstractPersistable<Long> {
         }
         this.loanOfficer = newLoanOfficer;
     }
+    
+	public void updateLoanOfficer(final Staff newLoanOfficer) {
+		if(newLoanOfficer != null){
+		this.loanOfficer = newLoanOfficer;
+		}
+	}
 
     public void updateTransactionProcessingStrategy(final LoanTransactionProcessingStrategy strategy) {
         this.transactionProcessingStrategy = strategy;
@@ -1293,7 +1297,7 @@ public class Loan extends AbstractPersistable<Long> {
                         scheduledLoanInstallment.periodDueDate(), scheduledLoanInstallment.principalDue(),
                         scheduledLoanInstallment.interestDue(), scheduledLoanInstallment.feeChargesDue(),
                         scheduledLoanInstallment.penaltyChargesDue(), scheduledLoanInstallment.isRecalculatedInterestComponent(),
-                        scheduledLoanInstallment.getLoanCompoundingDetails());
+                        scheduledLoanInstallment.getLoanCompoundingDetails(), scheduledLoanInstallment.advancePayment());
                 addRepaymentScheduleInstallment(installment);
             }
         }
@@ -3571,7 +3575,7 @@ public class Loan extends AbstractPersistable<Long> {
             if (isPaidOrPartiallyPaid && !loanCharge.isDueAtDisbursement()) {
                 if (loanCharge.isInstalmentFee()) {
                     LoanInstallmentCharge paidLoanChargePerInstallment = loanCharge
-                            .getLastPaidOrPartiallyPaidInstallmentLoanCharge(currency);
+                            .getLastPaidOrPartiallyPaidInstallmentLoanChargeForGlim(currency);
                     if (chargePerInstallment == null
                             || (paidLoanChargePerInstallment != null && chargePerInstallment.getRepaymentInstallment().getDueDate()
                                     .isBefore(paidLoanChargePerInstallment.getRepaymentInstallment().getDueDate()))) {
@@ -3965,16 +3969,20 @@ public class Loan extends AbstractPersistable<Long> {
         }
         
         if (this.isGLIMLoan()) {
-            final int comparsion = transactionForAdjustment.getTransactionDate().compareTo(getLastUserTransactionDate());
+            LoanTransaction currentTransaction = transactionForAdjustment;
+            if (MathUtility.isGreaterThanZero(newTransactionDetail.getAmount())) {
+                currentTransaction = newTransactionDetail;
+            }
+            final int comparsion = currentTransaction.getTransactionDate().compareTo(getLastUserTransactionDate());
             if (comparsion == 0) {
-                if (transactionForAdjustment.getCreatedDate() != null && getLastUserTransaction() != null) {
-                    if (transactionForAdjustment.getCreatedDate().compareTo(getLastUserTransaction().getCreatedDate()) == -1) {
+                if (currentTransaction.getCreatedDate() != null && getLastUserTransaction() != null) {
+                    if (currentTransaction.getCreatedDate().compareTo(getLastUserTransaction().getCreatedDate()) == -1) {
                         final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
                         throw new InvalidLoanTransactionTypeException("transaction",
                                 "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan", errorMessage);
                     }
                 }
-            } else if (transactionForAdjustment.getTransactionDate().isBefore(getLastUserTransactionDate())) {
+            } else if (currentTransaction.getTransactionDate().isBefore(getLastUserTransactionDate())) {
                 final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
                 throw new InvalidLoanTransactionTypeException("transaction", "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan",
                         errorMessage);
@@ -6036,7 +6044,10 @@ public class Loan extends AbstractPersistable<Long> {
             loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
             this.firstEmiAmount = firstInstallmentEmiAmount;
         }
-
+        if (!this.getDisbursementDate().isBefore(DateUtils.getLocalDateOfTenant()) && this.isInterestRecalculationEnabledForProduct()
+                && this.loanProduct().isAdjustInterestForRounding()) {
+            loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
+        }
         return loanScheduleGenerator.rescheduleNextInstallments(mc, loanApplicationTerms, this, generatorDTO.getHolidayDetailDTO(),
                 retreiveListOfTransactionsPostDisbursementExcludeAccruals(),loanRepaymentScheduleTransactionProcessor, generatorDTO.getRecalculateFrom());
     }

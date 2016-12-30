@@ -89,10 +89,8 @@ public class BankStatementDetailsReconciliationApiResource {
                     .retrieveBankStatementDetailsDataForReconcile(bankStatementId);
         }
         
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
-        return this.bankStatementDetailsApiJsonSerializer.serialize(settings, bankStatementDetailsData,
-                ReconciliationApiConstants.BANK_STATEMENT_DETAILS_RESPONSE_DATA_PARAMETERS);
+        return this.bankStatementDetailsReadPlatformService.getBankStatementDetails(bankStatementDetailsData, bankStatementId);        
+        
     }
 
     @PUT

@@ -152,6 +152,9 @@ public class RBLSinglePaymentStatusResponse {
 		@JsonProperty("TXNSTATUS")
 		private String transactionStatus;
 
+		@JsonProperty("PAYMENTSTATUS")
+		private String paymentStatus;
+
 		@JsonProperty("STATUSDESC")
 		private String statusDescription;
 
@@ -236,6 +239,14 @@ public class RBLSinglePaymentStatusResponse {
 
 		public void setPoNumber(String poNumber) {
 			this.poNumber = poNumber;
+		}
+
+		public String getPaymentStatus() {
+			return paymentStatus;
+		}
+
+		public void setPaymentStatus(String paymentStatus) {
+			this.paymentStatus = paymentStatus;
 		}
 	}
 

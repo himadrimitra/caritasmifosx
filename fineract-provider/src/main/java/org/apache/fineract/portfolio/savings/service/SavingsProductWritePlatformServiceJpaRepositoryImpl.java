@@ -88,7 +88,12 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
     private void handleDataIntegrityIssues(final JsonCommand command, final DataAccessException dae) {
 
         final Throwable realCause = dae.getMostSpecificCause();
-        if (realCause.getMessage().contains("sp_unq_name")) {
+        if (realCause.getMessage().contains("external_id")) {
+
+            final String externalId = command.stringValueOfParameterNamed("externalId");
+            throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.externalId", "Savings Product with externalId `"
+                    + externalId + "` already exists", "externalId", externalId);
+        } else if (realCause.getMessage().contains("sp_unq_name")) {
 
             final String name = command.stringValueOfParameterNamed("name");
             throw new PlatformDataIntegrityException("error.msg.product.savings.duplicate.name", "Savings product with name `" + name

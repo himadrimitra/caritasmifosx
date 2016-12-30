@@ -154,6 +154,14 @@ public class CommandWrapperBuilder {
         this.href = "/users/" + userId;
         return this;
     }
+    
+    public CommandWrapperBuilder unlockUser(final Long userId) {
+        this.actionName = "UNLOCK";
+        this.entityName = "USER";
+        this.entityId = userId;
+        this.href = "/users/" + userId +"?command=unlock";
+        return this;
+    }
 
     public CommandWrapperBuilder createOffice() {
         this.actionName = "CREATE";

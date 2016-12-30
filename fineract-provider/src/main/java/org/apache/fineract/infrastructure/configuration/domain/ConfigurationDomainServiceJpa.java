@@ -33,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Service
 public class ConfigurationDomainServiceJpa implements ConfigurationDomainService {
 
@@ -167,7 +166,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public Integer retrieveFinancialYearBeginningMonth() {
         final String propertyName = "financial-year-beginning-month";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-        if (property.isEnabled()) return  integerValue(property.getValue());
+        if (property.isEnabled()) return integerValue(property.getValue());
         return 1;
     }
 
@@ -201,14 +200,12 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         if (property.isEnabled()) {
             int value = integerValue(property.getValue());
-            if (value < 0 || value > 6) {
-                return defaultValue;
-            }
+            if (value < 0 || value > 6) { return defaultValue; }
             return value;
         }
         return defaultValue;
     }
-    
+
     @Override
     public int getAdjustedAmountRoundingMode() {
         final String propertyName = "adjusted-amount-rounding-mode";
@@ -216,9 +213,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         if (property.isEnabled()) {
             int value = integerValue(property.getValue());
-            if (value < 0 || value > 6) {
-                return defaultValue;
-            }
+            if (value < 0 || value > 6) { return defaultValue; }
             return value;
         }
         return defaultValue;
@@ -245,13 +240,13 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return property.getDateValue();
     }
 
-	@Override
-	public boolean isPaymnetypeApplicableforDisbursementCharge() {
-		final String propertyName = "paymenttype-applicable-for-disbursement-charges";
+    @Override
+    public boolean isPaymnetypeApplicableforDisbursementCharge() {
+        final String propertyName = "paymenttype-applicable-for-disbursement-charges";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return property.isEnabled();
-	}
-	
+    }
+
     @Override
     public boolean isSkippingMeetingOnFirstDayOfMonthEnabled() {
         return getGlobalConfigurationPropertyData("skip-repayment-on-first-day-of-month").isEnabled();
@@ -270,7 +265,7 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return property.isEnabled();
     }
-    
+
     @Override
     public boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled() {
         final String propertyName = "change-emi-if-repaymentdate-same-as-disbursementdate";
@@ -315,10 +310,10 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     }
 
     @Override
-    public boolean isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled(){
-    	final String propertyName = "force-loan-repayment-frequency-match-with-meeting-frequency";
-    	 final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-         return property.isEnabled();
+    public boolean isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled() {
+        final String propertyName = "force-loan-repayment-frequency-match-with-meeting-frequency";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
     }
 
     @Override
@@ -327,34 +322,33 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return property.isEnabled();
     }
-    
+
     @Override
     public GlobalConfigurationPropertyData getGlobalConfigurationPropertyData(final String propertyName) {
         GlobalConfigurationProperty configuration = this.globalConfigurationRepository.findOneByNameWithNotFoundDetection(propertyName);
         return configuration.toData();
     }
 
-
     @Override
     public boolean isSavingAccountsInculdedInCollectionSheet() {
         return getGlobalConfigurationPropertyData("savings_account_included_in_collection_sheet").isEnabled();
     }
 
-	@Override
-	public boolean isWithDrawForSavingsIncludedInCollectionSheet() {
-		return getGlobalConfigurationPropertyData("savings_withdraw_included_in_collection_sheet").isEnabled();
-	}
+    @Override
+    public boolean isWithDrawForSavingsIncludedInCollectionSheet() {
+        return getGlobalConfigurationPropertyData("savings_withdraw_included_in_collection_sheet").isEnabled();
+    }
 
     @Override
     public boolean isSearchIncludeGroupInfo() {
         return getGlobalConfigurationPropertyData("show-hierarchy-details-on-search").isEnabled();
     }
-    
+
     @Override
     public boolean isCustomerDeDuplicationEnabled() {
         return getGlobalConfigurationPropertyData("customer-deduplication").isEnabled();
     }
-    
+
     @Override
     public boolean isWorkFlowEnabled() {
         return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.WORK_FLOW).isEnabled();
@@ -390,12 +384,32 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
 		final String propertyName = "min-cgt-days";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return longValue(property.getValue());
-	}
+    }
 
-	@Override
-	public Long getMaxCgtDays() {
-		final String propertyName = "max-cgt-days";
+    @Override
+    public Long getMaxCgtDays() {
+        final String propertyName = "max-cgt-days";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return longValue(property.getValue());
-	}
+    }
+
+    @Override
+    public boolean isMaxLoginAttemptsEnable() {
+        final String propertyName = "max-login-attempts";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
+    }
+
+    @Override
+    public Integer retrieveMaxLoginAttempts() {
+        final String propertyName = "max-login-attempts";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        if (property.isEnabled()) return integerValue(property.getValue());
+        return 1;
+    }
+
+    @Override
+    public boolean isLoanOfficerToCenterHierarchyEnabled() {
+        return getGlobalConfigurationPropertyData("apply-loan-officer-to-center-hierarchy").isEnabled();
+    }
 }

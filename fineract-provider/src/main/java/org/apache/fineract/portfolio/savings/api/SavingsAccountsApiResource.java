@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.savings.api;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -149,22 +150,26 @@ public class SavingsAccountsApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveOne(@PathParam("accountId") final Long accountId,
             @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
-            @DefaultValue("all") @QueryParam("chargeStatus") final String chargeStatus, @Context final UriInfo uriInfo) {
+            @DefaultValue("all") @QueryParam("chargeStatus") final String chargeStatus, @Context final UriInfo uriInfo,@QueryParam("transactionsCount") final Integer transactionsCount,
+			@QueryParam("fromDate") final Date fromDate, @QueryParam("toDate") final Date toDate, @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
+			@QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,@QueryParam("sqlSearch") final String sqlSearch) {
 
         this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
 
         if (!(is(chargeStatus, "all") || is(chargeStatus, "active") || is(chargeStatus, "inactive"))) { throw new UnrecognizedQueryParamException(
                 "status", chargeStatus, new Object[] { "all", "active", "inactive" }); }
-
+        
         final SavingsAccountData savingsAccount = this.savingsAccountReadPlatformService.retrieveOne(accountId);
         SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
+        final SearchParameters searchParameters = SearchParameters.forTransactions(sqlSearch, transactionsCount,
+				fromDate, toDate, offset, limit, orderBy, sortOrder);
         if (savingsAccount.isAllowOverdraft()) {
             savingsAccountDpDetailsData = this.savingsAccountReadPlatformService.retrieveSavingsDpDetailsBySavingsId(accountId);
         }
 
         final Set<String> mandatoryResponseParameters = new HashSet<>();
         final SavingsAccountData savingsAccountTemplate = populateTemplateAndAssociations(accountId, savingsAccount,
-                staffInSelectedOfficeOnly, chargeStatus, uriInfo, mandatoryResponseParameters, savingsAccountDpDetailsData);
+                staffInSelectedOfficeOnly, chargeStatus, uriInfo, mandatoryResponseParameters, savingsAccountDpDetailsData, searchParameters);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),
                 mandatoryResponseParameters);
@@ -174,7 +179,7 @@ public class SavingsAccountsApiResource {
 
     private SavingsAccountData populateTemplateAndAssociations(final Long accountId, final SavingsAccountData savingsAccount,
             final boolean staffInSelectedOfficeOnly, final String chargeStatus, final UriInfo uriInfo,
-            final Set<String> mandatoryResponseParameters, SavingsAccountDpDetailsData savingsAccountDpDetailsData) {
+            final Set<String> mandatoryResponseParameters, SavingsAccountDpDetailsData savingsAccountDpDetailsData, SearchParameters searchParameters) {
 
         Collection<SavingsAccountTransactionData> transactions = null;
         Collection<SavingsAccountChargeData> charges = null;
@@ -189,7 +194,7 @@ public class SavingsAccountsApiResource {
             if (associationParameters.contains(SavingsApiConstants.transactions)) {
                 mandatoryResponseParameters.add(SavingsApiConstants.transactions);
                 final Collection<SavingsAccountTransactionData> currentTransactions = this.savingsAccountReadPlatformService
-                        .retrieveAllTransactions(accountId, DepositAccountType.SAVINGS_DEPOSIT);
+                        .retrieveAllTransactions(accountId, DepositAccountType.SAVINGS_DEPOSIT, searchParameters);
                 if (!CollectionUtils.isEmpty(currentTransactions)) {
                     transactions = currentTransactions;
                 }

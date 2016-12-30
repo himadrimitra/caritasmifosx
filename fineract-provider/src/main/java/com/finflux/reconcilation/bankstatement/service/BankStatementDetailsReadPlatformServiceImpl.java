@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -21,7 +22,10 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
+import com.finflux.reconcilation.bankstatement.domain.BankStatement;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailType;
+import com.finflux.reconcilation.bankstatement.domain.BankStatementRepositoryWrapper;
+import com.google.gson.Gson;
 
 @Service
 public class BankStatementDetailsReadPlatformServiceImpl implements BankStatementDetailsReadPlatformService{
@@ -29,13 +33,16 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
 	private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
     private final BankLoanTransactionsReadPlatformService bankLoanTransactionsReadPlatformService;
+    private final BankStatementRepositoryWrapper bankStatementReadPlatformService;
 
     @Autowired
     public BankStatementDetailsReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-    		final BankLoanTransactionsReadPlatformService bankLoanTransactionsReadPlatformService) {
+    		final BankLoanTransactionsReadPlatformService bankLoanTransactionsReadPlatformService,
+    		final BankStatementRepositoryWrapper bankStatementReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.bankLoanTransactionsReadPlatformService = bankLoanTransactionsReadPlatformService;
+        this.bankStatementReadPlatformService = bankStatementReadPlatformService;
     }
     
 
@@ -277,5 +284,21 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
         return this.jdbcTemplate.query(sql, rm, new Object[] { bankStatementId });
         
     }
+
+	@Override
+	public String getBankStatementDetails(
+			List<BankStatementDetailsData> bankStatementDetailData, final Long bankStatementId) {
+		HashMap<String, Object> responseData = new HashMap<>();
+        Gson gson = new Gson();     
+        BankStatement bankStatement = this.bankStatementReadPlatformService.findOneWithNotFoundDetection(bankStatementId);
+        final String sql = "SELECT count(*) from f_bank_statement_details bsd where bsd.bank_statement_id = ? and bsd.loan_account_number IS NULL and bsd.bank_statement_detail_type = "+ BankStatementDetailType.PORTFOLIO.getValue();
+        int totalTransactions = this.jdbcTemplate.queryForObject(
+                sql, new Object[] { bankStatementId }, Integer.class);
+        responseData.put("totalTransactions", totalTransactions);
+        responseData.put("bankName", bankStatement.getBank().getName());
+        responseData.put("bankStatementName", bankStatement.getName());
+        responseData.put("bankStatementDetails", bankStatementDetailData);
+        return gson.toJson(responseData);
+	}
 
 }

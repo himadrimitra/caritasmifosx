@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -84,13 +85,14 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
     private final AppUserPreviousPasswordRepository appUserPreviewPasswordRepository;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
     private final ClientRepository clientRepository;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public AppUserWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final AppUserRepository appUserRepository,
             final UserDomainService userDomainService, final OfficeRepository officeRepository, final RoleRepository roleRepository,
             final PlatformPasswordEncoder platformPasswordEncoder, final UserDataValidator fromApiJsonDeserializer,
             final AppUserPreviousPasswordRepository appUserPreviewPasswordRepository, final StaffRepositoryWrapper staffRepositoryWrapper,
-            final ClientRepository clientRepository) {
+            final ClientRepository clientRepository,final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.appUserRepository = appUserRepository;
         this.userDomainService = userDomainService;
@@ -101,6 +103,7 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
         this.appUserPreviewPasswordRepository = appUserPreviewPasswordRepository;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
         this.clientRepository = clientRepository;
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Transactional
@@ -317,6 +320,34 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
 
         return new CommandProcessingResultBuilder().withEntityId(userId).withOfficeId(user.getOffice().getId()).build();
     }
+    
+    @Override
+    public void updateFailedLoginStatus(final String username) {
+        if (this.configurationDomainService.isMaxLoginAttemptsEnable()) {
+            final AppUser appuser = this.appUserRepository.findAppUserByName(username);
+            if (appuser != null) {
+                appuser.updateFailure(this.configurationDomainService.retrieveMaxLoginAttempts());
+                this.appUserRepository.save(appuser);
+            }
+        }
+    }
+    
+    @Override
+    public void updateSuccessLoginStatus(final AppUser appuser) {
+        appuser.resetFailureAttempts();
+        appuser.setLastLoginDate(DateUtils.getLocalDateTimeOfTenant().toDate());
+        this.appUserRepository.save(appuser);
+    }
+    
+    @Override
+    public CommandProcessingResult unlockUser(final Long userId) {
+        final AppUser user = this.appUserRepository.findOne(userId);
+        if (user == null || user.isDeleted()) { throw new UserNotFoundException(userId); }
+        user.unLockAccount();
+        this.appUserRepository.save(user);
+
+        return new CommandProcessingResultBuilder().withEntityId(userId).withOfficeId(user.getOffice().getId()).build();
+    }
 
     /*
      * Guaranteed to throw an exception no matter what the data integrity issue
@@ -337,9 +368,4 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
         throw new PlatformDataIntegrityException("error.msg.unknown.data.integrity.issue", "Unknown data integrity issue with resource.");
     }
 
-	@Override
-	public void updateLastLogindate(AppUser user) {
-		user.setLastLoginDate(DateUtils.getLocalDateTimeOfTenant().toDate());
-		this.appUserRepository.save(user);
-	}
 }

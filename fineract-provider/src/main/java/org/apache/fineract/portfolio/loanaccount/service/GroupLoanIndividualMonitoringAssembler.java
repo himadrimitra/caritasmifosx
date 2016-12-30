@@ -32,6 +32,7 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
@@ -86,18 +87,17 @@ public class GroupLoanIndividualMonitoringAssembler {
                             && MathUtility.isGreaterThanZero(transactionAmount) && !isRecoveryPayment) { throw new ClientAlreadyWriteOffException(); }
                     glim.updateTransactionAmount(transactionAmount);
                 }
-                Boolean isClientSelected = member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean();
-                if (isClientSelected) {
-                    glimMembers.add(glim);
-                }
+                glimMembers.add(glim);
             }
         }
         return glimMembers;
     }
 
     public List<GroupLoanIndividualMonitoring> updateFromJson(final JsonElement element, final String amountType, Loan loan,
-            int numberOfRepayments, final BigDecimal interestRate) {
+            int numberOfRepayments, final BigDecimal interestRate, Collection<GroupLoanIndividualMonitoringDataChanges> clientMembersJson) {
         final List<GroupLoanIndividualMonitoring> glimList = new ArrayList<>();
+        
+        List<GroupLoanIndividualMonitoring> selectedGlimMembers = new ArrayList<>();
         if (this.fromApiJsonHelper.parameterExists(LoanApiConstants.clientMembersParamName, element)) {
             JsonArray clientMembers = this.fromApiJsonHelper.extractJsonArrayNamed(LoanApiConstants.clientMembersParamName, element);
             HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
@@ -106,52 +106,60 @@ public class GroupLoanIndividualMonitoringAssembler {
                 BigDecimal amount = null;
                 BigDecimal percentage = BigDecimal.ZERO;
                 BigDecimal totalInterest = BigDecimal.ZERO;
-                Boolean isClientSelected = member.has(LoanApiConstants.isClientSelectedParamName)
-                        && member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean();
-                Long glimId = member.get(LoanApiConstants.glimIdParamName).getAsLong();
+                Long glimId = member.get(LoanApiConstants.idParamName).getAsLong();
                 GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = this.glimRepositoryWrapper
                         .findOneWithNotFoundDetection(glimId);
-                groupLoanIndividualMonitoring.setIsClientSelected(isClientSelected);
-                if (isClientSelected) {
-                    if (member.has(LoanApiConstants.amountParamName)) {
-                        amount = member.get(LoanApiConstants.amountParamName).getAsBigDecimal();
-                    }
-                    if (member.has(LoanApiConstants.loanPurposeIdParamName)) {
-                        Long loanPurposeId = member.get(LoanApiConstants.loanPurposeIdParamName).getAsLong();
-                        CodeValue loanPurpose = this.codeValueRepository.findOne(loanPurposeId);
-                        groupLoanIndividualMonitoring.setLoanPurpose(loanPurpose);
-                    }
-                    if (amountType.equalsIgnoreCase("proposedAmount")) {
-                        groupLoanIndividualMonitoring.setProposedAmount(amount);
-                    } else if (amountType.equalsIgnoreCase("approvedAmount")) {
-                        groupLoanIndividualMonitoring.setApprovedAmount(amount);
-                    } else {
-                        groupLoanIndividualMonitoring.setDisbursedAmount(amount);
-                    }
+                selectedGlimMembers.add(groupLoanIndividualMonitoring);
 
-                    // total interest calculation
-                    if (loan.getLoanProductRelatedDetail().getInterestMethod().isDecliningBalnce()) {
-                        totalInterest = calculateTotalInterest(interestRate, numberOfRepayments, amount);
-                    } else {
-                        totalInterest = calculateTotalInterestForFlat(loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate(),
-                                numberOfRepayments, amount);
-                    }
-                    groupLoanIndividualMonitoring.setInterestAmount(totalInterest);
-
-                    // calculate percentage of principal amount
-                    percentage = calculatePercentageOfAmount(element, amount, percentage);
-                    groupLoanIndividualMonitoring.updatePercentage(percentage);
-                    Set<GroupLoanIndividualMonitoringCharge> glimCharges = groupLoanIndividualMonitoring
-                            .getGroupLoanIndividualMonitoringCharges();
-                    recalculateTotalFeeCharges(loan, chargesMap, amount, glimCharges);
-                    glimList.add(groupLoanIndividualMonitoring);
+                if (member.has(LoanApiConstants.transactionAmountParamName)) {
+                    amount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
+                }
+                if (member.has(LoanApiConstants.loanPurposeIdParamName)) {
+                    Long loanPurposeId = member.get(LoanApiConstants.loanPurposeIdParamName).getAsLong();
+                    CodeValue loanPurpose = this.codeValueRepository.findOne(loanPurposeId);
+                    groupLoanIndividualMonitoring.setLoanPurpose(loanPurpose);
+                }
+                if (amountType.equalsIgnoreCase("proposedAmount")) {
+                    groupLoanIndividualMonitoring.setProposedAmount(amount);
+                } else if (amountType.equalsIgnoreCase("approvedAmount")) {
+                    groupLoanIndividualMonitoring.setApprovedAmount(amount);
+                } else {
+                    groupLoanIndividualMonitoring.setDisbursedAmount(amount);
                 }
 
+                // total interest calculation
+                if (loan.getLoanProductRelatedDetail().getInterestMethod().isDecliningBalnce()) {
+                    totalInterest = calculateTotalInterest(interestRate, numberOfRepayments, amount);
+                } else {
+                    totalInterest = calculateTotalInterestForFlat(loan.getLoanProductRelatedDetail().getAnnualNominalInterestRate(),
+                            numberOfRepayments, amount);
+                }
+                groupLoanIndividualMonitoring.setInterestAmount(totalInterest);
+
+                // calculate percentage of principal amount
+                percentage = calculatePercentageOfAmount(element, amount, percentage);
+                groupLoanIndividualMonitoring.updatePercentage(percentage);
+                Set<GroupLoanIndividualMonitoringCharge> glimCharges = groupLoanIndividualMonitoring
+                        .getGroupLoanIndividualMonitoringCharges();
+                recalculateTotalFeeCharges(loan, chargesMap, amount, glimCharges);
+                glimList.add(groupLoanIndividualMonitoring);
+                clientMembersJson.add(GroupLoanIndividualMonitoringDataChanges.createNew(groupLoanIndividualMonitoring.getId(), amount));
+            
             }
             // update the recalculated charge amounts in loan charge obj
             updateLoanChargesForGlim(loan, chargesMap);
+            updateGlimMembersIsSelected(selectedGlimMembers, loan.getId());
         }
         return glimList;
+    }
+
+    private void updateGlimMembersIsSelected(List<GroupLoanIndividualMonitoring> selectedGlimMembers, Long loanId) {
+        List<GroupLoanIndividualMonitoring> availableGlimMembers = this.glimRepositoryWrapper.findByLoanId(loanId);
+        for (GroupLoanIndividualMonitoring availableGlimMember : availableGlimMembers) {
+            if (!selectedGlimMembers.contains(availableGlimMember)) {
+                availableGlimMember.setIsClientSelected(false);
+            }
+        }
     }
 
     public void updateLoanChargesForGlim(Loan loan, HashMap<Long, BigDecimal> chargesMap) {
@@ -218,100 +226,98 @@ public class GroupLoanIndividualMonitoringAssembler {
             List<GroupLoanIndividualMonitoring> glimList) {
         Map<Long, BigDecimal> chargesMap = new HashMap<>();
         for (final GroupLoanIndividualMonitoring glim : glimList) {
-            if (glim.isClientSelected()) {
-                BigDecimal totalCharge = BigDecimal.ZERO;
-                BigDecimal emiAmount = BigDecimal.ZERO;
-                BigDecimal recalculateEmiAmount = BigDecimal.ZERO;
-                BigDecimal totalPaybleAmount = BigDecimal.ZERO;
-                BigDecimal totalAmountBeforeAdjustment = BigDecimal.ZERO;
-                BigDecimal revisedTotalFee = BigDecimal.ZERO;
-                Set<GroupLoanIndividualMonitoringCharge> clientCharges = glim.getGroupLoanIndividualMonitoringCharges();
-                BigDecimal upfrontFeeAmount = BigDecimal.ZERO;
-                for (GroupLoanIndividualMonitoringCharge glimCharge : clientCharges) {
-                    glimCharge.setGlim(glim);
-                    if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
-                        totalCharge = totalCharge.add(BigDecimal.ZERO);
-                        upfrontFeeAmount = upfrontFeeAmount.add(glimCharge.getFeeAmount());
-                    } else {
-                        totalCharge = totalCharge.add(glimCharge.getFeeAmount());
-                    }
-
-                }
-                glim.setChargeAmount(totalCharge);
-                // adjust total amount
-                if (glim.getDisbursedAmount() != null) {
-                    totalAmountBeforeAdjustment = glim.getDisbursedAmount().add(glim.getInterestAmount()).add(totalCharge);
-                } else if (glim.getApprovedAmount() != null) {
-                    totalAmountBeforeAdjustment = glim.getApprovedAmount().add(glim.getInterestAmount()).add(totalCharge);
+            BigDecimal totalCharge = BigDecimal.ZERO;
+            BigDecimal emiAmount = BigDecimal.ZERO;
+            BigDecimal recalculateEmiAmount = BigDecimal.ZERO;
+            BigDecimal totalPaybleAmount = BigDecimal.ZERO;
+            BigDecimal totalAmountBeforeAdjustment = BigDecimal.ZERO;
+            BigDecimal revisedTotalFee = BigDecimal.ZERO;
+            Set<GroupLoanIndividualMonitoringCharge> clientCharges = glim.getGroupLoanIndividualMonitoringCharges();
+            BigDecimal upfrontFeeAmount = BigDecimal.ZERO;
+            for (GroupLoanIndividualMonitoringCharge glimCharge : clientCharges) {
+                glimCharge.setGlim(glim);
+                if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
+                    totalCharge = totalCharge.add(BigDecimal.ZERO);
+                    upfrontFeeAmount = upfrontFeeAmount.add(glimCharge.getFeeAmount());
                 } else {
-                    totalAmountBeforeAdjustment = glim.getProposedAmount().add(glim.getInterestAmount()).add(totalCharge);
+                    totalCharge = totalCharge.add(glimCharge.getFeeAmount());
                 }
-                BigDecimal beforeRoundingEmiAmount = BigDecimal.valueOf((totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment
-                        .doubleValue()));
 
-                if(upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1) {
-                    emiAmount = BigDecimal.valueOf(Math.round(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
-                    glim.setInstallmentAmount(emiAmount);
-                    glim.setTotalPaybleAmount(totalAmountBeforeAdjustment.add(upfrontFeeAmount));
-                } else {
-                    emiAmount = BigDecimal.valueOf(Math.ceil(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
-                    glim.setInstallmentAmount(emiAmount);
-                    totalPaybleAmount = BigDecimal.valueOf(emiAmount.multiply(BigDecimal.valueOf(numberOfRepayment)).doubleValue());
-                    glim.setTotalPaybleAmount(totalPaybleAmount);
-                }
-                
+            }
+            glim.setChargeAmount(totalCharge);
+            // adjust total amount
+            if (glim.getDisbursedAmount() != null) {
+                totalAmountBeforeAdjustment = glim.getDisbursedAmount().add(glim.getInterestAmount()).add(totalCharge);
+            } else if (glim.getApprovedAmount() != null) {
+                totalAmountBeforeAdjustment = glim.getApprovedAmount().add(glim.getInterestAmount()).add(totalCharge);
+            } else {
+                totalAmountBeforeAdjustment = glim.getProposedAmount().add(glim.getInterestAmount()).add(totalCharge);
+            }
+            BigDecimal beforeRoundingEmiAmount = BigDecimal.valueOf((totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment
+                    .doubleValue()));
 
-                // adjust rounding off amount to applicable charge
-                for (GroupLoanIndividualMonitoringCharge glimCharge : clientCharges) {
-                    if (glimCharge.getCharge().isEmiRoundingGoalSeek() && !ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType()).isUpfrontFee()) {
-                        BigDecimal differenceAmount = totalPaybleAmount.subtract(totalAmountBeforeAdjustment);
+            if(upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1) {
+                emiAmount = BigDecimal.valueOf(Math.round(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
+                glim.setInstallmentAmount(emiAmount);
+                glim.setTotalPaybleAmount(totalAmountBeforeAdjustment.add(upfrontFeeAmount));
+            } else {
+                emiAmount = BigDecimal.valueOf(Math.ceil(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
+                glim.setInstallmentAmount(emiAmount);
+                totalPaybleAmount = BigDecimal.valueOf(emiAmount.multiply(BigDecimal.valueOf(numberOfRepayment)).doubleValue());
+                glim.setTotalPaybleAmount(totalPaybleAmount);
+            }
+            
+
+            // adjust rounding off amount to applicable charge
+            for (GroupLoanIndividualMonitoringCharge glimCharge : clientCharges) {
+                if (glimCharge.getCharge().isEmiRoundingGoalSeek() && !ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType()).isUpfrontFee()) {
+                    BigDecimal differenceAmount = totalPaybleAmount.subtract(totalAmountBeforeAdjustment);
+                    revisedTotalFee = glimCharge.getFeeAmount().add(differenceAmount);
+                    /*
+                     * if diff amount is ZERO and max cap is equal to
+                     * revisedTotalFee then then substract one from EMI then
+                     * multiply with no of installments get diff amount add
+                     * to revised fee
+                     */
+                    BigDecimal capAmount = glimCharge.getCharge().getMaxCap() != null ? glimCharge.getCharge().getMaxCap()
+                            : BigDecimal.ZERO;
+                    BigDecimal maxCap = BigDecimal.valueOf(Math.ceil(capAmount.doubleValue()));
+                    maxCap = applyTaxComponentsOnCapping(maxCap, glimCharge.getCharge());
+                    if (revisedTotalFee.compareTo(maxCap) > 0 && revisedTotalFee.compareTo(BigDecimal.valueOf(Math.ceil(maxCap.doubleValue()))) == 0) {
+                        recalculateEmiAmount = emiAmount.subtract(BigDecimal.ONE);
+                        glim.setInstallmentAmount(recalculateEmiAmount);
+                        totalPaybleAmount = BigDecimal.valueOf(recalculateEmiAmount.multiply(BigDecimal.valueOf(numberOfRepayment))
+                                .doubleValue());
+                        glim.setTotalPaybleAmount(totalPaybleAmount);
+                        differenceAmount = totalPaybleAmount.subtract(totalAmountBeforeAdjustment);
                         revisedTotalFee = glimCharge.getFeeAmount().add(differenceAmount);
-                        /*
-                         * if diff amount is ZERO and max cap is equal to
-                         * revisedTotalFee then then substract one from EMI then
-                         * multiply with no of installments get diff amount add
-                         * to revised fee
-                         */
-                        BigDecimal capAmount = glimCharge.getCharge().getMaxCap() != null ? glimCharge.getCharge().getMaxCap()
-                                : BigDecimal.ZERO;
-                        BigDecimal maxCap = BigDecimal.valueOf(Math.ceil(capAmount.doubleValue()));
-                        maxCap = applyTaxComponentsOnCapping(maxCap, glimCharge.getCharge());
-                        if (revisedTotalFee.compareTo(maxCap) > 0 && revisedTotalFee.compareTo(BigDecimal.valueOf(Math.ceil(maxCap.doubleValue()))) == 0) {
-                            recalculateEmiAmount = emiAmount.subtract(BigDecimal.ONE);
-                            glim.setInstallmentAmount(recalculateEmiAmount);
-                            totalPaybleAmount = BigDecimal.valueOf(recalculateEmiAmount.multiply(BigDecimal.valueOf(numberOfRepayment))
-                                    .doubleValue());
-                            glim.setTotalPaybleAmount(totalPaybleAmount);
-                            differenceAmount = totalPaybleAmount.subtract(totalAmountBeforeAdjustment);
-                            revisedTotalFee = glimCharge.getFeeAmount().add(differenceAmount);
-                        } else if (revisedTotalFee.compareTo(maxCap) == 1) {
-                            emiAmount = BigDecimal.valueOf(Math.floor(beforeRoundingEmiAmount.doubleValue()));
-                            glim.setInstallmentAmount(emiAmount);
-                            totalPaybleAmount = BigDecimal.valueOf(emiAmount.multiply(BigDecimal.valueOf(numberOfRepayment)).doubleValue());
-                            glim.setTotalPaybleAmount(totalPaybleAmount);
-                            differenceAmount = totalPaybleAmount.subtract(totalAmountBeforeAdjustment);
-                            revisedTotalFee = glimCharge.getFeeAmount().add(differenceAmount);
-                        }
-                        totalCharge = totalCharge.add(differenceAmount);
-                        glimCharge.setRevisedFeeAmount(BigDecimal.valueOf(Math.round(revisedTotalFee.doubleValue())));
+                    } else if (revisedTotalFee.compareTo(maxCap) == 1) {
+                        emiAmount = BigDecimal.valueOf(Math.floor(beforeRoundingEmiAmount.doubleValue()));
+                        glim.setInstallmentAmount(emiAmount);
+                        totalPaybleAmount = BigDecimal.valueOf(emiAmount.multiply(BigDecimal.valueOf(numberOfRepayment)).doubleValue());
+                        glim.setTotalPaybleAmount(totalPaybleAmount);
+                        differenceAmount = totalPaybleAmount.subtract(totalAmountBeforeAdjustment);
+                        revisedTotalFee = glimCharge.getFeeAmount().add(differenceAmount);
                     }
-                    if (chargesMap.containsKey(glimCharge.getCharge().getId())) {
-                        chargesMap.put(
-                                glimCharge.getCharge().getId(),
-                                chargesMap.get(glimCharge.getCharge().getId()).add(
-                                        glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount() : glimCharge
-                                                .getRevisedFeeAmount()));
-                    } else {
-                        chargesMap.put(glimCharge.getCharge().getId(), glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount()
-                                : glimCharge.getRevisedFeeAmount());
-                    }
+                    totalCharge = totalCharge.add(differenceAmount);
+                    glimCharge.setRevisedFeeAmount(BigDecimal.valueOf(Math.round(revisedTotalFee.doubleValue())));
                 }
-                // add upfront fee amount
-                if (upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1) {
-                    glim.setChargeAmount(BigDecimal.valueOf(Math.round(upfrontFeeAmount.doubleValue())));
+                if (chargesMap.containsKey(glimCharge.getCharge().getId())) {
+                    chargesMap.put(
+                            glimCharge.getCharge().getId(),
+                            chargesMap.get(glimCharge.getCharge().getId()).add(
+                                    glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount() : glimCharge
+                                            .getRevisedFeeAmount()));
                 } else {
-                    glim.setChargeAmount(BigDecimal.valueOf(Math.round(totalCharge.doubleValue())));
+                    chargesMap.put(glimCharge.getCharge().getId(), glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount()
+                            : glimCharge.getRevisedFeeAmount());
                 }
+            }
+            // add upfront fee amount
+            if (upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1) {
+                glim.setChargeAmount(BigDecimal.valueOf(Math.round(upfrontFeeAmount.doubleValue())));
+            } else {
+                glim.setChargeAmount(BigDecimal.valueOf(Math.round(totalCharge.doubleValue())));
             }
         }
         for (LoanCharge loanCharge : loanCharges) {
@@ -330,8 +336,8 @@ public class GroupLoanIndividualMonitoringAssembler {
             Boolean isClientSelected = member.has(LoanApiConstants.isClientSelectedParamName)
                     && member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean();
             BigDecimal amount = BigDecimal.ZERO;
-            if (member.has(LoanApiConstants.amountParamName)) {
-                amount = member.get(LoanApiConstants.amountParamName).getAsBigDecimal();
+            if (member.has(LoanApiConstants.transactionAmountParamName)) {
+                amount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
             }
             
             Long glimClientId = member.get(LoanApiConstants.idParamName).getAsLong();
@@ -368,11 +374,10 @@ public class GroupLoanIndividualMonitoringAssembler {
                 // calculate percentage of principal amount
                 percentage = calculatePercentageOfAmount(element, amount, percentage);
             }
-
-            GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = GroupLoanIndividualMonitoring.createInstance(newLoanApplication,
-                    client, amount, null, null, loanPurpose, isClientSelected, adjustedAmount, installmentAmount, totalPaybleAmount,
-                    paidInterestAmount, paidAmount, totalInterest, clientCharges, percentage, paidPrincipalAmount, paidChargeAmount,
-                    waivedInterestAmount, waivedChargeAmount);
+            GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = GroupLoanIndividualMonitoring.createInstance(
+                    newLoanApplication, client, amount, null, null, loanPurpose, isClientSelected, adjustedAmount, installmentAmount,
+                    totalPaybleAmount, paidInterestAmount, paidAmount, totalInterest, clientCharges, percentage, paidPrincipalAmount,
+                    paidChargeAmount, waivedInterestAmount, waivedChargeAmount);
             glimList.add(groupLoanIndividualMonitoring);
         }
     }

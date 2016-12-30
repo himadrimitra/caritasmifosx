@@ -130,6 +130,9 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
 
     @Column(name = "recalculated_interest_component", nullable = false)
     private boolean recalculatedInterestComponent;
+    
+    @Column(name = "advance_payment_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal advancePaymentAmount;
 
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -157,6 +160,24 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.obligationsMet = false;
         this.recalculatedInterestComponent = recalculatedInterestComponent;
         this.loanCompoundingDetails = compoundingDetails;
+    }
+    
+    public LoanRepaymentScheduleInstallment(final Loan loan, final Integer installmentNumber, final LocalDate fromDate,
+            final LocalDate dueDate, final BigDecimal principal, final BigDecimal interest, final BigDecimal feeCharges,
+            final BigDecimal penaltyCharges, final boolean recalculatedInterestComponent,
+            final List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails, final BigDecimal advancedPaymentAmount) {
+        this.loan = loan;
+        this.installmentNumber = installmentNumber;
+        this.fromDate = fromDate.toDateTimeAtStartOfDay().toDate();
+        this.dueDate = dueDate.toDateTimeAtStartOfDay().toDate();
+        this.principal = defaultToNullIfZero(principal);
+        this.interestCharged = defaultToNullIfZero(interest);
+        this.feeChargesCharged = defaultToNullIfZero(feeCharges);
+        this.penaltyCharges = defaultToNullIfZero(penaltyCharges);
+        this.obligationsMet = false;
+        this.recalculatedInterestComponent = recalculatedInterestComponent;
+        this.loanCompoundingDetails = compoundingDetails;
+        this.advancePaymentAmount = advancedPaymentAmount;
     }
 
     public LoanRepaymentScheduleInstallment(final Loan loan) {
@@ -865,5 +886,15 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
     public void resetTotalPaidAmount() {
         this.totalPaidInAdvance = null;
         this.totalPaidLate = null;
+    }
+
+    
+    public Money getAdvancePaymentAmount(final MonetaryCurrency currency) {
+        return Money.of(currency, this.advancePaymentAmount);
+    }
+
+    
+    public void setAdvancePaymentAmount(BigDecimal advancePaymentAmount) {
+        this.advancePaymentAmount = advancePaymentAmount;
     }
 }

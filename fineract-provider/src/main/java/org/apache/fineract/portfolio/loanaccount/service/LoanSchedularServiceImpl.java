@@ -19,11 +19,14 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -33,7 +36,13 @@ import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
+import org.apache.fineract.organisation.office.domain.Office;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,13 +57,18 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     private final ConfigurationDomainService configurationDomainService;
     private final LoanReadPlatformService loanReadPlatformService;
     private final LoanWritePlatformService loanWritePlatformService;
+    private final LoanUtilService loanUtilService;
+    private final HolidayRepositoryWrapper holidayRepository;
 
     @Autowired
     public LoanSchedularServiceImpl(final ConfigurationDomainService configurationDomainService,
-            final LoanReadPlatformService loanReadPlatformService, final LoanWritePlatformService loanWritePlatformService) {
+            final LoanReadPlatformService loanReadPlatformService, final LoanWritePlatformService loanWritePlatformService,
+            final LoanUtilService loanUtilService, final HolidayRepositoryWrapper holidayRepository) {
         this.configurationDomainService = configurationDomainService;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanWritePlatformService = loanWritePlatformService;
+        this.loanUtilService = loanUtilService;
+        this.holidayRepository = holidayRepository;
     }
 
     @Override
@@ -64,7 +78,7 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         final Long penaltyWaitPeriodValue = this.configurationDomainService.retrievePenaltyWaitPeriod();
         final Boolean backdatePenalties = this.configurationDomainService.isBackdatePenaltiesEnabled();
         final Collection<OverdueLoanScheduleData> overdueLoanScheduledInstallments = this.loanReadPlatformService
-                .retrieveAllLoansWithOverdueInstallments(penaltyWaitPeriodValue,backdatePenalties);
+                .retrieveAllLoansWithOverdueInstallments(penaltyWaitPeriodValue, backdatePenalties);
 
         if (!overdueLoanScheduledInstallments.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
@@ -111,77 +125,168 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         }
     }
 
-	@Override
-	@CronTarget(jobName = JobName.RECALCULATE_INTEREST_FOR_LOAN)
-	public void recalculateInterest() throws JobExecutionException {
-		Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant()
-				.getConnection().getMaxRetriesOnDeadlock();
-		Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant()
-				.getConnection().getMaxIntervalBetweenRetries();
-		Collection<Long> loanIds = this.loanReadPlatformService
-				.fetchLoansForInterestRecalculation();
-		int i = 0;
-		if (!loanIds.isEmpty()) {
-			final StringBuilder sb = new StringBuilder();
-			for (Long loanId : loanIds) {
-				logger.info("Loan ID " + loanId);
-				Integer numberOfRetries = 0;
-				while (numberOfRetries <= maxNumberOfRetries) {
-					try {
-						this.loanWritePlatformService
-								.recalculateInterest(loanId);
-						numberOfRetries = maxNumberOfRetries + 1;
-					} catch (CannotAcquireLockException
-							| ObjectOptimisticLockingFailureException exception) {
-						logger.info("Recalulate interest job has been retried  "
-								+ numberOfRetries + " time(s)");
-						/***
-						 * Fail if the transaction has been retired for
-						 * maxNumberOfRetries
-						 **/
-						if (numberOfRetries >= maxNumberOfRetries) {
-							logger.warn("Recalulate interest job has been retried for the max allowed attempts of "
-									+ numberOfRetries
-									+ " and will be rolled back");
-							sb.append("Recalulate interest job has been retried for the max allowed attempts of "
-									+ numberOfRetries
-									+ " and will be rolled back");
-							break;
-						}
-						/***
-						 * Else sleep for a random time (between 1 to 10
-						 * seconds) and continue
-						 **/
-						try {
-							Random random = new Random();
-							int randomNum = random
-									.nextInt(maxIntervalBetweenRetries + 1);
-							Thread.sleep(1000 + (randomNum * 1000));
-							numberOfRetries = numberOfRetries + 1;
-						} catch (InterruptedException e) {
-							sb.append("Interest recalculation for loans failed " + exception.getMessage()) ;
-							break;
-						}
-					} catch (Exception e) {
-						Throwable realCause = e;
-						if (e.getCause() != null) {
-							realCause = e.getCause();
-						}
-						logger.error("Interest recalculation for loans failed for account:"	+ loanId + " with message "
-								+ realCause.getMessage());
-						sb.append("Interest recalculation for loans failed for account:").append(loanId).append(" with message ")
-                        .append(realCause.getMessage());
-						numberOfRetries = maxNumberOfRetries + 1;
-					}
-					i++;
-				}
-				logger.info("Loans count " + i);
-			}
-			if (sb.length() > 0) {
-				throw new JobExecutionException(sb.toString());
-			}
-		}
+    @Override
+    @CronTarget(jobName = JobName.RECALCULATE_INTEREST_FOR_LOAN)
+    public void recalculateInterest() throws JobExecutionException {
+        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
+        Collection<Long> loanIds = this.loanReadPlatformService.fetchLoansForInterestRecalculation();
+        int i = 0;
+        if (!loanIds.isEmpty()) {
+            final StringBuilder sb = new StringBuilder();
+            for (Long loanId : loanIds) {
+                logger.info("Loan ID " + loanId);
+                Integer numberOfRetries = 0;
+                while (numberOfRetries <= maxNumberOfRetries) {
+                    try {
+                        this.loanWritePlatformService.recalculateInterest(loanId);
+                        numberOfRetries = maxNumberOfRetries + 1;
+                    } catch (CannotAcquireLockException | ObjectOptimisticLockingFailureException exception) {
+                        logger.info("Recalulate interest job has been retried  " + numberOfRetries + " time(s)");
+                        /***
+                         * Fail if the transaction has been retired for
+                         * maxNumberOfRetries
+                         **/
+                        if (numberOfRetries >= maxNumberOfRetries) {
+                            logger.warn("Recalulate interest job has been retried for the max allowed attempts of " + numberOfRetries
+                                    + " and will be rolled back");
+                            sb.append("Recalulate interest job has been retried for the max allowed attempts of " + numberOfRetries
+                                    + " and will be rolled back");
+                            break;
+                        }
+                        /***
+                         * Else sleep for a random time (between 1 to 10
+                         * seconds) and continue
+                         **/
+                        try {
+                            Random random = new Random();
+                            int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
+                            Thread.sleep(1000 + (randomNum * 1000));
+                            numberOfRetries = numberOfRetries + 1;
+                        } catch (InterruptedException e) {
+                            sb.append("Interest recalculation for loans failed " + exception.getMessage());
+                            break;
+                        }
+                    } catch (Exception e) {
+                        Throwable realCause = e;
+                        if (e.getCause() != null) {
+                            realCause = e.getCause();
+                        }
+                        logger.error("Interest recalculation for loans failed for account:" + loanId + " with message "
+                                + realCause.getMessage());
+                        sb.append("Interest recalculation for loans failed for account:").append(loanId).append(" with message ")
+                                .append(realCause.getMessage());
+                        numberOfRetries = maxNumberOfRetries + 1;
+                    }
+                    i++;
+                }
+                logger.info("Loans count " + i);
+            }
+            if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+        }
 
-	}
+    }
+
+    @Override
+    @CronTarget(jobName = JobName.APPLY_HOLIDAYS_TO_LOANS)
+    public void applyHolidaysToLoans() throws JobExecutionException {
+
+        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+
+        if (!isHolidayEnabled) { return; }
+
+        final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
+                LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue()));
+        // Get all Holidays which are active/deleted and not processed
+        final List<Holiday> holidays = this.holidayRepository.findUnprocessed();
+
+        // Loop through all holidays
+        final Map<Long, LocalDate> officeIds = new HashMap<>();
+        for (final Holiday holiday : holidays) {
+            // All offices to which holiday is applied
+            final Set<Office> offices = holiday.getOffices();
+            for (final Office office : offices) {
+                if (officeIds.containsKey(office.getId())) {
+                    if (holiday.getFromDateLocalDate().isBefore(officeIds.get(office.getId()))) {
+                        officeIds.put(office.getId(), holiday.getFromDateLocalDate());
+                    }
+                } else {
+                    officeIds.put(office.getId(), holiday.getFromDateLocalDate());
+                }
+            }
+
+        }
+        StringBuilder sb = new StringBuilder();
+        Set<Long> failedForOffices = new HashSet<>();
+        for (Map.Entry<Long, LocalDate> entry : officeIds.entrySet()) {
+            try {
+                Collection<Long> loansForProcess = this.loanReadPlatformService.retrieveLoansByOfficesAndDate(entry.getKey(),
+                        entry.getValue(), loanStatuses);
+                final List<Holiday> holidaysList = null;
+                LocalDate recalculateFrom = entry.getValue();
+                HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidaysList);
+                for (Long loanId : loansForProcess) {
+                    try {
+                        this.loanWritePlatformService.updateScheduleDates(loanId, holidayDetailDTO, recalculateFrom);
+                    } catch (final PlatformApiDataValidationException e) {
+                        final List<ApiParameterError> errors = e.getErrors();
+                        for (final ApiParameterError error : errors) {
+                            logger.error("Apply Holidays for loans failed for account:" + loanId + " with message "
+                                    + error.getDeveloperMessage());
+                            sb.append("Apply Holidays for loans failed for account:").append(loanId).append(" with message ")
+                                    .append(error.getDeveloperMessage());
+                        }
+                        failedForOffices.add(entry.getKey());
+                    } catch (final AbstractPlatformDomainRuleException ex) {
+                        logger.error("Apply Holidays for loans failed for account:" + loanId + " with message "
+                                + ex.getDefaultUserMessage());
+                        sb.append("Apply Holidays for loans failed for account:").append(loanId).append(" with message ")
+                                .append(ex.getDefaultUserMessage());
+                        failedForOffices.add(entry.getKey());
+                    } catch (Exception e) {
+                        Throwable realCause = e;
+                        if (e.getCause() != null) {
+                            realCause = e.getCause();
+                        }
+                        logger.error("Apply Holidays for loans failed for account:" + loanId + " with message " + realCause.getMessage());
+                        sb.append("Apply Holidays for loans failed for account:").append(loanId).append(" with message ")
+                                .append(realCause.getMessage());
+                        failedForOffices.add(entry.getKey());
+                    }
+                }
+            } catch (Exception e) {
+                Throwable realCause = e;
+                if (e.getCause() != null) {
+                    realCause = e.getCause();
+                }
+                logger.error("Apply Holidays for loans failed  with message " + realCause.getMessage());
+                sb.append("Apply Holidays for loans failed with message ").append(realCause.getMessage());
+                failedForOffices.add(entry.getKey());
+            }
+        }
+        boolean holidayStatusChanged = false;
+        for (final Holiday holiday : holidays) {
+            if (failedForOffices.isEmpty()) {
+                holiday.processed();
+                holidayStatusChanged = true;
+            } else {
+                final Set<Office> offices = holiday.getOffices();
+                boolean updateProcessedStatus = true;
+                for (final Office office : offices) {
+                    if (failedForOffices.contains(office.getId())) {
+                        updateProcessedStatus = false;
+                    }
+                }
+                if (updateProcessedStatus) {
+                    holiday.processed();
+                    holidayStatusChanged = true;
+                }
+            }
+        }
+        if (holidayStatusChanged) {
+            this.holidayRepository.save(holidays);
+        }
+        if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+    }
 
 }

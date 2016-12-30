@@ -49,8 +49,11 @@ public class ApplicationCurrency extends AbstractPersistable<Long> {
 
     @Column(name = "internationalized_name_code", nullable = false, length = 50)
     private final String nameCode;
+    
+    @Column(name = "external_id", length = 50, nullable = true, unique = true)
+    private String externalId;
 
-    @Column(name = "display_symbol", nullable = true, length = 10)
+	@Column(name = "display_symbol", nullable = true, length = 10)
     private final String displaySymbol;
 
     protected ApplicationCurrency() {
@@ -60,21 +63,23 @@ public class ApplicationCurrency extends AbstractPersistable<Long> {
         this.inMultiplesOf = null;
         this.nameCode = null;
         this.displaySymbol = null;
+        this.externalId = null;
     }
 
     public static ApplicationCurrency from(final ApplicationCurrency currency, final int decimalPlaces, final Integer inMultiplesOf) {
         return new ApplicationCurrency(currency.code, currency.name, decimalPlaces, inMultiplesOf, currency.nameCode,
-                currency.displaySymbol);
+                currency.displaySymbol, currency.externalId);
     }
 
     private ApplicationCurrency(final String code, final String name, final int decimalPlaces, final Integer inMultiplesOf,
-            final String nameCode, final String displaySymbol) {
+            final String nameCode, final String displaySymbol, final String externalId) {
         this.code = code;
         this.name = name;
         this.decimalPlaces = decimalPlaces;
         this.inMultiplesOf = inMultiplesOf;
         this.nameCode = nameCode;
         this.displaySymbol = displaySymbol;
+        this.externalId = externalId;
     }
 
     public String getCode() {
@@ -100,6 +105,10 @@ public class ApplicationCurrency extends AbstractPersistable<Long> {
     public String getDisplaySymbol() {
         return this.displaySymbol;
     }
+    
+    public String getExternalId() {
+		return this.externalId;
+	}
 
     public CurrencyData toData() {
         return new CurrencyData(this.code, this.name, this.decimalPlaces, this.inMultiplesOf, this.displaySymbol, this.nameCode);

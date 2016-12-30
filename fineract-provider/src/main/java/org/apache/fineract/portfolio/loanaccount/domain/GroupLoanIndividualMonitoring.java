@@ -480,11 +480,12 @@ public class GroupLoanIndividualMonitoring extends AbstractPersistable<Long> {
                 && principalAmount.compareTo(MathUtility.add(this.paidPrincipalAmount, this.principalWrittenOffAmount)) == 0
                 && this.interestAmount.compareTo(MathUtility.add(this.paidInterestAmount, this.waivedInterestAmount,
                         this.interestWrittenOffAmount)) == 0
-                && this.chargeAmount
-                        .compareTo(MathUtility.add(this.paidChargeAmount, this.waivedChargeAmount, this.chargeWrittenOffAmount)) == 0) {
+                && this.chargeAmount.compareTo(MathUtility.add(this.paidChargeAmount, this.waivedChargeAmount,
+                        this.chargeWrittenOffAmount)) == 0) {
             isOutstandingBalanceZero = true;
 
         }
+        
         return isOutstandingBalanceZero;
     }
 

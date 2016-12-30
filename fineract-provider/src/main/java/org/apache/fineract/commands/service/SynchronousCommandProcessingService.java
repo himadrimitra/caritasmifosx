@@ -27,6 +27,8 @@ import org.apache.fineract.commands.exception.RollbackTransactionAsCommandIsNotA
 import org.apache.fineract.commands.exception.UnsupportedCommandException;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.commands.provider.CommandHandlerProvider;
+import org.apache.fineract.commands.provider.CommandValidationProvider;
+import org.apache.fineract.commands.validator.CommandSourceValidator;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -38,7 +40,6 @@ import org.apache.fineract.infrastructure.hooks.event.HookEvent;
 import org.apache.fineract.infrastructure.hooks.event.HookEventSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -54,13 +55,14 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
     private CommandSourceRepository commandSourceRepository;
     private final ConfigurationDomainService configurationDomainService;
     private final CommandHandlerProvider commandHandlerProvider;
+    private final CommandValidationProvider commandValidationProvider; 
 
     @Autowired
     public SynchronousCommandProcessingService(final PlatformSecurityContext context, final ApplicationContext applicationContext,
             final ToApiJsonSerializer<Map<String, Object>> toApiJsonSerializer,
             final ToApiJsonSerializer<CommandProcessingResult> toApiResultJsonSerializer,
             final CommandSourceRepository commandSourceRepository, final ConfigurationDomainService configurationDomainService,
-            final CommandHandlerProvider commandHandlerProvider) {
+            final CommandHandlerProvider commandHandlerProvider, final CommandValidationProvider commandValidationProvider) {
         this.context = context;
         this.context = context;
         this.applicationContext = applicationContext;
@@ -70,12 +72,15 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         this.commandSourceRepository = commandSourceRepository;
         this.configurationDomainService = configurationDomainService;
         this.commandHandlerProvider = commandHandlerProvider;
+        this.commandValidationProvider = commandValidationProvider;
     }
     
     
     private CommandProcessingResult processAndLogCommand(final CommandWrapper wrapper, final JsonCommand command,
             final boolean isApprovedByChecker) {
 
+        validateDataAccessPermissions(wrapper, command);
+        
         final boolean rollbackTransaction = this.configurationDomainService.isMakerCheckerEnabledForTask(wrapper.taskPermissionName());
 
         final NewCommandSourceHandler handler = findCommandHandler(wrapper);
@@ -245,5 +250,14 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         final HookEvent applicationEvent = new HookEvent(hookEventSource, serializedResult, tenantIdentifier, appUser, authToken);
 
         applicationContext.publishEvent(applicationEvent);
+    }
+    
+    private void validateDataAccessPermissions(final CommandWrapper wrapper, final JsonCommand command) {
+        CommandSourceValidator commandSourceValidator = this.commandValidationProvider.getHandler(wrapper.getEntityName());
+        if (commandSourceValidator != null) {
+            AppUser appUser = this.context.authenticatedUser();
+            commandSourceValidator.validate(command, appUser);
+        }
+
     }
 }

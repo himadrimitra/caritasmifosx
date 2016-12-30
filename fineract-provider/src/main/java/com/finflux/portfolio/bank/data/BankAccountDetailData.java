@@ -17,16 +17,22 @@ public class BankAccountDetailData {
     @SuppressWarnings("unused")
     private final String email;
     @SuppressWarnings("unused")
+    private final String bankName;
+    @SuppressWarnings("unused")
+    private final String bankCity;
+    @SuppressWarnings("unused")
     private final EnumOptionData status;
 
     public BankAccountDetailData(final Long id, final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email, final EnumOptionData status) {
+            final String mobileNumber, final String email,final String bankName, final String bankCity, final EnumOptionData status) {
         this.id = id;
         this.name = name;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;
         this.mobileNumber = mobileNumber;
         this.email = email;
+        this.bankName = bankName;
+        this.bankCity = bankCity;
         this.status = status;
     }
 
@@ -56,5 +62,13 @@ public class BankAccountDetailData {
 
     public EnumOptionData getStatus() {
         return status;
+    }
+
+    public String getBankName() {
+        return bankName;
+    }
+
+    public String getBankCity() {
+        return bankCity;
     }
 }

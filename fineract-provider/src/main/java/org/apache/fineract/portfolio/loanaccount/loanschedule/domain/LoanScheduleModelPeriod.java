@@ -56,4 +56,8 @@ public interface LoanScheduleModelPeriod {
     List<LoanInterestRecalcualtionAdditionalDetails> getLoanCompoundingDetails();
 
     void adjustInterestForCurrentPeriod(Money adjustedInterestForCurrentPeriod);
+
+    BigDecimal advancePayment();
+
+    void setAdvancePayment(Money advancePayment);
 }
