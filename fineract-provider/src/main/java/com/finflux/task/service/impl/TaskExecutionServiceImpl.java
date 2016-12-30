@@ -198,11 +198,15 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                             taskRepository.save(nextExecutionTask);
                         }
                     }
+                }else{
+                    parentTask.setStatus(TaskStatusType.COMPLETED.getValue());
+                    taskRepository.save(parentTask);
                 }
                 // set workflow status as all step done
 
             } else if (TaskStatusType.CANCELLED.equals(newStatus)) {
-                // do some logging or transition steps
+                parentTask.setStatus(TaskStatusType.CANCELLED.getValue());
+                taskRepository.save(parentTask);
             }
         }
 
