@@ -336,7 +336,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             Boolean isClientSelected = member.has(LoanApiConstants.isClientSelectedParamName)
                     && member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean();
             BigDecimal amount = BigDecimal.ZERO;
-            if (member.has(LoanApiConstants.transactionAmountParamName)) {
+            if (member.has(LoanApiConstants.transactionAmountParamName) && isClientSelected) {
                 amount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
             }
             
@@ -360,7 +360,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             BigDecimal totalInterest = BigDecimal.ZERO;
             Set<GroupLoanIndividualMonitoringCharge> clientCharges = new HashSet<>();
 
-            if (MathUtility.isGreaterThanZero(amount)) {
+            if (MathUtility.isGreaterThanZero(amount) && isClientSelected) {
                 // charges calculation
                 calculateTotalCharges(newLoanApplication, element, amount, client, clientCharges);
 
