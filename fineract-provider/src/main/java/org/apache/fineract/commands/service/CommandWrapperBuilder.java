@@ -3730,4 +3730,35 @@ public class CommandWrapperBuilder {
         this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
         return this;
     }
+
+    public CommandWrapperBuilder createProfileRatingConfig() {
+        this.actionName = "CREATE";
+        this.entityName = "PROFILERATINGCONFIG";
+        this.href = "/profileratingconfigs";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateProfileRatingConfig(final Long profileRatingConfigId) {
+        this.actionName = "UPDATE";
+        this.entityName = "PROFILERATINGCONFIG";
+        this.entityId = profileRatingConfigId;
+        this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateProfileRatingConfig(Long profileRatingConfigId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "PROFILERATINGCONFIG";
+        this.entityId = profileRatingConfigId;
+        this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
+
+    public CommandWrapperBuilder inActivateProfileRatingConfig(Long profileRatingConfigId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "PROFILERATINGCONFIG";
+        this.entityId = profileRatingConfigId;
+        this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
 }
