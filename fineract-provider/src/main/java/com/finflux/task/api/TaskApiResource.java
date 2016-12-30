@@ -77,7 +77,7 @@ public class TaskApiResource {
             @QueryParam("limit") final Integer limit, @QueryParam("officeId") final Long officeId,
             @QueryParam("parentConfigId") final Long parentConfigId, @QueryParam("childConfigId") final Long childConfigId,
             @Context final UriInfo uriInfo) {
-        SearchParameters searchParameters = SearchParameters.forTask(null, officeId, null, null, null, offset, limit, null, null);
+        SearchParameters searchParameters = SearchParameters.forTask(null, officeId, null, null, null, offset, limit, null, null, null);
         final Page<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy, searchParameters,
                 parentConfigId, childConfigId);
 
