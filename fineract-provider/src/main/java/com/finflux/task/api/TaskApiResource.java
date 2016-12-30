@@ -2,7 +2,12 @@ package com.finflux.task.api;
 
 import java.util.List;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -10,6 +15,8 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,9 +73,13 @@ public class TaskApiResource {
     @Path("actions")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @Context final UriInfo uriInfo) {
-
-        final List<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy);
+    public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @QueryParam("offset") final Integer offset,
+            @QueryParam("limit") final Integer limit, @QueryParam("officeId") final Long officeId,
+            @QueryParam("parentConfigId") final Long parentConfigId, @QueryParam("childConfigId") final Long childConfigId,
+            @Context final UriInfo uriInfo) {
+        SearchParameters searchParameters = SearchParameters.forTask(null, officeId, null, null, null, offset, limit, null, null);
+        final Page<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy, searchParameters,
+                parentConfigId, childConfigId);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 

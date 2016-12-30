@@ -1,0 +1,1 @@
+INSERT INTO `mifostenant-default`.`m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('taskmangement', 'READ_TASK_CONFIG', 'TASK_CONFIG', 'READ', '0');

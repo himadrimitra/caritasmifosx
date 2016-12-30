@@ -1,10 +1,18 @@
 package com.finflux.task.service;
 
-import com.finflux.task.data.*;
+import java.util.List;
+
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.data.RoleData;
 
-import java.util.List;
+import com.finflux.task.data.TaskActionLogData;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.TaskInfoData;
+import com.finflux.task.data.TaskNoteData;
+import com.finflux.task.data.TaskTemplateData;
 
 public interface TaskPlatformReadService {
 
@@ -22,7 +30,8 @@ public interface TaskPlatformReadService {
 
     List<LoanProductData> retrieveLoanProductTaskSummary(final Long loanProductId, final Long officeId);
 
-    List<TaskInfoData> retrieveTaskInformations(final String filterBy);
+    Page<TaskInfoData> retrieveTaskInformations(final String filterBy, SearchParameters searchParameters, final Long parentConfigId,
+            final Long childConfigId);
 
     List<TaskNoteData> getTaskNotes(Long taskId);
 
