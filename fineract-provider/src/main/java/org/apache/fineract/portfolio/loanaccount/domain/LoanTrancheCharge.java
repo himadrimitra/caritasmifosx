@@ -18,7 +18,6 @@
  */
 package org.apache.fineract.portfolio.loanaccount.domain;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -31,12 +30,12 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 @Table(name = "m_loan_tranche_charges")
 public class LoanTrancheCharge extends AbstractPersistable<Long> {
 
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "loan_id", nullable = false)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "loan_id", referencedColumnName = "id", nullable = false)
     private Loan loan;
     
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "charge_id", nullable = false)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "charge_id", referencedColumnName = "id", nullable = false)
     private Charge charge;
     
     LoanTrancheCharge() {
