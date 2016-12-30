@@ -3525,7 +3525,7 @@ public class Loan extends AbstractPersistable<Long> {
                     }
                 }
             }
-            if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+            if (!loanTransaction.isRecoveryRepayment() && this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
                 regenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
             }
             final List<LoanTransaction> allNonContraTransactionsPostDisbursement = retreiveListOfTransactionsPostDisbursement();
@@ -6243,7 +6243,7 @@ public class Loan extends AbstractPersistable<Long> {
             if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting() || loanTransaction.isRefund()) {
                 outstanding = outstanding.plus(loanTransaction.getAmount(getCurrency()));
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
-            } else {
+            } else if(!loanTransaction.isRecoveryRepayment()) {
                 if (this.loanInterestRecalculationDetails != null
                         && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()
                         && !loanTransaction.isRepaymentAtDisbursement()) {
