@@ -108,6 +108,27 @@ public class LoanScheduleData {
         this.totalPaidLate = null;
         this.totalOutstanding = null;
     }
+    
+    public LoanScheduleData(){
+        this.currency = null;
+        this.periods = null;
+        this.loanTermInDays = null;
+        this.totalPrincipalDisbursed = null;
+        this.totalPrincipalExpected = null;
+        this.totalPrincipalPaid = null;
+        this.totalInterestCharged = null;
+        this.totalFeeChargesCharged = null;
+        this.totalPenaltyChargesCharged = null;
+        this.totalWaived = null;
+        this.totalWrittenOff = null;
+        this.totalRepaymentExpected = null;
+        this.totalRepayment = null;
+        this.totalPaidInAdvance = null;
+        this.totalPaidLate = null;
+        this.totalOutstanding = null;
+    }
+    
+    
 
     public Collection<LoanSchedulePeriodData> getPeriods() {
         return this.periods;
