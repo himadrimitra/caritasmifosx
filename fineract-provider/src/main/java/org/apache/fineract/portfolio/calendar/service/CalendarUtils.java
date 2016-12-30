@@ -511,6 +511,9 @@ public class CalendarUtils {
         // to generate currect set of meeting dates reset interval same as loan
         // repayment interval.
         int meetingInterval = recur.getInterval();
+        if(meetingInterval < 1){
+        	meetingInterval = 1;
+        }
         int rep = loanRepaymentInterval / meetingInterval;
 
         // Recurring dates should follow loanRepayment frequency.
@@ -577,6 +580,9 @@ public class CalendarUtils {
          */
         
         int meetingInterval = recur.getInterval();
+        if(meetingInterval < 1){
+        	meetingInterval = 1;
+        }
         int rep = loanRepaymentInterval / meetingInterval;
 
         /*
