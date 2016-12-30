@@ -62,7 +62,8 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
         public String schema() {
             StringBuilder sb = new StringBuilder();
             sb.append(" bad.id as id, bad.name as name, bad.account_number as accountNumber, bad.ifsc_code as ifscCode, ");
-            sb.append(" bad.mobile_number as mobileNumber, bad.email as email, bad.status_id as status ");
+            sb.append(" bad.mobile_number as mobileNumber, bad.email as email, bad.status_id as status, ");
+            sb.append(" bad.bank_name as bankName, bad.bank_city as bankCity ");
             sb.append(" from f_bank_account_details bad ");
             return sb.toString();
         }
@@ -75,9 +76,12 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             final String ifscCode = rs.getString("ifscCode");
             final String email = rs.getString("email");
             final String mobileNumber = rs.getString("mobileNumber");
+            final String bankName = rs.getString("bankName");
+            final String bankCity = rs.getString("bankCity");
             final Integer type = JdbcSupport.getInteger(rs, "status");
             final EnumOptionData status = BankAccountDetailStatus.bankAccountDetailStatusEnumDate(type);
-            return new BankAccountDetailData(id, name, accountNumber, ifscCode, mobileNumber, email, status);
+            return new BankAccountDetailData(id, name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity,
+                    status);
         }
 
     }

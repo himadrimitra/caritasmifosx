@@ -1191,7 +1191,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
         Money processAmount = Money.zero(incrementBy.getCurrency());
         if (isInstalmentFee()) {
             if (installmentNumber == null) {
-                processAmount = getLastPaidOrPartiallyPaidInstallmentLoanCharge(incrementBy.getCurrency()).undoGlimPaidAmountBy(incrementBy,
+                processAmount = getLastPaidOrPartiallyPaidInstallmentLoanChargeForGlim(incrementBy.getCurrency()).undoGlimPaidAmountBy(incrementBy,
                         feeAmount);
             } else {
                 processAmount = getInstallmentLoanCharge(installmentNumber).undoGlimPaidAmountBy(incrementBy, feeAmount);
@@ -1217,6 +1217,21 @@ public class LoanCharge extends AbstractPersistable<Long> {
             Money outstanding = Money.of(currency, loanChargePerInstallment.getAmountOutstanding());
             final boolean partiallyPaid = outstanding.isGreaterThanZero()
                     && outstanding.isLessThan(loanChargePerInstallment.getAmount(currency));
+            if ((partiallyPaid || loanChargePerInstallment.isPaid())
+                    && (paidChargePerInstallment == null || paidChargePerInstallment.getRepaymentInstallment().getDueDate()
+                            .isBefore(loanChargePerInstallment.getRepaymentInstallment().getDueDate()))) {
+                paidChargePerInstallment = loanChargePerInstallment;
+            }
+        }
+        return paidChargePerInstallment;
+    }
+    
+    public LoanInstallmentCharge getLastPaidOrPartiallyPaidInstallmentLoanChargeForGlim(MonetaryCurrency currency) {
+        LoanInstallmentCharge paidChargePerInstallment = null;
+        for (final LoanInstallmentCharge loanChargePerInstallment : this.loanInstallmentCharge) {
+            Money paidAmount = loanChargePerInstallment.getAmountPaid(currency);
+            final boolean partiallyPaid = paidAmount.isGreaterThanZero()
+                    && paidAmount.isLessThan(loanChargePerInstallment.getAmount(currency));
             if ((partiallyPaid || loanChargePerInstallment.isPaid())
                     && (paidChargePerInstallment == null || paidChargePerInstallment.getRepaymentInstallment().getDueDate()
                             .isBefore(loanChargePerInstallment.getRepaymentInstallment().getDueDate()))) {

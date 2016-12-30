@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.client.service;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -811,6 +812,18 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final String sql = "select " + mapper.clientLookupByIdentifierSchema();
 
             return this.jdbcTemplate.queryForObject(sql, mapper, new Object[] { identifierTypeId, identifierKey });
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+    
+    @Override
+    public Long retrieveSavingsAccountIdByMobileNo(final String mobileno) {
+        try {
+
+        	final String sql = "select default_savings_account from m_client c WHERE c.mobile_no = ? " ; 
+        	return this.jdbcTemplate.queryForObject(sql,Long.class,mobileno);
+
         } catch (final EmptyResultDataAccessException e) {
             return null;
         }

@@ -130,7 +130,17 @@ public final class LoanScheduleModelDisbursementPeriod implements LoanScheduleMo
     }
 
     @Override
-    public void adjustInterestForCurrentPeriod(Money adjustedInterestForCurrentPeriod) {
+    public void adjustInterestForCurrentPeriod(@SuppressWarnings("unused") Money adjustedInterestForCurrentPeriod) {
+        return;
+    }
+
+    @Override
+    public BigDecimal advancePayment() {
+        return null;
+    }
+
+    @Override
+    public void setAdvancePayment(@SuppressWarnings("unused") Money advancePayment) {
         return;
     }
 }

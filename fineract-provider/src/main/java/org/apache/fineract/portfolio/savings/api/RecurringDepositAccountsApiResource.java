@@ -356,9 +356,9 @@ public class RecurringDepositAccountsApiResource {
 		final Integer limit = null;
 		final String orderBy = null;
 		final String sortOrder = null;
-
+		final Long paymentTypeId = null;
 		SearchParameters searchParameters = SearchParameters.forTask(sqlSearch, officeId, staffId, centerId, groupId,
-				offset, limit, orderBy, sortOrder);
+				offset, limit, orderBy, sortOrder, paymentTypeId);
 		final Collection<DepositAccountData> rdAccountData = this.depositAccountReadPlatformService.getRDAccountsForTaskLookup(searchParameters);
 		 final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 		 return this.toApiJsonSerializer.serialize(settings, rdAccountData);

@@ -95,6 +95,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
+import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepository;
+
 @Service
 public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements GroupingTypesWritePlatformService {
 
@@ -123,6 +126,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final VillageRepositoryWrapper villageRepository; 
     private final LoanReadPlatformService loanReadPlatformService;
     private final BusinessEventNotifierService businessEventNotifierService;
+    private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
 
     @Autowired
     public GroupingTypesWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -135,7 +139,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final SavingsAccountRepository savingsAccountRepository, final LoanRepositoryWrapper loanRepositoryWrapper, 
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator,
             final VillageRepositoryWrapper villageRepository, final LoanReadPlatformService loanReadPlatformService,
-            final BusinessEventNotifierService businessEventNotifierService) {
+            final BusinessEventNotifierService businessEventNotifierService,
+            final LoanApplicationReferenceRepository loanApplicationReferenceRepository) {
         this.context = context;
         this.groupRepository = groupRepository;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
@@ -157,6 +162,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.villageRepository = villageRepository;
         this.loanReadPlatformService = loanReadPlatformService;
         this.businessEventNotifierService = businessEventNotifierService;
+        this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
     }
 
     private CommandProcessingResult createGroupingType(final JsonCommand command, final GroupTypes groupingType, final Long centerId) {
@@ -383,11 +389,10 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             validateOfficeOpeningDateisAfterGroupOrCenterOpeningDate(groupOffice, groupForUpdate.getGroupLevel(), activationDate);
 
             final Map<String, Object> actualChanges = groupForUpdate.update(command);
-
+            
+            Staff newStaff = null;
             if (actualChanges.containsKey(GroupingTypesApiConstants.staffIdParamName)) {
                 final Long newValue = command.longValueOfParameterNamed(GroupingTypesApiConstants.staffIdParamName);
-
-                Staff newStaff = null;
                 if (newValue != null) {
                     newStaff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(newValue, groupHierarchy);
                 }
@@ -443,6 +448,41 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
                 }
             }
+			if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && groupingType.equals(GroupTypes.CENTER)  
+					&& actualChanges.containsKey(GroupingTypesApiConstants.staffIdParamName) && newStaff != null
+					&& newStaff.isLoanOfficer()) {
+				List<Group> groupMembers = groupForUpdate.getGroupMembers();
+				if (groupMembers != null && !groupMembers.isEmpty()) {
+					for (Group group : groupMembers) {
+						group.updateStaff(newStaff);
+						List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
+						if (groupLoans != null && !groupLoans.isEmpty()) {
+							for (Loan loan : groupLoans) {
+								loan.updateLoanOfficer(newStaff);
+							}
+						}
+						Set<Client> clientMembers = group.getActiveClientMembers();
+						if (clientMembers != null && !clientMembers.isEmpty()) {
+							for (Client client : clientMembers) {
+								client.updateStaff(newStaff);
+								List<Loan> clientLoans = this.loanRepositoryWrapper.findLoanByClientId(client.getId());
+								if (clientLoans != null && !clientLoans.isEmpty()) {
+									for (Loan loan : clientLoans) {
+										loan.updateLoanOfficer(newStaff);
+									}
+								}
+								List<LoanApplicationReference> clientLoanApplicationReference = 
+										loanApplicationReferenceRepository.findLoanByClientId(client.getId());
+								if(clientLoanApplicationReference != null && !clientLoanApplicationReference.isEmpty()){
+									for(LoanApplicationReference loanApplicationReference : clientLoanApplicationReference){
+										loanApplicationReference.updateLoanOfficer(newStaff);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 
             /*
              * final Set<Client> clientMembers = assembleSetOfClients(officeId,

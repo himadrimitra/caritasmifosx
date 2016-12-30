@@ -46,6 +46,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHold
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.dateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.activeParamName;
+
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -59,9 +60,11 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
@@ -276,8 +279,33 @@ public class SavingsAccountDataValidator {
         validateSavingsCharges(element, baseDataValidator);
 
         validateOverdraftParams(baseDataValidator, element);
+        
+        validateDpLimitAmount(element);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    private void validateDpLimitAmount(JsonElement element) {
+        BigDecimal overdraftLimit = BigDecimal.ZERO;
+        boolean allowDpLimit = false;
+        BigDecimal dpLimitAmount = BigDecimal.ZERO;
+        Boolean allowOverdraft = false;
+        if (this.fromApiJsonHelper.parameterExists(overdraftLimitParamName, element)) {
+            overdraftLimit = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(overdraftLimitParamName, element);
+        }
+        if (this.fromApiJsonHelper.parameterExists(allowOverdraftParamName, element)) {
+            allowOverdraft = this.fromApiJsonHelper.extractBooleanNamed(allowOverdraftParamName, element);
+        }
+        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowDpLimitParamName, element)) {
+            allowDpLimit = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowDpLimitParamName, element);
+        }
+        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpLimitAmountParamName, element)) {
+            dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpLimitAmountParamName, element);
+        }
+        if (allowOverdraft && allowDpLimit && MathUtility.isGreater(dpLimitAmount, overdraftLimit)) { throw new GeneralPlatformDomainRuleException(
+                "error.msg.dpLimitAmount.should.not.be.greater.than.overdraftLimit", "" + dpLimitAmount
+                        + " amount should not be greater than " + overdraftLimit + " amount", dpLimitAmount, overdraftLimit); }
+        
     }
 
     private void validateSavingsCharges(final JsonElement element, final DataValidatorBuilder baseDataValidator) {
@@ -498,6 +526,7 @@ public class SavingsAccountDataValidator {
         }
         
         validateOverdraftParams(baseDataValidator, element);
+        validateDpLimitAmount(element);
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 

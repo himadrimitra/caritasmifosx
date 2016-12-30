@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.savings.service;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -46,8 +47,6 @@ public interface SavingsAccountReadPlatformService {
 
     SavingsAccountTransactionData retrieveDepositTransactionTemplate(Long savingsId, DepositAccountType depositAccountType);
 
-    Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId, DepositAccountType depositAccountType);
-
     // Collection<SavingsAccountAnnualFeeData>
     // retrieveAccountsWithAnnualFeeDue();
 
@@ -67,5 +66,8 @@ public interface SavingsAccountReadPlatformService {
     void updateSavingsAccountDpLimit(BigDecimal dpLimitAmount, Long savingsAccountId);
 
     SavingsAccountDpDetailsData retrieveSavingsDpDetailsBySavingsId(Long accountId);
-    
+
+	Collection<SavingsAccountTransactionData> retrieveAllTransactions(Long savingsId,
+			DepositAccountType depositAccountType, SearchParameters searchParameters);
+
 }

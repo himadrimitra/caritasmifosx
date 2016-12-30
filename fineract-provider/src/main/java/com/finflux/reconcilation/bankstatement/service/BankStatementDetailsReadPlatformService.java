@@ -8,6 +8,7 @@ package com.finflux.reconcilation.bankstatement.service;
 import java.util.List;
 
 
+
 import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
 
 public interface BankStatementDetailsReadPlatformService {
@@ -25,5 +26,7 @@ public interface BankStatementDetailsReadPlatformService {
     public List<BankStatementDetailsData> retrieveAllBankStatementData(final Long bankStatementId);
     
     public List<BankStatementDetailsData> retrieveGeneratePortfolioData(final Long bankStatementId, String searchCriteria);
+    
+    public String getBankStatementDetails(List<BankStatementDetailsData> bankStatementDetailData, final Long bankStatementId);
     
 }

@@ -134,7 +134,7 @@ public class GroupLoanIndividualMonitoringReadPlatformServiceImpl implements Gro
             }
             totalInterestOutstanding = MathUtility.subtract(interestAmount, paidInterestAmount, waivedInterestAmount,
                     interestWrittenOffAmount);
-            totalFeeChargeOutstanding = MathUtility.subtract(chargeAmount, paidChargeAmount, waivedChargeAmount, interestWrittenOffAmount);
+            totalFeeChargeOutstanding = MathUtility.subtract(chargeAmount, paidChargeAmount, waivedChargeAmount, chargeWrittenOffAmount);
             totalLoanOutstandingAmount = MathUtility.add(totalPrincipalOutstanding, totalInterestOutstanding, totalFeeChargeOutstanding,
                     totalpenaltyChargeOutstanding);
             final BigDecimal remainingTransactionAmount = null;

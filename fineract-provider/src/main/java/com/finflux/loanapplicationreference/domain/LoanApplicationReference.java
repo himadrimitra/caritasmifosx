@@ -421,7 +421,7 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     public Loan getLoan() {
         return this.loan;
     }
-    
+
     public String getLoanApplicationReferenceNo() {
         return this.loanApplicationReferenceNo;
     }

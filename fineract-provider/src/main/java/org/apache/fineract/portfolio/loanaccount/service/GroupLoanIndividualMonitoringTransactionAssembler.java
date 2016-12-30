@@ -25,9 +25,10 @@ import org.apache.fineract.portfolio.charge.api.ChargesApiConstants;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringCharge;
 import org.apache.fineract.portfolio.charge.domain.GroupLoanIndividualMonitoringChargeRepository;
-import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringData;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepository;
@@ -80,7 +81,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
     }
 
     public Collection<GroupLoanIndividualMonitoringTransaction> assembleGLIMTransactions(final JsonCommand command,
-            final LoanTransaction loanTransaction) {
+            final LoanTransaction loanTransaction, Collection<GroupLoanIndividualMonitoringDataChanges> clientMembersJson) {
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = new ArrayList<>();
         BigDecimal individualTransactionAmount = BigDecimal.ZERO;
         if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
@@ -99,6 +100,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                     loanRepaymentScheduleTransactionProcessor.handleGLIMRepayment(groupLoanIndividualMonitoringTransaction,
                             individualTransactionAmount);
                     glimTransactions.add(groupLoanIndividualMonitoringTransaction);
+                    clientMembersJson.add(GroupLoanIndividualMonitoringDataChanges.createNew(glimId, individualTransactionAmount));
                 }
 
             }
@@ -113,60 +115,54 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
             for (JsonElement clientMember : clientMembers) {
                 JsonObject member = clientMember.getAsJsonObject();
-                if (member.get(LoanApiConstants.isClientSelectedParamName).getAsBoolean()) {
-                    BigDecimal individualTransactionAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
-                    totalInstallmentAmount = MathUtility.add(totalInstallmentAmount, individualTransactionAmount);
-                    if (isRecoveryRepayment) {
-                        Long glimId = member.get(LoanApiConstants.idParameterName).getAsLong();
-                        GroupLoanIndividualMonitoring glim = this.glimRepository.findOne(glimId);
-                        BigDecimal writeOffAmount = MathUtility.add(glim.getPrincipalWrittenOffAmount(),
-                                glim.getInterestWrittenOffAmount(), glim.getChargeWrittenOffAmount());
-                        if (MathUtility.isGreaterThanZero(individualTransactionAmount.subtract(writeOffAmount))) { throw new ClientCanNotExceedWriteOffAmount(); }
-                    }
+                BigDecimal individualTransactionAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
+                totalInstallmentAmount = MathUtility.add(totalInstallmentAmount, individualTransactionAmount);
+                if (isRecoveryRepayment) {
+                    Long glimId = member.get(LoanApiConstants.idParameterName).getAsLong();
+                    GroupLoanIndividualMonitoring glim = this.glimRepository.findOne(glimId);
+                    BigDecimal writeOffAmount = MathUtility.add(glim.getPrincipalWrittenOffAmount(),
+                            glim.getInterestWrittenOffAmount(), glim.getChargeWrittenOffAmount());
+                    if (MathUtility.isGreaterThanZero(individualTransactionAmount.subtract(writeOffAmount))) { throw new ClientCanNotExceedWriteOffAmount(); }
                 }
-
             }
             if (totalInstallmentAmount.compareTo(transactionAmount) != 0) { throw new ClientInstallmentNotEqualToTransactionAmountException(); }
         }
     }
 
     public Collection<GroupLoanIndividualMonitoringTransaction> waiveInterestForClients(final JsonCommand command,
-            final LoanTransaction loanTransaction) {
+            final LoanTransaction loanTransaction, Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers) {
         JsonArray clients = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
         final Locale locale = command.extractLocale();
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = new ArrayList<>();
         for (JsonElement element : clients) {
-            final Boolean isClientSelected = this.fromApiJsonHelper
-                    .extractBooleanNamed(LoanApiConstants.isClientSelectedParamName, element);
-            if (isClientSelected != null && isClientSelected) {
-                final Long glimId = this.fromApiJsonHelper.extractLongNamed(LoanApiConstants.idParameterName, element);
-                GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = this.groupLoanIndividualMonitoringRepositoryWrapper
-                        .findOneWithNotFoundDetection(glimId);
+            final Long glimId = this.fromApiJsonHelper.extractLongNamed(LoanApiConstants.idParameterName, element);
+            GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = this.groupLoanIndividualMonitoringRepositoryWrapper
+                    .findOneWithNotFoundDetection(glimId);
 
-                final BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed(
-                        LoanApiConstants.transactionAmountParamName, element, locale);
-                BigDecimal totalInterestOutstandingOnLoan = BigDecimal.ZERO;
-                BigDecimal paidInterestAmount = groupLoanIndividualMonitoring.getPaidInterestAmount();
-                BigDecimal totalInterestAmount = groupLoanIndividualMonitoring.getInterestAmount();
-                BigDecimal totalWaivedInterest = groupLoanIndividualMonitoring.getWaivedInterestAmount();
-                if (!MathUtility.isNull(paidInterestAmount) && !MathUtility.isNull(totalInterestAmount)) {
-                    totalInterestOutstandingOnLoan = totalInterestAmount.subtract(paidInterestAmount);
-                }
+            final BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed(
+                    LoanApiConstants.transactionAmountParamName, element, locale);
+            BigDecimal totalInterestOutstandingOnLoan = BigDecimal.ZERO;
+            BigDecimal paidInterestAmount = groupLoanIndividualMonitoring.getPaidInterestAmount();
+            BigDecimal totalInterestAmount = groupLoanIndividualMonitoring.getInterestAmount();
+            BigDecimal totalWaivedInterest = groupLoanIndividualMonitoring.getWaivedInterestAmount();
+            if (!MathUtility.isNull(paidInterestAmount) && !MathUtility.isNull(totalInterestAmount)) {
+                totalInterestOutstandingOnLoan = totalInterestAmount.subtract(paidInterestAmount);
+            }
 
-                if (totalInterestOutstandingOnLoan.compareTo(BigDecimal.ZERO) == 1) {
-                    if (transactionAmount.compareTo(totalInterestOutstandingOnLoan) == 1) {
-                        final String errorMessage = "The amount of interest to waive cannot be greater than total interest outstanding on loan.";
-                        throw new InvalidLoanStateTransitionException("waive.interest", "amount.exceeds.total.outstanding.interest",
-                                errorMessage, transactionAmount, totalInterestOutstandingOnLoan);
-                    }
-                    totalWaivedInterest = totalWaivedInterest.add(transactionAmount);
-                    groupLoanIndividualMonitoring.setWaivedInterestAmount(totalWaivedInterest);
-                    GroupLoanIndividualMonitoringTransaction groupLoanIndividualMonitoringTransaction = GroupLoanIndividualMonitoringTransaction
-                            .waiveInterest(groupLoanIndividualMonitoring, loanTransaction, transactionAmount, loanTransaction.getTypeOf()
-                                    .getValue());
-                    groupLoanIndividualMonitoring.updateGlimTransaction(groupLoanIndividualMonitoringTransaction);
-                    glimTransactions.add(groupLoanIndividualMonitoringTransaction);
+            if (totalInterestOutstandingOnLoan.compareTo(BigDecimal.ZERO) == 1) {
+                if (transactionAmount.compareTo(totalInterestOutstandingOnLoan) == 1) {
+                    final String errorMessage = "The amount of interest to waive cannot be greater than total interest outstanding on loan.";
+                    throw new InvalidLoanStateTransitionException("waive.interest", "amount.exceeds.total.outstanding.interest",
+                            errorMessage, transactionAmount, totalInterestOutstandingOnLoan);
                 }
+                totalWaivedInterest = totalWaivedInterest.add(transactionAmount);
+                groupLoanIndividualMonitoring.setWaivedInterestAmount(totalWaivedInterest);
+                GroupLoanIndividualMonitoringTransaction groupLoanIndividualMonitoringTransaction = GroupLoanIndividualMonitoringTransaction
+                        .waiveInterest(groupLoanIndividualMonitoring, loanTransaction, transactionAmount, loanTransaction.getTypeOf()
+                                .getValue());
+                groupLoanIndividualMonitoring.updateGlimTransaction(groupLoanIndividualMonitoringTransaction);
+                glimTransactions.add(groupLoanIndividualMonitoringTransaction);
+                clientMembers.add(GroupLoanIndividualMonitoringDataChanges.createNew(glimId, transactionAmount));
             }
         }
         return glimTransactions;
@@ -248,11 +244,11 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         MonetaryCurrency currency = loan.getCurrency();
         List<GroupLoanIndividualMonitoring> listForAdujustment = loan.getDefautGlimMembers();
         Long adjustedGlimId = (listForAdujustment.get(listForAdujustment.size() - 1)).getId();
-        if (adjustedGlimId != glimId) { return MathUtility.getShare(amount, glimAmount, totalAmount, currency); }
+        if (!adjustedGlimId.equals(glimId)) { return MathUtility.getShare(amount, glimAmount, totalAmount, currency); }
         BigDecimal othersShare = BigDecimal.ZERO;
-        for (GroupLoanIndividualMonitoring indGlim : listForAdujustment) {
-            if (indGlim.getId() != adjustedGlimId) {
-                othersShare = othersShare.add(MathUtility.getShare(amount, indGlim.getInterestAmount(), totalAmount, currency));
+        for (GroupLoanIndividualMonitoring glim : listForAdujustment) {
+            if (!glim.getId().equals(adjustedGlimId)) {
+                othersShare = othersShare.add(MathUtility.getShare(amount, glim.getInterestAmount(), totalAmount, currency));
             }
         }
         return amount.subtract(othersShare);
@@ -496,28 +492,26 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
     }
 
     public Collection<GroupLoanIndividualMonitoringTransaction> writeOffForClients(final LoanTransaction loanTransaction,
-            List<GroupLoanIndividualMonitoring> glimMembers, CodeValue writeoffReason) {
+            List<GroupLoanIndividualMonitoring> glimMembers, CodeValue writeoffReason, Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers) {
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = new ArrayList<>();
         for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
-            if (glimMember.isClientSelected()) {
-                final BigDecimal transactionAmount = glimMember.getTransactionAmount();
-                final BigDecimal principalWrittenOffAmount = glimMember.getDisbursedAmount().subtract(
-                        MathUtility.zeroIfNull(glimMember.getPaidPrincipalAmount()));
-                final BigDecimal interestWrittenOffAmount = glimMember.getInterestAmount().subtract(
-                        MathUtility.zeroIfNull(MathUtility.add(glimMember.getPaidInterestAmount(), glimMember.getWaivedInterestAmount())));
-                final BigDecimal chargeWrittenOffAmount = glimMember.getChargeAmount().subtract(
-                        MathUtility.zeroIfNull(MathUtility.add(glimMember.getPaidChargeAmount(), glimMember.getWaivedChargeAmount())));
-                glimMember.setPrincipalWrittenOffAmount(principalWrittenOffAmount);
-                glimMember.setInterestWrittenOffAmount(interestWrittenOffAmount);
-                glimMember.setChargeWrittenOffAmount(chargeWrittenOffAmount);
-                glimMember.setWriteOffReason(writeoffReason);
-                GroupLoanIndividualMonitoringTransaction groupLoanIndividualMonitoringTransaction = GroupLoanIndividualMonitoringTransaction
-                        .instance(glimMember, loanTransaction, loanTransaction.getTypeOf().getValue(), principalWrittenOffAmount,
-                                interestWrittenOffAmount, chargeWrittenOffAmount, BigDecimal.ZERO, transactionAmount);
-                glimMember.updateGlimTransaction(groupLoanIndividualMonitoringTransaction);
-                glimTransactions.add(groupLoanIndividualMonitoringTransaction);
-            }
-
+            final BigDecimal transactionAmount = glimMember.getTransactionAmount();
+            final BigDecimal principalWrittenOffAmount = glimMember.getDisbursedAmount().subtract(
+                    MathUtility.zeroIfNull(glimMember.getPaidPrincipalAmount()));
+            final BigDecimal interestWrittenOffAmount = glimMember.getInterestAmount().subtract(
+                    MathUtility.zeroIfNull(MathUtility.add(glimMember.getPaidInterestAmount(), glimMember.getWaivedInterestAmount())));
+            final BigDecimal chargeWrittenOffAmount = glimMember.getChargeAmount().subtract(
+                    MathUtility.zeroIfNull(MathUtility.add(glimMember.getPaidChargeAmount(), glimMember.getWaivedChargeAmount())));
+            glimMember.setPrincipalWrittenOffAmount(principalWrittenOffAmount);
+            glimMember.setInterestWrittenOffAmount(interestWrittenOffAmount);
+            glimMember.setChargeWrittenOffAmount(chargeWrittenOffAmount);
+            glimMember.setWriteOffReason(writeoffReason);
+            GroupLoanIndividualMonitoringTransaction groupLoanIndividualMonitoringTransaction = GroupLoanIndividualMonitoringTransaction
+                    .instance(glimMember, loanTransaction, loanTransaction.getTypeOf().getValue(), principalWrittenOffAmount,
+                            interestWrittenOffAmount, chargeWrittenOffAmount, BigDecimal.ZERO, transactionAmount);
+            glimMember.updateGlimTransaction(groupLoanIndividualMonitoringTransaction);
+            glimTransactions.add(groupLoanIndividualMonitoringTransaction);
+            clientMembers.add(GroupLoanIndividualMonitoringDataChanges.createNew(glimMember.getId(), transactionAmount));
         }
         return glimTransactions;
     }

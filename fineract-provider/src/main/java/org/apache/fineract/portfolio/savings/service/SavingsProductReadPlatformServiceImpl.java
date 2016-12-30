@@ -111,7 +111,7 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
 
         public SavingProductMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("sp.id as id, sp.name as name, sp.short_name as shortName, sp.description as description, ");
+            sqlBuilder.append("sp.id as id, sp.name as name, sp.short_name as shortName, sp.description as description, sp.external_id as externalId, ");
             sqlBuilder
                     .append("sp.currency_code as currencyCode, sp.currency_digits as currencyDigits, sp.currency_multiplesof as inMultiplesOf, ");
             sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ");
@@ -157,6 +157,7 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             final String name = rs.getString("name");
             final String shortName = rs.getString("shortName");
             final String description = rs.getString("description");
+            final String externalId = rs.getString("externalId");
 
             final String currencyCode = rs.getString("currencyCode");
             final String currencyName = rs.getString("currencyName");
@@ -225,7 +226,7 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
                     minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeForTransfers,
                     accountingRuleType, allowOverdraft, overdraftLimit, minRequiredBalance, enforceMinRequiredBalance,
                     minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                    taxGroupData, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat);
+                    taxGroupData, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
         }
     }
 

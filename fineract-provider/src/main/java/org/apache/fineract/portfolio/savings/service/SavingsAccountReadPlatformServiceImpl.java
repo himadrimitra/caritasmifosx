@@ -467,7 +467,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             final boolean withdrawalFeeForTransfers = rs.getBoolean("withdrawalFeeForTransfers");
 
             final boolean allowOverdraft = rs.getBoolean("allowOverdraft");
-            final BigDecimal overdraftLimit = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "overdraftLimit");
+            final BigDecimal overdraftLimit = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "overdraftLimit");
             final BigDecimal nominalAnnualInterestRateOverdraft = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs,
                     "nominalAnnualInterestRateOverdraft");
             final BigDecimal minOverdraftForInterestCalculation = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs,
@@ -727,14 +727,6 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         }
     }
 
-    @Override
-    public Collection<SavingsAccountTransactionData> retrieveAllTransactions(final Long savingsId, DepositAccountType depositAccountType) {
-
-        final String sql = "select " + this.transactionsMapper.schema()
-                + " where sa.id = ? and sa.deposit_type_enum = ? order by tr.transaction_date DESC, tr.created_date DESC, tr.id DESC";
-
-        return this.jdbcTemplate.query(sql, this.transactionsMapper, new Object[] { savingsId, depositAccountType.getValue() });
-    }
 
     @Override
     public SavingsAccountTransactionData retrieveSavingsTransaction(final Long savingsId, final Long transactionId,
@@ -756,6 +748,64 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
      * return this.jdbcTemplate.query(sql, this.annualFeeMapper, new Object[]
      * {}); }
      */
+    
+  
+	@Override
+	public Collection<SavingsAccountTransactionData> retrieveAllTransactions(final Long savingsId, DepositAccountType depositAccountType,
+			final SearchParameters searchParameters) {
+
+		final StringBuilder builder = new StringBuilder(400);
+		final SavingsAccountTransactionsMapper mapper = new SavingsAccountTransactionsMapper();
+		List<Object> params = new ArrayList<>();
+
+		String sqlSearch = searchParameters.getSqlSearch();
+		builder.append("select ");
+		builder.append(mapper.schema());
+		builder.append(" where sa.id = ?");
+		params.add(savingsId);
+
+		if (StringUtils.isNotBlank(sqlSearch)) {
+			sqlSearch = sqlSearch.replaceAll("accountNo", "sa.account_no");
+			builder.append(" and (").append(sqlSearch).append(")");
+		}
+
+		if (searchParameters.getStartDate() != null) {
+			LocalDate startDate = new LocalDate(searchParameters.getStartDate());
+			LocalDate endDate = DateUtils.getLocalDateOfTenant();
+			if (searchParameters.getEndDate() != null) {
+				endDate = new LocalDate(searchParameters.getEndDate());
+			}
+			builder.append(" and tr.transaction_date between ? and ? ");
+			params.add(formatter.print(startDate));
+			params.add(formatter.print(endDate));
+		}
+
+		if (searchParameters.getTransactionsCount() == null) {
+			if (searchParameters.isOrderByRequested()) {
+				builder.append(" order by ").append(searchParameters.getOrderBy());
+
+				if (searchParameters.isSortOrderProvided()) {
+					builder.append(' ').append(searchParameters.getSortOrder());
+				}
+			}
+
+			if (searchParameters.isLimited()) {
+				builder.append(" limit ").append(searchParameters.getLimit());
+				if (searchParameters.isOffset()) {
+					builder.append(" offset ").append(searchParameters.getOffset());
+				}
+			}
+		} else {
+
+			builder.append(" order by tr.transaction_date DESC, tr.id DESC limit ? ");
+			params.add(searchParameters.getTransactionsCount());
+		}
+		Object[] paramArray = params.toArray();
+
+		return this.jdbcTemplate.query(builder.toString(), mapper, paramArray);
+	}
+
+    
 
     private static final class SavingsAccountTransactionsMapper implements RowMapper<SavingsAccountTransactionData> {
 

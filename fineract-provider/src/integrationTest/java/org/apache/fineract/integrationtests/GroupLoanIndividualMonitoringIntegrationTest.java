@@ -423,11 +423,11 @@ public class GroupLoanIndividualMonitoringIntegrationTest {
 			String client2ShareAmount) {
 		HashMap client1Map = new HashMap<>();
 		client1Map.put("id", clientId1);
-		client1Map.put("amount", client1ShareAmount);
+		client1Map.put("transactionAmount", client1ShareAmount);
 		client1Map.put("isClientSelected", true);
 		HashMap client2Map = new HashMap<>();
 		client2Map.put("id", clientId2);
-		client2Map.put("amount", client2ShareAmount);
+		client2Map.put("transactionAmount", client2ShareAmount);
 		client2Map.put("isClientSelected", true);
 		List<HashMap> clientMembers = new ArrayList<HashMap>();
 		clientMembers.add(client1Map);
@@ -447,10 +447,8 @@ public class GroupLoanIndividualMonitoringIntegrationTest {
 			JsonElement clientShare = jsonObject.get("proposedAmount");
 			JsonElement clientId = jsonObject.get("clientId");
 			JsonElement glimId = jsonObject.get("id");
-			clientMember.put("id", clientId);
-			clientMember.put("glimId", glimId);
-			clientMember.put("amount", clientShare);
-			clientMember.put("isClientSelected", true);
+			clientMember.put("id", glimId);
+			clientMember.put("transactionAmount", clientShare);
 			clientMembers.add(clientMember);
 		}
 		return clientMembers;

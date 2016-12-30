@@ -151,7 +151,7 @@ public class ClientDataForAuthenticationAssembler {
 				.retrieveCodeValuesByCode("Customer Identifier");
 		CodeValueData customerDocumentType = null;
 		for (CodeValueData codeValue : codeValues) {
-			if (codeValue.getName().contains("Aadhaar")) {
+			if (codeValue.getName().toLowerCase().contains("aadhaar")) {
 				customerDocumentType = codeValue;
 			}
 		}

@@ -30,6 +30,7 @@ import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkDisbursalCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.OverdueLoanScheduleData;
 import org.joda.time.LocalDate;
@@ -74,8 +75,6 @@ public interface LoanWritePlatformService {
     void applyMeetingDateChanges(Calendar calendar, Collection<CalendarInstance> loanCalendarInstances,
             Boolean reschedulebasedOnMeetingDates, LocalDate presentMeetingDate, LocalDate newMeetingDate);
 
-    void applyHolidaysToLoans();
-
     LoanTransaction initiateLoanTransfer(Long accountId, LocalDate transferDate);
 
     LoanTransaction withdrawLoanTransfer(Long accountId, LocalDate transferDate);
@@ -116,5 +115,6 @@ public interface LoanWritePlatformService {
 
     CommandProcessingResult makeLoanPreRepayment(Long loanId, JsonCommand command);
 
+    void updateScheduleDates(Long loanId, HolidayDetailDTO holidayDetailDTO, LocalDate recalculateFrom);
 
 }

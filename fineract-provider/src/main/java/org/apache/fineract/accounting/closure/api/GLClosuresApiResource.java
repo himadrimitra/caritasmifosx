@@ -130,6 +130,25 @@ public class GLClosuresApiResource {
 
         return this.apiJsonSerializerService.serialize(settings, glClosureData, RESPONSE_DATA_PARAMETERS);
     }
+    
+
+    @GET
+    @Path("/offices/{officeId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retreiveClosureByOfficeId(@PathParam("officeId") final Long officeId, @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        final GLClosureData glClosureData = this.glClosureReadPlatformService.retrieveGLClosureByOfficeId(officeId);
+        if (settings.isTemplate()) {
+            glClosureData.setAllowedOffices(this.officeReadPlatformService.retrieveAllOfficesForDropdown());
+        }
+
+        return this.apiJsonSerializerService.serialize(settings, glClosureData, RESPONSE_DATA_PARAMETERS);
+    }
 
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })

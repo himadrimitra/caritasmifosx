@@ -323,7 +323,7 @@ public class Holiday extends AbstractPersistable<Long> {
             baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("not.in.pending.for.activation.state");
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
-
+        this.processed = false;
         this.status = HolidayStatusType.ACTIVE.getValue();
     }
 
@@ -335,6 +335,11 @@ public class Holiday extends AbstractPersistable<Long> {
         if (currentStatus.isDeleted()) {
             baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("already.in.deleted.state");
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        }
+        if (currentStatus.isActive() && this.processed) {
+            this.processed = false;
+        }else{
+            this.processed = true;
         }
         this.status = HolidayStatusType.DELETED.getValue();
     }

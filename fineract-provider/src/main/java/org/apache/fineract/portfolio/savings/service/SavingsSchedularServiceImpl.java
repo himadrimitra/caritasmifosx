@@ -33,8 +33,6 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.joda.time.LocalDate;
 import org.joda.time.Months;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -124,14 +122,16 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
                 BigDecimal dpAmount = savingsAccountDpDetailsData.getDpAmount();
                 BigDecimal amount = savingsAccountDpDetailsData.getAmount();
                 Integer duration = savingsAccountDpDetailsData.getDuration();
+                BigDecimal dpLimitAmount = BigDecimal.ZERO;
                 if (isPeriodNumberFallsInDuration(periodNumber, duration)) {
-                    BigDecimal dpLimitAmount = BigDecimal.ZERO;
                     if (!isLastPeriod(periodNumber, duration)) {
                         dpLimitAmount = dpAmount.subtract(BigDecimal.valueOf(periodNumber).multiply(amount));
+                        if (dpLimitAmount.compareTo(BigDecimal.ZERO) == -1) {
+                            dpLimitAmount = BigDecimal.ZERO;
+                        }
                     } 
-                    this.savingAccountReadPlatformService.updateSavingsAccountDpLimit(dpLimitAmount, savingsAccountDpDetailsData.getSavingsAccountId());
-                    
-                }
+                } 
+                this.savingAccountReadPlatformService.updateSavingsAccountDpLimit(dpLimitAmount, savingsAccountDpDetailsData.getSavingsAccountId());
             }
         }
         
