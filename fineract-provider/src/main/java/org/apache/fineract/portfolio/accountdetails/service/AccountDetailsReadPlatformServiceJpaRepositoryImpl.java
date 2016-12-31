@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.accountdetails.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -36,8 +37,11 @@ import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collaterals.data.PledgeData;
 import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanApplicationTimelineData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountApplicationTimelineData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountStatusEnumData;
@@ -102,6 +106,17 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         return new AccountSummaryCollectionData(groupLoanAccounts, groupSavingsAccounts, memberLoanAccounts, memberSavingsAccounts, null);
     }
 
+    @Override
+    public List<LoanAccountData> retrieveAllTransactionsForCenterId(final Long centerId, final String transactionDate) {
+        
+        final BulkUndoTransactionDataMapper rm = new BulkUndoTransactionDataMapper();
+        final BigDecimal loanTxnIsReversed = BigDecimal.ZERO;
+        final Integer loanTxnRepayment = LoanTransactionType.REPAYMENT.getValue();
+        final String sql = "select " + rm.schema() ;
+        return this.jdbcTemplate.query(sql, rm, new Object[]{transactionDate, loanTxnIsReversed, centerId, loanTxnRepayment});
+        
+    }
+    
     @Override
     public Collection<LoanAccountSummaryData> retrieveClientLoanAccountsByLoanOfficerId(final Long clientId, final Long loanOfficerId) {
         // Check if client exists
@@ -490,5 +505,47 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
                     timeline, inArrears,originalLoan,loanBalance,amountPaid);
         }
     }
+    
+    private static final class BulkUndoTransactionDataMapper implements RowMapper<LoanAccountData> {
+
+        final String schemaSql;
+
+        public BulkUndoTransactionDataMapper() {
+                final StringBuilder bulkUndoTransactionSql = new StringBuilder();
+                        bulkUndoTransactionSql.append(" ml.id AS loanId, mlt.id AS transactionId, mlt.amount AS transactionAmount, mc.firstname AS clientName, ")
+                                .append("mc.account_no AS accountNumber , mpl.name AS loanProductName ")
+                                .append("FROM m_loan ml ")
+                                .append("LEFT JOIN m_client mc ON ml.client_id = mc.id ")
+                                .append("LEFT JOIN m_product_loan mpl ON ml.product_id = mpl.id ")
+                                .append("LEFT JOIN m_group mg ON ml.group_id =mg.id ")
+                                .append("LEFT JOIN m_loan_transaction mlt ON ml.id =mlt.loan_id ")
+                                .append("INNER JOIN (SELECT MAX(dmlt.id) AS dmltId FROM m_loan_transaction dmlt GROUP BY dmlt.loan_id ) ddmlt on mlt.id = ddmlt.dmltId ")
+                                .append("WHERE mlt.transaction_date = ? AND mlt.is_reversed = ? AND mg.parent_id=? AND mlt.transaction_type_enum = ? ");
+                
+                this.schemaSql = bulkUndoTransactionSql.toString();
+        }
+
+        public String schema() {
+                return this.schemaSql;
+        }
+
+        @Override
+        public LoanAccountData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum)
+                        throws SQLException {
+
+                final Long loanId = JdbcSupport.getLong(rs, "loanId");
+                final Long transactionId = JdbcSupport.getLong(rs, "transactionId");
+                final String clientName = rs .getString("clientName");
+                final String accountNumber = rs .getString("accountNumber");
+                final String loanProductName = rs .getString("loanProductName");
+                final BigDecimal transactionAmount = rs.getBigDecimal("transactionAmount");
+                
+                LoanTransactionData loanTransactionData = LoanTransactionData.populateLoanTransactionData(transactionId, transactionAmount);
+                List<LoanTransactionData> loanTransactionDataList = new ArrayList<LoanTransactionData>();
+                loanTransactionDataList.add(loanTransactionData);
+
+                return LoanAccountData.bulkUndoTransactions(loanId, accountNumber, clientName, loanProductName, loanTransactionDataList);
+        }
+}
 
 }
