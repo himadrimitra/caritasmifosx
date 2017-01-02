@@ -128,6 +128,7 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidByData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanInstallmentChargeData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
@@ -2545,12 +2546,20 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                     scheduleGeneratorDTO.getHolidayDetailDTO());
             lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();  
+            LocalDate dueDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+            while (loanApplicationTerms.getLoanTermVariations().hasDueDateVariation(dueDate)) {
+                LoanTermVariationsData variation = loanApplicationTerms.getLoanTermVariations().nextDueDateVariation();
+                if (!variation.isSpecificToInstallment()) {
+                    lastActualRepaymentDate = variation.getDateValue();
+                }
+                dueDate = variation.getDateValue();
+            }
             if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
                 installment.updateFromDate(lastScheduledDate);
-                lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+                lastScheduledDate = dueDate;
                 installment.updateDueDate(lastScheduledDate);                                              
             } else {
-            	lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+            	lastScheduledDate = dueDate;
             }
         }
     }
