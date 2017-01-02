@@ -118,7 +118,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, 
             LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
             LoanProductConstants.adjustInterestForRoundingParamName, LoanProductConstants.isEmiBasedOnDisbursements,
-            LoanProductConstants.installmentCalculationPeriodTypeParamName));
+            LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 

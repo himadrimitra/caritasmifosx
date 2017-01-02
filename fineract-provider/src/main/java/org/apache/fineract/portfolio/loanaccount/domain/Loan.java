@@ -6722,12 +6722,13 @@ public class Loan extends AbstractPersistable<Long> {
     /*
      * get the next repayment date for rescheduling at the time of disbursement
      */
-    public LocalDate getNextPossibleRepaymentDateForRescheduling(Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled) {
+    public LocalDate getNextPossibleRepaymentDateForRescheduling(Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, final LocalDate actualDisbursementDate) {
         Set<LoanDisbursementDetails> loanDisbursementDetails = this.disbursementDetails;
         LocalDate nextRepaymentDate = DateUtils.getLocalDateOfTenant();
         if(this.isMultiDisburmentLoan()){
             for (LoanDisbursementDetails loanDisbursementDetail : loanDisbursementDetails) {
-                if (loanDisbursementDetail.actualDisbursementDate() == null) {
+                if (loanDisbursementDetail.actualDisbursementDate() == null
+                        || (actualDisbursementDate != null && loanDisbursementDetail.actualDisbursementDateAsLocalDate().isEqual(actualDisbursementDate))) {
                     for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
                         if (installment.getDueDate().isAfter(loanDisbursementDetail.expectedDisbursementDateAsLocalDate())) {
                             nextRepaymentDate = installment.getDueDate();
@@ -7511,6 +7512,15 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         return lastUserTransaction;
+    }
+
+    
+    public LocalDate getActualDisbursementDate() {
+        LocalDate disbursementDate = null;
+        if (this.actualDisbursementDate != null) {
+            disbursementDate = new LocalDate(this.actualDisbursementDate);
+        }
+        return disbursementDate;
     }
     
 }
