@@ -557,14 +557,24 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     // unprocessed(early payment ) amounts
                     Money unprocessed = loanRepaymentScheduleTransactionProcessor.handleRepaymentSchedule(currentTransactions, currency,
                             scheduleParams.getInstallments());
-
-                    if (unprocessed.isGreaterThanZero()) {
+                    boolean handlePrePayment = unprocessed.isGreaterThanZero();
+                    Money outstandingInCurrentInstallment = Money.zero(currency);
+                    if (scheduleParams.getOutstandingBalance().isZero() && !handlePrePayment) {
+                        LoanRepaymentScheduleInstallment lastInstallment = scheduleParams.getInstallments().get(
+                                scheduleParams.getInstallments().size() - 1);
+                        outstandingInCurrentInstallment = lastInstallment.getTotalOutstanding(currency);
+                        if (outstandingInCurrentInstallment.isLessThan(lastInstallment.getInterestCharged(currency))) {
+                            handlePrePayment = true;
+                        }
+                    }
+                    if (handlePrePayment) {
                         scheduleParams.reduceOutstandingBalance(unprocessed);
                         // pre closure check and processing
                         modifiedInstallment = handlePrepaymentOfLoan(mc, loanApplicationTerms, holidayDetailDTO, scheduleParams,
                                 totalInterestChargedForFullLoanTerm, scheduledDueDate, periodStartDateApplicableForInterest,
                                 currentPeriodParams.getInterestCalculationGraceOnRepaymentPeriodFraction(), currentPeriodParams,
-                                lastTotalOutstandingInterestPaymentDueToGrace, transactionDate, modifiedInstallment, loanCharges);
+                                lastTotalOutstandingInterestPaymentDueToGrace, transactionDate, modifiedInstallment, loanCharges,
+                                outstandingInCurrentInstallment);
 
                         Money addToPrinciapal = Money.zero(currency);
                         if (scheduleParams.getOutstandingBalance().isLessThanZero()) {
@@ -606,7 +616,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final Money totalInterestChargedForFullLoanTerm, final LocalDate scheduledDueDate,
             LocalDate periodStartDateApplicableForInterest, final double interestCalculationGraceOnRepaymentPeriodFraction,
             final ScheduleCurrentPeriodParams currentPeriodParams, final Money lastTotalOutstandingInterestPaymentDueToGrace,
-            final LocalDate transactionDate, final LoanScheduleModelPeriod installment, Set<LoanCharge> loanCharges) {
+            final LocalDate transactionDate, final LoanScheduleModelPeriod installment, Set<LoanCharge> loanCharges,
+            final Money outstandingInCurrentInstallment) {
         LoanScheduleModelPeriod modifiedInstallment = installment;
         if (!scheduleParams.getOutstandingBalance().isGreaterThan(currentPeriodParams.getInterestForThisPeriod())
                 && !scheduledDueDate.equals(transactionDate)) {
@@ -658,7 +669,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             Money chargeDiff = currentPeriodParams.getFeeChargesForInstallment().minus(tempPeriod.getFeeChargesForInstallment());
             Money penaltyDiff = currentPeriodParams.getPenaltyChargesForInstallment().minus(tempPeriod.getPenaltyChargesForInstallment());
 
-            Money diff = interestDiff.plus(chargeDiff).plus(penaltyDiff);
+            Money diff = interestDiff.plus(chargeDiff).plus(penaltyDiff).minus(outstandingInCurrentInstallment);
             if (scheduleParams.getOutstandingBalance().minus(diff).isGreaterThanZero()) {
                 updateCompoundingDetails(scheduleParams, periodStartDateApplicableForInterest);
             } else {
