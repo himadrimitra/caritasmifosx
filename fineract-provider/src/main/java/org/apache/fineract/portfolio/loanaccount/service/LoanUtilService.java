@@ -307,32 +307,38 @@ public class LoanUtilService {
             final Integer repayEvery, Integer minimumDaysBetweenDisbursalAndFirstRepayment,
             final PeriodFrequencyType repaymentPeriodFrequencyType, Group group) {
         
-        if (calendar != null) {// sync repayments
+        if (calculatedRepaymentsStartingFromDate == null) {
 
-            if (calculatedRepaymentsStartingFromDate == null && !calendar.getCalendarHistory().isEmpty()
-                    && calendarHistoryDataWrapper != null) {
-                // generate the first repayment date based on calendar history
-                List<CalendarHistory> historyList = calendarHistoryDataWrapper.getCalendarHistoryList();
-                if (historyList != null && historyList.size() > 0) {
-                    calculatedRepaymentsStartingFromDate = generateCalculatedRepaymentStartDate(calendarHistoryDataWrapper, actualDisbursementDate, group,
-                            minimumDaysBetweenDisbursalAndFirstRepayment, repayEvery, repaymentPeriodFrequencyType);
+            if (calendar != null) {// sync repayments
+
+                if (!calendar.getCalendarHistory().isEmpty() && calendarHistoryDataWrapper != null) {
+                    // generate the first repayment date based on calendar
+                    // history
+                    List<CalendarHistory> historyList = calendarHistoryDataWrapper.getCalendarHistoryList();
+                    if (historyList != null && historyList.size() > 0) {
+                        calculatedRepaymentsStartingFromDate = generateCalculatedRepaymentStartDate(calendarHistoryDataWrapper,
+                                actualDisbursementDate, group, minimumDaysBetweenDisbursalAndFirstRepayment, repayEvery,
+                                repaymentPeriodFrequencyType);
+                    }
                 }
-            }
 
-            // TODO: AA - user provided first repayment date takes precedence
-            // over recalculated meeting date
-            if (calculatedRepaymentsStartingFromDate == null) {
-                // FIXME: AA - Possibility of having next meeting date
-                // immediately after disbursement date,
-                // need to have minimum number of days gap between disbursement
-                // and first repayment date.
-                calculatedRepaymentsStartingFromDate = this.deriveFirstRepaymentDateForLoans(repayEvery, actualDisbursementDate,
-                        actualDisbursementDate, repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment, calendar);
+                // TODO: AA - user provided first repayment date takes
+                // precedence
+                // over recalculated meeting date
+                if (calculatedRepaymentsStartingFromDate == null) {
+                    // FIXME: AA - Possibility of having next meeting date
+                    // immediately after disbursement date,
+                    // need to have minimum number of days gap between
+                    // disbursement
+                    // and first repayment date.
+                    calculatedRepaymentsStartingFromDate = this.deriveFirstRepaymentDateForLoans(repayEvery, actualDisbursementDate,
+                            actualDisbursementDate, repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment, calendar);
+                }
+            } else {
+
+                calculatedRepaymentsStartingFromDate = calculateRepaymentStartingFromDate(actualDisbursementDate, repayEvery,
+                        minimumDaysBetweenDisbursalAndFirstRepayment, repaymentPeriodFrequencyType);
             }
-        }else{         
-            
-            calculatedRepaymentsStartingFromDate = calculateRepaymentStartingFromDate(actualDisbursementDate, repayEvery,
-                        minimumDaysBetweenDisbursalAndFirstRepayment, repaymentPeriodFrequencyType);            
         }
         return calculatedRepaymentsStartingFromDate;
     }
