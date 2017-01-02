@@ -377,7 +377,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         checkClientOrGroupActive(loan);
 
         final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
-        final LocalDate nextPossibleRepaymentDate = loan.getNextPossibleRepaymentDateForRescheduling(isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
         final Date rescheduledRepaymentDate = command.DateValueOfParameterNamed("adjustRepaymentDate");
         
         // check for product mix validations
@@ -396,26 +395,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final boolean considerAllDisbursmentsInSchedule =false;
         
 
-        // validate actual disbursement date against meeting date
-        final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
-                CalendarEntityType.LOANS.getValue());
 
-        LocalDate expectedFirstRepaymentDate = null;
-        if (rescheduledRepaymentDate != null) {
-            expectedFirstRepaymentDate = new LocalDate(rescheduledRepaymentDate);
-        } else {
-            expectedFirstRepaymentDate = nextPossibleRepaymentDate;
-        }
-        Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
-                actualDisbursementDate, loanProduct, loan.getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail().getRepayEvery(), null, null);
-        
-        Calendar calendar = null;
-        if(calendarInstance != null){
-            calendar = calendarInstance.getCalendar();
-        }
-       this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
-                expectedFirstRepaymentDate, actualDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
-                AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
+
 
         Map<BUSINESS_ENTITY, Object> entityMap = constructEntityMap(BUSINESS_ENTITY.LOAN, loan, command);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, entityMap);
@@ -441,6 +422,19 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                     considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
             Money amountToDisburse = disburseAmount.copy();
+            final LocalDate nextPossibleRepaymentDate = scheduleGeneratorDTO.getCalculatedRepaymentsStartingFromDate();
+            LocalDate expectedFirstRepaymentDate = null;
+            if (rescheduledRepaymentDate != null) {
+                expectedFirstRepaymentDate = new LocalDate(rescheduledRepaymentDate);
+            } else {
+                expectedFirstRepaymentDate = nextPossibleRepaymentDate;
+            }
+            Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
+                    actualDisbursementDate, loanProduct, loan.getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail().getRepayEvery(), null, null);
+            
+           this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                    expectedFirstRepaymentDate, actualDisbursementDate, scheduleGeneratorDTO.getCalendar(), minimumDaysBetweenDisbursalAndFirstRepayment,
+                    AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
             boolean recalculateSchedule = amountBeforeAdjust.isNotEqualTo(loan.getPrincpal());
             final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
 
@@ -704,7 +698,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Map<String, Object> changes = new LinkedHashMap<>();
         if (disbursalCommand == null) { return changes; }
 
-        final LocalDate nextPossibleRepaymentDate = null;
         final Date rescheduledRepaymentDate = null;
 
         for (int i = 0; i < disbursalCommand.length; i++) {
@@ -761,6 +754,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 final boolean considerAllDisbursmentsInSchedule =false;
                 final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                         considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+                final LocalDate nextPossibleRepaymentDate = scheduleGeneratorDTO.getCalculatedRepaymentsStartingFromDate();
+                LocalDate expectedFirstRepaymentDate = nextPossibleRepaymentDate;
+                Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
+                        actualDisbursementDate, loanProduct, loan.getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail().getRepayEvery(), null, null);
+                
+               this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                        expectedFirstRepaymentDate, actualDisbursementDate, scheduleGeneratorDTO.getCalendar(), minimumDaysBetweenDisbursalAndFirstRepayment,
+                        AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
                 regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate,
                         rescheduledRepaymentDate);
                 if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
