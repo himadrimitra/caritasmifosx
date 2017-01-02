@@ -201,29 +201,34 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         final List<Holiday> holidays = this.holidayRepository.findUnprocessed();
 
         // Loop through all holidays
-        final Map<Long, LocalDate> officeIds = new HashMap<>();
+        final Map<Long, List<Holiday>> officeIds = new HashMap<>();
         for (final Holiday holiday : holidays) {
             // All offices to which holiday is applied
             final Set<Office> offices = holiday.getOffices();
             for (final Office office : offices) {
                 if (officeIds.containsKey(office.getId())) {
-                    if (holiday.getFromDateLocalDate().isBefore(officeIds.get(office.getId()))) {
-                        officeIds.put(office.getId(), holiday.getFromDateLocalDate());
-                    }
+                    officeIds.get(office.getId()).add(holiday);
                 } else {
-                    officeIds.put(office.getId(), holiday.getFromDateLocalDate());
+                    List<Holiday> holidaylist = new ArrayList<>();
+                    holidaylist.add(holiday);
+                    officeIds.put(office.getId(), holidaylist);
                 }
             }
 
         }
         StringBuilder sb = new StringBuilder();
         Set<Long> failedForOffices = new HashSet<>();
-        for (Map.Entry<Long, LocalDate> entry : officeIds.entrySet()) {
+        for (Map.Entry<Long, List<Holiday>> entry : officeIds.entrySet()) {
             try {
-                Collection<Long> loansForProcess = this.loanReadPlatformService.retrieveLoansByOfficesAndDate(entry.getKey(),
-                        entry.getValue(), loanStatuses);
+                LocalDate recalculateFrom = null;
+                for(final Holiday holiday : entry.getValue()){
+                    if(recalculateFrom == null || recalculateFrom.isAfter(holiday.getFromDateLocalDate())){
+                        recalculateFrom = holiday.getFromDateLocalDate();
+                    }
+                }
+                Collection<Long> loansForProcess = this.loanReadPlatformService.retrieveLoansByOfficesAndHoliday(entry.getKey(),
+                        entry.getValue(), loanStatuses, recalculateFrom);
                 final List<Holiday> holidaysList = null;
-                LocalDate recalculateFrom = entry.getValue();
                 HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidaysList);
                 for (Long loanId : loansForProcess) {
                     try {

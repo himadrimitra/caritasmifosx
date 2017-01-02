@@ -2289,8 +2289,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(actualRepaymentDate,
                             loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
                     isFirstRepayment = false;
-                    lastInstallmentDate = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
-                            holidayDetailDTO).getChangedScheduleDate();
+                    AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
+                            holidayDetailDTO);
+                    lastInstallmentDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+                    actualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
 
                  // check for date changes
                     while (loanApplicationTerms.getLoanTermVariations().hasDueDateVariation(lastInstallmentDate)) {
