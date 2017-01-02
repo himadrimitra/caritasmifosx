@@ -65,6 +65,8 @@ public class ExternalServiceConnectivityTestCase {
 		Assert.assertNotNull(paymentTypeId);
 		PaymentTypeHelper.verifyPaymentTypeCreatedOnServer(requestSpec, responseSpec, paymentTypeId);
 
+		final Integer loanProductID = createLoanProduct(false, NONE);
+		
 		System.out.println("------------------CREATE TRANSACTION AUTHENTICATION-----------------");
 		String locale = "en";
 		Integer productTypeId = 1;
@@ -73,7 +75,7 @@ public class ExternalServiceConnectivityTestCase {
 		Long authenticationTypeId = new Long(1);
 		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
 				requestSpec, responseSpec, locale, productTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
-				authenticationTypeId);
+				authenticationTypeId, loanProductID);
 		Assert.assertNotNull(transactionAuthenticationId);
 		System.out.println("------------------------------------------------------------------------");
 		System.out.println(
@@ -81,7 +83,6 @@ public class ExternalServiceConnectivityTestCase {
 
 		final Integer clientId = ClientHelper.createClient(this.requestSpec, this.responseSpec);
 		ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientId);
-		final Integer loanProductID = createLoanProduct(false, NONE);
 		
 		System.out.println("--------------------------------CREATE CODE VALUE-------------------");
 		String aadhaar = "Aadhaar";

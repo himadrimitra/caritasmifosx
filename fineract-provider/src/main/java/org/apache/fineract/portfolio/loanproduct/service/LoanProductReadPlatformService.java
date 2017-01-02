@@ -52,4 +52,10 @@ public interface LoanProductReadPlatformService {
     LoanProductData retrieveLoanProductFloatingDetails(Long loanProductId);
     
     List<Map<String, Object>> getLoanProductMandatoryCharges(final Long productId, final Boolean isPenalty);
+    
+    void checkLoanProductByIdExists(final Long productId);
+    
+    LoanProductData retrieveLoanProductNameById(final Long productId);
+    
+    void checkLoanProductByIdIsActive(final Long productId, final boolean activeOnly);
 }

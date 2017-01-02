@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
@@ -142,5 +143,7 @@ public interface LoanReadPlatformService {
 
     Long retrieveLoanApplicationReferenceId(final LoanAccountData loanBasicDetails);
 
-    Collection<Long> retrieveLoansByOfficesAndDate(Long officeId, LocalDate date, Collection<Integer> status);
+    Long retrieveLoanProductIdByLoanId(final Long loanId);
+
+    Collection<Long> retrieveLoansByOfficesAndHoliday(Long officeId, List<Holiday> holidays, Collection<Integer> status, LocalDate recalculateFrom);
 }

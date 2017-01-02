@@ -14,6 +14,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,10 +30,13 @@ import com.google.gson.reflect.TypeToken;
 public class TransactionAuthenticationDataValidator {
 
 	private final FromJsonHelper fromJsonHelper;
+	private final LoanProductReadPlatformService loanProductReadPlatformService;
 
 	@Autowired
-	public TransactionAuthenticationDataValidator(final FromJsonHelper fromJsonHelper) {
+	public TransactionAuthenticationDataValidator(final FromJsonHelper fromJsonHelper,
+			final LoanProductReadPlatformService loanProductReadPlatformService) {
 		this.fromJsonHelper = fromJsonHelper;
+		this.loanProductReadPlatformService = loanProductReadPlatformService;
 	}
 
 	public void validateForCreate(final String json) {
@@ -64,6 +68,11 @@ public class TransactionAuthenticationDataValidator {
 		final Integer portfolioTypeId = this.fromJsonHelper.extractIntegerNamed("portfolioTypeId", element, locale);
 		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.PORTFOLIO_TYPE_ID)
 				.value(portfolioTypeId).notNull().integerGreaterThanZero();
+		
+		final Long productId = this.fromJsonHelper.extractLongNamed(TransactionAuthenticationApiConstants.PRODUCT_ID,
+				element);
+		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.PRODUCT_ID).value(productId)
+				.notNull().longGreaterThanZero();
 
 		final Long paymentTypeId = this.fromJsonHelper.extractLongNamed("paymentTypeId", element);
 		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID)
@@ -165,6 +174,10 @@ public class TransactionAuthenticationDataValidator {
 		} else {
 			portfolioTypeId = transactionAuthentication.getPortfolioType();
 		}
+		
+		final Long productId = command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID);
+		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.PRODUCT_ID)
+				.value(productId).notNull().longGreaterThanZero();
 
 		checkForValidTransactionTypes(portfolioTypeId, transactionTypeId, dataValidatorBuilder);
 
@@ -179,15 +192,32 @@ public class TransactionAuthenticationDataValidator {
 		final Long paymentTypeId = command
 				.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID);
 		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID)
-				.value(paymentTypeId).notNull().integerGreaterThanZero();
+				.value(paymentTypeId).notNull().longGreaterThanZero();
 
 		final BigDecimal amountGreaterThan = command
 				.bigDecimalValueOfParameterNamed(TransactionAuthenticationApiConstants.TRANSACTION_AMOUNT);
 		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.TRANSACTION_AMOUNT)
 				.value(amountGreaterThan).zeroOrPositiveAmount();
-
+		
 		throwExceptionIfValidationWarningsExist(dataValidationErrors);
 
+	}
+	
+	public void checkForAuthenticationRuleId(final JsonCommand command){
+		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+		final DataValidatorBuilder dataValidatorBuilder = new DataValidatorBuilder(dataValidationErrors)
+				.resource(TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_RESOURCE_NAME);
+		
+		final Long authenticationRuleId = command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID);
+		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID)
+				.value(authenticationRuleId).notNull().longGreaterThanZero();
+		
+		throwExceptionIfValidationWarningsExist(dataValidationErrors);
+	}
+	
+	public void checkForActiveLoanProduct(final JsonCommand command){
+		final Long productId = command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID);
+		this.loanProductReadPlatformService.checkLoanProductByIdIsActive(productId, true);
 	}
 
 }

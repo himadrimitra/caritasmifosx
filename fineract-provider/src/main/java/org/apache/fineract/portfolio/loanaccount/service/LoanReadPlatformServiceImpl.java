@@ -44,6 +44,7 @@ import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
@@ -109,6 +110,7 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
@@ -569,7 +571,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public LoanTransactionData retrieveDisbursalTemplate(final Long loanId, boolean paymentDetailsRequired) {
 
-        
+
         try {
             final Map<String, Object> data = retrieveDisbursalDataMap(loanId);
             
@@ -591,10 +593,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     			throw new LoanNotFoundException(loanId);
     		}
             BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedPrincipal");
+            Long productId = (Long) data.get("productId");
             Collection<TransactionAuthenticationData> transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
     				.retiveTransactionAuthenticationDetailsForTemplate(
     						SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
-    						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal);
+    						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal,
+    						loanId, productId);
             final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService.getOnlyActiveExternalAuthenticationServices();
     		if (externalServices.size() > 0 && !externalServices.isEmpty()) {
     			for(ExternalAuthenticationServiceData services :externalServices){
@@ -615,6 +619,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public Map<String, Object> retrieveDisbursalDataMap(final Long loanId) {
         final StringBuilder sql = new StringBuilder(200);
         sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
+        sql.append(" , l.product_id as productId ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -2595,20 +2600,61 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
     
     @Override
-    public Collection<Long> retrieveLoansByOfficesAndDate(final Long officeId, final LocalDate date, final Collection<Integer> status) {
+    public Collection<Long> retrieveLoansByOfficesAndHoliday(final Long officeId, final List<Holiday> holidays, final Collection<Integer> status, LocalDate recalculateFrom) {
         final StringBuilder sql = new StringBuilder();
+
         sql.append("SELECT DISTINCT(ml.id) ");
         sql.append("FROM m_office mo ");
-        sql.append("LEFT JOIN m_client mc ON mc.office_id = mo.id ");
-        sql.append("LEFT JOIN m_group mg ON mg.office_id = mo.id ");
-        sql.append("JOIN m_loan ml ON (ml.client_id = mc.id OR ml.group_id = mg.id) ");
-        sql.append("AND ml.maturedon_date > :date ");
-        sql.append(" AND ml.loan_status_id in (:status) ");
-        sql.append("WHERE mo.id = :officeId ");
+        sql.append("JOIN m_client mc ON mc.office_id = mo.id ");
+        sql.append("JOIN m_loan ml ON  ml.group_id is null and ml.client_id = mc.id  AND ml.maturedon_date >= :date AND ml.loan_status_id in (:status) ");
+        sql.append("JOIN m_loan_repayment_schedule rs on rs.loan_id = ml.id and (");
+        
+        generateConditionBasedOnHoliday(holidays, sql);
+        sql.append( ") ");
+        sql.append("WHERE mo.id = :officeId  ");
+
+        sql.append(" union ");
+
+        sql.append("SELECT DISTINCT(ml.id) ");
+        sql.append("FROM m_office mo ");
+        sql.append("JOIN m_group mg ON mg.office_id = mo.id ");
+        sql.append("JOIN m_loan ml ON ml.group_id = mg.id AND ml.maturedon_date >= :date AND ml.loan_status_id in (:status) ");
+        sql.append("JOIN m_loan_repayment_schedule rs on rs.loan_id = ml.id and (");
+        generateConditionBasedOnHoliday(holidays, sql);
+        sql.append( ") ");
+        sql.append("WHERE mo.id = :officeId  ");
+      
         Map<String, Object> paramMap = new HashMap<>(4);
-        paramMap.put("date", formatter.print(date));
+        paramMap.put("date", formatter.print(recalculateFrom));
         paramMap.put("status", status);
         paramMap.put("officeId", officeId);
         return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
+    }
+
+    @Override
+    public Long retrieveLoanProductIdByLoanId(Long loanId) {
+        try {
+            final String sql = "Select product_id from m_loan where id = ?";
+
+            return this.jdbcTemplate.queryForObject(sql, new Object[] { loanId }, Long.class);
+
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
+    }
+
+    private void generateConditionBasedOnHoliday(final List<Holiday> holidays, final StringBuilder sql) {
+        boolean isFirstTime = true;
+        for (Holiday holiday : holidays) {
+            if (!isFirstTime) {
+                sql.append(" or ");
+            }
+            sql.append("rs.duedate BETWEEN '");
+            sql.append(formatter.print(holiday.getFromDateLocalDate()));
+            sql.append("' and '");
+            sql.append(formatter.print(holiday.getToDateLocalDate()));
+            sql.append("'");
+            isFirstTime = false;
+        }
     }
 }

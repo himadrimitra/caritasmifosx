@@ -923,7 +923,19 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isPaymentTransaction() {
         return this.isNotReversed()
                 && !(this.isDisbursement() || this.isAccrual() || this.isRepaymentAtDisbursement() || this.isNonMonetaryTransaction() || this
-                        .isIncomePosting());
+                        .isIncomePosting() || this.isWaiverAtDisbursement());
+    }
+    
+    private boolean isWaiverAtDisbursement(){
+        boolean isWaiverAtDisbursement = false;
+        if(this.isChargesWaiver()){
+            Set<LoanChargePaidBy> paidBy = this.getLoanChargesPaid();
+            for(LoanChargePaidBy chargePaidBy : paidBy){
+                isWaiverAtDisbursement = chargePaidBy.getLoanCharge().isDueAtDisbursement();
+            }
+        }
+        
+        return isWaiverAtDisbursement;
     }
     
     public BigDecimal getInterestPortion() {

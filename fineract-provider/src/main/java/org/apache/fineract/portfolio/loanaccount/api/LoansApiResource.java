@@ -525,23 +525,29 @@ public class LoansApiResource {
                 repaymentSchedule = this.loanReadPlatformService.retrieveRepaymentSchedule(loanId, repaymentScheduleRelatedData,
                         disbursementData, loanBasicDetails.getTotalPaidFeeCharges());
                 if (loanBasicDetails.isInterestRecalculationEnabled() && loanBasicDetails.isActive()) {
-                    if (associationParameters.contains("futureSchedule")) {
-                        final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = loanRepaymentScheduleTransactionProcessorFactory
-                                .determineProcessor(new LoanTransactionProcessingStrategy(loanBasicDetails
-                                        .getTransactionProcessingStrategyCode()));
-                        if (!loanBasicDetails.isNPA()
-                                && loanRepaymentScheduleTransactionProcessor.isInterestFirstRepaymentScheduleTransactionProcessor()) {
-                            mandatoryResponseParameters.add("futureSchedule");
-                            this.calculationPlatformService.updateFutureSchedule(repaymentSchedule, loanId);
-                        }
-                    }
-
                     if (associationParameters.contains("originalSchedule")) {
                         mandatoryResponseParameters.add("originalSchedule");
                         LoanScheduleData loanScheduleData = this.loanScheduleHistoryReadPlatformService.retrieveRepaymentArchiveSchedule(
                                 loanId, repaymentScheduleRelatedData, disbursementData);
                         loanBasicDetails = LoanAccountData.withOriginalSchedule(loanBasicDetails, loanScheduleData);
                     }
+                }
+            }
+            
+            if (associationParameters.contains("futureSchedule")) {
+                if (loanBasicDetails.isInterestRecalculationEnabled() && loanBasicDetails.isActive()) {
+                    final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = loanRepaymentScheduleTransactionProcessorFactory
+                            .determineProcessor(new LoanTransactionProcessingStrategy(loanBasicDetails
+                                    .getTransactionProcessingStrategyCode()));
+                    if (!loanBasicDetails.isNPA()
+                            && loanRepaymentScheduleTransactionProcessor.isInterestFirstRepaymentScheduleTransactionProcessor()) {
+                        if (repaymentSchedule == null) {
+                            repaymentSchedule = new LoanScheduleData();
+                        }
+                        mandatoryResponseParameters.add("futureSchedule");
+                        this.calculationPlatformService.updateFutureSchedule(repaymentSchedule, loanId);
+                    }
+
                 }
             }
 

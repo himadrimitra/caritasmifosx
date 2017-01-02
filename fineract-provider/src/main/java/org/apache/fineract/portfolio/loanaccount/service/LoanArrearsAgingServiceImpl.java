@@ -51,6 +51,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanScheduleP
 import org.apache.fineract.scheduledjobs.service.ExecuteBatchUpdateTransactional;
 import org.apache.fineract.scheduledjobs.service.PageDataForArrearsAgeingDetailsWithOriginalSchedule;
 import org.apache.fineract.scheduledjobs.service.ScheduledJobRunnerServiceImpl;
+import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -209,10 +210,14 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
                 }
             }
         }
-
-        BigDecimal totalOverDue = principalOverdue.add(interestOverdue).add(feeOverdue).add(penaltyOverdue);
-        if (totalOverDue.compareTo(BigDecimal.ZERO) == 1) {
-            if (isInsertStatement) {
+		boolean graceOnArrearsAgeingExceeds = false;
+		Integer numberOfDaysSinceOverdue = Days.daysBetween(overDueSince, DateUtils.getLocalDateOfTenant()).getDays();
+		Integer graceOnArrearsAgeing = loan.getLoanProductRelatedDetail().getGraceOnArrearsAgeing();
+		graceOnArrearsAgeingExceeds = (graceOnArrearsAgeing == null
+				|| numberOfDaysSinceOverdue >= graceOnArrearsAgeing);
+		BigDecimal totalOverDue = principalOverdue.add(interestOverdue).add(feeOverdue).add(penaltyOverdue);
+		if (graceOnArrearsAgeingExceeds && totalOverDue.compareTo(BigDecimal.ZERO) == 1) {
+			if (isInsertStatement) {
                 updateSql = constructInsertStatement(loan.getId(), principalOverdue, interestOverdue, feeOverdue, penaltyOverdue,
                         overDueSince);
             } else {

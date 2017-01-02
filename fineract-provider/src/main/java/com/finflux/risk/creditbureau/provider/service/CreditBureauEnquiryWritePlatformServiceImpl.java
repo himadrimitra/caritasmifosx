@@ -8,6 +8,7 @@ import javax.transaction.Transactional;
 
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.joda.time.LocalDate;
@@ -142,6 +143,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             final CreditBureauProduct creditBureauProduct = this.creditBureauProductRepository
                     .findOneWithNotFoundDetection(creditBureauProductId);
             final Long loanEnquiryId = creditBureauExistingLoan.getLoanEnquiryId();
+            final LoanCreditBureauEnquiry loanCreditBureauEnquiry = this.loanCreditBureauEnquiryRepository.findOne(loanEnquiryId);
             final String lenderName = creditBureauExistingLoan.getLenderName();
             if (lenderName != null && (lender == null || !lender.label().equalsIgnoreCase(lenderName))) {
                 lender = this.codeValueRepository.findByCodeNameAndLabel("LenderOption", lenderName);
@@ -180,10 +182,14 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             final Integer loanTenure = null;
             Integer loanTenurePeriodType = null;
             if (creditBureauExistingLoan.getRepaymentFrequency() != null) {
-                loanTenurePeriodType = creditBureauExistingLoan.getRepaymentFrequency().getValue();
+                loanTenurePeriodType = CalendarFrequencyType.from(creditBureauExistingLoan.getRepaymentFrequency()).getValue();
             }
-            final Integer repaymentFrequency = null;
             final Integer repaymentFrequencyMultipleOf = null;
+            Integer repaymentFrequency = null;
+            if (creditBureauExistingLoan.getRepaymentFrequency() != null) {
+                repaymentFrequency = CalendarFrequencyType.from(creditBureauExistingLoan.getRepaymentFrequency()).getValue();
+            }
+           
             final LocalDate maturityDate = null;
             LocalDate closedDate = null;
             if (creditBureauExistingLoan.getClosedDate() != null) {
@@ -201,6 +207,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
                     loanTenure, loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount,
                     externalLoanPurpose, status, disbursedDate, maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24,
                     dpd60mths24, remark, archive);
+            existingLoan.setTrancheDisbursalId(loanCreditBureauEnquiry.getTrancheDisbursalId());
             newExistingLoans.add(existingLoan);
         }
 

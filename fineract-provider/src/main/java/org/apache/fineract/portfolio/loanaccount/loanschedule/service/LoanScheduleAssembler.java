@@ -44,7 +44,6 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepository;
 import org.apache.fineract.organisation.holiday.domain.HolidayStatusType;
-import org.apache.fineract.organisation.holiday.service.HolidayUtil;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
@@ -54,19 +53,15 @@ import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsDat
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
-import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
-import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
-import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarType;
 import org.apache.fineract.portfolio.calendar.exception.CalendarNotFoundException;
-import org.apache.fineract.portfolio.calendar.exception.MeetingFrequencyMismatchException;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
@@ -97,18 +92,15 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariations;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationsComparator;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.MinDaysBetweenDisbursalAndFirstRepaymentViolationException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.serialization.VariableLoanScheduleFromApiJsonValidator;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanChargeAssembler;
+import org.apache.fineract.portfolio.loanaccount.service.LoanScheduleValidator;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
@@ -156,7 +148,7 @@ public class LoanScheduleAssembler {
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
     private final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler;
-
+    private final LoanScheduleValidator loanScheduleValidator;
     @Autowired
     public LoanScheduleAssembler(final FromJsonHelper fromApiJsonHelper, final LoanProductRepository loanProductRepository,
             final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
@@ -170,7 +162,8 @@ public class LoanScheduleAssembler {
             final CalendarInstanceRepository calendarInstanceRepository, final PlatformSecurityContext context,
             final LoanUtilService loanUtilService, final LoanRepositoryWrapper loanRepositoryWrapper,
             final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
-            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler) {
+            final GroupLoanIndividualMonitoringAssembler groupLoanIndividualMonitoringAssembler,
+            final LoanScheduleValidator loanScheduleValidator) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.loanProductRepository = loanProductRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -191,6 +184,7 @@ public class LoanScheduleAssembler {
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
         this.groupLoanIndividualMonitoringAssembler = groupLoanIndividualMonitoringAssembler;
+        this.loanScheduleValidator = loanScheduleValidator;
     }
 
     public LoanApplicationTerms assembleLoanTerms(final JsonElement element, final boolean considerAllDisbursmentsInSchedule) {
@@ -276,7 +270,7 @@ public class LoanScheduleAssembler {
             calendar = this.calendarRepository.findOne(calendarId);
             if (calendar == null) { throw new CalendarNotFoundException(calendarId); }
             final PeriodFrequencyType meetingPeriodFrequency = CalendarUtils.getMeetingPeriodFrequencyType(calendar.getRecurrence());
-            validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(), repaymentFrequencyType,
+            this.loanScheduleValidator.validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(), repaymentFrequencyType,
                     CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
         } else {
             if (repaymentPeriodFrequencyType == PeriodFrequencyType.MONTHS && nthDay != null && nthDay != NthDayType.INVALID.getValue()) {
@@ -300,17 +294,17 @@ public class LoanScheduleAssembler {
          * If user has not passed the first repayments date then then derive the
          * same based on loan type.
          */
-        Integer minimumDaysBetweenDisbursalAndFirstRepayment = calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
+        
+        Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
                 expectedDisbursementDate, loanProduct, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType);
         
         if (calculatedRepaymentsStartingFromDate == null) {
 
-            calculatedRepaymentsStartingFromDate = deriveFirstRepaymentDate(loanType, repaymentEvery, expectedDisbursementDate,
-                    repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment, calendar, group);
+            calculatedRepaymentsStartingFromDate = this.loanUtilService.getCalculatedRepaymentsStartingFromDate(repaymentEvery, expectedDisbursementDate,
+                    repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment,
+                    calendar, group);
         }
 
-       
-    
         Boolean isSkipMeetingOnFirstDay = false;
         Integer numberOfDays = 0;
         boolean isSkipRepaymentOnFirstMonthEnabled = configurationDomainService.isSkippingMeetingOnFirstDayOfMonthEnabled();
@@ -318,22 +312,11 @@ public class LoanScheduleAssembler {
             isSkipMeetingOnFirstDay = this.loanUtilService.isLoanRepaymentsSyncWithMeeting(group, calendar);
             if(isSkipMeetingOnFirstDay) { numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue(); }  
         }
-        if ((loanType.isJLGAccount() || loanType.isGroupAccount()) && calendar != null) {
-            validateRepaymentsStartDateWithMeetingDates(calculatedRepaymentsStartingFromDate, calendar, isSkipMeetingOnFirstDay,
-                    numberOfDays);
-
-            /*
-             * If disbursement is synced on meeting, make sure disbursement date
-             * is on a meeting date
-             */
-            if (synchDisbursement != null && synchDisbursement.booleanValue()) {
-                validateDisbursementDateWithMeetingDates(expectedDisbursementDate, calendar, isSkipMeetingOnFirstDay, numberOfDays);
-            }
-        }
-
-		validateMinimumDaysBetweenDisbursalAndFirstRepayment(expectedDisbursementDate,
-				calculatedRepaymentsStartingFromDate, minimumDaysBetweenDisbursalAndFirstRepayment);
         
+        this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                calculatedRepaymentsStartingFromDate, expectedDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
+                loanType, synchDisbursement);
+
         // grace details
         final Integer graceOnPrincipalPayment = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("graceOnPrincipalPayment", element);
         final Integer recurringMoratoriumOnPrincipalPeriods = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("recurringMoratoriumOnPrincipalPeriods", element);
@@ -580,68 +563,6 @@ public class LoanScheduleAssembler {
         return disbursementDatas;
     }
 
-    public void validateRepaymentsStartDateWithMeetingDates(final LocalDate repaymentsStartingFromDate, final Calendar calendar,
-            boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays) {
-        if (repaymentsStartingFromDate != null) {
-            Set<CalendarHistory> calendarHistory = calendar.getActiveCalendarHistory();
-            final CalendarHistoryDataWrapper calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(calendarHistory);
-            CalendarHistory history = calendarHistoryDataWrapper.getCalendarHistory(repaymentsStartingFromDate);
-            String recurringRule = calendar.getRecurrence();
-            LocalDate seedDate = calendar.getStartDateLocalDate();
-            if (history != null) {
-                recurringRule = history.getRecurrence();
-                seedDate = history.getStartDateLocalDate();
-            }
-            if (!CalendarUtils.isValidRedurringDate(recurringRule, seedDate, repaymentsStartingFromDate, isSkipRepaymentOnFirstDayOfMonth,
-                    numberOfDays)) {
-                final String errorMessage = "First repayment date '" + repaymentsStartingFromDate + "' do not fall on a meeting date";
-                throw new LoanApplicationDateException("first.repayment.date.do.not.match.meeting.date", errorMessage,
-                        repaymentsStartingFromDate);
-            }
-        }
-    }
-
-    public void validateDisbursementDateWithMeetingDates(final LocalDate expectedDisbursementDate, final Calendar calendar, Boolean isSkipRepaymentOnFirstMonth, Integer numberOfDays) {
-        // disbursement date should fall on a meeting date
-        if (!calendar.isValidRecurringDate(expectedDisbursementDate, isSkipRepaymentOnFirstMonth, numberOfDays)) {
-            final String errorMessage = "Expected disbursement date '" + expectedDisbursementDate + "' do not fall on a meeting date";
-            throw new LoanApplicationDateException("disbursement.date.do.not.match.meeting.date", errorMessage, expectedDisbursementDate);
-        }
-
-    }
-
-    public void validateRepaymentFrequencyIsSameAsMeetingFrequency(final Integer meetingFrequency, final Integer repaymentFrequency,
-            final Integer meetingInterval, final Integer repaymentInterval) {
-        // meeting with daily frequency should allow loan products with any
-        // frequency.
-        if (!PeriodFrequencyType.DAYS.getValue().equals(meetingFrequency)) {
-            // repayment frequency must match with meeting frequency
-            if (!meetingFrequency.equals(repaymentFrequency)) {
-                throw new MeetingFrequencyMismatchException("loanapplication.repayment.frequency",
-                        "Loan repayment frequency period must match that of meeting frequency period", repaymentFrequency);
-            } else if (meetingFrequency.equals(repaymentFrequency)) {
-                // repayment frequency is same as meeting frequency repayment
-                // interval should be same or multiple of meeting interval
-            	String userMessageGlobalisationCode = "loanapplication.repayment.interval";
-            	String developerMessage = null;
-				if (configurationDomainService.isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled()
-						&& (repaymentInterval != meetingInterval)) {
-					 developerMessage = "Loan repayment frequency period must match that of meeting frequency period and "
-							+ "repayment repaid every # must equal  meeting interval " + meetingInterval;
-				}
-				else if (repaymentInterval % meetingInterval != 0) {
-					// throw exception: Loan product frequency/interval
-					 developerMessage = "Loan repayment repaid every # must equal or multiple of meeting interval "
-							+ meetingInterval;
-				}
-				if( developerMessage != null){
-					throw new MeetingFrequencyMismatchException(userMessageGlobalisationCode, developerMessage,
-							meetingInterval, repaymentInterval);
-				}
-            }
-        }
-    }
-
     public LoanProductRelatedDetail assembleLoanProductRelatedDetail(final JsonElement element) {
         final boolean considerAllDisbursmentsInSchedule = true;
         final LoanApplicationTerms loanApplicationTerms = assembleLoanTerms(element, considerAllDisbursmentsInSchedule);
@@ -678,10 +599,7 @@ public class LoanScheduleAssembler {
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, expectedDisbursementDate.toDate(),
                 HolidayStatusType.ACTIVE.getValue());
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
-
-        validateDisbursementDateIsOnNonWorkingDay(loanApplicationTerms.getExpectedDisbursementDate(), workingDays);
-        validateDisbursementDateIsOnHoliday(loanApplicationTerms.getExpectedDisbursementDate(), isHolidayEnabled, holidays);
-
+        this.loanScheduleValidator.validateDisbursementDateIsOnHolidayOrNonWorkingDay(loanApplicationTerms.getExpectedDisbursementDate(), workingDays, isHolidayEnabled, holidays);
         Set<LoanDisbursementDetails> loanDisbursementDetails = this.loanUtilService.fetchDisbursementData(element.getAsJsonObject());
         return assembleLoanScheduleFrom(loanApplicationTerms, isHolidayEnabled, holidays, workingDays, element, loanDisbursementDetails, glimList);
     }
@@ -1118,152 +1036,5 @@ public class LoanScheduleAssembler {
         }
     }
 
-    private void validateDisbursementDateIsOnNonWorkingDay(final LocalDate disbursementDate, final WorkingDays workingDays) {
-        if (!WorkingDaysUtil.isWorkingDay(workingDays, disbursementDate)) {
-            final String errorMessage = "The expected disbursement date cannot be on a non working day";
-            throw new LoanApplicationDateException("disbursement.date.on.non.working.day", errorMessage, disbursementDate);
-        }
-    }
-
-    private void validateDisbursementDateIsOnHoliday(final LocalDate disbursementDate, final boolean isHolidayEnabled,
-            final List<Holiday> holidays) {
-        if (isHolidayEnabled) {
-            if (HolidayUtil.isHoliday(disbursementDate, holidays)) {
-                final String errorMessage = "The expected disbursement date cannot be on a holiday";
-                throw new LoanApplicationDateException("disbursement.date.on.holiday", errorMessage, disbursementDate);
-            }
-        }
-    }
-
-    private LocalDate deriveFirstRepaymentDate(final AccountType loanType, final Integer repaymentEvery,
-            final LocalDate expectedDisbursementDate, final PeriodFrequencyType repaymentPeriodFrequencyType,
-            final Integer minimumDaysBetweenDisbursalAndFirstRepayment, final Calendar calendar, final Group group) {
-
-        LocalDate derivedFirstRepayment = null;
-
-        final LocalDate dateBasedOnMinimumDaysBetweenDisbursalAndFirstRepayment = expectedDisbursementDate
-                .plusDays(minimumDaysBetweenDisbursalAndFirstRepayment);
-
-        if (calendar != null) {
-
-            final LocalDate refernceDateForCalculatingFirstRepaymentDate = expectedDisbursementDate;
-            derivedFirstRepayment = this.loanUtilService.getCalculatedRepaymentsStartingFromDate(repaymentEvery, expectedDisbursementDate,
-                    repaymentPeriodFrequencyType, minimumDaysBetweenDisbursalAndFirstRepayment,
-                    calendar, group);
-
-        }/*** Individual or group account, or JLG not linked to a meeting ***/
-        else {
-            LocalDate dateBasedOnRepaymentFrequency;
-            // Derive the first repayment date as greater date among
-            // (disbursement date + plus frequency) or
-            // (disbursement date + minimum between disbursal and first
-            // repayment )
-            if (repaymentPeriodFrequencyType.isDaily()) {
-                dateBasedOnRepaymentFrequency = expectedDisbursementDate.plusDays(repaymentEvery);
-            } else if (repaymentPeriodFrequencyType.isWeekly()) {
-                dateBasedOnRepaymentFrequency = expectedDisbursementDate.plusWeeks(repaymentEvery);
-            } else if (repaymentPeriodFrequencyType.isMonthly()) {
-                dateBasedOnRepaymentFrequency = expectedDisbursementDate.plusMonths(repaymentEvery);
-            }/** yearly loan **/
-            else {
-                dateBasedOnRepaymentFrequency = expectedDisbursementDate.plusYears(repaymentEvery);
-            }
-            derivedFirstRepayment = dateBasedOnRepaymentFrequency.isAfter(dateBasedOnMinimumDaysBetweenDisbursalAndFirstRepayment) ? dateBasedOnRepaymentFrequency
-                    : dateBasedOnMinimumDaysBetweenDisbursalAndFirstRepayment;
-        }
-
-        return derivedFirstRepayment;
-    }
-
-
-    private void validateMinimumDaysBetweenDisbursalAndFirstRepayment(final LocalDate disbursalDate, final LocalDate firstRepaymentDate,
-            final Integer minimumDaysBetweenDisbursalAndFirstRepayment) {
-
-    	final LocalDate minimumFirstRepaymentDate = disbursalDate.plusDays(minimumDaysBetweenDisbursalAndFirstRepayment);	
-		if (firstRepaymentDate.isBefore(minimumFirstRepaymentDate)) {
-			final String errorMessage = "error.msg.loan.days.between.first.repayment.and.disbursal.are.less.than.minimum.days.or.periods.allowed";
-			final String developerErrorMessage = "Number of days between loan disbursal  (" + disbursalDate
-					+ ") and first repayment (" + firstRepaymentDate + ") can't be less than ("
-					+ minimumFirstRepaymentDate + ").";
-			throw new MinDaysBetweenDisbursalAndFirstRepaymentViolationException(errorMessage, developerErrorMessage,
-					disbursalDate, firstRepaymentDate, minimumDaysBetweenDisbursalAndFirstRepayment);
-		}
-    }
-    
-	public void validateMinimumDaysBetweenDisbursalAndFirstRepayment(LocalDate repaymentsStartingFromDate, Loan loan , 
-			LocalDate disbursementDate) {
-
-		final PeriodFrequencyType repaymentFrequencyType = loan.getLoanProductRelatedDetail()
-				.getRepaymentPeriodFrequencyType();
-		final Integer repaymentEvery = loan.getLoanProductRelatedDetail().getRepayEvery();
-		final Integer nthDay = null;
-		final Integer dayOfWeek = null;
-		final DayOfWeekType weekDayType = DayOfWeekType.fromInt(dayOfWeek);
-		LoanProduct loanProduct = loan.loanProduct();
-		validateMinimumDaysBetweenDisbursalAndFirstRepayment(disbursementDate, repaymentsStartingFromDate,
-				loanProduct, repaymentFrequencyType, repaymentEvery, nthDay, weekDayType);
-
-	}
-    
-	private void validateMinimumDaysBetweenDisbursalAndFirstRepayment(final LocalDate disbursalDate,
-			final LocalDate firstRepaymentDate, final LoanProduct loanProduct,
-			final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer repaymentEvery, Integer nthDay,
-			DayOfWeekType dayOfWeek) {
-		
-		final Integer calculatedminimumDaysBetweenDisbursalAndFirstRepayment = calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
-				disbursalDate, loanProduct, loanTermPeriodFrequencyType, repaymentEvery, nthDay, dayOfWeek);
-		final Integer minimumDaysBetweenDisbursalAndFirstRepayment = loanProduct
-				.getMinimumDaysBetweenDisbursalAndFirstRepayment();
-		Integer minumumPeriodsBetweenDisbursalAndFirstrepaymentdate = loanProduct
-				.getMinimumPeriodsBetweenDisbursalAndFirstRepayment();
-		if (minimumDaysBetweenDisbursalAndFirstRepayment > 0
-				|| minumumPeriodsBetweenDisbursalAndFirstrepaymentdate > 0) {
-			validateMinimumDaysBetweenDisbursalAndFirstRepayment(disbursalDate, firstRepaymentDate,
-					calculatedminimumDaysBetweenDisbursalAndFirstRepayment);
-		}
-	}
-	
-	private Integer calculateMinimumDaysBetweenDisbursalAndFirstRepayment(final LocalDate disbursalDate,
-			final LoanProduct loanProduct, final PeriodFrequencyType loanTermPeriodFrequencyType,
-			final Integer repaymentEvery, Integer nthDay, DayOfWeekType dayOfWeek) {
-		
-		final Integer minimumDaysBetweenDisbursalAndFirstRepayment = loanProduct
-				.getMinimumDaysBetweenDisbursalAndFirstRepayment();
-		Integer minumumPeriodsBetweenDisbursalAndFirstrepaymentdate = loanProduct
-				.getMinimumPeriodsBetweenDisbursalAndFirstRepayment();
-		final Integer minumumDaysBetweenDisbursalAndFirstrepaymentdateFromPeriod = 
-				calculateNumberOfDaysBetweenDisbursalRepaymentDateWithRepaymentPeriod(
-				disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, nthDay, dayOfWeek,
-				minumumPeriodsBetweenDisbursalAndFirstrepaymentdate);
-		final Integer calculatedminimumDaysBetweenDisbursalAndFirstRepayment = minimumDaysBetweenDisbursalAndFirstRepayment >= minumumDaysBetweenDisbursalAndFirstrepaymentdateFromPeriod
-				? minimumDaysBetweenDisbursalAndFirstRepayment
-				: minumumDaysBetweenDisbursalAndFirstrepaymentdateFromPeriod;
-		return calculatedminimumDaysBetweenDisbursalAndFirstRepayment;
-	}
-	
-	public Integer calculateNumberOfDaysBetweenDisbursalRepaymentDateWithRepaymentPeriod(
-			final LocalDate disbursalDate, final PeriodFrequencyType loanTermPeriodFrequencyType,
-			final Integer repaymentEvery, Integer nthDay, DayOfWeekType dayOfWeek, Integer numberOfRepaymentPeriods) {
-
-		LocalDate calculatedRepaymentdateFromNumberOfRepaymentPeriods = calculateRepaymentDateFromNumberOfRepaymentsPeriods(
-				disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, nthDay, dayOfWeek, numberOfRepaymentPeriods);
-		return Days.daysBetween(disbursalDate, calculatedRepaymentdateFromNumberOfRepaymentPeriods).getDays();
-	}
-
-	private LocalDate calculateRepaymentDateFromNumberOfRepaymentsPeriods(final LocalDate disbursalDate,
-			final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer repaymentEvery, Integer nthDay,
-			DayOfWeekType dayOfWeek, Integer numberOfRepaymentPeriods) {
-
-		// for calculating nth re payment date according loanFreequnncy of the
-		// loan
-		// between
-		// disbursal date and nth re payment date taking repaid every as
-		// loan
-		// repaidEvery*loanFreequnncy
-		final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
-		Integer repaidEvery = repaymentEvery * numberOfRepaymentPeriods;
-		return scheduledDateGenerator.getRepaymentPeriodDate(loanTermPeriodFrequencyType, repaidEvery, disbursalDate,
-				nthDay, dayOfWeek);
-	}
 
 }

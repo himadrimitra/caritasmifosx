@@ -42,7 +42,6 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
@@ -129,6 +128,7 @@ import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargeData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanChargePaidByData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanInstallmentChargeData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
@@ -179,7 +179,6 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplica
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleAssembler;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCommandFromApiJsonHelper;
@@ -255,7 +254,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanUtilService loanUtilService;
     private final LoanSummaryWrapper loanSummaryWrapper;
     private final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessingStrategy;
-    private final LoanScheduleAssembler loanScheduleAssembler;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final StandingInstructionWritePlatformService standingInstructionWritePlatformService;
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
@@ -266,6 +264,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper;
+    private final LoanScheduleValidator loanScheduleValidator;
 
 
     @Autowired
@@ -295,7 +294,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final BusinessEventNotifierService businessEventNotifierService, final GuarantorDomainService guarantorDomainService,
             final LoanUtilService loanUtilService, final LoanSummaryWrapper loanSummaryWrapper,
             final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessingStrategy,
-            final LoanScheduleAssembler loanScheduleAssembler,
             final CodeValueRepositoryWrapper codeValueRepository,final StandingInstructionWritePlatformService standingInstructionWritePlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
             final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
@@ -304,7 +302,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,
-            final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper) {
+            final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper,
+            final LoanScheduleValidator loanScheduleValidator) {
 
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
@@ -342,7 +341,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanUtilService = loanUtilService;
         this.loanSummaryWrapper = loanSummaryWrapper;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
-        this.loanScheduleAssembler = loanScheduleAssembler;
         this.codeValueRepository = codeValueRepository;
         this.standingInstructionWritePlatformService = standingInstructionWritePlatformService;
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
@@ -353,6 +351,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
         this.glimTransactionAssembler = glimTransactionAssembler;
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper = groupLoanIndividualMonitoringTransactionRepositoryWrapper;
+        this.loanScheduleValidator = loanScheduleValidator;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -370,7 +369,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
-        
         // validate ActualDisbursement Date Against Expected Disbursement Date
         LoanProduct loanProduct = loan.loanProduct();
         if(loanProduct.isSyncExpectedWithDisbursementDate()){
@@ -397,16 +395,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
         final boolean considerFutureDisbursmentsInSchedule = false;
         final boolean considerAllDisbursmentsInSchedule =false;
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
-                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+        
 
         // validate actual disbursement date against meeting date
         final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
                 CalendarEntityType.LOANS.getValue());
-        if (loan.isSyncDisbursementWithMeeting()) {
-            this.loanEventApiJsonValidator.validateDisbursementDateWithMeetingDate(actualDisbursementDate, calendarInstance, 
-                    scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), scheduleGeneratorDTO.getNumberOfdays());
-        }
 
         LocalDate expectedFirstRepaymentDate = null;
         if (rescheduledRepaymentDate != null) {
@@ -414,30 +407,19 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         } else {
             expectedFirstRepaymentDate = nextPossibleRepaymentDate;
         }
+        Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
+                actualDisbursementDate, loanProduct, loan.getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail().getRepayEvery(), null, null);
         
-        if(loan.getExpectedFirstRepaymentOnDate() != null){
-        this.loanScheduleAssembler.validateMinimumDaysBetweenDisbursalAndFirstRepayment(expectedFirstRepaymentDate, loan,
-                actualDisbursementDate);
+        Calendar calendar = null;
+        if(calendarInstance != null){
+            calendar = calendarInstance.getCalendar();
         }
-        
-        // validate first repayment date with meeting date
-        if (rescheduledRepaymentDate != null) {
-            Calendar calendar = null;
-            if (calendarInstance != null) {
-                calendar = calendarInstance.getCalendar();
-            }
-            if (calendar != null) {
-                boolean isSkipRepaymentOnFirstDayOfMonth = configurationDomainService.isSkippingMeetingOnFirstDayOfMonthEnabled();
-                final Integer numberOfDays = configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue();
-                this.loanScheduleAssembler.validateRepaymentsStartDateWithMeetingDates(new LocalDate(rescheduledRepaymentDate), calendar,
-                        isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
-            }
-        }
+       this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                expectedFirstRepaymentDate, actualDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
+                AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
 
         Map<BUSINESS_ENTITY, Object> entityMap = constructEntityMap(BUSINESS_ENTITY.LOAN, loan, command);
-        if(!command.booleanPrimitiveValueOfParameterNamed(LoanApiConstants.skipAuthenticationRule)){
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, entityMap);
-        }
 
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
@@ -457,6 +439,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         LoanTransaction disbursementTransaction = null;
         if (canDisburse) {
             Money disburseAmount = loan.adjustDisburseAmount(command, actualDisbursementDate);
+            ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                    considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
             Money amountToDisburse = disburseAmount.copy();
             boolean recalculateSchedule = amountBeforeAdjust.isNotEqualTo(loan.getPrincpal());
             final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
@@ -2562,12 +2546,20 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                     scheduleGeneratorDTO.getHolidayDetailDTO());
             lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();  
+            LocalDate dueDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+            while (loanApplicationTerms.getLoanTermVariations().hasDueDateVariation(dueDate)) {
+                LoanTermVariationsData variation = loanApplicationTerms.getLoanTermVariations().nextDueDateVariation();
+                if (!variation.isSpecificToInstallment()) {
+                    lastActualRepaymentDate = variation.getDateValue();
+                }
+                dueDate = variation.getDateValue();
+            }
             if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
                 installment.updateFromDate(lastScheduledDate);
-                lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+                lastScheduledDate = dueDate;
                 installment.updateDueDate(lastScheduledDate);                                              
             } else {
-            	lastScheduledDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+            	lastScheduledDate = dueDate;
             }
         }
     }
@@ -3384,7 +3376,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private void checkOtherDisbursementDetailsWithDate(final Loan loan, final Long disbursementId, final Date updatedDisbursementDate) {
         for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
             if (loanDisbursementDetails.expectedDisbursementDate().equals(updatedDisbursementDate)
-                    && loanDisbursementDetails.getId() != disbursementId) { throw new LoanDisbursementDateException(
+                    && !loanDisbursementDetails.getId().equals(disbursementId)) { throw new LoanDisbursementDateException(
                     "Loan disbursement details with date - " + updatedDisbursementDate + " for loan - " + loan.getId() + " already exists.",
                     loan.getId(), updatedDisbursementDate.toString()); }
         }
