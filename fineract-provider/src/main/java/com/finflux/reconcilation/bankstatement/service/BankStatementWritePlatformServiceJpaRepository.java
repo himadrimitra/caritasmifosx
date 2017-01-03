@@ -8,6 +8,9 @@ package com.finflux.reconcilation.bankstatement.service;
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -843,16 +846,19 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         
         Map<String, String> requestBodyMap = gson.fromJson(apiRequestBodyAsJson, type);
         String locale = requestBodyMap.get("locale");
+        String dateFormat = requestBodyMap.get("dateFormat");
         String currencyCode = currencyReadPlatformService.getDefaultCurrencyCode();
         List<BankStatementDetails> updatedList = new ArrayList<>();
+        DateFormat formatFromExcel = new SimpleDateFormat("yyyy-MM-dd", new Locale(locale));;
+        DateFormat targetFormat = new SimpleDateFormat(dateFormat);
         for (BankStatementDetailsData bankStatementDetail : bankStatementDetailsData) {
         	if(!bankStatementDetail.getIsReconciled()){
         		HashMap<String, Object> responseMap = new HashMap<>();
                 HashMap<String, Object> requestMap = new HashMap<>();
                 requestMap.put(ReconciliationApiConstants.localeParamName, locale);
-                requestMap.put(ReconciliationApiConstants.dateFormatParamName, "MMM DD, YYYY");
+                requestMap.put(ReconciliationApiConstants.dateFormatParamName, dateFormat);
                 requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBranch());
-                requestMap.put(ReconciliationApiConstants.transactionDateParamName, bankStatementDetail.getTransactionDate());
+                requestMap.put(ReconciliationApiConstants.transactionDateParamName, getFormattedDate(bankStatementDetail.getTransactionDate(),formatFromExcel, targetFormat));
                 requestMap.put(ReconciliationApiConstants.currencyCodeParamName, currencyCode);
                 requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId));
                 String requestBody = null;
@@ -998,5 +1004,14 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         .withEntityId(command.entityId()) //
         .build();
     }
-
+    
+    public static String getFormattedDate(Date transactionDate, DateFormat formatFromExcel, DateFormat targetFormat){
+        Date date;
+        try {
+            date = formatFromExcel.parse(transactionDate.toString());
+        } catch (ParseException e) {
+            return transactionDate.toString();
+        }
+        return targetFormat.format(date);
+    }
 }
