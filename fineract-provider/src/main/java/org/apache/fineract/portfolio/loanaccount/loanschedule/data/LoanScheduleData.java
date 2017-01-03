@@ -129,6 +129,7 @@ public class LoanScheduleData {
         this.totalPaidInAdvance = null;
         this.totalPaidLate = null;
         this.totalOutstanding = null;
+        this.totalAdvancePayment = null;
     }
     
     
