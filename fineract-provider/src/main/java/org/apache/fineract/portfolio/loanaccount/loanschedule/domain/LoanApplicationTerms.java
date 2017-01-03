@@ -710,7 +710,7 @@ public final class LoanApplicationTerms {
         // equal installment
         InterestCalculationPeriodMethod interestCalculationPeriodMethod = getPmtCalculationPeriodMethod();
         final BigDecimal periodicInterestRateForRepaymentPeriod = periodicInterestRate(calculator, mc, DaysInMonthType.DAYS_30,
-                DaysInYearType.DAYS_365, periodStartDate, periodEndDate, interestCalculationPeriodMethod);
+                DaysInYearType.DAYS_365, periodStartDate, periodEndDate, interestCalculationPeriodMethod, true);
         Money totalPmtForThisInstallment = calculateTotalDueForEqualInstallmentRepaymentPeriod(periodicInterestRateForRepaymentPeriod,
                 outstandingBalance, periodsElapsed);
         return totalPmtForThisInstallment;
@@ -1050,20 +1050,26 @@ public final class LoanApplicationTerms {
             final DaysInMonthType daysInMonthType, final DaysInYearType daysInYearType, LocalDate periodStartDate, LocalDate periodEndDate) {
 
         InterestCalculationPeriodMethod interestCalculationPeriodMethod = this.interestCalculationPeriodMethod;
+        boolean isForPMT = false;
         return periodicInterestRate(calculator, mc, daysInMonthType, daysInYearType, periodStartDate, periodEndDate,
-                interestCalculationPeriodMethod);
+                interestCalculationPeriodMethod, isForPMT);
     }
 
     private BigDecimal periodicInterestRate(final PaymentPeriodsInOneYearCalculator calculator, final MathContext mc,
             final DaysInMonthType daysInMonthType, final DaysInYearType daysInYearType, LocalDate periodStartDate, LocalDate periodEndDate,
-            final InterestCalculationPeriodMethod interestCalculationPeriodMethod) {
+            final InterestCalculationPeriodMethod interestCalculationPeriodMethod, boolean isForPMT) {
         final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator, interestCalculationPeriodMethod);
 
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         final BigDecimal loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
 
         BigDecimal periodicInterestRate = BigDecimal.ZERO;
-        BigDecimal loanTermFrequencyBigDecimal = calculateLoanTermFrequency(periodStartDate, periodEndDate);
+		BigDecimal loanTermFrequencyBigDecimal = BigDecimal.ONE;
+		if (isForPMT) {
+			loanTermFrequencyBigDecimal = BigDecimal.valueOf(this.repaymentEvery);
+		} else {
+			loanTermFrequencyBigDecimal = calculateLoanTermFrequency(periodStartDate, periodEndDate);
+		}
         switch (interestCalculationPeriodMethod) {
             case INVALID:
             break;
