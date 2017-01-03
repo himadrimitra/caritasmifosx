@@ -377,7 +377,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                     history.updateEndDate(null);
                     history.updateIsActive(false);
                 }
-            } else if (calendarHistoryEndDate == null) {
+            } else if (history.isActive() && calendarHistoryEndDate == null) {
                 calendarHistory.updateEndDate(null);
                 calendarHistory.updateIsActive(false);
             }
