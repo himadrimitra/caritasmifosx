@@ -15,4 +15,7 @@ public interface LoanApplicationReferenceRepository extends JpaRepository<LoanAp
 
     @Query("SELECT lar FROM LoanApplicationReference lar WHERE lar.loan.id = :loanId")
     LoanApplicationReference findOneByLoanId(@Param("loanId") Long loanId);
+    
+    @Query("from LoanApplicationReference loan where loan.client.id = :clientId and loan.group.id = :groupId")
+    List<LoanApplicationReference> findAllByClientIdAndGroupId(@Param("clientId") Long clientId, @Param("groupId") Long groupId);
 }
