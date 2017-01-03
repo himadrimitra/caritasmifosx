@@ -21,7 +21,10 @@ package org.apache.fineract.accounting.glaccount.service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.common.AccountingEnumerations;
@@ -36,21 +39,26 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final static String nameDecoratedBaseOnHierarchy = "concat(substring('........................................', 1, ((LENGTH(hierarchy) - LENGTH(REPLACE(hierarchy, '.', '')) - 1) * 4)), name)";
 
     @Autowired
     public GLAccountReadPlatformServiceImpl(final RoutingDataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
+
     }
 
     private static final class GLAccountMapper implements RowMapper<GLAccountData> {
@@ -68,7 +76,7 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
         public String schema() {
             StringBuilder sb = new StringBuilder();
             sb.append(
-                    " gl.id as id, name as name, parent_id as parentId, gl_code as glCode, disabled as disabled, manual_journal_entries_allowed as manualEntriesAllowed, ")
+                    " gl.id as id, gl.name as name, gl.parent_id as parentId, gl_code as glCode, disabled as disabled, manual_journal_entries_allowed as manualEntriesAllowed, ")
                     .append("classification_enum as classification, account_usage as accountUsage, gl.description as description, gl.gl_classification_type as glClassificationTypeEnum, ")
                     .append(nameDecoratedBaseOnHierarchy).append(" as nameDecorated, ")
                     .append("cv.id as codeId, cv.code_value as codeValue ");
@@ -268,6 +276,16 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
         return this.jdbcTemplate.query(sql, mapper, new Object[] { ruleId, transactionType });
     }
 
+    @Override
+    public List<GLAccountDataForLookup> retrieveAccountsByTags(Collection<Long> tagIds) {
+        final GLAccountDataLookUpMapper mapper = new GLAccountDataLookUpMapper();
+        final StringBuilder sqlBuilder = new StringBuilder(400);
+        sqlBuilder.append("select gl.id as id,gl.name as name,gl.gl_code as glCode ").append(" from  acc_gl_account gl ").append(" where gl.tag_id in (:tagIds) ");
+        Map<String, Object> paramMap = new HashMap<>(4);
+        paramMap.put("tagIds", tagIds);
+        return this.namedParameterJdbcTemplate.query(sqlBuilder.toString(), paramMap, mapper);
+    }
+    
     private static final class GLAccountDataLookUpMapper implements RowMapper<GLAccountDataForLookup> {
 
         public String schema() {

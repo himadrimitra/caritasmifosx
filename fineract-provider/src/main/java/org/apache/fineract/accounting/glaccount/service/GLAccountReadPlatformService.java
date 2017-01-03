@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.accounting.glaccount.service;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
@@ -41,4 +42,6 @@ public interface GLAccountReadPlatformService {
     GLAccountData retrieveNewGLAccountDetails(final Integer type);
 
     List<GLAccountDataForLookup> retrieveAccountsByTagId(final Long ruleId, final Integer transactionType);
+
+    List<GLAccountDataForLookup> retrieveAccountsByTags(Collection<Long> tagIds);
 }
