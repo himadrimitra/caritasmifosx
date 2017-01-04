@@ -2154,10 +2154,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
 
     @Override
-    public Collection<Long> fetchLoansForInterestRecalculation() {
+    public List<Long> fetchLoansForInterestRecalculation() {
         StringBuilder sqlBuilder = new StringBuilder();
         StringBuilder sql = new StringBuilder();
-        Collection<Long> loanIds = null;
+        List<Long> loanIds = null;
         sql.append("SELECT loan_id from reprocess_loans ");
         loanIds = this.jdbcTemplate.queryForList(sql.toString(), Long.class);
         sqlBuilder.append("SELECT ml.id FROM m_loan ml ");

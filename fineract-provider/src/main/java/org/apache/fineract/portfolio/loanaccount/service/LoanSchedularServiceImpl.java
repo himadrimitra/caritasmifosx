@@ -30,7 +30,9 @@ import java.util.Set;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
+import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
@@ -111,14 +113,11 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
                     sb.append("Apply Charges due for overdue loans failed for account:").append(loanId).append(" with message ")
                             .append(ex.getDefaultUserMessage());
                 } catch (Exception e) {
-                    Throwable realCause = e;
-                    if (e.getCause() != null) {
-                        realCause = e.getCause();
-                    }
+                    String rootCause = ExceptionHelper.fetchExceptionMessage(e);
                     logger.error("Apply Charges due for overdue loans failed for account:" + loanId + " with message "
-                            + realCause.getMessage());
+                            + rootCause);
                     sb.append("Apply Charges due for overdue loans failed for account:").append(loanId).append(" with message ")
-                            .append(realCause.getMessage());
+                            .append(rootCause);
                 }
             }
             if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
@@ -128,63 +127,138 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     @Override
     @CronTarget(jobName = JobName.RECALCULATE_INTEREST_FOR_LOAN)
     public void recalculateInterest() throws JobExecutionException {
-        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
-        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
-        Collection<Long> loanIds = this.loanReadPlatformService.fetchLoansForInterestRecalculation();
-        int i = 0;
-        if (!loanIds.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            for (Long loanId : loanIds) {
-                logger.info("Loan ID " + loanId);
-                Integer numberOfRetries = 0;
-                while (numberOfRetries <= maxNumberOfRetries) {
-                    try {
-                        this.loanWritePlatformService.recalculateInterest(loanId);
-                        numberOfRetries = maxNumberOfRetries + 1;
-                    } catch (CannotAcquireLockException | ObjectOptimisticLockingFailureException exception) {
-                        logger.info("Recalulate interest job has been retried  " + numberOfRetries + " time(s)");
-                        /***
-                         * Fail if the transaction has been retired for
-                         * maxNumberOfRetries
-                         **/
-                        if (numberOfRetries >= maxNumberOfRetries) {
-                            logger.warn("Recalulate interest job has been retried for the max allowed attempts of " + numberOfRetries
-                                    + " and will be rolled back");
-                            sb.append("Recalulate interest job has been retried for the max allowed attempts of " + numberOfRetries
-                                    + " and will be rolled back");
-                            break;
-                        }
-                        /***
-                         * Else sleep for a random time (between 1 to 10
-                         * seconds) and continue
-                         **/
-                        try {
-                            Random random = new Random();
-                            int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
-                            Thread.sleep(1000 + (randomNum * 1000));
-                            numberOfRetries = numberOfRetries + 1;
-                        } catch (InterruptedException e) {
-                            sb.append("Interest recalculation for loans failed " + exception.getMessage());
-                            break;
-                        }
-                    } catch (Exception e) {
-                        Throwable realCause = e;
-                        if (e.getCause() != null) {
-                            realCause = e.getCause();
-                        }
-                        logger.error("Interest recalculation for loans failed for account:" + loanId + " with message "
-                                + realCause.getMessage());
-                        sb.append("Interest recalculation for loans failed for account:").append(loanId).append(" with message ")
-                                .append(realCause.getMessage());
-                        numberOfRetries = maxNumberOfRetries + 1;
-                    }
-                    i++;
-                }
-                logger.info("Loans count " + i);
+        Map<String, String> jobParams = ThreadLocalContextUtil.getJobParams();
+        int numberOfThreads = 1;
+        if (jobParams.containsKey("number-of-threads")) {
+            numberOfThreads = Integer.parseInt(jobParams.get("number-of-threads"));
+            if (numberOfThreads == 0) {
+                numberOfThreads = 1;
             }
+        }
+        List<Long> loanIds = this.loanReadPlatformService.fetchLoansForInterestRecalculation();
+
+        if (!loanIds.isEmpty()) {
+            int loanSize = loanIds.size();
+            final StringBuilder sb = new StringBuilder();
+            if (numberOfThreads <= 1 || numberOfThreads > loanSize) {
+                Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+                Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
+                recalculateInterest(sb, maxNumberOfRetries, maxIntervalBetweenRetries, loanIds);
+            } else {
+                int subListSize = loanSize / numberOfThreads;
+                List<StringBuilder> bufferes = new ArrayList<>(numberOfThreads);
+                try {
+                    List<Thread> threads = new ArrayList<>();
+                    for (int threadNumber = 0; threadNumber < numberOfThreads; threadNumber++) {
+                        final StringBuilder threadsb = new StringBuilder();
+                        bufferes.add(threadsb);
+                        boolean completeList = false;
+                        if (threadNumber == numberOfThreads - 1) {
+                            completeList = true;
+                        }
+                        List<Long> subList = subList(loanIds, threadNumber, subListSize, completeList);
+                        if (subList.size() > 0) {
+                            Thread thread = new Thread(new RecalculateInterestThread(subList, threadsb));
+                            thread.start();
+                            threads.add(thread);
+                        }
+                        if (loanSize <= (threadNumber + 1) * subListSize) {
+                            break;
+                        }
+                    }
+                    for (Thread thread : threads) {
+                        thread.join();
+                    }
+                    for (StringBuilder threadsb : bufferes) {
+                        sb.append(threadsb.toString());
+                    }
+                } catch (InterruptedException e) {
+                    sb.append("Interest recalculation for loans failed " + e.getMessage());
+                }
+            }
+
             if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
         }
 
+    }
+    
+    private class RecalculateInterestThread implements Runnable {
+
+        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
+        final List<Long> loanIds;
+        final FineractPlatformTenant tenant;
+        final StringBuilder sb;
+
+        public RecalculateInterestThread(final List<Long> loanIds, final StringBuilder sb) {
+            this.loanIds = loanIds;
+            this.tenant = ThreadLocalContextUtil.getTenant();
+            this.sb = sb;
+        }
+
+        @Override
+        public void run() {
+            ThreadLocalContextUtil.setTenant(tenant);
+            recalculateInterest(sb, maxNumberOfRetries, maxIntervalBetweenRetries, loanIds);
+
+        }
+
+    }
+
+    private StringBuilder recalculateInterest(final StringBuilder sb, Integer maxNumberOfRetries, Integer maxIntervalBetweenRetries,
+            List<Long> loanIds) {
+        for (Long loanId : loanIds) {
+            logger.info("Loan ID " + loanId);
+            Integer numberOfRetries = 0;
+            while (numberOfRetries <= maxNumberOfRetries) {
+                try {
+                    this.loanWritePlatformService.recalculateInterest(loanId);
+                    numberOfRetries = maxNumberOfRetries + 1;
+                } catch (CannotAcquireLockException | ObjectOptimisticLockingFailureException exception) {
+                    logger.info("Recalulate interest job has been retried  " + numberOfRetries + " time(s)");
+                    /***
+                     * Fail if the transaction has been retired for
+                     * maxNumberOfRetries
+                     **/
+                    if (numberOfRetries >= maxNumberOfRetries) {
+                        logger.warn("Recalulate interest job has been retried for the max allowed attempts of " + numberOfRetries
+                                + " and will be rolled back");
+                        sb.append("Recalulate interest job has been retried for the max allowed attempts of " + numberOfRetries
+                                + " and will be rolled back");
+                        break;
+                    }
+                    /***
+                     * Else sleep for a random time (between 1 to 10 seconds)
+                     * and continue
+                     **/
+                    try {
+                        Random random = new Random();
+                        int randomNum = random.nextInt(maxIntervalBetweenRetries + 1);
+                        Thread.sleep(1000 + (randomNum * 1000));
+                        numberOfRetries = numberOfRetries + 1;
+                    } catch (InterruptedException e) {
+                        sb.append("Interest recalculation for loans failed " + exception.getMessage());
+                        break;
+                    }
+                } catch (Exception e) {
+                    String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                    logger.error("Interest recalculation for loans failed for account:" + loanId + " with message " + rootCause);
+                    sb.append(" Interest recalculation for loans failed for account:").append(loanId).append(" with message ")
+                            .append(rootCause);
+                    numberOfRetries = maxNumberOfRetries + 1;
+                }
+            }
+        }
+        return sb;
+    }
+
+    private List<Long> subList(List<Long> list, int counter, int sublistSize, boolean completeList) {
+        int fromIndex = counter * sublistSize;
+        int toIndex = fromIndex + sublistSize;
+        if (completeList || toIndex > list.size()) {
+            toIndex = list.size();
+        }
+        return list.subList(fromIndex, toIndex);
     }
 
     @Override
@@ -249,23 +323,17 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
                                 .append(ex.getDefaultUserMessage());
                         failedForOffices.add(entry.getKey());
                     } catch (Exception e) {
-                        Throwable realCause = e;
-                        if (e.getCause() != null) {
-                            realCause = e.getCause();
-                        }
-                        logger.error("Apply Holidays for loans failed for account:" + loanId + " with message " + realCause.getMessage());
+                        String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                        logger.error("Apply Holidays for loans failed for account:" + loanId + " with message " + rootCause);
                         sb.append("Apply Holidays for loans failed for account:").append(loanId).append(" with message ")
-                                .append(realCause.getMessage());
+                                .append(rootCause);
                         failedForOffices.add(entry.getKey());
                     }
                 }
             } catch (Exception e) {
-                Throwable realCause = e;
-                if (e.getCause() != null) {
-                    realCause = e.getCause();
-                }
-                logger.error("Apply Holidays for loans failed  with message " + realCause.getMessage());
-                sb.append("Apply Holidays for loans failed with message ").append(realCause.getMessage());
+                String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                logger.error("Apply Holidays for loans failed  with message " + rootCause);
+                sb.append("Apply Holidays for loans failed with message ").append(rootCause);
                 failedForOffices.add(entry.getKey());
             }
         }
