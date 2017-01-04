@@ -27,7 +27,7 @@ public class NccAccountNumberGenerator implements CustomAccountNumberGenerator {
 			AccountNumberFormat accountNumberFormat) {
 
 		String savingsAccountId = savingsAccount.getId().toString();
-		String externalIdForSavingsProduct = savingsAccount.savingsProduct().getExternalId().toString();
+		String externalIdForSavingsProduct = savingsAccount.savingsProduct().getExternalId();
 		String externalIdForCurreny = applicationCurrencyRepositoryWrapper
 				.findOneWithNotFoundDetection(savingsAccount.getCurrency()).getExternalId();
 		String externalIdforOffice = savingsAccount.office().getExternalId();
@@ -39,7 +39,7 @@ public class NccAccountNumberGenerator implements CustomAccountNumberGenerator {
 	@Override
 	public String generateAccountNumberForLoans(Loan loan, AccountNumberFormat accountNumberFormat) {
 		String accountId = loan.getId().toString();
-		String externalIdForProduct = loan.getLoanProduct().getExternalId().toString();
+		String externalIdForProduct = loan.getLoanProduct().getExternalId();
 		String externalIdForCurreny = applicationCurrencyRepositoryWrapper
 				.findOneWithNotFoundDetection(loan.getCurrency()).getExternalId();
 		String externalIdforOffice = loan.getOffice().getExternalId();
