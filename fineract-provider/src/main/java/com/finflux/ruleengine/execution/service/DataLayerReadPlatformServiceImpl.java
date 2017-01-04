@@ -41,7 +41,6 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         this.fromJsonHelper = fromJsonHelper;
     }
 
-    @SuppressWarnings("unused")
     @Override
     public Map<String, Object> getAllClientMatrix(Long clientId) {
         Map<String, Object> allClientData = new HashMap<>();
@@ -83,23 +82,22 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         /**
          * Client % Income from high stability
          */
-                try {
-        final Map<String, Object> clientIncomeFromHighStabilityPercentage = getClientIncomeFromHighStabilityPercentage(clientId);
-        if (clientIncomeFromHighStabilityPercentage != null) {
-            allClientData.putAll(clientIncomeFromHighStabilityPercentage);
-        }
-                }catch (final EmptyResultDataAccessException e) {}
+        try {
+            final Map<String, Object> clientIncomeFromHighStabilityPercentage = getClientIncomeFromHighStabilityPercentage(clientId);
+            if (clientIncomeFromHighStabilityPercentage != null) {
+                allClientData.putAll(clientIncomeFromHighStabilityPercentage);
+            }
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client meeting attendance history %
          */
-		try {
-			final Map<String, Object> clientMeetingAttendanceHistoryPercentage = getClientMeetingAttendanceHistoryPercentage(clientId);
-			if (clientMeetingAttendanceHistoryPercentage != null) {
-				allClientData.putAll(clientMeetingAttendanceHistoryPercentage);
-			}
-		} catch (final EmptyResultDataAccessException e) {
-		}
+        try {
+            final Map<String, Object> clientMeetingAttendanceHistoryPercentage = getClientMeetingAttendanceHistoryPercentage(clientId);
+            if (clientMeetingAttendanceHistoryPercentage != null) {
+                allClientData.putAll(clientMeetingAttendanceHistoryPercentage);
+            }
+        } catch (final EmptyResultDataAccessException e) {}
 
         return allClientData;
     }
@@ -187,7 +185,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             final Map<String, Object> clienttotalmonthlydueamountMap = new HashMap<String, Object>();
             clienttotalmonthlydueamountMap.put("clienttotalmonthlydueamount", clienttotalmonthlydueamount);
             allLoanApplicationData.putAll(clienttotalmonthlydueamountMap);
-        }catch (final EmptyResultDataAccessException e) {}
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client total written off amount from other lenders
@@ -196,7 +194,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             final Map<String, Object> clienttotalwrittenoffamountMap = new HashMap<String, Object>();
             clienttotalwrittenoffamountMap.put("clienttotalwrittenoffamount", clienttotalwrittenoffamount);
             allLoanApplicationData.putAll(clienttotalwrittenoffamountMap);
-        }catch (final EmptyResultDataAccessException e) {}
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client number of written off loans
@@ -205,7 +203,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             final Map<String, Object> clientnumberofwrittenoffloansMap = new HashMap<String, Object>();
             clientnumberofwrittenoffloansMap.put("clientnumberofwrittenoffloans", clientnumberofwrittenoffloans);
             allLoanApplicationData.putAll(clientnumberofwrittenoffloansMap);
-        }catch (final EmptyResultDataAccessException e) {}
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client total outstanding amount from other lenders
@@ -214,18 +212,16 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             final Map<String, Object> clientTotalOutstandingAmount = new HashMap<String, Object>();
             clientTotalOutstandingAmount.put("clienttotaloutstandingamount", clienttotaloutstandingamount);
             allLoanApplicationData.putAll(clientTotalOutstandingAmount);
-        }catch (final EmptyResultDataAccessException e) {}
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client number of active MFI loans
          */
         try {
             final Map<String, Object> clientActiveMFILoansCountMap = new HashMap<String, Object>();
-            clientActiveMFILoansCountMap.put("clientactiveloanscount",
-                    clientActiveMFILoansCount);
+            clientActiveMFILoansCountMap.put("clientactiveloanscount", clientActiveMFILoansCount);
             allLoanApplicationData.putAll(clientActiveMFILoansCountMap);
-        } catch (final EmptyResultDataAccessException e) {
-        }
+        } catch (final EmptyResultDataAccessException e) {}
 
         return allLoanApplicationData;
     }
@@ -353,9 +349,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
 
         public SurveyScorecardDataLayerMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append(" ")
-                    .append(" ss.survey_id as surveyId, ")
-                    .append(" sum(ss.a_value)  as scorecard ")
+            sqlBuilder.append(" ").append(" ss.survey_id as surveyId, ").append(" sum(ss.a_value)  as scorecard ")
                     .append(" FROM m_survey_scorecards as ss JOIN f_survey_taken st ON st.id = ss.survey_taken_id ");
             this.schemaSql = sqlBuilder.toString();
         }

@@ -24,8 +24,5 @@ INSERT IGNORE INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_na
   ('taskmangement', 'READ_TASK_NOTE', 'TASK_NOTE', 'READ', 0);
 
 
-INSERT INTO `f_risk_field` (`name`, `uname`, `value_type`, `options`, `code_name`, `is_active`)
+INSERT IGNORE INTO `f_risk_field` (`name`, `uname`, `value_type`, `options`, `code_name`, `is_active`)
 VALUES  ('Loan Amount', 'loanAmount', 0, NULL, NULL, 1);
-
-ALTER TABLE `f_task`
-  ADD COLUMN `description` VARCHAR(250) NULL AFTER `short_name`;

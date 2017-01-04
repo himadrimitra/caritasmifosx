@@ -12,4 +12,8 @@ public class ProfileRatingConfigNotFoundException extends AbstractPlatformResour
         super("error.msg.profile.rating.config.id.is.already." + status, "Profile rating config id " + id + " is already " + status, id,
                 status);
     }
+
+    public ProfileRatingConfigNotFoundException(final String type) {
+        super("error.msg.profile.rating.config.type.invalid", "Profile Rating Config with type " + type + " does not exist", type);
+    }
 }

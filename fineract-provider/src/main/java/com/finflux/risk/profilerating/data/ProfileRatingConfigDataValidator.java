@@ -41,7 +41,7 @@ public class ProfileRatingConfigDataValidator {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                .resource(ProfileRatingConfigApiConstants.PROFILERATINGCONFIG_RESOURCE_NAME);
+                .resource(ProfileRatingConfigApiConstants.PROFILE_RATING_CONFIG_RESOURCE_NAME);
 
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
@@ -72,7 +72,7 @@ public class ProfileRatingConfigDataValidator {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                .resource(ProfileRatingConfigApiConstants.PROFILERATINGCONFIG_RESOURCE_NAME);
+                .resource(ProfileRatingConfigApiConstants.PROFILE_RATING_CONFIG_RESOURCE_NAME);
 
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 

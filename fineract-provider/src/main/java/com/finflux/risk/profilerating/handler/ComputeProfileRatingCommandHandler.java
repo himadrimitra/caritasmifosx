@@ -9,22 +9,22 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.finflux.risk.profilerating.service.ProfileRatingConfigWritePlatformService;
+import com.finflux.risk.profilerating.service.ComputeProfileRatingWritePlatformService;
 
 @Service
-@CommandType(entity = "PROFILE_RATING_CONFIG", action = "UPDATE")
-public class UpdateProfileRatingConfigCommandHandler implements NewCommandSourceHandler {
+@CommandType(entity = "PROFILE_RATING", action = "COMPUTE")
+public final class ComputeProfileRatingCommandHandler implements NewCommandSourceHandler {
 
-    private final ProfileRatingConfigWritePlatformService writePlatformService;
+    private final ComputeProfileRatingWritePlatformService writePlatformService;
 
     @Autowired
-    public UpdateProfileRatingConfigCommandHandler(final ProfileRatingConfigWritePlatformService writePlatformService) {
+    public ComputeProfileRatingCommandHandler(final ComputeProfileRatingWritePlatformService writePlatformService) {
         this.writePlatformService = writePlatformService;
     }
 
     @Override
     @Transactional
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.writePlatformService.update(command.entityId(), command);
+        return this.writePlatformService.computeProfileRating(command);
     }
 }

@@ -3733,14 +3733,14 @@ public class CommandWrapperBuilder {
 
     public CommandWrapperBuilder createProfileRatingConfig() {
         this.actionName = "CREATE";
-        this.entityName = "PROFILERATINGCONFIG";
+        this.entityName = "PROFILE_RATING_CONFIG";
         this.href = "/profileratingconfigs";
         return this;
     }
 
     public CommandWrapperBuilder updateProfileRatingConfig(final Long profileRatingConfigId) {
         this.actionName = "UPDATE";
-        this.entityName = "PROFILERATINGCONFIG";
+        this.entityName = "PROFILE_RATING_CONFIG";
         this.entityId = profileRatingConfigId;
         this.href = "/profileratingconfigs/" + profileRatingConfigId;
         return this;
@@ -3748,7 +3748,7 @@ public class CommandWrapperBuilder {
 
     public CommandWrapperBuilder activateProfileRatingConfig(Long profileRatingConfigId) {
         this.actionName = "ACTIVATE";
-        this.entityName = "PROFILERATINGCONFIG";
+        this.entityName = "PROFILE_RATING_CONFIG";
         this.entityId = profileRatingConfigId;
         this.href = "/profileratingconfigs/" + profileRatingConfigId;
         return this;
@@ -3756,9 +3756,16 @@ public class CommandWrapperBuilder {
 
     public CommandWrapperBuilder inActivateProfileRatingConfig(Long profileRatingConfigId) {
         this.actionName = "INACTIVATE";
-        this.entityName = "PROFILERATINGCONFIG";
+        this.entityName = "PROFILE_RATING_CONFIG";
         this.entityId = profileRatingConfigId;
         this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
+
+    public CommandWrapperBuilder computeProfileRating() {
+        this.actionName = "COMPUTE";
+        this.entityName = "PROFILE_RATING";
+        this.href = "/computeprofileratings";
         return this;
     }
 }

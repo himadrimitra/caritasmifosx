@@ -90,11 +90,12 @@ CREATE TABLE `f_task` (
 	`parent_id` BIGINT(20) NULL DEFAULT NULL,
 	`name` VARCHAR(200) NOT NULL,
 	`short_name` VARCHAR(20) NOT NULL,
+	`description` VARCHAR(250) NULL DEFAULT NULL,
 	`entity_type` SMALLINT(3) NOT NULL,
 	`entity_id` BIGINT(20) NULL DEFAULT NULL,
 	`task_type` SMALLINT(3) NOT NULL,
 	`task_config_id` BIGINT(20) NOT NULL,
-  `task_activity_id` BIGINT(20) NULL DEFAULT NULL,
+	`task_activity_id` BIGINT(20) NULL DEFAULT NULL,
 	`status` SMALLINT(3) NOT NULL,
 	`priority` SMALLINT(3) NOT NULL,
 	`due_date` DATETIME NULL DEFAULT NULL,
@@ -140,6 +141,3 @@ CREATE TABLE `f_task_action_log` (
 	CONSTRAINT `FK_f_task_action_log_task_id` FOREIGN KEY (`task_id`) REFERENCES `f_task` (`id`),
 	CONSTRAINT `FK_f_task_action_log_action_user` FOREIGN KEY (`action_by`) REFERENCES `m_appuser` (`id`)
 );
-
-ALTER TABLE `f_task`
-	ADD COLUMN `description` VARCHAR(250) NULL AFTER `lastmodified_date`;
