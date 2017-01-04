@@ -399,7 +399,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
 
 
-        Map<BUSINESS_ENTITY, Object> entityMap = constructEntityMap(BUSINESS_ENTITY.LOAN, loan, command);
+        Map<BUSINESS_ENTITY, Object> entityMap = constructEntityMap(loan, command);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, entityMap);
 
         final List<Long> existingTransactionIds = new ArrayList<>();
@@ -3233,10 +3233,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         return map;
     }
     
-    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity, JsonCommand command) {
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final Object entity,final JsonCommand command) {
         Map<BUSINESS_ENTITY, Object> map = new HashMap<>(2);
-        map.put(entityEvent, entity);
-        map.put(entityEvent, command);
+        map.put(BUSINESS_ENTITY.LOAN, entity);
+        map.put(BUSINESS_ENTITY.JSON_COMMAND, command);
         return map;
     }
 
