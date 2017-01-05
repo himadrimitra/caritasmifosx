@@ -221,11 +221,11 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
                     scheduleParams.getActualRepaymentDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO));
-                        isFirstRepayment = false;
-                        AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(
-                                        scheduleParams.getActualRepaymentDate(), loanApplicationTerms, holidayDetailDTO);
-                        scheduleParams.setActualRepaymentDate(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
-                        LocalDate scheduledDueDate = adjustedDateDetailsDTO.getChangedScheduleDate();
+            isFirstRepayment = false;
+            AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(
+                    scheduleParams.getActualRepaymentDate(), loanApplicationTerms, holidayDetailDTO);
+            scheduleParams.setActualRepaymentDate(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
+            LocalDate scheduledDueDate = adjustedDateDetailsDTO.getChangedScheduleDate();
             
             // calculated interest start date for the period
             LocalDate periodStartDateApplicableForInterest = calculateInterestStartDateForPeriod(loanApplicationTerms,

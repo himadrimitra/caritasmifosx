@@ -120,6 +120,14 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
         }
         return disbursementDate;
     }
+    
+    public LocalDate getDisbursementDateAsLocalDate() {
+        LocalDate disbursementDate = expectedDisbursementDateAsLocalDate();
+        if (this.actualDisbursementDate != null) {
+            disbursementDate = actualDisbursementDateAsLocalDate();
+        }
+        return disbursementDate;
+    }
 
     public DisbursementData toData() {
         LocalDate expectedDisburseDate = expectedDisbursementDateAsLocalDate();
