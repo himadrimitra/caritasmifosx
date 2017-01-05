@@ -852,7 +852,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         DateFormat formatFromExcel = new SimpleDateFormat("yyyy-MM-dd", new Locale(locale));;
         DateFormat targetFormat = new SimpleDateFormat(dateFormat);
         for (BankStatementDetailsData bankStatementDetail : bankStatementDetailsData) {
-        	if(!bankStatementDetail.getIsReconciled()){
+        	if(isValidData(bankStatementDetail)){
         		HashMap<String, Object> responseMap = new HashMap<>();
                 HashMap<String, Object> requestMap = new HashMap<>();
                 requestMap.put(ReconciliationApiConstants.localeParamName, locale);
@@ -881,6 +881,13 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         responseData.put(ReconciliationApiConstants.RESOURCE, resultList);
         return gson.toJson(responseData);
     }
+    
+    private boolean isValidData(BankStatementDetailsData bankStatementDetail){
+        return (!bankStatementDetail.getIsReconciled() && bankStatementDetail.getAmount()!= null && bankStatementDetail.getGlCode() != null && bankStatementDetail.getBranch() != null 
+                && bankStatementDetail.getTransactionDate() != null && bankStatementDetail.getAccountingType() != null && (bankStatementDetail.getAccountingType().equalsIgnoreCase("CREDIT")
+                || bankStatementDetail.getAccountingType().equalsIgnoreCase("DEBIT")));
+    }
+
 
     private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetailsData bankStatementDetail, Long defaultBankGLAccountId) {
 
