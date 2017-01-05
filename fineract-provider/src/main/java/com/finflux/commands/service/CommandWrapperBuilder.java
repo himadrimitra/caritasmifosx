@@ -5,6 +5,7 @@
  */
 package com.finflux.commands.service;
 
+import com.finflux.task.data.TaskActionType;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 
@@ -238,6 +239,36 @@ public class CommandWrapperBuilder {
         this.entityId = bureauId;
         this.productId = productId;
         this.href = "/loanproducts/" + productId + "/creditbureau/" + bureauId ;
+        return this;
+    }
+
+    public CommandWrapperBuilder doActionOnTask(Long taskId, TaskActionType taskActionType) {
+        this.actionName = "ACTION_"+taskActionType.name();
+        this.entityName = "TASK_EXECUTION";
+        this.entityId = taskId;
+        this.href = "/tasks/" + taskId + "/execute" ;
+        return this;
+    }
+
+    public CommandWrapperBuilder addNoteToTask(Long taskId) {
+        this.actionName = "CREATE";
+        this.entityName = "TASK_EXECUTION_NOTE";
+        this.entityId = taskId;
+        this.href = "/tasks/" + taskId + "/execute/notes" ;
+        return this;
+    }
+
+    public CommandWrapperBuilder assignTaskToMe() {
+        this.actionName = "ASSIGN";
+        this.entityName = "TASK";
+        this.href = "/tasks";
+        return this;
+    }
+
+    public CommandWrapperBuilder unAssignTaskFromMe() {
+        this.actionName = "UNASSIGN";
+        this.entityName = "TASK";
+        this.href = "/tasks";
         return this;
     }
 

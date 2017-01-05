@@ -2,17 +2,18 @@ package com.finflux.task.api;
 
 import java.util.List;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import com.finflux.commands.service.CommandWrapperBuilder;
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.commands.domain.CommandWrapper;
+import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -39,17 +40,58 @@ public class TaskApiResource {
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final TaskPlatformReadService taskPlatformReadService;
     private final TaskPlatformReadServiceImpl taskConfigurationReadService;
+    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
 
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskApiResource(final PlatformSecurityContext context, final ApiRequestParameterHelper apiRequestParameterHelper,
             final DefaultToApiJsonSerializer toApiJsonSerializer, final TaskPlatformReadService taskPlatformReadService,
-            final TaskPlatformReadServiceImpl taskConfigurationReadService) {
+            final TaskPlatformReadServiceImpl taskConfigurationReadService,
+           final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.taskPlatformReadService = taskPlatformReadService;
         this.taskConfigurationReadService = taskConfigurationReadService;
+        this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+    }
+
+    @SuppressWarnings("unchecked")
+    @GET
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveTaskList(@QueryParam("filterby") final String filterBy, @QueryParam("offset") final Integer offset,
+                                              @QueryParam("limit") final Integer limit, @QueryParam("officeId") final Long officeId,
+                                              @QueryParam("parentConfigId") final Long parentConfigId, @QueryParam("childConfigId") final Long childConfigId,
+                                              @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASK_RESOURCE_NAME);
+        SearchParameters searchParameters = SearchParameters.forTask(null, officeId, null, null, null, offset, limit, null, null, null);
+        final Page<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy, searchParameters,
+                parentConfigId, childConfigId);
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        return this.toApiJsonSerializer.serialize(settings, workFlowStepActions);
+    }
+
+    @POST
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String updateTask( @QueryParam("command") final String commandParam,
+                                        final String apiRequestBodyAsJson) {
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+
+        CommandProcessingResult result = null;
+        CommandWrapper commandRequest = null;
+        if (is(commandParam, "assign")) {
+            commandRequest = builder.assignTaskToMe().build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else if(is(commandParam, "unassign")){
+            commandRequest = builder.unAssignTaskFromMe().build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }
+        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "assign", "unassign" }); }
+        return this.toApiJsonSerializer.serialize(result);
     }
 
     @SuppressWarnings("unchecked")
@@ -68,24 +110,6 @@ public class TaskApiResource {
         return this.toApiJsonSerializer.serialize(settings, loanProductTaskSummaries);
     }
 
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("actions")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveWorkFlowStepActions(@QueryParam("filterby") final String filterBy, @QueryParam("offset") final Integer offset,
-            @QueryParam("limit") final Integer limit, @QueryParam("officeId") final Long officeId,
-            @QueryParam("parentConfigId") final Long parentConfigId, @QueryParam("childConfigId") final Long childConfigId,
-            @Context final UriInfo uriInfo) {
-        SearchParameters searchParameters = SearchParameters.forTask(null, officeId, null, null, null, offset, limit, null, null, null);
-        final Page<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy, searchParameters,
-                parentConfigId, childConfigId);
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
-        return this.toApiJsonSerializer.serialize(settings, workFlowStepActions);
-    }
-
     @GET
     @Path("template")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -100,5 +124,9 @@ public class TaskApiResource {
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, taskTemplateData);
+    }
+
+    private boolean is(final String commandParam, final String commandValue) {
+        return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }
 }

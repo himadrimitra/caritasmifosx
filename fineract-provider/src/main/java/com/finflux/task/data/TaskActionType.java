@@ -3,6 +3,7 @@ package com.finflux.task.data;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 /**
@@ -48,9 +49,11 @@ public enum TaskActionType {
     }
 
     private static final Map<Integer, TaskActionType> intToEnumMap = new HashMap<>();
+    private static final Map<String, TaskActionType> stringToEnumMap = new HashMap<>();
     static {
         for (final TaskActionType type : TaskActionType.values()) {
             intToEnumMap.put(type.value, type);
+            stringToEnumMap.put(type.name().toLowerCase(), type);
         }
     }
 
@@ -58,8 +61,16 @@ public enum TaskActionType {
         return intToEnumMap.get(Integer.valueOf(i));
     }
 
+    public static TaskActionType fromString(final String str) {
+        if(StringUtils.isNotEmpty(str)) {
+            return stringToEnumMap.get(str.toLowerCase());
+        }else{
+            return null;
+        }
+    }
+
     public EnumOptionData getEnumOptionData() {
-        return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.toString());
+        return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.name().toLowerCase());
     }
 
     public TaskStatusType getToStatus() {

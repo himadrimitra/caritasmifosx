@@ -763,7 +763,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			transactionMap.add(transaction.getExternalServiceId(),transaction);
 		}
 
-		List<BankAccountTransaction> errorTransactions = bankAccountTransactionRepository.findByStatusOrderByExternalServiceIdAsc	(TransactionStatus.PENDING.getValue());
+		List<BankAccountTransaction> errorTransactions = bankAccountTransactionRepository.findByStatusOrderByExternalServiceIdAsc	(TransactionStatus.ERROR.getValue());
 		for(BankAccountTransaction transaction:errorTransactions ){
 			transactionMap.add(transaction.getExternalServiceId(),transaction);
 		}

@@ -2,9 +2,14 @@ package com.finflux.task.service.impl;
 
 import java.util.*;
 
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.useradministration.data.RoleData;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.service.RoleReadPlatformService;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +47,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     private final TaskPlatformReadService taskReadService;
     private final TaskRepositoryWrapper taskRepository;
     private final RoleReadPlatformService roleReadPlatformService;
-    private final PlatformSecurityContext context;
     private final RuleExecutionService ruleExecutionService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
     private final ExpressionExecutor expressionExecutor;
@@ -50,20 +54,22 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     private final TaskActionRoleRepository actionRoleRepository;
     private final TaskActionLogRepository actionLogRepository;
     private final TaskNoteRepository noteRepository;
+    private final FromJsonHelper fromJsonHelper;
+    private final PlatformSecurityContext context;
     private final Gson gson = new Gson();
     private Map<DataLayerKey, Long> dataLayerKeyLongMap;
 
     @Autowired
-    public TaskExecutionServiceImpl(final TaskPlatformReadService taskReadService, final TaskConfigRepositoryWrapper taskConfigRepository,
-            final TaskRepositoryWrapper taskRepository, final RoleReadPlatformService roleReadPlatformService, final PlatformSecurityContext context,
+    public TaskExecutionServiceImpl(final TaskPlatformReadService taskReadService,
+            final TaskRepositoryWrapper taskRepository, final RoleReadPlatformService roleReadPlatformService,
             final RuleExecutionService ruleExecutionService, final DataLayerReadPlatformService dataLayerReadPlatformService,
             final MyExpressionExecutor expressionExecutor, final TaskActionRepository taskActionRepository,
             final TaskActionRoleRepository actionRoleRepository, final TaskActionLogRepository actionLogRepository,
-            final TaskNoteRepository noteRepository) {
+            final TaskNoteRepository noteRepository,final FromJsonHelper fromJsonHelper,
+            final PlatformSecurityContext context) {
         this.taskReadService = taskReadService;
         this.taskRepository = taskRepository;
         this.roleReadPlatformService = roleReadPlatformService;
-        this.context = context;
         this.ruleExecutionService = ruleExecutionService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
         this.expressionExecutor = expressionExecutor;
@@ -71,6 +77,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         this.actionRoleRepository = actionRoleRepository;
         this.actionLogRepository = actionLogRepository;
         this.noteRepository = noteRepository;
+        this.fromJsonHelper = fromJsonHelper;
+        this.context = context;
     }
     /*
      * @Override public TaskExecutionData getWorkflowExecutionData(final Long
@@ -80,53 +88,60 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     @Override
     @Transactional
-    public void doActionOnTask(Long taskId, TaskActionType actionType) {
+    public CommandProcessingResult doActionOnTask(AppUser appUser, Long taskId, TaskActionType actionType) {
         Task task = taskRepository.findOneWithNotFoundDetection(taskId);
         TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
         if (actionType != null && status != null) {
             if (status.getPossibleActionsEnumOption().contains(actionType)) {
                 // not supported action
             }
-
             if (actionType.isCheckPermission()) {
-                checkUserhasActionPrivilege(task, actionType);
+                checkUserhasActionPrivilege(appUser, task, actionType);
             }
             if (actionType.getToStatus() != null) {
-                TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), context.authenticatedUser());
+                TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), appUser);
                 if (TaskActionType.CRITERIACHECK.equals(actionType)) {
                     runCriteriaCheckAndPopulate(task);
                     task.setStatus(TaskActionType.CRITERIACHECK.getToStatus().getValue());
-                    updateAssignedTo(task,TaskActionType.fromInt(task.getCurrentAction()));
+                    updateAssignedTo(appUser, task,TaskActionType.fromInt(task.getCurrentAction()));
                 }else{
                     TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
 
                     // StepStatus newStatus = stepAction.getToStatus();
                     if (status.equals(newStatus)) {
                         // do-nothing
-                        return;
+                        return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
                     }
                     task.setStatus(newStatus.getValue());
-                    updateActionAndAssignedTo(task, newStatus);
+                    updateActionAndAssignedTo(appUser,task, newStatus);
                 }
                 // update assigned-to if current user has next action
                 task = taskRepository.save(task);
                 actionLogRepository.save(actionLog);
                 if (task.getParent() != null) {
-                    notifyParentTask(task.getParent(), task, status, TaskStatusType.fromInt(task.getStatus()));
+                    notifyParentTask(appUser, task.getParent(), task, status, TaskStatusType.fromInt(task.getStatus()));
                 }
-
             }
         }
+        return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
         // do Action Log
     }
 
+    private CommandProcessingResult taskDataAsCommandProcessingResult(Long taskId) {
+        TaskExecutionData taskExecutionData = getTaskData(taskId);
+        Map<String,Object> changes  = new HashMap<>();
+        changes.put("taskData",taskExecutionData);
+        return CommandProcessingResult.withChanges(taskId,changes);
+    }
+
     @Override
-    public void updateActionAndAssignedTo(final Task task, final TaskStatusType newStatus) {
+    public void updateActionAndAssignedTo(AppUser appUser, final Task task, final TaskStatusType newStatus) {
         TaskActionType nextPossibleActionType = newStatus.getNextPositiveAction();
         if (nextPossibleActionType != null) {
             task.setCurrentAction(nextPossibleActionType.getValue());
-            if (nextPossibleActionType != null && canUserDothisAction(task, nextPossibleActionType)) {
-                task.setAssignedTo(context.authenticatedUser());
+            if (nextPossibleActionType != null && canUserDothisAction(appUser,
+                    task, nextPossibleActionType)) {
+                task.setAssignedTo(appUser);
             } else {
                 task.setAssignedTo(null);
             }
@@ -136,35 +151,36 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         }
     }
 
-    private void updateAssignedTo(final Task task, final TaskActionType nextPossibleActionType) {
+    private void updateAssignedTo(final AppUser appUser, final Task task, final TaskActionType nextPossibleActionType) {
         if (nextPossibleActionType != null) {
             task.setCurrentAction(nextPossibleActionType.getValue());
-            if (nextPossibleActionType != null && canUserDothisAction(task, nextPossibleActionType)) {
-                task.setAssignedTo(context.authenticatedUser());
+            if (nextPossibleActionType != null && canUserDothisAction(appUser, task, nextPossibleActionType)) {
+                task.setAssignedTo(appUser);
             } else {
                 task.setAssignedTo(null);
             }
         }
     }
 
-    private void checkUserhasActionPrivilege(Task task, TaskActionType actionType) {
+    private void checkUserhasActionPrivilege(AppUser appUser, Task task, TaskActionType actionType) {
         if (task.getActionGroupId() == null) { return; }
         TaskAction workflowStepAction = taskActionRepository
                 .findOneByActionGroupIdAndAction(task.getActionGroupId(), actionType.getValue());
         if (workflowStepAction != null) {
-            if (canUserDothisAction(workflowStepAction)) { return; }
+            if (canUserDothisAction(appUser, workflowStepAction)) { return; }
             throw new TaskActionPermissionException(actionType);
         }
     }
 
-    private boolean canUserDothisAction(Task task, TaskActionType taskActionType) {
+    @Override
+    public boolean canUserDothisAction(AppUser appUser, Task task, TaskActionType taskActionType) {
         if (task.getActionGroupId() == null) { return true; }
         TaskAction workflowStepAction = taskActionRepository.findOneByActionGroupIdAndAction(task.getActionGroupId(),
                 taskActionType.getValue());
-        return canUserDothisAction(workflowStepAction);
+        return canUserDothisAction(appUser, workflowStepAction);
     }
 
-    private boolean canUserDothisAction(TaskAction taskAction) {
+    private boolean canUserDothisAction(AppUser appUser, TaskAction taskAction) {
         if (taskAction == null) { return true; }
         final TaskActionType taskActionType = TaskActionType.fromInt(taskAction.getAction());
         if (!taskActionType.isCheckPermission()) { return true; }
@@ -176,7 +192,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         for (TaskActionRole actionRole : actionRoles) {
             roles.add(actionRole.getRoleId());
         }
-        Collection<RoleData> roleDatas = roleReadPlatformService.retrieveAppUserRoles(context.authenticatedUser().getId());
+        Collection<RoleData> roleDatas = roleReadPlatformService.retrieveAppUserRoles(appUser.getId());
         for (RoleData roleData : roleDatas) {
             if (roles.contains(roleData.getId())) { return true; }
         }
@@ -184,7 +200,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @SuppressWarnings("unused")
-    private void notifyParentTask(Task parentTask, Task task, TaskStatusType status, TaskStatusType newStatus) {
+    private void notifyParentTask(AppUser appUser, Task parentTask, Task task, TaskStatusType status, TaskStatusType newStatus) {
 
         if (TaskType.WORKFLOW.equals(TaskType.fromInt(parentTask.getTaskType()))) {
             if (TaskStatusType.COMPLETED.equals(newStatus) || TaskStatusType.SKIPPED.equals(newStatus)) {
@@ -194,7 +210,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                         Task nextExecutionTask = taskRepository.findOneWithNotFoundDetection(nextExecutionTaskId);
                         if (TaskStatusType.INACTIVE.getValue().equals(nextExecutionTask.getStatus())) {
                             nextExecutionTask.setStatus(TaskStatusType.INITIATED.getValue());
-                            updateActionAndAssignedTo(nextExecutionTask, TaskStatusType.INITIATED);
+                            updateActionAndAssignedTo(appUser,nextExecutionTask, TaskStatusType.INITIATED);
+                            nextExecutionTask.setCreatedDate(new DateTime());
                             taskRepository.save(nextExecutionTask);
                         }
                     }
@@ -225,7 +242,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
      * null; }
      */
 
-    private List<TaskActionData> getPossibleActionsOnTask(Long taskId, boolean onlyClickable) {
+    private List<TaskActionData> getPossibleActionsOnTask(AppUser appUser, Long taskId, boolean onlyClickable) {
         Task task = taskRepository.findOneWithNotFoundDetection(taskId);
         TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
         List<TaskActionData> actionDatas = new ArrayList<>();
@@ -270,7 +287,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
             if (taskAction == null && !action.isEnableByDefault()) {
                 continue;
             }
-            if (canUserDothisAction(taskAction)) {
+            if (canUserDothisAction(appUser,taskAction)) {
                 actionDatas.add(new TaskActionData(action,true,null));
             }else{
                 actionDatas.add(new TaskActionData(action,false,null));
@@ -313,8 +330,8 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @Override
-    public List<TaskActionData> getClickableActionsOnTask(Long taskId) {
-        return getPossibleActionsOnTask(taskId, true);
+    public List<TaskActionData> getClickableActionsOnTask(AppUser appUser, Long taskId) {
+        return getPossibleActionsOnTask(appUser, taskId, true);
     }
 
     @Override
@@ -328,16 +345,28 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     }
 
     @Override
-    public Long addNoteToTask(Long taskId, TaskNoteForm noteForm) {
+    public CommandProcessingResult addNoteToTask(AppUser appUser, Long taskId, String noteFormStr) {
         Task task = taskRepository.findOneWithNotFoundDetection(taskId);
+        TaskNoteForm noteForm = fromJsonHelper.fromJson(noteFormStr, TaskNoteForm.class);
         TaskNote taskNote = TaskNote.create(task,noteForm.getNote());
+        taskNote.setCreatedBy(appUser);
         taskNote = noteRepository.save(taskNote);
-        return taskNote.getId();
+        return new CommandProcessingResultBuilder().withEntityId(taskId).withResourceIdAsString(""+taskNote.getId()).build();
     }
 
     @Override
     public List<TaskActionLogData> getActionLogs(Long taskId) {
         return taskReadService.getActionLogs(taskId);
+    }
+
+    @Override
+    public CommandProcessingResult addNoteToTask(Long taskId, String json) {
+        return addNoteToTask(context.authenticatedUser(),taskId,json);
+    }
+
+    @Override
+    public CommandProcessingResult doActionOnTask(Long taskId, TaskActionType activitycomplete) {
+        return doActionOnTask(context.authenticatedUser(),taskId,activitycomplete);
     }
 
     @SuppressWarnings({})

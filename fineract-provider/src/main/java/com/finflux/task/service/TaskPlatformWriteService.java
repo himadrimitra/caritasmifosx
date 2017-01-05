@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.finflux.task.domain.TaskActivity;
 
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.client.domain.Client;
 
@@ -17,4 +18,8 @@ public interface TaskPlatformWriteService {
 
     Long createSingleTask(TaskActivity taskActivity, String title, Office office, Map<TaskConfigKey, String> map,
 						  Long actionGroupId);
+
+	CommandProcessingResult assignTaskToMe(Long aLong, String json);
+
+	CommandProcessingResult unassignTaskFromMe(Long aLong, String json);
 }

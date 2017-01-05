@@ -52,6 +52,10 @@ public class RBLSinglePaymentResponse {
 		@JsonProperty("Status")
 		private String status;
 
+		@JsonProperty("Resp_cde")
+		@JsonDeserialize(using = EmptyToNullObject.class)
+		private String responseCode;
+
 		@JsonProperty("Error_Cde")
 		@JsonDeserialize(using = EmptyToNullObject.class)
 		private String errorCode;
@@ -122,6 +126,14 @@ public class RBLSinglePaymentResponse {
 
 		public void setErrorDescription(String errorDescription) {
 			this.errorDescription = errorDescription;
+		}
+
+		public String getResponseCode() {
+			return responseCode;
+		}
+
+		public void setResponseCode(String responseCode) {
+			this.responseCode = responseCode;
 		}
 	}
 
