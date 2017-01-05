@@ -51,6 +51,8 @@ import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.joda.time.LocalDate;
 import org.springframework.util.CollectionUtils;
 
+import com.finflux.task.data.LoanProductTaskSummaryData;
+
 /**
  * Immutable data object to represent loan products.
  */
@@ -200,6 +202,8 @@ public class LoanProductData {
     
     final List<EnumOptionData> weeksInYearTypeOptions;
     private final EnumOptionData weeksInYearType;
+    
+    private LoanProductTaskSummaryData loanProductWorkFlowSummary;
 
     private final Boolean isEmiBasedOnDisbursements ;
     
@@ -1325,5 +1329,13 @@ public class LoanProductData {
 
     public boolean canUseForTopup() {
         return this.canUseForTopup;
+    }
+
+    public LoanProductTaskSummaryData getLoanProductWorkFlowSummary() {
+        return this.loanProductWorkFlowSummary;
+    }
+
+    public void setLoanProductWorkFlowSummary(final LoanProductTaskSummaryData loanProductWorkFlowSummary) {
+        this.loanProductWorkFlowSummary = loanProductWorkFlowSummary;
     }
 }

@@ -7,5 +7,7 @@ import java.util.Map;
  */
 public interface DataLayerReadPlatformService {
 
-    Map<String,Object> getAllMatrix(Long clientId);
+    Map<String,Object> getAllClientMatrix(Long clientId);
+
+    Map<String,Object> getAllLoanApplicationMatrix(Long loanApplicationId);
 }

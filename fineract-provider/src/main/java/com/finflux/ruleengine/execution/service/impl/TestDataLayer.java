@@ -1,12 +1,13 @@
 package com.finflux.ruleengine.execution.service.impl;
 
-import com.finflux.ruleengine.execution.service.DataLayer;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+import com.finflux.ruleengine.execution.data.DataLayerKey;
+import com.finflux.ruleengine.execution.service.DataLayer;
 
 /**
  * Created by dhirendra on 22/09/16.
@@ -18,10 +19,6 @@ public class TestDataLayer implements DataLayer {
 
     public TestDataLayer(){
         keyValueMap = new HashMap<>();
-        keyValueMap.put("age", 25L);
-//        keyValueMap.put("sex", "M");
-//        keyValueMap.put("isMarried", true);
-        keyValueMap.put("name", "dhirendra");
     }
 
     @Override
@@ -36,5 +33,14 @@ public class TestDataLayer implements DataLayer {
     @Override
     public Object getValue(String key) {
         return keyValueMap.get(key);
+    }
+
+    @Override
+    public void build(Map<DataLayerKey, Long> dataLayerEntities) {
+        keyValueMap.clear();
+        keyValueMap.put("age", 25L);
+//        keyValueMap.put("sex", "M");
+//        keyValueMap.put("isMarried", true);
+        keyValueMap.put("name", "dhirendra");
     }
 }

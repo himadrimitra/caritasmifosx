@@ -77,9 +77,9 @@ public class CgtData {
         final Collection<ClientData> clientMembers = null;
         final StaffData primaryLoanOfficer = StaffData.lookup(cgt.getLoanOfficer().getId(), cgt.getLoanOfficer().getDisplayName());
         final LocalDate expectedStartDate = new LocalDate(cgt.getExpectedStartDate());
-        final LocalDate expectedEndDate = new LocalDate(cgt.getExpectedStartDate());
+        final LocalDate expectedEndDate = new LocalDate(cgt.getExpectedEndDate());
         final LocalDate actualStartDate = new LocalDate(cgt.getExpectedStartDate());
-        final LocalDate actualEndDate = new LocalDate(cgt.getExpectedStartDate());
+        final LocalDate actualEndDate = new LocalDate(cgt.getExpectedEndDate());
        
         return new CgtData(cgt.getId(), cgt.getEntityTypeId(), cgt.getUniqueId(), cgt.getLocation(), cgtNoteData, expectedStartDate,
                 expectedEndDate, actualStartDate, actualEndDate, CgtStatusType.CgtStatusTypeEnumDatafromInt(cgt.getCgtStatus()),

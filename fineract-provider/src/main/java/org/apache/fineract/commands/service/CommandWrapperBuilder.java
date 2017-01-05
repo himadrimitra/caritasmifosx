@@ -3221,13 +3221,7 @@ public class CommandWrapperBuilder {
 
     /**
      * Create Address
-<<<<<<< 6740af46bc98df2b0ad4707849d48e48b9ebdb03
      * @param entityTypeId : This parameter is setting to entityId
-=======
-     * 
-     * @param entityTypeId
-     *            : This parameter is setting to entityId
->>>>>>> Risk configuration module
      * @param entityType
      * @param entityId : This parameter is setting to subentityId
      * @return
@@ -3682,21 +3676,30 @@ public class CommandWrapperBuilder {
         return this;
     }
     
-    public CommandWrapperBuilder activateSmartCard(final Long entityTypeId, final String entityType, final Long clientId) {
-        this.actionName = "ACTIVATE";
-        this.entityName = "SMARTCARD";
-        this.clientId = clientId;
-        this.subentityId = entityTypeId;
-        this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
-        return this;
-    }
+	public CommandWrapperBuilder activateSmartCard(final Long entityTypeId, final String entityType,
+			final Long clientId) {
+		this.actionName = "ACTIVATE";
+		this.entityName = "SMARTCARD";
+		this.clientId = clientId;
+		this.subentityId = entityTypeId;
+		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+		return this;
+	}
 
-    public CommandWrapperBuilder inActivateSmartCard(final Long entityTypeId, final String entityType, final Long clientId) {
-        this.actionName = "INACTIVATE";
-        this.entityName = "SMARTCARD";
-        this.clientId = clientId;
-        this.subentityId = entityTypeId;
-        this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+	public CommandWrapperBuilder inActivateSmartCard(final Long entityTypeId, final String entityType,
+			final Long clientId) {
+		this.actionName = "INACTIVATE";
+		this.entityName = "SMARTCARD";
+		this.clientId = clientId;
+		this.subentityId = entityTypeId;
+		this.href = "/clients/" + clientId + "/" + entityType + "/smartcard";
+		return this;
+	}
+
+    public CommandWrapperBuilder createAdhocTask() {
+        this.actionName = "CREATE";
+        this.entityName = "ADHOCTASK";
+        this.href = "/task/adhoc";
         return this;
     }
     
@@ -3725,6 +3728,44 @@ public class CommandWrapperBuilder {
         this.entityId = supportedEntityId;
         this.entityTypeId = entityTypeId;
         this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail";
+        return this;
+    }
+
+    public CommandWrapperBuilder createProfileRatingConfig() {
+        this.actionName = "CREATE";
+        this.entityName = "PROFILE_RATING_CONFIG";
+        this.href = "/profileratingconfigs";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateProfileRatingConfig(final Long profileRatingConfigId) {
+        this.actionName = "UPDATE";
+        this.entityName = "PROFILE_RATING_CONFIG";
+        this.entityId = profileRatingConfigId;
+        this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
+
+    public CommandWrapperBuilder activateProfileRatingConfig(Long profileRatingConfigId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "PROFILE_RATING_CONFIG";
+        this.entityId = profileRatingConfigId;
+        this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
+
+    public CommandWrapperBuilder inActivateProfileRatingConfig(Long profileRatingConfigId) {
+        this.actionName = "INACTIVATE";
+        this.entityName = "PROFILE_RATING_CONFIG";
+        this.entityId = profileRatingConfigId;
+        this.href = "/profileratingconfigs/" + profileRatingConfigId;
+        return this;
+    }
+
+    public CommandWrapperBuilder computeProfileRating() {
+        this.actionName = "COMPUTE";
+        this.entityName = "PROFILE_RATING";
+        this.href = "/computeprofileratings";
         return this;
     }
 }

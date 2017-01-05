@@ -30,6 +30,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private final ClientDataLayerMapper clientDataLayerMapper = new ClientDataLayerMapper();
     private final SurveyQuestionDataLayerMapper surveyQuestionDataLayerMapper = new SurveyQuestionDataLayerMapper();
     private final SurveyScorecardDataLayerMapper surveyScorecardDataLayerMapper = new SurveyScorecardDataLayerMapper();
+    private final LoanApplicationDataLayerMapper loanApplicationDataLayerMapper = new LoanApplicationDataLayerMapper();
 
     @Autowired
     public DataLayerReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -40,9 +41,8 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         this.fromJsonHelper = fromJsonHelper;
     }
 
-    @SuppressWarnings("unused")
     @Override
-    public Map<String, Object> getAllMatrix(Long clientId) {
+    public Map<String, Object> getAllClientMatrix(Long clientId) {
         Map<String, Object> allClientData = new HashMap<>();
         final String sql = "select " + clientDataLayerMapper.schema() + " where c.id = ?";
         try {
@@ -52,7 +52,8 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             }
         } catch (final EmptyResultDataAccessException e) {}
 
-        final String questionSql = "SELECT " + surveyQuestionDataLayerMapper.schema() + " WHERE st.entity_type = ? AND st.entity_id = ? ";
+        final String questionSql = "SELECT " + surveyQuestionDataLayerMapper.schema()
+                + " WHERE st.entity_type = ? AND st.entity_id = ? order by st.id asc";
         try {
             final SurveyEntityType surveyEntityType = SurveyEntityType.CLIENTS;
             List<Map<String, Object>> questionDataList = this.jdbcTemplate.query(questionSql, surveyQuestionDataLayerMapper, new Object[] {
@@ -66,7 +67,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         //
 
         final String surveySql = "SELECT " + surveyScorecardDataLayerMapper.schema()
-                + " WHERE st.entity_type = ? AND st.entity_id = ? group by ss.survey_id";
+                + " WHERE st.entity_type = ? AND st.entity_id = ? group by ss.survey_id, st.id order by st.id asc";
         try {
             final SurveyEntityType surveyEntityType = SurveyEntityType.CLIENTS;
             List<Map<String, Object>> surveyScoreCards = this.jdbcTemplate.query(surveySql, surveyScorecardDataLayerMapper, new Object[] {
@@ -79,9 +80,70 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         } catch (final EmptyResultDataAccessException e) {}
 
         /**
+         * Client % Income from high stability
+         */
+        try {
+            final Map<String, Object> clientIncomeFromHighStabilityPercentage = getClientIncomeFromHighStabilityPercentage(clientId);
+            if (clientIncomeFromHighStabilityPercentage != null) {
+                allClientData.putAll(clientIncomeFromHighStabilityPercentage);
+            }
+        } catch (final EmptyResultDataAccessException e) {}
+
+        /**
+         * Client meeting attendance history %
+         */
+        try {
+            final Map<String, Object> clientMeetingAttendanceHistoryPercentage = getClientMeetingAttendanceHistoryPercentage(clientId);
+            if (clientMeetingAttendanceHistoryPercentage != null) {
+                allClientData.putAll(clientMeetingAttendanceHistoryPercentage);
+            }
+        } catch (final EmptyResultDataAccessException e) {}
+
+        return allClientData;
+    }
+
+    @Override
+    public Map<String, Object> getAllLoanApplicationMatrix(Long loanApplicationId) {
+        Map<String, Object> allLoanApplicationData = new HashMap<>();
+        final String sql = "select " + loanApplicationDataLayerMapper.schema() + " where l.id = ?";
+        try {
+            Map<String, Object> loanAppDataMap = this.jdbcTemplate.queryForObject(sql, loanApplicationDataLayerMapper, loanApplicationId);
+            if (loanAppDataMap != null) {
+                allLoanApplicationData.putAll(loanAppDataMap);
+            }
+        } catch (final EmptyResultDataAccessException e) {}
+
+        final String questionSql = "SELECT " + surveyQuestionDataLayerMapper.schema()
+                + " WHERE st.entity_type = ? AND st.entity_id = ? order by st.id asc";
+        try {
+            final SurveyEntityType surveyEntityType = SurveyEntityType.LOANAPPLICATIONS;
+            List<Map<String, Object>> questionDataList = this.jdbcTemplate.query(questionSql, surveyQuestionDataLayerMapper, new Object[] {
+                    surveyEntityType.getValue(), loanApplicationId });
+            if (questionDataList != null) {
+                for (Map<String, Object> questionData : questionDataList) {
+                    allLoanApplicationData.putAll(questionData);
+                }
+            }
+        } catch (final EmptyResultDataAccessException e) {}
+        //
+
+        final String surveySql = "SELECT " + surveyScorecardDataLayerMapper.schema()
+                + " WHERE st.entity_type = ? AND st.entity_id = ? group by ss.survey_id, st.id order by st.id asc";
+        try {
+            final SurveyEntityType surveyEntityType = SurveyEntityType.LOANAPPLICATIONS;
+            List<Map<String, Object>> surveyScoreCards = this.jdbcTemplate.query(surveySql, surveyScorecardDataLayerMapper, new Object[] {
+                    surveyEntityType.getValue(), loanApplicationId });
+            if (surveyScoreCards != null) {
+                for (Map<String, Object> surveyScoreCard : surveyScoreCards) {
+                    allLoanApplicationData.putAll(surveyScoreCard);
+                }
+            }
+        } catch (final EmptyResultDataAccessException e) {}
+
+        /**
          * Client Details From Other Lenders Loans
          */
-        final List<Map<String, Object>> clientLoanDetailsFromOtherLendersList = getClientLoanDetailsFromOtherLenders(clientId);
+        final List<Map<String, Object>> clientLoanDetailsFromOtherLendersList = getLoanDetailsFromOtherLendersForLoanApplication(loanApplicationId);
         final BigDecimal clienttotaloutstandingamount = BigDecimal.ZERO;
         Integer clientActiveMFILoansCount = 0;
         final BigDecimal clienttotalwrittenoffamount = BigDecimal.ZERO;
@@ -100,7 +162,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
                 if (clientLoanDetailsFromOtherLenders.get("loanstatus") != null
                         && Integer.valueOf(clientLoanDetailsFromOtherLenders.get("loanstatus").toString()) == 300) {
                     clientLoanDetailsFromOtherLenders.remove("loanstatus");
-                    allClientData.putAll(clientLoanDetailsFromOtherLenders);
+                    allLoanApplicationData.putAll(clientLoanDetailsFromOtherLenders);
                     clienttotaloutstandingamount.add((BigDecimal) clientLoanDetailsFromOtherLenders.get("clientoutstandingamount"));
                     clientActiveMFILoansCount++;
 
@@ -119,61 +181,55 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         /**
          * Client total amount monthly due
          */
-        final Map<String, Object> clienttotalmonthlydueamountMap = new HashMap<String, Object>();
-        clienttotalmonthlydueamountMap.put("clienttotalmonthlydueamount", clienttotalmonthlydueamount);
-        allClientData.putAll(clienttotalmonthlydueamountMap);
+        try {
+            final Map<String, Object> clienttotalmonthlydueamountMap = new HashMap<String, Object>();
+            clienttotalmonthlydueamountMap.put("clienttotalmonthlydueamount", clienttotalmonthlydueamount);
+            allLoanApplicationData.putAll(clienttotalmonthlydueamountMap);
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client total written off amount from other lenders
          */
-        final Map<String, Object> clienttotalwrittenoffamountMap = new HashMap<String, Object>();
-        clienttotalwrittenoffamountMap.put("clienttotalwrittenoffamount", clienttotalwrittenoffamount);
-        allClientData.putAll(clienttotalwrittenoffamountMap);
+        try {
+            final Map<String, Object> clienttotalwrittenoffamountMap = new HashMap<String, Object>();
+            clienttotalwrittenoffamountMap.put("clienttotalwrittenoffamount", clienttotalwrittenoffamount);
+            allLoanApplicationData.putAll(clienttotalwrittenoffamountMap);
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client number of written off loans
          */
-        final Map<String, Object> clientnumberofwrittenoffloansMap = new HashMap<String, Object>();
-        clientnumberofwrittenoffloansMap.put("clientnumberofwrittenoffloans", clientnumberofwrittenoffloans);
-        allClientData.putAll(clientnumberofwrittenoffloansMap);
+        try {
+            final Map<String, Object> clientnumberofwrittenoffloansMap = new HashMap<String, Object>();
+            clientnumberofwrittenoffloansMap.put("clientnumberofwrittenoffloans", clientnumberofwrittenoffloans);
+            allLoanApplicationData.putAll(clientnumberofwrittenoffloansMap);
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client total outstanding amount from other lenders
          */
-        final Map<String, Object> clientTotalOutstandingAmount = new HashMap<String, Object>();
-        clientTotalOutstandingAmount.put("clienttotaloutstandingamount", clienttotaloutstandingamount);
-        allClientData.putAll(clientTotalOutstandingAmount);
+        try {
+            final Map<String, Object> clientTotalOutstandingAmount = new HashMap<String, Object>();
+            clientTotalOutstandingAmount.put("clienttotaloutstandingamount", clienttotaloutstandingamount);
+            allLoanApplicationData.putAll(clientTotalOutstandingAmount);
+        } catch (final EmptyResultDataAccessException e) {}
 
         /**
          * Client number of active MFI loans
          */
-        final Map<String, Object> clientActiveMFILoansCountMap = new HashMap<String, Object>();
-        clientActiveMFILoansCountMap.put("clientactiveloanscount", clientActiveMFILoansCount);
-        allClientData.putAll(clientActiveMFILoansCountMap);
+        try {
+            final Map<String, Object> clientActiveMFILoansCountMap = new HashMap<String, Object>();
+            clientActiveMFILoansCountMap.put("clientactiveloanscount", clientActiveMFILoansCount);
+            allLoanApplicationData.putAll(clientActiveMFILoansCountMap);
+        } catch (final EmptyResultDataAccessException e) {}
 
-        /**
-         * Client % Income from high stability
-         */
-        final Map<String, Object> clientIncomeFromHighStabilityPercentage = getClientIncomeFromHighStabilityPercentage(clientId);
-        if (clientIncomeFromHighStabilityPercentage != null) {
-            allClientData.putAll(clientIncomeFromHighStabilityPercentage);
-        }
-
-        /**
-         * Client meeting attendance history %
-         */
-        final Map<String, Object> clientMeetingAttendanceHistoryPercentage = getClientMeetingAttendanceHistoryPercentage(clientId);
-        if (clientMeetingAttendanceHistoryPercentage != null) {
-            allClientData.putAll(clientMeetingAttendanceHistoryPercentage);
-        }
-
-        return allClientData;
+        return allLoanApplicationData;
     }
 
     private Map<String, Object> getClientMeetingAttendanceHistoryPercentage(Long clientId) {
         final StringBuilder sql = new StringBuilder(150);
         sql.append("SELECT ");
-        sql.append("SUM(IF(ca.attendance_type_enum = 1,1,0))/COUNT(ca.id)*100 AS clientattendancepresentage ");
+        sql.append("ifNull(SUM(IF(ca.attendance_type_enum = 1,1,0))/COUNT(ca.id)*100,0) AS clientattendancepresentage ");
         sql.append("FROM m_client_attendance ca ");
         sql.append("INNER JOIN m_meeting meeting on meeting.id = ca.meeting_id AND meeting.meeting_date >= DATE_SUB(NOW(), INTERVAL 180 DAY) ");
         sql.append("WHERE ca.client_id = ? ");
@@ -184,7 +240,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private List<Map<String, Object>> getClientLoanDetailsFromOtherLenders(final Long clientId) {
         final StringBuilder sql = new StringBuilder(100);
         sql.append("SELECT el.loan_status_id AS loanstatus ");
-        sql.append("IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
+        sql.append(",IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
         sql.append(",IFNULL(el.installment_amount, 0) clientinstallmentamount ");
         sql.append(",IFNULL(el.written_off_amount, 0) clientwrittenoffamount ");
         sql.append(",IFNULL(el.loan_tenure_period_type, 0) loantenureperiodtype ");
@@ -193,10 +249,22 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         return this.jdbcTemplate.queryForList(sql.toString(), new Object[] { clientId });
     }
 
+    private List<Map<String, Object>> getLoanDetailsFromOtherLendersForLoanApplication(final Long loanApplicationId) {
+        final StringBuilder sql = new StringBuilder(100);
+        sql.append("SELECT el.loan_status_id AS loanstatus ");
+        sql.append(",IFNULL(el.current_outstanding,0) AS clientoutstandingamount ");
+        sql.append(",IFNULL(el.installment_amount, 0) clientinstallmentamount ");
+        sql.append(",IFNULL(el.written_off_amount, 0) clientwrittenoffamount ");
+        sql.append(",IFNULL(el.loan_tenure_period_type, 0) loantenureperiodtype ");
+        sql.append("FROM f_existing_loan el ");
+        sql.append("WHERE el.loan_application_id = ? ");
+        return this.jdbcTemplate.queryForList(sql.toString(), new Object[] { loanApplicationId });
+    }
+
     private Map<String, Object> getClientIncomeFromHighStabilityPercentage(final Long clientId) {
         final StringBuilder sql = new StringBuilder(250);
         sql.append("SELECT ");
-        sql.append(",((100*SUM(IF(ie.stability_enum_id = 3, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clienthighstabilitypercentage ");
+        sql.append("((100*SUM(IF(ie.stability_enum_id = 3, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clienthighstabilitypercentage ");
         sql.append(",((100*SUM(IF(ie.stability_enum_id = 2, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clientmediumstabilitypercentage ");
         sql.append(",((100*SUM(IF(ie.stability_enum_id = 1, IFNULL(cie.total_income,0),0)))/SUM(IFNULL(cie.total_income,0))) AS clientlowstabilitypercentage ");
         sql.append("FROM f_client_income_expense cie ");
@@ -281,8 +349,8 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
 
         public SurveyScorecardDataLayerMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append(" ").append("ss.survey_id as surveyId, ").append("sum(ss.a_value)  as scorecard ")
-                    .append("FROM m_survey_scorecards as ss JOIN f_survey_taken st ON st.id = ss.survey_taken_id ");
+            sqlBuilder.append(" ").append(" ss.survey_id as surveyId, ").append(" sum(ss.a_value)  as scorecard ")
+                    .append(" FROM m_survey_scorecards as ss JOIN f_survey_taken st ON st.id = ss.survey_taken_id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -299,6 +367,34 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             if (scroecard != null) {
                 mapData.put(FieldType.SURVEY + "_" + surveyId, "" + scroecard);
             }
+            return mapData;
+        }
+    }
+
+    private static final class LoanApplicationDataLayerMapper implements RowMapper<Map<String, Object>> {
+
+        private static FromJsonHelper jsonHelper = new FromJsonHelper();
+
+        private final String schemaSql;
+
+        public LoanApplicationDataLayerMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(100);
+            sqlBuilder.append(" l.loan_amount_requested as loanAmount");
+
+            sqlBuilder.append(" from f_loan_application_reference as l ");
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        @Override
+        public Map<String, Object> mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            Map<String, Object> mapData = new HashMap();
+            final BigDecimal amount = rs.getBigDecimal("loanAmount");
+            mapData.put("loanAmount", amount);
             return mapData;
         }
     }

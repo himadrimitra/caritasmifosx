@@ -7497,9 +7497,7 @@ public class Loan extends AbstractPersistable<Long> {
     public void setExpectedRepaymentPaymentType(PaymentType expectedRepaymentPaymentType) {
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
     }
-    
-    
-    
+
     public LoanTransaction getLastUserTransaction() {
         LocalDate currentTransactionDate = getDisbursementDate();
         LoanTransaction lastUserTransaction = null;

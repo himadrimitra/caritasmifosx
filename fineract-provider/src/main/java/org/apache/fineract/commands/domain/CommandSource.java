@@ -273,4 +273,7 @@ public class CommandSource extends AbstractPersistable<Long> {
         return this.entityTypeId;
     }
 
+    public AppUser getMaker() {
+        return maker;
+    }
 }

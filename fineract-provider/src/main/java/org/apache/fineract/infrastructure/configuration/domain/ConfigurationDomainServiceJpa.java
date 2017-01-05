@@ -24,6 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.cache.domain.CacheType;
 import org.apache.fineract.infrastructure.cache.domain.PlatformCache;
 import org.apache.fineract.infrastructure.cache.domain.PlatformCacheRepository;
+import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyConstant;
 import org.apache.fineract.infrastructure.configuration.data.GlobalConfigurationPropertyData;
 import org.apache.fineract.useradministration.domain.Permission;
 import org.apache.fineract.useradministration.domain.PermissionRepository;
@@ -349,33 +350,38 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     }
 
     @Override
-    public boolean isJlgLoansIncludedInIndividualCollectionSheet() {
-        return getGlobalConfigurationPropertyData("jlg_loans_included_in_individual_collection_sheet").isEnabled();
+    public boolean isWorkFlowEnabled() {
+        return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.WORK_FLOW).isEnabled();
     }
 
-    @Override
-    public boolean isGlimLoanInClientProfileShown() {
-        return getGlobalConfigurationPropertyData("glim-loans-in-client-profile").isEnabled();
-    }
+	@Override
+	public boolean isJlgLoansIncludedInIndividualCollectionSheet() {
+		return getGlobalConfigurationPropertyData("jlg_loans_included_in_individual_collection_sheet").isEnabled();
+	}
 
-    @Override
-    public boolean isCgtEnabled() {
-        return getGlobalConfigurationPropertyData("enable-cgt").isEnabled();
-    }
+	@Override
+	public boolean isGlimLoanInClientProfileShown() {
+		return getGlobalConfigurationPropertyData("glim-loans-in-client-profile").isEnabled();
+	}
+	
+	@Override
+	public boolean isCgtEnabled() {
+		return getGlobalConfigurationPropertyData("enable-cgt").isEnabled();
+	}
+	
+	@Override
+	public boolean isMinCgtDaysEnabled() {
+		return getGlobalConfigurationPropertyData("min-cgt-days").isEnabled();
+	}
+	
+	@Override
+	public boolean isMaxCgtDaysEnabled() {
+		return getGlobalConfigurationPropertyData("max-cgt-days").isEnabled();
+	}
 
-    @Override
-    public boolean isMinCgtDaysEnabled() {
-        return getGlobalConfigurationPropertyData("min-cgt-days").isEnabled();
-    }
-
-    @Override
-    public boolean isMaxCgtDaysEnabled() {
-        return getGlobalConfigurationPropertyData("max-cgt-days").isEnabled();
-    }
-
-    @Override
-    public Long getMinCgtDays() {
-        final String propertyName = "min-cgt-days";
+	@Override
+	public Long getMinCgtDays() {
+		final String propertyName = "min-cgt-days";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return longValue(property.getValue());
     }

@@ -58,7 +58,9 @@ public class RBLBankTransferService implements BankTransferService {
 					TransferType.NEFT, TransferType.RTGS});
 	private static final NumberFormat formatter = new DecimalFormat("#0.00");
 	private static final String STATUS_SUCCESS = "success";
+	private static final String RESPONSECODE_SUCCESS = "00";
 	private static final String STATUS_FAILED = "failed";
+	private static final String STATUS_INPROGRESS = "IN PROGRESS";
 	private static final String STATUS_FAILURE = "failure";
 	private static final String STATUS_INITIATED = "initiated";
 	private static final String IMPS_STATUS_SUCCESS = "2";
@@ -196,6 +198,7 @@ public class RBLBankTransferService implements BankTransferService {
 		BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
 		TransactionStatus txnStatus = TransactionStatus.ERROR;
 		String referenceNumber = null;
+
 		try {
 			ResponseEntity<RBLFundTransferResponse> response = restTemplate
 					.postForEntity(rblEndPoint + builder.build().toUriString(),
@@ -208,10 +211,12 @@ public class RBLBankTransferService implements BankTransferService {
 						.getPaymentResponse();
 
 				String requestStatus = null;
+				String responseCode = null;
 
 				if (paymentResponse != null) {
 					if (paymentResponse.getHeader() != null) {
 						requestStatus = paymentResponse.getHeader().getStatus();
+						responseCode = paymentResponse.getHeader().getResponseCode();
 						basicHttpResponse.setErrorCode(paymentResponse
 								.getHeader().getErrorCode());
 						basicHttpResponse.setErrorMessage(paymentResponse
@@ -227,11 +232,19 @@ public class RBLBankTransferService implements BankTransferService {
 					basicHttpResponse.setSuccess(true);
 					if(STATUS_FAILED.equalsIgnoreCase(requestStatus) || STATUS_FAILURE.equalsIgnoreCase(requestStatus)) {
 						txnStatus = TransactionStatus.FAILED;
+					}else if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
+						if (StringUtils.isNotEmpty(responseCode)){
+							if(RESPONSECODE_SUCCESS.equalsIgnoreCase(responseCode)){
+								txnStatus = TransactionStatus.SUCCESS;
+							}else{
+								txnStatus = TransactionStatus.PENDING;
+							}
+						}else {
+							txnStatus = TransactionStatus.SUCCESS;
+						}
+					}else {
+						txnStatus = TransactionStatus.PENDING;
 					}
-					if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
-						txnStatus = TransactionStatus.SUCCESS;
-					}
-					txnStatus = TransactionStatus.PENDING;
 				} else {
 					basicHttpResponse.setSuccess(false);
 				}
@@ -317,6 +330,8 @@ public class RBLBankTransferService implements BankTransferService {
 					if (paymentResponse.getBody() != null) {
 						txnStatusStr = paymentResponse.getBody()
 								.getTransactionStatus();
+						paymentStatus = paymentResponse.getBody()
+								.getPaymentStatus();
 					}
 				}
 
@@ -325,16 +340,20 @@ public class RBLBankTransferService implements BankTransferService {
 					if(StringUtils.isNotEmpty(txnStatusStr)) {
 						if (STATUS_SUCCESS.equalsIgnoreCase(txnStatusStr)) {
 							txnStatus = TransactionStatus.SUCCESS;
-						}
-						if (STATUS_FAILED.equalsIgnoreCase(txnStatusStr)) {
+						}else if (STATUS_FAILED.equalsIgnoreCase(txnStatusStr) || STATUS_FAILURE.equalsIgnoreCase(txnStatusStr)) {
 							txnStatus = TransactionStatus.FAILED;
+						}else if(STATUS_INPROGRESS.equalsIgnoreCase(txnStatusStr)){
+							txnStatus = TransactionStatus.PENDING;
+						}else {
+							txnStatus = TransactionStatus.PENDING;
 						}
 					}else if(StringUtils.isNotEmpty(paymentStatus)){
 						if (IMPS_STATUS_FAILURE.equalsIgnoreCase(paymentStatus)) {
 							txnStatus = TransactionStatus.FAILED;
-						}
-						if (IMPS_STATUS_SUCCESS.equalsIgnoreCase(paymentStatus)) {
+						}else if (IMPS_STATUS_SUCCESS.equalsIgnoreCase(paymentStatus)) {
 							txnStatus = TransactionStatus.SUCCESS;
+						}else {
+							txnStatus = TransactionStatus.PENDING;
 						}
 					}
 				} else {

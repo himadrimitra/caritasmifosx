@@ -96,7 +96,6 @@ public enum ChargeCalculationType {
             break;
             case 6:
             	chargeCalculationType = SLAB_BASED;
-            break;
             case 7:
             	chargeCalculationType = PERCENT_OF_AMOUNT_INTEREST_AND_FEES;
             break;

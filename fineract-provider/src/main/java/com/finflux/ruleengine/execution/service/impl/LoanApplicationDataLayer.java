@@ -4,29 +4,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
+import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.service.DataLayer;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 
 /**
  * Created by dhirendra on 22/09/16.
  */
-
 public class LoanApplicationDataLayer implements DataLayer {
 
-    private final RuleCacheService ruleCacheService;
     private final Map<String, Object> keyValueMap;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
 
-    public LoanApplicationDataLayer(Long loanApplicationId, Long clientId, DataLayerReadPlatformService dataLayerReadPlatformService,
-            RuleCacheService ruleCacheService) {
-        keyValueMap = dataLayerReadPlatformService.getAllMatrix(clientId);
+    public LoanApplicationDataLayer(DataLayerReadPlatformService dataLayerReadPlatformService) {
+        keyValueMap = new HashMap<>();
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
-        this.ruleCacheService = ruleCacheService;
-        // keyValueMap.put("age", 25L);
-        // // keyValueMap.put("sex", "M");
-        // // keyValueMap.put("isMarried", true);
-        // keyValueMap.put("name", "dhirendra");
     }
 
     @Override
@@ -41,5 +33,18 @@ public class LoanApplicationDataLayer implements DataLayer {
     @Override
     public Object getValue(String key) {
         return keyValueMap.get(key);
+    }
+
+    @Override
+    public void build(Map<DataLayerKey, Long> dataLayerEntities) {
+        keyValueMap.clear();
+        if(dataLayerEntities.get(DataLayerKey.CLIENT_ID)!=null){
+            Map clientDataMap = dataLayerReadPlatformService.getAllClientMatrix(dataLayerEntities.get(DataLayerKey.CLIENT_ID));
+            keyValueMap.putAll(clientDataMap);
+        }
+        if(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID)!=null){
+            Map loanApplicationDataMap = dataLayerReadPlatformService.getAllLoanApplicationMatrix(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID));
+            keyValueMap.putAll(loanApplicationDataMap);
+        }
     }
 }

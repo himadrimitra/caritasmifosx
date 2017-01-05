@@ -33,8 +33,6 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
 import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
-import com.finflux.workflow.execution.data.WorkflowExecutionData;
-import com.finflux.workflow.execution.service.WorkflowExecutionService;
 
 @Path("/loanapplicationreferences")
 @Component
@@ -47,20 +45,17 @@ public class LoanApplicationReferenceApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService;
-    private final WorkflowExecutionService workflowExecutionService;
 
     @SuppressWarnings("rawtypes")
     @Autowired
     public LoanApplicationReferenceApiResource(final PlatformSecurityContext context, final DefaultToApiJsonSerializer toApiJsonSerializer,
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
-            final WorkflowExecutionService workflowExecutionService) {
+            final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
-        this.workflowExecutionService = workflowExecutionService;
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
     }
 
@@ -163,24 +158,6 @@ public class LoanApplicationReferenceApiResource {
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
         return this.toApiJsonSerializer.serialize(result);
-    }
-
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("{loanApplicationReferenceId}/workflow")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String getLoanApplicationWorkflow(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
-            @Context final UriInfo uriInfo) {
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
-        final Long workflowExecutionId = this.workflowExecutionService
-                .getOrCreateWorkflowExecutionForLoanApplication(loanApplicationReferenceId);
-        if (workflowExecutionId != null) {
-            final WorkflowExecutionData workflowExecutionData = this.workflowExecutionService.getWorkflowExecutionData(workflowExecutionId);
-            return this.toApiJsonSerializer.serialize(settings, workflowExecutionData);
-        }
-        return this.toApiJsonSerializer.serialize(settings, workflowExecutionId);
     }
 
     private boolean is(final String commandParam, final String commandValue) {

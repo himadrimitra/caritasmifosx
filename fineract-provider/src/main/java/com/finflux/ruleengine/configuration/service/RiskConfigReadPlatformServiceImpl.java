@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.finflux.ruleengine.lib.data.*;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
@@ -23,10 +24,6 @@ import com.finflux.ruleengine.configuration.data.FieldData;
 import com.finflux.ruleengine.configuration.data.FieldType;
 import com.finflux.ruleengine.configuration.data.RuleData;
 import com.finflux.ruleengine.configuration.data.SurveyFieldData;
-import com.finflux.ruleengine.lib.data.Bucket;
-import com.finflux.ruleengine.lib.data.EntityRuleType;
-import com.finflux.ruleengine.lib.data.KeyValue;
-import com.finflux.ruleengine.lib.data.ValueType;
 import com.google.gson.reflect.TypeToken;
 
 @Service
@@ -115,7 +112,7 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
         }
     }
 
-    public RuleData retrieveOneRule(EntityRuleType ruleType, Long id) {
+    private RuleData retrieveOneRule(EntityRuleType ruleType, Long id) {
         final String sql = "select " + ruleDataMapper.schema() + " where rr.entity_type = ? and rr.id = ?";
         try {
             List<RuleData> ruleDatas = this.jdbcTemplate.query(sql, ruleDataMapper, ruleType.getValue(), id);
@@ -126,7 +123,28 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
         return null;
     }
 
-    public List<RuleData> getAllRulesByEntity(EntityRuleType ruleType) {
+    @Override
+    public RuleData retrieveRuleByUname(String uname) {
+        final String sql = "select " + ruleDataMapper.schema() + " where rr.uname = ? ";
+        try {
+            return this.jdbcTemplate.queryForObject(sql, ruleDataMapper, uname);
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+	@Override
+	public Rule getRuleById(Long ruleId) {
+		final String sql = "select " + ruleDataMapper.schema() + " where rr.id = ? ";
+		try {
+			RuleData ruleData =  this.jdbcTemplate.queryForObject(sql, ruleDataMapper, ruleId);
+			return ruleData.getRule();
+		} catch (final EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
+
+	public List<RuleData> getAllRulesByEntity(EntityRuleType ruleType) {
         final String sql = "select " + ruleDataMapper.schema() + " where rr.entity_type = ? ";
         try {
             return this.jdbcTemplate.query(sql, ruleDataMapper, ruleType.getValue());

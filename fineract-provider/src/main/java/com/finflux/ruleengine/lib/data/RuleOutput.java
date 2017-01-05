@@ -4,15 +4,14 @@ package com.finflux.ruleengine.lib.data;
  * Created by dhirendra on 06/09/16.
  */
 public class RuleOutput {
+
     private String value;
     private String bucket;
     private ValueType type;
     private OutputReason reason;
     private String error;
 
-    public RuleOutput(ValueType type, String outputValue,
-                      OutputReason outputReason, String bucket,
-                      String error) {
+    public RuleOutput(ValueType type, String outputValue, OutputReason outputReason, String bucket, String error) {
         this.value = outputValue;
         this.type = type;
         this.reason = outputReason;

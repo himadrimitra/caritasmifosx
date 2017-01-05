@@ -1,8 +1,7 @@
 package com.finflux.ruleengine.execution.api;
 
 import com.finflux.ruleengine.configuration.service.RiskConfigReadPlatformService;
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
-import com.finflux.ruleengine.eligibility.domain.LoanProductEligibility;
+import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.ruleengine.execution.service.DataLayerReadPlatformService;
 import com.finflux.ruleengine.execution.service.LoanProductEligibilityExecutionService;
@@ -22,9 +21,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by dhirendra on 15/09/16.
@@ -46,7 +43,6 @@ public class RuleExecutionApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final RuleExecutionService ruleExecutionService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
-    private final RuleCacheService ruleCacheService;
     private final LoanProductEligibilityExecutionService loanProductEligibilityExecutionService;
 
     @Autowired
@@ -58,7 +54,6 @@ public class RuleExecutionApiResource {
                                     final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
                                     final RuleExecutionService ruleExecutionService,
                                     final DataLayerReadPlatformService dataLayerReadPlatformService,
-                                    final RuleCacheService ruleCacheService,
                                     LoanProductEligibilityExecutionService loanProductEligibilityExecutionService) {
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -67,7 +62,6 @@ public class RuleExecutionApiResource {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.ruleExecutionService = ruleExecutionService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
-        this.ruleCacheService = ruleCacheService;
         this.loanProductEligibilityExecutionService = loanProductEligibilityExecutionService;
         this.toApiEligibilityJsonSerializer = toApiEligibilityJsonSerializer;
      }
@@ -80,8 +74,12 @@ public class RuleExecutionApiResource {
     public String retrieveOneRuleFactor(@PathParam("ruleId") final Long ruleId,
                                          @Context final UriInfo uriInfo) {
         this.context.authenticatedUser().validateHasReadPermission(RuleExecutionApiConstants.RULE_EXECUTION_RESOURCE_NAME);
-        LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(1L,2L,dataLayerReadPlatformService,ruleCacheService);
-        final RuleResult ruleResult = this.ruleExecutionService.executeCriteria(ruleId,dataLayer);
+        LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(dataLayerReadPlatformService);
+        Map<DataLayerKey,Long> dataLayerKeyLongMap = new HashMap<>();
+        dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,1L);
+        dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,1L);
+        dataLayer.build(dataLayerKeyLongMap);
+        final RuleResult ruleResult = this.ruleExecutionService.executeARule(ruleId,dataLayer);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, ruleResult);
     }

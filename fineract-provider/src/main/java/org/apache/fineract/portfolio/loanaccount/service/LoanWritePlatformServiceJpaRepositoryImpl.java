@@ -266,7 +266,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper;
     private final LoanScheduleValidator loanScheduleValidator;
 
-
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final LoanEventApiJsonValidator loanEventApiJsonValidator,
@@ -528,7 +527,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     this.loanTransactionRepository.save(mapEntry.getValue());
                     this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
                 }
-                notifyParamMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
+                notifyParamMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail);
             }
 
             // auto create standing instruction

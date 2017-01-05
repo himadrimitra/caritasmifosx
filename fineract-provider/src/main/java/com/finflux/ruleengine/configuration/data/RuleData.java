@@ -32,7 +32,7 @@ public class RuleData {
     private List<Bucket> buckets;
 
     public RuleData(Long id, EntityRuleType entityType, String name, String uname, String description, String defaultValue,
-                    ValueType valueType, List<KeyValue> possibleOutputs, List<Bucket> buckets, Boolean isActive) {
+            ValueType valueType, List<KeyValue> possibleOutputs, List<Bucket> buckets, Boolean isActive) {
         this.id = id;
         this.entityType = entityType;
         this.name = name;
@@ -42,6 +42,13 @@ public class RuleData {
         this.possibleOutputs = possibleOutputs;
         this.buckets = buckets;
         this.valueType = valueType;
+        this.isActive = isActive;
+    }
+
+    public RuleData(Long id, String name, String uname, Boolean isActive) {
+        this.id = id;
+        this.name = name;
+        this.uname = uname;
         this.isActive = isActive;
     }
 
@@ -134,8 +141,7 @@ public class RuleData {
     }
 
     public Rule getRule() {
-        Rule rule = new Rule(id, entityType, name, uname, description, defaultValue, valueType,
-                possibleOutputs, buckets);
+        Rule rule = new Rule(id, entityType, name, uname, description, defaultValue, valueType, possibleOutputs, buckets);
 
         return rule;
     }

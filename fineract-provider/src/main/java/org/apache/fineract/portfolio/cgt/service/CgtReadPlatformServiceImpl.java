@@ -60,14 +60,13 @@ public class CgtReadPlatformServiceImpl implements CgtReadPlatformService {
     @Override
     public CgtData retrievetTemplateDataOfEntity(Long entityId) {
 
-        final AppUser currentUser = this.context.authenticatedUser();
         final String sql = "select " + this.clientMembersOfEntityMapper.schema
                 + " where (mg.parent_id = ? or mg.id = ?) and mg.level_id = ? and mc.status_enum = ? ";
         final Collection<ClientData> clientMembers = this.jdbcTemplate.query(sql, this.clientMembersOfEntityMapper, new Object[] {
                 entityId, entityId, GroupTypes.GROUP.getId(), ClientStatus.ACTIVE.getValue() });
         final Group group = this.groupRepository.findOne(entityId);
         final StaffData staffData = StaffData.lookup(group.getStaff().getId(), group.getStaff().displayName());
-        final Collection<StaffData> staffDatas = this.staffReadPlatformService.retrieveAllLoanOfficersInOfficeById(currentUser.getOffice()
+        final Collection<StaffData> staffDatas = this.staffReadPlatformService.retrieveAllLoanOfficersInOfficeById(group.getOffice()
                 .getId());
 
         return CgtData.retriveTemplate(staffData, clientMembers, staffDatas);

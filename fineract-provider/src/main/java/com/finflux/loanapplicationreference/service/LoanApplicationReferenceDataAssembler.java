@@ -258,28 +258,28 @@ public class LoanApplicationReferenceDataAssembler {
                 final LoanPurpose loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanPurposeId);
                 loanApplicationReference.updateLoanPurpose(loanPurpose);
             }
-            
-			if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName)) {
-				final Long expectedDisbursalPaymentTypeId = command
-						.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName);
-				if (expectedDisbursalPaymentTypeId != null) {
-					loanApplicationReference.setExpectedDisbursalPaymentType(
-							this.paymentTypeRepository.findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId));
-				}else{
-					loanApplicationReference.setExpectedDisbursalPaymentType(null);
-				}
-				
-			}
-			if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName)) {
-				final Long expectedRepaymentPaymentTypeId = command
-						.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName);
-				if (expectedRepaymentPaymentTypeId != null) {
-					loanApplicationReference.setExpectedRepaymentPaymentType(
-							this.paymentTypeRepository.findOneWithNotFoundDetection(expectedRepaymentPaymentTypeId));
-				}else{
-					loanApplicationReference.setExpectedRepaymentPaymentType(null);
-				}
-			}
+
+            if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName)) {
+                final Long expectedDisbursalPaymentTypeId = command
+                        .longValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursalPaymentTypeParamName);
+                if (expectedDisbursalPaymentTypeId != null) {
+                    loanApplicationReference.setExpectedDisbursalPaymentType(this.paymentTypeRepository
+                            .findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId));
+                } else {
+                    loanApplicationReference.setExpectedDisbursalPaymentType(null);
+                }
+
+            }
+            if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName)) {
+                final Long expectedRepaymentPaymentTypeId = command
+                        .longValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedRepaymentPaymentTypeParamName);
+                if (expectedRepaymentPaymentTypeId != null) {
+                    loanApplicationReference.setExpectedRepaymentPaymentType(this.paymentTypeRepository
+                            .findOneWithNotFoundDetection(expectedRepaymentPaymentTypeId));
+                } else {
+                    loanApplicationReference.setExpectedRepaymentPaymentType(null);
+                }
+            }
         }
         return actualChanges;
     }

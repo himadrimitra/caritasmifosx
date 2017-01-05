@@ -257,8 +257,8 @@ public class LoanAssembler {
         final EnumOptionData loanType = AccountEnumerations.loanType(loanTypeStr);
         PaymentType expectedDisbursalPaymentType = null;
         PaymentType expectedRepaymentPaymentType = null;
-    	   Integer expectedDisbursalPaymentTypeId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, element);
-    	   if(element.getAsJsonObject().has(LoanApiConstants.expectedDisbursalPaymentTypeParamName)){
+        Integer expectedDisbursalPaymentTypeId = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(LoanApiConstants.expectedDisbursalPaymentTypeParamName, element);
+        if(element.getAsJsonObject().has(LoanApiConstants.expectedDisbursalPaymentTypeParamName)){
     	   if(expectedDisbursalPaymentTypeId != null){
     		   expectedDisbursalPaymentType = this.paymentTypeRepository.findOneWithNotFoundDetection(expectedDisbursalPaymentTypeId.longValue());
     	   }

@@ -6,6 +6,7 @@ import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -58,6 +59,16 @@ public class SurveyTakenApiResource {
     public Long createScorecard(final SurveyTakenData surveyTakenData) {
         final Survey survey = findSurvey(surveyTakenData.getSurveyId());
         final SurveyTaken surveyTaken = this.scorecardService.createSurveyTakenScorecard(surveyTakenData, survey);
+        return surveyTaken.getId();
+    }
+
+    @PUT
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    @Transactional
+    public Long updateScorecard(final SurveyTakenData surveyTakenData) {
+        final Survey survey = findSurvey(surveyTakenData.getSurveyId());
+        final SurveyTaken surveyTaken = this.scorecardService.updateSurveyTakenScorecard(surveyTakenData, survey);
         return surveyTaken.getId();
     }
 

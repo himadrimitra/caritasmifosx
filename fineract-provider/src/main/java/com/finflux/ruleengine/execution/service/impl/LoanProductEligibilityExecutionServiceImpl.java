@@ -2,10 +2,10 @@ package com.finflux.ruleengine.execution.service.impl;
 
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
-import com.finflux.ruleengine.configuration.service.RuleCacheService;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityCriteriaData;
 import com.finflux.ruleengine.eligibility.data.LoanProductEligibilityData;
 import com.finflux.ruleengine.eligibility.service.LoanProductEligibilityReadPlatformService;
+import com.finflux.ruleengine.execution.data.DataLayerKey;
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.ruleengine.execution.data.EligibilityStatus;
 import com.finflux.ruleengine.execution.service.*;
@@ -36,7 +36,6 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
     private final EligibilityCheckReadPlatformService eligibilityCheckReadPlatformService;
     private final EligibilityCheckWritePlatformService eligibilityCheckWritePlatformService;
     private final DataLayerReadPlatformService dataLayerReadPlatformService;
-    private final RuleCacheService ruleCacheService;
 
     @Autowired
     public LoanProductEligibilityExecutionServiceImpl(final RuleExecutionService ruleExecutionService,
@@ -44,7 +43,6 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
                                                       final LoanApplicationReferenceReadPlatformService loanApplicationReferenceReadPlatformService,
                                                       final LoanProductEligibilityReadPlatformService loanProductEligibilityReadPlatformService,
                                                       final DataLayerReadPlatformService dataLayerReadPlatformService,
-                                                      final RuleCacheService ruleCacheService,
                                                       final EligibilityCheckWritePlatformService eligibilityCheckWritePlatformService,
                                                       final EligibilityCheckReadPlatformService eligibilityCheckReadPlatformService){
         this.ruleExecutionService = ruleExecutionService;
@@ -52,7 +50,6 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
         this.loanApplicationReferenceReadPlatformService = loanApplicationReferenceReadPlatformService;
         this.loanProductEligibilityReadPlatformService = loanProductEligibilityReadPlatformService;
         this.dataLayerReadPlatformService = dataLayerReadPlatformService;
-        this.ruleCacheService = ruleCacheService;
         this.eligibilityCheckReadPlatformService = eligibilityCheckReadPlatformService;
         this.eligibilityCheckWritePlatformService = eligibilityCheckWritePlatformService;
     }
@@ -70,9 +67,12 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
             List<LoanProductEligibilityCriteriaData> criterias = loanProductEligibilityData.getCriterias();
             for(LoanProductEligibilityCriteriaData criteria: criterias){
                 if(loanAmount >= criteria.getMinAmount() && loanAmount <=criteria.getMaxAmount()){
-                    LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(loanApplicationId,clientId,
-                            dataLayerReadPlatformService, ruleCacheService);
-                    RuleResult ruleResult = ruleExecutionService.executeCriteria(criteria.getRiskCriteriaId(),dataLayer);
+                    LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(dataLayerReadPlatformService);
+                    Map<DataLayerKey,Long> dataLayerKeyLongMap = new HashMap<>();
+                    dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,clientId);
+                    dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,loanApplicationId);
+                    dataLayer.build(dataLayerKeyLongMap);
+                    RuleResult ruleResult = ruleExecutionService.executeARule(criteria.getRiskCriteriaId(),dataLayer);
                     eligibilityResult.setCriteriaOutput(ruleResult);
                     if(ruleResult !=null && ruleResult.getOutput().getValue()!=null){
                         Map<String, Object> map = new HashMap();

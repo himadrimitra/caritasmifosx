@@ -763,7 +763,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			transactionMap.add(transaction.getExternalServiceId(),transaction);
 		}
 
-		List<BankAccountTransaction> errorTransactions = bankAccountTransactionRepository.findByStatusOrderByExternalServiceIdAsc	(TransactionStatus.PENDING.getValue());
+		List<BankAccountTransaction> errorTransactions = bankAccountTransactionRepository.findByStatusOrderByExternalServiceIdAsc	(TransactionStatus.ERROR.getValue());
 		for(BankAccountTransaction transaction:errorTransactions ){
 			transactionMap.add(transaction.getExternalServiceId(),transaction);
 		}
@@ -787,9 +787,9 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 							+ transaction.getId()
 							+ " with message " + e.getLocalizedMessage());
 						errorMsg.append(
-							"Status update failed for transaction Id:")
-							.append(transaction.getId())
-							.append(e.getLocalizedMessage());
+							"| Status update failed for transaction Id: ")
+							.append(transaction.getId()).append(" with error:")
+							.append(e.getMessage());
 					}
 				}
 			}

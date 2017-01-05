@@ -107,4 +107,29 @@ public class ScorecardService {
     public List<SurveyTaken> findByEntityTypeAndEntityId(final Integer entityType, final Long entityId) {
         return this.surveyTakenRepository.findByEntityTypeAndEntityId(entityType, entityId);
     }
+
+    @SuppressWarnings("unused")
+    public SurveyTaken updateSurveyTakenScorecard(final SurveyTakenData surveyTakenData, final Survey survey) {
+        this.securityContext.authenticatedUser();
+        final Long surveyedById = surveyTakenData.getSurveyedBy();
+        final Staff surveyedBy = this.staffRepository.findOneWithNotFoundDetection(surveyedById);
+        final SurveyTaken surveyTaken = this.surveyTakenRepository.findOne(surveyTakenData.getId());
+        SurveyTakenMapper.updateMap(surveyTaken, surveyTakenData, survey, surveyedBy);
+        List<Scorecard> scorecards = new ArrayList<Scorecard>();
+        if (surveyTakenData.getScorecardValues() != null) {
+            for (final ScorecardValue scorecardValue : surveyTakenData.getScorecardValues()) {
+                final Scorecard scorecard = new Scorecard();;
+                scorecard.setSurveyTaken(surveyTaken);
+                scorecard.setSurvey(survey);
+                scorecard.setQuestion(this.questionRepository.findOne(scorecardValue.getQuestionId()));
+                scorecard.setResponse(this.responseRepository.findOne(scorecardValue.getResponseId()));
+                scorecard.setValue(scorecardValue.getValue());
+                scorecards.add(scorecard);
+            }
+        }
+        if (!scorecards.isEmpty()) {
+            surveyTaken.setScorecards(scorecards);
+        }
+        return this.surveyTakenRepository.save(surveyTaken);
+    }
 }

@@ -2,10 +2,13 @@ package com.finflux.loanapplicationreference.service;
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.WordUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -13,6 +16,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuild
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
@@ -21,6 +25,7 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateEx
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleCalculationPlatformService;
+import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanApplicationWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
@@ -42,6 +47,12 @@ import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataVal
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskConfigKey;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.TaskPlatformWriteService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -65,6 +76,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final LoanProductRepository loanProductRepository;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
+    private final TaskPlatformWriteService taskPlatformWriteService;
+    private final ConfigurationDomainService configurationDomainService;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
@@ -79,6 +93,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanScheduleCalculationPlatformService calculationPlatformService, final LoanProductRepository loanProductRepository,
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
+            final TaskPlatformWriteService taskPlatformWriteService, final ConfigurationDomainService configurationDomainService,
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
             final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
@@ -94,6 +110,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.loanProductRepository = loanProductRepository;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
+        this.taskPlatformWriteService = taskPlatformWriteService;
+        this.configurationDomainService = configurationDomainService;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
         this.paymentTypeRepository = paymentTypeRepository;
     }
 
@@ -115,15 +134,52 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
             this.repository.save(loanApplicationReference);
 
+            /**
+             * Check work flow configuration enabled or not
+             */
+            Boolean isProductMappedToWorkFlow = false;
+            if (this.configurationDomainService.isWorkFlowEnabled()) {
+                /**
+                 * Checking is loan product mapped with task configuration
+                 * entity type LOAN_PRODUCT
+                 */
+                final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOAN_PRODUCT.getValue(), loanProductId);
+                if (taskConfigEntityTypeMapping != null) {
+                    isProductMappedToWorkFlow = true;
+                    final Long loanApplicationId = loanApplicationReference.getId();
+                    final Long clientId = loanApplicationReference.getClient().getId();
+                    Client client = loanApplicationReference.getClient();
+                    final Map<TaskConfigKey, String> map = new HashMap<>();
+                    map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
+                    map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
+                    String description = constructDescription(loanProduct, loanApplicationReference, client);
+                    this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
+                            TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
+                            loanApplicationReference.getClient().getOffice(), map, description);
+                }
+            }
+
+            final Map<String, Object> changes = new LinkedHashMap<>(5);
+            changes.put("isProductMappedToWorkFlow", isProductMappedToWorkFlow);
+
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//
                     .withEntityId(loanApplicationReference.getId())//
+                    .with(changes) //
                     .build();
 
         } catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(dve);
             return CommandProcessingResult.empty();
         }
+    }
+
+    private String constructDescription(LoanProduct loanProduct, LoanApplicationReference applicationReference, Client client) {
+        String description = loanProduct.getProductName() + " application #" + applicationReference.getLoanApplicationReferenceNo() + " for "
+                + WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
+                applicationReference.getLoanAmountRequested();
+        return description;
     }
 
     @Override
@@ -219,7 +275,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final JsonQuery query = JsonQuery.from(validationJsonObject.toString(),
                     this.fromApiJsonHelper.parse(validationJsonObject.toString()), this.fromJsonHelper);
             final boolean considerAllDisbursmentsInSchedule = true;
-            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true, considerAllDisbursmentsInSchedule);
+            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true,
+                    considerAllDisbursmentsInSchedule);
 
             final JsonObject approveJsonObject = jsonObject.getAsJsonObject("formRequestData");
             final JsonElement approveJsonElement = this.fromApiJsonHelper.parse(approveJsonObject.toString());
@@ -334,6 +391,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         final Map<String, Object> changes = new LinkedHashMap<>(1);
         final Integer statusEnum = LoanApplicationReferenceStatus.APPLICATION_ACTIVE.getValue();
         changes.put("statusEnum", statusEnum);
+        changes.put("loanId", loanApplicationReference.getLoan().getId());
         loanApplicationReference.updateStatusEnum(statusEnum);
         this.repository.saveAndFlush(loanApplicationReference);
 

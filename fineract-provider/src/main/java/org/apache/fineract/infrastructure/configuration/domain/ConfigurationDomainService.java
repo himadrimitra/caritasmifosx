@@ -109,6 +109,8 @@ public interface ConfigurationDomainService {
 
     boolean isGlimLoanInClientProfileShown();
 
+    boolean isWorkFlowEnabled();
+
     boolean isCgtEnabled();
 
     boolean isMaxCgtDaysEnabled();
