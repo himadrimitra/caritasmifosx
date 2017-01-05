@@ -803,7 +803,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             final LocalDate repaymentsStartingFromDate = this.fromApiJsonHelper.extractLocalDateNamed(
                     repaymentsStartingFromDateParameterName, element);
             baseDataValidator.reset().parameter(repaymentsStartingFromDateParameterName).value(repaymentsStartingFromDate).ignoreIfNull();
-            if (!existingLoanApplication.getLoanTermVariations().isEmpty()) {
+            if (existingLoanApplication.isAnyActiveLoanVariation()) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("cannot.modify.application.due.to.variable.installments");
             }
         }
