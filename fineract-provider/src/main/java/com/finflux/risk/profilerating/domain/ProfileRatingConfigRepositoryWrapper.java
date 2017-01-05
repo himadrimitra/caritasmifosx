@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.risk.profilerating.data.ProfileRatingType;
 import com.finflux.risk.profilerating.exception.ProfileRatingConfigNotFoundException;
 
 @Service
@@ -37,5 +38,11 @@ public class ProfileRatingConfigRepositoryWrapper {
 
     public void delete(final ProfileRatingConfig profileRatingConfig) {
         this.repository.delete(profileRatingConfig);
+    }
+    
+    public ProfileRatingConfig findByType(final Integer type) {
+        final ProfileRatingConfig profileRatingConfig = this.repository.findByType(type);
+        if (profileRatingConfig == null) { throw new ProfileRatingConfigNotFoundException(ProfileRatingType.fromInt(type).toString()); }
+        return profileRatingConfig;
     }
 }

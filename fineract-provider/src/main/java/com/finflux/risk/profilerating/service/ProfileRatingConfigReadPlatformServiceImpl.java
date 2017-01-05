@@ -35,7 +35,7 @@ public class ProfileRatingConfigReadPlatformServiceImpl implements ProfileRating
 
     @Override
     public ProfileRatingConfigTemplateData retrieveTemplate() {
-        final Collection<EnumOptionData> typeOptions = ProfileRatingType.entityTypeOptions();
+        final Collection<EnumOptionData> typeOptions = ProfileRatingType.options();
         final Collection<RuleData> criteriaOptions = this.riskConfigReadPlatformService.getAllCriterias();
         return ProfileRatingConfigTemplateData.template(typeOptions, criteriaOptions);
     }

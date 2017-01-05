@@ -62,7 +62,7 @@ public class ProfileRatingConfigApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTemplate(@Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(ProfileRatingConfigApiConstants.PROFILERATINGCONFIG_RESOURCE_NAME);
+        this.context.authenticatedUser().validateHasReadPermission(ProfileRatingConfigApiConstants.PROFILE_RATING_CONFIG_RESOURCE_NAME);
         final ProfileRatingConfigTemplateData templateData = this.readPlatformService.retrieveTemplate();
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, templateData);
@@ -83,7 +83,7 @@ public class ProfileRatingConfigApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveAll(@Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(ProfileRatingConfigApiConstants.PROFILERATINGCONFIG_RESOURCE_NAME);
+        this.context.authenticatedUser().validateHasReadPermission(ProfileRatingConfigApiConstants.PROFILE_RATING_CONFIG_RESOURCE_NAME);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         final Collection<ProfileRatingConfigData> datas = this.readPlatformService.retrieveAll();
         return this.toApiJsonSerializer.serialize(settings, datas);
@@ -95,7 +95,7 @@ public class ProfileRatingConfigApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveOne(@PathParam("profileRatingConfigId") final Long profileRatingConfigId, @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(ProfileRatingConfigApiConstants.PROFILERATINGCONFIG_RESOURCE_NAME);
+        this.context.authenticatedUser().validateHasReadPermission(ProfileRatingConfigApiConstants.PROFILE_RATING_CONFIG_RESOURCE_NAME);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         final ProfileRatingConfigData data = this.readPlatformService.retrieveOne(profileRatingConfigId);
         return this.toApiJsonSerializer.serialize(settings, data);

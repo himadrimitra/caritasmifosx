@@ -42,7 +42,6 @@ public class ProfileRatingConfigWritePlatformServiceImpl implements ProfileRatin
         this.repository = repository;
     }
 
-    @Transactional
     @Override
     public CommandProcessingResult create(final JsonCommand command) {
         try {
@@ -60,7 +59,6 @@ public class ProfileRatingConfigWritePlatformServiceImpl implements ProfileRatin
         }
     }
 
-    @Transactional
     @Override
     public CommandProcessingResult update(final Long profileRatingConfigId, final JsonCommand command) {
         try {

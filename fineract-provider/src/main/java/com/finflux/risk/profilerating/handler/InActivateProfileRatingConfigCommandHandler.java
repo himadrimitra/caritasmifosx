@@ -1,5 +1,7 @@
 package com.finflux.risk.profilerating.handler;
 
+import javax.transaction.Transactional;
+
 import org.apache.fineract.commands.annotation.CommandType;
 import org.apache.fineract.commands.handler.NewCommandSourceHandler;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -10,7 +12,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.risk.profilerating.service.ProfileRatingConfigWritePlatformService;
 
 @Service
-@CommandType(entity = "PROFILERATINGCONFIG", action = "INACTIVATE")
+@CommandType(entity = "PROFILE_RATING_CONFIG", action = "INACTIVATE")
 public class InActivateProfileRatingConfigCommandHandler implements NewCommandSourceHandler {
 
     private final ProfileRatingConfigWritePlatformService writePlatformService;
@@ -21,6 +23,7 @@ public class InActivateProfileRatingConfigCommandHandler implements NewCommandSo
     }
 
     @Override
+    @Transactional
     public CommandProcessingResult processCommand(final JsonCommand command) {
         return this.writePlatformService.inActivate(command.entityId(), command);
     }

@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
@@ -17,7 +18,7 @@ import com.finflux.risk.profilerating.api.ProfileRatingConfigApiConstants;
 import com.finflux.ruleengine.configuration.domain.RuleModel;
 
 @Entity
-@Table(name = "f_profile_rating_config")
+@Table(name = "f_profile_rating_config", uniqueConstraints = { @UniqueConstraint(columnNames = { "type" }, name = "f_profile_rating_config_UNIQUE") })
 public class ProfileRatingConfig extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "type", length = 3, nullable = false)
@@ -79,5 +80,9 @@ public class ProfileRatingConfig extends AbstractAuditableCustom<AppUser, Long> 
 
     public void inActivate() {
         this.isActive = false;
+    }
+
+    public RuleModel getCriteria() {
+        return this.criteria;
     }
 }

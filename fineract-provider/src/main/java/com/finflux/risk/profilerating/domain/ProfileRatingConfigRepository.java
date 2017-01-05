@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface ProfileRatingConfigRepository extends JpaRepository<ProfileRatingConfig, Long>,
         JpaSpecificationExecutor<ProfileRatingConfig> {
 
+    ProfileRatingConfig findByType(final Integer type);
 }

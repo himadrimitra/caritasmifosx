@@ -6,7 +6,7 @@ import java.util.Set;
 
 public class ProfileRatingConfigApiConstants {
 
-    public static final String PROFILERATINGCONFIG_RESOURCE_NAME = "profileratingconfig";
+    public static final String PROFILE_RATING_CONFIG_RESOURCE_NAME = "profileratingconfig";
 
     /**
      * Entity Types Enumerations

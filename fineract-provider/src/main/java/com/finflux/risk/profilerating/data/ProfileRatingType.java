@@ -107,15 +107,15 @@ public enum ProfileRatingType {
         return codes.toArray();
     }
 
-    public static Collection<EnumOptionData> entityTypeOptions() {
-        final Collection<EnumOptionData> typeOptions = new ArrayList<>();
-        for (final ProfileRatingType enumType : values()) {
-            final EnumOptionData enumOptionData = profileRatingType(enumType.getValue());
+    public static Collection<EnumOptionData> options() {
+        final Collection<EnumOptionData> options = new ArrayList<>();
+        for (final ProfileRatingType type : values()) {
+            final EnumOptionData enumOptionData = profileRatingType(type.getValue());
             if (enumOptionData != null) {
-                typeOptions.add(enumOptionData);
+                options.add(enumOptionData);
             }
         }
-        return typeOptions;
+        return options;
     }
 
     public static EnumOptionData profileRatingType(final int id) {
