@@ -596,7 +596,7 @@ public class Loan extends AbstractPersistable<Long> {
         for (final LoanCharge loanCharge : loanCharges) {
             loanCharge.update(this);
             if (loanCharge.getTrancheDisbursementCharge() != null) {
-                addTrancheLoanCharge(loanCharge.getCharge());
+                addTrancheLoanCharge(loanCharge.getCharge(), loanCharge.amountOrPercentage());
             }
         }
         return loanCharges;
@@ -2007,7 +2007,8 @@ public class Loan extends AbstractPersistable<Long> {
             this.disbursementDetails.add(disbursementDetails);
             for (LoanTrancheCharge trancheCharge : trancheCharges) {
                 Charge chargeDefinition = trancheCharge.getCharge();
-                final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, null, null, null, new LocalDate(
+                BigDecimal amount = trancheCharge.getAmount();
+                final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, amount, null, null, new LocalDate(
                         expectedDisbursementDate), null, null);
                 loanCharge.update(this);
                 LoanTrancheDisbursementCharge loanTrancheDisbursementCharge = new LoanTrancheDisbursementCharge(loanCharge,
@@ -6576,13 +6577,13 @@ public class Loan extends AbstractPersistable<Long> {
         return actualDisbursementDate;
     }
 
-    public void addTrancheLoanCharge(Charge charge) {
+    public void addTrancheLoanCharge(Charge charge, BigDecimal amount) {
         List<Charge> appliedCharges = new ArrayList<>(); 
         for(LoanTrancheCharge loanTrancheCharge: trancheCharges){
             appliedCharges.add(loanTrancheCharge.getCharge());
         }
         if (!appliedCharges.contains(charge)) {
-            trancheCharges.add(new LoanTrancheCharge(charge, this));
+            trancheCharges.add(new LoanTrancheCharge(charge, this, amount));
         }
     }
 

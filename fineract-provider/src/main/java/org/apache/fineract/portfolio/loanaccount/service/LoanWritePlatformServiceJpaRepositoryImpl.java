@@ -1537,9 +1537,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         Collection<LoanTransaction> chargeTransactions = new ArrayList<>();
         if (chargeDefinition.isPercentageOfDisbursementAmount()) {
             LoanTrancheDisbursementCharge loanTrancheDisbursementCharge = null;
+            final BigDecimal amount = command.bigDecimalValueOfParameterNamed("amount");
             for (LoanDisbursementDetails disbursementDetail : loanDisburseDetails) {
                 if (disbursementDetail.actualDisbursementDate() == null) {
-                    loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, disbursementDetail.principal(), null, null, null,
+                    loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, disbursementDetail.principal(), amount, null, null,
                             disbursementDetail.expectedDisbursementDateAsLocalDate(), null, null);
                     loanTrancheDisbursementCharge = new LoanTrancheDisbursementCharge(loanCharge, disbursementDetail);
                     loanCharge.updateLoanTrancheDisbursementCharge(loanTrancheDisbursementCharge);
@@ -1556,7 +1557,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     }
                 }
             }
-            loan.addTrancheLoanCharge(chargeDefinition);
+            loan.addTrancheLoanCharge(chargeDefinition, amount);
         } else {
             loanCharge = LoanCharge.createNewFromJson(loan, chargeDefinition, command);
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADD_CHARGE,

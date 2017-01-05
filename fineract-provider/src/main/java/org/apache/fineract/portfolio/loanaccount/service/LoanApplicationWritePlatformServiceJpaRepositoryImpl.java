@@ -115,6 +115,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSummaryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTopupDetails;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTrancheCharge;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationNotInSubmittedAndPendingApprovalStateCannotBeDeleted;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationNotInSubmittedAndPendingApprovalStateCannotBeModified;
@@ -757,9 +758,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             /** Boolean determines if any charge has been modified **/
             boolean isChargeModified = false;
 
-            Set<Charge> newTrancheChages = this.loanChargeAssembler.getNewLoanTrancheCharges(command.parsedJson());
-            for (Charge charge : newTrancheChages) {
-                existingLoanApplication.addTrancheLoanCharge(charge);
+            Set<LoanTrancheCharge> newTrancheChages = this.loanChargeAssembler.getNewLoanTrancheCharges(command.parsedJson());
+            for (LoanTrancheCharge charge : newTrancheChages) {
+                existingLoanApplication.addTrancheLoanCharge(charge.getCharge(), charge.getAmount());
             }
 
             /**
