@@ -6689,6 +6689,17 @@ public class Loan extends AbstractPersistable<Long> {
     public List<LoanTermVariations> getLoanTermVariations() {
         return this.loanTermVariations;
     }
+    
+	public boolean isAnyActiveLoanVariation() {
+		if (!this.loanTermVariations.isEmpty() && this.loanTermVariations != null) {
+			for (LoanTermVariations loanTermVariation : this.loanTermVariations) {
+				if (loanTermVariation.isActive()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
     private int adjustNumberOfRepayments() {
         int repaymetsForAdjust = 0;
