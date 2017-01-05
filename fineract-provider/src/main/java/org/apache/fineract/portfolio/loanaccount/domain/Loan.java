@@ -5135,7 +5135,15 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void validateDisbursementDateIsOnNonWorkingDay(final WorkingDays workingDays, final boolean allowTransactionsOnNonWorkingDay) {
         if (!allowTransactionsOnNonWorkingDay) {
-            if (!WorkingDaysUtil.isWorkingDay(workingDays, getDisbursementDate())) {
+            if (this.isMultiDisburmentLoan()) {
+                for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
+                    if (!WorkingDaysUtil.isWorkingDay(workingDays, disbursementDetail.getDisbursementDateAsLocalDate())) {
+                        final String errorMessage = "Expected disbursement date cannot be on a non working day";
+                        throw new LoanApplicationDateException("disbursement.date.on.non.working.day", errorMessage,
+                                disbursementDetail.getDisbursementDateAsLocalDate());
+                    }
+                }
+            } else if (!WorkingDaysUtil.isWorkingDay(workingDays, getDisbursementDate())) {
                 final String errorMessage = "Expected disbursement date cannot be on a non working day";
                 throw new LoanApplicationDateException("disbursement.date.on.non.working.day", errorMessage,
                         getExpectedDisbursedOnLocalDate());
@@ -5145,7 +5153,15 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void validateDisbursementDateIsOnHoliday(final boolean allowTransactionsOnHoliday, final List<Holiday> holidays) {
         if (!allowTransactionsOnHoliday) {
-            if (HolidayUtil.isHoliday(getDisbursementDate(), holidays)) {
+            if (this.isMultiDisburmentLoan()) {
+                for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
+                    if (HolidayUtil.isHoliday(disbursementDetail.getDisbursementDateAsLocalDate(), holidays)) {
+                        final String errorMessage = "Expected disbursement date cannot be on a holiday";
+                        throw new LoanApplicationDateException("disbursement.date.on.holiday", errorMessage,
+                                disbursementDetail.getDisbursementDateAsLocalDate());
+                    }
+                }
+            } else if (HolidayUtil.isHoliday(getDisbursementDate(), holidays)) {
                 final String errorMessage = "Expected disbursement date cannot be on a holiday";
                 throw new LoanApplicationDateException("disbursement.date.on.holiday", errorMessage, getExpectedDisbursedOnLocalDate());
             }
