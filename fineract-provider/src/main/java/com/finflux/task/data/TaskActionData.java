@@ -34,7 +34,7 @@ public class TaskActionData extends EnumOptionData{
     private final List<RoleData> accessRoles;
 
     public TaskActionData(TaskActionType action, Boolean hasAccess, List<RoleData> accessRoles) {
-        super(action.getValue().longValue(), action.getCode(), action.toString());
+        super(action.getValue().longValue(), action.getCode(), action.name().toLowerCase());
         this.hasAccess = hasAccess;
         this.accessRoles = accessRoles;
     }

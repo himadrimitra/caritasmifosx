@@ -13,6 +13,7 @@ import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.office.domain.Office;
+import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.useradministration.domain.AppUser;
 
@@ -123,6 +124,7 @@ public class Task extends AbstractAuditableCustom<AppUser, Long> {
         this.dueDate = dueDate;
         this.currentAction = currentAction;
         this.assignedTo = assignedTo;
+
         this.taskOrder = taskOrder;
         this.criteria = criteria;
         this.approvalLogic = approvalLogic;

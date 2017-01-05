@@ -7,6 +7,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import com.finflux.commands.service.CommandWrapperBuilder;
+import com.finflux.task.exception.TaskInvalidActionException;
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.commands.domain.CommandWrapper;
+import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
@@ -17,7 +23,7 @@ import org.springframework.stereotype.Component;
 import com.finflux.task.data.*;
 import com.finflux.task.service.TaskExecutionService;
 
-@Path("/taskexecution")
+@Path("/tasks/{taskId}/execute")
 @Component
 @Scope("singleton")
 public class TaskExecutionApiResource {
@@ -27,15 +33,18 @@ public class TaskExecutionApiResource {
     @SuppressWarnings("rawtypes")
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final FromJsonHelper fromJsonHelper;
+    private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
 
     @SuppressWarnings("rawtypes")
     @Autowired
     public TaskExecutionApiResource(final PlatformSecurityContext context, final TaskExecutionService taskExecutionService,
-            final DefaultToApiJsonSerializer toApiJsonSerializer, final FromJsonHelper fromJsonHelper) {
+            final DefaultToApiJsonSerializer toApiJsonSerializer, final FromJsonHelper fromJsonHelper,
+            final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
         this.context = context;
         this.taskExecutionService = taskExecutionService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.fromJsonHelper = fromJsonHelper;
+        this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
     }
 
     /**
@@ -45,87 +54,86 @@ public class TaskExecutionApiResource {
      * @return
      */
     @GET
-    @Path("{taskId}")
+    @Path("template")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getTaskData(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASKEXECUTION_RESOURCE_NAME);
         final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskData(taskId);
         return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 
     @POST
-    @Path("{taskId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String doActionOnTask(@PathParam("taskId") final Long taskId, @QueryParam("action") final Long actionId,
-            @Context final UriInfo uriInfo) {
+    public String doActionOnTask(@PathParam("taskId") final Long taskId, @QueryParam("action") final String actionName,
+                                 final String apiRequestBodyAsJson) {
         this.context.authenticatedUser();
-        taskExecutionService.doActionOnTask(taskId, TaskActionType.fromInt(actionId.intValue()));
-        TaskExecutionData taskData = taskExecutionService.getTaskData(taskId);
-        return this.toApiJsonSerializer.serialize(taskData);
+        TaskActionType taskActionType = TaskActionType.fromString(actionName);
+        if(taskActionType==null){
+            throw new TaskInvalidActionException(actionName);
+        }
+        String jsonApiRequest = apiRequestBodyAsJson;
+        if (StringUtils.isBlank(jsonApiRequest)) {
+            jsonApiRequest = "{}";
+        }
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(jsonApiRequest);
+        CommandWrapper commandRequest = builder.doActionOnTask(taskId,taskActionType).build();
+        CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        return this.toApiJsonSerializer.serialize(result);
     }
 
     @GET
-    @Path("{taskId}/actions")
+    @Path("actions")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getNextActionsOnTask(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
-        context.authenticatedUser();
-        List<TaskActionData> possibleActions = taskExecutionService.getClickableActionsOnTask(taskId);
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASKEXECUTION_RESOURCE_NAME);
+        List<TaskActionData> possibleActions = taskExecutionService.getClickableActionsOnTask(
+                context.authenticatedUser(),taskId);
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 
     @GET
-    @Path("{taskId}/children")
+    @Path("children")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getChildrenOfTask(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
-        context.authenticatedUser();
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASKEXECUTION_RESOURCE_NAME);
         List<TaskExecutionData> possibleActions = taskExecutionService.getChildrenOfTask(taskId);
         return this.toApiJsonSerializer.serialize(possibleActions);
     }
 
     @GET
-    @Path("{entityType}/{entityId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String getTaskData(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
-            @Context final UriInfo uriInfo) {
-        TaskEntityType taskEntityType = TaskEntityType.fromString(entityType);
-        final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType, entityId);
-        return this.toApiJsonSerializer.serialize(taskExecutionData);
-    }
-
-    @GET
-    @Path("{taskId}/notes")
+    @Path("notes")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getTaskNotes(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
-        context.authenticatedUser();
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASKEXECUTION_NOTE_RESOURCE_NAME);
         List<TaskNoteData> taskNotes = taskExecutionService.getTaskNotes(taskId);
         return this.toApiJsonSerializer.serialize(taskNotes);
     }
 
     @GET
-    @Path("{taskId}/actionlog")
+    @Path("actionlog")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String getTaskActionLogs(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo) {
-        context.authenticatedUser();
+        this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASKEXECUTION_ACTIONLOG_RESOURCE_NAME);
         List<TaskActionLogData> taskActionLogs = taskExecutionService.getActionLogs(taskId);
         return this.toApiJsonSerializer.serialize(taskActionLogs);
     }
 
 
     @POST
-    @Path("{taskId}/notes")
+    @Path("notes")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String createTaskNote(@PathParam("taskId") final Long taskId, @Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
-        context.authenticatedUser().validateHasThesePermission(TaskApiConstants.TASK_NOTE_RESOURCE_NAME_CREATE_PERMISSION);
-        TaskNoteForm noteForm = fromJsonHelper.fromJson(apiRequestBodyAsJson, TaskNoteForm.class);
-        Long taskNoteId = taskExecutionService.addNoteToTask(taskId, noteForm);
-        return this.toApiJsonSerializer.serialize(taskNoteId);
+    public String createTaskNote(@PathParam("taskId") final Long taskId, final String apiRequestBodyAsJson) {
+        final CommandWrapperBuilder builder = new CommandWrapperBuilder().withJson(apiRequestBodyAsJson);
+        CommandWrapper commandRequest = builder.addNoteToTask(taskId).build();
+        CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        return this.toApiJsonSerializer.serialize(result);
     }
 
 }

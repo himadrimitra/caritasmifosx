@@ -448,12 +448,26 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         params.addValue("roles", loggedInUserRoleIds);
         params.addValue("hierarchy", hierarchySearchString);
         sqlBuilder.append("SELECT SQL_CALC_FOUND_ROWS ");
-        sqlBuilder.append(dataMapper.schema(parentConfigId));
-        if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.ASSIGNED)) {
-            params.addValue("assignedTo", this.context.authenticatedUser().getId());
-            sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
-        } else if (filterBy != null && filterBy.equalsIgnoreCase(TaskApiConstants.UNASSIGNED)) {
-            sqlBuilder.append(" AND t.assigned_to IS NULL ");
+        sqlBuilder.append(dataMapper.schema());
+        if (filterBy != null){
+            if (TaskApiConstants.ASSIGNED.equalsIgnoreCase(filterBy)) {
+                params.addValue("assignedTo", this.context.authenticatedUser().getId());
+                sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
+            }else if (TaskApiConstants.UNASSIGNED.equalsIgnoreCase(filterBy)) {
+                sqlBuilder.append(" AND t.assigned_to IS NULL ");
+            }else if (TaskApiConstants.ASSIGNED_NONWORKFLOW.equalsIgnoreCase(filterBy)) {
+                sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
+                sqlBuilder.append(" AND t.parent_id is null ");
+                sqlBuilder.append(" AND t.task_type = :taskType ");
+                params.addValue("assignedTo", this.context.authenticatedUser().getId());
+                params.addValue("taskType", TaskType.SINGLE.getValue());
+            }else if (TaskApiConstants.ASSIGNED_WORKFLOW.equalsIgnoreCase(filterBy)) {
+                sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
+                sqlBuilder.append(" AND t.parent_id is not null ");
+                sqlBuilder.append(" AND pt.task_type = :taskType ");
+                params.addValue("assignedTo", this.context.authenticatedUser().getId());
+                params.addValue("taskType", TaskType.WORKFLOW.getValue());
+            }
         }
         if (null != searchParameters.getOfficeId()) {
             sqlBuilder.append(" AND t.office_id = :officeId ");
@@ -461,12 +475,12 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         }
 
         if (null != parentConfigId) {
-            sqlBuilder.append(" AND t.parent_id = :parentConfigId ");
+            sqlBuilder.append(" AND pt.task_config_id = :parentConfigId ");
             params.addValue("parentConfigId", parentConfigId);
         }
 
         if (null != childConfigId) {
-            sqlBuilder.append(" AND t.id = :childConfigId ");
+            sqlBuilder.append(" AND t.task_config_id = :childConfigId ");
             params.addValue("childConfigId", childConfigId);
         }
 
@@ -600,7 +614,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         }
 
-        public String schema(Long parentConfigId) {
+        public String schema() {
             final StringBuilder sqlBuilder = new StringBuilder(500);
             sqlBuilder
                     .append(" t.id AS taskId,t.parent_id AS parentTaskId,t.name AS taskName, t.status AS taskStatusId, t.description As description ");
@@ -608,11 +622,9 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sqlBuilder.append(" ,CONCAT(appuser.firstname,' ',appuser.lastname) AS assignedTo ");
             sqlBuilder.append(" ,t.entity_type AS entityTypeId,t.entity_id AS entityId, t.config_values as configValues ");
             sqlBuilder.append(" ,c.id AS clientId,c.display_name AS clientName ");
-            sqlBuilder.append(" ,o.id AS officeId,o.name AS officeName ");
+            sqlBuilder.append(" ,o.id AS officeId,o.name AS officeName, t.created_date as createdOn ");
             sqlBuilder.append(" FROM f_task t ");
-            if (null != parentConfigId) {
-                sqlBuilder.append(" LEFT JOIN f_task pt ON pt.parent_id = t.id ");
-            }
+            sqlBuilder.append(" LEFT JOIN f_task pt ON pt.id = t.parent_id ");
             sqlBuilder.append(" LEFT JOIN m_client c ON c.id = t.client_id ");
             sqlBuilder.append(" LEFT JOIN m_office o ON o.id = t.office_id ");
             sqlBuilder.append(" LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
@@ -638,6 +650,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final Long entityId = rs.getLong("entityId");
             final Long clientId = rs.getLong("clientId");
             final String description  = rs.getString("description");
+            final Date createdOn  = rs.getTimestamp("createdOn");
             ClientData clientData = null;
             if (clientId != null) {
                 final String clientName = rs.getString("clientName");
@@ -659,7 +672,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 configValueMap = new Gson().fromJson(configValues, new TypeToken<HashMap<String, String>>() {}.getType());
             }
             return TaskInfoData.instance(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description);
+                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description,createdOn);
         }
     }
 }

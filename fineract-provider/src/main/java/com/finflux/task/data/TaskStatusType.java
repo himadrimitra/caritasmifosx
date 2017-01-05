@@ -59,7 +59,7 @@ public enum TaskStatusType {
     }
 
     public EnumOptionData getEnumOptionData() {
-        return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.name());
+        return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.name().toLowerCase());
     }
 
     public List<EnumOptionData> getPossibleActionsEnumOption() {

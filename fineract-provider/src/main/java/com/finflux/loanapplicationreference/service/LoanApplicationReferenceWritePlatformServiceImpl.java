@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
@@ -24,6 +25,7 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateEx
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleCalculationPlatformService;
+import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanApplicationWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
@@ -151,7 +153,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     final Map<TaskConfigKey, String> map = new HashMap<>();
                     map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
                     map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-                    String description = constructDescription(loanProduct.getProductName(), loanApplicationReference.getLoanApplicationReferenceNo(), client);
+                    String description = constructDescription(loanProduct, loanApplicationReference, client);
                     this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
                             TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
                             loanApplicationReference.getClient().getOffice(), map, description);
@@ -173,9 +175,10 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         }
     }
 
-    private String constructDescription(String productName, String loanApplicationReferenceNo, Client client) {
-        String description = productName + " Application #" + loanApplicationReferenceNo + " for "
-                + client.getDisplayName().toUpperCase() + " in Office (" + client.getOfficeName() + ")";
+    private String constructDescription(LoanProduct loanProduct, LoanApplicationReference applicationReference, Client client) {
+        String description = loanProduct.getProductName() + " application #" + applicationReference.getLoanApplicationReferenceNo() + " for "
+                + WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
+                applicationReference.getLoanAmountRequested();
         return description;
     }
 

@@ -1,5 +1,6 @@
 package com.finflux.task.data;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,7 @@ import com.finflux.ruleengine.execution.data.EligibilityResult;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.joda.time.LocalDate;
 
-public class TaskExecutionData {
+public class TaskExecutionData implements Serializable{
 
     private Long id;
     private Long parentId;
