@@ -24,6 +24,7 @@ import java.util.HashMap;
 
 import org.apache.fineract.integrationtests.common.SchedulerJobHelper;
 import org.apache.fineract.integrationtests.common.Utils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,13 +51,19 @@ public class AASchedulerJobDependencyIntegrationTest {
         this.requestSpec.header("Fineract-Platform-TenantId", "default");
         this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
     }
+    
+    @After
+    public void changeStatus(){
+        ArrayList<HashMap> allSchedulerJobsData = this.schedulerJobHelper.getAllSchedulerJobs(this.requestSpec, this.responseSpec);
+        activateAllTheJobs(allSchedulerJobsData,false);
+    }
 
     @Test
     public void testDependencyOfSchedulerJob() throws InterruptedException {
         ArrayList<HashMap> allSchedulerJobsData = this.schedulerJobHelper.getAllSchedulerJobs(this.requestSpec, this.responseSpec);
         Assert.assertNotNull(allSchedulerJobsData);
 
-        activateAllTheJobs(allSchedulerJobsData);
+        activateAllTheJobs(allSchedulerJobsData,true);
 
         boolean jobWillNotExecute = true;
 
@@ -71,9 +78,11 @@ public class AASchedulerJobDependencyIntegrationTest {
         executeDepentJobs(allSchedulerJobsData, jobWillNotExecute);
 
     }
-
+    
     private void executeJobById(Integer jobId) throws InterruptedException {
 
+        System.out.println("Exicuting job --->"+jobId);
+       
         // Retrieving Scheduler Job by ID
         HashMap schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
         Assert.assertNotNull(schedulerJob);
@@ -92,23 +101,24 @@ public class AASchedulerJobDependencyIntegrationTest {
             Assert.assertNotNull(schedulerJob);
             System.out.println("Job is Still Running");
         }
+        Thread.sleep(1500);
         ArrayList<HashMap> jobHistoryData = this.schedulerJobHelper.getSchedulerJobHistory(this.requestSpec, this.responseSpec,
                 jobId.toString());
 
         // Verifying the Status of the Recently executed Scheduler Job
-        Assert.assertEquals("Verifying Last Scheduler Job Status", "success", jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
+        Assert.assertEquals("Verifying Last Scheduler Job Status:"+jobId, "success", jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
     }
 
-    private void activateAllTheJobs(ArrayList<HashMap> allSchedulerJobsData) {
+    private void activateAllTheJobs(ArrayList<HashMap> allSchedulerJobsData, final Boolean active) {
         for (HashMap scheduleDetail : allSchedulerJobsData) {
-            Boolean active = (Boolean) scheduleDetail.get("active");
+            Boolean activeState = (Boolean) scheduleDetail.get("active");
             Integer jobId = (Integer) scheduleDetail.get("jobId");
-            if (!active) {
-                active = true;
+            if (active ^ activeState) {
                 HashMap changes = this.schedulerJobHelper.updateSchedulerJob(this.requestSpec, this.responseSpec, jobId.toString(),
                         active.toString());
                 // Verifying Scheduler Job updation
-                Assert.assertEquals("Verifying Scheduler Job Updation", active, changes.get("active"));
+                Assert.assertEquals("Verifying Scheduler Job Updation:"+jobId, active, changes.get("active"));
+                scheduleDetail.put("active", active);
 
             }
         }
@@ -124,7 +134,7 @@ public class AASchedulerJobDependencyIntegrationTest {
                     || jobName.equals("Add Accrual Transactions For Loans With Income Posted As Transactions")
                     || jobName.equals("Add Periodic Accrual Transactions") || jobName.equals("Add Accrual Transactions")) {
                 Integer jobId = (Integer) scheduleDetail.get("jobId");
-
+                System.out.println("Exicuting job --->"+jobId);
                 // Retrieving Scheduler Job by ID
                 HashMap schedulerJob = this.schedulerJobHelper.getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
                 Assert.assertNotNull(schedulerJob);
@@ -149,7 +159,7 @@ public class AASchedulerJobDependencyIntegrationTest {
                 if (jobWillNotExecute) {
                     Assert.assertTrue(jobHistoryData.isEmpty());
                 } else {
-                    Assert.assertEquals("Verifying Last Scheduler Job Status", "success", jobHistoryData.get(jobHistoryData.size() - 1)
+                    Assert.assertEquals("Verifying Last Scheduler Job Status :"+jobId, "success", jobHistoryData.get(jobHistoryData.size() - 1)
                             .get("status"));
                 }
             }
