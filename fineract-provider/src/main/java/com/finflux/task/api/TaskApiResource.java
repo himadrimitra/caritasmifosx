@@ -8,6 +8,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
 import com.finflux.commands.service.CommandWrapperBuilder;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.service.TaskExecutionService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
@@ -40,6 +43,7 @@ public class TaskApiResource {
     private final DefaultToApiJsonSerializer toApiJsonSerializer;
     private final TaskPlatformReadService taskPlatformReadService;
     private final TaskPlatformReadServiceImpl taskConfigurationReadService;
+    private final TaskExecutionService taskExecutionService;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
 
     @SuppressWarnings("rawtypes")
@@ -47,13 +51,15 @@ public class TaskApiResource {
     public TaskApiResource(final PlatformSecurityContext context, final ApiRequestParameterHelper apiRequestParameterHelper,
             final DefaultToApiJsonSerializer toApiJsonSerializer, final TaskPlatformReadService taskPlatformReadService,
             final TaskPlatformReadServiceImpl taskConfigurationReadService,
-           final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService) {
+           final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
+                           final TaskExecutionService taskExecutionService) {
         this.context = context;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.taskPlatformReadService = taskPlatformReadService;
         this.taskConfigurationReadService = taskConfigurationReadService;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
+        this.taskExecutionService = taskExecutionService;
     }
 
     @SuppressWarnings("unchecked")
@@ -128,5 +134,17 @@ public class TaskApiResource {
 
     private boolean is(final String commandParam, final String commandValue) {
         return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
+    }
+
+
+    @GET
+    @Path("{entityType}/{entityId}/execute/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String getTaskData(@PathParam("entityType") final String entityType, @PathParam("entityId") final Long entityId,
+                              @Context final UriInfo uriInfo) {
+        TaskEntityType taskEntityType = TaskEntityType.fromString(entityType);
+        final TaskExecutionData taskExecutionData = this.taskExecutionService.getTaskIdByEntity(taskEntityType, entityId);
+        return this.toApiJsonSerializer.serialize(taskExecutionData);
     }
 }
