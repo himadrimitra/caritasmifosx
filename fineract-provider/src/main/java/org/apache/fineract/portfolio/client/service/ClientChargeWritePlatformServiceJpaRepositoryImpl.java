@@ -36,6 +36,8 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.Money;
@@ -99,6 +101,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     private final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl;
     private final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl;
     private final ClientRecurringChargeRepository clientRecurringChargeRepository;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
     @Autowired
     public ClientChargeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -111,7 +114,8 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             final CalendarInstanceRepository calendarInstanceRepository,
             final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl,
             final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl,
-            final ClientRecurringChargeRepository clientRecurringChargeRepository) {
+            final ClientRecurringChargeRepository clientRecurringChargeRepository,
+            final FineractEntityAccessUtil fineractEntityAccessUtil) {
         this.context = context;
         this.chargeRepository = chargeRepository;
         this.clientChargeDataValidator = clientChargeDataValidator;
@@ -127,6 +131,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         this.clientReadPlatformServiceImpl = clientReadPlatformServiceImpl;
         this.groupReadPlatformServiceImpl = groupReadPlatformServiceImpl;
         this.clientRecurringChargeRepository = clientRecurringChargeRepository;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
 
     @Override
@@ -136,6 +141,9 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
 			final Client client = clientRepository.getActiveClientInUserScope(clientId);
 			final Long chargeDefinitionId = command.longValueOfParameterNamed(ClientApiConstants.chargeIdParamName);
+			this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, chargeDefinitionId);
 			LocalDate dueDate = command.localDateValueOfParameterNamed(ClientApiConstants.dueAsOfDateParamName);
 			final Boolean isSynchMeeting = command
 					.booleanPrimitiveValueOfParameterNamed(ClientApiConstants.chargesynchmeetingParamName);

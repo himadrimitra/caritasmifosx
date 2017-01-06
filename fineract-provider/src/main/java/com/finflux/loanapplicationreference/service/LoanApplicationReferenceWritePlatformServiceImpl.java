@@ -1,11 +1,7 @@
 package com.finflux.loanapplicationreference.service;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
@@ -15,6 +11,8 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
@@ -80,6 +78,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final ConfigurationDomainService configurationDomainService;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
 
@@ -95,7 +94,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
             final TaskPlatformWriteService taskPlatformWriteService, final ConfigurationDomainService configurationDomainService,
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
-            final PaymentTypeRepositoryWrapper paymentTypeRepository) {
+            final PaymentTypeRepositoryWrapper paymentTypeRepository,
+            final FineractEntityAccessUtil fineractEntityAccessUtil) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -114,6 +114,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.configurationDomainService = configurationDomainService;
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
         this.paymentTypeRepository = paymentTypeRepository;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
 
     @Override
@@ -125,6 +126,15 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     loanProductId, isPenalty);
             this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
             this.validator.validateForCreate(command.json());
+
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS, loanProductId);
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
 
             final LoanApplicationReference loanApplicationReference = this.assembler.assembleCreateForm(command);
 
@@ -193,6 +203,15 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     loanProductId, isPenalty);
             this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
             this.validator.validateForUpdate(command.json());
+
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS, loanProductId);
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
             final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
             this.validator.validateLoanAmountRequestedMinMaxConstraint(command.json(), loanProduct);
@@ -453,6 +472,17 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
     private void logAsErrorUnexpectedDataIntegrityException(final DataIntegrityViolationException dve) {
         logger.error(dve.getMessage(), dve);
+    }
+
+    private Collection<Long> extractChargeIds(JsonCommand command) {
+        Collection<Long> chargeIds = new ArrayList<>();
+        JsonArray charges = command.arrayOfParameterNamed("charges");
+        if(null != charges && charges.size() > 0){
+            for (JsonElement charge:charges) {
+                chargeIds.add(charge.getAsJsonObject().get("chargeId").getAsLong());
+            }
+        }
+        return chargeIds;
     }
 
 }

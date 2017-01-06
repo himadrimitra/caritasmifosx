@@ -34,6 +34,7 @@ public class FineractEntityApiResourceConstants {
     public static final String endDate = "endDate";
     public static final String LOCALE = "locale";
     public static final String DATE_FORMAT = "dateFormat";
+    public static final String isAllowedForChildOffices = "isAllowedForChildOffices";
 
     public static final String OFFICE_ACCESS_TO_LOAN_PRODUCTS = " office_access_to_loan_products ";
     public static final String OFFICE_ACCESS_TO_SAVINGS_PRODUCTS = " office_access_to_savings_products ";
@@ -43,12 +44,13 @@ public class FineractEntityApiResourceConstants {
 
     public static final Set<String> RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(mappingTypes));
 
-    public static final Set<String> FETCH_ENTITY_TO_ENTITY_MAPPINGS = new HashSet<>(Arrays.asList(mapId,relId,fromEnityType, toEntityType));
+    public static final Set<String> FETCH_ENTITY_TO_ENTITY_MAPPINGS = new HashSet<>(Arrays.asList(mapId,relId,fromEnityType, toEntityType,
+            startDate, endDate, isAllowedForChildOffices));
 
     public static final Set<String> CREATE_ENTITY_MAPPING_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(fromEnityType,
-            toEntityType, startDate, LOCALE, DATE_FORMAT, endDate));
+            toEntityType, startDate, LOCALE, DATE_FORMAT, endDate, isAllowedForChildOffices));
 
     public static final Set<String> UPDATE_ENTITY_MAPPING_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(relId,fromEnityType,
-            toEntityType, startDate,LOCALE, DATE_FORMAT, endDate));
+            toEntityType, startDate,LOCALE, DATE_FORMAT, endDate, isAllowedForChildOffices));
 
 }

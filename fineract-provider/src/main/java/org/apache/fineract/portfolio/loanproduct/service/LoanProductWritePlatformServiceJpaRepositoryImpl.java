@@ -18,17 +18,15 @@
  */
 package org.apache.fineract.portfolio.loanproduct.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.domain.Charge;
@@ -46,11 +44,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.ProductLoanCharge;
-import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
-import org.apache.fineract.portfolio.loanproduct.exception.LinkedChargeGoalSeekException;
-import org.apache.fineract.portfolio.loanproduct.exception.LoanProductCannotBeModifiedDueToNonClosedLoansException;
-import org.apache.fineract.portfolio.loanproduct.exception.LoanProductDateException;
-import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
+import org.apache.fineract.portfolio.loanproduct.exception.*;
 import org.apache.fineract.portfolio.loanproduct.serialization.LoanProductDataValidator;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -60,8 +54,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanProductWritePlatformService {
@@ -112,6 +108,11 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
 
             this.fromApiJsonDeserializer.validateForCreate(command.json());
             validateInputDates(command);
+
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
             final Fund fund = findFundByIdIfProvided(command.longValueOfParameterNamed("fundId"));
 
@@ -185,7 +186,12 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             this.fromApiJsonDeserializer.validateForUpdate(command.json(), product);
             validateInputDates(command);
 
-            if(anyChangeInCriticalFloatingRateLinkedParams(command, product) 
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
+            if(anyChangeInCriticalFloatingRateLinkedParams(command, product)
             		&& this.loanRepository.doNonClosedLoanAccountsExistForProduct(product.getId())){
             	throw new LoanProductCannotBeModifiedDueToNonClosedLoansException(product.getId());
             }
@@ -338,4 +344,16 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
     private void logAsErrorUnexpectedDataIntegrityException(final DataIntegrityViolationException dve) {
         logger.error(dve.getMessage(), dve);
     }
+
+    private Collection<Long> extractChargeIds(JsonCommand command) {
+        Collection<Long> chargeIds = new ArrayList<>();
+        JsonArray charges = command.arrayOfParameterNamed("charges");
+        if(null != charges && charges.size() > 0) {
+            for (JsonElement charge : charges) {
+                chargeIds.add(charge.getAsJsonObject().get("id").getAsLong());
+            }
+        }
+        return chargeIds;
+    }
+
 }

@@ -94,6 +94,8 @@ public class FineractEntityAccessWriteServiceImpl implements FineractEntityAcces
             final Long toId = command.longValueOfParameterNamed(FineractEntityApiResourceConstants.toEntityType);
             final Date startDate = command.DateValueOfParameterNamed(FineractEntityApiResourceConstants.startDate);
             final Date endDate = command.DateValueOfParameterNamed(FineractEntityApiResourceConstants.endDate);
+            final Boolean isAllowedForChildOffices = command.parameterExists(FineractEntityApiResourceConstants.isAllowedForChildOffices)?
+                    command.booleanObjectValueOfParameterNamed(FineractEntityApiResourceConstants.isAllowedForChildOffices) : false;
 
             fromApiJsonDeserializer.checkForEntity(relId.toString(), fromId, toId);
             if (startDate != null && endDate != null) {
@@ -101,7 +103,8 @@ public class FineractEntityAccessWriteServiceImpl implements FineractEntityAcces
                         .before(startDate)) { throw new FineractEntityToEntityMappingDateException(startDate.toString(), endDate.toString()); }
             }
 
-            final FineractEntityToEntityMapping newMap = FineractEntityToEntityMapping.newMap(mapId, fromId, toId, startDate, endDate);
+            final FineractEntityToEntityMapping newMap = FineractEntityToEntityMapping.newMap(mapId, fromId, toId,
+                    startDate, endDate, isAllowedForChildOffices);
 
             this.fineractEntityToEntityMappingRepository.save(newMap);
 

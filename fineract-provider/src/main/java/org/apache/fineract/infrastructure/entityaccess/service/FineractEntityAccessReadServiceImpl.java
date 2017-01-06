@@ -135,7 +135,7 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
             sql += " where firstentity.hierarchy like ? order by firstEntity.hierarchy";
             entityAccessData = this.jdbcTemplate.query(sql, mapper, new Object[] { fromEntityId, fromEntityId, hierarchySearchString });
         } else {
-        	entityAccessData = this.jdbcTemplate.query(sql, mapper, new Object[] { relId, fromEntityId});
+        	entityAccessData = this.jdbcTemplate.query(sql, mapper, new Object[] { relId, fromEntityId, hierarchy, hierarchy});
         }
 
         return entityAccessData;
@@ -143,10 +143,16 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
 
     private String getSQLForRetriveEntityAccessFor() {
     	StringBuffer str = new StringBuffer("select  eem.rel_id as relId,eem.from_id as fromId, ");
-    	        str.append("eem.to_id as toId, eem.start_date as startDate, eem.end_date as endDate ");
+    	        str.append("eem.to_id as toId, eem.start_date as startDate, eem.end_date as endDate, ");
+                str.append("eem.allowed_for_child_offices as isAllowedForChildOffices ");
     	        str.append("from  m_entity_to_entity_mapping eem ");
-    	        str.append("where eem.rel_id = ? ");
-    	        str.append("and eem.from_id = ? ");
+                str.append("left join m_office off on eem.from_id = off.id ");
+                str.append("where eem.rel_id = ? ");
+                str.append("and ((eem.allowed_for_child_offices = 0 and eem.from_id = ?) ");
+                str.append("or ");
+                str.append("(eem.allowed_for_child_offices = 1 and ? like concat(off.hierarchy,'%')) ");
+                str.append("or ");
+                str.append("(off.hierarchy like concat(?,'%'))) ");
         logger.debug(str.toString());
         return str.toString();
     }
@@ -273,7 +279,8 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
         public GetOneEntityMapper() {
 
             StringBuffer str = new StringBuffer("select eem.rel_id as relId, ");
-            str.append("eem.from_id as fromId,eem.to_Id as toId,eem.start_date as startDate,eem.end_date as endDate ");
+            str.append("eem.from_id as fromId,eem.to_Id as toId,eem.start_date as startDate,eem.end_date as endDate, ");
+            str.append("eem.allowed_for_child_offices as isAllowedForChildOffices ");
             str.append("from m_entity_to_entity_mapping eem ");
             str.append("where eem.id= ? ");
             this.schema = str.toString();
@@ -291,7 +298,8 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
             final Long toId = rs.getLong("toId");
             final Date startDate = rs.getDate("startDate");
             final Date endDate = rs.getDate("endDate");
-            return FineractEntityToEntityMappingData.getRelatedEntities(relId, fromId, toId, startDate, endDate);
+            final Boolean isAllowedForChildOffices = rs.getBoolean("isAllowedForChildOffices");
+            return FineractEntityToEntityMappingData.getRelatedEntities(relId, fromId, toId, startDate, endDate, isAllowedForChildOffices);
         }
 
     }
@@ -308,6 +316,7 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
             str.append("eem.to_id as to_id, ");
             str.append("eem.start_date as startDate, ");
             str.append("eem.end_date as endDate, ");
+            str.append("eem.allowed_for_child_offices as isAllowedForChildOffices, ");
             str.append("case er.code_name ");
             str.append("when 'office_access_to_loan_products' then ");
             str.append("o.name ");
@@ -362,7 +371,9 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
             final String toEntity = rs.getString("to_name");
             final Date startDate = rs.getDate("startDate");
             final Date endDate = rs.getDate("endDate");
-            return FineractEntityToEntityMappingData.getRelatedEntities(mapId, relId, fromId, toId, startDate, endDate, fromEntity, toEntity);
+            final Boolean isAllowedForChildOffices = rs.getBoolean("isAllowedForChildOffices");
+            return FineractEntityToEntityMappingData.getRelatedEntities(mapId, relId, fromId, toId, startDate, endDate,
+                    fromEntity, toEntity, isAllowedForChildOffices);
         }
     }
 
