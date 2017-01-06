@@ -65,7 +65,8 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         sb.append("SELECT CONCAT(IFNULL(ad.house_no,''), ' ', IFNULL(ad.street_no,''),  ' ' ");
         sb.append(",IFNULL(ad.village_town,''),  ' ', IFNULL(taluka.taluka_name,''),  ' ' ");
         sb.append(",IFNULL(dist.district_name,'')) AS clientAddress ");
-        sb.append(",IFNULL(ad.village_town,dist.district_name) AS clientCity ");
+        //sb.append(",IFNULL(ad.village_town,dist.district_name) AS clientCity ");
+        sb.append(",dist.district_name AS clientCity ");
         sb.append(",state.state_name AS clientState ");
         sb.append(",state.iso_state_code As stateShortCode,  IFNULL(ad.postal_code,'') AS clientPin,  mc.id AS clientId ");
         sb.append(",addresstypecv.id AS clientAddressTypeId,addresstypecv.code_value AS clientAddressType ");
