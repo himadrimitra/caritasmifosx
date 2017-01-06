@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
@@ -69,11 +70,8 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
             try {
                 this.loanAccrualWritePlatformService.addAccrualAccounting(mapEntry.getKey(), mapEntry.getValue());
             } catch (Exception e) {
-                Throwable realCause = e;
-                if (e.getCause() != null) {
-                    realCause = e.getCause();
-                }
-                sb.append("failed to add accural transaction for loan " + mapEntry.getKey() + " with message " + realCause.getMessage());
+                String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                sb.append("failed to add accural transaction for loan " + mapEntry.getKey() + " with message " + rootCause);
             }
         }
 
@@ -116,11 +114,8 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
             	logger.debug("Add Periodic Accrual Counter[" + counter + "], LoanId[" + mapEntry.getKey() + "]");
                 this.loanAccrualWritePlatformService.addPeriodicAccruals(tilldate, mapEntry.getKey(), mapEntry.getValue(), accrueAllInstallments);
             } catch (Exception e) {
-                Throwable realCause = e;
-                if (e.getCause() != null) {
-                    realCause = e.getCause();
-                }
-                sb.append("failed to add accural transaction for loan " + mapEntry.getKey() + " with message " + realCause.getMessage());
+                String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                sb.append("failed to add accural transaction for loan " + mapEntry.getKey() + " with message " + rootCause);
             }
         }
 
@@ -137,11 +132,8 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
                 try {
                     this.loanAccrualWritePlatformService.addIncomeAndAccrualTransactions(loanId);
                 } catch (Exception e) {
-                    Throwable realCause = e;
-                    if (e.getCause() != null) {
-                        realCause = e.getCause();
-                    }
-                    sb.append("failed to add income and accrual transaction for loan " + loanId + " with message " + realCause.getMessage());
+                    String rootCause = ExceptionHelper.fetchExceptionMessage(e);
+                    sb.append("failed to add income and accrual transaction for loan " + loanId + " with message " + rootCause);
                 }
             }
             if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }

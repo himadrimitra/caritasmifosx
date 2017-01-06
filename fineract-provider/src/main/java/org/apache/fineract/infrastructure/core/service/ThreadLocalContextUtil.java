@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.infrastructure.core.service;
 
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.springframework.util.Assert;
 
@@ -35,6 +37,8 @@ public class ThreadLocalContextUtil {
     private static final ThreadLocal<String> authTokenContext = new ThreadLocal<>();
     
     private static final ThreadLocal<Boolean> ignoreOverdue = new ThreadLocal<>();
+    
+    private static final ThreadLocal<Map<String,String>> jobParams = new ThreadLocal<>();
     
     public static void setTenant(final FineractPlatformTenant tenant) {
         Assert.notNull(tenant, "tenant cannot be null");
@@ -75,6 +79,14 @@ public class ThreadLocalContextUtil {
     
     public static Boolean getIgnoreOverdue() {
         return ignoreOverdue.get();
+    }
+    
+    public static void setJobParams(final Map<String,String> params) {
+        jobParams.set(params);
+    }
+
+    public static Map<String,String> getJobParams() {
+        return jobParams.get();
     }
 
 }

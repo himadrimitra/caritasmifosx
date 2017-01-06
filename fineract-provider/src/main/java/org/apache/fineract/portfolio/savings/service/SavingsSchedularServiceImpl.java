@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
@@ -68,12 +69,9 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
                 LocalDate transactionDate = null;
                 this.savingsAccountWritePlatformService.postInterest(savingsAccount, postInterestAsOn, transactionDate);
             } catch (Exception e) {
-                Throwable realCause = e;
-                if (e.getCause() != null) {
-                    realCause = e.getCause();
-                }
+                String rootCause = ExceptionHelper.fetchExceptionMessage(e);
                 sb.append("failed to post interest for Savings with id " + savingsAccount.getId() + " with message "
-                        + realCause.getMessage());
+                        + rootCause);
             }
         }
         

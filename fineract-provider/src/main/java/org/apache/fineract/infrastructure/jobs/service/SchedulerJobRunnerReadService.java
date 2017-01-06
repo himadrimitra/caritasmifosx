@@ -20,6 +20,7 @@ package org.apache.fineract.infrastructure.jobs.service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
@@ -41,5 +42,7 @@ public interface SchedulerJobRunnerReadService {
     public Date getLastRunDate(String jobName);
     
     public boolean isActive(String jobName);
+    
+    public Map<String,String>  getJobParams(Long jobId);
 
 }

@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailDataValidator;
 import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetail;
 import org.apache.fineract.infrastructure.jobs.domain.ScheduledJobDetailRepository;
@@ -170,7 +171,8 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         } else if (!isStopExecution) {
             scheduledJobDetail.updateCurrentlyRunningStatus(true);
         }
-
+        Map<String,String> jobParams = this.schedulerJobRunnerReadService.getJobParams(scheduledJobDetail.getId());
+        ThreadLocalContextUtil.setJobParams(jobParams);
         this.scheduledJobDetailsRepository.save(scheduledJobDetail);
         return isStopExecution;
     }
