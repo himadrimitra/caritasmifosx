@@ -26,7 +26,7 @@ public class CreditBureauExistingLoan {
     private Long loanTenure;
     private Long loanTenureType;
     private CalendarFrequencyType repaymentFrequency;
-    private Long repaymentMultiple;
+    private Integer repaymentMultiple;
     private Long externalLoanPurposeId;
     private LoanStatus loanStatus;
     private Date disbursedDate;
@@ -130,11 +130,11 @@ public class CreditBureauExistingLoan {
         this.loanTenureType = loanTenureType;
     }
 
-    public Long getRepaymentMultiple() {
+    public Integer getRepaymentMultiple() {
         return repaymentMultiple;
     }
 
-    public void setRepaymentMultiple(Long repaymentMultiple) {
+    public void setRepaymentMultiple(Integer repaymentMultiple) {
         this.repaymentMultiple = repaymentMultiple;
     }
 
