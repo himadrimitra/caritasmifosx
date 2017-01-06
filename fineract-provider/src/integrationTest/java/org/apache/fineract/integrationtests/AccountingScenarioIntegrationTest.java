@@ -1069,8 +1069,8 @@ public class AccountingScenarioIntegrationTest {
         this.loanTransactionHelper.makeRepayment(LOAN_REPAYMENT_DATE, new Float(prepayAmount), loanID);
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanAccountIsClosed(loanStatusHashMap);
-        
-        this.loanTransactionHelper.checkAccrualTransactionsOnDay(getDateAsLocalDate(dateFormat.format(todayDate.getTime())), 990.16f, 55f,
+        float interest = 1000f - INTEREST_3_DAYS;
+        this.loanTransactionHelper.checkAccrualTransactionsOnDay(getDateAsLocalDate(dateFormat.format(todayDate.getTime())), interest, 55f,
                 105f, loanID);
         
 
