@@ -852,7 +852,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         DateFormat formatFromExcel = new SimpleDateFormat("yyyy-MM-dd", new Locale(locale));;
         DateFormat targetFormat = new SimpleDateFormat(dateFormat);
         for (BankStatementDetailsData bankStatementDetail : bankStatementDetailsData) {
-        	if(isValidData(bankStatementDetail)){
+            GLAccountDataForLookup GLAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(bankStatementDetail.getGlCode());
+                if(isValidData(bankStatementDetail) && GLAccount != null){
         		HashMap<String, Object> responseMap = new HashMap<>();
                 HashMap<String, Object> requestMap = new HashMap<>();
                 requestMap.put(ReconciliationApiConstants.localeParamName, locale);
@@ -860,7 +861,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBranch());
                 requestMap.put(ReconciliationApiConstants.transactionDateParamName, getFormattedDate(bankStatementDetail.getTransactionDate(),formatFromExcel, targetFormat));
                 requestMap.put(ReconciliationApiConstants.currencyCodeParamName, currencyCode);
-                requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId));
+                requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId, GLAccount));
                 String requestBody = null;
                 if(requestMap.containsKey(ReconciliationApiConstants.officeIdParamName)){
                     requestBody = gson.toJson(requestMap);   
@@ -889,14 +890,13 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     }
 
 
-    private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetailsData bankStatementDetail, Long defaultBankGLAccountId) {
+    private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetailsData bankStatementDetail, Long defaultBankGLAccountId, GLAccountDataForLookup GLAccount) {
 
         HashMap<String, Object> creaditMap = new HashMap<>();
         HashMap<String, Object> debitMap = new HashMap<>();
         creaditMap.put(ReconciliationApiConstants.amountParamName, bankStatementDetail.getAmount());
         debitMap.put(ReconciliationApiConstants.amountParamName, bankStatementDetail.getAmount());
         String code = bankStatementDetail.getGlCode();
-        GLAccountDataForLookup GLAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(code);
         if (GLAccount == null) { throw new GLAccountNotFoundException(code); }
         if (bankStatementDetail.getAccountingType().equalsIgnoreCase(ReconciliationApiConstants.DEBIT)) {
             creaditMap.put(ReconciliationApiConstants.GL_ACCOUNT_ID, defaultBankGLAccountId);
