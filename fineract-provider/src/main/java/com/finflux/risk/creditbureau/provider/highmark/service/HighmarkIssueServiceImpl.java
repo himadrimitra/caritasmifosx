@@ -187,7 +187,7 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
                         existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
                         existingLoan.setLoanStatus(convertToLoanStatus(loanDetail.getSTATUS()));
                         if(loanDetail.getFREQ() != null && "BIWEEKLY".equalsIgnoreCase(loanDetail.getFREQ())){
-                            existingLoan.setRepaymentMultiple((long) 2);
+                            existingLoan.setRepaymentMultiple((int) 2);
                         }
                         existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanDetail.getFREQ()));
                         loanList.add(existingLoan);
