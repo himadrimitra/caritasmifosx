@@ -27,6 +27,7 @@ import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.data.StaffCenterData;
+import org.apache.fineract.portfolio.village.data.VillageData;
 
 public interface CenterReadPlatformService {
 
@@ -51,4 +52,5 @@ public interface CenterReadPlatformService {
     Collection<CenterData> retrieveAssociatedCenters(Long villageId);
 
     CenterData retrieveCenterAndMembersDetailsTemplate(Long centerId);
+
 }

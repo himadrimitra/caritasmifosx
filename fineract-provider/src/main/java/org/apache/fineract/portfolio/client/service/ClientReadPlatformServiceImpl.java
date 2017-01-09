@@ -18,7 +18,6 @@
  */
 package org.apache.fineract.portfolio.client.service;
 
-import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -52,11 +51,14 @@ import org.apache.fineract.portfolio.client.exception.ClientNotFoundException;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
 import org.apache.fineract.portfolio.savings.service.SavingsProductReadPlatformService;
+import org.apache.fineract.portfolio.village.data.VillageData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -887,12 +889,75 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     	builder.append("LEFT JOIN m_group g ON g.id=gc.group_id ");
     	builder.append("LEFT JOIN m_group pg ON pg.id = g.parent_id ");
     	builder.append("where gc.client_id=? ");
+    	builder.append("group by gc.client_id ");
     	try{
             return this.jdbcTemplate.queryForObject(builder.toString(), Long.class, clientId);
     }catch (final EmptyResultDataAccessException e) {
         return null;
     }
   }
+    
+    @Override
+    public ClientData retrieveHierarchyLookupForClient(final ClientData clientData) {
+        try {
+            final HierarchyLookupMapper hm = new HierarchyLookupMapper(clientData);
+            final String sql = "SELECT " + hm.schema() + " where c.id = ? ";
+            return this.jdbcTemplate.query(sql, hm, new Object[] { clientData.id() });
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+    
+  private static final class HierarchyLookupMapper implements ResultSetExtractor<ClientData> {
+        
+        private final ClientData clientData;
+        public HierarchyLookupMapper(final ClientData clientData) {
+            this.clientData = clientData;
+        }
+
+        public final String schema() {
+            return " o.id as officeId,o.name as officeName,go.id as groupOfficeId,go.name as groupOfficeName,v.id AS villageId,v.village_name AS villageName, g.parent_id AS centerId,pg.display_name AS centerName,g.id AS goupId,g.display_name as groupName "
+                    + "FROM m_client c "
+                    + "JOIN m_group_client gc ON gc.client_id = c.id "
+                    + "JOIN m_group g ON gc.group_id = g.id "
+                    + "LEFT JOIN m_group pg ON g.parent_id = pg.id "
+                    + "LEFT JOIN chai_village_center vc ON (vc.center_id = g.id OR vc.center_id = g.parent_id) "
+                    + "left JOIN chai_villages v ON vc.village_id = v.id "
+                    + "left join m_office go on g.office_id = go.id "
+                    + "join m_office o on o.id = c.office_id ";
+                    
+        }
+       
+        @Override
+        public ClientData extractData(ResultSet rs) throws SQLException, DataAccessException {
+            Collection<GroupGeneralData> parentGroups = new ArrayList<>();
+            Long officeId = null;
+            String officeName =  null;
+            while (rs.next()) {
+                final Long villageId = JdbcSupport.getLong(rs, "villageId");
+                final String villageName = rs.getString("villageName");
+                final Long centerId = JdbcSupport.getLong(rs, "centerId");
+                final String centerName = rs.getString("centerName");
+                final Long goupId = JdbcSupport.getLong(rs, "goupId");
+                final String groupName = rs.getString("groupName");
+                final Long groupOfficeId = JdbcSupport.getLong(rs, "groupOfficeId");
+                final String groupOfficeName = rs.getString("groupOfficeName");
+
+                
+                officeId = JdbcSupport.getLong(rs, "officeId");
+                officeName = rs.getString("officeName");
+
+
+                VillageData villageData = VillageData.lookup(villageId, villageName);
+                GroupGeneralData groupGeneralData = GroupGeneralData.lookupforhierarchy(goupId, groupName, centerId, centerName,
+                        villageData, groupOfficeId, groupOfficeName);
+                parentGroups.add(groupGeneralData);
+            }
+            
+            return ClientData.lookupforhierarchy(clientData, parentGroups,officeId,officeName);
+        }
+    }
+
 
 
 }

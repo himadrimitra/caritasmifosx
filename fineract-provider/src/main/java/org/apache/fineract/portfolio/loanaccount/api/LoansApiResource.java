@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.loanaccount.api;
 
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -76,6 +77,7 @@ import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.service.CollateralReadPlatformService;
 import org.apache.fineract.portfolio.collaterals.data.PledgeData;
@@ -183,6 +185,7 @@ public class LoansApiResource {
     private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory;
+    private final ClientReadPlatformService clientReadPlatformService;
 
     @Autowired
     public LoansApiResource(final PlatformSecurityContext context, final LoanReadPlatformService loanReadPlatformService,
@@ -204,7 +207,8 @@ public class LoansApiResource {
             final LoanScheduleHistoryReadPlatformService loanScheduleHistoryReadPlatformService, final PledgeReadPlatformService pledgeReadPlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService, final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-            final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory) {
+            final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory,
+            final ClientReadPlatformService clientReadPlatformService) {
         this.context = context;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
@@ -233,6 +237,7 @@ public class LoansApiResource {
         this.loanPurposeGroupReadPlatformService = loanPurposeGroupReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
         this.loanRepaymentScheduleTransactionProcessorFactory = loanRepaymentScheduleTransactionProcessorFactory;
+        this.clientReadPlatformService = clientReadPlatformService;
     }
 
     /*
@@ -505,6 +510,18 @@ public class LoansApiResource {
                 final Collection<LoanTransactionData> currentLoanRepayments = this.loanReadPlatformService.retrieveLoanTransactions(loanId);
                 if (!CollectionUtils.isEmpty(currentLoanRepayments)) {
                     loanRepayments = currentLoanRepayments;
+                }
+            }
+            
+            if (associationParameters.contains("hierarchyLookup")) {
+                if (loanBasicDetails.clientId() == null) {
+                    GroupGeneralData data = groupReadPlatformService.retrieveCenterDetailsWithGroup(loanBasicDetails.groupData());
+                    loanBasicDetails = LoanAccountData.populateGroupDetails(loanBasicDetails, data);
+                } else {
+                    ClientData clientData = ClientData.formClientData(loanBasicDetails.clientId(), loanBasicDetails.getClientName());
+                    clientData = this.clientReadPlatformService.retrieveHierarchyLookupForClient(clientData);
+
+                    loanBasicDetails = LoanAccountData.populateClientDetails(loanBasicDetails, clientData);
                 }
             }
 

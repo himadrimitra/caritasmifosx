@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
 
 public interface ClientReadPlatformService {
 
@@ -52,4 +53,6 @@ public interface ClientReadPlatformService {
 	Long retrieveDefaultStaffIdFromGroup(Long clientId);
 
 	Long retrieveSavingsAccountIdByMobileNo(String mobileno);
+
+    ClientData retrieveHierarchyLookupForClient(ClientData clientData);
 }

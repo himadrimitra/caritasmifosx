@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 
 public interface GroupReadPlatformService {
@@ -38,4 +39,7 @@ public interface GroupReadPlatformService {
     Collection<GroupGeneralData> retrieveGroupsForLookup(Long officeId);
 
     GroupGeneralData retrieveGroupWithClosureReasons();
+
+	GroupGeneralData retrieveCenterDetailsWithGroup(GroupGeneralData groupGeneralData);
+
 }

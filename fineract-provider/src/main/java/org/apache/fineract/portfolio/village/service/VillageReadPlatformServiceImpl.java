@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.village.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -39,6 +40,14 @@ import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
+import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
+import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.group.data.CenterData;
+import org.apache.fineract.portfolio.group.data.GroupGeneralData;
+import org.apache.fineract.portfolio.group.data.GroupRoleData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.village.data.VillageData;
 import org.apache.fineract.portfolio.village.data.VillageTimelineData;
 import org.apache.fineract.portfolio.village.domain.VillageTypeEnumerations;
@@ -64,7 +73,7 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
     
     private final VillageDataMapper villageDataMapper = new VillageDataMapper();
     private final RetrieveOneMapper oneVillageMapper = new RetrieveOneMapper();
-    
+    private final RetrieveHierarchyMapper hierarchyMapper = new RetrieveHierarchyMapper();
     @Autowired
     public VillageReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource, final OfficeReadPlatformService
             officeReadPlatformService, final PaginationParametersDataValidator paginationParametersDataValidator) {
@@ -155,6 +164,104 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         
         return this.jdbcTemplate.query(sqlBuilder.toString(), this.villageDataMapper, new Object[] { hierarchySearchString });
     }
+    
+    @Override
+    public Collection<CenterData> retrieveHierarchy(final Long villageId) {
+
+        try {
+            
+            final String sql = "SELECT "+ this.hierarchyMapper.schema() +"WHERE vc.village_id=?";
+            return this.jdbcTemplate.query(sql, this.hierarchyMapper, new Object[] { villageId });
+            
+        } catch (final EmptyResultDataAccessException e) {
+            throw new VillageNotFoundException(villageId);
+        }
+    }
+    
+    private static final class RetrieveHierarchyMapper implements RowMapper<CenterData> {
+        private final String schema;
+        
+        public RetrieveHierarchyMapper() {
+            
+            final StringBuilder builder = new StringBuilder(400);
+            
+            builder.append("vc.center_id as centerId,c.display_name AS centerName,g.id AS groupId,g.display_name AS groupName, ");
+            builder.append("mc.id AS clientId,mc.display_name AS clientName, ml.id as loanId, ml.account_no as loanAccountNo, lp.short_name as productShortName ");
+            builder.append("FROM chai_village_center vc ");
+            builder.append("JOIN m_group c ON vc.center_id = c.id ");
+            builder.append("LEFT JOIN m_group g ON g.parent_id=c.id ");
+            builder.append("LEFT JOIN m_group_client gc ON gc.group_id=g.id ");
+            builder.append("LEFT JOIN m_client mc ON mc.id=gc.client_id ");
+            builder.append("left join m_loan ml on ml.client_id = mc.id ");
+            builder.append("left join m_product_loan lp on ml.product_id = lp.id ");
+            this.schema = builder.toString();
+        }
+        
+        public String schema() {
+            return this.schema;
+        }
+        @Override
+        public CenterData mapRow(ResultSet rs, int rowNum) throws SQLException {
+
+            final Long centerId = rs.getLong("centerId");
+            final String centerName = rs.getString("centerName");
+            CenterData centerData = CenterData.formCenterData(centerId, centerName);
+            final Collection<ClientData> activeClientMembers = null;
+            final Collection<GroupRoleData> groupRoles = null;
+            final Collection<CalendarData> calendarsData = null;
+            final CalendarData collectionMeetingCalendar = null;
+            Collection<GroupGeneralData> groups = new ArrayList<>();
+            centerData = CenterData.withAssociations(centerData, groups, collectionMeetingCalendar);
+            do {
+                if (!centerId.equals(rs.getLong("centerId"))) {
+                    rs.previous();
+                    break;
+                }
+                final Long groupId = JdbcSupport.getLong(rs, "groupId");
+                final String groupName = rs.getString("groupName");
+                if (groupId == null) {
+                    break;
+                }
+                GroupGeneralData groupData = GroupGeneralData.formGroupData(groupId, groupName);
+                Collection<ClientData> clients = new ArrayList<>();
+                groupData = GroupGeneralData.withAssocations(groupData, clients, activeClientMembers, groupRoles, calendarsData,
+                        collectionMeetingCalendar);
+                groups.add(groupData);
+
+                do {
+                    if (!groupId.equals(rs.getLong("groupId"))) {
+                        rs.previous();
+                        break;
+                    }
+                    final Long clientId = JdbcSupport.getLong(rs, "clientId");
+                    final String clientName = rs.getString("clientName");
+                    if (clientId == null) {
+                        break;
+                    }
+                    final ClientData clientData = ClientData.formClientData(clientId, clientName);
+                    clients.add(clientData);
+                    do {
+                        if (!groupId.equals(rs.getLong("groupId")) || !clientId.equals(rs.getLong("clientId"))) {
+                            rs.previous();
+                            break;
+                        }
+                        final Long loanId = JdbcSupport.getLong(rs, "loanId");
+                        final String productShortName = rs.getString("productShortName");
+                        final String accountNo = rs.getString("loanAccountNo");
+                        if (loanId == null) {
+                            break;
+                        }
+                        LoanAccountSummaryData loanData = LoanAccountSummaryData.formLoanAccountSummaryData(loanId, accountNo,
+                                productShortName);
+                        clientData.addLoanAccountSummaryData(loanData);
+                    } while (rs.next());
+                } while (rs.next());
+            } while (rs.next());
+            return centerData;
+        }
+    
+    }
+    
     
     @Override
     public VillageData retrieveOne(final Long villageId) {
@@ -386,5 +493,20 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
         }
         
     }
+    
+    @Override
+	public VillageData retrieveVillageDetails(Long centerId) {
+		try {
+			final String sql = "select v.id as id,v.village_name as villageName from chai_villages v left join chai_village_center vc on vc.village_id = v.id"
+					+ " where vc.center_id = ? ";
+			final VillageLookupDataMapper vm = new VillageLookupDataMapper();
 
+			return this.jdbcTemplate.queryForObject(sql, vm, new Object[] { centerId });
+		} catch (final EmptyResultDataAccessException e) {
+			return null;
+
+		}
+	}
+	
+  
 }

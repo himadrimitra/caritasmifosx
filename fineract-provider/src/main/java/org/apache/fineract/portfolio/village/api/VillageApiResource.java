@@ -151,6 +151,8 @@ public class VillageApiResource {
         VillageData village = villageReadPlatformService.retrieveOne(villageId);
 
         // associations:
+        Collection<CenterData> hierarchy = null;
+
         Collection<CenterData> centers = null;
         Collection<AddressData> address  = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(VillageTypeApiConstants.pathParamName,villageId);
         
@@ -158,11 +160,15 @@ public class VillageApiResource {
             if (associationParameters.contains("setOfCenters")) {
                 centers = this.centerReadPlatformService.retrieveAssociatedCenters(villageId);
             }
+            
+            if(associationParameters.contains("hierarchy")){
+                hierarchy = this.villageReadPlatformService.retrieveHierarchy(villageId);
+            }
         }
         
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         
-        village = VillageData.withAssociations(village, centers,address);
+        village = VillageData.withAssociations(village, centers,address,hierarchy);
        // village.getAssociations(centers);
         
         return this.villageDataApiJsonSerializer.serialize(settings, village, VillageTypeApiConstants.VILLAGE_RESPONSE_DATA_PARAMETERS);

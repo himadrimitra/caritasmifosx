@@ -79,6 +79,7 @@ public class GroupingTypesApiConstants {
     public static final String centerMembersParamName = "centerMembers";
     public static final String villageOptionsParamName = "villageOptions";
     public static final String villageCounterParamName = "villageCounter";
+    public static final String villageData = "villageData";
 
     public static final String totalCollected = "totalCollected";
     public static final String totalOverdue = "totalOverdue";
@@ -119,7 +120,7 @@ public class GroupingTypesApiConstants {
     public static final Set<String> GROUP_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, nameParamName,
             externalIdParamName, officeIdParamName, officeNameParamName, "parentId", "parentName", staffIdParamName, staffNameParamName,
             hierarchyParamName, officeOptionsParamName, statusParamName, activeParamName, activationDateParamName, staffOptionsParamName,
-            clientOptionsParamName, timeLine));
+            clientOptionsParamName, timeLine, villageData));
 
     public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, activationDateParamName));
