@@ -65,6 +65,7 @@ import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collectionsheet.data.JLGCollectionSheetData;
 import org.apache.fineract.portfolio.collectionsheet.service.CollectionSheetReadPlatformService;
+import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.data.GroupRoleData;
 import org.apache.fineract.portfolio.group.service.CenterReadPlatformService;
@@ -72,6 +73,8 @@ import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.group.service.GroupRolesReadPlatformService;
 import org.apache.fineract.portfolio.meeting.data.MeetingData;
 import org.apache.fineract.portfolio.meeting.service.MeetingReadPlatformService;
+import org.apache.fineract.portfolio.village.data.VillageData;
+import org.apache.fineract.portfolio.village.service.VillageReadPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -88,7 +91,7 @@ import com.google.gson.JsonElement;
 @Scope("singleton")
 public class GroupsApiResource {
 
-    private final PlatformSecurityContext context;
+	private final PlatformSecurityContext context;
     private final GroupReadPlatformService groupReadPlatformService;
     private final CenterReadPlatformService centerReadPlatformService;
     private final ClientReadPlatformService clientReadPlatformService;
@@ -104,6 +107,8 @@ public class GroupsApiResource {
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final MeetingReadPlatformService meetingReadPlatformService;
     private final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService;
+    private final VillageReadPlatformService villageReadPlatformService;
+
     @SuppressWarnings("rawtypes")
     private final DefaultToApiJsonSerializer defaultToApiJsonSerializer;
 
@@ -121,7 +126,7 @@ public class GroupsApiResource {
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService,
             final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService,
-            final DefaultToApiJsonSerializer defaultToApiJsonSerializer) {
+            final DefaultToApiJsonSerializer defaultToApiJsonSerializer,final VillageReadPlatformService villageReadPlatformService) {
         this.context = context;
         this.groupReadPlatformService = groupReadPlatformService;
         this.centerReadPlatformService = centerReadPlatformService;
@@ -139,6 +144,7 @@ public class GroupsApiResource {
         this.meetingReadPlatformService = meetingReadPlatformService;
         this.loanUtilizationCheckReadPlatformService = loanUtilizationCheckReadPlatformService;
         this.defaultToApiJsonSerializer = defaultToApiJsonSerializer;
+        this.villageReadPlatformService = villageReadPlatformService;
     }
 
     @GET
@@ -220,10 +226,11 @@ public class GroupsApiResource {
         GroupRoleData selectedRole = null;
         Collection<CalendarData> calendars = null;
         CalendarData collectionMeetingCalendar = null;
+        VillageData vd =null;
 
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("all")) {
-                associationParameters.addAll(Arrays.asList("clientMembers", "activeClientMembers",
+                associationParameters.addAll(Arrays.asList("clientMembers", "hierarchyLookup", "activeClientMembers",
                         "groupRoles", "calendars", "collectionMeetingCalendar"));
             }
             if (associationParameters.contains("clientMembers")) {
@@ -232,6 +239,12 @@ public class GroupsApiResource {
                     membersOfGroup = null;
                 }
             }
+            
+            if (associationParameters.contains("hierarchyLookup") && (group.getParentId()!= null)) {
+            	vd = this.villageReadPlatformService.retrieveVillageDetails(group.getParentId());
+            	group = GroupGeneralData.withVillageData(group, vd);
+            }
+            
             if (associationParameters.contains("activeClientMembers")) {
                 activeClientMembers = this.clientReadPlatformService.retrieveActiveClientMembersOfGroup(groupId);
                 if (CollectionUtils.isEmpty(activeClientMembers)) {

@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.apache.fineract.infrastructure.core.data.PaginationParameters;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.village.data.VillageData;
 
 
@@ -34,4 +35,6 @@ public interface VillageReadPlatformService {
     Collection<VillageData> retrieveVillagesForLookup(Long officeId);
     VillageData retrieveOne(final Long villageId);
     VillageData getCountValue(final Long villageId);
+    VillageData retrieveVillageDetails(Long centerId);
+    Collection<CenterData> retrieveHierarchy(Long villageId);
 }

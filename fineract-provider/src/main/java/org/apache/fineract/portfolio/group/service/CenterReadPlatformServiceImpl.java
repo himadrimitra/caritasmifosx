@@ -789,4 +789,6 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
 
         return centerAccount;
     }
+
+	
 }

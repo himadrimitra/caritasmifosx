@@ -53,7 +53,6 @@ public class CenterData {
     private final GroupTimelineData timeline;
     // associations
     private  Collection<GroupGeneralData> groupMembers;
-
     // template
     private final Collection<GroupGeneralData> groupMembersOptions;
     private final CalendarData collectionMeetingCalendar;
@@ -82,11 +81,19 @@ public class CenterData {
     public static CenterData withTemplate(final CenterData templateCenter, final CenterData center) {
         return new CenterData(center.id, center.accountNo, center.name, center.externalId, center.status, center.activationDate,
                 center.officeId, center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers,
-                templateCenter.officeOptions, null, null, templateCenter.staffOptions, templateCenter.groupMembersOptions,
+                templateCenter.officeOptions, center.villageOptions, center.villageCounter, templateCenter.staffOptions, templateCenter.groupMembersOptions,
                 templateCenter.collectionMeetingCalendar, templateCenter.closureReasons, center.timeline, center.totalCollected,
                 center.totalOverdue, center.totaldue, center.installmentDue);
     }
 
+    public static CenterData withVillageData(final VillageData villageData, final CenterData center) {
+        return new CenterData(center.id, center.accountNo, center.name, center.externalId, center.status, center.activationDate,
+                center.officeId, center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers,
+                center.officeOptions, center.villageOptions, villageData, center.staffOptions, center.groupMembersOptions,
+                center.collectionMeetingCalendar, center.closureReasons, center.timeline, center.totalCollected,
+                center.totalOverdue, center.totaldue, center.installmentDue);
+    }
+    
     public static CenterData instance(final Long id, final String accountNo, final String name, final String externalId,
             final EnumOptionData status, final LocalDate activationDate, final Long officeId, final String officeName, final Long staffId,
             final String staffName, final String hierarchy, final GroupTimelineData timeline, final CalendarData collectionMeetingCalendar,
@@ -108,7 +115,7 @@ public class CenterData {
             final CalendarData collectionMeetingCalendar) {
         return new CenterData(centerData.id, centerData.accountNo, centerData.name, centerData.externalId, centerData.status,
                 centerData.activationDate, centerData.officeId, centerData.officeName, centerData.staffId, centerData.staffName,
-                centerData.hierarchy, groupMembers, centerData.officeOptions, null, null, centerData.staffOptions,
+                centerData.hierarchy, groupMembers, centerData.officeOptions, centerData.villageOptions, centerData.villageCounter, centerData.staffOptions,
                 centerData.groupMembersOptions, collectionMeetingCalendar, centerData.closureReasons, centerData.timeline,
                 centerData.totalCollected, centerData.totalOverdue, centerData.totaldue, centerData.installmentDue);
     }

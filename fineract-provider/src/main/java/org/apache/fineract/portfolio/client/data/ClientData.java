@@ -35,6 +35,7 @@ import org.apache.fineract.portfolio.accountdetails.data.SavingsAccountSummaryDa
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
+import org.apache.fineract.portfolio.village.data.VillageData;
 import org.joda.time.LocalDate;
 
 /**
@@ -81,7 +82,6 @@ final public class ClientData implements Comparable<ClientData> {
 
     private final Long savingsAccountId;
     private final EnumOptionData legalForm;
-
     // associations
     private final Collection<GroupGeneralData> groups;
 
@@ -104,7 +104,6 @@ final public class ClientData implements Comparable<ClientData> {
     private Collection<LoanAccountSummaryData> loanAccountSummaryDatas;
     private Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas;
     private final Collection<CodeValueData> closureReasons;
-
 
     public static ClientData template(final Long officeId, final LocalDate joinedDate, final Collection<OfficeData> officeOptions,
             final Collection<StaffData> staffOptions, final Collection<CodeValueData> narrations,
@@ -190,6 +189,20 @@ final public class ClientData implements Comparable<ClientData> {
 
     public static ClientData setParentGroups(final ClientData clientData, final Collection<GroupGeneralData> parentGroups) {
         return new ClientData(clientData.accountNo, clientData.status, clientData.subStatus, clientData.officeId, clientData.officeName,
+                clientData.transferToOfficeId, clientData.transferToOfficeName, clientData.id, clientData.firstname, clientData.middlename,
+                clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo, clientData.alternateMobileNo,
+                clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId, clientData.staffId,
+                clientData.staffName, clientData.officeOptions, parentGroups, clientData.staffOptions, null, null, clientData.timeline,
+                clientData.savingProductOptions, clientData.savingsProductId, clientData.savingsProductName, clientData.savingsAccountId,
+                clientData.savingAccountOptions, clientData.clientType, clientData.clientClassification, clientData.clientTypeOptions,
+                clientData.clientClassificationOptions, clientData.clientNonPersonConstitutionOptions,
+                clientData.clientNonPersonMainBusinessLineOptions, clientData.clientNonPersonDetails, clientData.clientLegalFormOptions,
+                clientData.legalForm, clientData.loanAccountSummaryDatas, clientData.savingsAccountSummaryDatas, clientData.closureReasons, clientData.closureReason);
+
+    }
+    
+    public static ClientData lookupforhierarchy(final ClientData clientData, final Collection<GroupGeneralData> parentGroups, final Long officeId, final String officeName) {
+        return new ClientData(clientData.accountNo, clientData.status, clientData.subStatus, officeId, officeName,
                 clientData.transferToOfficeId, clientData.transferToOfficeName, clientData.id, clientData.firstname, clientData.middlename,
                 clientData.lastname, clientData.fullname, clientData.displayName, clientData.externalId, clientData.mobileNo, clientData.alternateMobileNo,
                 clientData.dateOfBirth, clientData.gender, clientData.activationDate, clientData.imageId, clientData.staffId,
@@ -534,7 +547,7 @@ final public class ClientData implements Comparable<ClientData> {
         }
         this.staffId = staffId;
         this.staffName = staffName;
-
+        
         // associations
         this.groups = groups;
 
@@ -562,7 +575,6 @@ final public class ClientData implements Comparable<ClientData> {
         this.loanAccountSummaryDatas = loanAccountSummaryDatas;
         this.savingsAccountSummaryDatas = savingsAccountSummaryDatas;
         this.closureReasons = closureReasons;
-
     }
 
     public Long id() {
@@ -661,5 +673,5 @@ final public class ClientData implements Comparable<ClientData> {
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
-    
+   
 }

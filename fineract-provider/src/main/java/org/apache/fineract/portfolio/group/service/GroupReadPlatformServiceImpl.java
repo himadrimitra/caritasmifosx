@@ -49,6 +49,7 @@ import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.domain.GroupTypes;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
+import org.apache.fineract.portfolio.village.data.VillageData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -268,6 +269,17 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
     }
 
     @Override
+    public GroupGeneralData retrieveCenterDetailsWithGroup(final GroupGeneralData groupGeneralData) {
+        try {
+            final HierarchyLookupMapper hm = new HierarchyLookupMapper(groupGeneralData);
+            final String sql = "SELECT " + hm.schema() + " where g.id = ? ";
+            return this.jdbcTemplate.queryForObject(sql, hm, new Object[] { groupGeneralData.getId() });
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+	
+    @Override
     public Collection<GroupGeneralData> retrieveGroupsForLookup(final Long officeId) {
         this.context.authenticatedUser();
         final GroupLookupDataMapper rm = new GroupLookupDataMapper();
@@ -286,10 +298,46 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             final Long id = JdbcSupport.getLong(rs, "id");
             final String accountNo = rs.getString("accountNo");
             final String displayName = rs.getString("displayName");
+            
             return GroupGeneralData.lookup(id, accountNo, displayName);
         }
     }
 
+    private static final class HierarchyLookupMapper implements RowMapper<GroupGeneralData> {
+        
+        private final GroupGeneralData groupGeneralData;
+        public HierarchyLookupMapper(final GroupGeneralData groupGeneralData) {
+            this.groupGeneralData = groupGeneralData;
+        }
+
+        public final String schema() {
+            return "o.id as officeId,o.name as officeName,g.parent_id AS centerId,pg.display_name as centerName, v.id as villageId,v.village_name as villageName "
+					+ "FROM m_group g "
+					+ "join m_group pg on g.parent_id = pg.id "
+					+ "left join chai_village_center vc on (vc.center_id = g.id or vc.center_id = g.parent_id)"
+					+ "LEFT JOIN chai_villages v ON vc.village_id = v.id "
+					+ "left join m_office o on pg.office_id = o.id ";
+        }
+
+        @Override
+        public GroupGeneralData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+//            Long officeId = null;
+//            String officeName =  null;
+            final Long centerId = JdbcSupport.getLong(rs,"centerId");
+            final String centerName = rs.getString("centerName"); 
+            final Long villageId = JdbcSupport.getLong(rs,"villageId");
+            final String villageName = rs.getString("villageName"); 
+            
+            VillageData villageData = VillageData.lookup(villageId, villageName);
+            final Long officeId = JdbcSupport.getLong(rs, "officeId");
+            final String officeName = rs.getString("officeName");
+
+//            officeId = JdbcSupport.getLong(rs, "officeId");
+//            officeName = rs.getString("officeName");
+            return GroupGeneralData.lookupforhierarchy(centerId, centerName, villageData, this.groupGeneralData,officeId,officeName);
+        }
+    }
+    
     @Override
     public GroupGeneralData retrieveGroupWithClosureReasons() {
         final List<CodeValueData> closureReasons = new ArrayList<>(
