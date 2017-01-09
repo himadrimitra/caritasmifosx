@@ -68,6 +68,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepository;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
 import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -90,6 +93,8 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final BusinessEventNotifierService businessEventNotifierService;
     private final LoanReadPlatformService loanReadPlatformService;
+    private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
+    private final LoanApplicationReferenceRepositoryWrapper loanApplicationRepository;
 
     @Autowired
     public TransferWritePlatformServiceJpaRepositoryImpl(final ClientRepositoryWrapper clientRepository,
@@ -100,7 +105,9 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
             final SavingsAccountRepository savingsAccountRepository,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final LoanRepositoryWrapper loanRepositoryWrapper, final BusinessEventNotifierService businessEventNotifierService,
-            final LoanReadPlatformService loanReadPlatformService) {
+            final LoanReadPlatformService loanReadPlatformService, 
+            final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
+            LoanApplicationReferenceRepositoryWrapper loanApplicationRepository) {
         this.clientRepository = clientRepository;
         this.officeRepository = officeRepository;
         this.calendarInstanceRepository = calendarInstanceRepository;
@@ -115,6 +122,8 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         this.loanRepositoryWrapper = loanRepositoryWrapper;
         this.businessEventNotifierService = businessEventNotifierService;
         this.loanReadPlatformService = loanReadPlatformService;
+        this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
+        this.loanApplicationRepository = loanApplicationRepository;
     }
 
     @Override
@@ -214,7 +223,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
                     TRANSFER_NOT_SUPPORTED_REASON.DESTINATION_GROUP_HAS_NO_MEETING, destinationGroup.getId());
 
             }
-			if (isAnyActiveJLGLoanForClient && !sourceGroupCalendarInstance.equals(destinationGroupCalendarInstance)) {
+			if (!sourceGroupCalendarInstance.equals(destinationGroupCalendarInstance)) {
 				final Calendar sourceGroupCalendar = sourceGroupCalendarInstance.getCalendar();
 				final Calendar destinationGroupCalendar = destinationGroupCalendarInstance.getCalendar();
 
@@ -222,7 +231,7 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
 				 * Ensure that the recurrence pattern are same for collection
 				 * meeting in both the source and the destination calendar
 				 ***/
-				if (!(CalendarUtils.isFrequencySame(sourceGroupCalendar.getRecurrence(),
+				if (isAnyActiveJLGLoanForClient && !(CalendarUtils.isFrequencySame(sourceGroupCalendar.getRecurrence(),
 						destinationGroupCalendar.getRecurrence())
 						&& CalendarUtils.isIntervalSame(sourceGroupCalendar.getRecurrence(),
 								destinationGroupCalendar.getRecurrence()))) {
@@ -277,6 +286,26 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
                 this.loanRepository.saveAndFlush(loan);
             }
         }
+        
+        /**
+         * Submitted and Approved JLG LoanApplicationReference are now linked to the new Group and Loan officer
+         **/
+		List<LoanApplicationReference> allClientNewJLGLoans = loanApplicationReferenceRepository
+				.findAllByClientIdAndGroupId(client.getId(), sourceGroup.getId());
+		if (!allClientNewJLGLoans.isEmpty() && allClientNewJLGLoans != null) {
+			for (final LoanApplicationReference loan : allClientNewJLGLoans) {
+				if (loan.status().isActiveOrAwaitingApprovalOrDisbursal()) {
+					loan.updateGroup(destinationGroup);
+					if (inheritDestinationGroupLoanOfficer != null && inheritDestinationGroupLoanOfficer == true
+							&& destinationGroupLoanOfficer != null) {
+						loan.reassignLoanOfficer(destinationGroupLoanOfficer);
+					} else if (newLoanOfficer != null) {
+						loan.reassignLoanOfficer(newLoanOfficer);
+					}
+				}
+				this.loanApplicationRepository.saveAndFlush(loan);
+			}
+		}
 
         /**
          * change client group membership (only if source group and destination

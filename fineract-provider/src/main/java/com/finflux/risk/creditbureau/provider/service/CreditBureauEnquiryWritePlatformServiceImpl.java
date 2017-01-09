@@ -184,10 +184,14 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             if (creditBureauExistingLoan.getRepaymentFrequency() != null) {
                 loanTenurePeriodType = CalendarFrequencyType.from(creditBureauExistingLoan.getRepaymentFrequency()).getValue();
             }
-            final Integer repaymentFrequencyMultipleOf = null;
+            Integer repaymentFrequencyMultipleOf = null;
             Integer repaymentFrequency = null;
             if (creditBureauExistingLoan.getRepaymentFrequency() != null) {
                 repaymentFrequency = CalendarFrequencyType.from(creditBureauExistingLoan.getRepaymentFrequency()).getValue();
+            }
+            
+            if(creditBureauExistingLoan.getRepaymentMultiple() != null){
+            	repaymentFrequencyMultipleOf = creditBureauExistingLoan.getRepaymentMultiple();
             }
            
             final LocalDate maturityDate = null;

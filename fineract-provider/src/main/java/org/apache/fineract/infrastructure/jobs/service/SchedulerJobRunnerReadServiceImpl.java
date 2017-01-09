@@ -21,7 +21,9 @@ package org.apache.fineract.infrastructure.jobs.service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
@@ -31,7 +33,6 @@ import org.apache.fineract.infrastructure.jobs.data.JobDetailData;
 import org.apache.fineract.infrastructure.jobs.data.JobDetailHistoryData;
 import org.apache.fineract.infrastructure.jobs.exception.JobNotFoundException;
 import org.apache.fineract.infrastructure.jobs.exception.OperationNotAllowedException;
-import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,6 +45,8 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     private final JdbcTemplate jdbcTemplate;
 
     private final PaginationHelper<JobDetailHistoryData> paginationHelper = new PaginationHelper<>();
+    
+    private final String jobParamSql = "select jp.param_key as paramKey,jp.param_value as paramValue from  job_parameters jp where jp.job_id = ?";
 
     @Autowired
     public SchedulerJobRunnerReadServiceImpl(final RoutingDataSource dataSource) {
@@ -205,6 +208,18 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     @Override
     public boolean isActive(String jobName) {
         return this.jdbcTemplate.queryForObject("select j.is_active from job j where j.name='" + jobName + "'", Boolean.class);
+    }
+
+    @Override
+    public Map<String, String> getJobParams(Long jobId) {
+        Map<String, String> paramMap = new HashMap<>();
+        List<Map<String, Object>> params = this.jdbcTemplate.queryForList(jobParamSql, jobId);
+        for (Map<String, Object> paramData : params) {
+            String key = (String) paramData.get("paramKey");
+            String paramValue = (String) paramData.get("paramValue");
+            paramMap.put(key, paramValue);
+        }
+        return paramMap;
     }
 
 }

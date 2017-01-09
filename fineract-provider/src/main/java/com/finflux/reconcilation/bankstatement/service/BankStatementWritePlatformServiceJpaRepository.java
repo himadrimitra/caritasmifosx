@@ -8,6 +8,9 @@ package com.finflux.reconcilation.bankstatement.service;
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -843,18 +846,22 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         
         Map<String, String> requestBodyMap = gson.fromJson(apiRequestBodyAsJson, type);
         String locale = requestBodyMap.get("locale");
+        String dateFormat = requestBodyMap.get("dateFormat");
         String currencyCode = currencyReadPlatformService.getDefaultCurrencyCode();
         List<BankStatementDetails> updatedList = new ArrayList<>();
+        DateFormat formatFromExcel = new SimpleDateFormat("yyyy-MM-dd", new Locale(locale));;
+        DateFormat targetFormat = new SimpleDateFormat(dateFormat);
         for (BankStatementDetailsData bankStatementDetail : bankStatementDetailsData) {
-        	if(!bankStatementDetail.getIsReconciled()){
+            GLAccountDataForLookup GLAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(bankStatementDetail.getGlCode());
+                if(isValidData(bankStatementDetail) && GLAccount != null){
         		HashMap<String, Object> responseMap = new HashMap<>();
                 HashMap<String, Object> requestMap = new HashMap<>();
                 requestMap.put(ReconciliationApiConstants.localeParamName, locale);
-                requestMap.put(ReconciliationApiConstants.dateFormatParamName, "MMM DD, YYYY");
+                requestMap.put(ReconciliationApiConstants.dateFormatParamName, dateFormat);
                 requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBranch());
-                requestMap.put(ReconciliationApiConstants.transactionDateParamName, bankStatementDetail.getTransactionDate());
+                requestMap.put(ReconciliationApiConstants.transactionDateParamName, getFormattedDate(bankStatementDetail.getTransactionDate(),formatFromExcel, targetFormat));
                 requestMap.put(ReconciliationApiConstants.currencyCodeParamName, currencyCode);
-                requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId));
+                requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId, GLAccount));
                 String requestBody = null;
                 if(requestMap.containsKey(ReconciliationApiConstants.officeIdParamName)){
                     requestBody = gson.toJson(requestMap);   
@@ -875,15 +882,21 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         responseData.put(ReconciliationApiConstants.RESOURCE, resultList);
         return gson.toJson(responseData);
     }
+    
+    private boolean isValidData(BankStatementDetailsData bankStatementDetail){
+        return (!bankStatementDetail.getIsReconciled() && bankStatementDetail.getAmount()!= null && bankStatementDetail.getGlCode() != null && bankStatementDetail.getBranch() != null 
+                && bankStatementDetail.getTransactionDate() != null && bankStatementDetail.getAccountingType() != null && (bankStatementDetail.getAccountingType().equalsIgnoreCase("CREDIT")
+                || bankStatementDetail.getAccountingType().equalsIgnoreCase("DEBIT")));
+    }
 
-    private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetailsData bankStatementDetail, Long defaultBankGLAccountId) {
+
+    private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetailsData bankStatementDetail, Long defaultBankGLAccountId, GLAccountDataForLookup GLAccount) {
 
         HashMap<String, Object> creaditMap = new HashMap<>();
         HashMap<String, Object> debitMap = new HashMap<>();
         creaditMap.put(ReconciliationApiConstants.amountParamName, bankStatementDetail.getAmount());
         debitMap.put(ReconciliationApiConstants.amountParamName, bankStatementDetail.getAmount());
         String code = bankStatementDetail.getGlCode();
-        GLAccountDataForLookup GLAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(code);
         if (GLAccount == null) { throw new GLAccountNotFoundException(code); }
         if (bankStatementDetail.getAccountingType().equalsIgnoreCase(ReconciliationApiConstants.DEBIT)) {
             creaditMap.put(ReconciliationApiConstants.GL_ACCOUNT_ID, defaultBankGLAccountId);
@@ -998,5 +1011,14 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         .withEntityId(command.entityId()) //
         .build();
     }
-
+    
+    public static String getFormattedDate(Date transactionDate, DateFormat formatFromExcel, DateFormat targetFormat){
+        Date date;
+        try {
+            date = formatFromExcel.parse(transactionDate.toString());
+        } catch (ParseException e) {
+            return transactionDate.toString();
+        }
+        return targetFormat.format(date);
+    }
 }

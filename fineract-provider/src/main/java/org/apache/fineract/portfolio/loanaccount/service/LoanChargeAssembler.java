@@ -41,6 +41,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonit
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanChargeRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanTrancheCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTrancheDisbursementCharge;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
@@ -315,20 +316,23 @@ public class LoanChargeAssembler {
         return totalFee;
     }
 
-    public Set<Charge> getNewLoanTrancheCharges(final JsonElement element) {
-        final Set<Charge> associatedChargesForLoan = new HashSet<>();
+    public Set<LoanTrancheCharge> getNewLoanTrancheCharges(final JsonElement element) {
+        final Set<LoanTrancheCharge> associatedChargesForLoan = new HashSet<>();
         if (element.isJsonObject()) {
             final JsonObject topLevelJsonElement = element.getAsJsonObject();
+            final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
             if (topLevelJsonElement.has("charges") && topLevelJsonElement.get("charges").isJsonArray()) {
                 final JsonArray array = topLevelJsonElement.get("charges").getAsJsonArray();
                 for (int i = 0; i < array.size(); i++) {
                     final JsonObject loanChargeElement = array.get(i).getAsJsonObject();
                     final Long id = this.fromApiJsonHelper.extractLongNamed("id", loanChargeElement);
                     final Long chargeId = this.fromApiJsonHelper.extractLongNamed("chargeId", loanChargeElement);
+                    final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed("amount", loanChargeElement, locale);
                     if (id == null) {
                         final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
-                        if (chargeDefinition.getChargeTimeType() == ChargeTimeType.TRANCHE_DISBURSEMENT.getValue()) {
-                            associatedChargesForLoan.add(chargeDefinition);
+                        if (chargeDefinition.getChargeTimeType().equals(ChargeTimeType.TRANCHE_DISBURSEMENT.getValue())) {
+                            LoanTrancheCharge trancheCharge =  LoanTrancheCharge.createLoanTrancheCharge(chargeDefinition, amount);
+                            associatedChargesForLoan.add(trancheCharge);
                         }
                     }
                 }

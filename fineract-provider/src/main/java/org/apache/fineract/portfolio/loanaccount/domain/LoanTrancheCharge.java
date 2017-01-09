@@ -18,6 +18,9 @@
  */
 package org.apache.fineract.portfolio.loanaccount.domain;
 
+import java.math.BigDecimal;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -33,31 +36,35 @@ public class LoanTrancheCharge extends AbstractPersistable<Long> {
     @ManyToOne(optional = false)
     @JoinColumn(name = "loan_id", referencedColumnName = "id", nullable = false)
     private Loan loan;
-    
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "charge_id", referencedColumnName = "id", nullable = false)
     private Charge charge;
-    
+
+    @Column(name = "amount", scale = 6, precision = 19, nullable = false)
+    private BigDecimal amount;
+
     LoanTrancheCharge() {
 
     }
-    
-    LoanTrancheCharge(Charge chargeDefinition) {
-        this.charge = chargeDefinition ;
-    }
-    public LoanTrancheCharge(Charge charge, Loan loan) {
+
+    public LoanTrancheCharge(Charge charge, Loan loan, BigDecimal amount) {
         this.charge = charge;
-        this.loan = loan ;
+        this.loan = loan;
+        this.amount = amount;
     }
-    
-    public static LoanTrancheCharge createLoanTrancheCharge(Charge chargeDefinition) {
-        return new LoanTrancheCharge(chargeDefinition) ;
+
+    public static LoanTrancheCharge createLoanTrancheCharge(Charge chargeDefinition, BigDecimal amount) {
+        Loan loan = null;
+        return new LoanTrancheCharge(chargeDefinition, loan, amount);
     }
-    public static LoanTrancheCharge createLoanTrancheChargeWithLoan(Charge chargeDefinition, Loan loan) {
-        return new LoanTrancheCharge(chargeDefinition, loan) ;
-    }
-    
+
     public Charge getCharge() {
-        return charge ;
+        return charge;
+    }
+
+    
+    public BigDecimal getAmount() {
+        return this.amount;
     }
 }

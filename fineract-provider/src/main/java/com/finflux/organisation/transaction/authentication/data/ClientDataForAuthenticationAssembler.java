@@ -55,7 +55,7 @@ public class ClientDataForAuthenticationAssembler {
 
 	public ClientDataForAuthentication validateAndAssembleClientDataForAuthentication(JsonCommand command,
 			final Integer productType, final Integer transactionType, final SecondaryAuthenticationService secondaryAuthenticationService,
-			final Long productId) {
+			final Long productId, final Loan loan ) {
 
 		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 		final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
@@ -134,7 +134,7 @@ public class ClientDataForAuthenticationAssembler {
 
 		String aadhaarNumber = null;
 		if(secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar OTP") || secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar fingerprint")){
-		 aadhaarNumber = getAadhaarNumberOfClient(command.getLoanId());
+		 aadhaarNumber = getAadhaarNumberOfClient(loan.getId());
 	}
 
 		if (locationType.equals(TransactionAuthenticationApiConstants.PINCODE)) {

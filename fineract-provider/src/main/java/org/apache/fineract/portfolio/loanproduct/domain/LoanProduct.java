@@ -142,6 +142,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
 
     @Column(name = "min_periods_between_disbursal_and_first_repayment", nullable = true)
     private Integer minimumPeriodsBetweenDisbursalAndFirstRepayment;
+    
+    @Column(name = "min_duration_applicable_for_all_disbursements")
+    private boolean isMinDurationApplicableForAllDisbursements;
 
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "loanProduct", optional = true, orphanRemoval = true)
@@ -285,6 +288,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 .integerValueOfParameterNamed(LoanProductConstants.minimumDaysBetweenDisbursalAndFirstRepayment);
         final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment = command
                 .integerValueOfParameterNamed(LoanProductConstants.minimumPeriodsBetweenDisbursalAndFirstRepayment);
+        final boolean minDurationApplicableForAllDisbursements = command
+                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName);
 
         final AccountingRuleType accountingRuleType = AccountingRuleType.fromInt(command.integerValueOfParameterNamed("accountingRule"));
         final boolean includeInBorrowerCycle = command.booleanPrimitiveValueOfParameterNamed("includeInBorrowerCycle");
@@ -400,7 +405,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
                 loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements);
 
     }
 
@@ -636,7 +641,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
             final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
-            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod) {
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -706,6 +711,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.productInterestRecalculationDetails = productInterestRecalculationDetails;
         this.minimumDaysBetweenDisbursalAndFirstRepayment = minimumDaysBetweenDisbursalAndFirstRepayment;
         this.minimumPeriodsBetweenDisbursalAndFirstRepayment = minimumPeriodsBetweenDisbursalAndFirstRepayment;
+        this.isMinDurationApplicableForAllDisbursements = minDurationApplicableForAllDisbursements;
         this.holdGuaranteeFunds = holdGuarantorFunds;
         this.loanProductGuaranteeDetails = loanProductGuaranteeDetails;
         this.principalThresholdForLastInstallment = principalThresholdForLastInstallment;
@@ -965,6 +971,12 @@ public class LoanProduct extends AbstractPersistable<Long> {
             actualChanges.put("locale", localeAsInput);
             this.minimumPeriodsBetweenDisbursalAndFirstRepayment = newValue;
         }
+        
+        if(command.isChangeInBooleanParameterNamed(LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName, this.syncExpectedWithDisbursementDate)){
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName);
+            actualChanges.put(LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName, newValue);
+            this.isMinDurationApplicableForAllDisbursements = newValue;
+    }
 
         /**
          * Update interest recalculation settings
@@ -1530,6 +1542,11 @@ public class LoanProduct extends AbstractPersistable<Long> {
     
     public String getProductName() {
         return this.name;
+    }
+
+    
+    public boolean isMinDurationApplicableForAllDisbursements() {
+        return this.isMinDurationApplicableForAllDisbursements;
     }
 
 }

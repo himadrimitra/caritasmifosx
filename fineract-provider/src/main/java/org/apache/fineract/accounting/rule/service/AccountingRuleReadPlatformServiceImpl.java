@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,16 +111,20 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
                     final String creditAccountGLCode = rs.getString("creditAccountGLCode");
                     final boolean isInheritedToChildOffices = rs.getBoolean("isInheritedToChildOffices");
 
-                    final List<AccountingTagRuleData> creditTags;
-                    final List<AccountingTagRuleData> debitTags;
+                    List<AccountingTagRuleData> creditTags = null;
+                    List<AccountingTagRuleData> debitTags = null;
                     final List<GLAccountDataForLookup> creditAccounts;
                     final List<GLAccountDataForLookup> debitAccounts;
 
                     if (accountToCreditId == null) {
-                        creditTags = !this.isAssociationParametersExists ? getCreditOrDebitTags(id, JournalEntryType.CREDIT.getValue())
-                                : null;
-                        creditAccounts = this.isAssociationParametersExists ? this.glAccountReadPlatformService.retrieveAccountsByTagId(id,
-                                JournalEntryType.CREDIT.getValue()) : null;
+                        if(this.isAssociationParametersExists){
+                            creditAccounts = this.glAccountReadPlatformService.retrieveAccountsByTagId(id,
+                                    JournalEntryType.CREDIT.getValue());
+                        }else{
+                            creditTags = getCreditOrDebitTags(id, JournalEntryType.CREDIT.getValue());
+                            creditAccounts = getGLAccountForTags(creditTags);
+                            
+                        }
                     } else {
                         creditTags = null;
                         final GLAccountDataForLookup creditAccount = new GLAccountDataForLookup(accountToCreditId, creditAccountName,
@@ -127,24 +132,37 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
                         creditAccounts = new ArrayList<>(Arrays.asList(creditAccount));
                     }
                     if (accountToDebitId == null) {
-                        debitTags = !this.isAssociationParametersExists ? getCreditOrDebitTags(id, JournalEntryType.DEBIT.getValue())
-                                : null;
-                        debitAccounts = this.isAssociationParametersExists ? this.glAccountReadPlatformService.retrieveAccountsByTagId(id,
-                                JournalEntryType.DEBIT.getValue()) : null;
+                        if(this.isAssociationParametersExists){
+                            debitAccounts = this.glAccountReadPlatformService.retrieveAccountsByTagId(id,
+                                    JournalEntryType.DEBIT.getValue()); 
+                        } else {
+                            debitTags = getCreditOrDebitTags(id, JournalEntryType.DEBIT.getValue());
+                            debitAccounts = getGLAccountForTags(debitTags);
+                        }
                     } else {
                         debitTags = null;
                         final GLAccountDataForLookup debitAccount = new GLAccountDataForLookup(accountToDebitId, debitAccountName,
                                 debitAccountGLCode);
                         debitAccounts = new ArrayList<>(Arrays.asList(debitAccount));
                     }
-					accountingRuleData = new AccountingRuleData(id, officeId, officeName, name, description,
-							systemDefined, allowMultipleDebitEntries, allowMultipleCreditEntries, creditTags, debitTags,
-							creditAccounts, debitAccounts, isInheritedToChildOffices);
+                    accountingRuleData = new AccountingRuleData(id, officeId, officeName, name, description, systemDefined,
+                            allowMultipleDebitEntries, allowMultipleCreditEntries, creditTags, debitTags, creditAccounts, debitAccounts,
+                            isInheritedToChildOffices);
                 }
 
                 extractedData.put(id, accountingRuleData);
             }
             return extractedData;
+        }
+
+        private List<GLAccountDataForLookup> getGLAccountForTags(final List<AccountingTagRuleData> tags) {
+            final List<GLAccountDataForLookup> glAccounts;
+            Collection<Long> tagIds = new ArrayList<>();
+            for (final AccountingTagRuleData tag : tags) {
+                tagIds.add(tag.getTag().getId());
+            }
+            glAccounts = this.glAccountReadPlatformService.retrieveAccountsByTags(tagIds);
+            return glAccounts;
         }
 
         private List<AccountingTagRuleData> getCreditOrDebitTags(final Long creditOrDebitAccount, final Integer transactionType) {
@@ -277,33 +295,40 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
 					final String creditAccountGLCode = rs.getString("creditAccountGLCode");
 					final boolean isInheritedToChildOffices = rs.getBoolean("isInheritedToChildOffices");
 
-					final List<AccountingTagRuleData> creditTags;
-					final List<AccountingTagRuleData> debitTags;
+					List<AccountingTagRuleData> creditTags = null;
+					List<AccountingTagRuleData> debitTags = null;
 					final List<GLAccountDataForLookup> creditAccounts;
 					final List<GLAccountDataForLookup> debitAccounts;
 
-					if (accountToCreditId == null) {
-						creditTags = !this.isAssociationParametersExists
-								? getCreditOrDebitTags(id, JournalEntryType.CREDIT.getValue()) : null;
-						creditAccounts = this.isAssociationParametersExists ? this.glAccountReadPlatformService
-								.retrieveAccountsByTagId(id, JournalEntryType.CREDIT.getValue()) : null;
-					} else {
-						creditTags = null;
-						final GLAccountDataForLookup creditAccount = new GLAccountDataForLookup(accountToCreditId,
-								creditAccountName, creditAccountGLCode);
-						creditAccounts = new ArrayList<>(Arrays.asList(creditAccount));
-					}
-					if (accountToDebitId == null) {
-						debitTags = !this.isAssociationParametersExists
-								? getCreditOrDebitTags(id, JournalEntryType.DEBIT.getValue()) : null;
-						debitAccounts = this.isAssociationParametersExists ? this.glAccountReadPlatformService
-								.retrieveAccountsByTagId(id, JournalEntryType.DEBIT.getValue()) : null;
-					} else {
-						debitTags = null;
-						final GLAccountDataForLookup debitAccount = new GLAccountDataForLookup(accountToDebitId,
-								debitAccountName, debitAccountGLCode);
-						debitAccounts = new ArrayList<>(Arrays.asList(debitAccount));
-					}
+					 if (accountToCreditId == null) {
+			                        if(this.isAssociationParametersExists){
+			                            creditAccounts = this.glAccountReadPlatformService.retrieveAccountsByTagId(id,
+			                                    JournalEntryType.CREDIT.getValue());
+			                        }else{
+			                            creditTags = getCreditOrDebitTags(id, JournalEntryType.CREDIT.getValue());
+			                            creditAccounts = getGLAccountForTags(creditTags);
+			                            
+			                        }
+			                    } else {
+			                        creditTags = null;
+			                        final GLAccountDataForLookup creditAccount = new GLAccountDataForLookup(accountToCreditId, creditAccountName,
+			                                creditAccountGLCode);
+			                        creditAccounts = new ArrayList<>(Arrays.asList(creditAccount));
+			                    }
+			                    if (accountToDebitId == null) {
+			                        if(this.isAssociationParametersExists){
+			                            debitAccounts = this.glAccountReadPlatformService.retrieveAccountsByTagId(id,
+			                                    JournalEntryType.DEBIT.getValue()); 
+			                        } else {
+			                            debitTags = getCreditOrDebitTags(id, JournalEntryType.DEBIT.getValue());
+			                            debitAccounts = getGLAccountForTags(debitTags);
+			                        }
+			                    } else {
+			                        debitTags = null;
+			                        final GLAccountDataForLookup debitAccount = new GLAccountDataForLookup(accountToDebitId, debitAccountName,
+			                                debitAccountGLCode);
+			                        debitAccounts = new ArrayList<>(Arrays.asList(debitAccount));
+			                    }
 					accountingRuleData = new AccountingRuleData(id, officeId, officeName, name, description,
 							systemDefined, allowMultipleDebitEntries, allowMultipleCreditEntries, creditTags, debitTags,
 							creditAccounts, debitAccounts, isInheritedToChildOffices);
@@ -314,7 +339,17 @@ public class AccountingRuleReadPlatformServiceImpl implements AccountingRuleRead
 			return extractedData;
 		}
 
-		private List<AccountingTagRuleData> getCreditOrDebitTags(final Long creditOrDebitAccount,
+        private List<GLAccountDataForLookup> getGLAccountForTags(final List<AccountingTagRuleData> tags) {
+            final List<GLAccountDataForLookup> glAccounts;
+            Collection<Long> tagIds = new ArrayList<>();
+            for (final AccountingTagRuleData tag : tags) {
+                tagIds.add(tag.getTag().getId());
+            }
+            glAccounts = this.glAccountReadPlatformService.retrieveAccountsByTags(tagIds);
+            return glAccounts;
+        }
+
+        private List<AccountingTagRuleData> getCreditOrDebitTags(final Long creditOrDebitAccount,
 				final Integer transactionType) {
 			final AccountingTagRuleDataMapper mapper = new AccountingTagRuleDataMapper();
 			final String taggedAccountsSchema = "Select " + mapper.taggedAccountSchema()

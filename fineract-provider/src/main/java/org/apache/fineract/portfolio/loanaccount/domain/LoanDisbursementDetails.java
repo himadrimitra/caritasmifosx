@@ -96,6 +96,14 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
     public Date actualDisbursementDate() {
         return this.actualDisbursementDate;
     }
+    
+    public LocalDate actualDisbursementDateAsLocalDate() {
+        LocalDate actualDisbursementDate = null;
+        if (this.actualDisbursementDate != null) {
+            actualDisbursementDate = new LocalDate(this.actualDisbursementDate);
+        }
+        return actualDisbursementDate;
+    }
 
     public BigDecimal principal() {
         return this.principal;
@@ -109,6 +117,14 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
         Date disbursementDate = this.expectedDisbursementDate;
         if (this.actualDisbursementDate != null) {
             disbursementDate = this.actualDisbursementDate;
+        }
+        return disbursementDate;
+    }
+    
+    public LocalDate getDisbursementDateAsLocalDate() {
+        LocalDate disbursementDate = expectedDisbursementDateAsLocalDate();
+        if (this.actualDisbursementDate != null) {
+            disbursementDate = actualDisbursementDateAsLocalDate();
         }
         return disbursementDate;
     }

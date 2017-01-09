@@ -322,7 +322,12 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                     updateCalendarHistory(calendarHistory, calendarHistoryDataWrapper, endDate);
                 } else {
                     endDate = presentMeetingDate.minusDays(1);
-                    calendarHistory.updateEndDate(endDate.toDate());
+                    if(calendarHistory.getStartDateLocalDate().isAfter(endDate)){
+                        calendarHistory.updateIsActive(false);
+                        calendarHistory.updateEndDate(null);
+                    } else {
+                        calendarHistory.updateEndDate(endDate.toDate());
+                    }
                 }
             }
 
@@ -377,7 +382,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                     history.updateEndDate(null);
                     history.updateIsActive(false);
                 }
-            } else if (calendarHistoryEndDate == null) {
+            } else if (history.isActive() && calendarHistoryEndDate == null) {
                 calendarHistory.updateEndDate(null);
                 calendarHistory.updateIsActive(false);
             }

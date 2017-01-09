@@ -382,7 +382,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         checkClientOrGroupActive(loan);
 
         final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
-        final LocalDate nextPossibleRepaymentDate = loan.getNextPossibleRepaymentDateForRescheduling(isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled);
         final Date rescheduledRepaymentDate = command.DateValueOfParameterNamed("adjustRepaymentDate");
         
         // check for product mix validations
@@ -401,28 +400,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final boolean considerAllDisbursmentsInSchedule =false;
         
 
-        // validate actual disbursement date against meeting date
-        final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(loan.getId(),
-                CalendarEntityType.LOANS.getValue());
 
-        LocalDate expectedFirstRepaymentDate = null;
-        if (rescheduledRepaymentDate != null) {
-            expectedFirstRepaymentDate = new LocalDate(rescheduledRepaymentDate);
-        } else {
-            expectedFirstRepaymentDate = nextPossibleRepaymentDate;
-        }
-        Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
-                actualDisbursementDate, loanProduct, loan.getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail().getRepayEvery(), null, null);
-        
-        Calendar calendar = null;
-        if(calendarInstance != null){
-            calendar = calendarInstance.getCalendar();
-        }
-       this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
-                expectedFirstRepaymentDate, actualDisbursementDate, calendar, minimumDaysBetweenDisbursalAndFirstRepayment,
-                AccountType.fromInt(loan.getLoanType()), loan.isSyncDisbursementWithMeeting());
 
-        Map<BUSINESS_ENTITY, Object> entityMap = constructEntityMap(BUSINESS_ENTITY.LOAN, loan, command);
+
+        Map<BUSINESS_ENTITY, Object> entityMap = constructEntityMap(loan, command);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, entityMap);
 
         final List<Long> existingTransactionIds = new ArrayList<>();
@@ -446,6 +427,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                     considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
             Money amountToDisburse = disburseAmount.copy();
+            LocalDate nextPossibleRepaymentDate = validateAndFetchNextRepaymentDate(loan, actualDisbursementDate, loanProduct,
+                    isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, rescheduledRepaymentDate, scheduleGeneratorDTO);
             boolean recalculateSchedule = amountBeforeAdjust.isNotEqualTo(loan.getPrincpal());
             final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
 
@@ -585,6 +568,36 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .build();
     }
 
+    private LocalDate validateAndFetchNextRepaymentDate(final Loan loan, final LocalDate actualDisbursementDate, LoanProduct loanProduct,
+            final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, final Date rescheduledRepaymentDate,
+            ScheduleGeneratorDTO scheduleGeneratorDTO) {
+        LocalDate nextPossibleRepaymentDate = null;
+        final boolean isActiveLoan = loan.isOpen();
+        if(isActiveLoan){
+            nextPossibleRepaymentDate = loan.getNextPossibleRepaymentDateForRescheduling(isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, actualDisbursementDate);
+        }else{
+            nextPossibleRepaymentDate = scheduleGeneratorDTO.getCalculatedRepaymentsStartingFromDate(); 
+        }
+        if (!isActiveLoan || loanProduct.isMinDurationApplicableForAllDisbursements()) {
+            LocalDate expectedFirstRepaymentDate = null;
+            if (rescheduledRepaymentDate != null) {
+                expectedFirstRepaymentDate = new LocalDate(rescheduledRepaymentDate);
+            } else {
+                expectedFirstRepaymentDate = nextPossibleRepaymentDate;
+            }
+            Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService
+                    .calculateMinimumDaysBetweenDisbursalAndFirstRepayment(actualDisbursementDate, loanProduct, loan
+                            .getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail()
+                            .getRepayEvery(), null, null);
+
+            this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
+                    expectedFirstRepaymentDate, actualDisbursementDate, scheduleGeneratorDTO.getCalendar(),
+                    minimumDaysBetweenDisbursalAndFirstRepayment, AccountType.fromInt(loan.getLoanType()),
+                    loan.isSyncDisbursementWithMeeting());
+        }
+        return nextPossibleRepaymentDate;
+    }
+
 	private void createAndSaveLoanScheduleArchive(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO) {
 		LoanRescheduleRequest loanRescheduleRequest = null;
 		LoanScheduleModel loanScheduleModel = loan.regenerateScheduleModel(scheduleGeneratorDTO);
@@ -709,8 +722,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Map<String, Object> changes = new LinkedHashMap<>();
         if (disbursalCommand == null) { return changes; }
 
-        final LocalDate nextPossibleRepaymentDate = null;
         final Date rescheduledRepaymentDate = null;
+        final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled = this.configurationDomainService.isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled();
 
         for (int i = 0; i < disbursalCommand.length; i++) {
             final SingleDisbursalCommand singleLoanDisbursalCommand = disbursalCommand[i];
@@ -766,6 +779,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 final boolean considerAllDisbursmentsInSchedule =false;
                 final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                         considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+                final LocalDate nextPossibleRepaymentDate = validateAndFetchNextRepaymentDate(loan, actualDisbursementDate, loanProduct,
+                        isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, rescheduledRepaymentDate, scheduleGeneratorDTO);
                 regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate,
                         rescheduledRepaymentDate);
                 if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
@@ -1529,9 +1544,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         Collection<LoanTransaction> chargeTransactions = new ArrayList<>();
         if (chargeDefinition.isPercentageOfDisbursementAmount()) {
             LoanTrancheDisbursementCharge loanTrancheDisbursementCharge = null;
+            final BigDecimal amount = command.bigDecimalValueOfParameterNamed("amount");
             for (LoanDisbursementDetails disbursementDetail : loanDisburseDetails) {
                 if (disbursementDetail.actualDisbursementDate() == null) {
-                    loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, disbursementDetail.principal(), null, null, null,
+                    loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, disbursementDetail.principal(), amount, null, null,
                             disbursementDetail.expectedDisbursementDateAsLocalDate(), null, null);
                     loanTrancheDisbursementCharge = new LoanTrancheDisbursementCharge(loanCharge, disbursementDetail);
                     loanCharge.updateLoanTrancheDisbursementCharge(loanTrancheDisbursementCharge);
@@ -1548,7 +1564,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     }
                 }
             }
-            loan.addTrancheLoanCharge(chargeDefinition);
+            loan.addTrancheLoanCharge(chargeDefinition, amount);
         } else {
             loanCharge = LoanCharge.createNewFromJson(loan, chargeDefinition, command);
             this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADD_CHARGE,
@@ -3225,10 +3241,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         return map;
     }
     
-    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity, JsonCommand command) {
+    private Map<BUSINESS_ENTITY, Object> constructEntityMap(final Object entity,final JsonCommand command) {
         Map<BUSINESS_ENTITY, Object> map = new HashMap<>(2);
-        map.put(entityEvent, entity);
-        map.put(entityEvent, command);
+        map.put(BUSINESS_ENTITY.LOAN, entity);
+        map.put(BUSINESS_ENTITY.JSON_COMMAND, command);
         return map;
     }
 

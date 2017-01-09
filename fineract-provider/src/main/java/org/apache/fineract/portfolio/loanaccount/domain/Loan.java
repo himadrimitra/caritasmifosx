@@ -596,7 +596,7 @@ public class Loan extends AbstractPersistable<Long> {
         for (final LoanCharge loanCharge : loanCharges) {
             loanCharge.update(this);
             if (loanCharge.getTrancheDisbursementCharge() != null) {
-                addTrancheLoanCharge(loanCharge.getCharge());
+                addTrancheLoanCharge(loanCharge.getCharge(), loanCharge.amountOrPercentage());
             }
         }
         return loanCharges;
@@ -2007,7 +2007,8 @@ public class Loan extends AbstractPersistable<Long> {
             this.disbursementDetails.add(disbursementDetails);
             for (LoanTrancheCharge trancheCharge : trancheCharges) {
                 Charge chargeDefinition = trancheCharge.getCharge();
-                final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, null, null, null, new LocalDate(
+                BigDecimal amount = trancheCharge.getAmount();
+                final LoanCharge loanCharge = LoanCharge.createNewWithoutLoan(chargeDefinition, principal, amount, null, null, new LocalDate(
                         expectedDisbursementDate), null, null);
                 loanCharge.update(this);
                 LoanTrancheDisbursementCharge loanTrancheDisbursementCharge = new LoanTrancheDisbursementCharge(loanCharge,
@@ -5135,7 +5136,15 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void validateDisbursementDateIsOnNonWorkingDay(final WorkingDays workingDays, final boolean allowTransactionsOnNonWorkingDay) {
         if (!allowTransactionsOnNonWorkingDay) {
-            if (!WorkingDaysUtil.isWorkingDay(workingDays, getDisbursementDate())) {
+            if (this.isMultiDisburmentLoan()) {
+                for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
+                    if (!WorkingDaysUtil.isWorkingDay(workingDays, disbursementDetail.getDisbursementDateAsLocalDate())) {
+                        final String errorMessage = "Expected disbursement date cannot be on a non working day";
+                        throw new LoanApplicationDateException("disbursement.date.on.non.working.day", errorMessage,
+                                disbursementDetail.getDisbursementDateAsLocalDate());
+                    }
+                }
+            } else if (!WorkingDaysUtil.isWorkingDay(workingDays, getDisbursementDate())) {
                 final String errorMessage = "Expected disbursement date cannot be on a non working day";
                 throw new LoanApplicationDateException("disbursement.date.on.non.working.day", errorMessage,
                         getExpectedDisbursedOnLocalDate());
@@ -5145,7 +5154,15 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void validateDisbursementDateIsOnHoliday(final boolean allowTransactionsOnHoliday, final List<Holiday> holidays) {
         if (!allowTransactionsOnHoliday) {
-            if (HolidayUtil.isHoliday(getDisbursementDate(), holidays)) {
+            if (this.isMultiDisburmentLoan()) {
+                for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
+                    if (HolidayUtil.isHoliday(disbursementDetail.getDisbursementDateAsLocalDate(), holidays)) {
+                        final String errorMessage = "Expected disbursement date cannot be on a holiday";
+                        throw new LoanApplicationDateException("disbursement.date.on.holiday", errorMessage,
+                                disbursementDetail.getDisbursementDateAsLocalDate());
+                    }
+                }
+            } else if (HolidayUtil.isHoliday(getDisbursementDate(), holidays)) {
                 final String errorMessage = "Expected disbursement date cannot be on a holiday";
                 throw new LoanApplicationDateException("disbursement.date.on.holiday", errorMessage, getExpectedDisbursedOnLocalDate());
             }
@@ -6560,13 +6577,13 @@ public class Loan extends AbstractPersistable<Long> {
         return actualDisbursementDate;
     }
 
-    public void addTrancheLoanCharge(Charge charge) {
+    public void addTrancheLoanCharge(Charge charge, BigDecimal amount) {
         List<Charge> appliedCharges = new ArrayList<>(); 
         for(LoanTrancheCharge loanTrancheCharge: trancheCharges){
             appliedCharges.add(loanTrancheCharge.getCharge());
         }
         if (!appliedCharges.contains(charge)) {
-            trancheCharges.add(new LoanTrancheCharge(charge, this));
+            trancheCharges.add(new LoanTrancheCharge(charge, this, amount));
         }
     }
 
@@ -6689,6 +6706,17 @@ public class Loan extends AbstractPersistable<Long> {
     public List<LoanTermVariations> getLoanTermVariations() {
         return this.loanTermVariations;
     }
+    
+	public boolean isAnyActiveLoanVariation() {
+		if (!this.loanTermVariations.isEmpty() && this.loanTermVariations != null) {
+			for (LoanTermVariations loanTermVariation : this.loanTermVariations) {
+				if (loanTermVariation.isActive()) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
     private int adjustNumberOfRepayments() {
         int repaymetsForAdjust = 0;
@@ -6722,12 +6750,13 @@ public class Loan extends AbstractPersistable<Long> {
     /*
      * get the next repayment date for rescheduling at the time of disbursement
      */
-    public LocalDate getNextPossibleRepaymentDateForRescheduling(Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled) {
+    public LocalDate getNextPossibleRepaymentDateForRescheduling(Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, final LocalDate actualDisbursementDate) {
         Set<LoanDisbursementDetails> loanDisbursementDetails = this.disbursementDetails;
         LocalDate nextRepaymentDate = DateUtils.getLocalDateOfTenant();
         if(this.isMultiDisburmentLoan()){
             for (LoanDisbursementDetails loanDisbursementDetail : loanDisbursementDetails) {
-                if (loanDisbursementDetail.actualDisbursementDate() == null) {
+                if (loanDisbursementDetail.actualDisbursementDate() == null
+                        || (actualDisbursementDate != null && loanDisbursementDetail.actualDisbursementDateAsLocalDate().isEqual(actualDisbursementDate))) {
                     for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
                         if (installment.getDueDate().isAfter(loanDisbursementDetail.expectedDisbursementDateAsLocalDate())) {
                             nextRepaymentDate = installment.getDueDate();
@@ -7509,6 +7538,15 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         return lastUserTransaction;
+    }
+
+    
+    public LocalDate getActualDisbursementDate() {
+        LocalDate disbursementDate = null;
+        if (this.actualDisbursementDate != null) {
+            disbursementDate = new LocalDate(this.actualDisbursementDate);
+        }
+        return disbursementDate;
     }
     
 }

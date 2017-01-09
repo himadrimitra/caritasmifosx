@@ -43,6 +43,7 @@ import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -110,7 +111,6 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
-import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
@@ -2171,8 +2171,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
 
     @Override
-    public Collection<Long> fetchLoansForInterestRecalculation() {
+    public List<Long> fetchLoansForInterestRecalculation() {
         StringBuilder sqlBuilder = new StringBuilder();
+        StringBuilder sql = new StringBuilder();
+        List<Long> loanIds = null;
+        sql.append("SELECT loan_id from reprocess_loans ");
+        loanIds = this.jdbcTemplate.queryForList(sql.toString(), Long.class);
         sqlBuilder.append("SELECT ml.id FROM m_loan ml ");
         sqlBuilder.append(" INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id ");
         sqlBuilder.append(" LEFT JOIN m_loan_disbursement_detail dd on dd.loan_id=ml.id and dd.disbursedon_date is null ");
@@ -2201,6 +2205,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         sqlBuilder.append("and lrr.loan_id is null");
         sqlBuilder.append(" ))");
         sqlBuilder.append(" group by ml.id");
+        if (loanIds != null && loanIds.size() > 0) {
+            ThreadLocalContextUtil.setIgnoreOverdue(true);
+            return loanIds;
+    	} else {
         try {
             String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
             // will look only for yesterday modified rates
@@ -2210,6 +2218,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         } catch (final EmptyResultDataAccessException e) {
             return null;
         }
+    	} 
     }
 
     @Override
@@ -2657,4 +2666,5 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             isFirstTime = false;
         }
     }
+
 }

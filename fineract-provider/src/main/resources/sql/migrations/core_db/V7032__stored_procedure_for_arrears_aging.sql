@@ -21,14 +21,14 @@ CREATE TABLE if not exists `arrears_amounts` (
 	PRIMARY KEY (`loan_id`),
 	INDEX `loan_id` (`loan_id`)
 )
-COLLATE='latin1_swedish_ci'
+COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
 CREATE TABLE if not exists `arrears_loans` (
 	`loan_id` BIGINT(20) NOT NULL,
 	PRIMARY KEY (`loan_id`),
 	INDEX `loan_id` (`loan_id`)
 )
-COLLATE='latin1_swedish_ci'
+COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
 
 CREATE TABLE if not exists `arrears_maxid` (
@@ -37,7 +37,7 @@ CREATE TABLE if not exists `arrears_maxid` (
 	PRIMARY KEY (`loan_id`),
 	INDEX `loan_id` (`loan_id`)
 )
-COLLATE='latin1_swedish_ci'
+COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
 
 CREATE TABLE if not exists `arrears_paid` (
@@ -48,7 +48,7 @@ CREATE TABLE if not exists `arrears_paid` (
 	`fee` DECIMAL(19,6) NULL DEFAULT NULL,
 	`penalty` DECIMAL(19,6) NULL DEFAULT NULL
 )
-COLLATE='latin1_swedish_ci'
+COLLATE='utf8_general_ci'
 ENGINE=InnoDB;
 
 select count(*) into maxloans  from 

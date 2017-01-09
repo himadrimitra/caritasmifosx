@@ -229,7 +229,8 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
                             highmarkCredentialsData.getDOCUMENT_TYPE_ID07_PAN())) {
                         documentId.setTYPE(HighmarkConstants.DOCUMENT_TYPE_ID07_PAN);
                     } else {
-                        documentId.setTYPE("");
+                        //documentId.setTYPE("");
+                    	continue;
                     }
                 } else {
                     documentId.setTYPE("");

@@ -16,7 +16,7 @@ import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.B
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.service.BusinessEventListner;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
-import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -88,11 +88,9 @@ public class TransactionAuthenticationService {
 		@SuppressWarnings("unused")
 		@Override
 		public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-			Object loanEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
-			if (loanEntity instanceof JsonCommand) {
-				final JsonCommand jsonString = (JsonCommand) loanEntity;
-				executeTransactionAuthenticationService(jsonString);
-			}
+			JsonCommand jsonCommand = (JsonCommand)businessEventEntity.get(BUSINESS_ENTITY.JSON_COMMAND);
+			Loan loan = (Loan) businessEventEntity.get(BUSINESS_ENTITY.LOAN);
+			executeTransactionAuthenticationService(jsonCommand, loan);
 		}
 
 		@Override
@@ -141,7 +139,7 @@ public class TransactionAuthenticationService {
 
 	}
 
-	public void executeTransactionAuthenticationService(final JsonCommand command) {
+	public void executeTransactionAuthenticationService(final JsonCommand command, final Loan loan) {
 		final Integer count = this.transactionAuthenticationRepository.getPortfolioTypeAndTransactionType(
 				SupportedAuthenticationPortfolioTypes.LOANS.getValue(), SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue());
 		if (count > 0) {
@@ -152,7 +150,8 @@ public class TransactionAuthenticationService {
 					.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID);
 			final BigDecimal amountGreaterThan = command
 					.bigDecimalValueOfParameterNamed(TransactionAuthenticationApiConstants.TRANSACTION_AMOUNT);
-			final Long productId = this.loanReadPlatformService.retrieveLoanProductIdByLoanId(command.getLoanId());
+			Long productId = loan.getLoanProduct().getId();
+			
 			final TransactionAuthenticationData transactionAuthentication = this.transactionAuthenticationReadPlatformService
 					.retriveTransactionAuthenticationDetails(portfolioTypeId, transactionTypeId, paymentTypeId,
 							amountGreaterThan, productId);
@@ -174,7 +173,7 @@ public class TransactionAuthenticationService {
 							.validateAndAssembleClientDataForAuthentication(command,
 									SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
 									SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(),
-									secondaryAuthenticationService, productId);
+									secondaryAuthenticationService, productId, loan);
 
 					final String aadhaarNumber = clientDataForAuthentication.getClientAadhaarNumber();
 					final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory

@@ -25,6 +25,7 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -362,6 +363,10 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     public void updateStatusEnum(final Integer statusEnum) {
         this.statusEnum = statusEnum;
     }
+    
+    public void updateGroup(final Group newGroup) {
+        this.group = newGroup;
+    }
 
     public LoanProduct getLoanProduct() {
         return this.loanProduct;
@@ -388,6 +393,10 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
 
     public Integer getStatusEnum() {
         return this.statusEnum;
+    }
+    
+    public LoanStatus status() {
+        return LoanStatus.fromInt(this.statusEnum);
     }
 
     public Client getClient() {
@@ -424,5 +433,9 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
 
     public String getLoanApplicationReferenceNo() {
         return this.loanApplicationReferenceNo;
+    }    
+    
+    public void reassignLoanOfficer(final Staff newLoanOfficer){
+    	this.loanOfficer = newLoanOfficer;
     }
 }
