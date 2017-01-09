@@ -49,6 +49,8 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavailableException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
@@ -141,6 +143,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository;
     private final AppUserRepositoryWrapper appuserRepository;
     private final StandingInstructionRepository standingInstructionRepository;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -161,7 +164,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final StaffRepositoryWrapper staffRepository, final ConfigurationDomainService configurationDomainService,
             final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
             final AppUserRepositoryWrapper appuserRepository, 
-            final StandingInstructionRepository standingInstructionRepository) {
+            final StandingInstructionRepository standingInstructionRepository,
+            final FineractEntityAccessUtil fineractEntityAccessUtil) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
@@ -186,6 +190,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.depositAccountOnHoldTransactionRepository = depositAccountOnHoldTransactionRepository;
         this.appuserRepository = appuserRepository;
         this.standingInstructionRepository = standingInstructionRepository;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
 
     @Transactional
@@ -844,6 +849,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
                 : DateTimeFormat.forPattern("dd MM yyyy");
 
         final Long chargeDefinitionId = command.longValueOfParameterNamed(chargeIdParamName);
+        this.fineractEntityAccessUtil
+                .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                        FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, chargeDefinitionId);
         final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 
         Integer chargeTimeType = chargeDefinition.getChargeTimeType();

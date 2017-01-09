@@ -19,17 +19,15 @@
 package org.apache.fineract.portfolio.savings.service;
 
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productIdParamName;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -107,6 +105,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     private final SavingsAccountDomainService savingsAccountDomainService;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
     @Autowired
     public SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -120,7 +119,8 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final SavingsAccountDomainService savingsAccountDomainService,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final ClientRepository clientrepo,
-            final StaffRepository staffRepo) {
+            final StaffRepository staffRepo,
+            final FineractEntityAccessUtil fineractEntityAccessUtil) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingAccountAssembler = savingAccountAssembler;
@@ -139,6 +139,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.clientrepo = clientrepo;
         this.staffRepo = staffRepo;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
 
     /*
@@ -176,6 +177,14 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             this.savingsAccountDataValidator.validateForSubmit(command.json());
             final AppUser submittedBy = this.context.authenticatedUser();
 
+            final Long productId = command.longValueOfParameterNamed(productIdParamName);
+            this.fineractEntityAccessUtil.checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                    FineractEntityAccessType.OFFICE_ACCESS_TO_SAVINGS_PRODUCTS, productId);
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
             final SavingsAccount account = this.savingAccountAssembler.assembleFrom(command, submittedBy);
             this.savingAccountRepository.save(account);
 
@@ -210,6 +219,17 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     public CommandProcessingResult modifyApplication(final Long savingsId, final JsonCommand command) {
         try {
             this.savingsAccountDataValidator.validateForUpdate(command.json());
+
+            if(command.hasParameter(productIdParamName)){
+                Long productId = command.longValueOfParameterNamed(productIdParamName);
+                this.fineractEntityAccessUtil
+                        .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                                FineractEntityAccessType.OFFICE_ACCESS_TO_SAVINGS_PRODUCTS, productId);
+            }
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
             final Map<String, Object> changes = new LinkedHashMap<>(20);
 
@@ -572,5 +592,16 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
+    }
+
+    private Collection<Long> extractChargeIds(JsonCommand command) {
+        Collection<Long> chargeIds = new ArrayList<>();
+        JsonArray charges = command.arrayOfParameterNamed("charges");
+        if(null != charges && charges.size() > 0) {
+            for (JsonElement charge : charges) {
+                chargeIds.add(charge.getAsJsonObject().get("chargeId").getAsLong());
+            }
+        }
+        return chargeIds;
     }
 }

@@ -58,23 +58,27 @@ public class FineractEntityToEntityMapping extends AbstractPersistable<Long> {
     @Temporal(TemporalType.DATE)
     private Date endDate;
 
+    @Column(name = "allowed_for_child_offices", nullable = false)
+    private Boolean isAllowedForChildOffices = false;
+
     private FineractEntityToEntityMapping(final FineractEntityRelation relationId, final Long fromId, final Long toId, final Date startDate,
-            final Date endDate) {
+            final Date endDate, final Boolean isAllowedForChildOffices) {
         this.relationId = relationId;
         this.fromId = fromId;
         this.toId = toId;
         this.startDate = startDate;
         this.endDate = endDate;
-
+        this.isAllowedForChildOffices = isAllowedForChildOffices;
     }
 
     public FineractEntityToEntityMapping() {
         //
     }
 
-    public static FineractEntityToEntityMapping newMap(FineractEntityRelation relationId, Long fromId, Long toId, Date startDate, Date endDate) {
+    public static FineractEntityToEntityMapping newMap(FineractEntityRelation relationId, Long fromId, Long toId, Date startDate,
+            Date endDate, Boolean isAllowedForChildOffices) {
 
-        return new FineractEntityToEntityMapping(relationId, fromId, toId, startDate, endDate);
+        return new FineractEntityToEntityMapping(relationId, fromId, toId, startDate, endDate, isAllowedForChildOffices);
 
     }
 
@@ -109,6 +113,11 @@ public class FineractEntityToEntityMapping extends AbstractPersistable<Long> {
         }
         if (startDate != null && endDate != null) {
             if (endDate.before(startDate)) { throw new FineractEntityToEntityMappingDateException(startDate.toString(), endDate.toString()); }
+        }
+        if (command.isChangeInBooleanParameterNamed(FineractEntityApiResourceConstants.isAllowedForChildOffices, this.isAllowedForChildOffices)) {
+            final Boolean isAllowedForChildOffices = command.booleanObjectValueOfParameterNamed(FineractEntityApiResourceConstants.isAllowedForChildOffices);
+            actualChanges.put(FineractEntityApiResourceConstants.isAllowedForChildOffices, isAllowedForChildOffices);
+            this.isAllowedForChildOffices = isAllowedForChildOffices;
         }
 
         return actualChanges;

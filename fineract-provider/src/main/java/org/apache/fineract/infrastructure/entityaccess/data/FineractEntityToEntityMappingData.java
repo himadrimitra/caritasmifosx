@@ -47,8 +47,12 @@ public class FineractEntityToEntityMappingData implements Serializable {
     @SuppressWarnings("unused")
     private final String toEntity;
 
+    @SuppressWarnings("unused")
+    private final Boolean isAllowedForChildOffices;
+
     private FineractEntityToEntityMappingData(final Long mapId, final Long relationId, final Long fromId, final Long toId,
-            final Date startDate, final Date endDate, final String fromEntity, final String toEntity) {
+            final Date startDate, final Date endDate, final String fromEntity, final String toEntity,
+            final Boolean isAllowedForChildOffices) {
         this.mapId = mapId;
         this.relationId = relationId;
         this.fromId = fromId;
@@ -57,23 +61,27 @@ public class FineractEntityToEntityMappingData implements Serializable {
         this.endDate = endDate;
         this.fromEntity = fromEntity;
         this.toEntity = toEntity;
+        this.isAllowedForChildOffices = isAllowedForChildOffices;
     }
 
     public static FineractEntityToEntityMappingData getRelatedEntities(final Long mapId, final Long relationId, final Long fromId,
-            final Long toId, final Date startDate, final Date endDate ,final String fromEntity, final String toEntity) {
+            final Long toId, final Date startDate, final Date endDate ,final String fromEntity, final String toEntity,
+            final Boolean isAllowedForChildOffices) {
 
 
-        return new FineractEntityToEntityMappingData(mapId, relationId, fromId, toId, startDate, endDate, fromEntity, toEntity);
+        return new FineractEntityToEntityMappingData(mapId, relationId, fromId, toId, startDate, endDate,
+                fromEntity, toEntity, isAllowedForChildOffices);
 
     }
 
     public static FineractEntityToEntityMappingData getRelatedEntities(final Long relationId, final Long fromId, final Long toId,
-            final Date startDate, final Date endDate) {
+            final Date startDate, final Date endDate, final Boolean isAllowedForChildOffices) {
         final Long mapId = null;
         final String fromEntity = null;
         final String toEntity = null;
 
-        return new FineractEntityToEntityMappingData(mapId, relationId, fromId, toId, startDate, endDate, fromEntity, toEntity);
+        return new FineractEntityToEntityMappingData(mapId, relationId, fromId, toId, startDate, endDate,
+                fromEntity, toEntity, isAllowedForChildOffices);
 
     }
 

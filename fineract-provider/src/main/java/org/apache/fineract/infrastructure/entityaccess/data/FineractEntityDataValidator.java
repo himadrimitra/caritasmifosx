@@ -106,6 +106,13 @@ public class FineractEntityDataValidator {
             baseDataValidator.reset().parameter(FineractEntityApiResourceConstants.endDate).value(endDate);
         }
 
+        if(this.fromApiJsonHelper.parameterExists(FineractEntityApiResourceConstants.isAllowedForChildOffices, element)){
+            final Boolean isAllowedForChildOffices =
+                    this.fromApiJsonHelper.extractBooleanNamed(FineractEntityApiResourceConstants.isAllowedForChildOffices, element);
+            baseDataValidator.reset().parameter(FineractEntityApiResourceConstants.isAllowedForChildOffices)
+                    .value(isAllowedForChildOffices).validateForBooleanValue();
+        }
+
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
@@ -203,6 +210,14 @@ public class FineractEntityDataValidator {
         }
 
         if (this.fromApiJsonHelper.parameterExists(FineractEntityApiResourceConstants.endDate, element)) {
+            atLeastOneParameterPassedForUpdate = true;
+        }
+
+        if(this.fromApiJsonHelper.parameterExists(FineractEntityApiResourceConstants.isAllowedForChildOffices, element)){
+            final Boolean isAllowedForChildOffices =
+                    this.fromApiJsonHelper.extractBooleanNamed(FineractEntityApiResourceConstants.isAllowedForChildOffices, element);
+            baseDataValidator.reset().parameter(FineractEntityApiResourceConstants.isAllowedForChildOffices)
+                    .value(isAllowedForChildOffices).validateForBooleanValue();
             atLeastOneParameterPassedForUpdate = true;
         }
 

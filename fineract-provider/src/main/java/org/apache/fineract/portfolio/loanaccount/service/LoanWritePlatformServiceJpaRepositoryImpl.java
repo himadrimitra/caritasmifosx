@@ -48,6 +48,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformServiceUnavaila
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
+import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
@@ -265,6 +267,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper;
     private final LoanScheduleValidator loanScheduleValidator;
+    private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -302,7 +305,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,
             final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper,
-            final LoanScheduleValidator loanScheduleValidator) {
+            final LoanScheduleValidator loanScheduleValidator,
+            final FineractEntityAccessUtil fineractEntityAccessUtil) {
 
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
@@ -351,6 +355,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimTransactionAssembler = glimTransactionAssembler;
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper = groupLoanIndividualMonitoringTransactionRepositoryWrapper;
         this.loanScheduleValidator = loanScheduleValidator;
+        this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -1499,6 +1504,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         Set<LoanDisbursementDetails> loanDisburseDetails = loan.getDisbursementDetails();
         final Long chargeDefinitionId = command.longValueOfParameterNamed("chargeId");
+        this.fineractEntityAccessUtil
+                .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                        FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES,chargeDefinitionId);
         final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 
         if (loan.isDisbursed() && chargeDefinition.isDisbursementCharge()) {

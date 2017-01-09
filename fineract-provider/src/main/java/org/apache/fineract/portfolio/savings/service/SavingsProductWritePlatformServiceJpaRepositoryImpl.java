@@ -23,11 +23,10 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accounti
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -121,6 +120,11 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
         try {
             this.fromApiJsonDataValidator.validateForCreate(command.json());
 
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
+
             final SavingsProduct product = this.savingsProductAssembler.assemble(command);
 
             this.savingProductRepository.save(product);
@@ -154,6 +158,10 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
             if (product == null) { throw new SavingsProductNotFoundException(productId); }
 
             this.fromApiJsonDataValidator.validateForUpdate(command.json(), product);
+            Collection<Long> requestedChargeIds = extractChargeIds(command);
+            this.fineractEntityAccessUtil
+                    .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
+                            FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
             final Map<String, Object> changes = product.update(command);
 
@@ -214,4 +222,14 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
                 .build();
     }
 
+    private Collection<Long> extractChargeIds(JsonCommand command) {
+        Collection<Long> chargeIds = new ArrayList<>();
+        JsonArray charges = command.arrayOfParameterNamed("charges");
+        if(null != charges && charges.size() > 0) {
+            for (JsonElement charge : charges) {
+                chargeIds.add(charge.getAsJsonObject().get("id").getAsLong());
+            }
+        }
+        return chargeIds;
+    }
 }

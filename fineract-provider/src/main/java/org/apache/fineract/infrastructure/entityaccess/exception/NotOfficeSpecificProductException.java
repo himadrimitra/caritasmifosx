@@ -20,14 +20,16 @@ package org.apache.fineract.infrastructure.entityaccess.exception;
 
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 
+import java.util.Collection;
+
 /**
  * A {@link RuntimeException} thrown when valid api request end up violating
  * some domain rule.
  */
 public  class NotOfficeSpecificProductException extends AbstractPlatformDomainRuleException {
 		
-	public NotOfficeSpecificProductException(final Long productId, final Long officeId) {
-			super("error.msg.office.product.not.found", "Product with productId " + productId +
-					" not office Specific Product in offfice with officeId", officeId);
-		}
+	public NotOfficeSpecificProductException(final Collection<Long> productIds, final Long officeId) {
+		super("error.msg.office.product.or.charge.not.found", "Product or Charge with Id in " + productIds.toString() +
+			" not Office Specific Product for officeId "+ officeId, productIds, officeId);
 	}
+}
