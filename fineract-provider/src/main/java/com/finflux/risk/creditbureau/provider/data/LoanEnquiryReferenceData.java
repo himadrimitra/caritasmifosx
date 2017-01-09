@@ -77,6 +77,7 @@ public class LoanEnquiryReferenceData {
     }
 
     public Long getLoanApplicationId() {
+        if (this.loanApplicationId != null && this.loanApplicationId == 0) { return null; }
         return this.loanApplicationId;
     }
 

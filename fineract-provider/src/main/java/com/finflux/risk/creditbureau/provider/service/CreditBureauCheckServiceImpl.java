@@ -74,14 +74,21 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         if (entityType == null) { return null; }
         Long loanApplicationId = null;
         Long loanId = null;
+        LoanEnquiryData enquiryData = null;
         if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
             loanApplicationId = entityId;
+            enquiryData = this.creditBureauEnquiryReadService.getEnquiryRequestDataForLoanApplication(loanApplicationId);
         } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
             loanId = entityId;
             final LoanApplicationReference loanApplicationReference = this.loanApplicationReferenceRepository.findOneByLoanId(loanId);
-            loanApplicationId = loanApplicationReference.getId();
+            if (loanApplicationReference != null) {
+                loanApplicationId = loanApplicationReference.getId();
+                enquiryData = this.creditBureauEnquiryReadService.getEnquiryRequestDataForLoanApplication(loanApplicationId);
+            } else {
+                enquiryData = this.creditBureauEnquiryReadService.getEnquiryRequestDataForLoan(loanId);
+            }
         }
-        final LoanEnquiryData enquiryData = this.creditBureauEnquiryReadService.getEnquiryRequestDataForLoanApplication(loanApplicationId);
+
         final CreditBureauLoanProductMapping creditBureauLpMapping = creditBureauLpMappingRepository.findWithLoanProductId(enquiryData
                 .getLoanProductId());
         final CreditBureauProduct creditBureauProduct = creditBureauLpMapping.getCreditBureauProduct();
@@ -109,7 +116,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         if (loanEnquiryReferenceData == null || loanEnquiryReferenceData.getStatus().isInValid()
                 || loanEnquiryReferenceData.isCBReportGeneratedDaysGreaterThanStalePeriod(stalePeriod)) {
             // fire new request
-            this.creditBureauEnquiryReadService.inActivePreviousLoanApplicationCreditbureauEnquiries(loanApplicationId);
+            //this.creditBureauEnquiryReadService.inActivePreviousLoanApplicationCreditbureauEnquiries(loanApplicationId);
             EnquiryReferenceData enquiryReferenceData = createCreditBureauEnquiry(enquiryData, creditBureauProduct, type,
                     loanApplicationId, loanId, trancheDisbursalId);
             CreditBureauResponse creditBureauResponseEnquire = creditBureauProvider.enquireCreditBureau(enquiryReferenceData);
@@ -147,7 +154,9 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
                 loanId = entityId;
                 final LoanApplicationReference loanApplicationReference = this.loanApplicationReferenceRepository.findOneByLoanId(loanId);
-                loanApplicationId = loanApplicationReference.getId();
+                if(loanApplicationReference != null){
+                    loanApplicationId = loanApplicationReference.getId();
+                }
                 if (loanId != null && trancheDisbursalId == null) {
                     final Map<String, Object> data = this.loanReadPlatformServiceImpl.retrieveDisbursalDataMap(loanId);
                     if (data.get("trancheDisbursalId") != null) {
@@ -163,17 +172,21 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
             sb.append("INNER JOIN f_creditbureau_enquiry cbe ON cbe.id = lcbe.creditbureau_enquiry_id ");
             sb.append("LEFT JOIN f_existing_loan el ON el.loan_creditbureau_enquiry_id = lcbe.id AND el.loan_status_id = 300 ");
-            sb.append("WHERE lcbe.loan_application_id = ? AND lcbe.is_active = 1 ");
+            sb.append("WHERE lcbe.is_active = 1 ");
             if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
                 sb.append("AND lcbe.loan_id = ? AND lcbe.tranche_disbursal_id = ? ");
+                sb.append("GROUP BY el.loan_id ");
+            }else{
+                sb.append("AND lcbe.loan_application_id = ? "); 
+                sb.append("GROUP BY el.loan_application_id ");
             }
-            sb.append("GROUP BY el.loan_application_id ");
+            
             if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
                 return this.jdbcTemplate.queryForObject(sb.toString(), new OtherInstituteLoansSummaryDataExtractor(),
                         new Object[] { loanApplicationId });
             } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) { return this.jdbcTemplate
-                    .queryForObject(sb.toString(), new OtherInstituteLoansSummaryDataExtractor(), new Object[] { loanApplicationId, loanId,
-                            trancheDisbursalId }); }
+                    .queryForObject(sb.toString(), new OtherInstituteLoansSummaryDataExtractor(),
+                            new Object[] { loanId, trancheDisbursalId }); }
         } catch (final EmptyResultDataAccessException e) {}
         return null;
     }
@@ -277,7 +290,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
     private String generateRandomEnquiryNumber(final String type, final String implementationKey, final Long loanApplicationId,
             final Long loanId, final Long trancheDisbursalId) {
         if (loanId != null && trancheDisbursalId != null) { return implementationKey + "_" + type + "_" + System.currentTimeMillis() + "_"
-                + loanApplicationId + "_" + loanId + "_" + trancheDisbursalId; }
+                + loanId + "_" + trancheDisbursalId; }
         return implementationKey + "_" + type + "_" + System.currentTimeMillis() + "_" + loanApplicationId;
     }
 
