@@ -5725,7 +5725,8 @@ public class Loan extends AbstractPersistable<Long> {
         BigDecimal emiAmount = this.fixedEmiAmount;
         Date startDate = this.getDisbursementDate().toDate();
         for (LoanTermVariations loanTermVariations : this.loanTermVariations) {
-            if (loanTermVariations.getTermType().isEMIAmountVariation() && !startDate.after(loanTermVariations.getTermApplicableFrom())) {
+            if (loanTermVariations.isActive() && loanTermVariations.getTermType().isEMIAmountVariation()
+                    && !startDate.after(loanTermVariations.getTermApplicableFrom())) {
                 startDate = loanTermVariations.getTermApplicableFrom();
                 emiAmount = loanTermVariations.getTermValue();
             }
@@ -6721,10 +6722,12 @@ public class Loan extends AbstractPersistable<Long> {
     private int adjustNumberOfRepayments() {
         int repaymetsForAdjust = 0;
         for (LoanTermVariations loanTermVariations : this.loanTermVariations) {
-            if (loanTermVariations.getTermType().isInsertInstallment()) {
-                repaymetsForAdjust++;
-            } else if (loanTermVariations.getTermType().isDeleteInstallment()) {
-                repaymetsForAdjust--;
+            if (loanTermVariations.isActive()) {
+                if (loanTermVariations.getTermType().isInsertInstallment()) {
+                    repaymetsForAdjust++;
+                } else if (loanTermVariations.getTermType().isDeleteInstallment()) {
+                    repaymetsForAdjust--;
+                }
             }
         }
         return repaymetsForAdjust;
