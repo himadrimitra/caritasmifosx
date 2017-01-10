@@ -138,8 +138,11 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
     private void processCreditBureauReportRespon(final CreditBureauProvider creditBureauProvider,
             final LoanEnquiryReferenceData loanEnquiryReferenceData, final Long loanId, final Long trancheDisbursalId) {
         final CreditBureauResponse creditBureauResponse = creditBureauProvider.fetchCreditBureauReport(loanEnquiryReferenceData);
-        this.creditBureauEnquiryWritePlatformService.saveReportResponseDetails(loanEnquiryReferenceData, creditBureauResponse, loanId,
-                trancheDisbursalId);
+        this.creditBureauEnquiryWritePlatformService.saveReportResponseDetails(loanEnquiryReferenceData, creditBureauResponse);
+        if (creditBureauResponse.getCreditBureauExistingLoans() != null) {
+            this.creditBureauEnquiryWritePlatformService.saveCreditBureauExistingLoans(loanEnquiryReferenceData.getLoanApplicationId(),
+                    creditBureauResponse.getCreditBureauExistingLoans(), loanId, trancheDisbursalId);
+        }
     }
 
     @SuppressWarnings("null")
