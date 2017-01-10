@@ -234,8 +234,12 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
     private LoanStatus convertToLoanStatus(String status) {
         if ("CLOSED".equalsIgnoreCase(status)) {
             return LoanStatus.CLOSED_OBLIGATIONS_MET;
-        } else if ("ACTIVE".equals(status)) { return LoanStatus.ACTIVE; }
-        return null;
+        } else if ("ACTIVE".equals(status)) {
+            return LoanStatus.ACTIVE;
+        } else if ("CURRENT".equals(status)) {
+            return LoanStatus.APPROVED;
+        } else if ("WRITTEN-OFF".equals(status)) { return LoanStatus.CLOSED_WRITTEN_OFF; }
+        return LoanStatus.INVALID;
     }
 
     private CreditBureauEnquiryStatus convertStatus(String responseType) {
