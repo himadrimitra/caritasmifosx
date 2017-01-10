@@ -1,6 +1,7 @@
 package com.finflux.risk.creditbureau.provider.api;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -13,6 +14,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Component;
 import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConstants;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauFileContentData;
 import com.finflux.risk.creditbureau.provider.data.OtherInstituteLoansSummaryData;
+import com.finflux.risk.creditbureau.provider.exception.SearchParameterNotFoundException;
 import com.finflux.risk.creditbureau.provider.service.CreditBureauCheckService;
 
 @Path("/enquiry/creditbureau/")
@@ -87,5 +90,27 @@ public class CreditBureauEnquiryApiResource {
                 entityType, entityId);
         return this.toApiJsonSerializer.serialize(settings, creditBureauFileContentData);
     }
+    
+	@SuppressWarnings("unchecked")
+	@GET
+	@Path("/creditbureaureport/")
+	@Consumes({ MediaType.APPLICATION_JSON })
+	@Produces({ MediaType.APPLICATION_JSON })
+	public String getLatestCreditBureauReportFileContent(@DefaultValue("true")@QueryParam("isLatestdata") final boolean isLatestdata , 
+			@QueryParam("clientId") final Long clientId,@Context final UriInfo uriInfo) {
+		this.context.authenticatedUser()
+				.validateHasReadPermission(LoanApplicationReferenceApiConstants.CREDITBUREAUREPORT_RESOURCE_NAME);
+		if(clientId == null){
+			String errorMessage = "At least one search parameter should be there";
+			throw new SearchParameterNotFoundException(errorMessage, errorMessage);
+		}
+		final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper
+				.process(uriInfo.getQueryParameters());
+		final SearchParameters searchParameters = SearchParameters.forCreditBureauSearchParameters(clientId);
+		final CreditBureauFileContentData creditBureauFileContentData = this.creditBureauCheckService
+				.getCreditBureauReportFileContent(isLatestdata, searchParameters);
+
+		return this.toApiJsonSerializer.serialize(settings, creditBureauFileContentData);
+	}
 
 }
