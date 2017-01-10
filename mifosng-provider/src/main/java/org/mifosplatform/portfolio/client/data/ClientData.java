@@ -197,7 +197,7 @@ final public class ClientData implements Comparable<ClientData> {
 		return this.nationalId;
 	}
 
-	public static ClientData lookup(final Long id, final String displayName, final Long officeId, final String officeName) {
+	public static ClientData lookup(final Long id, final String displayName, final Long officeId, final String officeName, final String externalId) {
         final String accountNo = null;
         final String nationalId = null;
         final EnumOptionData status = null;
@@ -208,7 +208,6 @@ final public class ClientData implements Comparable<ClientData> {
         final String middlename = null;
         final String lastname = null;
         final String fullname = null;
-        final String externalId = null;
         final String mobileNo = null;
         final LocalDate dateOfBirth = null;
         final CodeValueData gender = null;
