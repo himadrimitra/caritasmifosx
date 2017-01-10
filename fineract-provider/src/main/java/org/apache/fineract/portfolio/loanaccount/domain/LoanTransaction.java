@@ -141,7 +141,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     @Column(name = "is_reconciled")
     private boolean isReconciled;
     
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "loanTransaction", orphanRemoval = true)
     private Set<GroupLoanIndividualMonitoringTransaction> groupLoanIndividualMonitoringTransactions = new HashSet<>();
 
