@@ -85,6 +85,9 @@ public class ExistingLoanReadPlatformServiceImpl implements ExistingLoanReadPlat
         } else if (loanId != null && trancheDisbursalId != null) {
             sql += " AND el.loan_id = ? AND el.tranche_disbursal_id = ? ";
             return this.jdbcTemplate.query(sql, rm, new Object[] { clientId, loanId, trancheDisbursalId });
+        }else if(clientId != null){
+        	sql += " AND el.loan_creditbureau_enquiry_id = (select max(fcet.id) from  f_loan_creditbureau_enquiry fcet where fcet.client_id = ?) ";
+        	return this.jdbcTemplate.query(sql, rm, new Object[] { clientId, clientId});
         }
         return this.jdbcTemplate.query(sql, rm, new Object[] { clientId });
     }

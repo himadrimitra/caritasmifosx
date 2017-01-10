@@ -12,6 +12,7 @@ import java.util.Map;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -325,10 +326,35 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             sb.append("AND lcbe.loan_id = ? AND lcbe.tranche_disbursal_id = ? ");
             return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] {
                     loanApplicationId, loanId, trancheDisbursalId });
-        }
+		} 
         return null;
 
     }
+    
+    @SuppressWarnings("null")
+    @Override
+	public CreditBureauFileContentData getCreditBureauReportFileContent(boolean isLatestdata,
+			final SearchParameters searchParameters) {
+		StringBuilder sb = new StringBuilder(100);
+		sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
+		sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
+		Long clientId = null;
+
+		if (searchParameters.isClientIdPassed()) {
+			clientId = searchParameters.getClientId();
+			if (isLatestdata) {
+				sb.append(
+						"WHERE lcbe.id = (select max(fcet.id) from  f_loan_creditbureau_enquiry fcet where fcet.client_id = ?) ");
+			}else{
+				sb.append(
+			"WHERE lcbe.client_id = ? ");
+			}
+
+			return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(),
+					new Object[] { clientId });
+		}
+		return null;
+	}
 
     private static final class CreditBureauFileContantDataExtractor implements RowMapper<CreditBureauFileContentData> {
 
