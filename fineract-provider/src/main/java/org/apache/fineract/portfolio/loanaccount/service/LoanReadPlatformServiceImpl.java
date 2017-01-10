@@ -97,7 +97,7 @@ import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSubStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
@@ -153,7 +153,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
-    private final LoanRepository loanRepository;
+    private final LoanRepositoryWrapper loanRepository;
     private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final ClientReadPlatformService clientReadPlatformService;
@@ -182,7 +182,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final GroupLoanIndividualMonitoringTransactionReadPlatformService groupLoanIndividualMonitoringTransactionReadPlatformService;
 
     @Autowired
-    public LoanReadPlatformServiceImpl(final PlatformSecurityContext context, final LoanRepository loanRepository,
+    public LoanReadPlatformServiceImpl(final PlatformSecurityContext context, final LoanRepositoryWrapper loanRepository,
             final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
             final LoanProductReadPlatformService loanProductReadPlatformService, final ClientReadPlatformService clientReadPlatformService,
             final GroupReadPlatformService groupReadPlatformService, final LoanDropdownReadPlatformService loanDropdownReadPlatformService,
@@ -458,8 +458,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         this.context.authenticatedUser();
 
-        final Loan loan = this.loanRepository.findOne(loanId);
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
+        final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
         loan.setHelpers(null, null, loanRepaymentScheduleTransactionProcessorFactory);
 
         final MonetaryCurrency currency = loan.getCurrency();
@@ -588,10 +587,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 fixedEmiAmount = (BigDecimal) data.get("fixedEmiAmount");
             }
             Collection<FingerPrintData> fingerPrintData = null;
-            final Loan loan = this.loanRepository.findOne(loanId);
-    		if (loan == null) {
-    			throw new LoanNotFoundException(loanId);
-    		}
+            Long clientId = (Long) data.get("clientId");
             BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedPrincipal");
             Long productId = (Long) data.get("productId");
             Collection<TransactionAuthenticationData> transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
@@ -604,7 +600,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     			for(ExternalAuthenticationServiceData services :externalServices){
     				if(services.getName().contains("Fingerprint Auth")){
     					if(services.isActive()){
-    						fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(loan.getClientId());
+    						fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(clientId);
     					}
     				}
     			}
@@ -619,7 +615,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public Map<String, Object> retrieveDisbursalDataMap(final Long loanId) {
         final StringBuilder sql = new StringBuilder(200);
         sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
-        sql.append(" , l.product_id as productId ");
+        sql.append(" , l.product_id as productId, l.client_id as clientId ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -2568,7 +2564,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public LoanTransactionData retrieveLoanForeclosureTemplate(final Long loanId, final LocalDate transactionDate) {
         this.context.authenticatedUser();
 
-        final Loan loan = this.loanRepository.findOne(loanId);
+        final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
         if (loan == null) { throw new LoanNotFoundException(loanId); }
         loan.validateForForeclosure(transactionDate);
         final MonetaryCurrency currency = loan.getCurrency();
@@ -2651,7 +2647,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             throw new LoanNotFoundException(loanId);
         }
     }
-
     private void generateConditionBasedOnHoliday(final List<Holiday> holidays, final StringBuilder sql) {
         boolean isFirstTime = true;
         for (Holiday holiday : holidays) {

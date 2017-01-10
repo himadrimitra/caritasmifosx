@@ -45,6 +45,7 @@ public class LoanTransactionRepositoryWrapper {
     public LoanTransaction findOneWithNotFoundDetection(final Long id) {
         final LoanTransaction loanTransaction = this.loanTransactionRepository.findOne(id);
         if (loanTransaction == null) { throw new LoanTransactionNotFoundException(id); }
+        org.hibernate.Hibernate.initialize(loanTransaction.getGlimTransaction());
         return loanTransaction;
     }
 
