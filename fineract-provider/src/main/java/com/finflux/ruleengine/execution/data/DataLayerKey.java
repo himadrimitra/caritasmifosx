@@ -6,6 +6,8 @@ package com.finflux.ruleengine.execution.data;
 public enum DataLayerKey {
     CLIENT_ID("clientId"), //
     CENETR_ID("centerId"), //
+    GROUP_ID("groupId"), //
+    VILLAGE_ID("villageId"), //
     LOANAPPLICATION_ID("loanApplicationId");//
 
     private String value;

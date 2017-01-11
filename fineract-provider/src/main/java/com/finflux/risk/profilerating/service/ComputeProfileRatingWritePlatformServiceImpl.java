@@ -112,7 +112,7 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
         } else {
             /**
              * If we are execute multiple recodes then it should be in back
-             * ground execution
+             * ground execution process
              */
             this.executorService.execute(new RunBackGroundProcessForProfileRatings(ThreadLocalContextUtil.getTenant(), profileRatingRuns,
                     command, this.context));
@@ -176,14 +176,22 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
             if (profileRatingRun.getScopeEntityType() != null && profileRatingRun.getScopeEntityId() != null) {
                 final Map<DataLayerKey, Long> dataLayerKeyLongMap = new HashMap<>();
                 List<Map<String, Object>> idMapList = new ArrayList<>();
-                if (ProfileRatingType.fromInt(entityType).toString().equalsIgnoreCase(ProfileRatingConfigApiConstants.enumTypeClient)) {
+                if (ProfileRatingType.CLIENT.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
                     dataLayerKey = DataLayerKey.CLIENT_ID;
                     taskConfigKey = TaskConfigKey.CLIENT_ID;
                     idMapList = getClientIds(profileRatingRun, entityId);
-                }else  if (ProfileRatingType.fromInt(entityType).toString().equalsIgnoreCase(ProfileRatingConfigApiConstants.enumTypeCenter)) {
+                } else if (ProfileRatingType.GROUP.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
+                    dataLayerKey = DataLayerKey.GROUP_ID;
+                    taskConfigKey = TaskConfigKey.GROUP_ID;
+                    idMapList = getGroupIds(profileRatingRun, entityId);
+                } else if (ProfileRatingType.CENTER.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
                     dataLayerKey = DataLayerKey.CENETR_ID;
                     taskConfigKey = TaskConfigKey.CENETR_ID;
                     idMapList = getCenterIds(profileRatingRun, entityId);
+                } else if (ProfileRatingType.CENTER.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
+                    dataLayerKey = DataLayerKey.VILLAGE_ID;
+                    taskConfigKey = TaskConfigKey.VILLAGE_ID;
+                    idMapList = getVillageIds(profileRatingRun, entityId);
                 }
                 if (dataLayerKey != null && taskConfigKey != null && !idMapList.isEmpty()) {
                     for (final Map<String, Object> idMap : idMapList) {
@@ -191,7 +199,7 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
                             dataLayerKeyLongMap.put(dataLayerKey, Long.valueOf(idMap.get(taskConfigKey.getValue()).toString()));
                             final ProfileRatingDataLayer dataLayer = new ProfileRatingDataLayer(this.dataLayerReadPlatformService);
                             dataLayer.build(dataLayerKeyLongMap);
-                            final RuleResult ruleResult = ruleExecutionService.executeARule(profileRatingRun.getCriteria().getId(),
+                            final RuleResult ruleResult = this.ruleExecutionService.executeARule(profileRatingRun.getCriteria().getId(),
                                     dataLayer);
                             if (ruleResult != null) {
                                 entityId = Long.valueOf(idMap.get(taskConfigKey.getValue()).toString());
@@ -212,32 +220,68 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
         }
     }
 
-    private final List<Map<String, Object>> getClientIds(ProfileRatingRun profileRatingRun, Long entityId) {
+    private final List<Map<String, Object>> getClientIds(final ProfileRatingRun profileRatingRun, final Long entityId) {
         final List<Map<String, Object>> clientIdMapList = new ArrayList<>();
         if (entityId == null
-                && ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).toString().equalsIgnoreCase("OFFICE")) {
+                && ScopeEntityType.OFFICE.getValue().equals(
+                        ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
             final Long officeId = profileRatingRun.getScopeEntityId();
             clientIdMapList.addAll(this.readPlatformService.getAllClientIdsFromOffice(officeId));
-        } else if (ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).toString().equalsIgnoreCase("OFFICE")) {
+        } else if (ScopeEntityType.OFFICE.getValue().equals(
+                ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
             final Map<String, Object> clientIdMap = new LinkedHashMap<>();
             clientIdMap.put("clientId", entityId);
             clientIdMapList.add(clientIdMap);
         }
         return clientIdMapList;
     }
-    
-    private final List<Map<String, Object>> getCenterIds(ProfileRatingRun profileRatingRun, Long entityId) {
+
+    private final List<Map<String, Object>> getCenterIds(final ProfileRatingRun profileRatingRun, final Long entityId) {
         final List<Map<String, Object>> centerIdMapList = new ArrayList<>();
         if (entityId == null
-                && ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).toString().equalsIgnoreCase("OFFICE")) {
+                && ScopeEntityType.OFFICE.getValue().equals(
+                        ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
             final Long officeId = profileRatingRun.getScopeEntityId();
             centerIdMapList.addAll(this.readPlatformService.getAllCenterIdsFromOffice(officeId));
-        } else if (ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).toString().equalsIgnoreCase("OFFICE")) {
-            final Map<String, Object> clientIdMap = new LinkedHashMap<>();
-            clientIdMap.put("centerId", entityId);
-            centerIdMapList.add(clientIdMap);
+        } else if (ScopeEntityType.OFFICE.getValue().equals(
+                ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
+            final Map<String, Object> centerIdMap = new LinkedHashMap<>();
+            centerIdMap.put("centerId", entityId);
+            centerIdMapList.add(centerIdMap);
         }
         return centerIdMapList;
+    }
+
+    private List<Map<String, Object>> getGroupIds(final ProfileRatingRun profileRatingRun, final Long entityId) {
+        final List<Map<String, Object>> groupIdMapList = new ArrayList<>();
+        if (entityId == null
+                && ScopeEntityType.OFFICE.getValue().equals(
+                        ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
+            final Long officeId = profileRatingRun.getScopeEntityId();
+            groupIdMapList.addAll(this.readPlatformService.getAllGroupIdsFromOffice(officeId));
+        } else if (ScopeEntityType.OFFICE.getValue().equals(
+                ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
+            final Map<String, Object> groupIdMap = new LinkedHashMap<>();
+            groupIdMap.put("groupId", entityId);
+            groupIdMapList.add(groupIdMap);
+        }
+        return groupIdMapList;
+    }
+
+    private List<Map<String, Object>> getVillageIds(final ProfileRatingRun profileRatingRun, final Long entityId) {
+        final List<Map<String, Object>> villageIdMapList = new ArrayList<>();
+        if (entityId == null
+                && ScopeEntityType.OFFICE.getValue().equals(
+                        ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
+            final Long officeId = profileRatingRun.getScopeEntityId();
+            villageIdMapList.addAll(this.readPlatformService.getAllVillageIdsFromOffice(officeId));
+        } else if (ScopeEntityType.OFFICE.getValue().equals(
+                ScopeEntityType.fromInt(profileRatingRun.getScopeEntityType().intValue()).getValue())) {
+            final Map<String, Object> villageIdMap = new LinkedHashMap<>();
+            villageIdMap.put("villageId", entityId);
+            villageIdMapList.add(villageIdMap);
+        }
+        return villageIdMapList;
     }
 
     @Transactional

@@ -48,12 +48,32 @@ public class ComputeProfileRatingReadPlatformServiceImpl implements ComputeProfi
         } catch (final EmptyResultDataAccessException e) {}
         return null;
     }
-    
+
     @Override
     public List<Map<String, Object>> getAllCenterIdsFromOffice(final Long officeId) {
         try {
             final StringBuilder sb = new StringBuilder(200);
             sb.append("SELECT c.id AS centerId FROM m_group c WHERE c.level_id = 1 AND c.office_id = " + officeId + "");
+            return this.jdbcTemplate.queryForList(sb.toString());
+        } catch (final EmptyResultDataAccessException e) {}
+        return null;
+    }
+
+    @Override
+    public List<Map<String, Object>> getAllGroupIdsFromOffice(final Long officeId) {
+        try {
+            final StringBuilder sb = new StringBuilder(200);
+            sb.append("SELECT g.id AS groupId FROM m_group g WHERE g.level_id = 2 AND g.office_id = " + officeId + "");
+            return this.jdbcTemplate.queryForList(sb.toString());
+        } catch (final EmptyResultDataAccessException e) {}
+        return null;
+    }
+
+    @Override
+    public List<Map<String, Object>> getAllVillageIdsFromOffice(final Long officeId) {
+        try {
+            final StringBuilder sb = new StringBuilder(200);
+            sb.append("SELECT v.id AS villageId FROM chai_villages v WHERE v.office_id = " + officeId + "");
             return this.jdbcTemplate.queryForList(sb.toString());
         } catch (final EmptyResultDataAccessException e) {}
         return null;
