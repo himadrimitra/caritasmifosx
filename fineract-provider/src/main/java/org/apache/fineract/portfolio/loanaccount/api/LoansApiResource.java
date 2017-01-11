@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -629,7 +630,10 @@ public class LoansApiResource {
                 repaymentFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
                 interestRateFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveInterestRateFrequencyTypeOptions();
                 loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(loanBasicDetails.clientId(), loanBasicDetails.loanProductId(), loanId);
-
+                repaymentFrequencyNthDayTypeOptions = dropdownReadPlatformService.retrieveRepaymentFrequencyOptionsForNthDayOfMonth();
+                repaymentFrequencyDayOfWeekTypeOptions = dropdownReadPlatformService.retrieveRepaymentFrequencyOptionsForDaysOfWeek();
+                
+                
                 amortizationTypeOptions = this.dropdownReadPlatformService.retrieveLoanAmortizationTypeOptions();
                 if (product.isLinkedToFloatingInterestRates()) {
                     interestTypeOptions = Arrays.asList(interestType(InterestMethod.DECLINING_BALANCE));

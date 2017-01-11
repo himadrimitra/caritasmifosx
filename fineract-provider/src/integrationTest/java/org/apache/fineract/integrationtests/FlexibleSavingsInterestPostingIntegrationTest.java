@@ -84,7 +84,19 @@ public class FlexibleSavingsInterestPostingIntegrationTest {
         this.savingsAccountHelper.postInterestForSavings(savingsId);
         HashMap accountDetails = this.savingsAccountHelper.getSavingsDetails(savingsId);
         ArrayList<HashMap<String, Object>> transactions = (ArrayList<HashMap<String, Object>>) accountDetails.get("transactions");
-        HashMap<String, Object> interestPostingTransaction = transactions.get(transactions.size() - 2);
+        HashMap<String, Object> interestPostingTransaction = null;
+        for(HashMap<String, Object> transaction : transactions){
+            HashMap<String, Object> type = (HashMap<String, Object>) transaction.get("transactionType");
+            String typeCode = (String) type.get("code");
+            if (typeCode.contains("interestPosting")) {
+                ArrayList<Integer> date = (ArrayList) transaction.get("date");
+                int year = date.get(0);
+                if (year == 2014) {
+                    interestPostingTransaction = transaction;
+                    break;
+                }
+            }
+        }
         for (Entry<String, Object> entry : interestPostingTransaction.entrySet())
             System.out.println(entry.getKey() + "-" + entry.getValue().toString());
         // 1st Dec 13 to 31st March 14 - 365 days, daily compounding using daily

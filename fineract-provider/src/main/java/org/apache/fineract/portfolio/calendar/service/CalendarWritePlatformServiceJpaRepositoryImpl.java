@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.calendar.service;
 
+import static org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_RESOURCE_NAME;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -280,7 +282,14 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
         LocalDate presentMeetingDate = null;
         
         if (reschedulebasedOnMeetingDates) {
-            
+            if (calendarForUpdate.isNthDayFrequency()) {
+                final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+                final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                        .resource(CALENDAR_RESOURCE_NAME);
+                baseDataValidator.parameter(CALENDAR_SUPPORTED_PARAMETERS.RESCHEDULE_BASED_ON_MEETING_DATES.getValue()).failWithCode(
+                        "not.supported.for.this.meeting");
+                throw new PlatformApiDataValidationException(dataValidationErrors);
+            }
             newMeetingDate = command.localDateValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.NEW_MEETING_DATE.getValue());
             presentMeetingDate = command.localDateValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.PRESENT_MEETING_DATE.getValue());
 

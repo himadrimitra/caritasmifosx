@@ -20,7 +20,6 @@ import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.exception.MeetingFrequencyMismatchException;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
@@ -51,22 +50,18 @@ public class LoanScheduleValidator {
 
         final PeriodFrequencyType repaymentFrequencyType = loan.getLoanProductRelatedDetail().getRepaymentPeriodFrequencyType();
         final Integer repaymentEvery = loan.getLoanProductRelatedDetail().getRepayEvery();
-        final Integer nthDay = null;
-        final Integer dayOfWeek = null;
-        final DayOfWeekType weekDayType = DayOfWeekType.fromInt(dayOfWeek);
         LoanProduct loanProduct = loan.loanProduct();
         validateMinimumDaysBetweenDisbursalAndFirstRepayment(disbursementDate, repaymentsStartingFromDate, loanProduct,
-                repaymentFrequencyType, repaymentEvery, nthDay, weekDayType);
+                repaymentFrequencyType, repaymentEvery);
 
     }
 
     public void validateMinimumDaysBetweenDisbursalAndFirstRepayment(final LocalDate disbursalDate, final LocalDate firstRepaymentDate,
-            final LoanProduct loanProduct, final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer repaymentEvery,
-            Integer nthDay, DayOfWeekType dayOfWeek) {
+            final LoanProduct loanProduct, final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer repaymentEvery) {
 
         final Integer calculatedminimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService
                 .calculateMinimumDaysBetweenDisbursalAndFirstRepayment(disbursalDate, loanProduct, loanTermPeriodFrequencyType,
-                        repaymentEvery, nthDay, dayOfWeek);
+                        repaymentEvery);
         validateMinimumDaysBetweenDisbursalAndFirstRepayment(disbursalDate, firstRepaymentDate, loanProduct,
                 calculatedminimumDaysBetweenDisbursalAndFirstRepayment);
     }

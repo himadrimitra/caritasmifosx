@@ -31,6 +31,7 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.joda.time.LocalDate;
@@ -71,7 +72,8 @@ public final class CalculateLoanScheduleQueryFromApiJsonHelper {
             LoanApiConstants.repaymentFrequencyNthDayTypeParameterName, LoanApiConstants.repaymentFrequencyDayOfWeekTypeParameterName,LoanApiConstants.recurringMoratoriumOnPrincipalPeriods,
             LoanProductConstants.isSubsidyApplicableParamName, "fixedEmiAmount", 
             LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName, LoanApiConstants.expectedDisbursalPaymentTypeParamName,
-            LoanApiConstants.expectedRepaymentPaymentTypeParamName, LoanApiConstants.syncRepaymentsWithMeeting));
+            LoanApiConstants.expectedRepaymentPaymentTypeParamName, LoanApiConstants.syncRepaymentsWithMeeting, 
+            CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue()));
 
     private final FromJsonHelper fromApiJsonHelper;
 

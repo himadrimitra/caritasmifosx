@@ -101,7 +101,7 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
             if (startDate != null && recurrence != null) {
                 humanReadable = CalendarUtils.getRRuleReadable(startDate, recurrence);
             }
-            Integer monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
+            Collection<Integer> monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
             final LocalDate createdDate = JdbcSupport.getLocalDate(rs, "createdDate");
             final LocalDate lastUpdatedDate = JdbcSupport.getLocalDate(rs, "updatedDate");
             final Long createdByUserId = rs.getLong("creatingUserId");
@@ -501,7 +501,7 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
             final Long lastUpdatedByUserId = null;
             final String lastUpdatedByUserName = null;
             final LocalTime meetingTime = null;
-            Integer monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
+            Collection<Integer> monthOnDay = CalendarUtils.getMonthOnDay(recurrence);
 
             return CalendarData.instance(id, calendarInstanceId, entityId, entityType, title, description, location, startDate, endDate,
                     duration, type, repeating, recurrence, frequency, interval, repeatsOnDay, repeatsOnNthDayOfMonth, remindBy,

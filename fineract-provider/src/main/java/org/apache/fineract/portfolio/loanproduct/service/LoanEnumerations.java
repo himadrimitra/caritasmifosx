@@ -187,6 +187,9 @@ public class LoanEnumerations {
             case LAST:
                 optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "last");
             break;
+            case ONDAY:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "onday");
+            break;
             default:
                 optionData = new EnumOptionData(new Integer(0).longValue(), codePrefix + type.getCode(), "invalid");
             break;

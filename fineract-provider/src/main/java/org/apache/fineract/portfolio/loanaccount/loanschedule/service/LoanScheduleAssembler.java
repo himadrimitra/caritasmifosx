@@ -54,6 +54,7 @@ import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
 import org.apache.fineract.organisation.workingdays.service.WorkingDayExemptionsReadPlatformService;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
@@ -214,7 +215,24 @@ public class LoanScheduleAssembler {
         final Integer repaymentFrequencyType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("repaymentFrequencyType", element);
         final PeriodFrequencyType repaymentPeriodFrequencyType = PeriodFrequencyType.fromInt(repaymentFrequencyType);
         final Integer nthDay = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("repaymentFrequencyNthDayType", element);
-        final Integer dayOfWeek = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("repaymentFrequencyDayOfWeekType", element);
+        Integer dayOfWeek = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("repaymentFrequencyDayOfWeekType", element);
+        final NthDayType nthDayType = NthDayType.fromInt(nthDay);
+        Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>();
+        if (nthDayType.isOnDay()) {
+            String[] repeatsOnDayOfMonthString = this.fromApiJsonHelper.extractArrayNamed(
+                    CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue(), element);
+            if (repeatsOnDayOfMonthString != null) {
+                for (String day : repeatsOnDayOfMonthString) {
+                    try {
+                        int monthDay = Integer.parseInt(day);
+                        repeatsOnDayOfMonth.add(monthDay);
+                    } catch (Exception e) {
+                        continue;
+                    }
+                }
+            }
+            dayOfWeek = null;
+        }
         final DayOfWeekType weekDayType = DayOfWeekType.fromInt(dayOfWeek);
 
         final Integer amortizationType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed("amortizationType", element);
@@ -278,7 +296,7 @@ public class LoanScheduleAssembler {
             if (repaymentPeriodFrequencyType == PeriodFrequencyType.MONTHS && nthDay != null && nthDay != NthDayType.INVALID.getValue()) {
                 LocalDate calendarStartDate = repaymentsStartingFromDate;
                 if (calendarStartDate == null) calendarStartDate = expectedDisbursementDate;
-                calendar = createLoanCalendar(calendarStartDate, repaymentEvery, CalendarFrequencyType.MONTHLY, dayOfWeek, nthDay);
+                calendar = createLoanCalendar(calendarStartDate, repaymentEvery, CalendarFrequencyType.MONTHLY, dayOfWeek, nthDay, repeatsOnDayOfMonth);
             }
         }
         CalendarHistoryDataWrapper calendarHistoryDataWrapper = null;
@@ -303,7 +321,7 @@ public class LoanScheduleAssembler {
          */
         
         Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
-                expectedDisbursementDate, loanProduct, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType);
+                expectedDisbursementDate, loanProduct, loanTermPeriodFrequencyType, repaymentEvery);
         
         if (calculatedRepaymentsStartingFromDate == null) {
 
@@ -527,16 +545,20 @@ public class LoanScheduleAssembler {
     private CalendarInstance createInterestRecalculationCalendarInstance(final LocalDate calendarStartDate, final Integer frequency,
             CalendarFrequencyType calendarFrequencyType, final Integer recalculationFrequencyNthDay, final Integer repeatsOnDay) {
         final String title = "loan_recalculation_detail";
+        Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>(1);
+        repeatsOnDayOfMonth.add(recalculationFrequencyNthDay);
         final Calendar calendar = Calendar.createRepeatingCalendar(title, calendarStartDate, CalendarType.COLLECTION.getValue(),
-                calendarFrequencyType, frequency, repeatsOnDay, recalculationFrequencyNthDay);
+                calendarFrequencyType, frequency, repeatsOnDay, recalculationFrequencyNthDay, repeatsOnDayOfMonth);
         return CalendarInstance.from(calendar, null, CalendarEntityType.LOAN_RECALCULATION_REST_DETAIL.getValue());
     }
 
     private Calendar createLoanCalendar(final LocalDate calendarStartDate, final Integer frequency,
-            CalendarFrequencyType calendarFrequencyType, final Integer repeatsOnDay, final Integer repeatsOnNthDayOfMonth) {
+            CalendarFrequencyType calendarFrequencyType, final Integer repeatsOnDay, final Integer repeatsOnNthDayOfMonth, 
+            final Collection<Integer> repeatsOnDayOfMonth) {
         final String title = "loan_schedule";
+        
         final Calendar calendar = Calendar.createRepeatingCalendar(title, calendarStartDate, CalendarType.COLLECTION.getValue(),
-                calendarFrequencyType, frequency, repeatsOnDay, repeatsOnNthDayOfMonth);
+                calendarFrequencyType, frequency, repeatsOnDay, repeatsOnNthDayOfMonth, repeatsOnDayOfMonth);
         return calendar;
     }
 
