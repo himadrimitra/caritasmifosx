@@ -6909,18 +6909,35 @@ public class Loan extends AbstractPersistable<Long> {
                     interest = interest.plus(balancesForCurrentPeroid[0])
                             .minus(balancesForCurrentPeroid[5]);
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[5])
-                            .minus(balancesForCurrentPeroid[0]);
+                    Money interestPayable = balancesForCurrentPeroid[0].minus(installment.getInterestWaived(currency));
+                    if (interestPayable.isGreaterThanZero()) {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency))
+                                .minus(interestPayable);
+                    } else {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency));
+                    }
                 }
                 if (balancesForCurrentPeroid[1].isGreaterThan(balancesForCurrentPeroid[3])) {
                     fee = fee.plus(balancesForCurrentPeroid[1].minus(balancesForCurrentPeroid[3]));
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[3].minus(balancesForCurrentPeroid[1]));
+                    Money feePayable = balancesForCurrentPeroid[1].minus(installment.getFeeChargesWaived(currency));
+                    if (feePayable.isGreaterThanZero()) {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getFeeChargesPaid(currency))
+                                .minus(feePayable);
+                    } else {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getFeeChargesPaid(currency));
+                    }
                 }
                 if (balancesForCurrentPeroid[2].isGreaterThan(balancesForCurrentPeroid[4])) {
                     penalty = penalty.plus(balancesForCurrentPeroid[2].minus(balancesForCurrentPeroid[4]));
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[4]).minus(balancesForCurrentPeroid[2]);
+                    Money penaltyPayable = balancesForCurrentPeroid[2].minus(installment.getPenaltyChargesWaived(currency));
+                    if (penaltyPayable.isGreaterThanZero()) {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getPenaltyChargesPaid(currency))
+                                .minus(penaltyPayable);
+                    } else {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getPenaltyChargesPaid(currency));
+                    }
                 }
             } else if (installment.getDueDate().isAfter(paymentDate)) {
                 paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency))
