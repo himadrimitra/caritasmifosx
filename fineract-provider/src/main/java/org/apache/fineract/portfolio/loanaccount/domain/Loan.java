@@ -367,7 +367,7 @@ public class Loan extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     @OrderBy(value = "expectedDisbursementDate, id")
-    private Set<LoanDisbursementDetails> disbursementDetails = new HashSet<>();
+    private List<LoanDisbursementDetails> disbursementDetails = new ArrayList<>();
 
     @OrderBy(value = "termApplicableFrom, id")
     @LazyCollection(LazyCollectionOption.FALSE)
@@ -445,7 +445,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
-            final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
+            final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final List<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
             final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
             final PaymentType expectedRepaymentPaymentType) {
@@ -463,7 +463,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
-            final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
+            final List<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
             final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
@@ -479,7 +479,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
-            final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
+            final List<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
             final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
@@ -497,7 +497,7 @@ public class Loan extends AbstractPersistable<Long> {
             final Staff loanOfficer, final LoanPurpose loanPurpose, final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProduct loanProduct, final LoanProductRelatedDetail loanRepaymentScheduleDetail, final LoanStatus loanStatus,
             final Set<LoanCharge> loanCharges, final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting,
-            final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
+            final BigDecimal fixedEmiAmount, final List<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
             final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
             final PaymentType expectedRepaymentPaymentType) {
@@ -548,7 +548,7 @@ public class Loan extends AbstractPersistable<Long> {
         if(disbursementDetails != null && disbursementDetails.size() > 0){
             this.disbursementDetails = disbursementDetails;
         }else{
-            this.disbursementDetails = new HashSet<>();
+            this.disbursementDetails = new ArrayList<>();
         }
         this.approvedPrincipal = this.loanRepaymentScheduleDetail.getPrincipal().getAmount();
         this.createStandingInstructionAtDisbursement = createStandingInstructionAtDisbursement;
@@ -5680,7 +5680,7 @@ public class Loan extends AbstractPersistable<Long> {
         return list;
     }
 
-    public Set<LoanDisbursementDetails> getDisbursementDetails() {
+    public List<LoanDisbursementDetails> getDisbursementDetails() {
         return this.disbursementDetails;
     }
 
@@ -6754,7 +6754,7 @@ public class Loan extends AbstractPersistable<Long> {
      * get the next repayment date for rescheduling at the time of disbursement
      */
     public LocalDate getNextPossibleRepaymentDateForRescheduling(Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, final LocalDate actualDisbursementDate) {
-        Set<LoanDisbursementDetails> loanDisbursementDetails = this.disbursementDetails;
+        List<LoanDisbursementDetails> loanDisbursementDetails = this.disbursementDetails;
         LocalDate nextRepaymentDate = DateUtils.getLocalDateOfTenant();
         if(this.isMultiDisburmentLoan()){
             for (LoanDisbursementDetails loanDisbursementDetail : loanDisbursementDetails) {

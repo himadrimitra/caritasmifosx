@@ -1491,7 +1491,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .build();
     }
 
-    private void validateAddingNewChargeAllowed(Set<LoanDisbursementDetails> loanDisburseDetails) {
+    private void validateAddingNewChargeAllowed(List<LoanDisbursementDetails> loanDisburseDetails) {
         boolean pendingDisbursementAvailable = false;
         for (LoanDisbursementDetails disbursementDetail : loanDisburseDetails) {
             if (disbursementDetail.actualDisbursementDate() == null) {
@@ -1513,7 +1513,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
 
-        Set<LoanDisbursementDetails> loanDisburseDetails = loan.getDisbursementDetails();
+        List<LoanDisbursementDetails> loanDisburseDetails = loan.getDisbursementDetails();
         final Long chargeDefinitionId = command.longValueOfParameterNamed("chargeId");
         final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 

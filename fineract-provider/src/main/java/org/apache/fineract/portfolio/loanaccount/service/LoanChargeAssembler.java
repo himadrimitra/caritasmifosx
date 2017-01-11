@@ -77,7 +77,7 @@ public class LoanChargeAssembler {
     }
 
     @SuppressWarnings("unused")
-	public Set<LoanCharge> fromParsedJson(final JsonElement element, Set<LoanDisbursementDetails> disbursementDetails) {
+	public Set<LoanCharge> fromParsedJson(final JsonElement element, List<LoanDisbursementDetails> disbursementDetails) {
         JsonArray jsonDisbursement = this.fromApiJsonHelper.extractJsonArrayNamed("disbursementData", element);
         List<Long> disbursementChargeIds = new ArrayList<>();
 

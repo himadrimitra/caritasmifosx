@@ -607,13 +607,13 @@ public class LoanScheduleAssembler {
                 HolidayStatusType.ACTIVE.getValue());
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
         this.loanScheduleValidator.validateDisbursementDateIsOnHolidayOrNonWorkingDay(loanApplicationTerms.getExpectedDisbursementDate(), workingDays, isHolidayEnabled, holidays);
-        Set<LoanDisbursementDetails> loanDisbursementDetails = this.loanUtilService.fetchDisbursementData(element.getAsJsonObject());
+        List<LoanDisbursementDetails> loanDisbursementDetails = this.loanUtilService.fetchDisbursementData(element.getAsJsonObject());
         return assembleLoanScheduleFrom(loanApplicationTerms, isHolidayEnabled, holidays, workingDays, element, loanDisbursementDetails, glimList);
     }
 
     public LoanScheduleModel assembleLoanScheduleFrom(final LoanApplicationTerms loanApplicationTerms, final boolean isHolidayEnabled,
             final List<Holiday> holidays, final WorkingDays workingDays, final JsonElement element,
-            Set<LoanDisbursementDetails> disbursementDetails, List<GroupLoanIndividualMonitoring> glimList) {
+            List<LoanDisbursementDetails> disbursementDetails, List<GroupLoanIndividualMonitoring> glimList) {
 
         final Set<LoanCharge> loanCharges = this.loanChargeAssembler.fromParsedJson(element, disbursementDetails);
         if(glimList != null && !glimList.isEmpty()) {
