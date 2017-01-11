@@ -210,14 +210,14 @@ public class LoanPurposeGroupWritePlatformServiceImpl implements LoanPurposeGrou
     @SuppressWarnings("unused")
     private void handleDataIntegrityIssues(final JsonCommand command, final DataIntegrityViolationException dve) {
         final Throwable realCause = dve.getMostSpecificCause();
-        if (realCause.getMessage().contains("UQ_f_loan_purpose_group_short_name")) {
-            throw new PlatformDataIntegrityException("error.msg.loan.purpose.group.short.name.already.exist",
-                    "Loan purpose group short name already exist", "shortName");
+        if (realCause.getMessage().contains("UQ_f_loan_purpose_group_system_code")) {
+            throw new PlatformDataIntegrityException("error.msg.loan.purpose.group.system.code.already.exist",
+                    "Loan purpose group system code already exist", "systemCode");
         } else if (realCause.getMessage().contains("UQ_f_loan_purpose_group")) {
             throw new PlatformDataIntegrityException("error.msg.loan.purpose.group.name.and.type.already.exist",
                     "Loan purpose group name and type already exist", "name", "typeEnumId");
-        } else if (realCause.getMessage().contains("UQ_f_loan_purpose_short_name")) { throw new PlatformDataIntegrityException(
-                "error.msg.loan.purpose.short.name.already.exist", "Loan purpose short name already exist", "name", "typeEnumId"); }
+        } else if (realCause.getMessage().contains("UQ_f_loan_purpose_system_code")) { throw new PlatformDataIntegrityException(
+                "error.msg.loan.purpose.system.code.already.exist", "Loan purpose system code already exist", "systemCode"); }
         logAsErrorUnexpectedDataIntegrityException(dve);
         throw new PlatformDataIntegrityException("error.msg.loan.purpose.groupping.data.integrity.issue",
                 "Unknown data integrity issue with resource.");

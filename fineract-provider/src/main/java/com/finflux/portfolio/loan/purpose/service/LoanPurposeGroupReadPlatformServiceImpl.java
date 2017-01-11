@@ -129,11 +129,12 @@ public class LoanPurposeGroupReadPlatformServiceImpl implements LoanPurposeGroup
 
         public String schema(final Boolean isFetchLoanPurposeDatas) {
             final StringBuilder sqlBuilder = new StringBuilder(400);
-            sqlBuilder.append("lpg.id as lpgId, lpg.name as lpgName, lpg.short_name as lpgShortName,lpg.description AS lpgDescription ")
-                    .append(",lpgtype.id as lpgTypeId, lpgtype.code_value as lpgTypeName, lpg.is_active as lpgIsActive ");
+            sqlBuilder
+                    .append("lpg.id as lpgId, lpg.name as lpgName, lpg.system_code as lpgSystemCode,lpg.description AS lpgDescription ")
+                    .append(",lpgtype.id as lpgTypeId, lpgtype.code_value as lpgTypeName, lpg.is_active as lpgIsActive, lpg.is_system_defined as lpgIsSystemDefined ");
             if (isFetchLoanPurposeDatas) {
                 sqlBuilder
-                        .append(",lp.id as lpId, lp.name as lpName,lp.short_name as lpShortName, lp.description AS lpDescription,lp.is_active as lpIsActive ");
+                        .append(",lp.id as lpId, lp.name as lpName,lp.system_code as lpSystemCode, lp.description AS lpDescription,lp.is_active as lpIsActive ");
             }
             sqlBuilder.append("FROM f_loan_purpose_group lpg ");
             if (isFetchLoanPurposeDatas) {
@@ -149,7 +150,7 @@ public class LoanPurposeGroupReadPlatformServiceImpl implements LoanPurposeGroup
             final Long id = JdbcSupport.getLongDefaultToNullIfZero(rs, "lpgId");
             if (id == null) { return null; }
             final String name = rs.getString("lpgName");
-            final String shortName = rs.getString("lpgShortName");
+            final String systemCode = rs.getString("lpgSystemCode");
             final String description = rs.getString("lpgDescription");
             CodeValueData loanPurposeGroupType = null;
             final Long lpgTypeId = rs.getLong("lpgTypeId");
@@ -157,7 +158,8 @@ public class LoanPurposeGroupReadPlatformServiceImpl implements LoanPurposeGroup
                 loanPurposeGroupType = CodeValueData.instanceIdAndName(rs.getLong("lpgTypeId"), rs.getString("lpgTypeName"));
             }
             final boolean isActive = rs.getBoolean("lpgIsActive");
-            return LoanPurposeGroupData.instance(id, name, shortName, description, loanPurposeGroupType, isActive);
+            final boolean isSystemDefined = rs.getBoolean("lpgIsSystemDefined");
+            return LoanPurposeGroupData.instance(id, name, systemCode, description, loanPurposeGroupType, isActive, isSystemDefined);
         }
     }
 
@@ -266,11 +268,11 @@ public class LoanPurposeGroupReadPlatformServiceImpl implements LoanPurposeGroup
         public String schema(final Boolean isFetchLoanPurposeGroupDatas) {
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder
-                    .append("lp.id as lpId, lp.name as lpName, lp.short_name as lpShortName,lp.description AS lpDescription,lp.is_active as lpIsActive ");
+                    .append("lp.id as lpId, lp.name as lpName, lp.system_code as lpSystemCode,lp.description AS lpDescription,lp.is_active as lpIsActive ");
             if (isFetchLoanPurposeGroupDatas) {
-                sqlBuilder.append(
-                        ",lpg.id as lpgId, lpg.name as lpgName, lpg.short_name as lpgShortName, lpg.description AS lpgDescription ")
-                        .append(",lpgtype.id as lpgTypeId, lpgtype.code_value as lpgTypeName, lpg.is_active as lpgIsActive ");
+                sqlBuilder
+                        .append(",lpg.id as lpgId, lpg.name as lpgName, lpg.system_code as lpgSystemCode, lpg.description AS lpgDescription ")
+                        .append(",lpgtype.id as lpgTypeId, lpgtype.code_value as lpgTypeName, lpg.is_active as lpgIsActive,lpg.is_system_defined as lpgIsSystemDefined ");
             }
             sqlBuilder.append("FROM f_loan_purpose lp ");
             if (isFetchLoanPurposeGroupDatas) {
@@ -286,13 +288,13 @@ public class LoanPurposeGroupReadPlatformServiceImpl implements LoanPurposeGroup
             final Long id = JdbcSupport.getLongDefaultToNullIfZero(rs, "lpId");
             if (id == null) { return null; }
             final String name = rs.getString("lpName");
-            final String shortName = rs.getString("lpShortName");
+            final String systemCode = rs.getString("lpSystemCode");
             final String description = rs.getString("lpDescription");
             final boolean isActive = rs.getBoolean("lpIsActive");
             if (this.isFetchLoanPurposeGroupDatas) {
 
             }
-            return LoanPurposeData.instance(id, name, shortName, description, isActive);
+            return LoanPurposeData.instance(id, name, systemCode, description, isActive);
         }
     }
 }

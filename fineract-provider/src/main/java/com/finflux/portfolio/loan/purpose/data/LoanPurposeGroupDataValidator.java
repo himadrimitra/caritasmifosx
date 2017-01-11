@@ -53,16 +53,17 @@ public class LoanPurposeGroupDataValidator {
         final String name = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.nameParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.nameParamName).value(name).notNull();
 
-        final String shortName = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.shortNameParamName, element);
-        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.shortNameParamName).value(shortName).notNull()
-                .notExceedingLengthOf(30);
+        final String systemCode = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.systemCodeParamName, element);
+        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.systemCodeParamName).value(systemCode).notNull()
+                .notExceedingLengthOf(50);
 
         final String description = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.descriptionParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.descriptionParamName).value(description).ignoreIfNull();
 
-        final Integer loanPurposeGroupTypeId = this.fromApiJsonHelper.extractIntegerNamed(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element,
-                locale);
-        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName).value(loanPurposeGroupTypeId).notNull();
+        final Integer loanPurposeGroupTypeId = this.fromApiJsonHelper.extractIntegerNamed(
+                LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element, locale);
+        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName).value(loanPurposeGroupTypeId)
+                .notNull();
 
         final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(LoanPurposeGroupApiConstants.isActiveParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.isActiveParamName).value(isActive).ignoreIfNull();
@@ -100,9 +101,10 @@ public class LoanPurposeGroupDataValidator {
         final String description = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.descriptionParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.descriptionParamName).value(description).ignoreIfNull();
 
-        final Integer loanPurposeGroupTypeId = this.fromApiJsonHelper.extractIntegerNamed(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element,
-                locale);
-        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName).value(loanPurposeGroupTypeId).notNull();
+        final Integer loanPurposeGroupTypeId = this.fromApiJsonHelper.extractIntegerNamed(
+                LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element, locale);
+        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName).value(loanPurposeGroupTypeId)
+                .notNull();
 
         final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(LoanPurposeGroupApiConstants.isActiveParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.isActiveParamName).value(isActive).ignoreIfNull();
@@ -128,9 +130,9 @@ public class LoanPurposeGroupDataValidator {
         final String name = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.nameParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.nameParamName).value(name).notNull();
 
-        final String shortName = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.shortNameParamName, element);
-        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.shortNameParamName).value(shortName).notNull()
-                .notExceedingLengthOf(30);
+        final String systemCode = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.systemCodeParamName, element);
+        baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.systemCodeParamName).value(systemCode).notNull()
+                .notExceedingLengthOf(50);
 
         final String description = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.descriptionParamName, element);
         baseDataValidator.reset().parameter(LoanPurposeGroupApiConstants.descriptionParamName).value(description).ignoreIfNull();

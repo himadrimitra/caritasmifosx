@@ -40,7 +40,7 @@ public class LoanPurposeGroupHelper {
     public static String getCreateLoanPurposeGroupRequestBodyAsJSON(final HashMap<String, Object> codeValue) {
         final HashMap<String, Object> map = new HashMap<>();
         map.put("name", "Loan Purpose Group Name");
-        map.put("shortName", "LPG");
+        map.put("systemCode", "LPG");
         map.put("description", "Loan Purpose Group Description");
         map.put("loanPurposeGroupTypeId", codeValue.get("id"));
         map.put("isActive", true);
@@ -94,7 +94,7 @@ public class LoanPurposeGroupHelper {
     private static String getCreateLoanPurposeRequestBodyAsJSON() {
         final HashMap<String, Object> map = new HashMap<>();
         map.put("name", "Loan Purpose Name");
-        map.put("shortName", "LP");
+        map.put("systemCode", "LP");
         map.put("description", "Loan Purpose Description");
         map.put("isActive", true);
         System.out.println("map : " + map);

@@ -1,5 +1,6 @@
 package com.finflux.portfolio.loan.utilization.service;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.Transactional;
@@ -9,7 +10,6 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,13 +51,13 @@ public class LoanUtilizationCheckWritePlatformServiceImpl implements LoanUtiliza
 
             this.validator.validateForCreate(command.json());
 
-            final LoanUtilizationCheck loanUtilizationCheck = this.assembler.assembleCreateForm(command);
+            final List<LoanUtilizationCheck> loanUtilizationChecks = this.assembler.assembleCreateForm(command);
 
-            this.repository.save(loanUtilizationCheck);
+            this.repository.save(loanUtilizationChecks);
 
             return new CommandProcessingResultBuilder()//
                     .withCommandId(command.commandId())//
-                    .withEntityId(loanUtilizationCheck.getId())//
+                    .withEntityId(loanUtilizationChecks.get(0).getId())
                     .build();
 
         } catch (final DataIntegrityViolationException dve) {

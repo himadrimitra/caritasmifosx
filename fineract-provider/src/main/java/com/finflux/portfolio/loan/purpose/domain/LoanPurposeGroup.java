@@ -21,14 +21,14 @@ import com.finflux.portfolio.loan.purpose.api.LoanPurposeGroupApiConstants;
 @Entity
 @Table(name = "f_loan_purpose_group", uniqueConstraints = {
         @UniqueConstraint(columnNames = { "name", "type_cv_id" }, name = "UQ_f_loan_purpose_group"),
-        @UniqueConstraint(columnNames = { "short_name" }, name = "UQ_f_loan_purpose_group_short_name") })
+        @UniqueConstraint(columnNames = { "system_code" }, name = "UQ_f_loan_purpose_group_system_code") })
 public class LoanPurposeGroup extends AbstractPersistable<Long> {
 
     @Column(name = "name", length = 100, nullable = false)
     private String name;
 
-    @Column(name = "short_name", length = 30, nullable = false, unique = true)
-    private String shortName;
+    @Column(name = "system_code", length = 50, nullable = false, unique = true)
+    private String systemCode;
 
     @Column(name = "description", length = 500, nullable = true)
     private String description;
@@ -39,21 +39,24 @@ public class LoanPurposeGroup extends AbstractPersistable<Long> {
 
     @Column(name = "is_active", length = 1, nullable = false)
     private Boolean isActive;
+    
+    @Column(name = "is_system_defined", length = 1, nullable = false)
+    private final boolean isSystemDefined = false;
 
     protected LoanPurposeGroup() {}
 
-    private LoanPurposeGroup(final String name, final String shortName, final String description, final CodeValue loanPurposeGroupType,
+    private LoanPurposeGroup(final String name, final String systemCode, final String description, final CodeValue loanPurposeGroupType,
             final Boolean isActive) {
         this.name = name;
-        this.shortName = shortName;
+        this.systemCode = systemCode;
         this.description = description;
         this.loanPurposeGroupType = loanPurposeGroupType;
         this.isActive = isActive;
     }
 
-    public static LoanPurposeGroup create(final String name, final String shortName, final String description,
+    public static LoanPurposeGroup create(final String name, final String systemCode, final String description,
             final CodeValue loanPurposeGroupType, final Boolean isActive) {
-        return new LoanPurposeGroup(name, shortName, description, loanPurposeGroupType, isActive);
+        return new LoanPurposeGroup(name, systemCode, description, loanPurposeGroupType, isActive);
     }
 
     public Map<String, Object> update(final JsonCommand command) {

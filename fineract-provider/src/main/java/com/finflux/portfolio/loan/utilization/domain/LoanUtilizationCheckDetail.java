@@ -4,12 +4,10 @@ import java.math.BigDecimal;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -19,10 +17,6 @@ public class LoanUtilizationCheckDetail extends AbstractPersistable<Long> {
     @ManyToOne
     @JoinColumn(name = "loan_utilization_check_id", nullable = false)
     private LoanUtilizationCheck loanUtilizationCheck;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "loan_id")
-    private Loan loan;
 
     @Column(name = "loan_purpose_id", nullable = true)
     private Long loanPurposeId;
@@ -38,10 +32,9 @@ public class LoanUtilizationCheckDetail extends AbstractPersistable<Long> {
 
     protected LoanUtilizationCheckDetail() {}
 
-    private LoanUtilizationCheckDetail(final LoanUtilizationCheck loanUtilizationCheck, final Loan loan, final Long loanPurposeId,
+    private LoanUtilizationCheckDetail(final LoanUtilizationCheck loanUtilizationCheck, final Long loanPurposeId,
             final Boolean isSameAsOriginalPurpose, final BigDecimal amount, final String comment) {
         this.loanUtilizationCheck = loanUtilizationCheck;
-        this.loan = loan;
         this.loanPurposeId = loanPurposeId;
         if (isSameAsOriginalPurpose != null) {
             this.isSameAsOriginalPurpose = isSameAsOriginalPurpose;
@@ -50,8 +43,20 @@ public class LoanUtilizationCheckDetail extends AbstractPersistable<Long> {
         this.comment = comment;
     }
 
-    public static LoanUtilizationCheckDetail create(final LoanUtilizationCheck loanUtilizationCheck, final Loan loan,
-            final Long loanPurposeId, final Boolean isSameAsOriginalPurpose, final BigDecimal amount, final String comment) {
-        return new LoanUtilizationCheckDetail(loanUtilizationCheck, loan, loanPurposeId, isSameAsOriginalPurpose, amount, comment);
+    public static LoanUtilizationCheckDetail create(final LoanUtilizationCheck loanUtilizationCheck, final Long loanPurposeId,
+            final Boolean isSameAsOriginalPurpose, final BigDecimal amount, final String comment) {
+        return new LoanUtilizationCheckDetail(loanUtilizationCheck, loanPurposeId, isSameAsOriginalPurpose, amount, comment);
+    }
+
+    public void update(final LoanUtilizationCheck loanUtilizationCheck, final Long loanPurposeId, final Boolean isSameAsOriginalPurpose,
+            final BigDecimal amount, final String comment) {
+        this.loanUtilizationCheck = loanUtilizationCheck;
+        this.loanPurposeId = loanPurposeId;
+        if (isSameAsOriginalPurpose != null) {
+            this.isSameAsOriginalPurpose = isSameAsOriginalPurpose;
+        }
+        this.amount = amount;
+        this.comment = comment;
+
     }
 }

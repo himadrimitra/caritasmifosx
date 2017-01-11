@@ -157,7 +157,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
         private LoanUtilizationCheckDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder.append("luc.id AS lucId, luc.audit_done_by AS auditDoneById, staff.display_name AS auditDoneByName ");
-            sqlBuilder.append(",luc.audit_done_on AS auditDoneOn,lucd.id AS lucdId,lucd.loan_id AS loanId ");
+            sqlBuilder.append(",luc.audit_done_on AS auditDoneOn,lucd.id AS lucdId,luc.loan_id AS loanId ");
             sqlBuilder.append(",lucd.is_same_as_oroginal_purpose AS isSameAsOroginalPurpose ");
             sqlBuilder.append(",lucd.amount AS amount,lucd.comment AS comment ");
             sqlBuilder.append(",lp.id AS lpId,lp.name AS lpName,lp.is_active AS lpIsActive ");
@@ -166,7 +166,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             sqlBuilder.append("FROM f_loan_utilization_check luc ");
             sqlBuilder.append("LEFT JOIN m_staff staff ON staff.id = luc.audit_done_by ");
             sqlBuilder.append("JOIN f_loan_utilization_check_detail lucd ON lucd.loan_utilization_check_id = luc.id ");
-            sqlBuilder.append("JOIN m_loan l ON l.id = lucd.loan_id ");
+            sqlBuilder.append("JOIN m_loan l ON l.id = luc.loan_id ");
             sqlBuilder.append("JOIN m_client c ON c.id = l.client_id ");
             sqlBuilder.append("LEFT JOIN m_group gp ON gp.id = l.group_id ");
             sqlBuilder.append("LEFT JOIN f_loan_purpose lp ON lp.id = lucd.loan_purpose_id ");
@@ -177,10 +177,11 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
         public LoanUtilizationCheckData mapRow(ResultSet rs, int rowNum) throws SQLException {
             final Long id = JdbcSupport.getLongDefaultToNullIfZero(rs, "lucId");
             if (id == null) { return null; }
+            final Long loanId = rs.getLong("loanId");
             final Long auditDoneById = rs.getLong("auditDoneById");
             final String auditDoneByName = rs.getString("auditDoneByName");
             final LocalDate auditDoneOn = JdbcSupport.getLocalDate(rs, "auditDoneOn");
-            return LoanUtilizationCheckData.instance(id, auditDoneById, auditDoneByName, auditDoneOn);
+            return LoanUtilizationCheckData.instance(id, loanId, auditDoneById, auditDoneByName, auditDoneOn);
         }
 
     }
@@ -203,38 +204,24 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
 
         @Override
         public Collection<LoanUtilizationCheckData> extractData(ResultSet rs) throws SQLException, DataAccessException {
-
-            List<LoanUtilizationCheckData> loanUtilizationCheckDataList = new ArrayList<>();
-
+            final List<LoanUtilizationCheckData> loanUtilizationCheckDataList = new ArrayList<>();
             LoanUtilizationCheckData loanUtilizationCheckData = null;
             LoanUtilizationCheckDetailData loanUtilizationCheckDetailData = null;
-            Long loanUtilizationCheckId = null;
-            Long loanId = null;
             int lucIndex = 0;// Loan utilization check index
             int lucdIndex = 0;// Loan utilization check details index
             int udIndex = 0;// utilization details index
-
             while (rs.next()) {
-                final Long tempLucId = rs.getLong("lucId");
-                if (loanUtilizationCheckData == null || (loanUtilizationCheckId != null && !loanUtilizationCheckId.equals(tempLucId))) {
-                    loanUtilizationCheckId = tempLucId;
-                    loanUtilizationCheckDetailData = null;
-                    loanUtilizationCheckData = this.loanUtilizationCheckDataMapper.mapRow(rs, lucIndex++);
-                    loanUtilizationCheckDataList.add(loanUtilizationCheckData);
-                }
+                loanUtilizationCheckData = this.loanUtilizationCheckDataMapper.mapRow(rs, lucIndex++);
                 if (loanUtilizationCheckData != null) {
-                    final Long tempLoanId = rs.getLong("loanId");
-                    if (loanUtilizationCheckDetailData == null || (loanId != null && !loanId.equals(tempLoanId))) {
-                        loanId = tempLoanId;
-                        loanUtilizationCheckDetailData = this.loanUtilizationCheckDetailDataMapper.mapRow(rs, lucdIndex++);
-                        if (loanUtilizationCheckDetailData != null) {
-                            loanUtilizationCheckData.addLoanUtilizationCheckDetails(loanUtilizationCheckDetailData);
-                        }
+                    loanUtilizationCheckDetailData = this.loanUtilizationCheckDetailDataMapper.mapRow(rs, lucdIndex++);
+                    if (loanUtilizationCheckDetailData != null) {
+                        loanUtilizationCheckData.addLoanUtilizationCheckDetailData(loanUtilizationCheckDetailData);
                     }
                     if (loanUtilizationCheckDetailData != null) {
                         final UtilizationDetailsData utilizationDetailsData = this.utilizationDetailsDataMapper.mapRow(rs, udIndex++);
-                        loanUtilizationCheckDetailData.addUtilizationDetailsData(utilizationDetailsData);
+                        loanUtilizationCheckDetailData.setUtilizationDetailsData(utilizationDetailsData);
                     }
+                    loanUtilizationCheckDataList.add(loanUtilizationCheckData);
                 }
             }
             return loanUtilizationCheckDataList;
@@ -247,7 +234,6 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
         public LoanUtilizationCheckDetailData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long id = JdbcSupport.getLongDefaultToNullIfZero(rs, "lucdId");
             if (id == null) { return null; }
-            final Long loanId = JdbcSupport.getLongDefaultToNullIfZero(rs, "loanId");
             final Long groupId = JdbcSupport.getLongDefaultToNullIfZero(rs, "groupId");
             final String groupName = rs.getString("groupName");
             final Long clientId = JdbcSupport.getLongDefaultToNullIfZero(rs, "clientId");
@@ -260,7 +246,7 @@ public class LoanUtilizationCheckReadPlatformServiceImpl implements LoanUtilizat
             final Integer loanTypeId = rs.getInt("loanTypeId");
             final EnumOptionData loanType = AccountEnumerations.loanType(loanTypeId);
             final BigDecimal principalAmount = rs.getBigDecimal("principalAmount");
-            return LoanUtilizationCheckDetailData.instance(id, loanId, groupId, groupName, clientId, clientName, loanStatus, loanType,
+            return LoanUtilizationCheckDetailData.instance(id, groupId, groupName, clientId, clientName, loanStatus, loanType,
                     principalAmount);
         }
     }

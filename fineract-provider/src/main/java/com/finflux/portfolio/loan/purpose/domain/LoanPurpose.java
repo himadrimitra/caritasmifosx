@@ -24,14 +24,14 @@ import org.hibernate.annotations.LazyCollectionOption;
 import com.finflux.portfolio.loan.purpose.api.LoanPurposeGroupApiConstants;
 
 @Entity
-@Table(name = "f_loan_purpose", uniqueConstraints = { @UniqueConstraint(columnNames = { "short_name" }, name = "UQ_f_loan_purpose_short_name") })
+@Table(name = "f_loan_purpose", uniqueConstraints = { @UniqueConstraint(columnNames = { "system_code" }, name = "UQ_f_loan_purpose_system_code") })
 public class LoanPurpose extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "name", length = 100, nullable = false)
     private String name;
 
-    @Column(name = "short_name", length = 30, nullable = false, unique = true)
-    private String shortName;
+    @Column(name = "system_code", length = 50, nullable = false, unique = true)
+    private String systemCode;
 
     @Column(name = "description", length = 500, nullable = true)
     private String description;
@@ -47,15 +47,15 @@ public class LoanPurpose extends AbstractAuditableCustom<AppUser, Long> {
 
     protected LoanPurpose() {}
 
-    private LoanPurpose(final String name, final String shortName, final String description, final Boolean isActive) {
+    private LoanPurpose(final String name, final String systemCode, final String description, final Boolean isActive) {
         this.name = name;
-        this.shortName = shortName;
+        this.systemCode = systemCode;
         this.description = description;
         this.isActive = isActive;
     }
 
-    public static LoanPurpose create(final String name, final String shortName, final String description, final Boolean isActive) {
-        return new LoanPurpose(name, shortName, description, isActive);
+    public static LoanPurpose create(final String name, final String systemCode, final String description, final Boolean isActive) {
+        return new LoanPurpose(name, systemCode, description, isActive);
     }
 
     public void addLoanPurposeGroupMapping(final LoanPurposeGroupMapping loanPurposeGroupMapping) {
@@ -103,7 +103,7 @@ public class LoanPurpose extends AbstractAuditableCustom<AppUser, Long> {
     public void activate() {
         this.isActive = true;
     }
-    
+
     public void updateAllLoanPurposeGroupMapping(final Set<LoanPurposeGroupMapping> loanPurposeGroupMappings) {
         this.loanPurposeGroupMapping.clear();
         if (loanPurposeGroupMappings != null) {

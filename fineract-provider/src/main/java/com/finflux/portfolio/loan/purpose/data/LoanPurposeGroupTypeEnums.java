@@ -11,8 +11,9 @@ import com.finflux.portfolio.loan.purpose.api.LoanPurposeGroupApiConstants;
 public enum LoanPurposeGroupTypeEnums {
 
     INVALID(0, "loanPurposeGroupType.invalid"), //
-    GROUPING(1, "loanPurposeGroupType.grouping"), //
-    CONSUMPTION(2, "loanPurposeGroupType.consumption");
+    CONSUMPTION_WISE(1, "loanPurposeGroupType.consumption.wise"), //
+    SECTOR_WISE(2, "loanPurposeGroupType.sector.wise"), //
+    PSL(3, "loanPurposeGroupType.psl"); // PSL - Priority Sector Lending
 
     private final Integer value;
     private final String code;
@@ -35,25 +36,13 @@ public enum LoanPurposeGroupTypeEnums {
         if (frequency != null) {
             switch (frequency) {
                 case 1:
-                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.GROUPING;
+                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.CONSUMPTION_WISE;
                 break;
                 case 2:
-                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.CONSUMPTION;
+                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.SECTOR_WISE;
                 break;
-            }
-        }
-        return loanPurposeGroupTypeEnums;
-    }
-
-    public static LoanPurposeGroupTypeEnums fromString(final String frequency) {
-        LoanPurposeGroupTypeEnums loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.INVALID;
-        if (frequency != null) {
-            switch (frequency) {
-                case "GROUPING":
-                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.GROUPING;
-                break;
-                case "CONSUMPTION":
-                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.CONSUMPTION;
+                case 3:
+                    loanPurposeGroupTypeEnums = LoanPurposeGroupTypeEnums.PSL;
                 break;
             }
         }
@@ -94,11 +83,14 @@ public enum LoanPurposeGroupTypeEnums {
     public static EnumOptionData loanPurposeGroupType(final LoanPurposeGroupTypeEnums type) {
         EnumOptionData optionData = null;
         switch (type) {
-            case GROUPING:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), LoanPurposeGroupApiConstants.grouping);
+            case CONSUMPTION_WISE:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), LoanPurposeGroupApiConstants.CONSUMPTION_WISE);
             break;
-            case CONSUMPTION:
-                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), LoanPurposeGroupApiConstants.consumption);
+            case SECTOR_WISE:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), LoanPurposeGroupApiConstants.SECTOR_WISE);
+            break;
+            case PSL:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), LoanPurposeGroupApiConstants.PSL);
             break;
             default:
             break;
