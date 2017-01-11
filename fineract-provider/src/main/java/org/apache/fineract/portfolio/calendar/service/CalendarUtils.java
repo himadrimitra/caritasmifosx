@@ -44,6 +44,7 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
+import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarWeekDaysType;
@@ -458,7 +459,7 @@ public class CalendarUtils {
 
     public static int getInterval(final String recurringRule) {
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
-        return recur.getInterval();
+        return recur.getInterval() == -1 ? 1:recur.getInterval();
     }
 
     public static CalendarFrequencyType getFrequency(final String recurringRule) {
@@ -742,18 +743,31 @@ public class CalendarUtils {
                 baseDataValidator.reset().parameter(repeatsOnDayParamName).value(repeatsOnDay).cantBeBlankWhenParameterProvidedIs(
                         repeatsOnNthDayOfMonthParamName, NthDayNameEnum.from(nthDayType.toString()).getCode().toLowerCase());
             }
-        }
-    }
-    public static Integer getMonthOnDay(String recurringRule) {
-        final Recur recur = CalendarUtils.getICalRecur(recurringRule);
-        NumberList monthDayList = null;
-        Integer monthOnDay = null;
-        if (getMeetingPeriodFrequencyType(recur).isMonthly()) {
-            monthDayList = recur.getMonthDayList();
-            if (!monthDayList.isEmpty()) {
-                monthOnDay = (Integer) monthDayList.get(0);
+            if(nthDayType.isOnDay()){
+                String onMonthDayParamName = CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue();
+                String[] repeatsOnDayOfMonthString = fromApiJsonHelper.extractArrayNamed(onMonthDayParamName, element);
+                baseDataValidator.reset().parameter(onMonthDayParamName).value(repeatsOnDayOfMonthString).notBlank();
+                if (repeatsOnDayOfMonthString != null) {
+                    for (String day : repeatsOnDayOfMonthString) {
+                        try {
+                            int monthDay = Integer.parseInt(day);
+                            if(monthDay < 1 && monthDay > 28){
+                                baseDataValidator.reset().parameter(onMonthDayParamName).value(day).failWithCode("not.in.valid.range");
+                            }
+                        } catch (Exception e) {
+                            baseDataValidator.reset().parameter(onMonthDayParamName).value(day).failWithCode("not.a.valid.number");
+                        }
+                    }
+                }
             }
         }
-        return monthOnDay;
+    }
+    public static Collection<Integer> getMonthOnDay(String recurringRule) {
+        final Recur recur = CalendarUtils.getICalRecur(recurringRule);
+        NumberList monthDayList = null;
+        if (getMeetingPeriodFrequencyType(recur).isMonthly()) {
+            monthDayList = recur.getMonthDayList();
+        }
+        return monthDayList;
     }
 }

@@ -36,8 +36,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
-import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -71,6 +71,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanApiConstants.loanTermFrequencyTypeParameterName, LoanApiConstants.numberOfRepaymentsParameterName,
             LoanApiConstants.repaymentEveryParameterName, LoanApiConstants.repaymentFrequencyTypeParameterName,
             LoanApiConstants.repaymentFrequencyNthDayTypeParameterName, LoanApiConstants.repaymentFrequencyDayOfWeekTypeParameterName,
+            CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue(),
             LoanApiConstants.interestRatePerPeriodParameterName, LoanApiConstants.amortizationTypeParameterName,
             LoanApiConstants.interestTypeParameterName, LoanApiConstants.isFloatingInterestRate, LoanApiConstants.interestRateDifferential,
             LoanApiConstants.interestCalculationPeriodTypeParameterName,
@@ -1318,10 +1319,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         final LocalDate disbursalDate = loan.getDisbursementDate();
         final PeriodFrequencyType repaymentFrequencyType = loan.getLoanProductRelatedDetail().getRepaymentPeriodFrequencyType();
         final Integer repaymentEvery = loan.getLoanProductRelatedDetail().getRepayEvery();
-        final Integer nthDay = null;
-        final Integer dayOfWeek = null;
-        final DayOfWeekType weekDayType = DayOfWeekType.fromInt(dayOfWeek);
-        return calculateLoanTermInDays(disbursalDate, repaymentFrequencyType, repaymentEvery, nthDay, weekDayType, numberOfRepaymentPeriods);
+        return calculateLoanTermInDays(disbursalDate, repaymentFrequencyType, repaymentEvery, numberOfRepaymentPeriods);
     }
 
     private Integer calculateLoanTermInDays(final LoanProduct loanProduct, final Integer numberOfRepaymentPeriods,
@@ -1329,25 +1327,19 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
         final PeriodFrequencyType loanTermPeriodFrequencyType = loanProduct.getLoanProductRelatedDetail().getRepaymentPeriodFrequencyType();
         final Integer repaymentEvery = loanProduct.getLoanProductRelatedDetail().getRepayEvery();
-        final Integer nthDay = null;
-        final DayOfWeekType weekDayType = null;
-        return calculateLoanTermInDays(disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType,
-                numberOfRepaymentPeriods);
+        return calculateLoanTermInDays(disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, numberOfRepaymentPeriods);
     }
 
     private Integer calculateLoanTermInDays(PeriodFrequencyType loanTermPeriodFrequencyType, final Integer numberOfRepaymentPeriods,
             final LocalDate disbursalDate) {
         final Integer repaymentEvery = 1;
-        final Integer nthDay = null;
-        final DayOfWeekType weekDayType = null;
-        return calculateLoanTermInDays(disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, nthDay, weekDayType,
-                numberOfRepaymentPeriods);
+        return calculateLoanTermInDays(disbursalDate, loanTermPeriodFrequencyType, repaymentEvery, numberOfRepaymentPeriods);
     }
 
     private Integer calculateLoanTermInDays(final LocalDate disbursalDate, final PeriodFrequencyType loanTermPeriodFrequencyType,
-            final Integer repaymentEvery, Integer nthDay, DayOfWeekType dayOfWeek, Integer numberOfRepaymentPeriods) {
+            final Integer repaymentEvery, Integer numberOfRepaymentPeriods) {
         return this.loanUtilService.calculateNumberOfDaysBetweenDisbursalRepaymentDateWithRepaymentPeriod(disbursalDate,
-                loanTermPeriodFrequencyType, repaymentEvery, nthDay, dayOfWeek, numberOfRepaymentPeriods);
+                loanTermPeriodFrequencyType, repaymentEvery, numberOfRepaymentPeriods);
     }
     
 }

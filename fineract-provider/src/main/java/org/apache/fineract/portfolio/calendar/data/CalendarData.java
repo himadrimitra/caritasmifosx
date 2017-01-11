@@ -69,7 +69,7 @@ public class CalendarData {
     private final String createdByUsername;
     private final Long lastUpdatedByUserId;
     private final String lastUpdatedByUsername;
-    private final Integer repeatsOnDayOfMonth;
+    private final Collection<Integer> repeatsOnDayOfMonth;
 
     // template related
     final List<EnumOptionData> entityTypeOptions;
@@ -86,7 +86,7 @@ public class CalendarData {
             final EnumOptionData repeatsOnNthDayOfMonth, final EnumOptionData remindBy, final Integer firstReminder,
             final Integer secondReminder, final String humanReadable, final LocalDate createdDate, final LocalDate lastUpdatedDate,
             final Long createdByUserId, final String createdByUsername, final Long lastUpdatedByUserId, final String lastUpdatedByUsername,
-            final LocalTime meetingTime, final Integer repeatsOnDayOfMonth) {
+            final LocalTime meetingTime, final Collection<Integer> repeatsOnDayOfMonth) {
 
         final Collection<LocalDate> recurringDates = null;
         final Collection<LocalDate> nextTenRecurringDates = null;
@@ -172,7 +172,7 @@ public class CalendarData {
         final Long lastUpdatedByUserId = null;
         final String lastUpdatedByUsername = null;
         final LocalTime meetingTime = null;
-        final Integer repeatsOnDayOfMonth = null;
+        final Collection<Integer> repeatsOnDayOfMonth = null;
 
         return new CalendarData(id, calendarInstanceId, entityId, entityType, title, description, location, startDate, endDate, duration,
                 type, repeating, recurrence, frequency, interval, repeatsOnDay, repeatsOnNthDayOfMonth, remindBy, firstReminder,
@@ -206,7 +206,7 @@ public class CalendarData {
             final Integer secondReminder, final Collection<LocalDate> recurringDates, final Collection<LocalDate> nextTenRecurringDates,
             final String humanReadable, final LocalDate recentEligibleMeetingDate, final LocalDate createdDate,
             final LocalDate lastUpdatedDate, final Long createdByUserId, final String createdByUsername, final Long lastUpdatedByUserId,
-            final String lastUpdatedByUsername, final Integer repeatsOnDayOfMonth, final List<EnumOptionData> entityTypeOptions,
+            final String lastUpdatedByUsername, final Collection<Integer> repeatsOnDayOfMonth, final List<EnumOptionData> entityTypeOptions,
             final List<EnumOptionData> calendarTypeOptions, final List<EnumOptionData> remindByOptions,
             final List<EnumOptionData> repeatsOptions, final List<EnumOptionData> repeatsOnDayOptions,final LocalTime meetingTime, 
             final List<EnumOptionData> frequencyNthDayTypeOptions) {

@@ -588,7 +588,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService
                     .calculateMinimumDaysBetweenDisbursalAndFirstRepayment(actualDisbursementDate, loanProduct, loan
                             .getLoanRepaymentScheduleDetail().getRepaymentPeriodFrequencyType(), loan.getLoanProductRelatedDetail()
-                            .getRepayEvery(), null, null);
+                            .getRepayEvery());
 
             this.loanScheduleValidator.validateRepaymentAndDisbursementDateWithMeetingDateAndMinimumDaysBetweenDisbursalAndFirstRepayment(
                     expectedFirstRepaymentDate, actualDisbursementDate, scheduleGeneratorDTO.getCalendar(),
@@ -2766,7 +2766,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             while (DateUtils.getLocalDateOfTenant().isAfter(startDate)) {
                 scheduleDates.put(frequencyNunber++, startDate.minusDays(diff.intValue()));
                 LocalDate scheduleDate = scheduledDateGenerator.getRepaymentPeriodDate(PeriodFrequencyType.fromInt(feeFrequency),
-                        chargeDefinition.feeInterval(), startDate, null, null);
+                        chargeDefinition.feeInterval(), startDate);
 
                 startDate = scheduleDate;
             }

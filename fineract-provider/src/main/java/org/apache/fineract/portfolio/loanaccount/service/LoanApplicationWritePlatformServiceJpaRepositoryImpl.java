@@ -50,6 +50,7 @@ import org.apache.fineract.portfolio.account.domain.AccountAssociationType;
 import org.apache.fineract.portfolio.account.domain.AccountAssociations;
 import org.apache.fineract.portfolio.account.domain.AccountAssociationsRepository;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.calendar.CalendarConstants.CALENDAR_SUPPORTED_PARAMETERS;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
@@ -80,6 +81,7 @@ import org.apache.fineract.portfolio.collaterals.domain.Pledges;
 import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.fund.domain.Fund;
@@ -401,11 +403,30 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     if (calendarStartDate == null) calendarStartDate = loanApplicationTerms.getExpectedDisbursementDate();
                     final CalendarFrequencyType calendarFrequencyType = CalendarFrequencyType.MONTHLY;
                     final Integer frequency = loanApplicationTerms.getRepaymentEvery();
-                    final Integer repeatsOnDay = loanApplicationTerms.getWeekDayType().getValue();
+                    Integer repeatsOnDay = null;
                     final Integer repeatsOnNthDayOfMonth = loanApplicationTerms.getNthDay();
+                    Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>();
+                    final NthDayType nthDayType = NthDayType.fromInt(repeatsOnNthDayOfMonth);
+                    if (nthDayType.isOnDay()) {
+                        String[] repeatsOnDayOfMonthString = command
+                                .arrayValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue());
+                        if (repeatsOnDayOfMonthString != null) {
+                            for (String day : repeatsOnDayOfMonthString) {
+                                try {
+                                    int monthDay = Integer.parseInt(day);
+                                    repeatsOnDayOfMonth.add(monthDay);
+                                } catch (Exception e) {
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                    }else{
+                        repeatsOnDay = loanApplicationTerms.getWeekDayType().getValue();
+                    }
                     final Integer calendarEntityType = CalendarEntityType.LOANS.getValue();
                     final Calendar loanCalendar = Calendar.createRepeatingCalendar(title, calendarStartDate,
-                            CalendarType.COLLECTION.getValue(), calendarFrequencyType, frequency, repeatsOnDay, repeatsOnNthDayOfMonth);
+                            CalendarType.COLLECTION.getValue(), calendarFrequencyType, frequency, repeatsOnDay, repeatsOnNthDayOfMonth, repeatsOnDayOfMonth);
                     this.calendarRepository.save(loanCalendar);
                     final CalendarInstance calendarInstance = CalendarInstance.from(loanCalendar, newLoanApplication.getId(),
                             calendarEntityType);
@@ -703,9 +724,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             default:
             break;
         }
-
+        Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>(1);
+        repeatsOnDayOfMonth.add(recalculationFrequencyNthDay);
         final Calendar calendar = Calendar.createRepeatingCalendar(title, calendarStartDate, CalendarType.COLLECTION.getValue(),
-                calendarFrequencyType, frequency, updatedRepeatsOnDay, recalculationFrequencyNthDay);
+                calendarFrequencyType, frequency, updatedRepeatsOnDay, recalculationFrequencyNthDay, repeatsOnDayOfMonth);
         final CalendarInstance calendarInstance = CalendarInstance.from(calendar, loan.loanInterestRecalculationDetails().getId(),
                 calendarEntityType.getValue());
         this.calendarInstanceRepository.save(calendarInstance);
@@ -1122,9 +1144,28 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                 final Integer interval = command.integerValueOfParameterNamed("repaymentEvery");
                                 LocalDate startDate = command.localDateValueOfParameterNamed("repaymentsStartingFromDate");
                                 if (startDate == null) startDate = command.localDateValueOfParameterNamed("expectedDisbursementDate");
+                                Integer repeatsOnNthDayOfMonth = (Integer) changes.get("repaymentFrequencyNthDayType");
+                                Integer nthWeekDay = (Integer) changes.get("repaymentFrequencyDayOfWeekType");
+                                final NthDayType nthDayType = NthDayType.fromInt(repeatsOnNthDayOfMonth);
+                                Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>();
+                                if (nthDayType.isOnDay()) {
+                                    String[] repeatsOnDayOfMonthString = command
+                                            .arrayValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue());
+                                    if (repeatsOnDayOfMonthString != null) {
+                                        for (String day : repeatsOnDayOfMonthString) {
+                                            try {
+                                                int monthDay = Integer.parseInt(day);
+                                                repeatsOnDayOfMonth.add(monthDay);
+                                            } catch (Exception e) {
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    nthWeekDay = null;
+                                }
                                 final Calendar newCalendar = Calendar.createRepeatingCalendar(title, startDate, typeId,
-                                        repaymentFrequencyType, interval, (Integer) changes.get("repaymentFrequencyDayOfWeekType"),
-                                        (Integer) changes.get("repaymentFrequencyNthDayType"));
+                                        repaymentFrequencyType, interval, nthWeekDay,
+                                        (Integer) changes.get("repaymentFrequencyNthDayType"), repeatsOnDayOfMonth);
                                 if (ciList != null && !ciList.isEmpty()) {
                                     final CalendarInstance calendarInstance = ciList.get(0);
                                     final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService.isCalendarAssociatedWithEntity(
@@ -1354,7 +1395,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             calendarHistoryDataWrapper = new CalendarHistoryDataWrapper(calendarHistory);
         }
         Integer minimumDaysBetweenDisbursalAndFirstRepayment = this.loanUtilService.calculateMinimumDaysBetweenDisbursalAndFirstRepayment(
-                expectedDisbursementDate,loan, null, null);
+                expectedDisbursementDate,loan);
         LocalDate calculatedRepaymentsStartingFromDate = this.loanUtilService.getCalculatedRepaymentsStartingFromDate(expectedDisbursementDate, loan,
                 calendarInstance, calendarHistoryDataWrapper);
         // validate expected disbursement date and repayment date against meeting date ,
