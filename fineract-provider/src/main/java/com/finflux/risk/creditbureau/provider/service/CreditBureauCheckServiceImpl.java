@@ -310,7 +310,9 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
             loanId = entityId;
             final LoanApplicationReference loanApplicationReference = this.loanApplicationReferenceRepository.findOneByLoanId(loanId);
-            loanApplicationId = loanApplicationReference.getId();
+            if(loanApplicationReference != null){
+                loanApplicationId = loanApplicationReference.getId();
+            }
             if (loanId != null) {
                 final Map<String, Object> data = this.loanReadPlatformServiceImpl.retrieveDisbursalDataMap(loanId);
                 if (data.get("trancheDisbursalId") != null) {
@@ -321,43 +323,37 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         final StringBuilder sb = new StringBuilder(100);
         sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
         sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
-        sb.append("WHERE lcbe.loan_application_id = ? AND lcbe.is_active = 1 ");
+        sb.append("WHERE lcbe.is_active = 1 ");
         if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
+            sb.append("AND lcbe.loan_application_id = ? ");
             return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(),
                     new Object[] { loanApplicationId });
         } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
             sb.append("AND lcbe.loan_id = ? AND lcbe.tranche_disbursal_id = ? ");
-            return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] {
-                    loanApplicationId, loanId, trancheDisbursalId });
-		} 
+            return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] { loanId,
+                    trancheDisbursalId });
+        }
         return null;
 
     }
     
-    @SuppressWarnings("null")
     @Override
-	public CreditBureauFileContentData getCreditBureauReportFileContent(boolean isLatestdata,
-			final SearchParameters searchParameters) {
-		StringBuilder sb = new StringBuilder(100);
-		sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
-		sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
-		Long clientId = null;
-
-		if (searchParameters.isClientIdPassed()) {
-			clientId = searchParameters.getClientId();
-			if (isLatestdata) {
-				sb.append(
-						"WHERE lcbe.id = (select max(fcet.id) from  f_loan_creditbureau_enquiry fcet where fcet.client_id = ?) ");
-			}else{
-				sb.append(
-			"WHERE lcbe.client_id = ? ");
-			}
-
-			return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(),
-					new Object[] { clientId });
-		}
-		return null;
-	}
+    public CreditBureauFileContentData getCreditBureauReportFileContent(boolean isLatestdata, final SearchParameters searchParameters) {
+        StringBuilder sb = new StringBuilder(100);
+        sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
+        sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
+        Long clientId = null;
+        if (searchParameters.isClientIdPassed()) {
+            clientId = searchParameters.getClientId();
+            if (isLatestdata) {
+                sb.append("WHERE lcbe.id = (select max(fcet.id) from  f_loan_creditbureau_enquiry fcet where fcet.client_id = ?) ");
+            } else {
+                sb.append("WHERE lcbe.client_id = ? ");
+            }
+            return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] { clientId });
+        }
+        return null;
+    }
 
     private static final class CreditBureauFileContantDataExtractor implements RowMapper<CreditBureauFileContentData> {
 
