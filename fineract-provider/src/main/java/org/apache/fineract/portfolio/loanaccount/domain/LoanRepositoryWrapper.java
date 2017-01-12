@@ -53,9 +53,15 @@ public class LoanRepositoryWrapper {
     public Loan findOneWithNotFoundDetectionAndLazyInitialize(final Long id) {
         final Loan loan = this.repository.findOne(id);
         if (loan == null) { throw new LoanNotFoundException(id); }
+        initializeLazyEntities(loan);
+        return loan;
+    }
+
+    private void initializeLazyEntities(final Loan loan) {
         Hibernate.initialize(loan.getLoanPurpose());
         Hibernate.initialize(loan.getLoanOfficerHistory());
-        return loan;
+        Hibernate.initialize(loan.getFund());
+        Hibernate.initialize(loan.getCollateral());
     }
 
     public Collection<Loan> findActiveLoansByLoanIdAndGroupId(Long clientId, Long groupId) {
@@ -72,8 +78,7 @@ public class LoanRepositoryWrapper {
     public List<Loan> findLoanByClientId(final Long clientId){
         final List<Loan> loans = this.repository.findLoanByClientId(clientId);
         for(Loan loan : loans){
-            Hibernate.initialize(loan.getLoanPurpose());
-            Hibernate.initialize(loan.getLoanOfficerHistory());
+            initializeLazyEntities(loan);
         }
         return loans;
     }
@@ -81,8 +86,7 @@ public class LoanRepositoryWrapper {
     public List<Loan> findByClientIdAndGroupId( Long clientId, Long groupId){
         List<Loan> loans = this.repository.findByClientIdAndGroupId(clientId, groupId);
         for(Loan loan : loans){
-            Hibernate.initialize(loan.getLoanPurpose());
-            Hibernate.initialize(loan.getLoanOfficerHistory());
+            initializeLazyEntities(loan);
         }
         return loans;
     }

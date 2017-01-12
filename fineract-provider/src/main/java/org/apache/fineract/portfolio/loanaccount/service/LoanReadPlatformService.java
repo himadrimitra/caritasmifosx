@@ -148,5 +148,9 @@ public interface LoanReadPlatformService {
 
     Collection<Long> retrieveLoansByOfficesAndHoliday(Long officeId, List<Holiday> holidays, Collection<Integer> status, LocalDate recalculateFrom);
 
+    LoanAccountData retrieveOneWithBasicDetails(Long loanId);
+
+    void validateForLoanExistence(Long loanId);
+
    // Collection<LoanAccountData> retrieveLoanDetailForHierarchy(ClientData clientData);
 }

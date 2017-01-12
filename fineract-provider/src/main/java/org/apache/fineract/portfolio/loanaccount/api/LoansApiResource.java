@@ -20,12 +20,10 @@ package org.apache.fineract.portfolio.loanaccount.api;
 
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestType;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -680,14 +678,13 @@ public class LoansApiResource {
                     clientActiveLoanOptions = this.accountDetailsReadPlatformService
                             .retrieveClientActiveLoanAccountSummary(loanBasicDetails.clientId());
                 }
-
+                final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
+                        .retrieveAllPaymentTypes();
+                loanBasicDetails.setPaymentOptions(paymentOptions);
             }
 
             paidInAdvanceTemplate = this.loanReadPlatformService.retrieveTotalPaidInAdvance(loanId);
         }
-        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
-				.retrieveAllPaymentTypes();
-        loanBasicDetails.setPaymentOptions(paymentOptions);
         
         final LoanAccountData loanAccount = LoanAccountData.associationsAndTemplate(loanBasicDetails, repaymentSchedule, loanRepayments,
                 charges, collateral, guarantors, meeting, productOptions, loanTermFrequencyTypeOptions, repaymentFrequencyTypeOptions,
