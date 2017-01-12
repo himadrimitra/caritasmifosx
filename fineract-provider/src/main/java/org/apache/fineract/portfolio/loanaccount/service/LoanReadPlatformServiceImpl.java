@@ -231,7 +231,6 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
     @Override
     public LoanAccountData retrieveOne(final Long loanId) {
-
         try {
             final AppUser currentUser = this.context.authenticatedUser();
             final String hierarchy = currentUser.getOffice().getHierarchy();
@@ -249,6 +248,32 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             return this.jdbcTemplate.queryForObject(sqlBuilder.toString(), rm, new Object[] { loanId, hierarchySearchString,
                     hierarchySearchString,hierarchySearchString });
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
+    }
+    
+    @Override
+    public LoanAccountData retrieveOneWithBasicDetails(final Long loanId) {
+
+        try {
+            final LoanBasicMapper rm = new LoanBasicMapper();
+            final StringBuilder sqlBuilder = new StringBuilder(rm.loanSchema().length() + 200);
+            sqlBuilder.append("select ");
+            sqlBuilder.append(rm.loanSchema());
+            sqlBuilder.append(" where l.id=?");
+
+            return this.jdbcTemplate.queryForObject(sqlBuilder.toString(), rm, new Object[] { loanId });
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanNotFoundException(loanId);
+        }
+    }
+    
+    @Override
+    public void validateForLoanExistence(final Long loanId) {
+        try {
+            final String sql = "select l.id from m_loan l where l.id=?";
+            this.jdbcTemplate.queryForObject(sql, Long.class, loanId);
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanNotFoundException(loanId);
         }
@@ -2662,4 +2687,291 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
     }
 
+    private static class LoanBasicMapper implements RowMapper<LoanAccountData> {
+
+        private CurrencyMapper currencyMapper = new CurrencyMapper();
+        final String loanSql;
+
+        LoanBasicMapper() {
+            final StringBuilder sb = new StringBuilder(10000);
+            sb.append("l.id as id, l.account_no as accountNo, l.external_id as externalId, l.fund_id as fundId, ");
+            sb.append(" l.loan_type_enum as loanType, l.loan_purpose_id as loanPurposeId, l.weeks_in_year_enum as weeksInYearType, ");
+            sb.append(" l.product_id as loanProductId, ");
+            sb.append(" l.client_id as clientId, ");
+            sb.append(" l.group_id as groupId, ");
+            sb.append(" l.submittedon_date as submittedOnDate, l.rejectedon_date as rejectedOnDate, l.withdrawnon_date as withdrawnOnDate, ");
+            sb.append(" l.approvedon_date as approvedOnDate, l.expected_disbursedon_date as expectedDisbursementDate, l.disbursedon_date as actualDisbursementDate, ");
+            sb.append(" l.closedon_date as closedOnDate, l.writtenoffon_date as writtenOffOnDate, ");
+            sb.append(" l.expected_firstrepaymenton_date as expectedFirstRepaymentOnDate, l.interest_calculated_from_date as interestChargedFromDate, l.expected_maturedon_date as expectedMaturityDate, ");
+            sb.append(" l.principal_amount_proposed as proposedPrincipal, l.principal_amount as principal, l.approved_principal as approvedPrincipal, l.arrearstolerance_amount as inArrearsTolerance, l.number_of_repayments as numberOfRepayments, l.repay_every as repaymentEvery,");
+            sb.append(" l.grace_on_principal_periods as graceOnPrincipalPayment, l.recurring_moratorium_principal_periods as recurringMoratoriumOnPrincipalPeriods, l.grace_on_interest_periods as graceOnInterestPayment, l.grace_interest_free_periods as graceOnInterestCharged,l.grace_on_arrears_ageing as graceOnArrearsAgeing,");
+            sb.append(" l.nominal_interest_rate_per_period as interestRatePerPeriod, l.annual_nominal_interest_rate as annualInterestRate, ");
+            sb.append(" l.repayment_period_frequency_enum as repaymentFrequencyType, l.interest_period_frequency_enum as interestRateFrequencyType, ");
+            sb.append(" l.term_frequency as termFrequency, l.term_period_frequency_enum as termPeriodFrequencyType, ");
+            sb.append(" l.amortization_method_enum as amortizationType, l.interest_method_enum as interestType, l.interest_calculated_in_period_enum as interestCalculationPeriodType,");
+            sb.append(" l.allow_partial_period_interest_calcualtion as allowPartialPeriodInterestCalcualtion,");
+            sb.append(" l.loan_status_id as lifeCycleStatusId, l.loan_transaction_strategy_id as transactionStrategyId, ");
+            sb.append(" l.currency_code as currencyCode, l.currency_digits as currencyDigits, l.currency_multiplesof as inMultiplesOf, ");
+            sb.append(" l.loan_officer_id as loanOfficerId, ");
+            sb.append(" l.principal_disbursed_derived as principalDisbursed,");
+            sb.append(" l.principal_repaid_derived as principalPaid,");
+            sb.append(" l.principal_writtenoff_derived as principalWrittenOff,");
+            sb.append(" l.principal_outstanding_derived as principalOutstanding,");
+            sb.append(" l.interest_charged_derived as interestCharged,");
+            sb.append(" l.interest_repaid_derived as interestPaid,");
+            sb.append(" l.interest_waived_derived as interestWaived,");
+            sb.append(" l.interest_writtenoff_derived as interestWrittenOff,");
+            sb.append(" l.interest_outstanding_derived as interestOutstanding,");
+            sb.append(" l.fee_charges_charged_derived as feeChargesCharged,");
+            sb.append(" l.total_charges_due_at_disbursement_derived as feeChargesDueAtDisbursementCharged,");
+            sb.append(" l.fee_charges_repaid_derived as feeChargesPaid,");
+            sb.append(" l.fee_charges_waived_derived as feeChargesWaived,");
+            sb.append(" l.fee_charges_writtenoff_derived as feeChargesWrittenOff,");
+            sb.append(" l.fee_charges_outstanding_derived as feeChargesOutstanding,");
+            sb.append(" l.penalty_charges_charged_derived as penaltyChargesCharged,");
+            sb.append(" l.penalty_charges_repaid_derived as penaltyChargesPaid,");
+            sb.append(" l.penalty_charges_waived_derived as penaltyChargesWaived,");
+            sb.append(" l.penalty_charges_writtenoff_derived as penaltyChargesWrittenOff,");
+            sb.append(" l.penalty_charges_outstanding_derived as penaltyChargesOutstanding,");
+            sb.append(" l.total_expected_repayment_derived as totalExpectedRepayment,");
+            sb.append(" l.total_repayment_derived as totalRepayment,");
+            sb.append(" l.total_expected_costofloan_derived as totalExpectedCostOfLoan,");
+            sb.append(" l.total_costofloan_derived as totalCostOfLoan,");
+            sb.append(" l.total_waived_derived as totalWaived,");
+            sb.append(" l.total_writtenoff_derived as totalWrittenOff,");
+            sb.append(" l.writeoff_reason_cv_id as writeoffReasonId,");
+            sb.append(" l.total_outstanding_derived as totalOutstanding,");
+            sb.append(" l.total_overpaid_derived as totalOverpaid,");
+            sb.append(" l.fixed_emi_amount as fixedEmiAmount,");
+            sb.append(" l.max_outstanding_loan_balance as outstandingLoanBalance,");
+            sb.append(" l.loan_sub_status_id as loanSubStatusId,");
+            sb.append(" l.sync_disbursement_with_meeting as syncDisbursementWithMeeting,");
+            sb.append(" l.loan_counter as loanCounter, l.loan_product_counter as loanProductCounter,");
+            sb.append(" l.is_npa as isNPA, l.days_in_month_enum as daysInMonth, l.days_in_year_enum as daysInYear, ");
+            sb.append(" l.interest_recalculation_enabled as isInterestRecalculationEnabled, ");
+            sb.append(" l.is_floating_interest_rate as isFloatingInterestRate, ");
+            sb.append("l.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId, ");
+            sb.append("l.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, ");
+            sb.append(" l.interest_rate_differential as interestRateDifferential, ");
+            sb.append(" l.create_standing_instruction_at_disbursement as createStandingInstructionAtDisbursement, ");
+            sb.append(" l.is_topup as isTopup ");
+            sb.append(" from m_loan l");
+            this.loanSql = sb.toString();
+        }
+
+        public String loanSchema() {
+            return this.loanSql;
+        }
+
+        @Override
+        public LoanAccountData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final String currencyCode = rs.getString("currencyCode");
+            final String currencyName = "";
+            final String currencyNameCode = "";
+            final String currencyDisplaySymbol = "";
+            final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
+            final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
+            final CurrencyData currencyData = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf,
+                    currencyDisplaySymbol, currencyNameCode);
+
+            final Long id = rs.getLong("id");
+            final String accountNo = rs.getString("accountNo");
+            final String externalId = rs.getString("externalId");
+
+            final Long clientId = JdbcSupport.getLong(rs, "clientId");
+
+            final Long groupId = JdbcSupport.getLong(rs, "groupId");
+
+            final Integer loanTypeId = JdbcSupport.getInteger(rs, "loanType");
+            final EnumOptionData loanType = AccountEnumerations.loanType(loanTypeId);
+
+            final Long fundId = JdbcSupport.getLong(rs, "fundId");
+
+            final Long loanOfficerId = JdbcSupport.getLong(rs, "loanOfficerId");
+
+            final Long loanPurposeId = JdbcSupport.getLong(rs, "loanPurposeId");
+
+            final Integer weeksInYearTypeInteger = JdbcSupport.getInteger(rs, "weeksInYearType");
+            final EnumOptionData weeksInYearType = LoanEnumerations.weeksInYearType(WeeksInYearType.fromInt(weeksInYearTypeInteger));
+
+            final Long loanProductId = JdbcSupport.getLong(rs, "loanProductId");
+
+            final BigDecimal outstandingLoanBalance = rs.getBigDecimal("outstandingLoanBalance");
+
+            final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
+            final LocalDate rejectedOnDate = JdbcSupport.getLocalDate(rs, "rejectedOnDate");
+            final LocalDate withdrawnOnDate = JdbcSupport.getLocalDate(rs, "withdrawnOnDate");
+            final LocalDate approvedOnDate = JdbcSupport.getLocalDate(rs, "approvedOnDate");
+            final LocalDate expectedDisbursementDate = JdbcSupport.getLocalDate(rs, "expectedDisbursementDate");
+            final LocalDate actualDisbursementDate = JdbcSupport.getLocalDate(rs, "actualDisbursementDate");
+            final LocalDate closedOnDate = JdbcSupport.getLocalDate(rs, "closedOnDate");
+            final LocalDate writtenOffOnDate = JdbcSupport.getLocalDate(rs, "writtenOffOnDate");
+            final Long writeoffReasonId = JdbcSupport.getLong(rs, "writeoffReasonId");
+            final String writeoffReason = null;
+            final LocalDate expectedMaturityDate = JdbcSupport.getLocalDate(rs, "expectedMaturityDate");
+
+            final LoanApplicationTimelineData timeline = new LoanApplicationTimelineData(submittedOnDate, rejectedOnDate, withdrawnOnDate,
+                    approvedOnDate, expectedDisbursementDate, actualDisbursementDate, closedOnDate, expectedMaturityDate, writtenOffOnDate);
+
+            final BigDecimal principal = rs.getBigDecimal("principal");
+            final BigDecimal approvedPrincipal = rs.getBigDecimal("approvedPrincipal");
+            final BigDecimal proposedPrincipal = rs.getBigDecimal("proposedPrincipal");
+            final BigDecimal totalOverpaid = rs.getBigDecimal("totalOverpaid");
+            final BigDecimal inArrearsTolerance = rs.getBigDecimal("inArrearsTolerance");
+
+            final Integer numberOfRepayments = JdbcSupport.getInteger(rs, "numberOfRepayments");
+            final Integer repaymentEvery = JdbcSupport.getInteger(rs, "repaymentEvery");
+            final BigDecimal interestRatePerPeriod = rs.getBigDecimal("interestRatePerPeriod");
+            final BigDecimal annualInterestRate = rs.getBigDecimal("annualInterestRate");
+            final BigDecimal interestRateDifferential = rs.getBigDecimal("interestRateDifferential");
+            final boolean isFloatingInterestRate = rs.getBoolean("isFloatingInterestRate");
+
+            final Integer graceOnPrincipalPayment = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "graceOnPrincipalPayment");
+            final Integer recurringMoratoriumOnPrincipalPeriods = JdbcSupport.getIntegerDefaultToNullIfZero(rs,
+                    "recurringMoratoriumOnPrincipalPeriods");
+            final Integer graceOnInterestPayment = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "graceOnInterestPayment");
+            final Integer graceOnInterestCharged = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "graceOnInterestCharged");
+            final Integer graceOnArrearsAgeing = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "graceOnArrearsAgeing");
+
+            final Integer termFrequency = JdbcSupport.getInteger(rs, "termFrequency");
+            final Integer termPeriodFrequencyTypeInt = JdbcSupport.getInteger(rs, "termPeriodFrequencyType");
+            final EnumOptionData termPeriodFrequencyType = LoanEnumerations.termFrequencyType(termPeriodFrequencyTypeInt);
+
+            final int repaymentFrequencyTypeInt = JdbcSupport.getInteger(rs, "repaymentFrequencyType");
+            final EnumOptionData repaymentFrequencyType = LoanEnumerations.repaymentFrequencyType(repaymentFrequencyTypeInt);
+
+            final int interestRateFrequencyTypeInt = JdbcSupport.getInteger(rs, "interestRateFrequencyType");
+            final EnumOptionData interestRateFrequencyType = LoanEnumerations.interestRateFrequencyType(interestRateFrequencyTypeInt);
+
+            final Long transactionStrategyId = JdbcSupport.getLong(rs, "transactionStrategyId");
+
+            final int amortizationTypeInt = JdbcSupport.getInteger(rs, "amortizationType");
+            final int interestTypeInt = JdbcSupport.getInteger(rs, "interestType");
+            final int interestCalculationPeriodTypeInt = JdbcSupport.getInteger(rs, "interestCalculationPeriodType");
+
+            final EnumOptionData amortizationType = LoanEnumerations.amortizationType(amortizationTypeInt);
+            final EnumOptionData interestType = LoanEnumerations.interestType(interestTypeInt);
+            final EnumOptionData interestCalculationPeriodType = LoanEnumerations
+                    .interestCalculationPeriodType(interestCalculationPeriodTypeInt);
+            final Boolean allowPartialPeriodInterestCalcualtion = rs.getBoolean("allowPartialPeriodInterestCalcualtion");
+
+            final Integer lifeCycleStatusId = JdbcSupport.getInteger(rs, "lifeCycleStatusId");
+            final LoanStatusEnumData status = LoanEnumerations.status(lifeCycleStatusId);
+
+            final Integer loanSubStatusId = JdbcSupport.getInteger(rs, "loanSubStatusId");
+            EnumOptionData loanSubStatus = null;
+            if (loanSubStatusId != null) {
+                loanSubStatus = LoanSubStatus.loanSubStatus(loanSubStatusId);
+            }
+
+            // settings
+            final LocalDate expectedFirstRepaymentOnDate = JdbcSupport.getLocalDate(rs, "expectedFirstRepaymentOnDate");
+            final LocalDate interestChargedFromDate = JdbcSupport.getLocalDate(rs, "interestChargedFromDate");
+
+            final Boolean syncDisbursementWithMeeting = rs.getBoolean("syncDisbursementWithMeeting");
+
+            final BigDecimal feeChargesDueAtDisbursementCharged = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs,
+                    "feeChargesDueAtDisbursementCharged");
+            LoanSummaryData loanSummary = null;
+            Boolean inArrears = false;
+            if (status.id().intValue() >= 300) {
+
+                // loan summary
+                final BigDecimal principalDisbursed = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalDisbursed");
+                final BigDecimal principalPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalPaid");
+                final BigDecimal principalWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalWrittenOff");
+                final BigDecimal principalOutstanding = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalOutstanding");
+                final BigDecimal principalOverdue = BigDecimal.ZERO;
+
+                final BigDecimal interestCharged = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestCharged");
+                final BigDecimal interestPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestPaid");
+                final BigDecimal interestWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestWaived");
+                final BigDecimal interestWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestWrittenOff");
+                final BigDecimal interestOutstanding = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestOutstanding");
+                final BigDecimal interestOverdue = BigDecimal.ZERO;
+
+                final BigDecimal feeChargesCharged = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesCharged");
+                final BigDecimal feeChargesPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesPaid");
+                final BigDecimal feeChargesWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesWaived");
+                final BigDecimal feeChargesWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesWrittenOff");
+                final BigDecimal feeChargesOutstanding = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeChargesOutstanding");
+                final BigDecimal feeChargesOverdue = BigDecimal.ZERO;
+
+                final BigDecimal penaltyChargesCharged = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesCharged");
+                final BigDecimal penaltyChargesPaid = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesPaid");
+                final BigDecimal penaltyChargesWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesWaived");
+                final BigDecimal penaltyChargesWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesWrittenOff");
+                final BigDecimal penaltyChargesOutstanding = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "penaltyChargesOutstanding");
+                final BigDecimal penaltyChargesOverdue = BigDecimal.ZERO;
+
+                final BigDecimal totalExpectedRepayment = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalExpectedRepayment");
+                final BigDecimal totalRepayment = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalRepayment");
+                final BigDecimal totalExpectedCostOfLoan = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalExpectedCostOfLoan");
+                final BigDecimal totalCostOfLoan = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalCostOfLoan");
+                final BigDecimal totalWaived = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalWaived");
+                final BigDecimal totalWrittenOff = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalWrittenOff");
+                final BigDecimal totalOutstanding = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "totalOutstanding");
+                final BigDecimal totalOverdue = BigDecimal.ZERO;
+
+                final LocalDate overdueSinceDate = null;
+
+                loanSummary = new LoanSummaryData(currencyData, principalDisbursed, principalPaid, principalWrittenOff,
+                        principalOutstanding, principalOverdue, interestCharged, interestPaid, interestWaived, interestWrittenOff,
+                        interestOutstanding, interestOverdue, feeChargesCharged, feeChargesDueAtDisbursementCharged, feeChargesPaid,
+                        feeChargesWaived, feeChargesWrittenOff, feeChargesOutstanding, feeChargesOverdue, penaltyChargesCharged,
+                        penaltyChargesPaid, penaltyChargesWaived, penaltyChargesWrittenOff, penaltyChargesOutstanding,
+                        penaltyChargesOverdue, totalExpectedRepayment, totalRepayment, totalExpectedCostOfLoan, totalCostOfLoan,
+                        totalWaived, totalWrittenOff, totalOutstanding, totalOverdue, overdueSinceDate, writeoffReasonId, writeoffReason);
+            }
+
+            GroupGeneralData groupData = null;
+            if (groupId != null) {
+                final String groupName = null;
+                groupData = GroupGeneralData.formGroupData(groupId, groupName);
+            }
+
+            final Integer loanCounter = JdbcSupport.getInteger(rs, "loanCounter");
+            final Integer loanProductCounter = JdbcSupport.getInteger(rs, "loanProductCounter");
+            final BigDecimal fixedEmiAmount = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "fixedEmiAmount");
+            final Boolean isNPA = rs.getBoolean("isNPA");
+
+            final int daysInMonth = JdbcSupport.getInteger(rs, "daysInMonth");
+            final EnumOptionData daysInMonthType = CommonEnumerations.daysInMonthType(daysInMonth);
+            final int daysInYear = JdbcSupport.getInteger(rs, "daysInYear");
+            final EnumOptionData daysInYearType = CommonEnumerations.daysInYearType(daysInYear);
+            final boolean isInterestRecalculationEnabled = rs.getBoolean("isInterestRecalculationEnabled");
+            final Boolean createStandingInstructionAtDisbursement = rs.getBoolean("createStandingInstructionAtDisbursement");
+
+            LoanInterestRecalculationData interestRecalculationData = null;
+
+            final boolean isTopup = rs.getBoolean("isTopup");
+            PaymentTypeData expectedDisbursalPaymentType = null;
+            final Integer expectedDisbursalPaymentTypeId = JdbcSupport.getInteger(rs, "expectedDisbursalPaymentTypeId");
+            PaymentTypeData expectedRepaymentPaymentType = null;
+            if (expectedDisbursalPaymentTypeId != null) {
+                final String disbursementPaymentTypeName = null;
+                expectedDisbursalPaymentType = PaymentTypeData.instance(expectedDisbursalPaymentTypeId.longValue(),
+                        disbursementPaymentTypeName);
+            }
+            final Integer expectedRepaymentPaymentTypeId = JdbcSupport.getInteger(rs, "expectedRepaymentPaymentTypeId");
+            if (expectedRepaymentPaymentTypeId != null) {
+                final String repaymenPaymentTypeName = null;
+                expectedRepaymentPaymentType = PaymentTypeData
+                        .instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);
+            }
+            return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, groupData, loanType, loanProductId,
+                    fundId, loanPurposeId, loanOfficerId, currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid,
+                    inArrearsTolerance, termFrequency, termPeriodFrequencyType, numberOfRepayments, repaymentEvery, repaymentFrequencyType,
+                    transactionStrategyId, amortizationType, interestRatePerPeriod, interestRateFrequencyType, annualInterestRate,
+                    interestType, isFloatingInterestRate, interestRateDifferential, interestCalculationPeriodType,
+                    allowPartialPeriodInterestCalcualtion, expectedFirstRepaymentOnDate, graceOnPrincipalPayment,
+                    recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, interestChargedFromDate,
+                    timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting, loanCounter,
+                    loanProductCounter, fixedEmiAmount, outstandingLoanBalance, inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType,
+                    daysInYearType, isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement,
+                    loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+        }
+    }
+    
 }

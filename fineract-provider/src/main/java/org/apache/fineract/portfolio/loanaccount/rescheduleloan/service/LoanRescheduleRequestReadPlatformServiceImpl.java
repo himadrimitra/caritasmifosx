@@ -30,13 +30,11 @@ import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformSer
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
-import org.apache.fineract.portfolio.loanaccount.domain.Loan;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestData;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestEnumerations;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestStatusEnumData;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestTimelineData;
+import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,15 +47,15 @@ import org.springframework.stereotype.Service;
 public class LoanRescheduleRequestReadPlatformServiceImpl implements LoanRescheduleRequestReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final LoanRepository loanRepository;
+    private final LoanReadPlatformService loanReadPlatformService;
     private final LoanRescheduleRequestRowMapper loanRescheduleRequestRowMapper = new LoanRescheduleRequestRowMapper();
     private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
-    public LoanRescheduleRequestReadPlatformServiceImpl(final RoutingDataSource dataSource, LoanRepository loanRepository,
+    public LoanRescheduleRequestReadPlatformServiceImpl(final RoutingDataSource dataSource, LoanReadPlatformService loanReadPlatformService,
             final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.loanRepository = loanRepository;
+        this.loanReadPlatformService = loanReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
@@ -194,9 +192,7 @@ public class LoanRescheduleRequestReadPlatformServiceImpl implements LoanResched
     
     @Override
     public List<LoanRescheduleRequestData> readLoanRescheduleRequests(Long loanId) {
-        final Loan loan = this.loanRepository.findOne(loanId);
-
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
+        this.loanReadPlatformService.validateForLoanExistence(loanId);
 
         final String sql = "select " + this.loanRescheduleRequestRowMapper.schema() + " where lr.loan_id = ?";
 
@@ -219,10 +215,7 @@ public class LoanRescheduleRequestReadPlatformServiceImpl implements LoanResched
 
     @Override
     public List<LoanRescheduleRequestData> readLoanRescheduleRequests(Long loanId, Integer statusEnum) {
-        final Loan loan = this.loanRepository.findOne(loanId);
-
-        if (loan == null) { throw new LoanNotFoundException(loanId); }
-
+        this.loanReadPlatformService.validateForLoanExistence(loanId);
         final String sql = "select " + this.loanRescheduleRequestRowMapper.schema() + " where lr.loan_id = ?" + " and lr.status_enum = ?";
 
         return this.jdbcTemplate.query(sql, this.loanRescheduleRequestRowMapper, new Object[] { loanId, statusEnum });

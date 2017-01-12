@@ -188,7 +188,7 @@ public class Loan extends AbstractPersistable<Long> {
     @JoinColumn(name = "product_id", nullable = false)
     private LoanProduct loanProduct;
 
-    @ManyToOne(optional = true)
+    @ManyToOne(optional = true, fetch=FetchType.LAZY)
     @JoinColumn(name = "fund_id", nullable = true)
     private Fund fund;
 
@@ -196,7 +196,7 @@ public class Loan extends AbstractPersistable<Long> {
     @JoinColumn(name = "loan_officer_id", nullable = true)
     private Staff loanOfficer;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name = "loan_purpose_id", nullable = true)
     private LoanPurpose loanPurpose;
 
@@ -317,7 +317,7 @@ public class Loan extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     private Set<LoanTrancheCharge> trancheCharges = new HashSet<>();
 
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     private Set<LoanCollateral> collateral = null;
 
@@ -7567,6 +7567,11 @@ public class Loan extends AbstractPersistable<Long> {
             disbursementDate = new LocalDate(this.actualDisbursementDate);
         }
         return disbursementDate;
+    }
+
+    
+    public Fund getFund() {
+        return this.fund;
     }
     
 }
