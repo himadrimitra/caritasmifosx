@@ -382,7 +382,9 @@ public class ProductToGLAccountMappingHelper {
                     savePaymentChannelToFundSourceMapping(productId, newPaymentType, newGLAccountId, portfolioProductType);
                 }
             }
-        }
+		} else {
+			this.accountMappingRepository.deleteInBatch(existingPaymentChannelToFundSourceMappings);
+		}
     }
     
     public void updateCodeValueToExpenseMappings(final JsonCommand command, final JsonElement element, final Long productId,
