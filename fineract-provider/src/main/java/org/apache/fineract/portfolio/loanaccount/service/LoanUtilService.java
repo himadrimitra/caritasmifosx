@@ -419,10 +419,10 @@ public class LoanUtilService {
 
     }
     
-    public Set<LoanDisbursementDetails> fetchDisbursementData(final JsonObject command) {
+    public List<LoanDisbursementDetails> fetchDisbursementData(final JsonObject command) {
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(command);
         final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(command);
-        Set<LoanDisbursementDetails> disbursementDatas = new HashSet<>();
+        List<LoanDisbursementDetails> disbursementDatas = new ArrayList<>();
         if (command.has(LoanApiConstants.disbursementDataParameterName)) {
             final JsonArray disbursementDataArray = command.getAsJsonArray(LoanApiConstants.disbursementDataParameterName);
             if (disbursementDataArray != null && disbursementDataArray.size() > 0) {

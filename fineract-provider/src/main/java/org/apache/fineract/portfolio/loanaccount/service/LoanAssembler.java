@@ -205,7 +205,7 @@ public class LoanAssembler {
         if (loanPurposeId != null) {
             loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanPurposeId);
         }
-        Set<LoanDisbursementDetails> disbursementDetails = null;
+        List<LoanDisbursementDetails> disbursementDetails = null;
         BigDecimal fixedEmiAmount = null;
         if (loanProduct.isMultiDisburseLoan() || loanProduct.canDefineInstallmentAmount()) {
             fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(LoanApiConstants.emiAmountParameterName, element);

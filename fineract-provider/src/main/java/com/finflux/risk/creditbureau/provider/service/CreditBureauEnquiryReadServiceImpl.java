@@ -115,18 +115,20 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         sb.append(",ce.creditbureau_product_id AS cbProductId,  ce.created_date AS requestedDate, lce.status AS status ");
         sb.append("FROM f_loan_creditbureau_enquiry lce ");
         sb.append("LEFT JOIN f_creditbureau_enquiry ce ON lce.creditbureau_enquiry_id  = ce.id ");
-        sb.append("WHERE lce.loan_application_id = ? AND ce.creditbureau_product_id = ? ");
+        sb.append("WHERE ce.creditbureau_product_id = ? ");
         if (loanId != null && trancheDisbursalId != null) {
             sb.append("AND lce.loan_id = ? AND lce.tranche_disbursal_id = ? ");
+        } else {
+            sb.append("AND lce.loan_application_id = ? ");
         }
         sb.append("order by id desc limit 1 ");
         List<LoanEnquiryReferenceData> l = null;
         if (loanId != null && trancheDisbursalId != null) {
-            l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor, new Object[] { loanApplicationId,
-                    creditBureauProductId, loanId, trancheDisbursalId });
+            l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor, new Object[] { creditBureauProductId,
+                    loanId, trancheDisbursalId });
         } else {
-            l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor, new Object[] { loanApplicationId,
-                    creditBureauProductId });
+            l = this.jdbcTemplate.query(sb.toString(), this.loanCreditBureauEnquiryDataExtractor, new Object[] { creditBureauProductId,
+                    loanApplicationId });
         }
         if (!l.isEmpty()) { return l.get(0); }
         return null;
@@ -259,7 +261,7 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         final StringBuilder sb = new StringBuilder(200);
         sb.append("SELECT mc.display_name AS clientName, mc.firstname AS firstname, mc.middlename AS middlename ");
         sb.append(",mc.lastname AS lastname, mc.date_of_birth AS clientDOB, mc.office_id AS branchId ");
-        sb.append(",mc.mobile_no AS clientMobileNo, l.product_id AS loanProductId, lar.loan_amount_requested AS loanAmount,mc.id AS clientId ");
+        sb.append(",mc.mobile_no AS clientMobileNo, l.product_id AS loanProductId, l.principal_amount_proposed AS loanAmount,mc.id AS clientId ");
         sb.append(",cv.id AS genderId, cv.code_value AS gender ");
         sb.append("FROM m_loan l ");
         sb.append("INNER JOIN m_client mc ON mc.id = l.client_id ");

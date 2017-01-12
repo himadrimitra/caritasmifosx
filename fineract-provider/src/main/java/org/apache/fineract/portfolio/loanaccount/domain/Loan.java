@@ -367,7 +367,7 @@ public class Loan extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     @OrderBy(value = "expectedDisbursementDate, id")
-    private Set<LoanDisbursementDetails> disbursementDetails = new HashSet<>();
+    private List<LoanDisbursementDetails> disbursementDetails = new ArrayList<>();
 
     @OrderBy(value = "termApplicableFrom, id")
     @LazyCollection(LazyCollectionOption.FALSE)
@@ -445,7 +445,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
-            final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
+            final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final List<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
             final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
             final PaymentType expectedRepaymentPaymentType) {
@@ -463,7 +463,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
-            final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
+            final List<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
             final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
@@ -479,7 +479,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProductRelatedDetail loanRepaymentScheduleDetail, final Set<LoanCharge> loanCharges,
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
-            final Set<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
+            final List<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
             final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
         final LoanStatus status = null;
@@ -497,7 +497,7 @@ public class Loan extends AbstractPersistable<Long> {
             final Staff loanOfficer, final LoanPurpose loanPurpose, final LoanTransactionProcessingStrategy transactionProcessingStrategy,
             final LoanProduct loanProduct, final LoanProductRelatedDetail loanRepaymentScheduleDetail, final LoanStatus loanStatus,
             final Set<LoanCharge> loanCharges, final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting,
-            final BigDecimal fixedEmiAmount, final Set<LoanDisbursementDetails> disbursementDetails,
+            final BigDecimal fixedEmiAmount, final List<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
             final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
             final PaymentType expectedRepaymentPaymentType) {
@@ -548,7 +548,7 @@ public class Loan extends AbstractPersistable<Long> {
         if(disbursementDetails != null && disbursementDetails.size() > 0){
             this.disbursementDetails = disbursementDetails;
         }else{
-            this.disbursementDetails = new HashSet<>();
+            this.disbursementDetails = new ArrayList<>();
         }
         this.approvedPrincipal = this.loanRepaymentScheduleDetail.getPrincipal().getAmount();
         this.createStandingInstructionAtDisbursement = createStandingInstructionAtDisbursement;
@@ -5680,7 +5680,7 @@ public class Loan extends AbstractPersistable<Long> {
         return list;
     }
 
-    public Set<LoanDisbursementDetails> getDisbursementDetails() {
+    public List<LoanDisbursementDetails> getDisbursementDetails() {
         return this.disbursementDetails;
     }
 
@@ -5725,7 +5725,8 @@ public class Loan extends AbstractPersistable<Long> {
         BigDecimal emiAmount = this.fixedEmiAmount;
         Date startDate = this.getDisbursementDate().toDate();
         for (LoanTermVariations loanTermVariations : this.loanTermVariations) {
-            if (loanTermVariations.getTermType().isEMIAmountVariation() && !startDate.after(loanTermVariations.getTermApplicableFrom())) {
+            if (loanTermVariations.isActive() && loanTermVariations.getTermType().isEMIAmountVariation()
+                    && !startDate.after(loanTermVariations.getTermApplicableFrom())) {
                 startDate = loanTermVariations.getTermApplicableFrom();
                 emiAmount = loanTermVariations.getTermValue();
             }
@@ -6721,10 +6722,12 @@ public class Loan extends AbstractPersistable<Long> {
     private int adjustNumberOfRepayments() {
         int repaymetsForAdjust = 0;
         for (LoanTermVariations loanTermVariations : this.loanTermVariations) {
-            if (loanTermVariations.getTermType().isInsertInstallment()) {
-                repaymetsForAdjust++;
-            } else if (loanTermVariations.getTermType().isDeleteInstallment()) {
-                repaymetsForAdjust--;
+            if (loanTermVariations.isActive()) {
+                if (loanTermVariations.getTermType().isInsertInstallment()) {
+                    repaymetsForAdjust++;
+                } else if (loanTermVariations.getTermType().isDeleteInstallment()) {
+                    repaymetsForAdjust--;
+                }
             }
         }
         return repaymetsForAdjust;
@@ -6751,7 +6754,7 @@ public class Loan extends AbstractPersistable<Long> {
      * get the next repayment date for rescheduling at the time of disbursement
      */
     public LocalDate getNextPossibleRepaymentDateForRescheduling(Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, final LocalDate actualDisbursementDate) {
-        Set<LoanDisbursementDetails> loanDisbursementDetails = this.disbursementDetails;
+        List<LoanDisbursementDetails> loanDisbursementDetails = this.disbursementDetails;
         LocalDate nextRepaymentDate = DateUtils.getLocalDateOfTenant();
         if(this.isMultiDisburmentLoan()){
             for (LoanDisbursementDetails loanDisbursementDetail : loanDisbursementDetails) {
@@ -6906,18 +6909,35 @@ public class Loan extends AbstractPersistable<Long> {
                     interest = interest.plus(balancesForCurrentPeroid[0])
                             .minus(balancesForCurrentPeroid[5]);
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[5])
-                            .minus(balancesForCurrentPeroid[0]);
+                    Money interestPayable = balancesForCurrentPeroid[0].minus(installment.getInterestWaived(currency));
+                    if (interestPayable.isGreaterThanZero()) {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency))
+                                .minus(interestPayable);
+                    } else {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency));
+                    }
                 }
                 if (balancesForCurrentPeroid[1].isGreaterThan(balancesForCurrentPeroid[3])) {
                     fee = fee.plus(balancesForCurrentPeroid[1].minus(balancesForCurrentPeroid[3]));
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[3].minus(balancesForCurrentPeroid[1]));
+                    Money feePayable = balancesForCurrentPeroid[1].minus(installment.getFeeChargesWaived(currency));
+                    if (feePayable.isGreaterThanZero()) {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getFeeChargesPaid(currency))
+                                .minus(feePayable);
+                    } else {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getFeeChargesPaid(currency));
+                    }
                 }
                 if (balancesForCurrentPeroid[2].isGreaterThan(balancesForCurrentPeroid[4])) {
                     penalty = penalty.plus(balancesForCurrentPeroid[2].minus(balancesForCurrentPeroid[4]));
                 } else {
-                    paidFromFutureInstallments = paidFromFutureInstallments.plus(balancesForCurrentPeroid[4]).minus(balancesForCurrentPeroid[2]);
+                    Money penaltyPayable = balancesForCurrentPeroid[2].minus(installment.getPenaltyChargesWaived(currency));
+                    if (penaltyPayable.isGreaterThanZero()) {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getPenaltyChargesPaid(currency))
+                                .minus(penaltyPayable);
+                    } else {
+                        paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getPenaltyChargesPaid(currency));
+                    }
                 }
             } else if (installment.getDueDate().isAfter(paymentDate)) {
                 paidFromFutureInstallments = paidFromFutureInstallments.plus(installment.getInterestPaid(currency))
