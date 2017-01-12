@@ -594,21 +594,26 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     		}
             BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedPrincipal");
             Long productId = (Long) data.get("productId");
-            Collection<TransactionAuthenticationData> transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
-    				.retiveTransactionAuthenticationDetailsForTemplate(
-    						SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
-    						SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal,
-    						loanId, productId);
-            final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService.getOnlyActiveExternalAuthenticationServices();
-    		if (externalServices.size() > 0 && !externalServices.isEmpty()) {
-    			for(ExternalAuthenticationServiceData services :externalServices){
-    				if(services.getName().contains("Fingerprint Auth")){
-    					if(services.isActive()){
-    						fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(loan.getClientId());
-    					}
-    				}
-    			}
-    		}
+            Collection<TransactionAuthenticationData> transactionAuthenticationOptions = null; 
+			if (loan.getClient() != null) {
+				transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
+						.retiveTransactionAuthenticationDetailsForTemplate(
+								SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+								SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal,
+								loanId, productId);
+				final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService
+						.getOnlyActiveExternalAuthenticationServices();
+				if (externalServices.size() > 0 && !externalServices.isEmpty()) {
+					for (ExternalAuthenticationServiceData services : externalServices) {
+						if (services.getName().contains("Fingerprint Auth")) {
+							if (services.isActive()) {
+								fingerPrintData = this.fingerPrintReadPlatformServices
+										.retriveFingerPrintData(loan.getClientId());
+							}
+						}
+					}
+				}
+			}
             return LoanTransactionData.LoanTransactionDataForDisbursalTemplate(transactionType, expectedDisbursementDate, principal,
                     paymentOptions, fixedEmiAmount, nextDueDate, transactionAuthenticationOptions,fingerPrintData);
         } catch (final EmptyResultDataAccessException e) {
@@ -2648,5 +2653,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             isFirstTime = false;
         }
     }
+
+	@Override
+	public Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(Long loanId) {
+		final StringBuilder sql = new StringBuilder(200);
+		sql.append("Select product_id as productId, approved_principal as apprivedPrincipal, client_id as clientId ");
+		sql.append("from m_loan where id = :loanId ");
+		Map<String, Object> paramMap = new HashMap<>(1);
+		paramMap.put("loanId", loanId);
+
+		return this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap );
+	}
 
 }

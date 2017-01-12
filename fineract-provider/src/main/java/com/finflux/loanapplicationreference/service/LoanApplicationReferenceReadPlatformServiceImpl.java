@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -20,8 +22,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.finflux.fingerprint.data.FingerPrintData;
+import com.finflux.fingerprint.services.FingerPrintReadPlatformServices;
+import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
+import com.finflux.infrastructure.external.authentication.service.ExternalAuthenticationServicesReadPlatformService;
 import com.finflux.loanapplicationreference.data.LoanApplicationChargeData;
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
 import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
@@ -30,6 +37,10 @@ import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
 import com.finflux.loanapplicationreference.data.LoanApplicationSanctionTrancheData;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
+import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
+import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticaionTransactionTypes;
+import com.finflux.organisation.transaction.authentication.domain.SupportedAuthenticationPortfolioTypes;
+import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationReadPlatformService;
 
 @Service
 public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanApplicationReferenceReadPlatformService {
@@ -40,27 +51,71 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     private final LoanApplicationChargeDataMapper chargeDataMapper;
     private final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
+    private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
+    private final FingerPrintReadPlatformServices fingerPrintReadPlatformServices;
+    private final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Autowired
     public LoanApplicationReferenceReadPlatformServiceImpl(final RoutingDataSource dataSource,
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanApplicationReferenceRepositoryWrapper loanApplicationReferenceRepository,
-            final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
+            final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
+    		final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
+    		final RoutingDataSource dataSourc) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.dataMapper = new LoanApplicationReferenceDataMapper();
         this.chargeDataMapper = new LoanApplicationChargeDataMapper();
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+        this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
+        this.fingerPrintReadPlatformServices = fingerPrintReadPlatformServices;
+        this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
     }
 
     @Override
     public LoanApplicationReferenceTemplateData templateData(final boolean onlyActive) {
         final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-        return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions);
+		return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions);
     }
 
+    @Override
+    public LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Long loanApplicationReferenceId) {
+    	final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive);
+        final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
+        Map<String, Object> data = retrieveLoanProductIdApprovedAmountClientId(loanApplicationReferenceId);
+        Long productId = (Long) data.get("productId");
+        BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedAmount");
+        Long clientId = (Long) data.get("clientId");
+        Collection<FingerPrintData> fingerPrintData = null;
+        Collection<TransactionAuthenticationData> transactionAuthenticationOptions  = null;
+		if (clientId != null) {
+			transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
+					.retiveTransactionAuthenticationDetailsForTemplate(
+							SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+							SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal,
+							loanApplicationReferenceId, productId);
+			final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService
+					.getOnlyActiveExternalAuthenticationServices();
+			if (externalServices.size() > 0 && !externalServices.isEmpty()) {
+				for (ExternalAuthenticationServiceData services : externalServices) {
+					if (services.getName().contains("Fingerprint Auth")) {
+						if (services.isActive()) {
+							fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(clientId);
+						}
+					}
+				}
+			}
+		}
+		return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions,
+				transactionAuthenticationOptions, fingerPrintData);
+    }
+    
     @Override
     public Collection<LoanApplicationReferenceData> retrieveAll(final Long clientId) {
         try {
@@ -337,4 +392,18 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                     expectedTrancheDisbursementDate);
         }
     }
+    
+	@Override
+	public Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(Long loanApplicationReferenceId) {
+		final StringBuilder sql = new StringBuilder(200);
+		sql.append(
+				"Select lpar.loan_product_id as productId, flas.loan_amount_approved as approvedAmount, lpar.client_id as clientId ");
+		sql.append(" from f_loan_application_reference lpar ");
+		sql.append(
+				"Join f_loan_application_sanction flas on lpar.id = flas.loan_app_ref_id and lpar.id = :loanApplicationReferenceId");
+		Map<String, Object> paramMap = new HashMap<>(1);
+		paramMap.put("loanApplicationReferenceId", loanApplicationReferenceId);
+
+		return this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap );
+	}
 }
