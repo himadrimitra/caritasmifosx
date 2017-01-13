@@ -10,7 +10,7 @@ import com.jayway.restassured.specification.ResponseSpecification;
 public class ExternalServiceConnectivityHelper {
 
 	private static final String DefaultApiPath = "/fineract-provider/api/v1/";
-	private static final String GenerateOtp = DefaultApiPath + "transactions/authentication/generate/otp";
+	private static final String GenerateOtp = DefaultApiPath + "transactions/authentication/loan/";
 	private static final String AuthenticateUser = DefaultApiPath + "transactions/authentication/user";
 	private static final String AuthenticationServices = DefaultApiPath + "external/authentications/services";
 	private ResponseSpecification responseSpec;
@@ -26,7 +26,7 @@ public class ExternalServiceConnectivityHelper {
 		String json = getAsJSON(loanId, transactionAuthenticationTypeId);
 		System.out.println("--------------------SEND OTP---------------------------");
 		System.out.println("The json is "+json);
-		return Utils.performServerPost(this.requestSpec, this.responseSpec, GenerateOtp + "?" + Utils.TENANT_IDENTIFIER,
+		return Utils.performServerPost(this.requestSpec, this.responseSpec, GenerateOtp + loanId+"/generate/otp"+"?" + Utils.TENANT_IDENTIFIER,
 				json, null);
 	}
 
@@ -48,8 +48,7 @@ public class ExternalServiceConnectivityHelper {
 
 	public String getAsJSON(final Integer loanId, final Integer transactionAuthenticationTypeId) {
 		final HashMap<String, Object> map = new HashMap<>();
-		map.put("loanId", loanId);
-		map.put("authenticationRuleId", transactionAuthenticationTypeId);
+		map.put("transactionAuthenticationId", transactionAuthenticationTypeId);
 		return new Gson().toJson(map);
 	}
 

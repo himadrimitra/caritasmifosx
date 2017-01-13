@@ -27,6 +27,8 @@ import org.springframework.stereotype.Component;
 
 import com.finflux.commands.service.CommandWrapperBuilder;
 import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
+import com.finflux.organisation.transaction.authentication.service.OtpRequestHandlerFactory;
+import com.finflux.organisation.transaction.authentication.service.OtpRequestHandlerService;
 import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationReadPlatformService;
 import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationService;
 
@@ -39,6 +41,8 @@ public class TransactionAuthenticationApiResource {
 	private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
 	private final ApiRequestParameterHelper apiRequestParameterHelper;
 	private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
+	private final OtpRequestHandlerFactory otpRequestHandlerFactory;
+	
 
 	private final TransactionAuthenticationService transactionAuthenticationService;
 
@@ -48,13 +52,15 @@ public class TransactionAuthenticationApiResource {
 			final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
 			final ApiRequestParameterHelper apiRequestParameterHelper,
 			final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-			final TransactionAuthenticationService transactionAuthenticationService) {
+			final TransactionAuthenticationService transactionAuthenticationService,
+			final OtpRequestHandlerFactory otpRequestHandlerFactory) {
 		this.context = context;
 		this.toApiJsonSerializer = toApiJsonSerializer;
 		this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
 		this.apiRequestParameterHelper = apiRequestParameterHelper;
 		this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
 		this.transactionAuthenticationService = transactionAuthenticationService;
+		this.otpRequestHandlerFactory = otpRequestHandlerFactory;
 	}
 
 	@GET
@@ -80,12 +86,15 @@ public class TransactionAuthenticationApiResource {
 	}
 
 	@POST
-	@Path("generate/otp")
+	@Path("{portfolioType}/{protfolioId}/generate/otp")
 	@Consumes({ MediaType.APPLICATION_JSON })
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String generateOTP(@Context final UriInfo uriInfo, final String apiRequestBodyAsJson) {
+	public String generateOTP(@Context final UriInfo uriInfo, @PathParam("portfolioType") String portfolioType,
+			@PathParam("protfolioId") Long portfolioId, final String apiRequestBodyAsJson) {
 		this.context.authenticatedUser().validateHasPermissionTo(TransactionAuthenticationApiConstants.GENERATE_OTP);
-		Object otpResponse = this.transactionAuthenticationService.sendOtpForTheCLient(apiRequestBodyAsJson);
+		final OtpRequestHandlerService otpRequestHandlerService = this.otpRequestHandlerFactory
+				.getOtpRequestHandlerService(portfolioType);
+		Object otpResponse = otpRequestHandlerService.sendOtp(portfolioId, apiRequestBodyAsJson);
 		return this.toApiJsonSerializer.serialize(otpResponse);
 	}
 
