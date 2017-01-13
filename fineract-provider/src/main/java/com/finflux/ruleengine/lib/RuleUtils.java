@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.finflux.ruleengine.configuration.data.FieldData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,16 @@ public class RuleUtils {
     @Autowired
     public RuleUtils(RiskConfigReadPlatformService riskConfigReadPlatformService){
         this.riskConfigReadPlatformService = riskConfigReadPlatformService;
+    }
+
+    public FieldData getFieldFromParameter(String parameter){
+        List<FieldData> fields = riskConfigReadPlatformService.getAllFields();
+        for(FieldData fieldData: fields){
+            if(fieldData.getUname().equalsIgnoreCase(parameter)){
+                return fieldData;
+            }
+        }
+        return null;
     }
 
     public String buildExpression(ExpressionNode expressionNode) throws InvalidExpressionException {

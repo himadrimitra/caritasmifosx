@@ -249,6 +249,18 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
         return new ArrayList<AddressData>();
     }
 
+    @Override
+    public Long countOfAddressByEntityTypeAndEntityId(AddressEntityTypeEnums entityType, Long entityId) {
+        AddressCountMapper addressCountMapper = new AddressCountMapper();
+        final Integer entityTypeEnum = entityType.getValue();
+        final String sql = "SELECT " + addressCountMapper.schema() + " where ae.entity_id = ? AND ae.entity_type_enum = ? ";
+        Long addressCount =  this.jdbcTemplate.queryForObject(sql, addressCountMapper, new Object[] { entityId, entityTypeEnum });
+        if(addressCount==null){
+            addressCount = 0L;
+        }
+        return addressCount;
+    }
+
     private static final class AddressDataMapper implements RowMapper<AddressData> {
 
         private final String schema;
@@ -414,6 +426,30 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 parentAddressType = CodeValueData.instance(parentAddressTypeId, parentAddressTypeName, parentAddressTypeIsActive);
             }
             return AddressEntityData.instance(id, addressId, addressType, entityId, entityType, isActive, parentAddressType);
+        }
+    }
+
+
+    private static final class AddressCountMapper implements RowMapper<Long> {
+
+        private final String schema;
+
+        public AddressCountMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+            sqlBuilder.append("count(1) AS count ");
+            sqlBuilder.append("FROM f_address_entity ae ");
+            this.schema = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schema;
+        }
+
+        @Override
+        public Long mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long count = rs.getLong("count");
+            return count;
         }
     }
 }

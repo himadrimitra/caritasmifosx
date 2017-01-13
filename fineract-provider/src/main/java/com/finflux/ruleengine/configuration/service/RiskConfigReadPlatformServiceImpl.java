@@ -60,6 +60,13 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
             // return null;
         }
 
+        try {
+            List<FieldData> clientIdentifierList = getAllClientIdentifierFields();
+            allFields.addAll(clientIdentifierList);
+        } catch (final EmptyResultDataAccessException e) {
+            // return null;
+        }
+
         final String surveyFieldsSql = "select " + surveyFieldDataMapper.schema() + " order by s.id asc, sq.id asc, sr.id asc";
         try {
             List<SurveyFieldData> surveyFieldDataList = this.jdbcTemplate.query(surveyFieldsSql, surveyFieldDataMapper);
@@ -68,8 +75,20 @@ public class RiskConfigReadPlatformServiceImpl implements RiskConfigReadPlatform
         } catch (final EmptyResultDataAccessException e) {
             // return null;
         }
+
         return allFields;
 
+    }
+
+    private List<FieldData> getAllClientIdentifierFields() {
+        List<FieldData> fields = new ArrayList<>();
+        Collection<CodeValueData> codeValues = codeValueReadPlatformService.retrieveCodeValuesByCode("Customer Identifier");
+        for(CodeValueData codeValueData: codeValues){
+            FieldData clientIdentifierField = new FieldData(codeValueData.getName(), FieldType.CLIENTIDENTIFIER.name() + "_"
+                    + codeValueData.getId(), ValueType.STRING, null, FieldType.CLIENTIDENTIFIER);
+            fields.add(clientIdentifierField);
+        }
+        return fields;
     }
 
     @Override

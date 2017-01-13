@@ -3,14 +3,19 @@ package com.finflux.ruleengine.execution.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.finflux.kyc.address.data.AddressEntityTypeEnums;
+import com.finflux.kyc.address.service.AddressReadPlatformService;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
+import org.apache.fineract.portfolio.client.service.ClientIdentifierReadPlatformService;
 import org.apache.fineract.spm.domain.SurveyEntityType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -31,14 +36,20 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private final SurveyQuestionDataLayerMapper surveyQuestionDataLayerMapper = new SurveyQuestionDataLayerMapper();
     private final SurveyScorecardDataLayerMapper surveyScorecardDataLayerMapper = new SurveyScorecardDataLayerMapper();
     private final LoanApplicationDataLayerMapper loanApplicationDataLayerMapper = new LoanApplicationDataLayerMapper();
+    private final ClientIdentifierReadPlatformService clientIdentifierReadPlatformService;
+    private final AddressReadPlatformService addressReadPlatformService;
 
     @Autowired
     public DataLayerReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final CodeValueReadPlatformService codeValueReadPlatformService, final FromJsonHelper fromJsonHelper) {
+            final CodeValueReadPlatformService codeValueReadPlatformService, final FromJsonHelper fromJsonHelper,
+            final ClientIdentifierReadPlatformService clientIdentifierReadPlatformService,
+            final AddressReadPlatformService addressReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.fromJsonHelper = fromJsonHelper;
+        this.clientIdentifierReadPlatformService = clientIdentifierReadPlatformService;
+        this.addressReadPlatformService = addressReadPlatformService;
     }
 
     @Override
@@ -52,6 +63,22 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
             }
         } catch (final EmptyResultDataAccessException e) {}
 
+        //identifierData
+
+        Collection<ClientIdentifierData> identifierDatas = this.clientIdentifierReadPlatformService.retrieveClientIdentifiers(clientId);
+        if(identifierDatas!=null){
+            for(ClientIdentifierData identifierData: identifierDatas){
+                final Map<String, Object> keyValue = new HashMap<>();
+                keyValue.put(FieldType.CLIENTIDENTIFIER.name()+"_"+identifierData.getDocumentType().getId(), identifierData.getDocumentKey());
+                allClientData.putAll(keyValue);
+            }
+        }
+
+        //addressData
+        Long addressCount = addressReadPlatformService.countOfAddressByEntityTypeAndEntityId(AddressEntityTypeEnums.CLIENTS,clientId);
+        allClientData.put("clientAddressCount",addressCount);
+
+        //Survey QUestions
         final String questionSql = "SELECT " + surveyQuestionDataLayerMapper.schema()
                 + " WHERE st.entity_type = ? AND st.entity_id = ? order by st.id asc";
         try {
