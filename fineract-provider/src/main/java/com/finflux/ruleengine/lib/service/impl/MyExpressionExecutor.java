@@ -1,5 +1,6 @@
 package com.finflux.ruleengine.lib.service.impl;
 
+import com.finflux.ruleengine.configuration.data.FieldData;
 import com.finflux.ruleengine.lib.FieldUndefinedException;
 import com.finflux.ruleengine.lib.InvalidExpressionException;
 import com.finflux.ruleengine.lib.RuleUtils;
@@ -65,32 +66,32 @@ public class MyExpressionExecutor implements ExpressionExecutor {
     private boolean executeExpressionLeafNode(ExpressionNode expressionNode, Map<String,Object> map) throws FieldUndefinedException, InvalidExpressionException {
         Expression expression = expressionNode.getExpression();
         Object value = map.get(expression.getParameter());
-        if(value!=null) {
-            try {
-                if (value instanceof String) {
-                    if (ValueType.BOOLEAN.equals(expression.getValueType())) {
-                        String tmpValue = (String) value;
-                        value = Boolean.parseBoolean(tmpValue);
-                    } else if (ValueType.NUMBER.equals(expression.getValueType())) {
-                        String tmpValue = (String) value;
-                        value = NumberUtils.createNumber(tmpValue);
-                    }
+        if(value==null && !expression.getComparator().getSupportNullValue()) {
+            FieldData errorField = ruleUtils.getFieldFromParameter(expression.getParameter());
+            throw new FieldUndefinedException("No data found for Key:["+errorField.getName()+"]");
+        }
+        try {
+            if (value instanceof String) {
+                if (ValueType.BOOLEAN.equals(expression.getValueType())) {
+                    String tmpValue = (String) value;
+                    value = Boolean.parseBoolean(tmpValue);
+                } else if (ValueType.NUMBER.equals(expression.getValueType())) {
+                    String tmpValue = (String) value;
+                    value = NumberUtils.createNumber(tmpValue);
                 }
-
-                EvaluationContext context = new StandardEvaluationContext();
-                context.setVariable(expression.getParameter(), value);
-
-                ExpressionParser parser = new SpelExpressionParser();
-
-                String expressionStr = ruleUtils.buildExpression(expressionNode);
-                org.springframework.expression.Expression exp = parser.parseExpression(expressionStr);
-                return exp.getValue(context, Boolean.class);
-            }catch(Exception e){
-                throw new InvalidExpressionException("Error occurred while evaluating:["
-                        +ruleUtils.buildExpression(expressionNode)+"]",e);
             }
-        }else{
-            throw new FieldUndefinedException("No data found for key:["+expression.getParameter()+"]");
+
+            EvaluationContext context = new StandardEvaluationContext();
+            context.setVariable(expression.getParameter(), value);
+
+            ExpressionParser parser = new SpelExpressionParser();
+
+            String expressionStr = ruleUtils.buildExpression(expressionNode);
+            org.springframework.expression.Expression exp = parser.parseExpression(expressionStr);
+            return exp.getValue(context, Boolean.class);
+        }catch(Exception e){
+            throw new InvalidExpressionException("Error occurred while evaluating:["
+                    +ruleUtils.buildExpression(expressionNode)+"]",e);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.finflux.ruleengine.execution.data;
 
 import com.finflux.ruleengine.lib.data.RuleResult;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 /**
  * Created by dhirendra on 30/09/16.
@@ -8,6 +9,8 @@ import com.finflux.ruleengine.lib.data.RuleResult;
 public class EligibilityResult {
 
     private EligibilityStatus status;
+
+    private EnumOptionData eligibiltyStatus;
 
     private RuleResult criteriaOutput;
 
@@ -17,6 +20,9 @@ public class EligibilityResult {
 
     public void setStatus(EligibilityStatus status) {
         this.status = status;
+        if(this.status!=null) {
+            this.eligibiltyStatus = status.getEnumOptionData();
+        }
     }
 
     public RuleResult getCriteriaOutput() {

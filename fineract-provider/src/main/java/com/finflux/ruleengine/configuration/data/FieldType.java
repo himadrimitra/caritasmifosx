@@ -11,13 +11,15 @@ import java.util.Map;
 public enum FieldType {
     SURVEY(1, "fieldType.survey"),
     QUESTION(2, "fieldType.question"),
-    DATA(3, "fieldType.data");
+    DATA(3, "fieldType.data"),
+    CLIENTIDENTIFIER(4, "fieldType.identifier");
 
     private final Integer value;
     private final String code;
 
 
     private FieldType(final Integer value, final String code) {
+
         this.value = value;
         this.code = code;
     }

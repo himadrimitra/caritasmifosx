@@ -86,4 +86,28 @@ public class ClientIdentifierData {
 	public String getDocumentKey() {
 		return documentKey;
 	}
+
+	public Long getId() {
+		return id;
+	}
+
+	public Long getClientId() {
+		return clientId;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public Collection<CodeValueData> getAllowedDocumentTypes() {
+		return allowedDocumentTypes;
+	}
+
+	public List<EnumOptionData> getClientIdentifierStatusOptions() {
+		return clientIdentifierStatusOptions;
+	}
 }
