@@ -591,7 +591,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final StringBuilder builder = new StringBuilder(200);
 
             builder.append("c.id as id, c.display_name as displayName, ");
-            builder.append("c.office_id as officeId, o.name as officeName ");
+            builder.append("c.office_id as officeId, o.name as officeName, ");
+            builder.append("c.external_id as externalId ");
             builder.append("from m_client c ");
             builder.append("join m_office o on o.id = c.office_id ");
 
@@ -609,8 +610,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final String displayName = rs.getString("displayName");
             final Long officeId = rs.getLong("officeId");
             final String officeName = rs.getString("officeName");
+            final String externalId = rs.getString("externalId");
 
-            return ClientData.lookup(id, displayName, officeId, officeName);
+            return ClientData.lookup(id, displayName, officeId, officeName,externalId);
         }
     }
 

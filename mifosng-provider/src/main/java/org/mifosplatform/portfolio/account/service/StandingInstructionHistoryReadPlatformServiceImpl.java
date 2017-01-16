@@ -156,8 +156,8 @@ public class StandingInstructionHistoryReadPlatformServiceImpl implements Standi
             sqlBuilder.append("atsih.amount as amount, atsih.error_log as errorLog, ");
             sqlBuilder.append("fromoff.id as fromOfficeId, fromoff.name as fromOfficeName,");
             sqlBuilder.append("tooff.id as toOfficeId, tooff.name as toOfficeName,");
-            sqlBuilder.append("fromclient.id as fromClientId, fromclient.display_name as fromClientName,");
-            sqlBuilder.append("toclient.id as toClientId, toclient.display_name as toClientName,");
+            sqlBuilder.append("fromclient.id as fromClientId, fromclient.display_name as fromClientName,fromclient.external_id as fromClientExternalId,");
+            sqlBuilder.append("toclient.id as toClientId, toclient.display_name as toClientName,toclient.external_id as toClientExternalId,");
             sqlBuilder.append("fromsavacc.id as fromSavingsAccountId, fromsavacc.account_no as fromSavingsAccountNo,");
             sqlBuilder.append("fromsp.id as fromProductId, fromsp.name as fromProductName, ");
             sqlBuilder.append("fromloanacc.id as fromLoanAccountId, fromloanacc.account_no as fromLoanAccountNo,");
@@ -210,11 +210,13 @@ public class StandingInstructionHistoryReadPlatformServiceImpl implements Standi
 
             final Long fromClientId = JdbcSupport.getLong(rs, "fromClientId");
             final String fromClientName = rs.getString("fromClientName");
-            final ClientData fromClient = ClientData.lookup(fromClientId, fromClientName, fromOfficeId, fromOfficeName);
+            final String fromClientExternalId = rs.getString("fromClientExternalId");
+            final ClientData fromClient = ClientData.lookup(fromClientId, fromClientName, fromOfficeId, fromOfficeName, fromClientExternalId);
 
             final Long toClientId = JdbcSupport.getLong(rs, "toClientId");
             final String toClientName = rs.getString("toClientName");
-            final ClientData toClient = ClientData.lookup(toClientId, toClientName, toOfficeId, toOfficeName);
+            final String toClientExternalId = rs.getString("toClientExternalId");
+            final ClientData toClient = ClientData.lookup(toClientId, toClientName, toOfficeId, toOfficeName, toClientExternalId);
 
             final Long fromSavingsAccountId = JdbcSupport.getLong(rs, "fromSavingsAccountId");
             final String fromSavingsAccountNo = rs.getString("fromSavingsAccountNo");
