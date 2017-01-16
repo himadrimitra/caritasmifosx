@@ -724,6 +724,11 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 this.loanInstallmentCharge.add(loanChargePerInstallmentArray[index++]);
             }
         }
+        Money amount = Money.zero(this.loan.getCurrency());
+        for(LoanInstallmentCharge charge:this.loanInstallmentCharge){
+            amount =amount.plus(charge.getAmount());
+        }
+        this.amount =amount.getAmount();
     }
 
     public boolean isDueAtDisbursement() {
