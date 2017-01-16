@@ -3574,7 +3574,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     private boolean isFullProcessingRequired(final LoanTransaction loanTransaction){
-        return isForeclosure() && loanTransaction.getTransactionSubTye().isPrePayment();
+        return isForeclosure() || loanTransaction.getTransactionSubTye().isPrePayment();
     }
 
     private void undoGlimLoanChargesPaid(Map<Long, BigDecimal> chargeAmountMap, final Set<LoanCharge> charges,
