@@ -189,18 +189,20 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
         final List<Long> loanIds;
         final FineractPlatformTenant tenant;
         final StringBuilder sb;
+        final Boolean ignoreOverdue;
 
         public RecalculateInterestThread(final List<Long> loanIds, final StringBuilder sb) {
             this.loanIds = loanIds;
             this.tenant = ThreadLocalContextUtil.getTenant();
             this.sb = sb;
+            this.ignoreOverdue = ThreadLocalContextUtil.getIgnoreOverdue();
         }
 
         @Override
         public void run() {
             ThreadLocalContextUtil.setTenant(tenant);
+            ThreadLocalContextUtil.setIgnoreOverdue(ignoreOverdue);
             recalculateInterest(sb, maxNumberOfRetries, maxIntervalBetweenRetries, loanIds);
-
         }
 
     }
