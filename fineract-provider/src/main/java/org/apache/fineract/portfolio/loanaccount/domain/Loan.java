@@ -4050,6 +4050,8 @@ public class Loan extends AbstractPersistable<Long> {
 
         if (isClosedObligationsMet() || isClosedWrittenOff() || isClosedWithOutsandingAmountMarkedForReschedule()) {
             this.loanStatus = LoanStatus.ACTIVE.getValue();
+            this.closedOnDate = null;
+            this.actualMaturityDate = this.expectedMaturityDate;
             if (this.isGLIMLoan()) {
                 Set<GroupLoanIndividualMonitoringTransaction> glimTransactions = transactionForAdjustment.getGlimTransaction();
                 for (GroupLoanIndividualMonitoringTransaction glimTransaction : glimTransactions) {
