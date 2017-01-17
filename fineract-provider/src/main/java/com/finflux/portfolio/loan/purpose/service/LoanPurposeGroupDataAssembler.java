@@ -44,7 +44,7 @@ public class LoanPurposeGroupDataAssembler {
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         final String name = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.nameParamName, element);
-        final String shortName = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.shortNameParamName, element);
+        final String systemCode = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.systemCodeParamName, element);
         final String description = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.descriptionParamName, element);
         final Long loanPurposeGroupTypeId = this.fromApiJsonHelper.extractLongNamed(
                 LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName, element);
@@ -53,14 +53,15 @@ public class LoanPurposeGroupDataAssembler {
         if (isActive == null) {
             isActive = true;
         }
-        return LoanPurposeGroup.create(name, shortName, description, loanPurposeGroupType, isActive);
+        return LoanPurposeGroup.create(name, systemCode, description, loanPurposeGroupType, isActive);
     }
 
     public Map<String, Object> assembleUpdateLoanPurposeGroupForm(final LoanPurposeGroup loanPurposeGroup, final JsonCommand command) {
         final Map<String, Object> actualChanges = loanPurposeGroup.update(command);
         if (!actualChanges.isEmpty()) {
             if (actualChanges.containsKey(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName)) {
-                final Long loanPurposeGroupTypeId = command.longValueOfParameterNamed(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName);
+                final Long loanPurposeGroupTypeId = command
+                        .longValueOfParameterNamed(LoanPurposeGroupApiConstants.loanPurposeGroupTypeIdParamName);
                 final CodeValue loanPurposeGroupType = this.codeValueRepository.findOneWithNotFoundDetection(loanPurposeGroupTypeId);
                 loanPurposeGroup.updateLoanPurposeGroupType(loanPurposeGroupType);
             }
@@ -73,13 +74,13 @@ public class LoanPurposeGroupDataAssembler {
 
         final JsonElement element = command.parsedJson();
         final String name = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.nameParamName, element);
-        final String shortName = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.shortNameParamName, element);
+        final String systemCode = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.systemCodeParamName, element);
         final String description = this.fromApiJsonHelper.extractStringNamed(LoanPurposeGroupApiConstants.descriptionParamName, element);
         Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(LoanPurposeGroupApiConstants.isActiveParamName, element);
         if (isActive == null) {
             isActive = true;
         }
-        final LoanPurpose loanPurpose = LoanPurpose.create(name, shortName, description, isActive);
+        final LoanPurpose loanPurpose = LoanPurpose.create(name, systemCode, description, isActive);
 
         if (this.fromApiJsonHelper.parameterExists(LoanPurposeGroupApiConstants.loanPurposeGroupIdsParamName, element)) {
             final String[] loanPurposeGroupIds = this.fromApiJsonHelper.extractArrayNamed(

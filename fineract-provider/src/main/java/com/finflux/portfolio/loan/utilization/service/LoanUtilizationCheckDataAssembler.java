@@ -44,10 +44,31 @@ public class LoanUtilizationCheckDataAssembler {
         this.loanRepository = loanRepository;
     }
 
-    public LoanUtilizationCheck assembleCreateForm(final JsonCommand command) {
+    public List<LoanUtilizationCheck> assembleCreateForm(final JsonCommand command) {
+        final List<LoanUtilizationCheck> loanUtilizationChecks = new ArrayList<>();
+        final JsonElement parentElement = command.parsedJson();
+        final JsonObject parentElementObj = parentElement.getAsJsonObject();
+        if (parentElement.isJsonObject() && !command.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName)) {
+            final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(parentElement.getAsJsonObject());
+            loanUtilizationChecks.add(loanUtilizationCheck);
+        } else if (command.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName)) {
+            final JsonArray array = parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName).getAsJsonArray();
+            if (array != null && array.size() > 0) {
+                for (int i = 0; i < array.size(); i++) {
+                    final JsonObject element = array.get(i).getAsJsonObject();
+                    final LoanUtilizationCheck loanUtilizationCheck = assembleCreateFormEachObject(element);
+                    loanUtilizationChecks.add(loanUtilizationCheck);
+                }
+            }
+        }
+        return loanUtilizationChecks;
+    }
 
-        final JsonElement element = command.parsedJson();
-
+    private LoanUtilizationCheck assembleCreateFormEachObject(final JsonObject element) {
+        final JsonObject topLevelJsonElement = element.getAsJsonObject();
+        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+        final Long loanId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanIdParamName, element);
+        final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
         AppUser toBeAuditedBy = null;
         final Long toBeAuditedById = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName,
                 element);
@@ -77,77 +98,62 @@ public class LoanUtilizationCheckDataAssembler {
             auditDoneOn = localDateAuditDoneOn.toDate();
         }
 
-        final LoanUtilizationCheck loanUtilizationCheck = LoanUtilizationCheck.create(toBeAuditedBy, auditeScheduledOn, auditDoneBy,
+        final LoanUtilizationCheck loanUtilizationCheck = LoanUtilizationCheck.create(loan, toBeAuditedBy, auditeScheduledOn, auditDoneBy,
                 auditDoneOn);
 
-        final List<LoanUtilizationCheckDetail> loanUtilizationCheckDetails = assembleLoanUtilizationCheckDetails(loanUtilizationCheck,
-                element);
+        final LoanUtilizationCheckDetail loanUtilizationCheckDetail = assembleLoanUtilizationCheckDetail(loanUtilizationCheck,
+                element.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale);
 
-        if (loanUtilizationCheck != null && loanUtilizationCheckDetails != null && loanUtilizationCheckDetails.size() > 0) {
-            loanUtilizationCheck.addAllLoanUtilizationCheckDetails(loanUtilizationCheckDetails);
+        if (loanUtilizationCheck != null && loanUtilizationCheckDetail != null) {
+            loanUtilizationCheck.updateLoanUtilizationCheckDetails(loanUtilizationCheckDetail);
         }
         return loanUtilizationCheck;
     }
 
-    @SuppressWarnings("unused")
-    private List<LoanUtilizationCheckDetail> assembleLoanUtilizationCheckDetails(final LoanUtilizationCheck loanUtilizationCheck,
-            final JsonElement element) {
+    private LoanUtilizationCheckDetail assembleLoanUtilizationCheckDetail(final LoanUtilizationCheck loanUtilizationCheck,
+            final JsonElement utilizationDetailElement, final Locale locale) {
+        LoanUtilizationCheckDetail loanUtilizationCheckDetail = loanUtilizationCheck.getLoanUtilizationCheckDetail();
 
-        final JsonObject topLevelJsonElement = element.getAsJsonObject();
+        final Long loanPurposeId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanPurposeIdParamName,
+                utilizationDetailElement);
 
-        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+        final Boolean isSameAsOriginalPurpose = this.fromApiJsonHelper.extractBooleanNamed(
+                LoanUtilizationCheckApiConstants.isSameAsOriginalPurposeParamName, utilizationDetailElement);
 
-        final List<LoanUtilizationCheckDetail> loanUtilizationCheckDetails = new ArrayList<LoanUtilizationCheckDetail>();
-        final JsonArray loanUtilizationCheckDetailsArray = this.fromApiJsonHelper.extractJsonArrayNamed(
-                LoanUtilizationCheckApiConstants.loanUtilizationCheckDetailsParamName, element);
-        if (loanUtilizationCheckDetailsArray != null && loanUtilizationCheckDetailsArray.size() > 0) {
-            for (int i = 0; i < loanUtilizationCheckDetailsArray.size(); i++) {
-                final JsonObject loanUtilizationElement = loanUtilizationCheckDetailsArray.get(i).getAsJsonObject();
+        final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed(LoanUtilizationCheckApiConstants.amountParamName,
+                utilizationDetailElement, locale);
 
-                final Long loanId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanIdParamName,
-                        loanUtilizationElement);
-                final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
-
-                final JsonArray utilizationDetailsArray = this.fromApiJsonHelper.extractJsonArrayNamed(
-                        LoanUtilizationCheckApiConstants.utilizationDetailsParamName, loanUtilizationElement);
-                if (utilizationDetailsArray != null && utilizationDetailsArray.size() > 0) {
-                    for (int j = 0; j < utilizationDetailsArray.size(); j++) {
-
-                        final JsonObject utilizationDetailElement = utilizationDetailsArray.get(j).getAsJsonObject();
-
-                        final Long loanPurposeId = this.fromApiJsonHelper.extractLongNamed(
-                                LoanUtilizationCheckApiConstants.loanPurposeIdParamName, utilizationDetailElement);
-
-                        final Boolean isSameAsOriginalPurpose = this.fromApiJsonHelper.extractBooleanNamed(
-                                LoanUtilizationCheckApiConstants.isSameAsOriginalPurposeParamName, utilizationDetailElement);
-
-                        final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed(
-                                LoanUtilizationCheckApiConstants.amountParamName, utilizationDetailElement, locale);
-
-                        final String comment = this.fromApiJsonHelper.extractStringNamed(LoanUtilizationCheckApiConstants.commentParamName,
-                                utilizationDetailElement);
-
-                        final LoanUtilizationCheckDetail loanUtilizationCheckDetail = LoanUtilizationCheckDetail.create(
-                                loanUtilizationCheck, loan, loanPurposeId, isSameAsOriginalPurpose, amount, comment);
-
-                        loanUtilizationCheckDetails.add(loanUtilizationCheckDetail);
-                    }
-                } else {
-                    final LoanUtilizationCheckDetail loanUtilizationCheckDetail = LoanUtilizationCheckDetail.create(loanUtilizationCheck,
-                            loan, null, null, null, null);
-
-                    loanUtilizationCheckDetails.add(loanUtilizationCheckDetail);
-                }
-            }
+        final String comment = this.fromApiJsonHelper.extractStringNamed(LoanUtilizationCheckApiConstants.commentParamName,
+                utilizationDetailElement);
+        if (loanUtilizationCheckDetail != null) {
+            loanUtilizationCheckDetail.update(loanUtilizationCheck, loanPurposeId, isSameAsOriginalPurpose, amount, comment);
+        } else {
+            loanUtilizationCheckDetail = LoanUtilizationCheckDetail.create(loanUtilizationCheck, loanPurposeId, isSameAsOriginalPurpose,
+                    amount, comment);
         }
-        return loanUtilizationCheckDetails;
+        return loanUtilizationCheckDetail;
     }
 
     public Map<String, Object> assembleUpdateForm(final LoanUtilizationCheck loanUtilizationCheck, final JsonCommand command) {
+        final JsonElement parentElement = command.parsedJson();
+        final JsonObject parentElementObj = parentElement.getAsJsonObject();
+        final JsonObject topLevelJsonElement = parentElement.getAsJsonObject();
+        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         final Map<String, Object> changes = loanUtilizationCheck.update(command);
-        final List<LoanUtilizationCheckDetail> loanUtilizationCheckDetails = assembleLoanUtilizationCheckDetails(loanUtilizationCheck,
-                command.parsedJson());
-        loanUtilizationCheck.addAllLoanUtilizationCheckDetails(loanUtilizationCheckDetails);
+        final LoanUtilizationCheckDetail loanUtilizationCheckDetail = assembleLoanUtilizationCheckDetail(loanUtilizationCheck,
+                parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName).getAsJsonObject(), locale);
+        loanUtilizationCheck.updateLoanUtilizationCheckDetails(loanUtilizationCheckDetail);
+        if (changes.containsKey(LoanUtilizationCheckApiConstants.loanIdParamName)) {
+            final Long loanId = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.loanIdParamName);
+            final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
+            loanUtilizationCheck.updateLoan(loan);
+        }
+        if (changes.containsKey(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName)) {
+            final Long toBeAuditedById = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName);
+            final AppUser toBeAuditedBy = this.appUserRepository.findOne(toBeAuditedById);
+            if (toBeAuditedBy == null) { throw new UserNotFoundException(toBeAuditedById); }
+            loanUtilizationCheck.updateToBeAuditedBy(toBeAuditedBy);
+        }
         if (changes.containsKey(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName)) {
             final Long toBeAuditedById = command.longValueOfParameterNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName);
             final AppUser toBeAuditedBy = this.appUserRepository.findOne(toBeAuditedById);

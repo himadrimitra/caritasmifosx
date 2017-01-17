@@ -9,25 +9,27 @@ public class LoanPurposeGroupData {
 
     private final Long id;
     private final String name;
-    private final String shortName;
+    private final String systemCode;
     private final String description;
     private final CodeValueData loanPurposeGroupType;
     private final Boolean isActive;
+    private final Boolean isSystemDefined;
     private Collection<LoanPurposeData> loanPurposeDatas;
 
-    private LoanPurposeGroupData(final Long id, final String name, final String shortName, final String description,
-            final CodeValueData loanPurposeGroupType, final Boolean isActive) {
+    private LoanPurposeGroupData(final Long id, final String name, final String systemCode, final String description,
+            final CodeValueData loanPurposeGroupType, final Boolean isActive, final Boolean isSystemDefined) {
         this.id = id;
         this.name = name;
-        this.shortName = shortName;
+        this.systemCode = systemCode;
         this.description = description;
         this.loanPurposeGroupType = loanPurposeGroupType;
         this.isActive = isActive;
+        this.isSystemDefined = isSystemDefined;
     }
 
-    public static LoanPurposeGroupData instance(final Long id, final String name, final String shortName, final String description,
-            final CodeValueData loanPurposeGroupType, final Boolean isActive) {
-        return new LoanPurposeGroupData(id, name, shortName, description, loanPurposeGroupType, isActive);
+    public static LoanPurposeGroupData instance(final Long id, final String name, final String systemCode, final String description,
+            final CodeValueData loanPurposeGroupType, final Boolean isActive, final Boolean isSystemDefined) {
+        return new LoanPurposeGroupData(id, name, systemCode, description, loanPurposeGroupType, isActive, isSystemDefined);
     }
 
     @SuppressWarnings("unused")

@@ -34,24 +34,44 @@ public class LoanUtilizationCheckDataValidator {
     }
 
     public void validateForCreate(final String json) {
-
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
-
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
                 LoanUtilizationCheckApiConstants.CREATE_LOAN_UTILIZATION_CHECK_REQUEST_DATA_PARAMETERS);
-
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(LoanUtilizationCheckApiConstants.LOAN_UTILIZATION_CHECK_RESOURCE_NAME);
+        final JsonElement parentElement = this.fromApiJsonHelper.parse(json);
+        final JsonObject parentElementObj = parentElement.getAsJsonObject();
+        if (parentElement.isJsonObject()
+                && !this.fromApiJsonHelper.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName, parentElement)) {
+            validateEachJsonObjectForCreate(parentElement.getAsJsonObject(), baseDataValidator);
+        } else if (this.fromApiJsonHelper.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName, parentElement)) {
+            final JsonArray array = parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName).getAsJsonArray();
+            if (array != null && array.size() > 0) {
+                for (int i = 0; i < array.size(); i++) {
+                    final JsonObject element = array.get(i).getAsJsonObject();
+                    validateEachJsonObjectForCreate(element, baseDataValidator);
+                    throwExceptionIfValidationWarningsExist(dataValidationErrors);
+                }
+            }
+        }
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
 
-        final JsonElement element = this.fromApiJsonHelper.parse(json);
+    private void validateEachJsonObjectForCreate(final JsonObject element, final DataValidatorBuilder baseDataValidator) {
+
+        if (StringUtils.isBlank(element.toString())) { throw new InvalidJsonException(); }
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, element.toString(),
+                LoanUtilizationCheckApiConstants.CREATE_LOAN_UTILIZATION_CHECK_REQUEST_DATA_PARAMETERS);
 
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
 
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+
+        final Long loanId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanIdParamName, element);
+        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.loanIdParamName).value(loanId).notNull();
 
         final Boolean isAuditeScheduledOn = this.fromApiJsonHelper.extractBooleanNamed(
                 LoanUtilizationCheckApiConstants.isAuditeScheduledOnParamName, element);
@@ -83,40 +103,18 @@ public class LoanUtilizationCheckDataValidator {
             baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.auditDoneByIdParamName).value(auditDoneById).notNull();
             baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.auditDoneOnParamName).value(auditDoneOn).notNull();
         }
-
-        final JsonArray loanUtilizationCheckDetailsArray = this.fromApiJsonHelper.extractJsonArrayNamed(
-                LoanUtilizationCheckApiConstants.loanUtilizationCheckDetailsParamName, element);
-
-        if (loanUtilizationCheckDetailsArray != null && loanUtilizationCheckDetailsArray.size() > 0) {
-            for (int i = 0; i < loanUtilizationCheckDetailsArray.size(); i++) {
-                final JsonObject loanUtilizationElement = loanUtilizationCheckDetailsArray.get(i).getAsJsonObject();
-                validateForLoanUtilizationCheckDetails(locale, loanUtilizationElement, baseDataValidator);
-            }
-        }
-
-        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        validateForLoanUtilizationCheckDetail(locale, element.get(LoanUtilizationCheckApiConstants.loanUtilizationDetailsParamName)
+                .getAsJsonObject(), baseDataValidator);
     }
 
-    private void validateForLoanUtilizationCheckDetails(final Locale locale, final JsonObject element,
+    private void validateForLoanUtilizationCheckDetail(final Locale locale, final JsonObject element,
             final DataValidatorBuilder baseDataValidator) {
 
-        final Long loanId = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.loanIdParamName, element);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.loanIdParamName).value(loanId).notNull();
+        if (StringUtils.isBlank(element.toString())) { throw new InvalidJsonException(); }
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, element.toString(),
+                LoanUtilizationCheckApiConstants.CREATE_LOAN_UTILIZATION_CHECK_REQUEST_DATA_PARAMETERS);
 
-        final JsonArray utilizationDetailsArray = this.fromApiJsonHelper.extractJsonArrayNamed(
-                LoanUtilizationCheckApiConstants.utilizationDetailsParamName, element);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.utilizationDetailsParamName).value(utilizationDetailsArray)
-                .jsonArrayNotEmpty();
-
-        if (utilizationDetailsArray != null && utilizationDetailsArray.size() > 0) {
-            for (int i = 0; i < utilizationDetailsArray.size(); i++) {
-                final JsonObject utilizationDetail = utilizationDetailsArray.get(i).getAsJsonObject();
-                validateForUtilizationDetails(locale, utilizationDetail, baseDataValidator);
-            }
-        }
-    }
-
-    private void validateForUtilizationDetails(final Locale locale, final JsonObject element, final DataValidatorBuilder baseDataValidator) {
         final Long loanPurposeId = this.fromApiJsonHelper
                 .extractLongNamed(LoanUtilizationCheckApiConstants.loanPurposeIdParamName, element);
         baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.loanPurposeIdParamName).value(loanPurposeId).ignoreIfNull();
@@ -148,39 +146,22 @@ public class LoanUtilizationCheckDataValidator {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(LoanUtilizationCheckApiConstants.LOAN_UTILIZATION_CHECK_RESOURCE_NAME);
 
-        final JsonElement element = this.fromApiJsonHelper.parse(json);
-
-        final JsonObject topLevelJsonElement = element.getAsJsonObject();
-
-        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
-
-        final Long toBeAuditedById = this.fromApiJsonHelper.extractLongNamed(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName,
-                element);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.toBeAuditedByIdParamName).value(toBeAuditedById)
-                .ignoreIfNull();
-
-        final LocalDate auditeScheduledOn = this.fromApiJsonHelper.extractLocalDateNamed(
-                LoanUtilizationCheckApiConstants.auditeScheduledOnParamName, element);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.auditeScheduledOnParamName).value(auditeScheduledOn)
-                .ignoreIfNull();
-
-        final Long auditDoneById = this.fromApiJsonHelper
-                .extractLongNamed(LoanUtilizationCheckApiConstants.auditDoneByIdParamName, element);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.auditDoneByIdParamName).value(auditDoneById).ignoreIfNull();
-
-        final LocalDate auditDoneOn = this.fromApiJsonHelper.extractLocalDateNamed(LoanUtilizationCheckApiConstants.auditDoneOnParamName,
-                element);
-        baseDataValidator.reset().parameter(LoanUtilizationCheckApiConstants.auditDoneOnParamName).value(auditDoneOn).ignoreIfNull();
-
-        final JsonArray loanUtilizationCheckDetailsArray = this.fromApiJsonHelper.extractJsonArrayNamed(
-                LoanUtilizationCheckApiConstants.loanUtilizationCheckDetailsParamName, element);
-
-        if (loanUtilizationCheckDetailsArray != null && loanUtilizationCheckDetailsArray.size() > 0) {
-            for (int i = 0; i < loanUtilizationCheckDetailsArray.size(); i++) {
-                final JsonObject loanUtilizationElement = loanUtilizationCheckDetailsArray.get(i).getAsJsonObject();
-                validateForLoanUtilizationCheckDetails(locale, loanUtilizationElement, baseDataValidator);
+        final JsonElement parentElement = this.fromApiJsonHelper.parse(json);
+        final JsonObject parentElementObj = parentElement.getAsJsonObject();
+        if (parentElement.isJsonObject()
+                && !this.fromApiJsonHelper.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName, parentElement)) {
+            validateEachJsonObjectForCreate(parentElement.getAsJsonObject(), baseDataValidator);
+        } else if (this.fromApiJsonHelper.parameterExists(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName, parentElement)) {
+            final JsonArray array = parentElementObj.get(LoanUtilizationCheckApiConstants.loanUtilizationChecksParamName).getAsJsonArray();
+            if (array != null && array.size() > 0) {
+                for (int i = 0; i < array.size(); i++) {
+                    final JsonObject element = array.get(i).getAsJsonObject();
+                    validateEachJsonObjectForCreate(element, baseDataValidator);
+                    throwExceptionIfValidationWarningsExist(dataValidationErrors);
+                }
             }
         }
+
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 

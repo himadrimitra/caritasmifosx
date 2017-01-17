@@ -47,50 +47,40 @@ public class LoanUtilizationCheckHelper {
     @SuppressWarnings("rawtypes")
     public static String getCreateLoanUtilizationCheckRequestBodyAsJSON(final Integer loanId, final Integer staffId) {
         final Map<String, Object> map = new LinkedHashMap<>();
-        map.put("auditDoneById", staffId);
-        map.put("auditDoneOn", "15 Dec 2014");
-
-        final List<Map> loanUtilizationCheckDetails = new ArrayList<>();
-        final Map<String, Object> loanUtilizationCheckDetail = new LinkedHashMap<>();
-        loanUtilizationCheckDetail.put("loanId", loanId);
-
-        final List<Map> utilizationDetails = new ArrayList<>();
+        final List<Map> loanUtilizationChecks = new ArrayList<>();
+        final Map<String, Object> loanUtilizationCheck = new LinkedHashMap<>();
+        loanUtilizationCheck.put("loanId", loanId);
+        loanUtilizationCheck.put("auditDoneById", staffId);
+        loanUtilizationCheck.put("auditDoneOn", "15 Dec 2014");
         final Map<String, Object> utilizationDetail = new LinkedHashMap<>();
         utilizationDetail.put("isSameAsOriginalPurpose", true);
         utilizationDetail.put("amount", 50000.00);
         utilizationDetail.put("comment", "ok");
-        utilizationDetails.add(utilizationDetail);
-        loanUtilizationCheckDetail.put("utilizationDetails", utilizationDetails);
-
-        loanUtilizationCheckDetails.add(loanUtilizationCheckDetail);
-        map.put("loanUtilizationCheckDetails", loanUtilizationCheckDetails);
-
+        utilizationDetail.put("locale", "en");
+        utilizationDetail.put("dateFormat", DATE_FORMAT);
+        loanUtilizationCheck.put("utilizationDetails", utilizationDetail);
+        loanUtilizationCheck.put("locale", "en");
+        loanUtilizationCheck.put("dateFormat", DATE_FORMAT);
+        loanUtilizationChecks.add(loanUtilizationCheck);
+        map.put("loanUtilizationChecks", loanUtilizationChecks);
         map.put("locale", "en");
         map.put("dateFormat", DATE_FORMAT);
         System.out.println("map : " + map);
         return new Gson().toJson(map);
     }
 
-    @SuppressWarnings("rawtypes")
     private static String getUpdateLoanPurposeGroupRequestBodyAsJSON(final Integer loanId) {
         final Map<String, Object> map = new LinkedHashMap<>();
+        map.put("loanId", loanId);
+        map.put("auditDoneById", 1);
         map.put("auditDoneOn", "15 Dec 2014");
-
-        final List<Map> loanUtilizationCheckDetails = new ArrayList<>();
-        final Map<String, Object> loanUtilizationCheckDetail = new LinkedHashMap<>();
-        loanUtilizationCheckDetail.put("loanId", loanId);
-
-        final List<Map> utilizationDetails = new ArrayList<>();
         final Map<String, Object> utilizationDetail = new LinkedHashMap<>();
         utilizationDetail.put("isSameAsOriginalPurpose", true);
         utilizationDetail.put("amount", 50000.00);
-        utilizationDetail.put("comment", "ok");
-        utilizationDetails.add(utilizationDetail);
-        loanUtilizationCheckDetail.put("utilizationDetails", utilizationDetails);
-
-        loanUtilizationCheckDetails.add(loanUtilizationCheckDetail);
-        map.put("loanUtilizationCheckDetails", loanUtilizationCheckDetails);
-
+        utilizationDetail.put("comment", "ok edited");
+        utilizationDetail.put("locale", "en");
+        utilizationDetail.put("dateFormat", DATE_FORMAT);
+        map.put("utilizationDetails", utilizationDetail);
         map.put("locale", "en");
         map.put("dateFormat", DATE_FORMAT);
         System.out.println("map : " + map);
