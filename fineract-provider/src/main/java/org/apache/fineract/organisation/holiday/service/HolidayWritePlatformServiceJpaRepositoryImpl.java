@@ -200,6 +200,13 @@ public class HolidayWritePlatformServiceJpaRepositoryImpl implements HolidayWrit
             throw new HolidayDateException("to.date.cannot.be.before.from.date", defaultUserMessage, fromDate.toString(),
                     toDate.toString());
         }
+        
+		for (LocalDate date = fromDate; date.isBefore(toDate); date = date.plusDays(1)) {
+			if (!daysRepositoryWrapper.isWorkingDay(date)) {
+				defaultUserMessage = "Holiday should be on a working day.";
+				throw new HolidayDateException("holiday.should.be.on.a.working.day", defaultUserMessage, date.toString());
+			}
+		}
 
         if (repaymentsRescheduledTo != null) {
             if (repaymentsRescheduledTo.isEqual(fromDate) || repaymentsRescheduledTo.isEqual(toDate)

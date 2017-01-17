@@ -68,6 +68,19 @@ public class LoanApplicationReferenceApiResource {
         final LoanApplicationReferenceTemplateData templateData = this.loanApplicationReferenceReadPlatformService.templateData(onlyActive);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, templateData);
+}
+    
+    @SuppressWarnings("unchecked")
+    @GET
+    @Path("{loanApplicationReferenceId}/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String disbursementTemplate(@DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive, @Context final UriInfo uriInfo,
+    		@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId) {
+		final LoanApplicationReferenceTemplateData templateData = this.loanApplicationReferenceReadPlatformService
+				.templateData(onlyActive, loanApplicationReferenceId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, templateData);
     }
 
     @POST

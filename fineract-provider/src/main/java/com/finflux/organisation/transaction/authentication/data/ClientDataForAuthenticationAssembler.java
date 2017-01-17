@@ -134,7 +134,7 @@ public class ClientDataForAuthenticationAssembler {
 
 		String aadhaarNumber = null;
 		if(secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar OTP") || secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar fingerprint")){
-		 aadhaarNumber = getAadhaarNumberOfClient(loan.getId());
+		 aadhaarNumber = getAadhaarNumberOfClient(loan.getClientId());
 	}
 
 		if (locationType.equals(TransactionAuthenticationApiConstants.PINCODE)) {
@@ -147,7 +147,7 @@ public class ClientDataForAuthenticationAssembler {
 
 	}
 
-	public String getAadhaarNumberOfClient(final Long loanId) {
+	public String getAadhaarNumberOfClient(final Long clientId) {
 		Collection<CodeValueData> codeValues = this.codeValueReadPlatformService
 				.retrieveCodeValuesByCode("Customer Identifier");
 		CodeValueData customerDocumentType = null;
@@ -161,10 +161,8 @@ public class ClientDataForAuthenticationAssembler {
 			throw new CodeValueNotFoundException("Aadhaar", "Aadhaar");
 		}
 
-		final Loan loan = this.loanAssembler.assembleFrom(loanId);
-
 		Collection<ClientIdentifierData> clientIdentifiers = this.clientIdentifierReadPlatformService
-				.retrieveClientIdentifiers(loan.getClientId());
+				.retrieveClientIdentifiers(clientId);
 		String aadhaarNumber = null;
 		for (ClientIdentifierData clientIdentifier : clientIdentifiers) {
 			if (clientIdentifier.getDocumentType().getId().equals(customerDocumentType.getId())) {

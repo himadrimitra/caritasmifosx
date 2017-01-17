@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
@@ -153,4 +154,6 @@ public interface LoanReadPlatformService {
     void validateForLoanExistence(Long loanId);
 
    // Collection<LoanAccountData> retrieveLoanDetailForHierarchy(ClientData clientData);
+    
+    Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(final Long loanId);
 }

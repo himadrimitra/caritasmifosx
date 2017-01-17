@@ -54,7 +54,6 @@ public class TransactionAuthenticationService {
 	private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
 	private final TransactionAuthenticationDataValidator transactionAuthenticationDataValidator;
 	private final GenerateOtpFactory generateOtpFactory;
-	private final LoanReadPlatformService loanReadPlatformService;
 
 	@Autowired
 	public TransactionAuthenticationService(final BusinessEventNotifierService businessEventNotifierService,
@@ -64,7 +63,7 @@ public class TransactionAuthenticationService {
 			final ClientDataForAuthenticationAssembler clientData,
 			final TransactionAuthenticationDataValidator transactionAuthenticationDataValidator,
 			final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
-			final GenerateOtpFactory generateOtpFactory, final LoanReadPlatformService loanReadPlatformService) {
+			final GenerateOtpFactory generateOtpFactory) {
 		this.businessEventNotifierService = businessEventNotifierService;
 		this.secondaryAuthenticationFactory = secondaryAuthenticationFactory;
 		this.fromJsonHelper = fromJsonHelper;
@@ -74,7 +73,6 @@ public class TransactionAuthenticationService {
 		this.transactionAuthenticationDataValidator = transactionAuthenticationDataValidator;
 		this.transactionAuthenticationReadPlatformService = transactionAuthenticationReadPlatformService;
 		this.generateOtpFactory = generateOtpFactory;
-		this.loanReadPlatformService = loanReadPlatformService;
 	}
 
 	@PostConstruct
@@ -100,31 +98,27 @@ public class TransactionAuthenticationService {
 
 	}
 
-	public Object sendOtpForTheCLient(final String json) {
+	public Object sendOtpForTheCLient(final Long clientId, final String json) {
 		final JsonElement element = this.fromJsonHelper.parse(json);
-
-		final Long loanId = this.fromJsonHelper.extractLongNamed("loanId", element);
-		final long authenticationRuleId = this.fromJsonHelper
-				.extractLongNamed(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID, element);
+		final long transactionAuthenticationId = this.fromJsonHelper
+				.extractLongNamed(TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_ID, element);
 		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 		final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
 				.resource(TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_RESOURCE_NAME);
-
-		baseDataValidator.reset().parameter("loanId").value(loanId).longGreaterThanZero();
-		baseDataValidator.reset().parameter(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID)
-				.value(authenticationRuleId).longGreaterThanZero();
+		baseDataValidator.reset().parameter(TransactionAuthenticationApiConstants.TRANSACTION_AUTHENTICATION_ID)
+				.value(transactionAuthenticationId).longGreaterThanZero();
 		if (!dataValidationErrors.isEmpty()) {
 			throw new PlatformApiDataValidationException(dataValidationErrors);
 		}
 
 		TransactionAuthentication transactionAuthentication = this.transactionAuthenticationRepository
-				.findOneWithNotFoundDetection(authenticationRuleId);
+				.findOneWithNotFoundDetection(transactionAuthenticationId);
 
 		SecondaryAuthenticationService secondaryAuthenticationService = this.repository
 				.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
 		if (secondaryAuthenticationService.isActive()) {
 			if (secondaryAuthenticationService.getName().equals(TransactionAuthenticationApiConstants.AADHAAR_OTP)) {
-				String aadhaarNumber = this.clientData.getAadhaarNumberOfClient(loanId);
+				String aadhaarNumber = this.clientData.getAadhaarNumberOfClient(clientId);
 				final GenerateOtpService generateOtpService = this.generateOtpFactory
 						.getOtpService(secondaryAuthenticationService.getAuthServiceClassName());
 				return generateOtpService.generateOtp(aadhaarNumber);
@@ -142,7 +136,7 @@ public class TransactionAuthenticationService {
 	public void executeTransactionAuthenticationService(final JsonCommand command, final Loan loan) {
 		final Integer count = this.transactionAuthenticationRepository.getPortfolioTypeAndTransactionType(
 				SupportedAuthenticationPortfolioTypes.LOANS.getValue(), SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue());
-		if (count > 0) {
+		if (count > 0 && loan.getClient() != null) {
 			this.transactionAuthenticationDataValidator.validateForDisbursement(command);
 			final Integer portfolioTypeId = SupportedAuthenticationPortfolioTypes.LOANS.getValue();
 			final Integer transactionTypeId = SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue();

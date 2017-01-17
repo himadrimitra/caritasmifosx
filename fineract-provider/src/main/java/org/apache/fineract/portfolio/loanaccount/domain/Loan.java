@@ -3574,7 +3574,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     private boolean isFullProcessingRequired(final LoanTransaction loanTransaction){
-        return isForeclosure() && loanTransaction.getTransactionSubTye().isPrePayment();
+        return isForeclosure() || loanTransaction.getTransactionSubTye().isPrePayment();
     }
 
     private void undoGlimLoanChargesPaid(Map<Long, BigDecimal> chargeAmountMap, final Set<LoanCharge> charges,
@@ -6260,17 +6260,24 @@ public class Loan extends AbstractPersistable<Long> {
         Money outstanding = Money.zero(getCurrency());
         List<LoanTransaction> loanTransactions = retreiveListOfTransactionsExcludeAccruals();
         for (LoanTransaction loanTransaction : loanTransactions) {
-            if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting() || loanTransaction.isRefund()) {
+            if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting()) {
                 outstanding = outstanding.plus(loanTransaction.getAmount(getCurrency()));
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
             } else if(!loanTransaction.isRecoveryRepayment()) {
                 if (this.loanInterestRecalculationDetails != null
                         && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()
                         && !loanTransaction.isRepaymentAtDisbursement()) {
+                    if (this.loanInterestRecalculationDetails.getInterestRecalculationCompoundingMethod().isInterestCompoundingEnabled()) {
+                        outstanding = outstanding.minus(loanTransaction.getInterestPortion());
+                    }
+                    if (this.loanInterestRecalculationDetails.getInterestRecalculationCompoundingMethod().isFeeCompoundingEnabled()) {
+                        outstanding = outstanding.minus(loanTransaction.getFeeChargesPortion())
+                                .minus(loanTransaction.getPenaltyChargesPortion(getCurrency()));
+                    }
                     outstanding = outstanding.minus(loanTransaction.getAmount(getCurrency()));
-                } else {
-                    outstanding = outstanding.minus(loanTransaction.getPrincipalPortion(getCurrency()));
                 }
+                outstanding = outstanding.minus(loanTransaction.getPrincipalPortion(getCurrency()));
+
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
             }
         }
