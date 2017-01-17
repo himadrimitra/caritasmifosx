@@ -215,13 +215,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             isFirstRepayment = false;
         }
-        Money capitalizedAmount= LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0).negated(); 
-        processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedAmount, loanApplicationTerms.getExpectedDisbursementDate());
         while (!scheduleParams.getOutstandingBalance().isZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
             LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
                     scheduleParams.getActualRepaymentDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO));
-            isFirstRepayment = false;
             AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(
                     scheduleParams.getActualRepaymentDate(), loanApplicationTerms, holidayDetailDTO);
             scheduleParams.setActualRepaymentDate(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
@@ -232,7 +229,12 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate,
                     loanApplicationTerms.isInterestChargedFromDateSameAsDisbursalDateEnabled(),
                     loanApplicationTerms.getExpectedDisbursementDate());
-
+            if (isFirstRepayment) {
+                Money capitalizedAmount = LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0).negated();
+                processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedAmount,
+                        periodStartDateApplicableForInterest);
+            }
+            isFirstRepayment = false;
             // Loan Schedule Exceptions that need to be applied for Loan Account
             LoanTermVariationParams termVariationParams = applyLoanTermVariations(loanApplicationTerms, scheduleParams,
                     previousRepaymentDate, scheduledDueDate, interestRatesForInstallments, this.paymentPeriodsInOneYearCalculator, mc);
