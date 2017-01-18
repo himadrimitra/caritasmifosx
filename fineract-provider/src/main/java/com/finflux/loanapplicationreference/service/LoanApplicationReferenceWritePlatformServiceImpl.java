@@ -140,7 +140,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
             final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
-            this.validator.validateLoanAmountRequestedMinMaxConstraint(command.json(), loanProduct);
+            this.validator.validateLoanAmountRequestedMinMaxConstraint(loanApplicationReference, loanProduct);
 
             this.repository.save(loanApplicationReference);
 
@@ -214,9 +214,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
             final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
-            this.validator.validateLoanAmountRequestedMinMaxConstraint(command.json(), loanProduct);
 
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(loanApplicationReference, command);
+            this.validator.validateLoanAmountRequestedMinMaxConstraint(loanApplicationReference, loanProduct);
 
             if (!changes.isEmpty()) {
                 this.repository.saveAndFlush(loanApplicationReference);

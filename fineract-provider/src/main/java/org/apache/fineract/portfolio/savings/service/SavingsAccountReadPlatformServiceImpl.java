@@ -741,7 +741,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
     /*
      * @Override public Collection<SavingsAccountAnnualFeeData>
      * retrieveAccountsWithAnnualFeeDue() { final String sql = "select " +
-     * this.annualFeeMapper.schema() +
+     * this.annualFeeMapper.schemaList() +
      * " where sa.annual_fee_next_due_date is not null and sa.annual_fee_next_due_date <= NOW()"
      * ;
      * 
@@ -1258,7 +1258,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
      * 
      * this.schemaSql = sqlBuilder.toString(); }
      * 
-     * public String schema() { return this.schemaSql; }
+     * public String schemaList() { return this.schemaSql; }
      * 
      * @Override public SavingsAccountAnnualFeeData mapRow(final ResultSet rs,
      * 

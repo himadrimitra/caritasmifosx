@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
+import com.finflux.portfolio.loanemipacks.service.LoanEMIPacksReadPlatformService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -180,6 +182,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService;
     private final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService;
     private final GroupLoanIndividualMonitoringTransactionReadPlatformService groupLoanIndividualMonitoringTransactionReadPlatformService;
+    private final LoanEMIPacksReadPlatformService loanEMIPacksReadPlatformService;
 
     @Autowired
     public LoanReadPlatformServiceImpl(final PlatformSecurityContext context, final LoanRepositoryWrapper loanRepository,
@@ -199,7 +202,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final LoanPurposeGroupReadPlatformService loanPurposeGroupReadPlatformService,
             final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
             final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
-            final GroupLoanIndividualMonitoringTransactionReadPlatformService groupLoanIndividualMonitoringTransactionReadPlatformService) {
+            final GroupLoanIndividualMonitoringTransactionReadPlatformService groupLoanIndividualMonitoringTransactionReadPlatformService,
+            final LoanEMIPacksReadPlatformService loanEMIPacksReadPlatformService) {
         this.context = context;
         this.loanRepository = loanRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
@@ -226,7 +230,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         this.fingerPrintReadPlatformServices = fingerPrintReadPlatformServices;
         this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
         this.groupLoanIndividualMonitoringTransactionReadPlatformService = groupLoanIndividualMonitoringTransactionReadPlatformService;
-       
+        this.loanEMIPacksReadPlatformService = loanEMIPacksReadPlatformService;
     }
 
     @Override
@@ -1753,11 +1757,15 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService
 				.retrieveAllPaymentTypes();
+        Collection<LoanEMIPackData> loanEMIPacks = this.loanEMIPacksReadPlatformService.retrieveEMIPackDetails(productId);
+        if(loanEMIPacks == null || loanEMIPacks.size() == 0){
+            loanEMIPacks = null;
+        }
         return LoanAccountData.loanProductWithTemplateDefaults(loanProduct, loanTermFrequencyTypeOptions, repaymentFrequencyTypeOptions,
                 repaymentFrequencyNthDayTypeOptions, repaymentFrequencyDaysOfWeekTypeOptions, repaymentStrategyOptions,
                 interestRateFrequencyTypeOptions, amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions,
                 fundOptions, chargeOptions, loanPurposeOptions, loanCollateralOptions, loanCycleCounter, loanProductCollateralPledgesOptions,
-                clientActiveLoanOptions, paymentOptions, loanOfficerId);
+                clientActiveLoanOptions, paymentOptions, loanOfficerId, loanEMIPacks);
     }
 
     @Override

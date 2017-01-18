@@ -3768,4 +3768,30 @@ public class CommandWrapperBuilder {
         this.href = "/computeprofileratings";
         return this;
     }
+
+    public CommandWrapperBuilder createLoanEMIPack(Long loanProductId) {
+        this.actionName = "CREATE";
+        this.entityName = "LOANEMIPACKS";
+        this.productId = loanProductId;
+        this.href = "/loanemipacks/"+loanProductId;
+        return this;
+    }
+
+    public CommandWrapperBuilder updateLoanEMIPack(Long loanProductId, Long loanEMIPackId) {
+        this.actionName = "UPDATE";
+        this.entityName = "LOANEMIPACKS";
+        this.productId = loanProductId;
+        this.entityId = loanEMIPackId;
+        this.href = "/loanemipacks/"+loanProductId+"/"+loanEMIPackId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteLoanEMIPack(Long loanProductId, Long loanEMIPackId) {
+        this.actionName = "DELETE";
+        this.entityName = "LOANEMIPACKS";
+        this.productId = loanProductId;
+        this.entityId = loanEMIPackId;
+        this.href = "/loanemipacks/"+loanProductId+"/"+loanEMIPackId;
+        return this;
+    }
 }

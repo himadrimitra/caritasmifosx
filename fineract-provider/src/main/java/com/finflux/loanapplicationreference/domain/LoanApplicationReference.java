@@ -19,6 +19,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import com.finflux.portfolio.loanemipacks.domain.LoanEMIPack;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -122,6 +123,10 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     @JoinColumn(name = "expected_repayment_payment_type_id", nullable = true)
     private PaymentType expectedRepaymentPaymentType;
 
+    @ManyToOne
+    @JoinColumn(name = "loan_emi_pack_id", nullable = true)
+    private LoanEMIPack loanEMIPack;
+
     protected LoanApplicationReference() {}
 
     LoanApplicationReference(final String loanApplicationReferenceNo, final String externalIdOne, final String externalIdTwo,
@@ -129,7 +134,8 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             final LoanProduct loanProduct, final LoanPurpose loanPurpose, final BigDecimal loanAmountRequested,
             final Integer numberOfRepayments, final Integer repaymentPeriodFrequencyEnum, final Integer repayEvery,
             final Integer termPeriodFrequencyEnum, final Integer termFrequency, final BigDecimal fixedEmiAmount, final Integer noOfTranche,
-            final Date submittedOnDate, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
+            final Date submittedOnDate, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType,
+            final LoanEMIPack loanEMIPack) {
         this.loanApplicationReferenceNo = loanApplicationReferenceNo;
         this.externalIdOne = externalIdOne;
         this.externalIdTwo = externalIdTwo;
@@ -151,6 +157,7 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
         this.submittedOnDate = submittedOnDate;
         this.expectedDisbursalPaymentType= expectedDisbursalPaymentType;
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+        this.loanEMIPack = loanEMIPack;
     }
 
     public static LoanApplicationReference create(final String loanApplicationReferenceNo, final String externalIdOne,
@@ -158,13 +165,13 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             final Integer accountTypeEnum, final LoanProduct loanProduct, final LoanPurpose loanPurpose,
             final BigDecimal loanAmountRequested, final Integer numberOfRepayments, final Integer repaymentPeriodFrequencyEnum,
             final Integer repayEvery, final Integer termPeriodFrequencyEnum, final Integer termFrequency, final BigDecimal fixedEmiAmount,
-            final Integer noOfTranche, final Date submittedOnDate,final PaymentType expectedDisbursalPaymentType,
-            final PaymentType expectedRepaymentPaymentType ) {
+            final Integer noOfTranche, final Date submittedOnDate, final PaymentType expectedDisbursalPaymentType,
+            final PaymentType expectedRepaymentPaymentType, final LoanEMIPack loanEMIPack) {
 
         return new LoanApplicationReference(loanApplicationReferenceNo, externalIdOne, externalIdTwo, client, loanOfficer, group,
                 statusEnum, accountTypeEnum, loanProduct, loanPurpose, loanAmountRequested, numberOfRepayments,
                 repaymentPeriodFrequencyEnum, repayEvery, termPeriodFrequencyEnum, termFrequency, fixedEmiAmount, noOfTranche,
-                submittedOnDate, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                submittedOnDate, expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPack);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -239,6 +246,19 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
             if (command.parameterExists(LoanApplicationReferenceApiConstants.loanPurposeIdParamName)) {
                 final Long newValue = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanPurposeIdParamName);
                 actualChanges.put(LoanApplicationReferenceApiConstants.loanPurposeIdParamName, newValue);
+            }
+        }
+
+        if (this.loanEMIPack != null) {
+            if (command.parameterExists(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName)
+                    && command.isChangeInLongParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, this.loanEMIPack.getId())) {
+                final Long newValue = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName);
+                actualChanges.put(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, newValue);
+            }
+        } else {
+            if (command.parameterExists(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName)) {
+                final Long newValue = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName);
+                actualChanges.put(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, newValue);
             }
         }
 
@@ -438,4 +458,37 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
     public void reassignLoanOfficer(final Staff newLoanOfficer){
     	this.loanOfficer = newLoanOfficer;
     }
+
+    public void setLoanAmountRequested(BigDecimal loanAmountRequested) {
+        this.loanAmountRequested = loanAmountRequested;
+    }
+
+    public void setNumberOfRepayments(Integer numberOfRepayments) {
+        this.numberOfRepayments = numberOfRepayments;
+    }
+
+    public void setRepaymentPeriodFrequencyEnum(Integer repaymentPeriodFrequencyEnum) {
+        this.repaymentPeriodFrequencyEnum = repaymentPeriodFrequencyEnum;
+    }
+
+    public void setRepayEvery(Integer repayEvery) {
+        this.repayEvery = repayEvery;
+    }
+
+    public void setFixedEmiAmount(BigDecimal fixedEmiAmount) {
+        this.fixedEmiAmount = fixedEmiAmount;
+    }
+
+    public void setTermPeriodFrequencyEnum(Integer termPeriodFrequencyEnum) {
+        this.termPeriodFrequencyEnum = termPeriodFrequencyEnum;
+    }
+
+    public void setTermFrequency(Integer termFrequency) {
+        this.termFrequency = termFrequency;
+    }
+
+    public void setLoanEMIPack(LoanEMIPack loanEMIPack) {
+        this.loanEMIPack = loanEMIPack;
+    }
+
 }
