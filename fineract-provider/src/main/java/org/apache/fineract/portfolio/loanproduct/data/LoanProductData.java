@@ -76,6 +76,7 @@ public class LoanProductData {
     private final BigDecimal minPrincipal;
     private final BigDecimal maxPrincipal;
     private final Integer numberOfRepayments;
+
     private final Integer minNumberOfRepayments;
     private final Integer maxNumberOfRepayments;
     private final Integer repaymentEvery;
@@ -185,6 +186,7 @@ public class LoanProductData {
     private final List<FloatingRateData> floatingRateOptions;
 
     private final Boolean multiDisburseLoan;
+
     private final Integer maxTrancheCount;
     private final BigDecimal outstandingLoanBalance;
     private final BigDecimal principalThresholdForLastInstallment;
@@ -1347,4 +1349,16 @@ public class LoanProductData {
     public void setLoanProductWorkFlowSummary(final LoanProductTaskSummaryData loanProductWorkFlowSummary) {
         this.loanProductWorkFlowSummary = loanProductWorkFlowSummary;
     }
+    public Integer getMaxTrancheCount() {
+        return maxTrancheCount;
+    }
+
+    public Integer getMinNumberOfRepayments() {
+        return minNumberOfRepayments;
+    }
+
+    public Integer getMaxNumberOfRepayments() {
+        return maxNumberOfRepayments;
+    }
+
 }

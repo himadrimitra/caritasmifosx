@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -14,6 +15,7 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
@@ -185,12 +187,20 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lar.submittedon_date AS submittedOnDate ");
             sqlBuilder.append(",lar.expected_disbursal_payment_type_id as expectedDisbursalPaymentTypeId, pt_disburse.value as disbursementPaymentTypeName ");
             sqlBuilder.append(",lar.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, pt_repayment.value as repaymenPaymentTypeName ");
+            sqlBuilder.append(",lep.id as lepid, lep.loan_product_id as leploanProductId, ");
+            sqlBuilder.append("lep.repay_every as leprepaymentEvery, lep.repayment_period_frequency_enum as leprepaymentFrequencyTypeEnum, ");
+            sqlBuilder.append("lep.number_of_repayments as lepnumberOfRepayments, lep.sanction_amount as lepsanctionAmount, ");
+            sqlBuilder.append("lep.fixed_emi as lepfixedEmi, lep.disbursal_1_amount as lepdisbursalAmount1, ");
+            sqlBuilder.append("lep.disbursal_2_amount as lepdisbursalAmount2, lep.disbursal_3_amount as lepdisbursalAmount3, ");
+            sqlBuilder.append("lep.disbursal_4_amount as lepdisbursalAmount4, lep.disbursal_2_emi as lepdisbursalEmi2, ");
+            sqlBuilder.append("lep.disbursal_3_emi as lepdisbursalEmi3, lep.disbursal_4_emi as lepdisbursalEmi4 ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
             sqlBuilder.append("LEFT JOIN m_staff sf ON sf.id = lar.loan_officer_id ");
             sqlBuilder.append("LEFT JOIN f_loan_purpose loanPurpose ON loanPurpose.id = lar.loan_purpose_id ");
             sqlBuilder.append("LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = lar.expected_disbursal_payment_type_id ");
             sqlBuilder.append(" LEFT JOIN m_payment_type pt_repayment ON pt_repayment.id = lar.expected_repayment_payment_type_id ");
+            sqlBuilder.append(" LEFT JOIN f_loan_emi_packs lep ON lar.loan_emi_pack_id = lep.id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -239,13 +249,49 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
 				final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
 				expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(),
 						repaymenPaymentTypeName);
-			} 
+			}
+
+            LoanEMIPackData loanEMIPackData = null;
+            final Long lepid = JdbcSupport.getLong(rs, "lepid");
+            if(lepid != null){
+                final Long leploanProductId = JdbcSupport.getLong(rs, "leploanProductId");
+                final Integer leprepaymentEvery = JdbcSupport.getInteger(rs, "leprepaymentEvery");
+                final Integer leprepaymentFrequencyTypeEnum = JdbcSupport.getInteger(rs, "leprepaymentFrequencyTypeEnum");
+                final EnumOptionData leprepaymentFrequencyType = LoanEnumerations.repaymentFrequencyType(leprepaymentFrequencyTypeEnum);
+                final Integer lepnumberOfRepayments = JdbcSupport.getInteger(rs, "lepnumberOfRepayments");
+                final BigDecimal lepsanctionAmount = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepsanctionAmount");
+                final BigDecimal lepfixedEmi = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepfixedEmi");
+                final BigDecimal lepdisbursalAmount1  = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount1");
+                final BigDecimal lepdisbursalAmount2 = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount2");
+                final BigDecimal lepdisbursalAmount3 = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount3");
+                final BigDecimal lepdisbursalAmount4 = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount4");
+                final Integer lepdisbursalEmi2 = JdbcSupport.getInteger(rs, "lepdisbursalEmi2");
+                final Integer lepdisbursalEmi3 = JdbcSupport.getInteger(rs, "lepdisbursalEmi3");
+                final Integer lepdisbursalEmi4 = JdbcSupport.getInteger(rs, "lepdisbursalEmi4");
+                final String leploanProductName = null;
+
+                loanEMIPackData = LoanEMIPackData.loanEMIPackData(lepid,
+                        leploanProductId,
+                        leprepaymentEvery,
+                        leprepaymentFrequencyType,
+                        lepnumberOfRepayments,
+                        lepsanctionAmount,
+                        lepfixedEmi,
+                        lepdisbursalAmount1,
+                        lepdisbursalAmount2,
+                        lepdisbursalAmount3,
+                        lepdisbursalAmount4,
+                        lepdisbursalEmi2,
+                        lepdisbursalEmi3,
+                        lepdisbursalEmi4,
+                        leploanProductName);
+            }
 
             return LoanApplicationReferenceData.instance(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne,
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
                     repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
-                    expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData);
         }
     }
 
@@ -330,8 +376,16 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",las.term_frequency AS termFrequency ");
             sqlBuilder.append(",las.fixed_emi_amount AS fixedEmiAmount ");
             sqlBuilder.append(",las.max_outstanding_loan_balance AS maxOutstandingLoanBalance ");
+            sqlBuilder.append(",lep.id as lepid, lep.loan_product_id as leploanProductId, ");
+            sqlBuilder.append("lep.repay_every as leprepaymentEvery, lep.repayment_period_frequency_enum as leprepaymentFrequencyTypeEnum, ");
+            sqlBuilder.append("lep.number_of_repayments as lepnumberOfRepayments, lep.sanction_amount as lepsanctionAmount, ");
+            sqlBuilder.append("lep.fixed_emi as lepfixedEmi, lep.disbursal_1_amount as lepdisbursalAmount1, ");
+            sqlBuilder.append("lep.disbursal_2_amount as lepdisbursalAmount2, lep.disbursal_3_amount as lepdisbursalAmount3, ");
+            sqlBuilder.append("lep.disbursal_4_amount as lepdisbursalAmount4, lep.disbursal_2_emi as lepdisbursalEmi2, ");
+            sqlBuilder.append("lep.disbursal_3_emi as lepdisbursalEmi3, lep.disbursal_4_emi as lepdisbursalEmi4 ");
             sqlBuilder.append("FROM f_loan_application_sanction las ");
             sqlBuilder.append("INNER JOIN f_loan_application_reference lar ON lar.id = las.loan_app_ref_id ");
+            sqlBuilder.append(" LEFT JOIN f_loan_emi_packs lep ON las.loan_emi_pack_id = lep.id ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -352,10 +406,48 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final Integer termFrequency = JdbcSupport.getIntegeActualValue(rs, "termFrequency");
             final BigDecimal fixedEmiAmount = rs.getBigDecimal("fixedEmiAmount");
             final BigDecimal maxOutstandingLoanBalance = rs.getBigDecimal("maxOutstandingLoanBalance");
+
+            LoanEMIPackData loanEMIPackData = null;
+            final Long lepid = JdbcSupport.getLong(rs, "lepid");
+            if(lepid != null){
+                final Long leploanProductId = JdbcSupport.getLong(rs, "leploanProductId");
+                final Integer leprepaymentEvery = JdbcSupport.getInteger(rs, "leprepaymentEvery");
+                final Integer leprepaymentFrequencyTypeEnum = JdbcSupport.getInteger(rs, "leprepaymentFrequencyTypeEnum");
+                final EnumOptionData leprepaymentFrequencyType = LoanEnumerations.repaymentFrequencyType(leprepaymentFrequencyTypeEnum);
+                final Integer lepnumberOfRepayments = JdbcSupport.getInteger(rs, "lepnumberOfRepayments");
+                final BigDecimal lepsanctionAmount = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepsanctionAmount");
+                final BigDecimal lepfixedEmi = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepfixedEmi");
+                final BigDecimal lepdisbursalAmount1  = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount1");
+                final BigDecimal lepdisbursalAmount2 = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount2");
+                final BigDecimal lepdisbursalAmount3 = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount3");
+                final BigDecimal lepdisbursalAmount4 = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "lepdisbursalAmount4");
+                final Integer lepdisbursalEmi2 = JdbcSupport.getInteger(rs, "lepdisbursalEmi2");
+                final Integer lepdisbursalEmi3 = JdbcSupport.getInteger(rs, "lepdisbursalEmi3");
+                final Integer lepdisbursalEmi4 = JdbcSupport.getInteger(rs, "lepdisbursalEmi4");
+                final String leploanProductName = null;
+
+                loanEMIPackData = LoanEMIPackData.loanEMIPackData(lepid,
+                        leploanProductId,
+                        leprepaymentEvery,
+                        leprepaymentFrequencyType,
+                        lepnumberOfRepayments,
+                        lepsanctionAmount,
+                        lepfixedEmi,
+                        lepdisbursalAmount1,
+                        lepdisbursalAmount2,
+                        lepdisbursalAmount3,
+                        lepdisbursalAmount4,
+                        lepdisbursalEmi2,
+                        lepdisbursalEmi3,
+                        lepdisbursalEmi4,
+                        leploanProductName);
+            }
+
+
             return LoanApplicationSanctionData
                     .instance(loanAppSanctionId, loanApplicationReferenceId, loanAmountApproved, approvedOnDate, expectedDisbursementDate,
                             repaymentsStartingFromDate, numberOfRepayments, repaymentPeriodFrequency, repayEvery, termPeriodFrequency,
-                            termFrequency, fixedEmiAmount, maxOutstandingLoanBalance, this.loanApplicationSanctionTrancheDatas);
+                            termFrequency, fixedEmiAmount, maxOutstandingLoanBalance, this.loanApplicationSanctionTrancheDatas, loanEMIPackData);
         }
     }
 

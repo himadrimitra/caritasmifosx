@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -124,26 +125,37 @@ public class LoanApplicationReferenceDataValidator {
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanPurposeIdParamName).value(loanPurposeId).notNull()
                 .integerGreaterThanZero();
 
-        final BigDecimal loanAmountRequested = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                LoanApplicationReferenceApiConstants.loanAmountRequestedParamName, element);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountRequestedParamName).value(loanAmountRequested)
-                .notBlank().positiveAmount();
+        if(this.fromApiJsonHelper.parameterExists(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, element)){
+            final Long loanEMIPackId = this.fromApiJsonHelper.extractLongNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName).value(loanEMIPackId)
+                    .notNull().longGreaterThanZero();
+        }else{
+            final BigDecimal loanAmountRequested = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.loanAmountRequestedParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountRequestedParamName).value(loanAmountRequested)
+                    .notBlank().positiveAmount();
 
-        final Integer numberOfRepayments = this.fromApiJsonHelper.extractIntegerNamed(
-                LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName, element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName).value(numberOfRepayments)
-                .notNull().integerGreaterThanZero();
+            final Integer numberOfRepayments = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName).value(numberOfRepayments)
+                    .notNull().integerGreaterThanZero();
 
-        final Integer repaymentPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
-                LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName, element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName)
-                .value(repaymentPeriodFrequencyEnum).notNull().isOneOfTheseValues(PeriodFrequencyType.integerValues());
+            final Integer repaymentPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName)
+                    .value(repaymentPeriodFrequencyEnum).notNull().isOneOfTheseValues(PeriodFrequencyType.integerValues());
 
-        final Integer repayEvery = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.repayEveryParamName,
-                element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repayEveryParamName).value(repayEvery).notNull()
-                .integerGreaterThanZero();
+            final Integer repayEvery = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.repayEveryParamName,
+                    element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repayEveryParamName).value(repayEvery).notNull()
+                    .integerGreaterThanZero();
 
+            final BigDecimal fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.fixedEmiAmountParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName).value(fixedEmiAmount)
+                    .ignoreIfNull().zeroOrPositiveAmount();
+
+        }
         final Integer termPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
                 LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName, element, locale);
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName)
@@ -153,11 +165,6 @@ public class LoanApplicationReferenceDataValidator {
                 LoanApplicationReferenceApiConstants.termFrequencyParamName, element, locale);
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.termFrequencyParamName).value(termFrequency).notNull()
                 .integerGreaterThanZero();
-
-        final BigDecimal fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                LoanApplicationReferenceApiConstants.fixedEmiAmountParamName, element);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName).value(fixedEmiAmount)
-                .ignoreIfNull().zeroOrPositiveAmount();
 
         final Integer noOfTranche = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.noOfTrancheParamName,
                 element, locale);
@@ -193,25 +200,15 @@ public class LoanApplicationReferenceDataValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    public void validateLoanAmountRequestedMinMaxConstraint(final String json, final LoanProduct loanProduct) {
-
-        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
-
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
-                LoanApplicationReferenceApiConstants.CREATE_REQUEST_DATA_PARAMETERS);
+    public void validateLoanAmountRequestedMinMaxConstraint(final LoanApplicationReference loanApplicationReference, final LoanProduct loanProduct) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(LoanApplicationReferenceApiConstants.LOANAPPLICATIONREFERENCE_RESOURCE_NAME);
 
-        final JsonElement element = this.fromApiJsonHelper.parse(json);
-
         final String loanAmountRequestedParameterName = LoanApplicationReferenceApiConstants.loanAmountRequestedParamName;
-        final BigDecimal loanAmountRequested = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(loanAmountRequestedParameterName,
-                element);
+        final BigDecimal loanAmountRequested = loanApplicationReference.getLoanAmountRequested();
 
         final BigDecimal minPrincipalAmount = loanProduct.getMinPrincipalAmount().getAmount();
         final BigDecimal maxPrincipalAmount = loanProduct.getMaxPrincipalAmount().getAmount();
@@ -302,25 +299,37 @@ public class LoanApplicationReferenceDataValidator {
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanPurposeIdParamName).value(loanPurposeId).notNull()
                 .integerGreaterThanZero();
 
-        final BigDecimal loanAmountRequested = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                LoanApplicationReferenceApiConstants.loanAmountRequestedParamName, element);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountRequestedParamName).value(loanAmountRequested)
-                .notBlank().positiveAmount();
+        if(this.fromApiJsonHelper.parameterExists(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, element)){
+            final Long loanEMIPackId = this.fromApiJsonHelper.extractLongNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName).value(loanEMIPackId)
+                    .notNull().longGreaterThanZero();
+        }else{
+            final BigDecimal loanAmountRequested = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.loanAmountRequestedParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountRequestedParamName).value(loanAmountRequested)
+                    .notBlank().positiveAmount();
 
-        final Integer numberOfRepayments = this.fromApiJsonHelper.extractIntegerNamed(
-                LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName, element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName).value(numberOfRepayments)
-                .notNull().integerGreaterThanZero();
+            final Integer numberOfRepayments = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName).value(numberOfRepayments)
+                    .notNull().integerGreaterThanZero();
 
-        final Integer repaymentPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
-                LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName, element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName)
-                .value(repaymentPeriodFrequencyEnum).notNull().isOneOfTheseValues(PeriodFrequencyType.integerValues());
+            final Integer repaymentPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName)
+                    .value(repaymentPeriodFrequencyEnum).notNull().isOneOfTheseValues(PeriodFrequencyType.integerValues());
 
-        final Integer repayEvery = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.repayEveryParamName,
-                element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repayEveryParamName).value(repayEvery).notNull()
-                .integerGreaterThanZero();
+            final Integer repayEvery = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.repayEveryParamName,
+                    element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repayEveryParamName).value(repayEvery).notNull()
+                    .integerGreaterThanZero();
+
+            final BigDecimal fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.fixedEmiAmountParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName).value(fixedEmiAmount)
+                    .ignoreIfNull().zeroOrPositiveAmount();
+
+        }
 
         final Integer termPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
                 LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName, element, locale);
@@ -331,11 +340,6 @@ public class LoanApplicationReferenceDataValidator {
                 LoanApplicationReferenceApiConstants.termFrequencyParamName, element, locale);
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.termFrequencyParamName).value(termFrequency).notNull()
                 .integerGreaterThanZero();
-
-        final BigDecimal fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                LoanApplicationReferenceApiConstants.fixedEmiAmountParamName, element);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName).value(fixedEmiAmount)
-                .ignoreIfNull().zeroOrPositiveAmount();
 
         final Integer noOfTranche = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.noOfTrancheParamName,
                 element, locale);
@@ -410,10 +414,45 @@ public class LoanApplicationReferenceDataValidator {
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
 
-        final BigDecimal loanAmountApproved = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                LoanApplicationReferenceApiConstants.loanAmountApprovedParamName, element);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName).value(loanAmountApproved)
-                .notBlank().positiveAmount();
+        BigDecimal loanAmountApproved = BigDecimal.ZERO;
+        if(this.fromApiJsonHelper.parameterExists(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, element)){
+            final Integer loanEMIPackId = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.loanEMIPackIdParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName).value(loanEMIPackId)
+                    .notNull().integerGreaterThanZero();
+
+            loanAmountApproved = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.loanAmountApprovedParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName).value(loanAmountApproved)
+                    .notBlank().positiveAmount();
+
+        } else {
+            loanAmountApproved = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.loanAmountApprovedParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName).value(loanAmountApproved)
+                    .notBlank().positiveAmount();
+
+            final Integer numberOfRepayments = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName).value(numberOfRepayments)
+                    .notNull().integerGreaterThanZero();
+
+            final Integer repaymentPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName, element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName)
+                    .value(repaymentPeriodFrequencyEnum).notNull().isOneOfTheseValues(PeriodFrequencyType.integerValues());
+
+            final Integer repayEvery = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.repayEveryParamName,
+                    element, locale);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repayEveryParamName).value(repayEvery).notNull()
+                    .integerGreaterThanZero();
+
+            final BigDecimal fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanApplicationReferenceApiConstants.fixedEmiAmountParamName, element);
+            baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName).value(fixedEmiAmount)
+                    .ignoreIfNull().zeroOrPositiveAmount();
+
+        }
 
         final LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed(
                 LoanApplicationReferenceApiConstants.expectedDisbursementDateParaName, element);
@@ -425,21 +464,6 @@ public class LoanApplicationReferenceDataValidator {
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentsStartingFromDateParaName)
                 .value(repaymentsStartingFromDate).ignoreIfNull().validateDateAfter(expectedDisbursementDate);
 
-        final Integer numberOfRepayments = this.fromApiJsonHelper.extractIntegerNamed(
-                LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName, element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName).value(numberOfRepayments)
-                .notNull().integerGreaterThanZero();
-
-        final Integer repaymentPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
-                LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName, element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName)
-                .value(repaymentPeriodFrequencyEnum).notNull().isOneOfTheseValues(PeriodFrequencyType.integerValues());
-
-        final Integer repayEvery = this.fromApiJsonHelper.extractIntegerNamed(LoanApplicationReferenceApiConstants.repayEveryParamName,
-                element, locale);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.repayEveryParamName).value(repayEvery).notNull()
-                .integerGreaterThanZero();
-
         final Integer termPeriodFrequencyEnum = this.fromApiJsonHelper.extractIntegerNamed(
                 LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName, element, locale);
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName)
@@ -449,11 +473,6 @@ public class LoanApplicationReferenceDataValidator {
                 LoanApplicationReferenceApiConstants.termFrequencyParamName, element, locale);
         baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.termFrequencyParamName).value(termFrequency).notNull()
                 .integerGreaterThanZero();
-
-        final BigDecimal fixedEmiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
-                LoanApplicationReferenceApiConstants.fixedEmiAmountParamName, element);
-        baseDataValidator.reset().parameter(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName).value(fixedEmiAmount)
-                .ignoreIfNull().zeroOrPositiveAmount();
 
         final BigDecimal maxOutstandingLoanBalance = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                 LoanApplicationReferenceApiConstants.maxOutstandingLoanBalanceParamName, element);

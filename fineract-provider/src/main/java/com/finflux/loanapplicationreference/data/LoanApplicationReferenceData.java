@@ -2,6 +2,7 @@ package com.finflux.loanapplicationreference.data;
 
 import java.math.BigDecimal;
 
+import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
@@ -35,6 +36,7 @@ public class LoanApplicationReferenceData {
     private final LocalDate submittedOnDate;
     private final PaymentTypeData expectedDisbursalPaymentType; 
     private final PaymentTypeData expectedRepaymentPaymentType;
+    private final LoanEMIPackData loanEMIPackData;
 
     private LoanApplicationReferenceData(final Long loanApplicationReferenceId, final String loanApplicationReferenceNo,
             final String externalIdOne, final String externalIdTwo, final Long loanId, final Long clientId, final Long loanOfficerId,
@@ -43,7 +45,8 @@ public class LoanApplicationReferenceData {
             final BigDecimal loanAmountRequested, final Integer numberOfRepayments, final EnumOptionData repaymentPeriodFrequency,
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
-            final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType) {
+            final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
+            final LoanEMIPackData loanEMIPackData) {
         this.loanApplicationReferenceId = loanApplicationReferenceId;
         this.loanApplicationReferenceNo = loanApplicationReferenceNo;
         this.externalIdOne = externalIdOne;
@@ -70,6 +73,7 @@ public class LoanApplicationReferenceData {
         this.submittedOnDate = submittedOnDate;
         this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+        this.loanEMIPackData = loanEMIPackData;
     }
 
     public static LoanApplicationReferenceData instance(final Long loanApplicationReferenceId, final String loanApplicationReferenceNo,
@@ -79,13 +83,14 @@ public class LoanApplicationReferenceData {
             final BigDecimal loanAmountRequested, final Integer numberOfRepayments, final EnumOptionData repaymentPeriodFrequency,
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
-            final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType) {
+            final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
+            final LoanEMIPackData loanEMIPackData) {
 
         return new LoanApplicationReferenceData(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, externalIdTwo,
                 loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId, loanProductName,
                 loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency, repayEvery,
                 termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, expectedDisbursalPaymentType,
-                expectedRepaymentPaymentType);
+                expectedRepaymentPaymentType, loanEMIPackData);
     }
 
     public Long getLoanApplicationReferenceId() {

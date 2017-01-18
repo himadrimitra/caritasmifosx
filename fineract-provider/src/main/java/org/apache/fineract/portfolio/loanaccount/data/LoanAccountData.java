@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.persistence.Transient;
 
+import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -234,6 +235,8 @@ public class LoanAccountData {
     
     private Long loanApplicationReferenceId;
 
+    private final Collection<LoanEMIPackData> loanEMIPacks;
+
     /**
      * Used to produce a {@link LoanAccountData} with only collateral options
      * for now.
@@ -359,6 +362,7 @@ public class LoanAccountData {
         final PaymentTypeData expectedDisbursalPaymentType = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -380,7 +384,7 @@ public class LoanAccountData {
                 originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType,
-                paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
 
     }
 
@@ -501,6 +505,7 @@ public class LoanAccountData {
         final PaymentTypeData expectedDisbursalPaymentType = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
 
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
@@ -523,7 +528,7 @@ public class LoanAccountData {
                 originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType,
-                paymentOptions , expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData );
+                paymentOptions , expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
 
     }
 
@@ -641,6 +646,7 @@ public class LoanAccountData {
         final EnumOptionData weeksInYearType = null;
         final Collection<PaymentTypeData> paymentOptions = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal,
@@ -662,7 +668,7 @@ public class LoanAccountData {
                 originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType,
-                paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
 
     }
     
@@ -774,6 +780,7 @@ public class LoanAccountData {
         final Collection<PaymentTypeData> paymentOptions = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
 
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
@@ -795,7 +802,7 @@ public class LoanAccountData {
                 originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions, pledgeId,
                 interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap,maximumGap,
                 subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, 
-                weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
 
     }
     
@@ -922,6 +929,7 @@ public class LoanAccountData {
         final PaymentTypeData expectedDisbursalPaymentType = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
 
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
@@ -944,7 +952,7 @@ public class LoanAccountData {
                 originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType
-                ,paymentOptions , expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                ,paymentOptions , expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
 
     }
 
@@ -976,7 +984,7 @@ public class LoanAccountData {
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
                 acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
-                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, clientAcc.clientData);
+                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, clientAcc.clientData, acc.loanEMIPacks);
     }
 
     /**
@@ -1106,6 +1114,7 @@ public class LoanAccountData {
         final PaymentTypeData expectedDisbursalPaymentType = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -1127,7 +1136,7 @@ public class LoanAccountData {
                 originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap, maximumGap,
                 subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,weeksInYearType
-                ,paymentOptions , expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                ,paymentOptions , expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
 
     }
 
@@ -1158,7 +1167,8 @@ public class LoanAccountData {
                 acc.interestRecalculationData, acc.originalSchedule, acc.createStandingInstructionAtDisbursement,
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
-                acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
+                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
 
     }
 
@@ -1172,7 +1182,8 @@ public class LoanAccountData {
             final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions,
             final Collection<LoanPurposeData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions,
             final Integer loanCycleNumber, final Collection<PledgeData> loanProductCollateralPledgesOptions,
-            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final Collection<PaymentTypeData> paymentOptions, Long loanOfficerId) {
+            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final Collection<PaymentTypeData> paymentOptions,
+            final Long loanOfficerId, final Collection<LoanEMIPackData> loanEMIPacks) {
 
         final Long id = null;
         final String accountNo = null;
@@ -1302,7 +1313,8 @@ public class LoanAccountData {
                 product.toLoanInterestRecalculationData(), originalSchedule, createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, product.isVariableInstallmentsAllowed(),
                 product.getMinimumGapBetweenInstallments(), product.getMaximumGapBetweenInstallments(), subStatus, canUseForTopup,
-                clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData,
+                loanEMIPacks);
     }
 
     public static LoanAccountData populateLoanProductDefaults(final LoanAccountData acc, final LoanProductData product) {
@@ -1366,7 +1378,8 @@ public class LoanAccountData {
                 loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 product.isVariableInstallmentsAllowed(), product.getMinimumGapBetweenInstallments(),
                 product.getMaximumGapBetweenInstallments(), acc.subStatus, acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup,
-                acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions,
+                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
 
     }
 
@@ -1512,7 +1525,8 @@ public class LoanAccountData {
                 acc.originalSchedule, acc.createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions,
                 pledgeId, interestRatesPeriods, acc.isVariableInstallmentsAllowed, acc.minimumGap,
                 acc.maximumGap, acc.subStatus, acc.canUseForTopup, clientActiveLoanOptions, acc.isTopup,
-                acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions,
+                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
     }
 
     public static LoanAccountData associationsAndTemplate(final LoanAccountData acc, final Collection<LoanProductData> productOptions,
@@ -1556,7 +1570,7 @@ public class LoanAccountData {
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
                 acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
-                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
     }
 
     public static LoanAccountData associateMemberVariations(final LoanAccountData acc, final Map<Long, Integer> memberLoanCycle) {
@@ -1623,7 +1637,7 @@ public class LoanAccountData {
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
                 acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, 
-                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
 
     }
 
@@ -1659,7 +1673,7 @@ public class LoanAccountData {
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
                 acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions,
-                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
     }
 
     public static LoanAccountData withLoanCalendarData(final LoanAccountData acc, final CalendarData calendarData) {
@@ -1689,7 +1703,7 @@ public class LoanAccountData {
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
                 acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions,
-                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
     }
 
     public static LoanAccountData withOriginalSchedule(final LoanAccountData acc, final LoanScheduleData originalSchedule) {
@@ -1719,40 +1733,24 @@ public class LoanAccountData {
                 acc.interestRecalculationData, originalSchedule, acc.createStandingInstructionAtDisbursement, acc.paidInAdvance,
                 acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods, acc.isVariableInstallmentsAllowed, acc.minimumGap,
                 acc.maximumGap, acc.subStatus, acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup,
-                acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,acc.weeksInYearType, acc.paymentOptions,
+                acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
     }
 
-    private LoanAccountData(
-            final Long id, //
+    private LoanAccountData(final Long id, //
             final String accountNo, //
             final LoanStatusEnumData status, //
             final String externalId, //
-            final Long clientId,
-            final String clientAccountNo,
-            final String clientName,
-            final Long clientOfficeId, //
-            final GroupGeneralData group,
-            final EnumOptionData loanType,
-            final Long loanProductId,
-            final String loanProductName,
+            final Long clientId, final String clientAccountNo, final String clientName, final Long clientOfficeId, //
+            final GroupGeneralData group, final EnumOptionData loanType, final Long loanProductId, final String loanProductName,
             final String loanProductDescription, //
-            final boolean isLoanProductLinkedToFloatingRate,
-            final Long fundId,
-            final String fundName,
-            final Long loanPurposeId,
+            final boolean isLoanProductLinkedToFloatingRate, final Long fundId, final String fundName, final Long loanPurposeId,
             final String loanPurposeName, //
-            final Long loanOfficerId,
-            final String loanOfficerName, //
-            final CurrencyData currency,
-            BigDecimal proposedPrincipal,
-            final BigDecimal principal,
-            final BigDecimal approvedPrincipal,
+            final Long loanOfficerId, final String loanOfficerName, //
+            final CurrencyData currency, BigDecimal proposedPrincipal, final BigDecimal principal, final BigDecimal approvedPrincipal,
             final BigDecimal totalOverpaid, //
-            final BigDecimal inArrearsTolerance,
-            final Integer termFrequency, //
-            final EnumOptionData termPeriodFrequencyType,
-            final Integer numberOfRepayments,
-            final Integer repaymentEvery,
+            final BigDecimal inArrearsTolerance, final Integer termFrequency, //
+            final EnumOptionData termPeriodFrequencyType, final Integer numberOfRepayments, final Integer repaymentEvery,
             final EnumOptionData repaymentFrequencyType, //
             final EnumOptionData repaymentFrequencyNthDayType, final EnumOptionData repaymentFrequencyDayOfWeekType,
             final Long transactionProcessingStrategyId, String transactionProcessingStrategyCode,
@@ -1771,26 +1769,21 @@ public class LoanAccountData {
             final Collection<EnumOptionData> repaymentFrequencyNthDayTypeOptions,
             final Collection<EnumOptionData> repaymentFrequencyDaysOfWeekTypeOptions,
             final Collection<TransactionProcessingStrategyData> transactionProcessingStrategyOptions, final Collection<EnumOptionData> interestRateFrequencyTypeOptions,
-            final Collection<EnumOptionData> amortizationTypeOptions, final Collection<EnumOptionData> interestTypeOptions,
-            final Collection<EnumOptionData> interestCalculationPeriodTypeOptions, final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions,
-            final ChargeData chargeTemplate, final Collection<StaffData> loanOfficerOptions,
-            final Collection<LoanPurposeData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions,
-            final Collection<CalendarData> calendarOptions, final Boolean syncDisbursementWithMeeting, final Integer loanCounter,
-            final Integer loanProductCounter, final Collection<NoteData> notes,
-            final Collection<PortfolioAccountData> accountLinkingOptions, final PortfolioAccountData linkedAccount,
-            final Collection<DisbursementData> disbursementDetails, final Boolean multiDisburseLoan, final Boolean canDefineInstallmentAmount,
-            BigDecimal fixedEmiAmount, final BigDecimal maxOutstandingLoanBalance,
+            final Collection<EnumOptionData> amortizationTypeOptions, final Collection<EnumOptionData> interestTypeOptions, final Collection<EnumOptionData> interestCalculationPeriodTypeOptions,
+            final Collection<FundData> fundOptions, final Collection<ChargeData> chargeOptions, final ChargeData chargeTemplate, final Collection<StaffData> loanOfficerOptions,
+            final Collection<LoanPurposeData> loanPurposeOptions, final Collection<CodeValueData> loanCollateralOptions, final Collection<CalendarData> calendarOptions,
+            final Boolean syncDisbursementWithMeeting, final Integer loanCounter, final Integer loanProductCounter, final Collection<NoteData> notes,
+            final Collection<PortfolioAccountData> accountLinkingOptions, final PortfolioAccountData linkedAccount, final Collection<DisbursementData> disbursementDetails,
+            final Boolean multiDisburseLoan, final Boolean canDefineInstallmentAmount, BigDecimal fixedEmiAmount, final BigDecimal maxOutstandingLoanBalance,
             final Collection<LoanTermVariationsData> emiAmountVariations, final Map<Long, LoanBorrowerCycleData> memberVariations, final LoanProductData product,
-            final Boolean inArrears, final Integer graceOnArrearsAgeing, final Collection<ChargeData> overdueCharges,
-            final Boolean isNPA, final EnumOptionData daysInMonthType, final EnumOptionData daysInYearType,
-            final boolean isInterestRecalculationEnabled, final LoanInterestRecalculationData interestRecalculationData,
-            final LoanScheduleData originalSchedule, final Boolean createStandingInstructionAtDisbursement,
-            final PaidInAdvanceData paidInAdvance, final Collection<PledgeData> loanProductCollateralPledgesOptions,
-            final Long pledgeId, final Collection<InterestRatePeriodData> interestRatesPeriods,
-            final Boolean isVariableInstallmentsAllowed, final Integer minimumGap, final Integer maximumGap,
-            final EnumOptionData subStatus, final Boolean canUseForTopup, final Collection<LoanAccountSummaryData> clientActiveLoanOptions,
-            final boolean isTopup, final Long closureLoanId, final String closureLoanAccountNo, final BigDecimal topupAmount,
-            final EnumOptionData weeksInYearType,final Collection<PaymentTypeData> paymentOptions, final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType, final ClientData clientData ) {
+            final Boolean inArrears, final Integer graceOnArrearsAgeing, final Collection<ChargeData> overdueCharges, final Boolean isNPA,
+            final EnumOptionData daysInMonthType, final EnumOptionData daysInYearType, final boolean isInterestRecalculationEnabled, final LoanInterestRecalculationData interestRecalculationData,
+            final LoanScheduleData originalSchedule, final Boolean createStandingInstructionAtDisbursement, final PaidInAdvanceData paidInAdvance,
+            final Collection<PledgeData> loanProductCollateralPledgesOptions, final Long pledgeId, final Collection<InterestRatePeriodData> interestRatesPeriods,
+            final Boolean isVariableInstallmentsAllowed, final Integer minimumGap, final Integer maximumGap, final EnumOptionData subStatus, final Boolean canUseForTopup,
+            final Collection<LoanAccountSummaryData> clientActiveLoanOptions, final boolean isTopup, final Long closureLoanId, final String closureLoanAccountNo, final BigDecimal topupAmount,
+            final EnumOptionData weeksInYearType, final Collection<PaymentTypeData> paymentOptions, final PaymentTypeData expectedDisbursalPaymentType,
+            final PaymentTypeData expectedRepaymentPaymentType, final ClientData clientData, Collection<LoanEMIPackData> loanEMIPacks) {
 
         this.id = id;
         this.accountNo = accountNo;
@@ -1980,6 +1973,7 @@ public class LoanAccountData {
         this.paymentOptions = paymentOptions;
         this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+        this.loanEMIPacks = loanEMIPacks;
 
     }
     
@@ -2241,6 +2235,7 @@ public class LoanAccountData {
         this.paymentOptions = paymentOptions;
         this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
+        this.loanEMIPacks = null;
 
     }
 
@@ -2536,6 +2531,7 @@ public class LoanAccountData {
         final PaymentTypeData expectedDisbursalPaymentType = null;
         final PaymentTypeData expectedRepaymentPaymentType = null;
         final ClientData clientData = null;
+        final Collection<LoanEMIPackData> loanEMIPacks = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -2557,7 +2553,7 @@ public class LoanAccountData {
                 createStandingInstructionAtDisbursement, paidInAdvance, loanProductCollateralPledgesOptions, pledgeId,
                 interestRatesPeriods, isVariableInstallmentsAllowed, minimumGap, maximumGap, subStatus, canUseForTopup,
                 clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType, paymentOptions,
-                expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData);
+                expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks);
     }
     
     public static LoanAccountData populateGroupDetails(final LoanAccountData acc, final GroupGeneralData groupData) {
@@ -2587,7 +2583,8 @@ public class LoanAccountData {
                 acc.interestRecalculationData, acc.originalSchedule, acc.createStandingInstructionAtDisbursement,
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
-                acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData);
+                acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
+                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks);
 
     }
     
@@ -2619,7 +2616,7 @@ public class LoanAccountData {
                 acc.paidInAdvance, acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods,
                 acc.isVariableInstallmentsAllowed, acc.minimumGap, acc.maximumGap, acc.subStatus, acc.canUseForTopup,
                 acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
-                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, clientData);
+                acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, clientData, acc.loanEMIPacks);
     }
 
     

@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.finflux.portfolio.loanemipacks.domain.LoanEMIPack;
+import com.finflux.portfolio.loanemipacks.domain.LoanEMIPackRepository;
+import com.finflux.portfolio.loanemipacks.exception.LoanEMIPackNotFoundException;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
@@ -58,13 +61,15 @@ public class LoanApplicationReferenceDataAssembler {
     private final GroupRepositoryWrapper groupRepository;
     private final LoanPurposeRepositoryWrapper loanPurposeRepository;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
+    private final LoanEMIPackRepository loanEMIPackRepository;
 
     @Autowired
     public LoanApplicationReferenceDataAssembler(final FromJsonHelper fromApiJsonHelper, final RoutingDataSource dataSource,
             final LoanProductRepository loanProductRepository, final ClientRepositoryWrapper clientRepository,
             final StaffRepositoryWrapper staffRepository, final ChargeRepositoryWrapper chargeRepository,
             final LoanApplicationChargeRepositoryWrapper loanApplicationChargeRepository, final GroupRepositoryWrapper groupRepository,
-            final LoanPurposeRepositoryWrapper loanPurposeRepository, final PaymentTypeRepositoryWrapper paymentTypeRepository) {
+            final LoanPurposeRepositoryWrapper loanPurposeRepository, final PaymentTypeRepositoryWrapper paymentTypeRepository,
+            final LoanEMIPackRepository loanEMIPackRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.loanProductRepository = loanProductRepository;
@@ -75,6 +80,7 @@ public class LoanApplicationReferenceDataAssembler {
         this.groupRepository = groupRepository;
         this.loanPurposeRepository = loanPurposeRepository;
         this.paymentTypeRepository = paymentTypeRepository;
+        this.loanEMIPackRepository = loanEMIPackRepository;
     }
 
     public LoanApplicationReference assembleCreateForm(final JsonCommand command) {
@@ -120,25 +126,49 @@ public class LoanApplicationReferenceDataAssembler {
             loanPurpose = this.loanPurposeRepository.findOneWithNotFoundDetection(loanpurposeId);
         }
 
-        final BigDecimal loanAmountRequested = command
-                .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountRequestedParamName);
+        BigDecimal loanAmountRequested = null;
+        Integer numberOfRepayments = null;
+        Integer repaymentPeriodFrequencyEnum = null;
+        Integer repayEvery = null;
+        BigDecimal fixedEmiAmount = null;
+        Integer termPeriodFrequencyEnum = null;
+        Integer termFrequency = null;
+        LoanEMIPack loanEMIPack = null;
 
-        final Integer numberOfRepayments = command
-                .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName);
+        if(command.hasParameter(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName)){
+            final Long loanEMIPackId = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName);
+            loanEMIPack = this.loanEMIPackRepository.findOne(loanEMIPackId);
+            if(loanEMIPack == null || !loanEMIPack.loanProductId.equals(loanProductId)){
+                throw new LoanEMIPackNotFoundException(loanEMIPackId);
+            }
+            loanAmountRequested = loanEMIPack.sanctionAmount;
+            numberOfRepayments = loanEMIPack.numberOfRepayments;
+            repaymentPeriodFrequencyEnum = loanEMIPack.repaymentFrequencyType;
+            repayEvery = loanEMIPack.repaymentEvery;
+            fixedEmiAmount = loanEMIPack.fixedEmi;
+            termFrequency = numberOfRepayments * repayEvery;
+            termPeriodFrequencyEnum = repaymentPeriodFrequencyEnum;
+        }else{
+            loanAmountRequested = command
+                    .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountRequestedParamName);
 
-        final Integer repaymentPeriodFrequencyEnum = command
-                .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName);
+            numberOfRepayments = command
+                    .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName);
 
-        final Integer repayEvery = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repayEveryParamName);
+            repaymentPeriodFrequencyEnum = command
+                    .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName);
 
-        final Integer termPeriodFrequencyEnum = command
-                .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName);
+            repayEvery = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repayEveryParamName);
 
-        final Integer termFrequency = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termFrequencyParamName);
+            fixedEmiAmount = command
+                    .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName);
 
-        final BigDecimal fixedEmiAmount = command
-                .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName);
+            termPeriodFrequencyEnum = command
+                    .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName);
 
+            termFrequency = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termFrequencyParamName);
+
+        }
         final Integer noOfTranche = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.noOfTrancheParamName);
 
         final LocalDate submittedOnDate = command
@@ -169,7 +199,8 @@ public class LoanApplicationReferenceDataAssembler {
         final LoanApplicationReference loanApplicationReference = LoanApplicationReference.create(loanApplicationReferenceNo,
                 externalIdOne, externalIdTwo, client, loanOfficer, group, statusEnum, accountTypeEnum, loanProduct, loanPurpose,
                 loanAmountRequested, numberOfRepayments, repaymentPeriodFrequencyEnum, repayEvery, termPeriodFrequencyEnum, termFrequency,
-                fixedEmiAmount, noOfTranche, submittedOnDate.toDate(), expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                fixedEmiAmount, noOfTranche, submittedOnDate.toDate(), expectedDisbursalPaymentType, expectedRepaymentPaymentType,
+                loanEMIPack);
 
         final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
                 command.json());
@@ -233,9 +264,6 @@ public class LoanApplicationReferenceDataAssembler {
                 command.json());
         loanApplicationReference.updateLoanApplicationCharges(loanApplicationCharges);
         final Map<String, Object> actualChanges = loanApplicationReference.update(command);
-        final LocalDate expectedFirstRepaymentOnDate = null;
-        validateSubmittedOnDate(loanApplicationReference.submittedOnDateParamNameLocalDate(), expectedFirstRepaymentOnDate,
-                loanApplicationReference.getLoanProduct(), loanApplicationReference.getClient());
         if (!actualChanges.isEmpty()) {
             if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.clientIdParamName)) {
                 final Long clientId = (Long) actualChanges.get(LoanApplicationReferenceApiConstants.clientIdParamName);
@@ -252,6 +280,22 @@ public class LoanApplicationReferenceDataAssembler {
                 final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
                 if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
                 loanApplicationReference.updateLoanProduct(loanProduct);
+                loanApplicationReference.setLoanEMIPack(null);
+            }
+            if(actualChanges.containsKey(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName)){
+                final Long loanEMIPackId = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName);
+                final LoanEMIPack loanEMIPack = this.loanEMIPackRepository.findOne(loanEMIPackId);
+                if(loanEMIPack == null || !loanEMIPack.loanProductId.equals(loanApplicationReference.getLoanProduct().getId())){
+                    throw new LoanEMIPackNotFoundException(loanEMIPackId);
+                }
+                loanApplicationReference.setLoanEMIPack(loanEMIPack);
+                loanApplicationReference.setLoanAmountRequested(loanEMIPack.sanctionAmount);
+                loanApplicationReference.setNumberOfRepayments(loanEMIPack.numberOfRepayments);
+                loanApplicationReference.setRepaymentPeriodFrequencyEnum(loanEMIPack.repaymentFrequencyType);
+                loanApplicationReference.setRepayEvery(loanEMIPack.repaymentEvery);
+                loanApplicationReference.setFixedEmiAmount(loanEMIPack.fixedEmi);
+                loanApplicationReference.setTermFrequency(loanEMIPack.repaymentEvery * loanEMIPack.numberOfRepayments);
+                loanApplicationReference.setTermPeriodFrequencyEnum(loanEMIPack.repaymentFrequencyType);
             }
             if (actualChanges.containsKey(LoanApplicationReferenceApiConstants.loanPurposeIdParamName)) {
                 final Long loanPurposeId = (Long) actualChanges.get(LoanApplicationReferenceApiConstants.loanPurposeIdParamName);
@@ -281,6 +325,9 @@ public class LoanApplicationReferenceDataAssembler {
                 }
             }
         }
+        final LocalDate expectedFirstRepaymentOnDate = null;
+        validateSubmittedOnDate(loanApplicationReference.submittedOnDateParamNameLocalDate(), expectedFirstRepaymentOnDate,
+                loanApplicationReference.getLoanProduct(), loanApplicationReference.getClient());
         return actualChanges;
     }
 
@@ -300,45 +347,83 @@ public class LoanApplicationReferenceDataAssembler {
         BigDecimal loanAmountApproved = null;
         if (loanApplicationSanction != null && loanApplicationSanction.getId() != null) {
             changes = loanApplicationSanction.update(command);
+            if(changes.containsKey(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName)){
+                final Long loanEMIPackId = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName);
+                final LoanEMIPack loanEMIPack = this.loanEMIPackRepository.findOne(loanEMIPackId);
+                if(loanEMIPack == null || !loanEMIPack.loanProductId.equals(loanApplicationReference.getLoanProduct().getId())){
+                    throw new LoanEMIPackNotFoundException(loanEMIPackId);
+                }
+                loanApplicationSanction.setLoanEMIPack(loanEMIPack);
+                loanApplicationSanction.setLoanAmountApproved(loanEMIPack.sanctionAmount);
+                loanApplicationSanction.setNumberOfRepayments(loanEMIPack.numberOfRepayments);
+                loanApplicationSanction.setRepaymentPeriodFrequencyEnum(loanEMIPack.repaymentFrequencyType);
+                loanApplicationSanction.setRepayEvery(loanEMIPack.repaymentEvery);
+                loanApplicationSanction.setFixedEmiAmount(loanEMIPack.fixedEmi);
+                loanApplicationSanction.setTermFrequency(loanEMIPack.repaymentEvery * loanEMIPack.numberOfRepayments);
+                loanApplicationSanction.setTermPeriodFrequencyEnum(loanEMIPack.repaymentFrequencyType);
+            }
             loanAmountApproved = loanApplicationSanction.getLoanAmountApproved();
         } else {
-
-            loanAmountApproved = command.bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName);
 
             final LocalDate expectedDisbursementDate = command
                     .localDateValueOfParameterNamed(LoanApplicationReferenceApiConstants.expectedDisbursementDateParaName);
 
-            final Integer numberOfRepayments = command
-                    .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName);
+            Integer numberOfRepayments = null;
+            Integer repaymentPeriodFrequencyEnum = null;
+            Integer repayEvery = null;
+            BigDecimal fixedEmiAmount = null;
+            Integer termPeriodFrequencyEnum = null;
+            Integer termFrequency = null;
+            LoanEMIPack loanEMIPack = null;
 
-            Integer repaymentPeriodFrequencyEnum = command
-                    .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName);
+            if(command.hasParameter(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName)){
+                final Long loanEMIPackId = command.longValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanEMIPackIdParamName);
+                loanEMIPack = this.loanEMIPackRepository.findOne(loanEMIPackId);
+                if(loanEMIPack == null || !loanEMIPack.loanProductId.equals(loanProduct.getId())){
+                    throw new LoanEMIPackNotFoundException(loanEMIPackId);
+                }
+                loanAmountApproved = loanEMIPack.sanctionAmount;
+                numberOfRepayments = loanEMIPack.numberOfRepayments;
+                repaymentPeriodFrequencyEnum = loanEMIPack.repaymentFrequencyType;
+                repayEvery = loanEMIPack.repaymentEvery;
+                fixedEmiAmount = loanEMIPack.fixedEmi;
+                termFrequency = numberOfRepayments * repayEvery;
+                termPeriodFrequencyEnum = repaymentPeriodFrequencyEnum;
+            }else{
+                loanAmountApproved = command
+                        .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName);
 
-            if (repaymentPeriodFrequencyEnum == null) {
-                repaymentPeriodFrequencyEnum = loanProduct.getInterestPeriodFrequencyType().getValue();
-            }
+                numberOfRepayments = command
+                        .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.numberOfRepaymentsParamName);
 
-            Integer repayEvery = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repayEveryParamName);
-            if (repayEvery == null || repayEvery == 0) {
-                repayEvery = loanProduct.getLoanProductRelatedDetail().getRepayEvery();
-            }
+                repaymentPeriodFrequencyEnum = command
+                        .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repaymentPeriodFrequencyEnumParamName);
 
-            Integer termPeriodFrequencyEnum = command
-                    .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName);
-            if (termPeriodFrequencyEnum == null) {
-                repaymentPeriodFrequencyEnum = loanProduct.getInterestPeriodFrequencyType().getValue();
-            }
+                if (repaymentPeriodFrequencyEnum == null) {
+                    repaymentPeriodFrequencyEnum = loanProduct.getInterestPeriodFrequencyType().getValue();
+                }
 
-            Integer termFrequency = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termFrequencyParamName);
-            if (termFrequency == null || termFrequency == 0) {
-                termFrequency = repayEvery * loanProduct.getNumberOfRepayments();
+                repayEvery = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.repayEveryParamName);
+
+                fixedEmiAmount = command
+                        .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName);
+
+                termPeriodFrequencyEnum = command
+                        .integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termPeriodFrequencyEnumParamName);
+                if (termPeriodFrequencyEnum == null) {
+                    repaymentPeriodFrequencyEnum = loanProduct.getInterestPeriodFrequencyType().getValue();
+                }
+
+                termFrequency = command.integerValueOfParameterNamed(LoanApplicationReferenceApiConstants.termFrequencyParamName);
+
+                if (termFrequency == null || termFrequency == 0) {
+                    termFrequency = repayEvery * loanProduct.getNumberOfRepayments();
+                }
+
             }
 
             final LocalDate approvedOnDate = command
                     .localDateValueOfParameterNamed(LoanApplicationReferenceApiConstants.approvedOnDateParaName);
-
-            final BigDecimal fixedEmiAmount = command
-                    .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName);
 
             final BigDecimal maxOutstandingLoanBalance = command
                     .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.maxOutstandingLoanBalanceParamName);
@@ -352,7 +437,7 @@ public class LoanApplicationReferenceDataAssembler {
 
             loanApplicationSanction = LoanApplicationSanction.create(loanApplicationReference, loanAmountApproved, approvedOnDate.toDate(),
                     expectedDisbursementDate.toDate(), repaymentsStartingFromDate, numberOfRepayments, repaymentPeriodFrequencyEnum,
-                    repayEvery, termPeriodFrequencyEnum, termFrequency, fixedEmiAmount, maxOutstandingLoanBalance);
+                    repayEvery, termPeriodFrequencyEnum, termFrequency, fixedEmiAmount, maxOutstandingLoanBalance, loanEMIPack);
         }
 
         final JsonElement parentElement = command.parsedJson();

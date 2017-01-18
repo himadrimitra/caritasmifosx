@@ -320,7 +320,7 @@ public class DepositAccountInterestRateChartReadPlatformServiceImpl implements D
         /*
          * private final String schemaSql;
          * 
-         * public String schema() { return this.schemaSql; }
+         * public String schemaList() { return this.schemaSql; }
          * 
          * private DepositAccountInterestRateChartSlabsMapper() { final
          * StringBuilder sqlBuilder = new StringBuilder(400);

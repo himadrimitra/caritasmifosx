@@ -79,13 +79,15 @@ public class LoanApplicationReferenceApiConstants {
     
     public static final String skipAuthenticationRule = "skipAuthenticationRule";
 
+    public static final String loanEMIPackIdParamName = "loanEMIPackId";
+
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdOneParamName,
             externalIdTwoParamName, clientIdParamName, loanOfficerIdParamName, groupIdParamName, accountTypeParamName,
             loanProductIdParamName, loanPurposeIdParamName, loanAmountRequestedParamName, numberOfRepaymentsParamName,
             repaymentPeriodFrequencyEnumParamName, repayEveryParamName, termPeriodFrequencyEnumParamName, termFrequencyParamName,
             fixedEmiAmountParamName, maxOutstandingLoanBalanceParamName, noOfTrancheParamName, submittedOnDateParamName, chargesParamName,
             localeParamName, dateFormatParamName, expectedDisbursalPaymentTypeParamName, expectedRepaymentPaymentTypeParamName,
-            skipAuthenticationRule));
+            skipAuthenticationRule,loanEMIPackIdParamName));
 
     public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(externalIdOneParamName,
             externalIdTwoParamName, clientIdParamName, loanOfficerIdParamName, groupIdParamName, accountTypeParamName,
@@ -93,12 +95,12 @@ public class LoanApplicationReferenceApiConstants {
             repaymentPeriodFrequencyEnumParamName, repayEveryParamName, termPeriodFrequencyEnumParamName, termFrequencyParamName,
             fixedEmiAmountParamName, maxOutstandingLoanBalanceParamName, noOfTrancheParamName, submittedOnDateParamName, chargesParamName,
             localeParamName, dateFormatParamName, expectedDisbursalPaymentTypeParamName, expectedRepaymentPaymentTypeParamName,
-            skipAuthenticationRule));
+            skipAuthenticationRule,loanEMIPackIdParamName));
 
     public static final Set<String> APPROVE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(loanAmountApprovedParamName,
             approvedOnDateParaName, expectedDisbursementDateParaName, numberOfRepaymentsParamName, repaymentPeriodFrequencyEnumParamName,
             repayEveryParamName, termPeriodFrequencyEnumParamName, termFrequencyParamName, fixedEmiAmountParamName,
             maxOutstandingLoanBalanceParamName, loanApplicationSanctionTrancheDatasParamName, repaymentsStartingFromDateParaName,
-            localeParamName, dateFormatParamName, chargesParamName));
+            localeParamName, dateFormatParamName, chargesParamName,loanEMIPackIdParamName));
 
 }
