@@ -149,7 +149,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = loanRepaymentScheduleTransactionProcessorFactory
                 .determineProcessor(loan.transactionProcessingStrategy());
 
-        if (!loan.repaymentScheduleDetail().isInterestRecalculationEnabled() || loan.isNpa() || !loan.status().isActive()
+        if (!loan.repaymentScheduleDetail().isInterestRecalculationEnabled() || !loan.status().isActive()
                 || !loanRepaymentScheduleTransactionProcessor.isInterestFirstRepaymentScheduleTransactionProcessor()) { return; }
 
         if (loan.loanProduct().isMultiDisburseLoan()) {
