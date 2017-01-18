@@ -99,6 +99,10 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                 checkUserhasActionPrivilege(appUser, task, actionType);
             }
             if (actionType.getToStatus() != null) {
+                if(status.isCompleted())
+                {
+                    return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
+                }
                 TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), appUser);
                 if (TaskActionType.CRITERIACHECK.equals(actionType)) {
                     runCriteriaCheckAndPopulate(task);
@@ -126,7 +130,6 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
         // do Action Log
     }
-
     private CommandProcessingResult taskDataAsCommandProcessingResult(Long taskId) {
         TaskExecutionData taskExecutionData = getTaskData(taskId);
         Map<String,Object> changes  = new HashMap<>();

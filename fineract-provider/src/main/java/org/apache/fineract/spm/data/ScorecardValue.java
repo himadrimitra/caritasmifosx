@@ -63,6 +63,16 @@ public class ScorecardValue {
         this.responseId = responseId;
         this.value = value;
     }
+    
+    public ScorecardValue(final Long id, final Long questionId, final String questionName, final Long responseId, final String answerName,
+            final Integer value) {
+        this.id = id;
+        this.questionId = questionId;
+        this.questionName = questionName;
+        this.responseId = responseId;
+        this.answerName = answerName;
+        this.value = value;
+    }
 
     public Long getQuestionId() {
         return questionId;
