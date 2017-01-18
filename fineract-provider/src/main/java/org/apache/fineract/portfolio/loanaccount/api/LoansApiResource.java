@@ -538,8 +538,7 @@ public class LoansApiResource {
                     final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = loanRepaymentScheduleTransactionProcessorFactory
                             .determineProcessor(new LoanTransactionProcessingStrategy(loanBasicDetails
                                     .getTransactionProcessingStrategyCode()));
-                    if (!loanBasicDetails.isNPA()
-                            && loanRepaymentScheduleTransactionProcessor.isInterestFirstRepaymentScheduleTransactionProcessor()) {
+                    if (loanRepaymentScheduleTransactionProcessor.isInterestFirstRepaymentScheduleTransactionProcessor()) {
                         if (repaymentSchedule == null) {
                             repaymentSchedule = new LoanScheduleData();
                         }
