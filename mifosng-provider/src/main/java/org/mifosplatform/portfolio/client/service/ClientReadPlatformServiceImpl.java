@@ -159,6 +159,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final String firstname = searchParameters.getFirstname();
         final String lastname = searchParameters.getLastname();
         final Long clientStatus = searchParameters.getclientStatus();
+        final String mobileNoLength = searchParameters.getMobileNoLength();
 
         String extraCriteria = "";
         if (sqlSearch != null) {
@@ -195,7 +196,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         if (searchParameters.isScopedByOfficeHierarchy()) {
             extraCriteria += " and o.hierarchy like " + ApiParameterHelper.sqlEncodeString(searchParameters.getHierarchy() + "%");
         }
-
+        if(mobileNoLength != null){
+            extraCriteria += " and c.mobile_no is not null AND LENGTH(c.mobile_no) = " + mobileNoLength;
+        }
         if (StringUtils.isNotBlank(extraCriteria)) {
             extraCriteria = extraCriteria.substring(4);
         }
