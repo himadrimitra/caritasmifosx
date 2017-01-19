@@ -293,7 +293,7 @@ public class LoanScheduleAssembler {
             this.loanScheduleValidator.validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(), repaymentFrequencyType,
                     CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
         } else {
-            if (repaymentPeriodFrequencyType == PeriodFrequencyType.MONTHS && nthDay != null && nthDay != NthDayType.INVALID.getValue()) {
+            if (repaymentPeriodFrequencyType.isMonthly() && nthDay != null && nthDay != NthDayType.INVALID.getValue()) {
                 LocalDate calendarStartDate = repaymentsStartingFromDate;
                 if (calendarStartDate == null) calendarStartDate = expectedDisbursementDate;
                 calendar = createLoanCalendar(calendarStartDate, repaymentEvery, CalendarFrequencyType.MONTHLY, dayOfWeek, nthDay, repeatsOnDayOfMonth);

@@ -396,7 +396,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 final boolean considerAllDisbursmentsInSchedule = true;
                 final LoanApplicationTerms loanApplicationTerms = this.loanScheduleAssembler.assembleLoanTerms(command.parsedJson(), considerAllDisbursmentsInSchedule);
                 final Integer repaymentFrequencyNthDayType = command.integerValueOfParameterNamed("repaymentFrequencyNthDayType");
-                if (loanApplicationTerms.getRepaymentPeriodFrequencyType() == PeriodFrequencyType.MONTHS
+                if (loanApplicationTerms.getRepaymentPeriodFrequencyType().isMonthly()
                         && repaymentFrequencyNthDayType != null) {
                     final String title = "loan_schedule_" + newLoanApplication.getId();
                     LocalDate calendarStartDate = loanApplicationTerms.getRepaymentsStartingFromLocalDate();
@@ -1123,70 +1123,69 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         instanceDeleted = true;
                     }
                 }
-                if (changes.containsKey("repaymentFrequencyNthDayType") || changes.containsKey("repaymentFrequencyDayOfWeekType")) {
-                    if (changes.get("repaymentFrequencyNthDayType") == null) {
-                        if (ciList != null && !ciList.isEmpty() && !instanceDeleted) {
-                            final CalendarInstance calendarInstance = ciList.get(0);
-                            final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService.isCalendarAssociatedWithEntity(
-                                    calendarInstance.getEntityId(), calendarInstance.getCalendar().getId(), CalendarEntityType.LOANS.getValue().longValue());
-                            if (isCalendarAssociatedWithEntity) {
-                                this.calendarInstanceRepository.delete(calendarInstance);
-                                this.calendarRepository.delete(calendarInstance.getCalendar());
-                            }
+                if (changes.get("repaymentFrequencyNthDayType") == null) {
+                    if (ciList != null && !ciList.isEmpty() && !instanceDeleted) {
+                        final CalendarInstance calendarInstance = ciList.get(0);
+                        final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService.isCalendarAssociatedWithEntity(
+                                calendarInstance.getEntityId(), calendarInstance.getCalendar().getId(), CalendarEntityType.LOANS.getValue()
+                                        .longValue());
+                        if (isCalendarAssociatedWithEntity) {
+                            this.calendarInstanceRepository.delete(calendarInstance);
+                            this.calendarRepository.delete(calendarInstance.getCalendar());
                         }
-                    } else {
-                        Integer repaymentFrequencyTypeInt = command.integerValueOfParameterNamed("repaymentFrequencyType");
-                        if (repaymentFrequencyTypeInt != null) {
-                            if (PeriodFrequencyType.fromInt(repaymentFrequencyTypeInt) == PeriodFrequencyType.MONTHS) {
-                                final String title = "loan_schedule_" + existingLoanApplication.getId();
-                                final Integer typeId = CalendarType.COLLECTION.getValue();
-                                final CalendarFrequencyType repaymentFrequencyType = CalendarFrequencyType.MONTHLY;
-                                final Integer interval = command.integerValueOfParameterNamed("repaymentEvery");
-                                LocalDate startDate = command.localDateValueOfParameterNamed("repaymentsStartingFromDate");
-                                if (startDate == null) startDate = command.localDateValueOfParameterNamed("expectedDisbursementDate");
-                                Integer repeatsOnNthDayOfMonth = (Integer) changes.get("repaymentFrequencyNthDayType");
-                                Integer nthWeekDay = (Integer) changes.get("repaymentFrequencyDayOfWeekType");
-                                final NthDayType nthDayType = NthDayType.fromInt(repeatsOnNthDayOfMonth);
-                                Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>();
-                                if (nthDayType.isOnDay()) {
-                                    String[] repeatsOnDayOfMonthString = command
-                                            .arrayValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue());
-                                    if (repeatsOnDayOfMonthString != null) {
-                                        for (String day : repeatsOnDayOfMonthString) {
-                                            try {
-                                                int monthDay = Integer.parseInt(day);
-                                                repeatsOnDayOfMonth.add(monthDay);
-                                            } catch (Exception e) {
-                                                continue;
-                                            }
+                    }
+                } else {
+                    Integer repaymentFrequencyTypeInt = command.integerValueOfParameterNamed("repaymentFrequencyType");
+                    if (repaymentFrequencyTypeInt != null) {
+                        if (PeriodFrequencyType.fromInt(repaymentFrequencyTypeInt) == PeriodFrequencyType.MONTHS) {
+                            final String title = "loan_schedule_" + existingLoanApplication.getId();
+                            final Integer typeId = CalendarType.COLLECTION.getValue();
+                            final CalendarFrequencyType repaymentFrequencyType = CalendarFrequencyType.MONTHLY;
+                            final Integer interval = command.integerValueOfParameterNamed("repaymentEvery");
+                            LocalDate startDate = command.localDateValueOfParameterNamed("repaymentsStartingFromDate");
+                            if (startDate == null) startDate = command.localDateValueOfParameterNamed("expectedDisbursementDate");
+                            Integer repeatsOnNthDayOfMonth = (Integer) changes.get("repaymentFrequencyNthDayType");
+                            Integer nthWeekDay = (Integer) changes.get("repaymentFrequencyDayOfWeekType");
+                            final NthDayType nthDayType = NthDayType.fromInt(repeatsOnNthDayOfMonth);
+                            Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>();
+                            if (nthDayType.isOnDay()) {
+                                String[] repeatsOnDayOfMonthString = command
+                                        .arrayValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue());
+                                if (repeatsOnDayOfMonthString != null) {
+                                    for (String day : repeatsOnDayOfMonthString) {
+                                        try {
+                                            int monthDay = Integer.parseInt(day);
+                                            repeatsOnDayOfMonth.add(monthDay);
+                                        } catch (Exception e) {
+                                            continue;
                                         }
                                     }
-                                    nthWeekDay = null;
                                 }
-                                final Calendar newCalendar = Calendar.createRepeatingCalendar(title, startDate, typeId,
-                                        repaymentFrequencyType, interval, nthWeekDay,
-                                        (Integer) changes.get("repaymentFrequencyNthDayType"), repeatsOnDayOfMonth);
-                                if (ciList != null && !ciList.isEmpty()) {
-                                    final CalendarInstance calendarInstance = ciList.get(0);
-                                    final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService.isCalendarAssociatedWithEntity(
-                                            calendarInstance.getEntityId(), calendarInstance.getCalendar().getId(), CalendarEntityType.LOANS.getValue().longValue());
-                                    if (isCalendarAssociatedWithEntity) {
-                                        final Calendar existingCalendar = calendarInstance.getCalendar();
-                                        if (existingCalendar != null) {
-                                            String existingRecurrence = existingCalendar.getRecurrence();
-                                            if (!existingRecurrence.equals(newCalendar.getRecurrence())) {
-                                                existingCalendar.setRecurrence(newCalendar.getRecurrence());
-                                                this.calendarRepository.save(existingCalendar);
-                                            }
+                                nthWeekDay = null;
+                            }
+                            final Calendar newCalendar = Calendar.createRepeatingCalendar(title, startDate, typeId, repaymentFrequencyType,
+                                    interval, nthWeekDay, (Integer) changes.get("repaymentFrequencyNthDayType"), repeatsOnDayOfMonth);
+                            if (ciList != null && !ciList.isEmpty()) {
+                                final CalendarInstance calendarInstance = ciList.get(0);
+                                final boolean isCalendarAssociatedWithEntity = this.calendarReadPlatformService
+                                        .isCalendarAssociatedWithEntity(calendarInstance.getEntityId(), calendarInstance.getCalendar()
+                                                .getId(), CalendarEntityType.LOANS.getValue().longValue());
+                                if (isCalendarAssociatedWithEntity) {
+                                    final Calendar existingCalendar = calendarInstance.getCalendar();
+                                    if (existingCalendar != null) {
+                                        String existingRecurrence = existingCalendar.getRecurrence();
+                                        if (!existingRecurrence.equals(newCalendar.getRecurrence())) {
+                                            existingCalendar.setRecurrence(newCalendar.getRecurrence());
+                                            this.calendarRepository.save(existingCalendar);
                                         }
                                     }
-                                } else {
-                                    this.calendarRepository.save(newCalendar);
-                                    final Integer calendarEntityType = CalendarEntityType.LOANS.getValue();
-                                    final CalendarInstance calendarInstance = new CalendarInstance(newCalendar,
-                                            existingLoanApplication.getId(), calendarEntityType);
-                                    this.calendarInstanceRepository.save(calendarInstance);
                                 }
+                            } else {
+                                this.calendarRepository.save(newCalendar);
+                                final Integer calendarEntityType = CalendarEntityType.LOANS.getValue();
+                                final CalendarInstance calendarInstance = new CalendarInstance(newCalendar,
+                                        existingLoanApplication.getId(), calendarEntityType);
+                                this.calendarInstanceRepository.save(calendarInstance);
                             }
                         }
                     }
