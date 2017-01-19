@@ -5902,7 +5902,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void processIncomeTransactions(AppUser currentUser) {
-        if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
+        if (!this.isNpa() && this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
             LocalDate lastCompoundingDate = this.getDisbursementDate();
             List<LoanInterestRecalcualtionAdditionalDetails> compoundingDetails = extractInterestRecalculationAdditionalDetails();
             List<LoanTransaction> incomeTransactions = retreiveListOfIncomePostingTransactions();
@@ -6079,7 +6079,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     private LoanScheduleDTO getRecalculatedSchedule(final ScheduleGeneratorDTO generatorDTO) {
 
-        if (!this.repaymentScheduleDetail().isInterestRecalculationEnabled() || isNpa) { return null; }
+        if (!this.repaymentScheduleDetail().isInterestRecalculationEnabled()) { return null; }
         final InterestMethod interestMethod = this.loanRepaymentScheduleDetail.getInterestMethod();
         final LoanScheduleGenerator loanScheduleGenerator = generatorDTO.getLoanScheduleFactory().create(interestMethod);
 

@@ -610,7 +610,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         LocalDate accruedTill = loan.getAccruedTill();
         if (!loan.isPeriodicAccrualAccountingEnabledOnLoanProduct()
         		|| (loan.loanInterestRecalculationDetails() != null && loan.loanInterestRecalculationDetails().isCompoundingToBePostedAsTransaction())
-                || ((accruedTill == null || !isInterestCalcualtionHappened || loan.isNpa()) && loan.isOpen())
+                || ((accruedTill == null || !isInterestCalcualtionHappened ) && loan.isOpen())
                 || (!loan.isOpen() && !(loan.status().isOverpaid() || loan.status().isClosedObligationsMet()))) { return; }
         boolean accrueAllInstallments = false;
         if(loan.status().isClosedObligationsMet() || loan.status().isOverpaid()){
