@@ -73,4 +73,10 @@ public enum TaskStatusType {
     public TaskActionType getNextPositiveAction() {
         return nextPositiveAction;
     }
+
+    public boolean isCompleted() {
+        if(TaskStatusType.COMPLETED.value.equals(this.value)||TaskStatusType.CANCELLED.value.equals(this.value)||TaskStatusType.SKIPPED.value.equals(this.value))
+            return true;
+        return false;
+    }
 }

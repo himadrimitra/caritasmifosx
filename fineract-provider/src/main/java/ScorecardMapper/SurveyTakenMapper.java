@@ -41,8 +41,8 @@ public class SurveyTakenMapper {
         if (surveyTaken.getScorecards() != null && !surveyTaken.getScorecards().isEmpty()) {
             scorecardValues = new ArrayList<ScorecardValue>();
             for (final Scorecard scorecard : surveyTaken.getScorecards()) {
-                scorecardValues.add(new ScorecardValue(scorecard.getId(), scorecard.getQuestion().getId(), scorecard.getResponse().getId(),
-                        scorecard.getValue()));
+                scorecardValues.add(new ScorecardValue(scorecard.getId(), scorecard.getQuestion().getId(), scorecard.getQuestion()
+                        .getText(), scorecard.getResponse().getId(), scorecard.getResponse().getText(), scorecard.getValue()));
             }
         }
         return new SurveyTakenData(surveyTaken.getId(), surveyTaken.getSurvey().getId(), surveyTaken.getSurvey().getName(), surveyTaken
