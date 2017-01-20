@@ -30,6 +30,7 @@ import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.useradministration.data.AppUserData;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 
 import com.finflux.fingerprint.data.FingerPrintData;
 import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
@@ -46,8 +47,8 @@ public class LoanTransactionData {
     private final LoanTransactionEnumData type;
 
     private final LocalDate date;
-    private final LocalDate createdDate;
-    private final LocalDate updatedDate;
+    private final LocalDateTime createdDate;
+    private final LocalDateTime updatedDate;
     private final AppUserData createdBy;
     private final AppUserData updatedBy;
 
@@ -132,8 +133,8 @@ public class LoanTransactionData {
             final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
             final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, BigDecimal unrecognizedIncomePortion,
             final Collection<PaymentTypeData> paymentTypeOptions, final String externalId, final AccountTransferData transfer,
-            final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, boolean manuallyReversed, final LocalDate createdDate, 
-            final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy, final List<GroupLoanIndividualMonitoringTransactionData> glimTransactions) {
+            final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, boolean manuallyReversed, final LocalDateTime createdDate, 
+            final LocalDateTime updatedDate, final AppUserData createdBy, final AppUserData updatedBy, final List<GroupLoanIndividualMonitoringTransactionData> glimTransactions) {
         this(id, officeId, officeName, transactionType, paymentDetailData, currency, date, amount, principalPortion, interestPortion,
                 feeChargesPortion, penaltyChargesPortion, overpaymentPortion, unrecognizedIncomePortion, paymentTypeOptions, externalId,
                 transfer, fixedEmiAmount, outstandingLoanBalance, null, manuallyReversed, createdDate, updatedDate, createdBy, updatedBy, glimTransactions);
@@ -208,7 +209,7 @@ public class LoanTransactionData {
             final BigDecimal penaltyChargesPortion, final BigDecimal overpaymentPortion, final BigDecimal unrecognizedIncomePortion,
             final Collection<PaymentTypeData> paymentTypeOptions, final String externalId, final AccountTransferData transfer,
             final BigDecimal fixedEmiAmount, BigDecimal outstandingLoanBalance, final LocalDate submittedOnDate, final boolean manuallyReversed, 
-            final LocalDate createdDate, final LocalDate updatedDate, final AppUserData createdBy, final AppUserData updatedBy,
+            final LocalDateTime createdDate, final LocalDateTime updatedDate, final AppUserData createdBy, final AppUserData updatedBy,
             final List<GroupLoanIndividualMonitoringTransactionData> glimTransactions) {
         this.id = id;
         this.officeId = officeId;
