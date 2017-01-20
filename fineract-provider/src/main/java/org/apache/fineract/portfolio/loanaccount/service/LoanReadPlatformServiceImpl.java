@@ -31,8 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
-import com.finflux.portfolio.loanemipacks.service.LoanEMIPacksReadPlatformService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -121,6 +119,7 @@ import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.apache.fineract.useradministration.data.AppUserData;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
@@ -148,6 +147,8 @@ import com.finflux.organisation.transaction.authentication.domain.SupportedAuthe
 import com.finflux.organisation.transaction.authentication.service.TransactionAuthenticationReadPlatformService;
 import com.finflux.portfolio.loan.purpose.data.LoanPurposeData;
 import com.finflux.portfolio.loan.purpose.service.LoanPurposeGroupReadPlatformService;
+import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
+import com.finflux.portfolio.loanemipacks.service.LoanEMIPacksReadPlatformService;
 
 @Service
 public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
@@ -1644,8 +1645,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                             bankNumber);
                 }
             }
-            final LocalDateTime createdDate = JdbcSupport.getDateTime(rs, "createdDate").toLocalDateTime();
-			final LocalDateTime updatedDate = JdbcSupport.getDateTime(rs, "updatedDate").toLocalDateTime();
+            final DateTime createdDateTime = JdbcSupport.getDateTime(rs, "createdDate");
+            final LocalDateTime createdDate = createdDateTime == null ? null: createdDateTime.toLocalDateTime();
+            final DateTime updatedDateTime = JdbcSupport.getDateTime(rs, "updatedDate");
+            final LocalDateTime updatedDate = updatedDateTime == null ? null:JdbcSupport.getDateTime(rs, "updatedDate").toLocalDateTime();
             final LocalDate date = JdbcSupport.getLocalDate(rs, "date");
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
             final BigDecimal totalAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "total");

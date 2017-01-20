@@ -44,5 +44,7 @@ public interface SchedulerJobRunnerReadService {
     public boolean isActive(String jobName);
     
     public Map<String,String>  getJobParams(Long jobId);
+    
+    public Map<String,String>  getJobParams(String jobName);
 
 }

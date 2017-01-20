@@ -25,6 +25,7 @@ import static org.apache.fineract.accounting.accrual.api.AccrualAccountingConsta
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.accounting.accrual.serialization.AccrualAccountingDataValidator;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -32,8 +33,10 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.jobs.service.SchedularWritePlatformService;
+import org.apache.fineract.infrastructure.jobs.service.SchedulerJobRunnerReadService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,13 +48,16 @@ public class AccrualAccountingWritePlatformServiceImpl implements AccrualAccount
     private final LoanAccrualPlatformService loanAccrualPlatformService;
     private final AccrualAccountingDataValidator accountingDataValidator;
     private final SchedularWritePlatformService schedularWritePlatformService;
+    private final SchedulerJobRunnerReadService schedulerJobRunnerReadService;
 
     @Autowired
     public AccrualAccountingWritePlatformServiceImpl(final LoanAccrualPlatformService loanAccrualPlatformService,
-            final AccrualAccountingDataValidator accountingDataValidator, final SchedularWritePlatformService schedularWritePlatformService) {
+            final AccrualAccountingDataValidator accountingDataValidator, final SchedularWritePlatformService schedularWritePlatformService,
+            final SchedulerJobRunnerReadService schedulerJobRunnerReadService) {
         this.loanAccrualPlatformService = loanAccrualPlatformService;
         this.accountingDataValidator = accountingDataValidator;
         this.schedularWritePlatformService = schedularWritePlatformService;
+        this.schedulerJobRunnerReadService = schedulerJobRunnerReadService;
     }
 
     @Override
@@ -70,6 +76,8 @@ public class AccrualAccountingWritePlatformServiceImpl implements AccrualAccount
         // if the current running status updated which means system is not
         // running this job so we will start the job
         if (updated) {
+            Map<String,String> jobParams = this.schedulerJobRunnerReadService.getJobParams(JobName.ADD_PERIODIC_ACCRUAL_ENTRIES.toString());
+            ThreadLocalContextUtil.setJobParams(jobParams);
             String errorlog = this.loanAccrualPlatformService.addPeriodicAccruals(tilldate, list);
             this.schedularWritePlatformService.updateCurrentlyRunningStatus(JobName.ADD_PERIODIC_ACCRUAL_ENTRIES.toString(), false);
 
