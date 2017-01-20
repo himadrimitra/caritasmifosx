@@ -123,6 +123,7 @@ import org.apache.fineract.useradministration.data.AppUserData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -1643,8 +1644,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                             bankNumber);
                 }
             }
-            final LocalDate createdDate = JdbcSupport.getLocalDate(rs, "createdDate");
-			final LocalDate updatedDate = JdbcSupport.getLocalDate(rs, "updatedDate");
+            final LocalDateTime createdDate = JdbcSupport.getDateTime(rs, "createdDate").toLocalDateTime();
+			final LocalDateTime updatedDate = JdbcSupport.getDateTime(rs, "updatedDate").toLocalDateTime();
             final LocalDate date = JdbcSupport.getLocalDate(rs, "date");
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
             final BigDecimal totalAmount = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "total");
