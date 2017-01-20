@@ -47,6 +47,8 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     private final PaginationHelper<JobDetailHistoryData> paginationHelper = new PaginationHelper<>();
     
     private final String jobParamSql = "select jp.param_key as paramKey,jp.param_value as paramValue from  job_parameters jp where jp.job_id = ?";
+    
+    private final String jobParamSqlByJobName = "select jp.param_key as paramKey,jp.param_value as paramValue from job j join  job_parameters jp on jp.job_id = j.id where j.name = ?";
 
     @Autowired
     public SchedulerJobRunnerReadServiceImpl(final RoutingDataSource dataSource) {
@@ -214,6 +216,18 @@ public class SchedulerJobRunnerReadServiceImpl implements SchedulerJobRunnerRead
     public Map<String, String> getJobParams(Long jobId) {
         Map<String, String> paramMap = new HashMap<>();
         List<Map<String, Object>> params = this.jdbcTemplate.queryForList(jobParamSql, jobId);
+        for (Map<String, Object> paramData : params) {
+            String key = (String) paramData.get("paramKey");
+            String paramValue = (String) paramData.get("paramValue");
+            paramMap.put(key, paramValue);
+        }
+        return paramMap;
+    }
+
+    @Override
+    public Map<String, String> getJobParams(String jobName) {
+        Map<String, String> paramMap = new HashMap<>();
+        List<Map<String, Object>> params = this.jdbcTemplate.queryForList(jobParamSqlByJobName, jobName);
         for (Map<String, Object> paramData : params) {
             String key = (String) paramData.get("paramKey");
             String paramValue = (String) paramData.get("paramValue");
