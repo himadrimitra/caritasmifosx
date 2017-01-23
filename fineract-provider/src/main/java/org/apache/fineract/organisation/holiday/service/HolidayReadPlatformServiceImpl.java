@@ -35,7 +35,6 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.holiday.data.HolidayData;
 import org.apache.fineract.organisation.holiday.domain.RescheduleType;
 import org.apache.fineract.organisation.holiday.exception.HolidayNotFoundException;
-import org.apache.fineract.organisation.workingdays.domain.RepaymentScheduleUpdationType;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -63,7 +62,7 @@ public class HolidayReadPlatformServiceImpl implements HolidayReadPlatformServic
             final StringBuilder sqlBuilder = new StringBuilder(200);
             sqlBuilder.append("h.id as id, h.name as name, h.description as description, h.from_date as fromDate, h.to_date as toDate, ");
             sqlBuilder.append("h.repayments_rescheduled_to as repaymentsScheduleTO, h.status_enum as statusEnum, ");
-            sqlBuilder.append("h.extend_repayment_schedule AS isExtendRepaymentReschedule ");
+            sqlBuilder.append("h.extend_repayment_schedule AS isExtendRepaymentReschedule,h.resheduling_type As repaymentSchedulingType ");
             sqlBuilder.append("from m_holiday h ");
             this.schema = sqlBuilder.toString();
         }
@@ -83,8 +82,9 @@ public class HolidayReadPlatformServiceImpl implements HolidayReadPlatformServic
             final Integer statusEnum = JdbcSupport.getInteger(rs, "statusEnum");
             final EnumOptionData status = HolidayEnumerations.holidayStatusType(statusEnum);
             final Long isExtendRepaymentReschedule = rs.getLong("isExtendRepaymentReschedule");
+            final Integer repaymentSchedulingType = JdbcSupport.getInteger(rs, "repaymentSchedulingType");
 
-            return new HolidayData(id, name, description, fromDate, toDate, repaymentsScheduleTO, status, isExtendRepaymentReschedule);
+            return new HolidayData(id, name, description, fromDate, toDate, repaymentsScheduleTO, status, isExtendRepaymentReschedule, repaymentSchedulingType);
         }
 
     }
@@ -140,14 +140,12 @@ public class HolidayReadPlatformServiceImpl implements HolidayReadPlatformServic
         }
     }
     
-    @SuppressWarnings("unused")
 	@Override
     public List<EnumOptionData> retrieveRepaymentScheduleUpdationTyeOptions(){
-        List<EnumOptionData> repSchUpdationTypeOptions = new ArrayList<EnumOptionData>(RescheduleType.values().length);
-        for (RescheduleType repSchUpdationType : RescheduleType.values()) {
-            repSchUpdationTypeOptions.add(new EnumOptionData(repSchUpdationType.getValue().longValue(),
-                    repSchUpdationType.getCode(), repSchUpdationType.name()));
-        }
+        
+        final List<EnumOptionData> repSchUpdationTypeOptions = Arrays.asList(
+                HolidayEnumerations.rescheduleType(RescheduleType.RESCHEDULETOSPECIFICDATE),
+                HolidayEnumerations.rescheduleType(RescheduleType.RESCHEDULETONEXTREPAYMENTDATE));
         return repSchUpdationTypeOptions;
     }
 

@@ -33,6 +33,7 @@ public enum RescheduleType {
 	public boolean isResheduleToNextRepaymentDate(){
 		return this.value.equals(RescheduleType.RESCHEDULETONEXTREPAYMENTDATE.getValue());
 	}
+
 	
 	public Integer getValue() {
 		return this.value;
