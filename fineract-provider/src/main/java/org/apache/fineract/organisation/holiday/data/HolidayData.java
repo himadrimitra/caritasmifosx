@@ -41,9 +41,9 @@ public class HolidayData {
     private final EnumOptionData status;
     @SuppressWarnings("unused")
     private final Long isExtendRepaymentReschedule;
-
+    private final Integer repaymentSchedulingType;
     public HolidayData(final Long id, final String name, final String description, final LocalDate fromDate, final LocalDate toDate,
-            final LocalDate repaymentsRescheduledTo, final EnumOptionData status, final Long isExtendRepaymentReschedule) {
+            final LocalDate repaymentsRescheduledTo, final EnumOptionData status, final Long isExtendRepaymentReschedule, final Integer repaymentSchedulingType) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -53,5 +53,6 @@ public class HolidayData {
         this.officeId = null;
         this.status = status;
         this.isExtendRepaymentReschedule = isExtendRepaymentReschedule;
+        this.repaymentSchedulingType= repaymentSchedulingType;
     }
 }
