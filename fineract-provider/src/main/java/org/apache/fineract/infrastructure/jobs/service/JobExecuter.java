@@ -8,6 +8,9 @@ import java.util.TreeMap;
 
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -98,17 +101,26 @@ public class JobExecuter {
         final T jobDetail;
         final JobRunner<T> jobRunner;
         final StringBuilder sb;
+        final Authentication auth;
 
         public JobRunnerThread(final JobRunner<T> jobRunner, final T jobDetail, final StringBuilder sb) {
             this.tenant = ThreadLocalContextUtil.getTenant();
             this.jobRunner = jobRunner;
             this.jobDetail = jobDetail;
             this.sb = sb;
+            if(SecurityContextHolder.getContext() == null){
+                this.auth = null;
+            } else {
+                this.auth = SecurityContextHolder.getContext().getAuthentication();
+            }
         }
 
         @Override
         public void run() {
             ThreadLocalContextUtil.setTenant(tenant);
+            if (this.auth != null) {
+                SecurityContextHolder.getContext().setAuthentication(this.auth);
+            }
             this.jobRunner.runJob(this.jobDetail, this.sb);
         }
 
