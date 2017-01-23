@@ -6,6 +6,8 @@ package com.finflux.task.data;
 public enum TaskConfigKey {
     CLIENT_ID("clientId"), //
     CENETR_ID("centerId"), //
+    GROUP_ID("groupId"), //
+    VILLAGE_ID("villageId"), //
     OFFICE_ID("officeId"), //
     LOANAPPLICATION_ID("loanApplicationId"), //
     DATATABLE_NAME("datatablename"), //
