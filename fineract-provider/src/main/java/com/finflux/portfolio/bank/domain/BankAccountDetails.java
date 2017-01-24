@@ -99,6 +99,16 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(BankAccountDetailConstants.emailParameterName, newValue);
             this.email = StringUtils.defaultIfEmpty(newValue, null);
         }
+        if (command.isChangeInStringParameterNamed(BankAccountDetailConstants.bankNameParameterName, this.bankName)) {
+            final String newValue = command.stringValueOfParameterNamed(BankAccountDetailConstants.bankNameParameterName);
+            actualChanges.put(BankAccountDetailConstants.bankNameParameterName, newValue);
+            this.bankName = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        if (command.isChangeInStringParameterNamed(BankAccountDetailConstants.bankCityParameterName, this.bankCity)) {
+            final String newValue = command.stringValueOfParameterNamed(BankAccountDetailConstants.bankCityParameterName);
+            actualChanges.put(BankAccountDetailConstants.bankCityParameterName, newValue);
+            this.bankCity = StringUtils.defaultIfEmpty(newValue, null);
+        }
 
         return actualChanges;
     }
