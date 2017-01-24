@@ -13,7 +13,10 @@ public enum TaskConfigKey {
     DATATABLE_NAME("datatablename"), //
     SURVEY_ID("surveyId"), //
     TITLE("title"), //
-    BODY("body");
+    BODY("body"),
+    BANK_TRANSACTION_ID("bankTransactionId"),
+    LOAN_ID("loanId"),
+    LOAN_TRANSACTION_ID("loanTransactionId");
 
     private String value;
 

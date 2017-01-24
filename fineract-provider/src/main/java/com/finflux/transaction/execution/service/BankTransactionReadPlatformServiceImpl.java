@@ -3,9 +3,9 @@ package com.finflux.transaction.execution.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
-import com.finflux.transaction.execution.data.BankTransactionEntityType;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 import com.finflux.portfolio.bank.domain.BankAccountDetailStatus;
 import com.finflux.transaction.execution.data.BankTransactionDetail;
+import com.finflux.transaction.execution.data.BankTransactionEntityType;
 import com.finflux.transaction.execution.data.TransactionStatus;
 import com.finflux.transaction.execution.data.TransferType;
 
@@ -86,7 +87,10 @@ public class BankTransactionReadPlatformServiceImpl
 			StringBuilder sb = new StringBuilder();
 			sb.append(" bat.id as transactionId,bat.entity_type as entityType,bat.entity_id as entityId, ");
 			sb.append(" bat.entity_transaction_id as entityTxnId,bat.amount as amount,bat.status as status, ");
-			sb.append(" bat.transfer_type as transferType, ");
+			sb.append(" bat.transfer_type as transferType, bat.reference_number as referenceNumber, ");
+			sb.append(" bat.utr_number as utrNumber, bat.po_number as poNumber, ");
+			sb.append(" bat.error_code as errorCode, bat.error_message as errorMessage, ");
+			sb.append(" bat.transaction_date as transactionDate, ");
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
 			sb.append(" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
@@ -113,6 +117,12 @@ public class BankTransactionReadPlatformServiceImpl
 			final BigDecimal amount = rs.getBigDecimal("amount");
 			final Integer status = rs.getInt("status");
 			final Integer transferType = rs.getInt("transferType");
+			final String referenceNumber = rs.getString("referenceNumber");
+			final String utrNumber = rs.getString("utrNumber");
+			final String poNumber = rs.getString("poNumber");
+			final String errorCode = rs.getString("errorCode");
+			final String errorMessage = rs.getString("errorMessage");
+			final Date transactionDate = rs.getTimestamp("transactionDate");
 
 			final Long debitAccountid = rs.getLong("debitAccountid");
 			final String debitAccountName = rs.getString("debitAccountName");
@@ -151,7 +161,8 @@ public class BankTransactionReadPlatformServiceImpl
 					transactionId, debitAccount, beneficiaryAccount,
 					entityType, entityId, entityTxnId, amount, TransferType
 							.fromInt(transferType).getEnumOptionData(),
-					TransactionStatus.fromInt(status).getEnumOptionData());
+					TransactionStatus.fromInt(status).getEnumOptionData(),
+					referenceNumber, utrNumber, poNumber, errorCode, errorMessage,transactionDate);
 
 			return accountTransactionDetail;
 		}

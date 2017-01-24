@@ -52,24 +52,24 @@ public class RBLSinglePaymentStatusRequest {
 		@JsonProperty("Approver_ID")
 		private String approverId;
 
-		public Header(String transactionId, String corpId, String makerId,
-				String checkerId, String approverId) {
+		public Header(String transactionId, String corpId, Long makerId,
+				Long checkerId, Long approverId) {
 			this.transactionId = transactionId;
 			this.corpId = corpId;
 			if (makerId == null) {
 				this.makerId = "";
 			} else {
-				this.makerId = makerId;
+				this.makerId = makerId.toString();
 			}
 			if (checkerId == null) {
 				this.checkerId = "";
 			} else {
-				this.checkerId = checkerId;
+				this.checkerId = checkerId.toString();
 			}
 			if (approverId == null) {
 				this.approverId = "";
 			} else {
-				this.approverId = approverId;
+				this.approverId = approverId.toString();
 			}
 		}
 

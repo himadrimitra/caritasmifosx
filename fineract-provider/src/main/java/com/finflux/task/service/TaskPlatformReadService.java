@@ -7,12 +7,7 @@ import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.data.RoleData;
 
-import com.finflux.task.data.TaskActionLogData;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.data.TaskExecutionData;
-import com.finflux.task.data.TaskInfoData;
-import com.finflux.task.data.TaskNoteData;
-import com.finflux.task.data.TaskTemplateData;
+import com.finflux.task.data.*;
 
 public interface TaskPlatformReadService {
 
@@ -36,6 +31,8 @@ public interface TaskPlatformReadService {
     List<TaskNoteData> getTaskNotes(Long taskId);
 
     List<TaskActionLogData> getActionLogs(Long taskId);
+
+    TaskMakerCheckerData getMakerCheckerData(Long taskId);
 
 	List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId);
 }

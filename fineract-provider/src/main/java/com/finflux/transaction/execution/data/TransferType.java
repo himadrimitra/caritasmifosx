@@ -1,9 +1,9 @@
 package com.finflux.transaction.execution.data;
 
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 /**
  * Created by dhirendra on 23/11/16.
@@ -15,10 +15,12 @@ public enum TransferType {
     RTGS(4, "transactionType.rtgs");
 
 	private static final Map<Integer, TransferType> intToEnumMap = new HashMap<>();
+	private static final Map<String, TransferType> stringToEnumMap = new HashMap<>();
 
 	static {
 		for (final TransferType type : TransferType.values()) {
 			intToEnumMap.put(type.value, type);
+			stringToEnumMap.put(type.name().toLowerCase(),type);
 		}
 	}
 
@@ -35,8 +37,16 @@ public enum TransferType {
 		return type;
 	}
 
+	public static TransferType fromString(final String str) {
+		if(str == null){
+			return  null;
+		}
+		final TransferType type = stringToEnumMap.get(str.toLowerCase());
+		return type;
+	}
+
 	public EnumOptionData getEnumOptionData() {
-		return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.toString());
+		return new EnumOptionData(this.getValue().longValue(), this.getCode(), this.name().toLowerCase());
 	}
 
 
