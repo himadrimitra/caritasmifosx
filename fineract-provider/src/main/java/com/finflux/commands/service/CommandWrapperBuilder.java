@@ -5,12 +5,12 @@
  */
 package com.finflux.commands.service;
 
-import com.finflux.task.data.TaskActionType;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 
 import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.finflux.reconcilation.ReconciliationApiConstants;
+import com.finflux.task.data.TaskActionType;
 
 public class CommandWrapperBuilder {
 
@@ -277,6 +277,14 @@ public class CommandWrapperBuilder {
         this.entityName = "BANK_TRANSACTION";
         this.entityId = transactionId;
         this.href = "/banktransaction/" + transactionId + "?command=submit&template=true";
+        return this;
+    }
+
+    public CommandWrapperBuilder retryBankTransaction(Long transactionId) {
+        this.actionName = "RETRY";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=retry&template=true";
         return this;
     }
 

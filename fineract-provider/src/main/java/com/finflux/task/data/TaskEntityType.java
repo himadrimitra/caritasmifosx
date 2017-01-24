@@ -11,7 +11,8 @@ public enum TaskEntityType {
 
     INVALID(0, "taskEntityType.invalid","invalid"), //
     LOAN_APPLICATION(1, "taskEntityType.loanapplication", "loanApplication"), //
-    ADHOC(2, "taskEntityType.adhoc","adhoc");//
+    ADHOC(2, "taskEntityType.adhoc","adhoc"),
+    BANK_TRANSACTION(3, "taskEntityType.banktransaction","bankTransaction");//
 
     private final Integer value;
     private final String code;

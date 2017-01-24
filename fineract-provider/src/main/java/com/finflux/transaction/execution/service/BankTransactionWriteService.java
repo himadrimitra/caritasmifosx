@@ -1,13 +1,15 @@
 package com.finflux.transaction.execution.service;
 
-import com.finflux.transaction.execution.domain.BankAccountTransaction;
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+
+import com.finflux.transaction.execution.domain.BankAccountTransaction;
 
 public interface BankTransactionWriteService {
 
     CommandProcessingResult initiateTransaction(Long transactionId);
 
-    CommandProcessingResult submitTransaction(Long transactionId);
+    CommandProcessingResult submitTransaction(Long transactionId, JsonCommand command);
 
     Long createTransactionEntry(BankAccountTransaction bankAccountTransaction);
 

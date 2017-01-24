@@ -8,22 +8,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.finflux.transaction.execution.service.BankTransactionWriteService;
+import com.finflux.transaction.execution.service.RetryBankTransactionServiceFactory;
 
 @Service
-@CommandType(entity = "BANK_TRANSACTION", action = "SUBMIT")
-public class SubmitBankTransactionCommandHandler implements NewCommandSourceHandler {
+@CommandType(entity = "BANK_TRANSACTION", action = "RETRY")
+public class RetryBankTransactionCommandHandler implements NewCommandSourceHandler {
 
-    private final BankTransactionWriteService bankTransactionWriteService;
+    private final RetryBankTransactionServiceFactory retryBankTransactionServiceFactory;
 
     @Autowired
-    public SubmitBankTransactionCommandHandler(final BankTransactionWriteService bankTransactionWriteService) {
-        this.bankTransactionWriteService = bankTransactionWriteService;
+    public RetryBankTransactionCommandHandler(final RetryBankTransactionServiceFactory retryBankTransactionServiceFactory) {
+        this.retryBankTransactionServiceFactory = retryBankTransactionServiceFactory;
     }
 
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.bankTransactionWriteService.submitTransaction(command.entityId(), command);
+        return this.retryBankTransactionServiceFactory.retryBankTransaction(command.entityId());
     }
 }

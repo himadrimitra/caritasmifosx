@@ -1,22 +1,23 @@
 package com.finflux.transaction.execution.provider;
 
+import java.math.BigDecimal;
+
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 import com.finflux.transaction.execution.data.BankTransactionResponse;
 import com.finflux.transaction.execution.data.TransferType;
-
-import java.math.BigDecimal;
 
 /**
  * Created by dhirendra on 23/08/16.
  */
 public interface BankTransferService {
 
-    BankTransactionResponse doTransaction(String internalTxnId, BigDecimal amount, String reason, BankAccountDetailData debitAccount,
+    BankTransactionResponse doTransaction(Long internalTxnId, BigDecimal amount, String reason, BankAccountDetailData debitAccount,
                                           BankAccountDetailData beneficiaryAccount, TransferType transferType, String debitParticulars, String debitremarks,
-                                          String beneficiaryParticulars, String beneficiaryRemarks);
+                                          String beneficiaryParticulars, String beneficiaryRemarks, Long makerId, Long checkerId,
+                                          Long approverId);
 
-    BankTransactionResponse getTransactionStatus(String internalTxnId, String referenceNumber, String makerId, String checkerId,
-                                                 String approverId);
+    BankTransactionResponse getTransactionStatus(Long internalTxnId, String referenceNumber, Long makerId, Long checkerId,
+                                                 Long approverId);
 
     void getStatus(String externalTxnId);
 

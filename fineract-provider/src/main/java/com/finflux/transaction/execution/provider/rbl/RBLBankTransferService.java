@@ -6,30 +6,33 @@ import java.math.BigDecimal;
 import java.security.KeyStore;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.finflux.infrastructure.external.requestreponse.data.ThirdPartyRequestEntityType;
+import com.finflux.infrastructure.external.requestreponse.service.ThirdPartyRequestResponseWritePlatformService;
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 import com.finflux.transaction.execution.data.BankTransactionResponse;
 import com.finflux.transaction.execution.data.BasicHttpResponse;
@@ -44,6 +47,7 @@ import com.finflux.transaction.execution.provider.rbl.response.RBLFundTransferRe
 import com.finflux.transaction.execution.provider.rbl.response.RBLFundTransferStatusResponse;
 import com.finflux.transaction.execution.provider.rbl.response.RBLSinglePaymentResponse;
 import com.finflux.transaction.execution.provider.rbl.response.RBLSinglePaymentStatusResponse;
+import com.google.gson.Gson;
 
 /**
  * Created by dhirendra on 23/11/16.
@@ -53,9 +57,6 @@ public class RBLBankTransferService implements BankTransferService {
 	private final static Logger logger = LoggerFactory
 			.getLogger(RBLBankTransferService.class);
 
-	private static final List<TransferType> SUPPORTED_TRANSFERS = Arrays
-			.asList(new TransferType[]{TransferType.FT, TransferType.IMPS,
-					TransferType.NEFT, TransferType.RTGS});
 	private static final NumberFormat formatter = new DecimalFormat("#0.00");
 	private static final String STATUS_SUCCESS = "success";
 	private static final String RESPONSECODE_SUCCESS = "00";
@@ -84,9 +85,11 @@ public class RBLBankTransferService implements BankTransferService {
 	private final String authorizationCode;
 	private final String clientId;
 	private final String clientSecret;
+	private final Gson gson = new Gson();
 	private String validationResource;
 	private RestTemplate restTemplate;
 	private Boolean isConfigured = false;
+	private final ThirdPartyRequestResponseWritePlatformService requestResponseLogWriter;
 
 	// String rblEndPoint = "https://apideveloper.rblbank.com";
 	// String doSingleTxnResource = "/test/sb/rbl/v1/payments/corp/payment";
@@ -94,11 +97,13 @@ public class RBLBankTransferService implements BankTransferService {
 	// String clientSecret =
 	// "jK0aC3pQ3tG7mG1lY7eF1tV0nI5sO8vE1rN6xB2tT8vN7uG2lH";
 
-	private RBLBankTransferService(String clientId, String clientSecret,
+	private RBLBankTransferService(ThirdPartyRequestResponseWritePlatformService requestResponseLogWriter,
+								   String clientId, String clientSecret,
 			String user, String password, String keystorePath,
 			String keyStorePassword, String rblEndPoint,
 			String doSingleTxnResource, String doSingleTxnStatusResource,
 			String rptCode, String corporateId) {
+		this.requestResponseLogWriter = requestResponseLogWriter;
 		this.clientId = clientId;
 		this.clientSecret = clientSecret;
 		String authUser = user + ":" + password;
@@ -134,8 +139,9 @@ public class RBLBankTransferService implements BankTransferService {
 		}
 	}
 
-	public static RBLBankTransferService getInstance(Map<String, String> keyValueMap) {
-		return new RBLBankTransferService(keyValueMap.get(KEY_CLIENT_ID),
+	public static RBLBankTransferService getInstance(Map<String, String> keyValueMap,
+													 ThirdPartyRequestResponseWritePlatformService thirdPartyRequestResponseWritePlatformService) {
+		return new RBLBankTransferService(thirdPartyRequestResponseWritePlatformService, keyValueMap.get(KEY_CLIENT_ID),
 				keyValueMap.get(KEY_CLIENT_SECRET), keyValueMap.get(KEY_USER),
 				keyValueMap.get(KEY_PASSWORD),
 				keyValueMap.get(KEY_KEYSTORE_PATH),
@@ -148,20 +154,23 @@ public class RBLBankTransferService implements BankTransferService {
 	}
 
 	@Override
-	public BankTransactionResponse doTransaction(String internalTxnId,
+	public BankTransactionResponse doTransaction(Long internalBankTransactionId,
 												 BigDecimal amount, String reason,
 												 BankAccountDetailData debitAccount,
 												 BankAccountDetailData beneficiaryAccount,
 												 TransferType transferType, String debitParticulars,
 												 String debitremarks, String beneficiaryParticulars,
-												 String beneficiaryRemarks) {
+												 String beneficiaryRemarks, Long makerUserId,
+												 Long checkerUserId, Long approverUserId) {
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 		headers.add("Authorization", "Basic " + authorizationCode);
 		headers.add("Content-Type", "application/json");
 
+		String internalTransactionReference = corporateId.substring(0,3)+internalBankTransactionId;
+
 		RBLSinglePaymentRequest.Header header = new RBLSinglePaymentRequest.Header(
-				corporateId.substring(0,3)+internalTxnId, corporateId, null, null, null);
+				internalTransactionReference, corporateId, makerUserId, checkerUserId, approverUserId);
 
 		RBLSinglePaymentRequest.Body body = new RBLSinglePaymentRequest.Body(
 				formatter.format(amount), debitAccount.getAccountNumber(),
@@ -198,85 +207,114 @@ public class RBLBankTransferService implements BankTransferService {
 		BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
 		TransactionStatus txnStatus = TransactionStatus.ERROR;
 		String referenceNumber = null;
-
+		String utrNumber = null;
+		String poNumber = null;
+		String responseBody = null;
+		DateTime txnTime = null;
+		HttpStatus responseHttpStatus = null;
+		HttpHeaders responseHttpHeaders = null;
+		StopWatch stopWatch = new StopWatch();
+		String completeUrl = rblEndPoint + builder.build().toUriString();
+		Long requestLogId = requestResponseLogWriter.registerRequest(ThirdPartyRequestEntityType.BANKTRANSACTION,internalBankTransactionId,
+				HttpMethod.POST,rblEndPoint+doSingleTxnResource,gson.toJson(rblFundTransferRequest));
+		stopWatch.start();
 		try {
 			ResponseEntity<RBLFundTransferResponse> response = restTemplate
-					.postForEntity(rblEndPoint + builder.build().toUriString(),
+					.exchange(completeUrl, HttpMethod.POST,
 							request, RBLFundTransferResponse.class);
 
-			if (response != null & response.getBody() != null) {
-				basicHttpResponse.setHttpStatusCode(response.getStatusCode()
-						.toString());
-				RBLSinglePaymentResponse paymentResponse = response.getBody()
-						.getPaymentResponse();
+			stopWatch.stop();
+			responseBody = gson.toJson(response.getBody());
+			responseHttpHeaders = response.getHeaders();
+			responseHttpStatus = response.getStatusCode();
 
-				String requestStatus = null;
-				String responseCode = null;
+			basicHttpResponse.setHttpStatusCode(response.getStatusCode()
+					.toString());
+			RBLSinglePaymentResponse paymentResponse = response.getBody()
+					.getPaymentResponse();
 
-				if (paymentResponse != null) {
-					if (paymentResponse.getHeader() != null) {
-						requestStatus = paymentResponse.getHeader().getStatus();
-						responseCode = paymentResponse.getHeader().getResponseCode();
-						basicHttpResponse.setErrorCode(paymentResponse
-								.getHeader().getErrorCode());
-						basicHttpResponse.setErrorMessage(paymentResponse
-								.getHeader().getErrorDescription());
-					}
-					if (paymentResponse.getBody() != null) {
-						referenceNumber = paymentResponse.getBody()
-								.getReferenceNumber();
+			String requestStatus = null;
+			String responseCode = null;
+
+			if (paymentResponse != null) {
+				if (paymentResponse.getHeader() != null) {
+					requestStatus = paymentResponse.getHeader().getStatus();
+					responseCode = paymentResponse.getHeader().getResponseCode();
+					basicHttpResponse.setErrorCode(paymentResponse
+							.getHeader().getErrorCode());
+					basicHttpResponse.setErrorMessage(paymentResponse
+							.getHeader().getErrorDescription());
+				}
+				if (paymentResponse.getBody() != null) {
+					referenceNumber = paymentResponse.getBody()
+							.getReferenceNumber();
+					utrNumber = paymentResponse.getBody().getUtrNumber();
+					poNumber = paymentResponse.getBody().getPoNumber();
+					if(paymentResponse.getBody().getTxnTime()!=null){
+						txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(),
+								DateTimeFormat.forPattern("yyyy-MM-dd hh:mm:ss.S"));
 					}
 				}
-
-				if (StringUtils.isNotEmpty(referenceNumber)){
-					basicHttpResponse.setSuccess(true);
-					if(STATUS_FAILED.equalsIgnoreCase(requestStatus) || STATUS_FAILURE.equalsIgnoreCase(requestStatus)) {
-						txnStatus = TransactionStatus.FAILED;
-					}else if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
-						if (StringUtils.isNotEmpty(responseCode)){
-							if(RESPONSECODE_SUCCESS.equalsIgnoreCase(responseCode)){
-								txnStatus = TransactionStatus.SUCCESS;
-							}else{
-								txnStatus = TransactionStatus.PENDING;
-							}
-						}else {
-							txnStatus = TransactionStatus.SUCCESS;
-						}
-					}else {
+			}
+			basicHttpResponse.setSuccess(true);
+			if(STATUS_FAILED.equalsIgnoreCase(requestStatus) || STATUS_FAILURE.equalsIgnoreCase(requestStatus)) {
+				txnStatus = TransactionStatus.FAILED;
+			}else if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
+				if (StringUtils.isNotEmpty(responseCode)){
+					if(RESPONSECODE_SUCCESS.equalsIgnoreCase(responseCode)){
+						txnStatus = TransactionStatus.SUCCESS;
+					}else{
 						txnStatus = TransactionStatus.PENDING;
 					}
-				} else {
-					basicHttpResponse.setSuccess(false);
+				}else {
+					txnStatus = TransactionStatus.SUCCESS;
 				}
-
-			} else {
-				basicHttpResponse.setErrorMessage("Empty Response");
+			}else {
+				txnStatus = TransactionStatus.PENDING;
 			}
 
+		} catch(HttpStatusCodeException e){
+			stopWatch.stop();
+			responseBody = e.getResponseBodyAsString();
+			responseHttpStatus = e.getStatusCode();
+			responseHttpHeaders = e.getResponseHeaders();
+			logger.warn("RBL Initiate Transaction  HttpStatusCodeException Exception", e);
+			basicHttpResponse.setSuccess(false);
 		} catch (RestClientException e) {
+			stopWatch.stop();
+			responseBody = e.getMessage();
 			basicHttpResponse.setErrorMessage(e.getMessage());
-			logger.warn("RBL DO Transaction Exception", e);
+			logger.warn("RBL Initiate Transaction RestClientException", e);
+			basicHttpResponse.setSuccess(false);
+		} catch(Exception e){
+			stopWatch.stop();
+			responseBody = e.getMessage();
+			logger.warn("RBL Initiate Transaction unknown exception", e);
+			basicHttpResponse.setSuccess(false);
 		}
+		final String loggableResponse = constructResponseString(responseHttpStatus, responseHttpHeaders,responseBody);
+		requestResponseLogWriter.registerResponse(requestLogId,loggableResponse,stopWatch.getTime(),
+				responseHttpStatus!=null?responseHttpStatus.value():null);
 
-		return new BankTransactionResponse(basicHttpResponse, internalTxnId,
-				referenceNumber, txnStatus);
+		return new BankTransactionResponse(basicHttpResponse, internalTransactionReference,
+				referenceNumber, txnStatus, utrNumber,poNumber, txnTime);
 	}
 
 	@Override
-	public BankTransactionResponse getTransactionStatus(String internalTxnId,
-														String referenceNumber, String makerId, String checkerId,
-														String approverId) {
+	public BankTransactionResponse getTransactionStatus(Long internalTxnId,
+														String referenceNumber, Long makerId, Long checkerId,
+														Long approverId) {
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 		headers.add("Authorization", "Basic " + authorizationCode);
 		headers.add("Content-Type", "application/json");
 
-		String transactionId = corporateId.substring(0,3)+internalTxnId;
+		String internalTransactionReference = corporateId.substring(0,3)+internalTxnId;
 		RBLSinglePaymentStatusRequest.Header header = new RBLSinglePaymentStatusRequest.Header(
-				transactionId, corporateId, makerId, checkerId, approverId);
+				internalTransactionReference, corporateId, makerId, checkerId, approverId);
 
 		if(StringUtils.isEmpty(referenceNumber)){
-			referenceNumber = "SP"+corporateId+transactionId;
+			referenceNumber = "SP"+corporateId+internalTransactionReference;
 		}
 		RBLSinglePaymentStatusRequest.Body body = new RBLSinglePaymentStatusRequest.Body(
 				referenceNumber);
@@ -304,77 +342,139 @@ public class RBLBankTransferService implements BankTransferService {
 		BasicHttpResponse basicHttpResponse = new BasicHttpResponse();
 		TransactionStatus txnStatus = TransactionStatus.ERROR;
 
+		String utrNumber = null;
+		String poNumber = null;
+		DateTime txnTime = null;
+
+		String completeUrl = rblEndPoint + builder.build().toUriString();
+		String responseBody = null;
+		HttpStatus responseHttpStatus = null;
+		HttpHeaders responseHttpHeaders = null;
+		StopWatch stopWatch = new StopWatch();
+		Long requestLogId = requestResponseLogWriter.registerRequest(ThirdPartyRequestEntityType.BANKTRANSACTION,internalTxnId,
+				HttpMethod.POST,rblEndPoint+doSingleTxnResource,gson.toJson(rblFundTransferStatusRequest));
+		stopWatch.start();
 		try {
 			ResponseEntity<RBLFundTransferStatusResponse> response = restTemplate
-					.postForEntity(rblEndPoint + builder.build().toUriString(),
+					.exchange(completeUrl,HttpMethod.POST,
 							request, RBLFundTransferStatusResponse.class);
 
-			if (response != null & response.getBody() != null) {
-				basicHttpResponse.setHttpStatusCode(response.getStatusCode()
-						.toString());
-				RBLSinglePaymentStatusResponse paymentResponse = response
-						.getBody().getpaymentStatusResponse();
+			stopWatch.stop();
+			responseBody = gson.toJson(response.getBody());
+			responseHttpHeaders = response.getHeaders();
+			responseHttpStatus = response.getStatusCode();
 
-				String requestStatus = null;
-				String txnStatusStr = null;
-				String paymentStatus = null;
+			basicHttpResponse.setHttpStatusCode(response.getStatusCode()
+					.toString());
+			RBLSinglePaymentStatusResponse paymentResponse = response
+					.getBody().getpaymentStatusResponse();
 
-				if (paymentResponse != null) {
-					if (paymentResponse.getHeader() != null) {
-						requestStatus = paymentResponse.getHeader().getStatus();
-						basicHttpResponse.setErrorCode(paymentResponse
-								.getHeader().getErrorCode());
-						basicHttpResponse.setErrorMessage(paymentResponse
-								.getHeader().getErrorDescription());
-					}
-					if (paymentResponse.getBody() != null) {
-						txnStatusStr = paymentResponse.getBody()
-								.getTransactionStatus();
-						paymentStatus = paymentResponse.getBody()
-								.getPaymentStatus();
+			String requestStatus = null;
+			String txnStatusStr = null;
+			String paymentStatus = null;
+			String errorCode = null;
+
+			if (paymentResponse != null) {
+				if (paymentResponse.getHeader() != null) {
+					requestStatus = paymentResponse.getHeader().getStatus();
+					errorCode = paymentResponse
+							.getHeader().getErrorCode();
+					basicHttpResponse.setErrorCode(errorCode);
+					basicHttpResponse.setErrorMessage(paymentResponse
+							.getHeader().getErrorDescription());
+				}
+				if (paymentResponse.getBody() != null) {
+					txnStatusStr = paymentResponse.getBody()
+							.getTransactionStatus();
+					paymentStatus = paymentResponse.getBody()
+							.getPaymentStatus();
+					utrNumber = paymentResponse.getBody().getUtrNumber();
+					poNumber = paymentResponse.getBody().getPoNumber();
+					if(paymentResponse.getBody().getTxnTime()!=null){
+						txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(),
+								DateTimeFormat.forPattern("yyyy-MM-dd hh:mm:ss.S"));
 					}
 				}
-
-				if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
-					basicHttpResponse.setSuccess(true);
-					if(StringUtils.isNotEmpty(txnStatusStr)) {
-						if (STATUS_SUCCESS.equalsIgnoreCase(txnStatusStr)) {
-							txnStatus = TransactionStatus.SUCCESS;
-						}else if (STATUS_FAILED.equalsIgnoreCase(txnStatusStr) || STATUS_FAILURE.equalsIgnoreCase(txnStatusStr)) {
-							txnStatus = TransactionStatus.FAILED;
-						}else if(STATUS_INPROGRESS.equalsIgnoreCase(txnStatusStr)){
-							txnStatus = TransactionStatus.PENDING;
-						}else {
-							txnStatus = TransactionStatus.PENDING;
-						}
-					}else if(StringUtils.isNotEmpty(paymentStatus)){
-						if (IMPS_STATUS_FAILURE.equalsIgnoreCase(paymentStatus)) {
-							txnStatus = TransactionStatus.FAILED;
-						}else if (IMPS_STATUS_SUCCESS.equalsIgnoreCase(paymentStatus)) {
-							txnStatus = TransactionStatus.SUCCESS;
-						}else {
-							txnStatus = TransactionStatus.PENDING;
-						}
-					}
-				} else {
-					basicHttpResponse.setSuccess(false);
-				}
-
-			} else {
-				basicHttpResponse.setErrorMessage("Empty Response");
 			}
 
-		} catch (RestClientException e) {
-			basicHttpResponse.setErrorMessage(e.getMessage());
-			logger.warn("RBL Get Transaction Status Exception", e);
-		}
+			basicHttpResponse.setSuccess(true);
 
-		return new BankTransactionResponse(basicHttpResponse, internalTxnId,
-				referenceNumber, txnStatus);
+			if (STATUS_SUCCESS.equalsIgnoreCase(requestStatus)) {
+				if (StringUtils.isNotEmpty(txnStatusStr)) {
+					if (STATUS_SUCCESS.equalsIgnoreCase(txnStatusStr)) {
+						txnStatus = TransactionStatus.SUCCESS;
+					} else if (STATUS_FAILED.equalsIgnoreCase(txnStatusStr) || STATUS_FAILURE.equalsIgnoreCase(txnStatusStr)) {
+						txnStatus = TransactionStatus.FAILED;
+					} else if (STATUS_INPROGRESS.equalsIgnoreCase(txnStatusStr)) {
+						txnStatus = TransactionStatus.PENDING;
+					} else {
+						txnStatus = TransactionStatus.PENDING;
+					}
+				} else if (StringUtils.isNotEmpty(paymentStatus)) {
+					if (IMPS_STATUS_FAILURE.equalsIgnoreCase(paymentStatus)) {
+						txnStatus = TransactionStatus.FAILED;
+					} else if (IMPS_STATUS_SUCCESS.equalsIgnoreCase(paymentStatus)) {
+						txnStatus = TransactionStatus.SUCCESS;
+					} else {
+						txnStatus = TransactionStatus.PENDING;
+					}
+				}
+			} else if(STATUS_FAILED.equalsIgnoreCase(requestStatus)){
+				if(RBLConstants.ERROR_CODE_ER009_RefNo_does_not_exist.equalsIgnoreCase(errorCode)){
+					txnStatus = TransactionStatus.FAILED;
+				}
+			}
+
+		} catch(HttpStatusCodeException e){
+			stopWatch.stop();
+			responseBody = e.getResponseBodyAsString();
+			responseHttpStatus = e.getStatusCode();
+			responseHttpHeaders = e.getResponseHeaders();
+			logger.warn("RBL  Get Transaction Status HttpStatusCodeException Exception", e);
+			basicHttpResponse.setSuccess(false);
+		} catch (RestClientException e) {
+			stopWatch.stop();
+			responseBody = e.getMessage();
+			basicHttpResponse.setErrorMessage(e.getMessage());
+			logger.warn("RBL Get Transaction Status RestClientException", e);
+			basicHttpResponse.setSuccess(false);
+		} catch(Exception e){
+			stopWatch.stop();
+			responseBody = e.getMessage();
+			logger.warn("RBL Get Transaction Status unknown exception", e);
+			basicHttpResponse.setSuccess(false);
+		}
+		final String loggableResponse = constructResponseString(responseHttpStatus, responseHttpHeaders,responseBody);
+		requestResponseLogWriter.registerResponse(requestLogId,loggableResponse,stopWatch.getTime(),
+				responseHttpStatus!=null?responseHttpStatus.value():null);
+		return new BankTransactionResponse(basicHttpResponse, internalTransactionReference,
+				referenceNumber, txnStatus, utrNumber, poNumber, txnTime);
 	}
 
 	@Override
 	public void getStatus(String externalTxnId) {
 
+	}
+
+	private String constructResponseString(final HttpStatus statusCode, final HttpHeaders headers,
+										   final String bodyStr) {
+		StringBuilder builder = new StringBuilder("<");
+		if(statusCode!=null) {
+			builder.append(statusCode.toString());
+			builder.append(' ');
+			builder.append(statusCode.getReasonPhrase());
+			builder.append(',');
+		}
+		if (bodyStr != null) {
+			builder.append(bodyStr);
+			if (headers != null) {
+				builder.append(',');
+			}
+		}
+		if (headers != null) {
+			builder.append(headers);
+		}
+		builder.append('>');
+		return builder.toString();
 	}
 }

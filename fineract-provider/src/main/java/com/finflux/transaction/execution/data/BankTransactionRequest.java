@@ -2,6 +2,8 @@ package com.finflux.transaction.execution.data;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.portfolio.client.domain.Client;
+
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 
 /**
@@ -17,8 +19,9 @@ public class BankTransactionRequest {
         private final Long entityTxnId;
         private final BigDecimal amount;
         private final String reason;
+        private final Client client;
 
-        public BankTransactionRequest(BankAccountDetailData debiter, BankAccountDetailData beneficiary,
+        public BankTransactionRequest(Client client, BankAccountDetailData debiter, BankAccountDetailData beneficiary,
 									  Integer entityTypeId, Long entityId, Long entityTxnId, BigDecimal amount,
 									  String reason, TransferType transferType) {
                 this.debiter = debiter;
@@ -29,11 +32,12 @@ public class BankTransactionRequest {
                 this.entityTxnId = entityTxnId;
                 this.amount = amount;
                 this.reason = reason;
+                this.client = client;
         }
 
-        public BankTransactionRequest(BankAccountDetailData debiter, BankAccountDetailData beneficiary,
+        public BankTransactionRequest(Client client, BankAccountDetailData debiter, BankAccountDetailData beneficiary,
 									  Integer entityTypeId, Long entityId, Long entityTxnId, BigDecimal amount, String reason) {
-                this(debiter, beneficiary, entityTypeId, entityId, entityTxnId, amount,reason,TransferType.NEFT);
+                this(client, debiter, beneficiary, entityTypeId, entityId, entityTxnId, amount,reason,TransferType.NEFT);
         }
 
         public BankAccountDetailData getDebiter() {
@@ -66,5 +70,9 @@ public class BankTransactionRequest {
 
         public String getReason() {
                 return reason;
+        }
+
+        public Client getClient() {
+                return client;
         }
 }
