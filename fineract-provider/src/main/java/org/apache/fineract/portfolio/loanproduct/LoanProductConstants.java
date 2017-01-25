@@ -141,6 +141,7 @@ public interface LoanProductConstants {
     public static final String isEmiBasedOnDisbursements = "isEmiBasedOnDisbursements" ;
     
     public static final String installmentCalculationPeriodTypeParamName = "installmentCalculationPeriodType";
+    public static final String brokenPeriodMethodTypeParamName = "brokenPeriodMethodType";
     
     public static final String canUseForTopup = "canUseForTopup";
     

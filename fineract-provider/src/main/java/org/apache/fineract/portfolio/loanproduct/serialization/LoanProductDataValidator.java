@@ -118,7 +118,8 @@ public final class LoanProductDataValidator {
             LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, 
             LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
             LoanProductConstants.adjustInterestForRoundingParamName, LoanProductConstants.isEmiBasedOnDisbursements,
-            LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName));
+            LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName,
+            LoanProductConstants.brokenPeriodMethodTypeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -743,6 +744,11 @@ public final class LoanProductDataValidator {
         final Integer installmentCalculationPeriodType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.installmentCalculationPeriodTypeParamName, element,
                 Locale.getDefault());
         baseDataValidator.reset().parameter(LoanProductConstants.installmentCalculationPeriodTypeParamName).value(installmentCalculationPeriodType).ignoreIfNull()
+                .inMinMaxRange(0, 1);
+        
+        final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.brokenPeriodMethodTypeParamName, element,
+                Locale.getDefault());
+        baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType).ignoreIfNull()
                 .inMinMaxRange(0, 1);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -1728,6 +1734,13 @@ public final class LoanProductDataValidator {
                     LoanProductConstants.installmentCalculationPeriodTypeParamName, element, Locale.getDefault());
             baseDataValidator.reset().parameter(LoanProductConstants.installmentCalculationPeriodTypeParamName)
                     .value(installmentCalculationPeriodType).ignoreIfNull().inMinMaxRange(0, 1);
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.brokenPeriodMethodTypeParamName, element)) {
+            final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanProductConstants.brokenPeriodMethodTypeParamName, element, Locale.getDefault());
+            baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType)
+                    .ignoreIfNull().inMinMaxRange(0, 1);
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

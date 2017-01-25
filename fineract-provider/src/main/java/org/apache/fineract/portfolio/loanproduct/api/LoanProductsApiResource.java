@@ -354,13 +354,15 @@ public class LoanProductsApiResource {
         final List<EnumOptionData> weeksInYearTypeOptions = this.dropdownReadPlatformService
                 .retrieveWeeksInYearTypeOptions();
         
+        final List<EnumOptionData> brokenPeriodMethodTypeOptions = this.dropdownReadPlatformService.retrieveBrokenPeriodMethodTypeOptions();
+        
         return new LoanProductData(productData, chargeOptions, penaltyOptions, paymentTypeOptions, currencyOptions,
                 amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions, repaymentFrequencyTypeOptions,
                 interestRateFrequencyTypeOptions, fundOptions, transactionProcessingStrategyOptions, accountOptions,
                 accountingRuleTypeOptions, loanCycleValueConditionTypeOptions, daysInMonthTypeOptions, daysInYearTypeOptions,
                 interestRecalculationCompoundingTypeOptions, rescheduleStrategyTypeOptions, interestRecalculationFrequencyTypeOptions,
                 preCloseInterestCalculationStrategyOptions, floatingRateOptions, interestRecalculationNthDayTypeOptions,
-                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment, codeValueOptions, weeksInYearTypeOptions);
+                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment, codeValueOptions, weeksInYearTypeOptions, brokenPeriodMethodTypeOptions);
     }
 
 }

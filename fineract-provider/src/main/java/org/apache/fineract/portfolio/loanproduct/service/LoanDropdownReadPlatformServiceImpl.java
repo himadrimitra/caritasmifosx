@@ -21,6 +21,8 @@ package org.apache.fineract.portfolio.loanproduct.service;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.amortizationType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestCalculationPeriodType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRateFrequencyType;
+import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingDayOfWeekType;
+import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingNthDayType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationFrequencyType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestType;
@@ -31,8 +33,6 @@ import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.repaymentFrequencyNthDayType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.repaymentFrequencyType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.rescheduleStrategyType;
-import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingNthDayType;
-import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingDayOfWeekType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,11 +43,10 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
-import org.apache.fineract.portfolio.loanaccount.data.LoanStatusEnumData;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionProcessingStrategyRepository;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.BrokenPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
@@ -231,5 +230,12 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
         final List<EnumOptionData> weeksInYearTypeOptions = Arrays.asList(
                 LoanEnumerations.weeksInYearType(WeeksInYearType.Week_52),LoanEnumerations.weeksInYearType(WeeksInYearType.Week_48));
         return weeksInYearTypeOptions;
+    }
+    
+    @Override
+    public List<EnumOptionData> retrieveBrokenPeriodMethodTypeOptions() {
+        final List<EnumOptionData> brokenPeriodMethodTypeOptions = Arrays.asList(LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.DISTRIBUTE_EQUALLY),
+                LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.ADJUST_IN_FIRST_EMI));
+        return brokenPeriodMethodTypeOptions;
     }
 }

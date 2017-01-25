@@ -34,6 +34,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationType;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionSubType;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.BrokenPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
@@ -796,6 +797,25 @@ public class LoanEnumerations {
             case Week_48:
                 optionData = new EnumOptionData(WeeksInYearType.Week_48.getValue().longValue(),
                         WeeksInYearType.Week_48.getCode(), "48");
+            break;
+        }
+        return optionData;
+    }
+    
+    public static EnumOptionData brokenPeriodMethodType(final Integer id) {
+        return brokenPeriodMethodType(BrokenPeriodMethod.fromInt(id));
+    }
+
+    public static EnumOptionData brokenPeriodMethodType(final BrokenPeriodMethod type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case ADJUST_IN_FIRST_EMI:
+                optionData = new EnumOptionData(BrokenPeriodMethod.ADJUST_IN_FIRST_EMI.getValue().longValue(),
+                        BrokenPeriodMethod.ADJUST_IN_FIRST_EMI.getCode(), "Add to first installment interest");
+            break;
+            default:
+                optionData = new EnumOptionData(BrokenPeriodMethod.DISTRIBUTE_EQUALLY.getValue().longValue(),
+                        BrokenPeriodMethod.DISTRIBUTE_EQUALLY.getCode(), "Distribute equally among all installments");
             break;
         }
         return optionData;

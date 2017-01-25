@@ -137,6 +137,9 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     @Column(name = "pmt_calculated_in_period_enum" , nullable = true)
     private Integer pmtCalculationPeriodMethod;
     
+    @Column(name = "broken_period_method_enum", nullable = true)
+    private Integer brokenPeriodMethod;
+    
     public static LoanProductRelatedDetail createFrom(final MonetaryCurrency currency, final BigDecimal principal,
             final BigDecimal nominalInterestRatePerPeriod, final PeriodFrequencyType interestRatePeriodFrequencyType,
             final BigDecimal nominalAnnualInterestRate, final InterestMethod interestMethod,
@@ -146,13 +149,13 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
             final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
             final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
-            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod) {
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, Integer brokenPeriodMethod) {
 
         return new LoanProductRelatedDetail(currency, principal, nominalInterestRatePerPeriod, interestRatePeriodFrequencyType,
                 nominalAnnualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion,
                 repaymentEvery, repaymentPeriodFrequencyType, numberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment,
                 graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType,
-                isInterestRecalculationEnabled, weeksInYearType, isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
+                isInterestRecalculationEnabled, weeksInYearType, isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
     }
 
     protected LoanProductRelatedDetail() {
@@ -168,7 +171,7 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
             final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
             final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
-            final boolean isEmiBasedOnDisbursements, final Integer pmtCalculationPeriodMethod) {
+            final boolean isEmiBasedOnDisbursements, final Integer pmtCalculationPeriodMethod, final Integer brokenPeriodMethod) {
         this.currency = currency;
         this.principal = defaultPrincipal;
         this.nominalInterestRatePerPeriod = defaultNominalInterestRatePerPeriod;
@@ -197,6 +200,7 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         this.weeksInYearType = weeksInYearType;
         this.isEmiBasedOnDisbursements = isEmiBasedOnDisbursements ;
         this.pmtCalculationPeriodMethod = pmtCalculationPeriodMethod;
+        this.brokenPeriodMethod = brokenPeriodMethod;
     }
 
     private Integer defaultToNullIfZero(final Integer value) {
@@ -532,6 +536,13 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             this.pmtCalculationPeriodMethod = newValue;
         }
         
+        if (command.isChangeInIntegerParameterNamed(LoanProductConstants.brokenPeriodMethodTypeParamName, this.brokenPeriodMethod)) {
+            final Integer newValue = command.integerValueOfParameterNamed(LoanProductConstants.brokenPeriodMethodTypeParamName);
+            actualChanges.put(LoanProductConstants.brokenPeriodMethodTypeParamName, newValue);
+            actualChanges.put("locale", localeAsInput);
+            this.brokenPeriodMethod = newValue;
+        }
+        
         validateRepaymentPeriodWithGraceSettings();
 
         return actualChanges;
@@ -703,5 +714,14 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             pmtCalculationMethod = InterestCalculationPeriodMethod.fromInt(this.pmtCalculationPeriodMethod);
         }
         return pmtCalculationMethod;
+    }
+
+    
+    public BrokenPeriodMethod getBrokenPeriodMethod() {
+        BrokenPeriodMethod brokenPeriodMethod = BrokenPeriodMethod.DISTRIBUTE_EQUALLY;
+        if (this.brokenPeriodMethod != null) {
+            brokenPeriodMethod = BrokenPeriodMethod.fromInt(this.brokenPeriodMethod);
+        }
+        return brokenPeriodMethod;
     }
 }

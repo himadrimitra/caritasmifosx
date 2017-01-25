@@ -232,6 +232,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lca.loan_transaction_strategy_id as transactionProcessingStrategyBoolean,lca.interest_calculated_in_period_enum as interestCalcPeriodBoolean, lca.arrearstolerance_amount as arrearsToleranceBoolean, "
                     + "lca.repay_every as repaymentFrequencyBoolean, lca.moratorium as graceOnPrincipalAndInterestBoolean, lca.grace_on_arrears_ageing as graceOnArrearsAgingBoolean, "
                     + "lp.is_linked_to_floating_interest_rates as isLinkedToFloatingInterestRates, "
+                    + "lp.broken_period_method_enum as brokenPeriodMethodType,"
                     + "lfr.floating_rates_id as floatingRateId, "
                     + "fr.name as floatingRateName, "
                     + "lfr.interest_rate_differential as interestRateDifferential, "
@@ -342,6 +343,12 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             EnumOptionData installmentCalculationPeriodType = null;
             if (installmentCalculationPeriodTypeId != null) {
                 installmentCalculationPeriodType = LoanEnumerations.interestCalculationPeriodType(installmentCalculationPeriodTypeId);
+            }
+            
+            Integer brokenPeriodTypeId = JdbcSupport.getInteger(rs, "brokenPeriodMethodType");
+            EnumOptionData brokenPeriodMethodType = null;
+            if (brokenPeriodTypeId != null) {
+                brokenPeriodMethodType = LoanEnumerations.brokenPeriodMethodType(brokenPeriodTypeId);
             }
 
             final boolean includeInBorrowerCycle = rs.getBoolean("includeInBorrowerCycle");
@@ -507,7 +514,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                    weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements);
+                    weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType);
         }
     }
 

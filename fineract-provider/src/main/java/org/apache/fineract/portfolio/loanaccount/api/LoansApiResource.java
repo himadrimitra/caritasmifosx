@@ -454,6 +454,7 @@ public class LoansApiResource {
         Collection<EnumOptionData> repaymentFrequencyNthDayTypeOptions = null;
         Collection<EnumOptionData> repaymentFrequencyDayOfWeekTypeOptions = null;
         Collection<LoanAccountSummaryData> clientActiveLoanOptions = null;
+        Collection<EnumOptionData> brokenPeriodMethodTypeOptions = null;
         
         if (!associationParameters.isEmpty()) {
             if (ApiParameterHelper.isExcludeAssociationsForResponseContains(queryParams, "loanBasicDetails")) {
@@ -629,6 +630,7 @@ public class LoansApiResource {
                 loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(loanBasicDetails.clientId(), loanBasicDetails.loanProductId(), loanId);
                 repaymentFrequencyNthDayTypeOptions = dropdownReadPlatformService.retrieveRepaymentFrequencyOptionsForNthDayOfMonth();
                 repaymentFrequencyDayOfWeekTypeOptions = dropdownReadPlatformService.retrieveRepaymentFrequencyOptionsForDaysOfWeek();
+                brokenPeriodMethodTypeOptions = this.dropdownReadPlatformService.retrieveBrokenPeriodMethodTypeOptions();
                 
                 
                 amortizationTypeOptions = this.dropdownReadPlatformService.retrieveLoanAmortizationTypeOptions();
@@ -692,7 +694,7 @@ public class LoansApiResource {
                 fundOptions, chargeOptions, chargeTemplate, allowedLoanOfficers, loanPurposeOptions, loanCollateralOptions, 
                 calendarOptions, notes, accountLinkingOptions, linkedAccount, disbursementData, emiAmountVariations,
                 overdueCharges, paidInAdvanceTemplate, loanProductCollateralPledgesOptions, pledgeId, interestRatesPeriods,
-                clientActiveLoanOptions);
+                clientActiveLoanOptions, brokenPeriodMethodTypeOptions);
         loanAccount.setLoanApplicationReferenceId(loanBasicDetails.getLoanApplicationReferenceId());
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),

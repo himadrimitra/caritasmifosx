@@ -130,6 +130,14 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             scheduleParams = loanScheduleParams;
         }
 
+        boolean isFirstRepayment = true;
+        LocalDate firstRepaymentdate = this.scheduledDateGenerator.generateNextRepaymentDate(
+                loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+        final LocalDate idealDisbursementDate = this.scheduledDateGenerator.idealDisbursementDateBasedOnFirstRepaymentDate(
+                loanApplicationTerms.getLoanTermPeriodFrequencyType(), loanApplicationTerms.getRepaymentEvery(), firstRepaymentdate,
+                loanApplicationTerms.getLoanCalendar(), loanApplicationTerms.getHolidayDetailDTO(), loanApplicationTerms);
+        loanApplicationTerms.setIdealDisbursementDate(idealDisbursementDate);
+        
         final Collection<RecalculationDetail> transactions = scheduleParams.getRecalculationDetails();
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = scheduleParams
                 .getLoanRepaymentScheduleTransactionProcessor();
@@ -147,12 +155,6 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             loanApplicationTerms.updateTotalInterestDue(totalInterestChargedForFullLoanTerm);
         }
 
-        boolean isFirstRepayment = true;
-        LocalDate firstRepaymentdate = this.scheduledDateGenerator.generateNextRepaymentDate(
-                loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
-        final LocalDate idealDisbursementDate = this.scheduledDateGenerator.idealDisbursementDateBasedOnFirstRepaymentDate(
-                loanApplicationTerms.getLoanTermPeriodFrequencyType(), loanApplicationTerms.getRepaymentEvery(), firstRepaymentdate,
-                loanApplicationTerms.getLoanCalendar(), loanApplicationTerms.getHolidayDetailDTO(), loanApplicationTerms);
 
         if (!scheduleParams.isPartialUpdate()) {
             // Set Fixed Principal Amount
@@ -2434,6 +2436,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     }
                 }
 
+                if(instalmentNumber == 1 && loanApplicationTerms.isFirstInstallmentCalculationRequired()){
+                    loanApplicationTerms.updateTotalInterestAccounted(installment.getInterestCharged(currency));
+                }
+                
                 // calculation of basic fields to start the schedule generation
                 // from the middle
                 periodStartDate = installment.getDueDate();
