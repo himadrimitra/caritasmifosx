@@ -59,5 +59,9 @@ public enum InterestCalculationPeriodMethod {
     public boolean isDaily() {
         return this.value.equals(InterestCalculationPeriodMethod.DAILY.getValue());
     }
+    
+    public boolean isSameAsRepayment() {
+        return this.value.equals(InterestCalculationPeriodMethod.SAME_AS_REPAYMENT_PERIOD.getValue());
+    }
 
 }

@@ -752,6 +752,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.fixed_emi_amount as fixedEmiAmount,");
             sb.append(" l.max_outstanding_loan_balance as outstandingLoanBalance,");
             sb.append(" l.loan_sub_status_id as loanSubStatusId,");
+            sb.append(" l.broken_period_method_enum as brokenPeriodMethodType,");
             sb.append(" la.principal_overdue_derived as principalOverdue,");
             sb.append(" la.interest_overdue_derived as interestOverdue,");
             sb.append(" la.fee_charges_overdue_derived as feeChargesOverdue,");
@@ -1046,6 +1047,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final EnumOptionData daysInYearType = CommonEnumerations.daysInYearType(daysInYear);
             final boolean isInterestRecalculationEnabled = rs.getBoolean("isInterestRecalculationEnabled");
             final Boolean createStandingInstructionAtDisbursement = rs.getBoolean("createStandingInstructionAtDisbursement");
+            
+            Integer brokenPeriodTypeId = JdbcSupport.getInteger(rs, "brokenPeriodMethodType");
+            EnumOptionData brokenPeriodMethodType = null;
+            if (brokenPeriodTypeId != null) {
+                brokenPeriodMethodType = LoanEnumerations.brokenPeriodMethodType(brokenPeriodTypeId);
+            }
+
 
             LoanInterestRecalculationData interestRecalculationData = null;
             if (isInterestRecalculationEnabled) {
@@ -1136,7 +1144,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType,
                     isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
                     minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
-                    topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                    topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType);
         }
     }
     
@@ -1765,11 +1773,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         if(loanEMIPacks == null || loanEMIPacks.size() == 0){
             loanEMIPacks = null;
         }
+        final List<EnumOptionData> brokenPeriodMethodTypeOptions = this.loanDropdownReadPlatformService.retrieveBrokenPeriodMethodTypeOptions();
         return LoanAccountData.loanProductWithTemplateDefaults(loanProduct, loanTermFrequencyTypeOptions, repaymentFrequencyTypeOptions,
                 repaymentFrequencyNthDayTypeOptions, repaymentFrequencyDaysOfWeekTypeOptions, repaymentStrategyOptions,
                 interestRateFrequencyTypeOptions, amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions,
                 fundOptions, chargeOptions, loanPurposeOptions, loanCollateralOptions, loanCycleCounter, loanProductCollateralPledgesOptions,
-                clientActiveLoanOptions, paymentOptions, loanOfficerId, loanEMIPacks);
+                clientActiveLoanOptions, paymentOptions, loanOfficerId, loanEMIPacks,brokenPeriodMethodTypeOptions);
     }
 
     @Override
@@ -2762,6 +2771,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append("l.expected_repayment_payment_type_id as expectedRepaymentPaymentTypeId, ");
             sb.append(" l.interest_rate_differential as interestRateDifferential, ");
             sb.append(" l.create_standing_instruction_at_disbursement as createStandingInstructionAtDisbursement, ");
+            sb.append(" l.broken_period_method_enum as brokenPeriodMethodType,");
             sb.append(" l.is_topup as isTopup ");
             sb.append(" from m_loan l");
             this.loanSql = sb.toString();
@@ -2968,6 +2978,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 expectedRepaymentPaymentType = PaymentTypeData
                         .instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);
             }
+            
+            Integer brokenPeriodTypeId = JdbcSupport.getInteger(rs, "brokenPeriodMethodType");
+            EnumOptionData brokenPeriodMethodType = null;
+            if (brokenPeriodTypeId != null) {
+                brokenPeriodMethodType = LoanEnumerations.brokenPeriodMethodType(brokenPeriodTypeId);
+            }
+            
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, groupData, loanType, loanProductId,
                     fundId, loanPurposeId, loanOfficerId, currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid,
                     inArrearsTolerance, termFrequency, termPeriodFrequencyType, numberOfRepayments, repaymentEvery, repaymentFrequencyType,
@@ -2978,7 +2995,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting, loanCounter,
                     loanProductCounter, fixedEmiAmount, outstandingLoanBalance, inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType,
                     daysInYearType, isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement,
-                    loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                    loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType);
         }
     }
 

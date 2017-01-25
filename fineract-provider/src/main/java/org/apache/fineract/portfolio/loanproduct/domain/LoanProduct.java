@@ -388,6 +388,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
 
         final Integer pmtCalculationPeriodMethod = command
                 .integerValueOfParameterNamed(LoanProductConstants.installmentCalculationPeriodTypeParamName);
+        
+        final Integer brokenPeriodMethod = command
+                .integerValueOfParameterNamed(LoanProductConstants.brokenPeriodMethodTypeParamName);
 				
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
@@ -405,7 +408,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
                 loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod);
 
     }
 
@@ -641,7 +644,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
             final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
-            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements) {
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements, 
+            final Integer brokenPeriodMethod) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -674,7 +678,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 considerPartialPeriodInterest, repayEvery, repaymentFrequencyType, defaultNumberOfInstallments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods,
                 graceOnInterestPayment, graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing,
                 daysInMonthType.getValue(), daysInYearType.getValue(), isInterestRecalculationEnabled, weeksInYearType.getValue(),
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
 
         this.loanProductRelatedDetail.validateRepaymentPeriodWithGraceSettings();
 
