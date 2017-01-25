@@ -3794,4 +3794,13 @@ public class CommandWrapperBuilder {
         this.href = "/loanemipacks/"+loanProductId+"/"+loanEMIPackId;
         return this;
     }
+
+    public CommandWrapperBuilder createTaskConfig(final String entityType, final Long entityId) {
+        this.actionName = "CREATE";
+        this.entityName = "TASK_CONFIG";
+        this.entityId = entityId;
+        this.href = "/tasksconfigurations/" + entityType + "/" + entityId;
+        return this;
+    }
+
 }

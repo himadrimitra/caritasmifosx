@@ -1,5 +1,6 @@
 package com.finflux.task.service;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -8,6 +9,7 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.data.RoleData;
 
 import com.finflux.task.data.TaskActionLogData;
+import com.finflux.task.data.TaskActivityData;
 import com.finflux.task.data.TaskEntityType;
 import com.finflux.task.data.TaskExecutionData;
 import com.finflux.task.data.TaskInfoData;
@@ -37,5 +39,7 @@ public interface TaskPlatformReadService {
 
     List<TaskActionLogData> getActionLogs(Long taskId);
 
-	List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId);
+    List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId);
+
+    Collection<TaskActivityData> retrieveAllTaskActivityData();
 }

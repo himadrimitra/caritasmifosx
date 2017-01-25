@@ -147,7 +147,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             TaskDataMapper rm = new TaskDataMapper();
             final String sql = "SELECT " + rm.schema() + " WHERE t.id = ? ";
             return this.jdbcTemplate.queryForObject(sql, rm, taskId);
-        }catch (EmptyResultDataAccessException e){
+        } catch (EmptyResultDataAccessException e) {
             throw new TaskNotFoundException(taskId);
         }
     }
@@ -449,19 +449,19 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         params.addValue("hierarchy", hierarchySearchString);
         sqlBuilder.append("SELECT SQL_CALC_FOUND_ROWS ");
         sqlBuilder.append(dataMapper.schema());
-        if (filterBy != null){
+        if (filterBy != null) {
             if (TaskApiConstants.ASSIGNED.equalsIgnoreCase(filterBy)) {
                 params.addValue("assignedTo", this.context.authenticatedUser().getId());
                 sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
-            }else if (TaskApiConstants.UNASSIGNED.equalsIgnoreCase(filterBy)) {
+            } else if (TaskApiConstants.UNASSIGNED.equalsIgnoreCase(filterBy)) {
                 sqlBuilder.append(" AND t.assigned_to IS NULL ");
-            }else if (TaskApiConstants.ASSIGNED_NONWORKFLOW.equalsIgnoreCase(filterBy)) {
+            } else if (TaskApiConstants.ASSIGNED_NONWORKFLOW.equalsIgnoreCase(filterBy)) {
                 sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
                 sqlBuilder.append(" AND t.parent_id is null ");
                 sqlBuilder.append(" AND t.task_type = :taskType ");
                 params.addValue("assignedTo", this.context.authenticatedUser().getId());
                 params.addValue("taskType", TaskType.SINGLE.getValue());
-            }else if (TaskApiConstants.ASSIGNED_WORKFLOW.equalsIgnoreCase(filterBy)) {
+            } else if (TaskApiConstants.ASSIGNED_WORKFLOW.equalsIgnoreCase(filterBy)) {
                 sqlBuilder.append(" AND t.assigned_to = :assignedTo ");
                 sqlBuilder.append(" AND t.parent_id is not null ");
                 sqlBuilder.append(" AND pt.task_type = :taskType ");
@@ -510,7 +510,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     @Override
     public List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId) {
         final String sql = "SELECT " + roleDataMapper.schema() + " WHERE ta.action_group_id = ? and ta.action = ?";
-        return this.jdbcTemplate.query(sql, roleDataMapper, actionGroupId,actionId);
+        return this.jdbcTemplate.query(sql, roleDataMapper, actionGroupId, actionId);
     }
 
     private static final class TaskNoteDataMapper implements RowMapper<TaskNoteData> {
@@ -520,8 +520,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         public TaskNoteDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append("tn.id as id, tn.task_id as taskId, ").append("tn.note as note, ")
-                    .append("CONCAT(appuser.firstname,' ',appuser.lastname) AS createdBy, ")
-                    .append("tn.created_date as createdOn ")
+                    .append("CONCAT(appuser.firstname,' ',appuser.lastname) AS createdBy, ").append("tn.created_date as createdOn ")
                     .append("from f_task_note tn ").append("LEFT JOIN m_appuser appuser ON appuser.id = tn.createdby_id ");
             this.schemaSql = sqlBuilder.toString();
         }
@@ -551,10 +550,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         public TaskActionLogDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" tal.id as id, tal.task_id as taskId, ").append("tal.action as action, ")
-                    .append(" CONCAT(appuser.firstname,' ',appuser.lastname) AS actionBy, ")
-                    .append(" tal.action_on as actionOn ")
-                    .append(" from f_task_action_log tal ")
-                    .append(" LEFT JOIN m_appuser appuser ON appuser.id = tal.action_by ");
+                    .append(" CONCAT(appuser.firstname,' ',appuser.lastname) AS actionBy, ").append(" tal.action_on as actionOn ")
+                    .append(" from f_task_action_log tal ").append(" LEFT JOIN m_appuser appuser ON appuser.id = tal.action_by ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -584,8 +581,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         public RoleDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
             sqlBuilder.append(" r.id as id, r.name as name, r.description as description, r.is_disabled as isDisabled ")
-                    .append(" from f_task_action_role tar ")
-                    .append(" LEFT JOIN m_role r ON tar.role_id = r.id ")
+                    .append(" from f_task_action_role tar ").append(" LEFT JOIN m_role r ON tar.role_id = r.id ")
                     .append(" LEFT JOIN f_task_action ta ON tar.task_action_id = ta.id ");
             this.schemaSql = sqlBuilder.toString();
         }
@@ -601,7 +597,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final String name = rs.getString("name");
             final String description = rs.getString("description");
             final Boolean isDisabled = rs.getBoolean("isDisabled");
-            return new RoleData(id,name,description, isDisabled, null);
+            return new RoleData(id, name, description, isDisabled, null);
         }
 
     }
@@ -649,8 +645,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final String entityType = TaskEntityType.fromInt(entityTypeId).toString();
             final Long entityId = rs.getLong("entityId");
             final Long clientId = rs.getLong("clientId");
-            final String description  = rs.getString("description");
-            final Date createdOn  = rs.getTimestamp("createdOn");
+            final String description = rs.getString("description");
+            final Date createdOn = rs.getTimestamp("createdOn");
             ClientData clientData = null;
             if (clientId != null) {
                 final String clientName = rs.getString("clientName");
@@ -672,7 +668,42 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
                 configValueMap = new Gson().fromJson(configValues, new TypeToken<HashMap<String, String>>() {}.getType());
             }
             return TaskInfoData.instance(taskId, parentTaskId, taskName, taskStatus, currentAction, assignedId, assignedTo, entityTypeId,
-                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description,createdOn);
+                    entityType, entityId, nextActionUrl, clientData, officeData, configValueMap, description, createdOn);
         }
     }
+
+    @Override
+    public Collection<TaskActivityData> retrieveAllTaskActivityData() {
+        final TaskActivityDataMapper dataMapper = new TaskActivityDataMapper();
+        final String sql = "SELECT " + dataMapper.schema();
+        return this.jdbcTemplate.query(sql, dataMapper);
+    }
+
+    private static final class TaskActivityDataMapper implements RowMapper<TaskActivityData> {
+
+        private final String schema;
+
+        public TaskActivityDataMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+            sqlBuilder.append("ta.id AS id, ta.name AS name, ta.identifier AS identifier,ta.type AS type ");
+            sqlBuilder.append("FROM f_task_activity ta ");
+            this.schema = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schema;
+        }
+
+        @SuppressWarnings({ "unused" })
+        @Override
+        public TaskActivityData mapRow(final ResultSet rs, final int rowNum) throws SQLException {
+            final Long id = rs.getLong("id");
+            final String name = rs.getString("name");
+            final String identifier = rs.getString("identifier");
+            final Integer typeId = rs.getInt("type");
+            final EnumOptionData type = TaskActivityType.fromInt(typeId).getEnumOptionData();
+            return TaskActivityData.instance(id, name, identifier, type);
+        }
+    }
+
 }
