@@ -2,6 +2,9 @@ package com.finflux.portfolio.bank.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
 import com.finflux.portfolio.bank.domain.BankAccountDetailStatus;
+import com.finflux.portfolio.bank.domain.BankAccountType;
 
 @Service
 public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsReadService {
@@ -63,7 +67,7 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             StringBuilder sb = new StringBuilder();
             sb.append(" bad.id as id, bad.name as name, bad.account_number as accountNumber, bad.ifsc_code as ifscCode, ");
             sb.append(" bad.mobile_number as mobileNumber, bad.email as email, bad.status_id as status, ");
-            sb.append(" bad.bank_name as bankName, bad.bank_city as bankCity ");
+            sb.append(" bad.bank_name as bankName, bad.bank_city as bankCity, bad.account_type_enum as accountType ");
             sb.append(" from f_bank_account_details bad ");
             return sb.toString();
         }
@@ -80,10 +84,19 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             final String bankCity = rs.getString("bankCity");
             final Integer type = JdbcSupport.getInteger(rs, "status");
             final EnumOptionData status = BankAccountDetailStatus.bankAccountDetailStatusEnumDate(type);
+            final Integer accountTypeVal  = JdbcSupport.getInteger(rs, "accountType");
+            final EnumOptionData accountType = BankAccountType.bankAccountType(accountTypeVal);
             return new BankAccountDetailData(id, name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity,
-                    status);
+                    status, accountType);
         }
 
+    }
+    
+    @Override
+    public Collection<EnumOptionData> bankAccountTypeOptions() {
+        final List<EnumOptionData> bankAccountTypeOptions = Arrays.asList(
+                BankAccountType.bankAccountType(BankAccountType.SAVINGSACCOUNT),BankAccountType.bankAccountType(BankAccountType.CURRENTACCOUNT));
+        return bankAccountTypeOptions;
     }
 
 }
