@@ -71,9 +71,10 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
         final String email = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.emailParameterName, element);
         final String bankName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankNameParameterName, element);
         final String bankCity = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankCityParameterName, element);
-
+        final Integer accountTypeId = this.fromApiJsonHelper.extractLongNamed(BankAccountDetailConstants.accountTypeIdParamName, element).intValue();
+        
         BankAccountDetails accountDetails = BankAccountDetails.create(name, accountNumber, ifscCode, mobileNumber, email,
-                bankName, bankCity);
+                bankName, bankCity, accountTypeId);
         accountDetails.updateStatus(BankAccountDetailStatus.ACTIVE.getValue());
         return accountDetails;
     }
@@ -114,7 +115,10 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
                 creaeNewAccountDetail = true;
             }
         }
-
+        final Integer accountTypeId = this.fromApiJsonHelper.extractLongNamed(BankAccountDetailConstants.accountTypeIdParamName, element).intValue();
+            if(!accountTypeId.equals(accountDetails.getAccountType())){
+                creaeNewAccountDetail = true;
+            }
         if (creaeNewAccountDetail) {
             accountDetails.updateStatus(BankAccountDetailStatus.DELETED.getValue());
             this.repository.save(accountDetails);

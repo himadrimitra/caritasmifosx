@@ -71,7 +71,11 @@ public class BankAccountDetailApiResource {
         if (bankEntityType == null) { throw new BankAccountDetailEntityTypeNotSupportedException(entityType); }
 
         BankAccountDetailData bankAccountDetailData = this.readPlatformService.retrieveOneBy(bankEntityType, entityId);
-
+        if(bankAccountDetailData == null){
+            bankAccountDetailData = new BankAccountDetailData(readPlatformService.bankAccountTypeOptions());
+        } else {
+            bankAccountDetailData.setBankAccountTypeOptions(readPlatformService.bankAccountTypeOptions());
+        }
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, bankAccountDetailData);
     }

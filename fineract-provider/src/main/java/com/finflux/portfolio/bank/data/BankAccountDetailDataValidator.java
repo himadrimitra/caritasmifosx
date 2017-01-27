@@ -3,6 +3,7 @@ package com.finflux.portfolio.bank.data;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -37,6 +38,7 @@ public class BankAccountDetailDataValidator {
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(BankAccountDetailConstants.resourceName);
@@ -47,6 +49,9 @@ public class BankAccountDetailDataValidator {
         final String accountNumber = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.accountNumberParameterName,
                 element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.accountNumberParameterName).value(accountNumber).notBlank();
+
+        final Integer accountTypeId = this.fromApiJsonHelper.extractIntegerNamed(BankAccountDetailConstants.accountTypeIdParamName, element,locale);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.accountTypeIdParamName).value(accountTypeId).notBlank();
 
         final String ifscCode = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.ifscCodeParameterName, element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.ifscCodeParameterName).value(ifscCode).notBlank();
@@ -78,6 +83,7 @@ public class BankAccountDetailDataValidator {
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(BankAccountDetailConstants.resourceName);
@@ -91,6 +97,13 @@ public class BankAccountDetailDataValidator {
             final String accountNumber = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.accountNumberParameterName,
                     element);
             baseDataValidator.reset().parameter(BankAccountDetailConstants.accountNumberParameterName).value(accountNumber).notBlank();
+        }
+
+        if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.accountTypeIdParamName, element)) {
+            final Integer accountTypeId = this.fromApiJsonHelper
+                    .extractIntegerNamed(BankAccountDetailConstants.accountTypeIdParamName, element, locale);
+            baseDataValidator.reset().parameter(BankAccountDetailConstants.accountTypeIdParamName).value(accountTypeId).notBlank();
+
         }
 
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.ifscCodeParameterName, element)) {

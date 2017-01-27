@@ -6,6 +6,9 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
+import com.finflux.transaction.execution.data.BankTransactionEntityType;
+
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 import com.finflux.portfolio.bank.domain.BankAccountDetailStatus;
+import com.finflux.portfolio.bank.domain.BankAccountType;
 import com.finflux.transaction.execution.data.BankTransactionDetail;
 import com.finflux.transaction.execution.data.BankTransactionEntityType;
 import com.finflux.transaction.execution.data.TransactionStatus;
@@ -91,6 +95,7 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" bat.utr_number as utrNumber, bat.po_number as poNumber, ");
 			sb.append(" bat.error_code as errorCode, bat.error_message as errorMessage, ");
 			sb.append(" bat.transaction_date as transactionDate, ");
+			sb.append(" bat.account_type_enum as benAccountType ,");
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
 			sb.append(" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
@@ -99,6 +104,7 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" benbad.account_number as benAccountNumber,  benbad.ifsc_code as benIfscCode, ");
 			sb.append(" benbad.mobile_number as benMobile, benbad.email as benEmail, benbad.status_id as benStatus, ");
 			sb.append(" benbad.bank_name as benBankName, benbad.bank_city as benBankCity, ");
+			sb.append(" benbad.account_type_enum as debAccountType, ");
 			sb.append(" bat.reference_number as referenceNumber ");
 			sb.append(" from f_bank_account_transaction bat ");
 			sb.append(" left join f_bank_account_details debbad on bat.debit_account = debbad.id ");
@@ -134,12 +140,13 @@ public class BankTransactionReadPlatformServiceImpl
 			final Integer debitStatus = rs.getInt("debitStatus");
 			final String debBankCity = rs.getString("debBankCity");
 			final String debBankName = rs.getString("debBankName");
+		        final Integer debAccountType = JdbcSupport.getInteger(rs, "debAccountType");
 
 			final BankAccountDetailData debitAccount = new BankAccountDetailData(
 					debitAccountid, debitAccountName, debitAccountNumber,
 					debitIfscCode, debitMobile, debitEmail,debBankName, debBankCity,
 					BankAccountDetailStatus
-							.bankAccountDetailStatusEnumDate(debitStatus));
+							.bankAccountDetailStatusEnumDate(debitStatus), BankAccountType.bankAccountType(debAccountType));
 
 			final Long benAccountid = rs.getLong("benAccountid");
 			final String benAccountName = rs.getString("benAccountName");
@@ -150,12 +157,13 @@ public class BankTransactionReadPlatformServiceImpl
 			final Integer benStatus = rs.getInt("benStatus");
 			final String benBankCity = rs.getString("benBankCity");
 			final String benBankName = rs.getString("benBankName");
+			final Integer benAccountType = JdbcSupport.getInteger(rs, "benAccountType");
 
 			final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(
 					benAccountid, benAccountName, benAccountNumber,
 					benIfscCode, benMobile, benEmail,benBankName, benBankCity,
 					BankAccountDetailStatus
-							.bankAccountDetailStatusEnumDate(benStatus));
+							.bankAccountDetailStatusEnumDate(benStatus), BankAccountType.bankAccountType(benAccountType));
 
 			BankTransactionDetail accountTransactionDetail = new BankTransactionDetail(
 					transactionId, debitAccount, beneficiaryAccount,
