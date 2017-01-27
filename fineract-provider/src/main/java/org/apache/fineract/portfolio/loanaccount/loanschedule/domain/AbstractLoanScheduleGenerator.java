@@ -1947,7 +1947,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             if (map.containsKey(mapEntry.getKey())) {
                 value = value.plus(map.get(mapEntry.getKey()));
             }
-            map.put(mapEntry.getKey(), value);
+            if (!value.isZero()) {
+                map.put(mapEntry.getKey(), value);
+            }
         }
 
         for (Map.Entry<LocalDate, Money> mapEntry : params.getPrincipalPortionMap().entrySet()) {
@@ -1955,7 +1957,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             if (map.containsKey(mapEntry.getKey())) {
                 value = value.plus(map.get(mapEntry.getKey()));
             }
-            map.put(mapEntry.getKey(), value);
+            if (!value.isZero()) {
+                map.put(mapEntry.getKey(), value);
+            }
         }
 
         for (Map.Entry<LocalDate, Money> mapEntry : params.getCompoundingMap().entrySet()) {

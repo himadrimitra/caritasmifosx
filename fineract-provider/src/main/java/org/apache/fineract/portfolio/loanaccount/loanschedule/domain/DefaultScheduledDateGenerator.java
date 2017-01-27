@@ -309,11 +309,21 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                 if (loanCalendar == null) {
                     idealDisbursementDate = firstRepaymentDate.minusMonths(repaidEvery);
                 } else {
-                    idealDisbursementDate = CalendarUtils.getNewRepaymentMeetingDate(loanCalendar.getRecurrence(),
-                            firstRepaymentDate.minusMonths(repaidEvery), firstRepaymentDate.minusMonths(repaidEvery), repaidEvery,
-                            CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(repaymentPeriodFrequencyType),
-                            holidayDetailDTO.getWorkingDays(), loanApplicationTerms.isSkipRepaymentOnFirstDayofMonth(),
-                            loanApplicationTerms.getNumberOfdays());
+                    LocalDate meetingStartDate = loanCalendar.getStartDateLocalDate();
+                    while (!meetingStartDate.isBefore(loanApplicationTerms.getExpectedDisbursementDate())) {
+                        meetingStartDate = meetingStartDate.minusMonths(repaidEvery);
+                    }
+                    LocalDate idealDisbursementDateTemp = meetingStartDate;
+                    while (idealDisbursementDateTemp.isBefore(firstRepaymentDate)) {
+                        idealDisbursementDate = idealDisbursementDateTemp;
+                        idealDisbursementDateTemp = CalendarUtils.getNewRepaymentMeetingDate(loanCalendar.getRecurrence(),
+                                meetingStartDate, idealDisbursementDateTemp.plusDays(1), repaidEvery,
+                                CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(repaymentPeriodFrequencyType),
+                                holidayDetailDTO.getWorkingDays(), loanApplicationTerms.isSkipRepaymentOnFirstDayofMonth(),
+                                loanApplicationTerms.getNumberOfdays());
+                    }
+                    
+                   
                 }
             break;
             case YEARS:
