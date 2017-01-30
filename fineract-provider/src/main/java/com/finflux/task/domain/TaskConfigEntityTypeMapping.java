@@ -23,7 +23,7 @@ public class TaskConfigEntityTypeMapping extends AbstractPersistable<Long> {
     @Column(name = "entity_id", length = 20)
     private Long entityId;
 
-    protected TaskConfigEntityTypeMapping() {}
+    public TaskConfigEntityTypeMapping() {}
 
     public TaskConfig getTaskConfig() {
         return this.taskConfig;
@@ -31,5 +31,17 @@ public class TaskConfigEntityTypeMapping extends AbstractPersistable<Long> {
 
     public Long getTaskConfigId() {
         return this.taskConfig.getId();
+    }
+
+    public void setTaskConfig(final TaskConfig taskConfig) {
+        this.taskConfig = taskConfig;
+    }
+
+    public void setEntityType(final Integer entityType) {
+        this.entityType = entityType;
+    }
+
+    public void setEntityId(final Long entityId) {
+        this.entityId = entityId;
     }
 }

@@ -154,7 +154,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                  * entity type LOAN_PRODUCT
                  */
                 final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOAN_PRODUCT.getValue(), loanProductId);
+                        .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT.getValue(), loanProductId);
                 if (taskConfigEntityTypeMapping != null) {
                     isProductMappedToWorkFlow = true;
                     final Long loanApplicationId = loanApplicationReference.getId();

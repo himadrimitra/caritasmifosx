@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.transaction.Transactional;
-
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -240,7 +238,6 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
         return centerIdMapList;
     }
 
-    @Transactional
     private void saveProfileRatingScore(final ProfileRatingRun profileRatingRun, final RuleResult ruleResult,
             final Integer overriddenScore, final Long entityId) {
         final Integer entityType = profileRatingRun.getEntityType();

@@ -2,13 +2,15 @@ package com.finflux.task.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum TaskConfigEntityType {
 
     INVALID(0, "taskConfigEntityType.invalid"), //
-    LOAN_PRODUCT(1, "taskConfigEntityType.loan.product"), //
+    LOANPRODUCT(1, "taskConfigEntityType.loanproduct"), //
     ADHOC(2, "taskConfigEntityType.adhoc");//
 
     private final Integer value;
@@ -32,7 +34,7 @@ public enum TaskConfigEntityType {
         if (frequency != null) {
             switch (frequency) {
                 case 1:
-                    taskConfigEntityType = TaskConfigEntityType.LOAN_PRODUCT;
+                    taskConfigEntityType = TaskConfigEntityType.LOANPRODUCT;
                 break;
                 default:
                 break;
@@ -44,7 +46,7 @@ public enum TaskConfigEntityType {
     public static EnumOptionData taskConfigEntityType(final TaskConfigEntityType type) {
         EnumOptionData optionData = null;
         switch (type) {
-            case LOAN_PRODUCT:
+            case LOANPRODUCT:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Loan Product");
             break;
             default:
@@ -62,5 +64,17 @@ public enum TaskConfigEntityType {
             }
         }
         return taskConfigEntityTypeOptions;
+    }
+
+    private static final Map<String, TaskConfigEntityType> entityTypeNameToEnumMap = new HashMap<>();
+
+    static {
+        for (final TaskConfigEntityType entityType : TaskConfigEntityType.values()) {
+            entityTypeNameToEnumMap.put(entityType.name().toLowerCase(), entityType);
+        }
+    }
+
+    public static TaskConfigEntityType getEntityType(String entityType) {
+        return entityTypeNameToEnumMap.get(entityType.toLowerCase());
     }
 }
