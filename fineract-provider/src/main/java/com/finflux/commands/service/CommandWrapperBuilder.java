@@ -5,12 +5,14 @@
  */
 package com.finflux.commands.service;
 
+import com.finflux.task.data.TaskActionType;
+
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 
 import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.finflux.reconcilation.ReconciliationApiConstants;
-import com.finflux.task.data.TaskActionType;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 public class CommandWrapperBuilder {
 
@@ -30,11 +32,12 @@ public class CommandWrapperBuilder {
     private Long templateId;
     private String option;
     private Integer entityTypeId;
+    private FormDataMultiPart formDataMultiPart;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
                 this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
-                this.templateId, this.option, this.entityTypeId);
+                this.templateId, this.option, this.entityTypeId, this.formDataMultiPart);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -293,6 +296,10 @@ public class CommandWrapperBuilder {
         this.entityName = "BANK_TRANSACTION";
         this.entityId = transactionId;
         this.href = "/banktransaction/" + transactionId + "?command=inititate&template=true";
+        return this;
+    }
+    public CommandWrapperBuilder withFormDataMultiPart(final FormDataMultiPart formDataMultiPart) {
+        this.formDataMultiPart = formDataMultiPart;
         return this;
     }
 }

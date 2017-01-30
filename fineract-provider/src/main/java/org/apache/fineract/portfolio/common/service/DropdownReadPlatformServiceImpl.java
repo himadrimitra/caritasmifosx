@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.ConditionType;
+import org.apache.fineract.portfolio.common.domain.ConditionalOperator;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -66,6 +67,13 @@ public class DropdownReadPlatformServiceImpl implements DropdownReadPlatformServ
         final List<EnumOptionData> daysInYearTypeOptions = Arrays.asList(daysInYearType(DaysInYearType.ACTUAL),
                 daysInYearType(DaysInYearType.DAYS_360), daysInYearType(DaysInYearType.DAYS_364), daysInYearType(DaysInYearType.DAYS_365));
         return daysInYearTypeOptions;
+    }
+
+    @Override
+    public List<EnumOptionData> retrieveConditionalOperatorOptions() {
+
+        return Arrays.asList(ConditionalOperator.from(ConditionalOperator.BETWEEN),ConditionalOperator.from(ConditionalOperator.LESS_THAN),ConditionalOperator.from(ConditionalOperator.LESS_THAN_OR_EQUAL),
+                ConditionalOperator.from(ConditionalOperator.GREATER_THAN),ConditionalOperator.from(ConditionalOperator.GREATER_THAN_OR_EQUAL),ConditionalOperator.from(ConditionalOperator.EQUAL));
     }
 
 }

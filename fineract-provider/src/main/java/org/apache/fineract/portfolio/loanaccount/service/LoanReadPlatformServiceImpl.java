@@ -73,6 +73,7 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
+import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundData;
 import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
@@ -1733,7 +1734,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         }
         final Collection<EnumOptionData> interestCalculationPeriodTypeOptions = this.loanDropdownReadPlatformService
                 .retrieveLoanInterestRateCalculatedInPeriodOptions();
-        final Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds();
+        final Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds(FundApiConstants.activeParamName);
         final Collection<TransactionProcessingStrategyData> repaymentStrategyOptions = this.loanDropdownReadPlatformService
                 .retreiveTransactionProcessingStrategies();
         final Collection<LoanPurposeData> loanPurposeOptions = this.loanPurposeGroupReadPlatformService.retrieveAllLoanPurposes(null, null,

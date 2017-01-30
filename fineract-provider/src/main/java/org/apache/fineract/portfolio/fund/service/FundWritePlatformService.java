@@ -21,9 +21,19 @@ package org.apache.fineract.portfolio.fund.service;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 
+import com.sun.jersey.multipart.FormDataMultiPart;
+
 public interface FundWritePlatformService {
 
     CommandProcessingResult createFund(JsonCommand command);
 
     CommandProcessingResult updateFund(Long fundId, JsonCommand command);
+    
+    CommandProcessingResult assignFundFromCSV(FormDataMultiPart formParams);
+    
+    CommandProcessingResult assignFund(Long fundId, JsonCommand command);
+    
+    CommandProcessingResult activateFund(Long fundId);
+    
+    CommandProcessingResult deactivateFund(Long fundId);
 }
