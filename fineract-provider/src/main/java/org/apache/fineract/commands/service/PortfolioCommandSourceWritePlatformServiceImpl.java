@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.gson.JsonElement;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 @Service
 public class PortfolioCommandSourceWritePlatformServiceImpl implements PortfolioCommandSourceWritePlatformService {
@@ -98,7 +99,7 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(json);
         command = JsonCommand.from(json, parsedCommand, this.fromApiJsonHelper, wrapper.getEntityName(), wrapper.getEntityId(),
                 wrapper.getSubentityId(), wrapper.getGroupId(), wrapper.getClientId(), wrapper.getLoanId(), wrapper.getSavingsId(),
-                wrapper.getTransactionId(), wrapper.getHref(), wrapper.getProductId(), wrapper.getEntityTypeId());
+                wrapper.getTransactionId(), wrapper.getHref(), wrapper.getProductId(), wrapper.getEntityTypeId(), wrapper.getFormDataMultiPart());
         while (numberOfRetries <= maxNumberOfRetries) {
             try {
             	if(isTransactionalScopeRequiredInprocessAndLogCommand){
@@ -152,11 +153,12 @@ public class PortfolioCommandSourceWritePlatformServiceImpl implements Portfolio
                 commandSourceInput.getSavingsId(), commandSourceInput.getTransactionId(), commandSourceInput.getOption(),
                 commandSourceInput.getEntityTypeId());
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(commandSourceInput.json());
+        final FormDataMultiPart formDataMultiPart = null;
         final JsonCommand command = JsonCommand.fromExistingCommand(makerCheckerId, commandSourceInput.json(), parsedCommand,
                 this.fromApiJsonHelper, commandSourceInput.getEntityName(), commandSourceInput.resourceId(),
                 commandSourceInput.subresourceId(), commandSourceInput.getGroupId(), commandSourceInput.getClientId(),
                 commandSourceInput.getLoanId(), commandSourceInput.getSavingsId(), commandSourceInput.getTransactionId(),
-                commandSourceInput.getResourceGetUrl(), commandSourceInput.getProductId(), commandSourceInput.getEntityTypeId());
+                commandSourceInput.getResourceGetUrl(), commandSourceInput.getProductId(), commandSourceInput.getEntityTypeId(), formDataMultiPart);
 
         final boolean makerCheckerApproval = true;
         return this.processAndLogCommandService.processAndLogCommandWithTransactionalScope(wrapper, command, makerCheckerApproval);

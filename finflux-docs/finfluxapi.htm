@@ -68,8 +68,1529 @@
 
             var baseUrl = "";
 
+<<<<<<< HEAD
             if (docURL.substring(0, 4).toLowerCase() == "http") {
                 var l = getLocation(docURL);
+=======
+			<div class="flybar-nav">
+				<h2 class="flybar-button">Accounting</h2>
+				<div id="toc-menu-accounting" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#glaccounts">General Ledger Account</a></td>
+								<td>glaccounts</td>
+								<td><a href="#glaccounts_create">Create a New Ledger Account</a></td>
+								<td><a href="#glaccounts_list">List Ledger Accounts</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>glaccounts/{glaccountId}</td>
+								<td></td>
+								<td><a href="#glaccounts_retrieve">Retrieve a Ledger Account</a></td>
+								<td><a href="#glaccounts_update">Update a Ledger Account</a></td>
+								<td><a href="#glaccounts_delete">Delete a Ledger Account</a></td>
+							</tr>
+							<tr>
+								<td><a href="#glclosures">Accounting Closure</a></td>
+								<td>glclosures</td>
+								<td><a href="#glclosures_create">Create an Accounting Closure</a></td>
+								<td><a href="#glclosures_list">List Accounting Closures</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>glclosures/{glclosureId}</td>
+								<td></td>
+								<td><a href="#glclosures_retrieve">Retrieve an Accounting Closure</a></td>
+								<td><a href="#glclosures_update">Update an Accounting Closure</a></td>
+								<td><a href="#glclosures_delete">Delete an Accounting Closure</a></td>
+							</tr>
+							<tr>
+								<td><a href="#journalentries">Journal Entries</a></td>
+								<td>journalentries</td>
+								<td><a href="#journalentries_create">Create Journal Entries</a></td>
+								<td><a href="#journalentries_list">List Journal Entries</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>journalentries?command=updateRunningBalance</td>
+								<td><a href="#journalentries_updatebalance">Update Running Balance for Journal Entries</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>journalentries/{entryId}</td>
+								<td></td>
+								<td><a href="#journalentries_retrieve">Retrieve a single Entry</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>journalentries/{transactionId}/reversal</td>
+								<td><a href="#journalentries_reverse">Reverse Journal Entries</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#accountingrules">Accounting Rules</a></td>
+								<td>accountingrules</td>
+								<td><a href="#accountingrules_create">Create a Accounting Rule</a></td>
+								<td><a href="#accountingrules_list">List Accounting Rules</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>accountingrules/{accountingruleId}</td>
+								<td></td>
+								<td><a href="#accountingrules_retrieve">Retrieve a Accounting Rule</a></td>
+								<td><a href="#accountingrules_update">Update a Accounting Rule</a></td>
+								<td><a href="#accountingrules_delete">Delete a Accounting Rule</a></td>
+							</tr>
+							<tr>
+								<td><a href="#officeglaccount">Mapping Financial Activities to Accounts</a></td>
+								<td>financialactivityaccounts</td>
+								<td><a href="#financialactivityaccounts_create">Create Financial Activity to Account Mapping</a><br> </td>
+								<td><a href="#financialactivityaccounts_list">List Financial Activities to Accounts Mappings</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>financialactivityaccounts/{financialActivityAccountId}</td>
+								<td></td>
+								<td><a href="#financialactivityaccounts_retrieve">Retrieve a Financial Activity to Account Mapping</a></td>
+								<td><a href="#financialactivityaccounts_update">Update a Financial Activity to Account Mapping</a></td>
+								<td><a href="#financialactivityaccounts_delete">Delete a Financial Activity to Account Mapping</a></td>
+
+							</tr>
+							<tr>
+								<td><a href="#periodicaccrualaccounting">Periodic Accrual Accounting</a></td>
+								<td>accrualaccounting</td>
+								<td><a href="#periodicaccrualaccounting_run">Execute Periodic Accrual Accounting</a><br> </td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+
+							<tr>
+								<td><a href="#provisioningentries">Provisioning Entries</a></td>
+								<td>provisioningentries</td>
+								<td><a href="#provisioningentries_create">Create Provisioning Entry</a><br> </td>
+								<td><a href="#provisioningentries_list">List Provisioning Entries</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>provisioningentries/{entryId}</td>
+								<td></td>
+								<td><a href="#provisioningentry_retrieve">Retrieve Provisioning Entry</a></td>
+								<td><a href="#provisioningentry_recreate">Recreates Provisionin Entry</a></td>
+								<td><a href="#provisioningentry_addjournals">Add Provisioning Journal Entries</a></td>
+							</tr>
+
+
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="flybar-nav">
+				<h2 class="flybar-button">Org</h2>
+				<div id="toc-menu-org" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#offices">Office</a></td>
+								<td>offices</td>
+								<td><a href="#offices_create">Create an Office</a></td>
+								<td><a href="#offices_list">List Offices</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>offices/{officeId}</td>
+								<td></td>
+								<td><a href="#offices_retrieve">Retrieve an Office</a></td>
+								<td><a href="#offices_update">Update an Office</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#loanproducts">Loan Product</a></td>
+								<td>loanproducts</td>
+								<td><a href="#loanproducts_create">Create a Loan
+										Product</a></td>
+								<td><a href="#loanproducts_list">List Loan Products</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>loanproducts/{productId}</td>
+								<td></td>
+								<td><a href="#loanproducts_retrieve">Retrieve a Loan
+										Product</a></td>
+								<td><a href="#loanproducts_update">Update a Loan
+										Product</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#savingsproducts">Savings Product</a></td>
+								<td>savingsproducts</td>
+								<td><a href="#savingsproducts_create">Create a Savings product</a></td>
+								<td><a href="#savingsproducts_list">List Savings products</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+														
+							<tr>
+								<td></td>
+								<td>savingsproducts/{productId}</td>
+								<td></td>
+								<td><a href="#savingsproducts_retrieve">Retrieve a savings product</a></td>
+								<td><a href="#savingsproducts_update">Update a savings product</a></td>
+								<td><a href="#savingsproducts_delete">Delete a savings product</a></td>
+							</tr>
+							<tr>
+								<td><a href="#fdproducts">Fixed Deposit Product</a></td>
+								<td>fixeddepositproducts</td>
+								<td><a href="#fdproducts_create">Create a Fixed Deposit product</a></td>
+								<td><a href="#fdproducts_list">List Fixed Deposit products</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>fixeddepositproducts/{productId}</td>
+								<td></td>
+								<td><a href="#fdproducts_retrieve">Retrieve a Fixed Deposit product</a></td>
+								<td><a href="#fdproducts_update">Update a Fixed Deposit product</a></td>
+								<td><a href="#fdproducts_delete">Delete a Fixed Deposit product</a></td>
+							</tr>
+							<tr>
+								<td><a href="#rdproducts">Recurring Deposit Product</a></td>
+								<td>recurringdepositproducts</td>
+								<td><a href="#rdproducts_create">Create a Recurring Deposit product</a></td>
+								<td><a href="#rdproducts_list">List Recurring Deposit products</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>recurringdepositproducts/{productId}</td>
+								<td></td>
+								<td><a href="#rdproducts_retrieve">Retrieve a Recurring Deposit product</a></td>
+								<td><a href="#rdproducts_update">Update a Recurring Deposit product</a></td>
+								<td><a href="#rdproducts_delete">Delete a Recurring Deposit product</a></td>
+							</tr>
+							<tr>
+								<td><a href="#shareproducts">Share Product</a></td>
+								<td>shareproducts</td>
+								<td><a href="#shareproducts_create">Create a Share product</a></td>
+								<td><a href="#shareproducts_list">List Share products</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>shareproducts/{productId}</td>
+								<td></td>
+								<td><a href="#shareproducts_retrieve">Retrieve a Share product</a></td>
+								<td><a href="#shareproducts_update">Update a Share product</a></td>
+							</tr>
+							
+							<tr>
+								<td><a href="#configs">Currency</a></td>
+								<td>currencies</td>
+								<td></td>
+								<td><a href="#configs_currencyretrieve">Retrieve
+										Currency Configuration</a></td>
+								<td><a href="#configs_currencyupdate">Update Currency
+										Configuration</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#funds">Funds</a></td>
+								<td>funds</td>
+								<td><a href="#funds_create">Create a Fund</a></td>
+								<td><a href="#funds_retrieve">List Funds</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>funds/{fundId}</td>
+								<td></td>
+								<td><a href="#fund_retrieve">Retrieve a Fund</a></td>
+								<td><a href="#fund_update">Update a Fund</a></td>
+								<td></td>
+							</tr>
+
+							<tr>
+								<td></td>
+								<td>funds/{fundId}?command=activate</td>
+								<td><a href="#funds_activate">Activate a Fund</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>funds/{fundId}?command=deactivate</td>
+								<td><a href="#funds_deactivate">Deactivate a Fund</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>funds/{fundId}?command=assign</td>
+								<td><a href="#funds_assign">Assign to Fund</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#funds"></a></td>
+								<td>funds/mapping/loans?isSummary=true</td>
+								<td><a href="#funds_mapping">Retrieve Loans for Fund Mapping</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#staff">Staff</a></td>
+								<td>staff</td>
+								<td><a href="#staff_create">Create a Staff Member</a></td>
+								<td><a href="#staff_list">List Staff</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>staff/{staffId}</td>
+								<td></td>
+								<td><a href="#staff_retrieve">Retrieve a Staff Member</a></td>
+								<td><a href="#staff_update">Update a Staff Member</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#client_images">Staff Images</a></td>
+								<td>staff/{staffId}/images</td>
+								<td><a href="#client_images_create">Upload an Image for a Staff Member (as  DATA URI)</a></td>
+								<td><a href="#client_images_retrieve">Get Staff Image (DATA URI)</a></td>
+								<td><a href="#client_images_update">Update Staff Image (DATA URI)</a></td>
+								<td><a href="#client_images_delete">Delete Staff Image</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td></td>
+								<td><a href="#client_images_create_form">
+									Upload an Image for a Staff Member (Multi-part form data)</a>
+								</td>
+								<td><a href="#client_images_retrieve_binary">Get Staff Image (Binary file)</a></td>
+								<td><a href="#client_images_update_form">
+									Update Staff Image (Multi-part form data)</a>
+								</td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#charges">Charges</a></td>
+								<td>charges</td>
+								<td><a href="#charges_create">Create a Charge</a></td>
+								<td><a href="#charges_list">List Charges</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>charges/{chargeId}</td>
+								<td></td>
+								<td><a href="#charges_retrieve">Retrieve a Charge</a></td>
+								<td><a href="#charges_update">Update a Charge</a></td>
+								<td><a href="#charges_delete">Delete a Charge</a></td>
+							</tr>
+							<tr>
+								<td><a href="#loanproductmix">Loan Product Mix</a></td>
+								<td>loanproducts?associations=productMixes</td>
+								<td></td>
+								<td><a href="#loanproductmix_list">List Loan Products Mix</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>loanproducts/{productId}/productmix</td>
+								<td><a href="#loanproductmix_create">Create a Loan Product Mix</a></td>
+								<td><a href="#loanproductmix_retrieve">Retrieve Loan Products Mix</a></td>
+								<td><a href="#loanproductmix_update">Update Loan Product Mix</a></td>
+								<td><a href="#loanproductmix_delete">Delete Loan Products Mix</a></td>
+							</tr>
+							<tr>
+								<td><a href="#holidays">Holidays</a></td>
+								<td>holidays</td>
+								<td><a href="#holidays_create">Create a Holiday</a></td>
+								<td><a href="#holidays_list">List Holidays</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>holidays/{holidayId}</td>
+								<td></td>
+								<td><a href="#holidays_retrieve">Retrieve a Holiday</a></td>
+								<td><a href="#holidays_update">Update a Holiday</a></td>
+								<td><a href="#holidays_delete">Delete a Holiday</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>holidays/{holidayId}?command=activate</td>
+								<td><a href="#holidays_activate">Activate a Holiday</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#workingdays">Working days</a></td>
+								<td>workingdays</td>
+								<td><a href="#workingdays_list">List workingdays</a></td>
+							    <td><a href="#workingdays_template">Working days template</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>workingdays/{workingdaysId}</td>
+								<td></td>
+								<td><a href="#workingdays_update">Update a workingdays</a></td>
+							</tr>
+							<tr>
+								<td><a href="#templates">User Generated Documents</a></td>
+								<td>templates</td>
+								<td><a href="#resources_addtemplate">Create a UGD</a></td>
+								<td><a href="#resource_templatelist">List UGDs</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>templates/{templateId}</td>
+								<td></td>
+								<td><a href="#resources_retrievetemplate">Retrieve a UGD</a></td>
+								<td><a href="#resources_updatetemplate">Update a UGD</a></td>
+								<td><a href="#resources_deletetemplate">Delete a UGD</a></td>
+							</tr>
+							<tr>
+								<td><a href="#interestratechart">Interest Rate Charts</a></td>
+								<td>charts</td>
+								<td><a href="#interestratechart_create">Create a Chart</a></td>
+								<td><a href="#interestratechart_list">List Charts</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>interestratecharts/{chartId}</td>
+								<td></td>
+								<td><a href="#interestratechart_retrieve">Retrieve a Chart</a></td>
+								<td><a href="#interestratechart_update">Update a Chart</a></td>
+								<td><a href="#interestratechart_delete">Delete a Chart</a></td>
+							</tr>
+							<tr>
+								<td><a href="#interestrateslab">Interest Rate Slabs</a></td>
+								<td>slabs</td>
+								<td><a href="#interestrateslab_create">Create a Slab</a></td>
+								<td><a href="#interestrateslab_list">List Slabs</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>interestrateslabs/{slabId}</td>
+								<td></td>
+								<td><a href="#interestrateslab_retrieve">Retrieve a Slab</a></td>
+								<td><a href="#interestrateslab_update">Update a Slab</a></td>
+								<td><a href="#interestrateslab_delete">Delete a Slab</a></td>
+							</tr>
+							<tr>
+								<td><a href="#tellercashmgmt">Teller Cash Management</a></td>
+								<td>tellers</td>
+								<td><a href="#createtellers">Create Teller</a></td>
+								<td><a href="#listtellers">List Tellers</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}</td>
+								<td></td>
+								<td><a href="#findtellers">Find Teller</a></td>
+								<td><a href="#updatetellers">Update Teller</a></td>
+								<td><a href="#deletetellers">Delete Teller</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers</td>
+								<td><a href="#createcashier">Create Cashier</a></td>
+								<td><a href="#findallcashiers">Retrieve Cashier</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/{cashierId}</td>
+								<td></td>
+								<td><a href="#findaonecashier">Find Cashier</a></td>
+								<td><a href="#updatecashier">Update Cashier</a></td>
+								<td><a href="#deletecashier">Delete Cashier</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/template</td>
+								<td></td>
+								<td><a href="#updatecashier">Retrieve Cashier Template</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/{cashierId}/allocate</td>
+								<td><a href="#allocateCashToCashier">Allocate Cash To Cashier</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/{cashierId}/settle</td>
+								<td><a href="#settleCashFromCashier">Settle Cash From Cashier</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/{cashierId}/transactions</td>
+								<td></td>
+								<td><a href="#transactionsForCashier">Retrieve Cashier Transactions</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/{cashierId}/summaryandtransactions</td>
+								<td></td>
+								<td><a href="#getTransactionsWtihSummaryForCashier">Retrieve Cashier Transactions With Summary</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>tellers/{tellerId}/cashiers/{cashierId}/transactions/template</td>
+								<td></td>
+								<td><a href="#retrieveCashierTxnTemplate">Retrieve Cashier Transaction Template</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+
+							<tr>
+								<td><a href="#paymenttype">Payment Type</a></td>
+								<td>paymenttypes</td>
+								<td><a href="#create_paymenttype">Create Payment Type</a></td>
+								<td><a href="#paymenttype_list">List Payment Types</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>paymenttypes/{paymentTypeId}</td>
+								<td></td>
+								<td><a href="#paymenttype_retrieve">Retrieve Payment Type</a></td>
+								<td><a href="#paymenttype_update">Update Payment Type</a></td>
+								<td><a href="#paymnettype_delete">Delete Payment Type</a></td>
+							</tr>
+							<tr>
+								<td><a href="#provisioningcriteria">Provisioning Criteria</a></td>
+								<td>provisioningcriteria</td>
+								<td><a href="#create_provisioningcriteria">Create Provisioning Criteria</a></td>
+								<td><a href="#provisioningcriteria_list">List Provisioning Criteria</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>provisioningcriteria/{criteriaId}</td>
+								<td></td>
+								<td><a href="#retrieve_provisioningcriteria">Retrieve Provisioning Criteria</a></td>
+								<td><a href="#update_provisioningcriteria">Update Provisioning Criteria</a></td>
+								<td><a href="#delete_provisioningcriteria">Delete Provisioning Criteria</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#floatingrates">Floating Rates</a></td>
+								<td>floatingrates</td>
+								<td><a href="#create_floatingrates">Create Floating Rate</a></td>
+								<td><a href="#floatingrates_list">List Floating Rates</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>floatingrates/{floatingRateId}</td>
+								<td></td>
+								<td><a href="#retrieve_floatingrate">Retrieve Floating Rate</a></td>
+								<td><a href="#update_floatingrate">Update Floating Rate</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#taxcomponent">Tax Component</a></td>
+								<td>taxes/component</td>
+								<td><a href="#create_taxcomponent">Create Tax Component</a></td>
+								<td><a href="#taxcomponents_list">List Tax Components</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>taxes/component/{taxComponentId}</td>
+								<td></td>
+								<td><a href="#retrieve_taxcomponent">Retrieve Tax component</a></td>
+								<td><a href="#update_taxcomponent">Update Tax Component</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#taxgroup">Tax Group</a></td>
+								<td>taxes/group</td>
+								<td><a href="#create_taxgroup">Create Tax Group</a></td>
+								<td><a href="#taxgroup_list">List Tax Groups</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>taxes/group/{taxGroupId}</td>
+								<td></td>
+								<td><a href="#retrieve_taxgroup">Retrieve Tax Group</a></td>
+								<td><a href="#update_taxgroup">Update Tax Group</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="flybar-nav">
+				<h2 class="flybar-button">User</h2>
+				<div id="toc-menu-user" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#authenticationbasic">Authentication HTTP Basic</a></td>
+								<td>authentication</td>
+								<td><a href="#authenticate_request_basic">Verify Authentication</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#authenticationoauth">Authentication Oauth2</a></td>
+								<td>oauth/token</td>
+								<td><a href="#oauth">OAuth2 Access and refresh Token Request</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td></td>
+								<td><a href="#oauth_access_token_req">OAuth2 Access Token Request from refresh token</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>authenticated user</td>
+								<td></td>
+								<td><a href="#userdetails_request">Fetch Authenticated user details</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#users">User</a></td>
+								<td>users</td>
+								<td><a href="#users_create">Create a User</a></td>
+								<td><a href="#users_list">List Users</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>users/{userId}</td>
+								<td></td>
+								<td><a href="#users_retrieve">Retrieve a User</a></td>
+								<td><a href="#users_update">Update a User</a></td>
+								<td><a href="#users_delete">Delete a User</a></td>
+							</tr>
+							<tr>
+								<td><a href="#roles">Role</a></td>
+								<td>roles</td>
+								<td><a href="#roles_create">Create a New Role</a></td>
+								<td><a href="#roles_list">List Roles</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>roles/{roleId}</td>
+								<td></td>
+								<td><a href="#roles_retrieve">Retrieve a Role</a></td>
+								<td><a href="#roles_update">Update a Role</a></td>
+								<td><a href="#roles_delete">Delete Role</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>roles/{roleId}/permissions</td>
+								<td></td>
+								<td><a href="#rolespermissions_retrieve">Retrieve a
+										Role's Permissions</a></td>
+								<td><a href="#rolespermissions_update">Update a Role's
+										Permissions</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>roles/{roleId}?command=enable</td>
+								<td><a href="#roles_enable">Enable Role</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>roles/{roleId}?command=disable</td>
+								<td><a href="#roles_disable">Disable Role</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#permissions">Permission</a></td>
+								<td>permissions</td>
+								<td></td>
+								<td><a href="#permissions_list">List Application Permissions</a></td>
+								<td><a href="#permissions_update">Enable/Disable Permissions for Maker Checker</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#password_preferences">Password preferences</a></td>
+								<td>passwordpreferences</td>
+								<td><a href=""></a></td>
+								<td><a href="#password_preferences_list">Get Password Preferences</a></td>
+								<td><a href="#password_preferences_update">Update Password Preferences</a></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="flybar-nav">
+				<h2 class="flybar-button">System</h2>
+				<div id="toc-menu-system" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#configs_global">Global Configuration</a></td>
+								<td>configurations</td>
+								<td></td>
+								<td><a href="#configs_globalconfig_retrieve">List
+										Global Configuration</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#configs_global">Global Configuration</a></td>
+								<td>configurations/{configId}</td>
+								<td></td>
+								<td><a href="#configs_globalconfig_retrieve_one">Retrieve
+										a Global Configuration</a></td>
+								<td><a href="#configs_globalconfig_update">Update
+										Global Configuration</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#configs_hooks">Hooks</a></td>
+								<td>hooks</td>
+								<td><a href="#configs_hooks_create">Create a Hook</a></td>
+								<td><a href="#configs_hooks_retrieve">List Hooks</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>hooks/{hookId}</td>
+								<td></td>
+								<td><a href="#configs_hook_retrieve">Retrieve a Hook</a></td>
+								<td><a href="#configs_hook_update">Update a Hook</a></td>
+								<td><a href="#configs_hook_delete">Delete a Hook</a></td>
+							</tr>
+							<tr>
+								<td><a href="#accountnumberformats">Account number format</a></td>
+								<td>accountnumberformats</td>
+								<td><a href="#accountnumberformats_create">Create an Account number format</a></td>
+								<td><a href="#accountnumberformats_list">List Account number formats</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>accountnumberformats/{accountnumberformatId}</td>
+								<td></td>
+								<td><a href="#accountnumberformats_retrieve">Retrieve an Account number format</a></td>
+								<td><a href="#accountnumberformats_update">Update an Account number format</a></td>
+								<td><a href="#accountnumberformats_delete">Delete an Account number format</a></td>
+							</tr>
+							<tr>
+								<td><a href="#configs_codes">Codes</a></td>
+								<td>codes</td>
+								<td><a href="#configs_codes_create">Create a Code</a></td>
+								<td><a href="#configs_codes_retrieve">List Codes</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>codes/{codeId}</td>
+								<td></td>
+								<td><a href="#configs_code_retrieve">Retrieve a Code</a></td>
+								<td><a href="#configs_code_update">Update a Code</a></td>
+								<td><a href="#configs_code_delete">Delete a Code</a></td>
+							</tr>
+							<tr>
+								<td><a href="#configs_codes_codevalues">Code Values</a></td>
+								<td>codes/{codeId}/codevalues</td>
+								<td><a href="#configs_codes_codevalues_create">Create a Code Value</a></td>
+								<td><a href="#configs_codes_codevalues_list">List Code Values</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>codes/{codeId}/codevalues/{codevalueId}</td>
+								<td></td>
+								<td><a href="#configs_codes_codevalues_retrieve">Retrieve a Code Value</a></td>
+								<td><a href="#configs_codes_codevalues_update">Update a Code Value</a></td>
+								<td><a href="#configs_codes_codevalues_delete">Delete a Code Value</a></td>
+							</tr>
+							<tr>
+								<td><a href="#audits">Audits</a></td>
+								<td>audits</td>
+								<td></td>
+								<td><a href="#audits_list">List Audits</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>audits/{auditId}</td>
+								<td></td>
+								<td><a href="#audits_retrieve">Retrieve an Audit Entry</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#makercheckers">Makercheckers</a></td>
+								<td>makercheckers</td>
+								<td></td>
+								<td><a href="#makercheckers_list">List Maker Checker Entries</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>makercheckers/{auditId}</td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td><a href="#makercheckers_delete">Delete Maker Checker Entry</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>makercheckers/{auditId}?command=approve</td>
+								<td><a href="#makercheckers_approve">Approve Maker Checker Entry</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#scheduler_jobs">Scheduler jobs</a></td>
+								<td>jobs</td>
+								<td></td>
+								<td><a href="#scheduler_jobs_list">List Scheduler jobs</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>jobs/{jobId}</td>
+								<td></td>
+								<td><a href="#retrieve_scheduler_job">Retrieve a job</a></td>
+								<td><a href="#update_scheduler_job">Update a job</a></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>jobs/{jobId}?command=executeJob</td>
+								<td><a href="#run_job">Run a job</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>jobs/{jobid}/runhistory</td>
+								<td></td>
+								<td><a href="#retrieve_job_runhistory">Retrieve job history</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>scheduler</td>
+								<td></td>
+								<td><a href="#retrieve_scheduler_status">Retrieve scheduler status</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>scheduler?command=start</td>
+								<td><a href="#activate_scheduler">Activate a scheduler service</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>scheduler?command=stop</td>
+								<td><a href="#suspend_scheduler">Suspend a scheduler service</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#external_services">External Services</a></td>
+								<td>externalservice/{servicename}</td>
+								<td></td>
+								<td><a href="#configs_externalService_retrieve">Retrieve
+										a external service configuration</a></td>
+								<td><a href="#configs_externalService_update">Update
+										external service Configuration</a></td>
+								<td></td>
+							</tr>
+                            <tr>
+								<td><a href="#external_authentication_services">External Authentication Services</a></td>
+								<td>/external/authentications/services</td>
+								<td></td>
+								<td><a href="#external_authentication_service_read">Retrieve
+										a external authentication services</a></td>
+								<td><a href="#external_authentication_service_update">Update
+										external authentication service</a></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="flybar-nav">
+				<h2 class="flybar-button">Non-Core</h2>
+				<div id="toc-menu-noncore" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#datatables">Data Table</a></td>
+								<td>datatables</td>
+                                <td><a href="#datatables_createTable">Create Data Table</a></td>
+								<td><a href="#datatables_list">List Data Tables</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+                                <td>datatables/{datatable}</td>
+                                <td></td>
+								<td><a href="#datatables_getTable">Retrieve Data Table Details</a></td>
+                                <td><a href="#datatables_updateTable">Update Data Table</a></td>
+                                <td><a href="#datatables_deleteTable">Delete Data Table</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>datatables/register/{datatable}/{apptable}</td>
+								<td><a href="#datatables_register">Register Data Table</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>datatables/deregister/{datatable}</td>
+								<td><a href="#datatables_deregister">Deregister Data
+										Table</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>datatables/{datatable}/{apptableId}</td>
+								<td><a href="#datatables_create">Create Entry in Data
+										Table</a></td>
+								<td><a href="#datatables_retrieve">Retrieve Entry(s)
+										from Data Table</a></td>
+								<td><a href="#datatables_update">Update Entry in Data
+										Table (One to One)</a></td>
+								<td><a href="#datatables_delete">Delete Entry(s) in
+										Data Table</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>datatables/{datatable}/{apptableId}/{datatableId}</td>
+								<td></td>
+								<td><a href="#datatables_update_1M">Update Entry in
+										Data Table (One to Many)</a></td>
+								<td></td>
+								<td><a href="#datatables_delete_1M">Delete Entry in
+										Data Table (One to Many)</a></td>
+							</tr>
+							<tr>
+								<td><a href="#notes">Notes</a></td>
+								<td>{resource}/{resourceId}/notes</td>
+								<td><a href="#resources_addnote">Add a Resource Note</a></td>
+								<td><a href="#resource_notelist">Retrieve a Resource's Notes</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>{resource}/{resourceId}/notes/{noteId}</td>
+								<td></td>
+								<td><a href="#resources_retrievenote">List All
+								Notes for a Resource</a></td>
+								<td><a href="#resources_updatenote">Update a Resource Note</a></td>
+								<td><a href="#resources_deletenote">Delete a Resource Note</a></td>
+							</tr>
+							<tr>
+								<td><a href="#documents">Documents</a></td>
+								<td>{entityType}/{entityId}/documents</td>
+								<td><a href="#documents_create">Create a Document</a></td>
+								<td><a href="#documents_list">List All Document Details</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>{entityType}/{entityId}/documents/{documentId}</td>
+								<td></td>
+								<td><a href="#documents_retrieve">Retrieve a Documents Details</a></td>
+								<td><a href="#documents_update">Update a Document</a></td>
+								<td><a href="#documents_delete">Delete a Document</a></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>{entityType}/{entityId}/documents/{documentId}/attachment</td>
+								<td></td>
+								<td><a href="#documents_retrieve_file">Retrieve
+									binary file associated with a
+									Document</a>
+								</td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#search">Search</a></td>
+								<td>search</td>
+								<td></td>
+								<td><a href="#search_resource">Search Resources</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#advance_search">AdHoc Search</a></td>
+								<td>search/advance</td>
+								<td><a href="#advance_search_resource">Advance Search</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+                                 <td><a href="#survey_retrieve">Survey</a></td>
+                                 <td>survey/</td>
+                                 <td></td>
+                                 <td><a href="#survey_retrieve">List surveys</a></td>
+                                 <td></td>
+                                 <td></td>
+                             </tr>
+                             <tr>
+                                 <td></td>
+                                 <td>survey/{surveyName}</td>
+                                 <td></td>
+                                 <td><a href="#survey_details">Retrieve Survey details</a></td>
+                                 <td></td>
+                                 <td></td>
+                             </tr>
+                             <tr>
+                                 <td></td>
+                                 <td>survey/{surveyName}/{clientId}</td>
+                                 <td><a href="#survey_create">Create Entry in the survey table</a></td>
+                                 <td></td>
+                                 <td></td>
+                                 <td></td>
+                             </tr>
+                            <tr>
+                                 <td><a href="#transaction_authentication">Transaction Authentication</a></td>
+                                 <td>/transactions/authentication</td>
+                                <td><a href="#create_transaction_authentication">Create Transaction Authentication</a> </td>
+                                 <td><a href="#retrieve_transaction_authentication">List transaction authentication</a></td>
+                                 <td><a href="#transaction_authentication_update"> Update transaction authentication</a></td>
+                                 <td><td><a href="#transaction_authentication_delete"> Delete transaction authentication</a></td>
+                             </tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="flybar-nav">
+				<h2 class="flybar-button">Report</h2>
+				<div id="toc-menu-report" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td colspan=2 valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">POST</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>create/complex
+													update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">PUT</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>update</div></td>
+										</tr>
+									</table></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">DELETE</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>delete</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td><a href="#reports">Report</a></td>
+								<td>reports</td>
+								<td><a href="#reports_create">Create a Report</a></td>
+								<td><a href="#reports_list">List Reports</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>reports/{id}</td>
+								<td></td>
+								<td><a href="#reports_retrieve">Retrieve a Report</a></td>
+								<td><a href="#reports_update">Update a Report</a></td>
+								<td><a href="#reports_delete">Delete a Report</a></td>
+							</tr>
+							<tr>
+								<td><a href="#runreports">Run Report</a></td>
+								<td>runreports/{reportName}</td>
+								<td></td>
+								<td><a href="#report_run">Run a Report</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#report_mailing_jobs">Report Mailing Job</a></td>
+								<td>reportmailingjob</td>
+								<td><a href="#report_mailing_jobs_create">Create a Report Mailing Job</a></td>
+								<td><a href="#report_mailing_jobs_list">List Reports Mailing Jobs</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>reportmailingjob/{id}</td>
+								<td></td>
+								<td><a href="#report_mailing_jobs_retrieve">Retrieve a Report Mailing Job</a></td>
+								<td><a href="#report_mailing_jobs_update">Update a Report Mailing Job</a></td>
+								<td><a href="#report_mailing_jobs_delete">Delete a Report Mailing Job</a></td>
+							</tr>
+                            <tr>
+								<td></td>
+								<td>reportmailingjobrunhistory/{jobId}</td>
+								<td></td>
+								<td><a href="#report_mailing_job_history_list">Retrieve Reports Mailing Job History</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="flybar-nav">
+				<h2 class="flybar-button">Template</h2>
+				<div id="toc-menu-template" class="flybar-menu">
+					<div class="tocMatrix">
+						<table class=matrixHeading>
+							<tr class="matrixHeadingBG">
+								<td valign="top"><div class="matrixHeadingVerbs">
+										<table>
+											<tr>
+												<td>RESOURCES</td>
+											</tr>
+										</table>
+									</div></td>
+								<td><table>
+										<tr>
+											<td><div class="matrixHeadingVerbs">GET</div></td>
+										</tr>
+										<tr>
+											<td><div class=matrixHeadingCommands>read</div></td>
+										</tr>
+									</table></td>
+							</tr>
+							<tr>
+								<td>clients/template</td>
+								<td><a href="#clients_template">Retrieve Client Template</a></td>
+							</tr>
+							<tr>
+								<td>groups/template</td>
+								<td><a href="#groups_template">Retrieve Group Template</a></td>
+							</tr>
+							<tr >
+								<td>loanproducts/template</td>
+								<td><a href="#loanproducts_template">Retrieve Loan Product Template</a></td>
+							</tr>
+							<tr >
+								<td>loanproducts/template?isProductMixTemplate=true</td>
+								<td><a href="#loanproductmix_template">Retrieve Loan Product Mix Template</a></td>
+							</tr>
+							<tr>
+								<td>loans/template?clientId={clientId}</td>
+								<td><a href="#loans_template">Retrieve Loan Template</a></td>
+							</tr>
+							<tr>
+								<td>loans/{loanId}/transactions/template</td>
+								<td><a href="#loans_repaymenttemplate_etc">Retrieve Loan Transaction Template</a></td>
+							</tr>
+							<tr>
+								<td>charges/template</td>
+								<td><a href="#charges_template">Retrieve Charge Template</a></td>
+							</tr>
+							<tr>
+								<td>offices/template</td>
+								<td><a href="#offices_template">Retrieve Office Template</a></td>
+							</tr>
+							<tr>
+								<td>users/template</td>
+								<td><a href="#users_template">Retrieve User Template</a></td>
+							</tr>
+							<tr>
+								<td>hooks/template</td>
+								<td><a href="#hooks_template">Retrieve Hooks Template</a></td>
+							</tr>
+	                        <tr>
+	                                <td>audits/searchtemplate</td>
+	                                <td><a href="#audits_searchtemplate">Retrieve Audit Search Template</a></td>
+	                        </tr>
+	                        <tr>
+	                                <td>makercheckers/searchtemplate</td>
+	                                <td><a href="#makercheckers_searchtemplate">Retrieve Maker Checker Search Template</a></td>
+	                        </tr>
+	                        <tr>
+                                <td>reports/template</td>
+                                <td><a href="#reports_template">Retrieve Report Template</a></td>
+	                        </tr>
+	                        <tr>
+                                <td>accountingrules/template</td>
+                                <td><a href="#accountingrules_template">Retrieve Accounting Rule Template</a></td>
+	                        </tr>
+	                        <tr >
+								<td>savingproducts/template</td>
+								<td><a href="#savingsproducts_template">Retrieve Savings Product Template</a></td>
+							</tr>
+							<tr>
+								<td>savingsaccounts/template?clientId={clientId}</td>
+								<td><a href="#savingsaccounts_template">Retrieve savings template</a></td>
+							</tr>
+							<tr>
+								<td>savingsaccounts/{accountId}/transactions/template</td>
+								<td><a href="#savingsaccounts_transactions_template">Retrieve savings account transaction template</a></td>
+							</tr>
+                            <tr>
+                                <td>standinginstructions/template</td>
+                                <td><a href="#standinginstruction_template">Retrieve Standing Instruction Template</a></td>
+                            </tr>
+                            <tr>
+                                <td>accounttransfers/template</td>
+                                <td><a href="#accounttransfers_template">Retrieve Account Transfer Template</a></td>
+                            </tr>
+							<tr>
+								<td>funds/templates</td>
+								<td><a href="#funds_template">Retrieve Fund Template</a></td>
+							</tr>
+							<tr>
+								<td>funds/templates?command=search</td>
+								<td><a href="#funds_search_template">Retrieve Fund Template For Search</a></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+>>>>>>> 1be2ad747... 3076 fund mapping
 
                 if (l.hostname == "demo.openmf.org") {
                     baseUrl = openmfDemoUrl;
@@ -29547,6 +31068,7 @@
                     No Request Body:
                     {
                     }
+<<<<<<< HEAD
                 </code>
                 <code class="method-response">
                     {
@@ -29578,6 +31100,1052 @@
 
                     <tr class=alt><td>fromAccountType</td></tr>
                     <tr><td class=fielddesc>The type of account from which the transfer is made. 1=Loan Account, 2=Savings Account</td></tr>
+=======
+				</code>
+				</div>
+			</div>
+
+			<!-- Fund starts here -->
+			<a id="funds" name="funds" class="old-syle-anchor">&nbsp;</a>
+			<a id="funds_template" name="funds_template" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h2>Retrieve Fund Template:</h2>
+					<p>This is a convenience resource. It can be useful when creating or updateing funds:
+
+					</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">GET https://Domain Name/api/v1/funds/templates
+					</code>
+					<code class="method-response">
+				
+					{
+					"fundSourceOptions": [
+					{
+					"id": 80,
+					"name": "sbi",
+					"position": 0,
+					"description": "",
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					}
+					],
+					"facilityTypeOptions": [
+					{
+					"id": 71,
+					"name": "Term",
+					"position": 0,
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					},
+					{
+					"id": 74,
+					"name": "Assignment",
+					"position": 0,
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					},
+					{
+					"id": 72,
+					"name": "Buyout",
+					"position": 0,
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					},
+					{
+					"id": 70,
+					"name": "Own",
+					"position": 0,
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					},
+					{
+					"id": 73,
+					"name": "Secuterization",
+					"position": 0,
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					}
+					],
+					"loanPurposeOptions": [
+					{
+					"id": 42,
+					"name": "agriculture",
+					"position": 0,
+					"description": "",
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					},
+					{
+					"id": 41,
+					"name": "business",
+					"position": 0,
+					"description": "",
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					}
+					],
+					"repaymentFrequencyTypeOptions": [
+					{
+					"id": 0,
+					"code": "repaymentFrequency.periodFrequencyType.days",
+					"value": "Days"
+					},
+					{
+					"id": 1,
+					"code": "repaymentFrequency.periodFrequencyType.weeks",
+					"value": "Weeks"
+					},
+					{
+					"id": 2,
+					"code": "repaymentFrequency.periodFrequencyType.months",
+					"value": "Months"
+					}
+					],
+					"categoryOptions": [
+					{
+					"id": 81,
+					"name": "private",
+					"position": 0,
+					"description": "",
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					}
+					],
+					"fundRepaymentFrequencyOptions": [
+					{
+					"id": 78,
+					"name": "monthly",
+					"position": 0,
+					"description": "",
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					},
+					{
+					"id": 79,
+					"name": "weekly",
+					"position": 0,
+					"description": "",
+					"isActive": true,
+					"codeScore": 0,
+					"mandatory": false
+					}
+					]
+					}
+				</code>
+				 </div>
+
+	   </div>
+	   <a id="funds_search_template" name="funds_template" class="old-syle-anchor">&nbsp;</a>
+	<div class="method-section">
+		<div class="method-description">
+			<h2>Retrieve Fund Template for Search:</h2>
+			<p>This is a convenience resource. It can be useful when searching loans for fund mapping:
+
+			</p>
+		</div>
+		<div class="method-example">
+			<code class="method-declaration">GET https://Domain Name/api/v1/funds/template?command=search
+			</code>
+			<code class="method-response">
+
+			{
+			"loanPurposeCategoryOptions": [
+			
+			{
+			"id": 75,
+			"name": "Consumption Wise",
+			"position": 0,
+			"isActive": true,
+			"codeScore": 0,
+			"mandatory": false
+			}
+			],
+			"clientTypeOptions": [
+			{
+			"id": 40,
+			"name": "Individual",
+			"position": 0,
+			"description": "",
+			"isActive": true,
+			"codeScore": 0,
+			"mandatory": false
+			}
+			],
+			"loanPurposeOptions": [
+			{
+			"id": 42,
+			"name": "agriculture",
+			"position": 0,
+			"description": "",
+			"isActive": true,
+			"codeScore": 0,
+			"mandatory": false
+			},
+			{
+			"id": 41,
+			"name": "business",
+			"position": 0,
+			"description": "",
+			"isActive": true,
+			"codeScore": 0,
+			"mandatory": false
+			}
+			],
+			"fundOptions": [
+			{
+			"id": 18,
+			"name": "existing fund",
+			"externalId": "1111",
+			"fundSource": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundCategory": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"facilityType": {
+			"id": 70,
+			"name": "Own",
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundRepaymentFrequency": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"tenure": 0,
+			"tenureFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"morotorium": 0,
+			"morotoriumFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"isActive": true,
+			"isLoanAssigned": false,
+			"fundLoanPurposeData": []
+			},
+			{
+			"id": 23,
+			"name": "new",
+			"fundSource": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundCategory": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"facilityType": {
+			"id": 70,
+			"name": "Own",
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundRepaymentFrequency": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"tenure": 0,
+			"tenureFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"morotorium": 0,
+			"morotoriumFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"isActive": true,
+			"isLoanAssigned": true,
+			"fundLoanPurposeData": []
+			},
+			{
+			"id": 20,
+			"name": "own",
+			"fundSource": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundCategory": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"facilityType": {
+			"id": 70,
+			"name": "Own",
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundRepaymentFrequency": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"tenure": 0,
+			"tenureFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"morotorium": 0,
+			"morotoriumFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"isActive": true,
+			"isLoanAssigned": false,
+			"fundLoanPurposeData": []
+			},
+			{
+			"id": 19,
+			"name": "sbi in",
+			"fundSource": {
+			"id": 80,
+			"name": "sbi",
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundCategory": {
+			"id": 81,
+			"name": "private",
+			"isActive": false,
+			"mandatory": false
+			},
+			"facilityType": {
+			"id": 72,
+			"name": "Buyout",
+			"isActive": false,
+			"mandatory": false
+			},
+			"assignmentStartDate": [
+			2017,
+			1,
+			2
+			],
+			"assignmentEndDate": [
+			2017,
+			1,
+			25
+			],
+			"sanctionedDate": [
+			2017,
+			1,
+			17
+			],
+			"sanctionedAmount": 234,
+			"disbursedDate": [
+			2017,
+			1,
+			19
+			],
+			"disbursedAmount": 35,
+			"maturityDate": [
+			2017,
+			1,
+			1
+			],
+			"interestRate": 23,
+			"fundRepaymentFrequency": {
+			"id": 79,
+			"name": "weekly",
+			"isActive": false,
+			"mandatory": false
+			},
+			"tenure": 3,
+			"tenureFrequency": {
+			"id": 1,
+			"code": "periodFrequencyType.weeks",
+			"value": "WEEKS"
+			},
+			"morotorium": 4,
+			"morotoriumFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"isActive": true,
+			"isLoanAssigned": false,
+			"fundLoanPurposeData": []
+			},
+			{
+			"id": 22,
+			"name": "xcv",
+			"fundSource": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundCategory": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"facilityType": {
+			"id": 70,
+			"name": "Own",
+			"isActive": false,
+			"mandatory": false
+			},
+			"fundRepaymentFrequency": {
+			"id": 0,
+			"isActive": false,
+			"mandatory": false
+			},
+			"tenure": 0,
+			"tenureFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"morotorium": 0,
+			"morotoriumFrequency": {
+			"id": 0,
+			"code": "periodFrequencyType.days",
+			"value": "DAYS"
+			},
+			"isActive": true,
+			"isLoanAssigned": false,
+			"fundLoanPurposeData": []
+			}
+			],
+			"offices": [
+			{
+			"id": 1,
+			"name": "Head Office",
+			"nameDecorated": "Head Office"
+			}
+			],
+			"conditionalOperatorOptions": [
+			{
+			"value": "BETWEEN",
+			"code": "between"
+			},
+			{
+			"value": "LESS THAN",
+			"code": "<"
+				},
+					{
+						"value": "LESS THAN OR EQUAL",
+							"code": "<="
+			},
+			{
+			"value": "GREATER THAN",
+			"code": ">"
+			},
+			{
+			"value": "GREATER THAN OR EQUAL",
+			"code": ">="
+			},
+			{
+			"value": "EQUAL",
+			"code": "="
+			}
+			],
+			"loanProducts": [
+			
+			{
+			"id": 2,
+			"name": "repayWeekly",
+			"includeInBorrowerCycle": false,
+			"useBorrowerCycle": false,
+			"isLinkedToFloatingInterestRates": false,
+			"isFloatingInterestRateCalculationAllowed": false,
+			"allowVariableInstallments": false,
+			"isInterestRecalculationEnabled": false,
+			"canDefineInstallmentAmount": false,
+			"adjustFirstEMIAmount": false,
+			"adjustInterestForRounding": false,
+			"principalVariationsForBorrowerCycle": [],
+			"interestRateVariationsForBorrowerCycle": [],
+			"numberOfRepaymentVariationsForBorrowerCycle": [],
+			"canUseForTopup": false,
+			"holdGuaranteeFunds": false,
+			"accountMovesOutOfNPAOnlyOnArrearsCompletion": false,
+			"closeLoanOnOverpayment": false,
+			"syncExpectedWithDisbursementDate": false,
+			"isEmiBasedOnDisbursements": false
+			}
+			],
+			"genderOptions": [
+			{
+			"id": 23,
+			"name": "Male",
+			"position": 1,
+			"isActive": true,
+			"codeScore": 0,
+			"mandatory": false
+			}
+			],
+			"clientClassificationOptions": [
+			{
+			"id": 38,
+			"name": "MINORITY",
+			"position": 0,
+			"description": "",
+			"isActive": true,
+			"codeScore": 0,
+			"mandatory": false
+			}
+			]
+			}
+		</code>
+	</div>
+		</div>
+			<div class="method-section">
+				<div class="method-description">
+					<h3>Funds</h3>
+                                </div>
+                        </div>
+
+			<a id="funds_create" name="funds_create" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Create a Fund</h4>
+					<h4>Mandatory Fields</h4>
+					<ol>
+						<li><b>facilityType IS "Own"</b></li>
+						<li>name</li>
+						<li>facilityType</li>
+						<ul>
+						<li><b>If facilityType IS Not "Own"</b></li>
+						<li>name</li>
+						<li>facilityType</li>
+						<li>dateFormat</li>
+						<li>assignmentStartDate</li>
+						<li>assignmentEndDate</li>
+						<li>disbursedAmount</li>
+						<li>disbursedDate</li>
+						<li>fundCategory</li>
+						<li>fundLoanPurpose</li>
+						<li>fundRepaymentFrequency</li>
+						<li>fundSource</li>
+						<li>interestRate</li>
+						<li>locale</li>
+						<li>maturityDate</li>
+						<li>sanctionedAmount</li>
+						<li>sanctionedDate</li>
+						<li>tenure</li>
+						<li>tenureFrequency</li>
+					</ul>
+					</ol>
+
+					<p>Creates a fund.</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/funds
+					</code>
+					<code class="method-request">
+POST funds
+Content-Type: application/json
+//if facilityType IS NOT "Own" then
+Request Body:
+{
+   "assignmentEndDate":"25 January 2017",
+   "assignmentStartDate":"25 January 2017",
+   "bookDebtHypothecation":"23",
+   "cashCollateral":"45.6",
+   "dateFormat":"dd MMMM yyyy",
+   "disbursedAmount":"44",
+   "disbursedDate":"25 January 2017",
+   "facilityType":21,
+   "fundCategory":82,
+   "fundLoanPurpose":[
+	  {
+		 "loanPurposeAmount":"54 ",
+		 "loanPurposeId":2
+	  }
+   ],
+   "fundRepaymentFrequency":79,
+   "fundSource":80,
+   "interestRate":"34.5",
+   "loanPortfolioFee":"12.4",
+   "locale":"en",
+   "maturityDate":"25 January 2017",
+   "morotorium":"3",
+   "morotoriumFrequency":1,
+   "name":"sbi",
+   "personalGurantee":"sbi gurantee",
+   "sanctionedAmount":"12",
+   "sanctionedDate":"25 January 2017",
+   "tenure":"4",
+   "tenureFrequency":1
+}
+
+//if facilty type IS "Own"
+Request Body:
+{
+   "name":"sbi",
+   "facilityType":21
+}
+
+					</code>
+					<code class="method-response">
+{
+	"resourceId": 1
+}
+					</code>
+				</div>
+			</div>
+
+			<a id="funds_retrieve" name="funds_retrieve" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve Funds</h4>
+					<p>Returns the list of funds.</p>
+					<p>Example Requests:</p>
+					<div class=apiClick>funds</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/funds
+					</code>
+					<code class="method-response">
+[
+	{
+  "id": 19,
+  "name": "sbi",
+  "fundSource": {
+	"id": 80,
+	"name": "sbi",
+	"isActive": false,
+	"mandatory": false
+  },
+  "fundCategory": {
+	"id": 81,
+	"name": "private",
+	"isActive": false,
+	"mandatory": false
+  },
+  "facilityType": {
+	"id": 72,
+	"name": "Buyout",
+	"isActive": false,
+	"mandatory": false
+  },
+  "assignmentStartDate": [
+	2017,
+	1,
+	25
+  ],
+  "assignmentEndDate": [
+	2017,
+	1,
+	25
+  ],
+  "sanctionedDate": [
+	2017,
+	1,
+	25
+  ],
+  "sanctionedAmount": 12,
+  "disbursedDate": [
+	2017,
+	1,
+	25
+  ],
+  "disbursedAmount": 44,
+  "maturityDate": [
+	2017,
+	1,
+	25
+  ],
+  "interestRate": 34.5,
+  "fundRepaymentFrequency": {
+	"id": 79,
+	"name": "weekly",
+	"isActive": false,
+	"mandatory": false
+  },
+  "tenure": 4,
+  "tenureFrequency": {
+	"id": 1,
+	"code": "periodFrequencyType.weeks",
+	"value": "WEEKS"
+  },
+  "morotorium": 3,
+  "morotoriumFrequency": {
+	"id": 1,
+	"code": "periodFrequencyType.weeks",
+	"value": "WEEKS"
+  },
+  "loanPortfolioFee": 12.4,
+  "bookDebtHypothecation": 23,
+  "cashCollateral": 45.6,
+  "personalGurantee": "sbi gurantee",
+  "isActive": true,
+  "isLoanAssigned": false,
+  "fundLoanPurposeData": [
+	{
+	  "id": 1,
+	  "fundId": 19,
+	  "loanPurpose": {
+		"id": 42,
+		"name": "agriculture",
+		"isActive": false,
+		"mandatory": false
+	  },
+	  "loanPurposeAmount": 3
+	},
+	{
+	  "id": 2,
+	  "fundId": 19,
+	  "loanPurpose": {
+		"id": 41,
+		"name": "business",
+		"isActive": false,
+		"mandatory": false
+	  },
+	  "loanPurposeAmount": 34
+	}
+  ]
+}
+]
+					</code>
+				</div>
+			</div>
+
+			<a id="fund_retrieve" name="fund_retrieve" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve a Fund</h4>
+					<p>Returns the details of a Fund.</p>
+					<p>Example Requests:</p>
+					<div class=apiClick>funds/1</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/funds/{fundId}
+					</code>
+					<code class="method-response">
+{
+  "id": 19,
+  "name": "sbi",
+  "fundSource": {
+	"id": 80,
+	"name": "sbi",
+	"isActive": false,
+	"mandatory": false
+  },
+  "fundCategory": {
+	"id": 81,
+	"name": "private",
+	"isActive": false,
+	"mandatory": false
+  },
+  "facilityType": {
+	"id": 72,
+	"name": "Buyout",
+	"isActive": false,
+	"mandatory": false
+  },
+  "assignmentStartDate": [
+	2017,
+	1,
+	25
+  ],
+  "assignmentEndDate": [
+	2017,
+	1,
+	25
+  ],
+  "sanctionedDate": [
+	2017,
+	1,
+	25
+  ],
+  "sanctionedAmount": 12,
+  "disbursedDate": [
+	2017,
+	1,
+	25
+  ],
+  "disbursedAmount": 44,
+  "maturityDate": [
+	2017,
+	1,
+	25
+  ],
+  "interestRate": 34.5,
+  "fundRepaymentFrequency": {
+	"id": 79,
+	"name": "weekly",
+	"isActive": false,
+	"mandatory": false
+  },
+  "tenure": 4,
+  "tenureFrequency": {
+	"id": 1,
+	"code": "periodFrequencyType.weeks",
+	"value": "WEEKS"
+  },
+  "morotorium": 3,
+  "morotoriumFrequency": {
+	"id": 1,
+	"code": "periodFrequencyType.weeks",
+	"value": "WEEKS"
+  },
+  "loanPortfolioFee": 12.4,
+  "bookDebtHypothecation": 23,
+  "cashCollateral": 45.6,
+  "personalGurantee": "sbi gurantee",
+  "isActive": true,
+  "isLoanAssigned": false,
+  "fundLoanPurposeData": [
+	{
+	  "id": 1,
+	  "fundId": 19,
+	  "loanPurpose": {
+		"id": 42,
+		"name": "agriculture",
+		"isActive": false,
+		"mandatory": false
+	  },
+	  "loanPurposeAmount": 3
+	},
+	{
+	  "id": 2,
+	  "fundId": 19,
+	  "loanPurpose": {
+		"id": 41,
+		"name": "business",
+		"isActive": false,
+		"mandatory": false
+	  },
+	  "loanPurposeAmount": 34
+	}
+  ]
+}
+					</code>
+				</div>
+			</div>
+			
+			//search loans for fund mapping
+			<a id="funds_mapping" name="funds_mapping" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve Loans For Fund Mapping</h4>
+					<p>Returns the loans based on selected criteria</p>					
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/funds/mapping/loans?isSummary=true
+					</code>
+					<code class="method-request">
+	POST funds/mapping/loans				
+	Content-Type: application/json
+Request Body:
+{
+	"approvedDate": {
+		"operator": "between",
+		"min": "2016-01-30",
+		"max": "2017-01-30"
+	},
+	"clientClassifications": ["46"],
+	"clientTypes": ["48"],
+	"dateFormat": "yyyy-MM-dd",
+	"disbursementDate": {
+		"operator": "between",
+		"min": "2016-01-30",
+		"max": "2017-01-30"
+	},
+	"districts": ["6"],
+	"funds": ["1"],
+	"genders": ["23"],
+	"loanProducts": ["1"],
+	"loanPurposeCategories": ["42"],
+	"loanPurposes": ["50"],
+	"locale": "en",
+	"offices": ["1"],
+	"overDueFromDays": {
+		"operator": "between",
+		"min": "0",
+		"max": "10"
+	},
+	"paidRepayment": {
+		"operator": "between",
+		"min": "0",
+		"max": "10"
+	},
+	"pendingRepayment": {
+		"operator": "between",
+		"min": "0",
+		"max": "10"
+	},
+	"principalOutstanding": {
+		"operator": "between",
+		"min": "0",
+		"max": "10"
+	},
+	"selectedCriteriaList": ["approvedDate", "clientClassifications", "clientTypes", "states", "districts", "funds", "genders", "principalOutstanding", "paidRepayment", "pendingRepayment", "overDueFromDays", "loanPurposes", "loanPurposeCategories", "disbursementDate", "trancheDisburse"],
+	"states": ["17"],
+	"trancheDisburse": true
+}
+					</code>
+					<code class="method-response">
+This Api returns fundSearchQueryBuilder which has the query details for detail view and searched data as fundMappingSearchData
+{
+	"fundSearchQueryBuilder": {
+		"queryBuilder": "select count(*) as loanCount,sum(ifnull(l.total_expected_repayment_derived,0.0)) as totalAmount, sum(ifnull(l.total_outstanding_derived,0.0)) as outstandingAmount, sum(ifnull(l.principal_disbursed_derived,0.0)) as disbursedAmount,  sum(ifnull(l.principal_outstanding_derived,0.0)) as principalOutstandingAmount ,  clientType.id as clientTypeId ,clientType.code_value as clientTypeName ,  gender.id as genderId ,gender.code_value as genderName ,  office.id as officeId, office.name as officeName  from m_loan l  LEFT JOIN m_client c on c.id \u003d l.client_id   LEFT JOIN m_code_value clientType on clientType.id \u003d c.client_type_cv_id  LEFT JOIN m_code_value gender on gender.id \u003d c.gender_cv_id  LEFT JOIN m_office office on c.office_id \u003d office.id  where l.loan_status_id in (300) and l.loan_type_enum in (1 ,3)  and  clientType.id in  (47, 48) and  gender.id in  (23) and  office.id in  (1) group by  clientType.id  ,  gender.id  ,  office.id ",
+		"selectedCriteriaList": ["clientTypes", "genders", "offices"],
+		"groupByClauseBuilder": " group by  clientType.id  ,  gender.id  ,  office.id ",
+		"joinClauseBuilder": " LEFT JOIN m_client c on c.id \u003d l.client_id   LEFT JOIN m_code_value clientType on clientType.id \u003d c.client_type_cv_id  LEFT JOIN m_code_value gender on gender.id \u003d c.gender_cv_id  LEFT JOIN m_office office on c.office_id \u003d office.id ",
+		"whereClauseBuilder": " where l.loan_status_id in (300) and l.loan_type_enum in (1 ,3)  and  clientType.id in  (47, 48) and  gender.id in  (23) and  office.id in  (1)",
+		"selectClauseBuilder": "select count(*) as loanCount,sum(ifnull(l.total_expected_repayment_derived,0.0)) as totalAmount, sum(ifnull(l.total_outstanding_derived,0.0)) as outstandingAmount, sum(ifnull(l.principal_disbursed_derived,0.0)) as disbursedAmount,  sum(ifnull(l.principal_outstanding_derived,0.0)) as principalOutstandingAmount ,  clientType.id as clientTypeId ,clientType.code_value as clientTypeName ,  gender.id as genderId ,gender.code_value as genderName ,  office.id as officeId, office.name as officeName ",
+		"isSummary": true
+	},
+	"fundMappingSearchData": [{
+		"officeName": "Head Office",
+		"genderName": "Male",
+		"clientTypeName": "Individual",
+		"disbursedAmount": 2000.000000,
+		"loanCount": 1,
+		"principalOutstandingAmount": 1840.990000,
+		"trancheDisburse": false
+	}]
+}
+					</code>
+				</div>
+			</div>
+
+			<a id="fund_update" name="fund_update" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Update a Fund</h4>
+					<p>Updates the details of a fund.</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+PUT https://DomainName/api/v1/funds/{fundId}
+					</code>
+					<code class="method-request">
+PUT funds/1
+Content-Type: application/json
+Request Body:
+{
+  "name": "sbi new"
+}
+					</code>
+					<code class="method-response">
+{
+    "resourceId": 1,
+    "changes": {
+        "name": "EU Agri Fund (2010-2020)"
+    }
+}
+					</code>
+				</div>
+			</div>
+
+	<a id="funds_activate" name="funds_activate" class="old-syle-anchor">&nbsp;</a>
+	<div class="method-section">
+		<div class="method-description">
+			<h4>Activate a Fund</h4>
+		</div>
+		<div class="method-example">
+			<code class="method-declaration">
+				POST https://DomainName/api/v1/funds/{fundId}?command=activate
+			</code>
+			<code class="method-request">
+
+				POST Activate funds
+				Content-Type: application/json
+				Request Body
+				{}
+			</code>
+			<code class="method-response">
+				{
+				"resourceId": 1
+				}
+			</code>
+		</div>
+	</div>
+	<a id="funds_assign" name="funds_assign" class="old-syle-anchor">&nbsp;</a>
+	<div class="method-section">
+		<div class="method-description">
+			<h4>Assign a Fund</h4>
+			<h3> This api is work after searching the loan . With this api we can assign the loans to fund.</h3>
+		</div>
+		<div class="method-example">
+			<code class="method-declaration">
+				POST https://DomainName/api/v1/funds/{fundId}?command=assign
+			</code>
+			<code class="method-request">
+
+				POST Assign funds
+				Content-Type: application/json
+				Request Body
+				{  
+				   "groupByClauseBuilder":"office.id ",
+				   "joinClauseBuilder":" LEFT JOIN m_client c on c.id = l.client_id ",
+				   "queryBuilder":"select clientType.code_value as clientTypeName  from m_loan l  LEFT JOIN m_client c on c.id = l.client_id  where clientType.id in  (40)  and  office.id in  (1) group by  clientType.id ",
+				   "selectClauseBuilder":"select count(*) as loanCount ",
+				   "selectedCriteriaList":[  
+					  "clientTypes"
+				   ],
+				   "whereClauseBuilder":" where  clientType.id in  (40)"
+				}
+			</code>
+			<code class="method-response">
+				{
+				"resourceId": 1
+				}
+			</code>
+		</div>
+	</div>
+	<a id="funds_deactivate" name="funds_activate" class="old-syle-anchor">&nbsp;</a>
+	<div class="method-section">
+		<div class="method-description">
+			<h4>Deactivate a Fund</h4>
+		</div>
+		<div class="method-example">
+			<code class="method-declaration">
+				POST https://DomainName/api/v1/funds/{fundId}?command=deactivate
+			</code>
+			<code class="method-request">
+
+				POST Deactivate funds
+				Content-Type: application/json
+				Request Body
+				{}
+			</code>
+			<code class="method-response">
+				{
+				"resourceId": 1
+				}
+			</code>
+		</div>
+	</div>
+>>>>>>> 1be2ad747... 3076 fund mapping
 
                     <tr class=alt><td>fromAccountId</td></tr>
                     <tr><td class=fielddesc>The id of the account from which the transfer is made.</td></tr>

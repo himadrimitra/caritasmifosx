@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.JsonElement;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 @Service(value = "SHAREPRODUCT_COMMANDSERVICE")
 public class ShareProductCommandsServiceImpl implements ProductCommandsService {
@@ -46,8 +47,9 @@ public class ShareProductCommandsServiceImpl implements ProductCommandsService {
     @Override
     public Object handleCommand(Long productId, String command, String jsonBody) {
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(jsonBody);
+        FormDataMultiPart formDataMultiPart = null;
         final JsonCommand jsonCommand = JsonCommand.from(jsonBody, parsedCommand, this.fromApiJsonHelper, null, null, null, null, null,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, formDataMultiPart);
         if (ShareProductApiConstants.PREIEW_DIVIDENDS_COMMAND_STRING.equals(command)) {
             return null ;
         } else if (ShareProductApiConstants.POST_DIVIDENdS_COMMAND_STRING.equals(command)) { return postDividends(productId,

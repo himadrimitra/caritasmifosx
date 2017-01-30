@@ -82,6 +82,7 @@ import org.apache.fineract.portfolio.collateral.service.CollateralReadPlatformSe
 import org.apache.fineract.portfolio.collaterals.data.PledgeData;
 import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
+import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundData;
 import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
@@ -641,7 +642,7 @@ public class LoansApiResource {
                 }
                 interestCalculationPeriodTypeOptions = this.dropdownReadPlatformService.retrieveLoanInterestRateCalculatedInPeriodOptions();
 
-                fundOptions = this.fundReadPlatformService.retrieveAllFunds();
+                fundOptions = this.fundReadPlatformService.retrieveAllFunds(FundApiConstants.activeParamName);
                 repaymentStrategyOptions = this.dropdownReadPlatformService.retreiveTransactionProcessingStrategies();
                 if (product.getMultiDisburseLoan()) {
                     chargeOptions = this.chargeReadPlatformService.retrieveLoanAccountApplicableCharges(loanId,

@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.gson.JsonElement;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 @Service(value = "SHAREACCOUNT_COMMANDSERVICE")
 public class ShareAccountCommandsServiceImpl implements AccountsCommandsService {
@@ -46,8 +47,9 @@ public class ShareAccountCommandsServiceImpl implements AccountsCommandsService 
     @Override
     public Object handleCommand(Long accountId, String command, String jsonBody) {
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(jsonBody);
+        FormDataMultiPart  formDataMultiPart = null;
         final JsonCommand jsonCommand = JsonCommand.from(jsonBody, parsedCommand, this.fromApiJsonHelper, null, null, null, null, null,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, formDataMultiPart);
         if(ShareAccountApiConstants.APPROVE_COMMAND.equals(command)){
             return approveShareAccount(accountId, jsonCommand) ;
         }if(ShareAccountApiConstants.REJECT_COMMAND.equals(command)){

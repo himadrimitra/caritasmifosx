@@ -41,6 +41,7 @@ import org.joda.time.format.DateTimeFormatter;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
+import com.sun.jersey.multipart.FormDataMultiPart;
 
 /**
  * Immutable representation of a command.
@@ -65,28 +66,30 @@ public final class JsonCommand {
     private final String url;
     private final Long productId;
     private final Integer entityTypeId;
+    private final FormDataMultiPart formDataMultiPart;
 
     public static JsonCommand from(final String jsonCommand, final JsonElement parsedCommand, final FromJsonHelper fromApiJsonHelper,
             final String entityName, final Long resourceId, final Long subresourceId, final Long groupId, final Long clientId,
-            final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId, Integer entityTypeId) {
+            final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId, Integer entityTypeId,
+            final FormDataMultiPart formDataMultiPart) {
         return new JsonCommand(null, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId,formDataMultiPart);
 
     }
 
     public static JsonCommand fromExistingCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
-            final String url, final Long productId, Integer entityTypeId) {
+            final String url, final Long productId, Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, null, null,
-                null, null, null, url, productId, entityTypeId);
+                null, null, null, url, productId, entityTypeId, formDataMultiPart);
     }
 
     public static JsonCommand fromExistingCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
-            final Long productId, Integer entityTypeId) {
+            final Long productId, Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
 
     }
 
@@ -94,7 +97,7 @@ public final class JsonCommand {
         final String jsonCommand = command.fromApiJsonHelper.toJson(parsedCommand);
         return new JsonCommand(command.commandId, jsonCommand, parsedCommand, command.fromApiJsonHelper, command.entityName,
                 command.resourceId, command.subresourceId, command.groupId, command.clientId, command.loanId, command.savingsId,
-                command.transactionId, command.url, command.productId, command.entityTypeId);
+                command.transactionId, command.url, command.productId, command.entityTypeId, command.formDataMultiPart);
     }
     
     public static JsonCommand from(FromJsonHelper fromApiJsonHelper, final JsonElement parsedCommand, final Long resourceId) {
@@ -110,14 +113,15 @@ public final class JsonCommand {
         final String url = null;
         final Long productId = null;
         final Integer entityTypeId = null;
+        final FormDataMultiPart formDataMultiPart = null;
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
-                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId);
+                clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
     }
 
     public JsonCommand(final Long commandId, final String jsonCommand, final JsonElement parsedCommand,
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
-            final Long productId, final Integer entityTypeId) {
+            final Long productId, final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
 
         this.commandId = commandId;
         this.jsonCommand = jsonCommand;
@@ -134,6 +138,7 @@ public final class JsonCommand {
         this.url = url;
         this.productId = productId;
         this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = formDataMultiPart;
     }
 
     public String json() {
@@ -592,5 +597,9 @@ public final class JsonCommand {
     public Integer getEntityTypeId() {
         return this.entityTypeId;
     }
-
+    
+    public FormDataMultiPart getFormDataMultiPart() {
+        return this.formDataMultiPart;
+    }
+    
 }

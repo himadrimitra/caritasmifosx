@@ -20,6 +20,8 @@ package org.apache.fineract.commands.domain;
 
 import org.apache.fineract.useradministration.api.PasswordPreferencesApiConstants;
 
+import com.sun.jersey.multipart.FormDataMultiPart;
+
 public class CommandWrapper {
 
     private final Long commandId;
@@ -40,17 +42,20 @@ public class CommandWrapper {
     private final Long productId;
     private final String option;
     private final Integer entityTypeId;
+    private final FormDataMultiPart formDataMultiPart;
 
     @SuppressWarnings("unused")
     private Long templateId;
 
     public static CommandWrapper wrap(final String actionName, final String entityName, final Long resourceId, final Long subresourceId, final String option, final Integer entityTypeId) {
-        return new CommandWrapper(null, actionName, entityName, resourceId, subresourceId, null, null, option, entityTypeId);
+        final FormDataMultiPart formDataMultiPart = null;
+        return new CommandWrapper(null, actionName, entityName, resourceId, subresourceId, null, null, option, entityTypeId, formDataMultiPart);
     }
 
     public static CommandWrapper fromExistingCommand(final Long commandId, final String actionName, final String entityName,
             final Long resourceId, final Long subresourceId, final String resourceGetUrl, final Long productId, final String option, final Integer entityTypeId) {
-        return new CommandWrapper(commandId, actionName, entityName, resourceId, subresourceId, resourceGetUrl, productId, option, entityTypeId);
+        final FormDataMultiPart formDataMultiPart = null;
+        return new CommandWrapper(commandId, actionName, entityName, resourceId, subresourceId, resourceGetUrl, productId, option, entityTypeId, formDataMultiPart);
     }
 
     public static CommandWrapper fromExistingCommand(final Long commandId, final String actionName, final String entityName,
@@ -62,7 +67,8 @@ public class CommandWrapper {
     }
 
     private CommandWrapper(final Long commandId, final String actionName, final String entityName, final Long resourceId,
-            final Long subresourceId, final String resourceGetUrl, final Long productId, final String option, final Integer entityTypeId) {
+            final Long subresourceId, final String resourceGetUrl, final Long productId, final String option, final Integer entityTypeId,
+            final FormDataMultiPart formDataMultiPart) {
         this.commandId = commandId;
         this.officeId = null;
         this.groupId = null;
@@ -80,12 +86,13 @@ public class CommandWrapper {
         this.productId = productId;
         this.option = option;
         this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = formDataMultiPart;
     }
 
     public CommandWrapper(final Long officeId, final Long groupId, final Long clientId, final Long loanId, final Long savingsId,
             final String actionName, final String entityName, final Long entityId, final Long subentityId, final String href,
             final String json, final String transactionId, final Long productId, final Long templateId, final String option,
-            final Integer entityTypeId) {
+            final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
 
         this.commandId = null;
         this.officeId = officeId;
@@ -105,6 +112,7 @@ public class CommandWrapper {
         this.templateId = templateId;
         this.option = option;
         this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = formDataMultiPart;
     }
 
     private CommandWrapper(final Long commandId, final String actionName, final String entityName, final Long resourceId,
@@ -128,6 +136,7 @@ public class CommandWrapper {
         this.productId = productId;
         this.option = option;
         this.entityTypeId = entityTypeId;
+        this.formDataMultiPart = null;
     }
 
     public String getHref() {
@@ -294,6 +303,10 @@ public class CommandWrapper {
 
     public Long getSavingsId() {
         return this.savingsId;
+    }
+    
+    public FormDataMultiPart getFormDataMultiPart() {
+        return this.formDataMultiPart;
     }
 
     public Long getProductId() {

@@ -64,6 +64,7 @@ import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.floatingrates.data.FloatingRateData;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
+import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundData;
 import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
@@ -316,7 +317,7 @@ public class LoanProductsApiResource {
                 .retrieveInterestRateFrequencyTypeOptions();
         final Collection<PaymentTypeData> paymentTypeOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
 
-        Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds();
+        Collection<FundData> fundOptions = this.fundReadPlatformService.retrieveAllFunds(FundApiConstants.activeParamName);
         if (fundOptions.isEmpty()) {
             fundOptions = null;
         }
