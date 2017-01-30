@@ -6,11 +6,8 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
-import com.finflux.transaction.execution.data.BankTransactionEntityType;
-
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,14 +28,11 @@ public class BankTransactionReadPlatformServiceImpl
 		BankTransactionReadPlatformService {
 
 	private final JdbcTemplate jdbcTemplate;
-	private final PlatformSecurityContext context;
 	private final AccountTransactionDetailMapper transactionDetailMapper = new AccountTransactionDetailMapper();
 
 	@Autowired
 	public BankTransactionReadPlatformServiceImpl(
-			final PlatformSecurityContext context,
 			final RoutingDataSource dataSource) {
-		this.context = context;
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
@@ -95,7 +89,7 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" bat.utr_number as utrNumber, bat.po_number as poNumber, ");
 			sb.append(" bat.error_code as errorCode, bat.error_message as errorMessage, ");
 			sb.append(" bat.transaction_date as transactionDate, ");
-			sb.append(" bat.account_type_enum as benAccountType ,");
+			sb.append(" debbad.account_type_enum as  debAccountType,");
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
 			sb.append(" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
@@ -104,7 +98,7 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" benbad.account_number as benAccountNumber,  benbad.ifsc_code as benIfscCode, ");
 			sb.append(" benbad.mobile_number as benMobile, benbad.email as benEmail, benbad.status_id as benStatus, ");
 			sb.append(" benbad.bank_name as benBankName, benbad.bank_city as benBankCity, ");
-			sb.append(" benbad.account_type_enum as debAccountType, ");
+			sb.append(" benbad.account_type_enum as benAccountType, ");
 			sb.append(" bat.reference_number as referenceNumber ");
 			sb.append(" from f_bank_account_transaction bat ");
 			sb.append(" left join f_bank_account_details debbad on bat.debit_account = debbad.id ");

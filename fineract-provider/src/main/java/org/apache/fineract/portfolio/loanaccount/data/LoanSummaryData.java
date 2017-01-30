@@ -35,6 +35,7 @@ public class LoanSummaryData {
     private final BigDecimal principalWrittenOff;
     private final BigDecimal principalOutstanding;
     private final BigDecimal principalOverdue;
+    private final BigDecimal principalNetDisbursed;
     private final BigDecimal interestCharged;
     private final BigDecimal interestPaid;
     private final BigDecimal interestWaived;
@@ -68,22 +69,23 @@ public class LoanSummaryData {
 
     public LoanSummaryData(final CurrencyData currency, final BigDecimal principalDisbursed, final BigDecimal principalPaid,
             final BigDecimal principalWrittenOff, final BigDecimal principalOutstanding, final BigDecimal principalOverdue,
-            final BigDecimal interestCharged, final BigDecimal interestPaid, final BigDecimal interestWaived,
-            final BigDecimal interestWrittenOff, final BigDecimal interestOutstanding, final BigDecimal interestOverdue,
-            final BigDecimal feeChargesCharged, final BigDecimal feeChargesDueAtDisbursementCharged, final BigDecimal feeChargesPaid,
-            final BigDecimal feeChargesWaived, final BigDecimal feeChargesWrittenOff, final BigDecimal feeChargesOutstanding,
-            final BigDecimal feeChargesOverdue, final BigDecimal penaltyChargesCharged, final BigDecimal penaltyChargesPaid,
-            final BigDecimal penaltyChargesWaived, final BigDecimal penaltyChargesWrittenOff, final BigDecimal penaltyChargesOutstanding,
-            final BigDecimal penaltyChargesOverdue, final BigDecimal totalExpectedRepayment, final BigDecimal totalRepayment,
-            final BigDecimal totalExpectedCostOfLoan, final BigDecimal totalCostOfLoan, final BigDecimal totalWaived,
-            final BigDecimal totalWrittenOff, final BigDecimal totalOutstanding, final BigDecimal totalOverdue,
-            final LocalDate overdueSinceDate,final Long writeoffReasonId,final String writeoffReason) {
+            BigDecimal principalNetDisbursed, final BigDecimal interestCharged, final BigDecimal interestPaid,
+            final BigDecimal interestWaived, final BigDecimal interestWrittenOff, final BigDecimal interestOutstanding,
+            final BigDecimal interestOverdue, final BigDecimal feeChargesCharged, final BigDecimal feeChargesDueAtDisbursementCharged,
+            final BigDecimal feeChargesPaid, final BigDecimal feeChargesWaived, final BigDecimal feeChargesWrittenOff,
+            final BigDecimal feeChargesOutstanding, final BigDecimal feeChargesOverdue, final BigDecimal penaltyChargesCharged,
+            final BigDecimal penaltyChargesPaid, final BigDecimal penaltyChargesWaived, final BigDecimal penaltyChargesWrittenOff,
+            final BigDecimal penaltyChargesOutstanding, final BigDecimal penaltyChargesOverdue, final BigDecimal totalExpectedRepayment,
+            final BigDecimal totalRepayment, final BigDecimal totalExpectedCostOfLoan, final BigDecimal totalCostOfLoan,
+            final BigDecimal totalWaived, final BigDecimal totalWrittenOff, final BigDecimal totalOutstanding,
+            final BigDecimal totalOverdue,final LocalDate overdueSinceDate,final Long writeoffReasonId, final String writeoffReason) {
         this.currency = currency;
         this.principalDisbursed = principalDisbursed;
         this.principalPaid = principalPaid;
         this.principalWrittenOff = principalWrittenOff;
         this.principalOutstanding = principalOutstanding;
         this.principalOverdue = principalOverdue;
+        this.principalNetDisbursed = principalNetDisbursed;
         this.interestCharged = interestCharged;
         this.interestPaid = interestPaid;
         this.interestWaived = interestWaived;
