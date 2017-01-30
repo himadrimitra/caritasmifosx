@@ -66,11 +66,11 @@ public class LoanTransactionData {
     private final AccountTransferData transfer;
     private final BigDecimal fixedEmiAmount;
     private final BigDecimal outstandingLoanBalance;
-    @SuppressWarnings("unused")
     private final LocalDate submittedOnDate;
     private final boolean manuallyReversed;
+    private final LocalDate possibleNextRepaymentDate;
     @SuppressWarnings("unused")
-	private final LocalDate possibleNextRepaymentDate;
+    private BigDecimal netDisbursalAmount;
 
     // templates
     final Collection<PaymentTypeData> paymentTypeOptions;
@@ -485,6 +485,11 @@ public class LoanTransactionData {
             this.glimTransactions = new ArrayList<>();
         }
         this.glimTransactions.addAll(glimTransactions);
+    }
+
+    
+    public void setNetDisbursalAmount(BigDecimal netDisbursalAmount) {
+        this.netDisbursalAmount = netDisbursalAmount;
     }
 	
 }

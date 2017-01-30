@@ -852,7 +852,12 @@ public final class LoanApplicationTerms {
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
 
         final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator);
-        final BigDecimal loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
+        final BigDecimal loanTermPeriodsInYearBigDecimal;
+        if(this.interestCalculationPeriodMethod.isSameAsRepayment()){
+            loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear * this.paymentsInProvidedPeriod);
+        }else{
+            loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
+        }
 
         BigDecimal loanTermFrequencyBigDecimal = BigDecimal.ZERO;
         LocalDate startDate = getActualInterestChargedFromDate();
@@ -867,8 +872,8 @@ public final class LoanApplicationTerms {
         }
         loanTermFrequencyBigDecimal = loanTermFrequencyBigDecimal.add(calculatePeriodsBetweenDatesByInterestMethod(startDate, endDate));
         
-        return this.annualNominalInterestRate.divide(BigDecimal.valueOf(this.paymentsInProvidedPeriod), mc)
-                .divide(loanTermPeriodsInYearBigDecimal, mc).divide(divisor, mc).multiply(loanTermFrequencyBigDecimal);
+        return this.annualNominalInterestRate.divide(loanTermPeriodsInYearBigDecimal, mc).divide(divisor, mc)
+                .multiply(loanTermFrequencyBigDecimal);
     }
     
     public Money calculateFlatInterestForFirstPeriod(final PaymentPeriodsInOneYearCalculator calculator, final MathContext mc) {
@@ -878,7 +883,12 @@ public final class LoanApplicationTerms {
         if (isFirstInstallmentCalculationRequired()) {
             final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
             final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator);
-            final BigDecimal loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
+            final BigDecimal loanTermPeriodsInYearBigDecimal;
+            if(this.interestCalculationPeriodMethod.isSameAsRepayment()){
+                loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear * this.paymentsInProvidedPeriod);
+            }else{
+                loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
+            }
             BigDecimal periodsInLoanTerm = BigDecimal.ZERO;
             LocalDate startDate = getActualInterestChargedFromDate();
             if (startDate.isBefore(idealDisbursementDate)) {
@@ -886,8 +896,7 @@ public final class LoanApplicationTerms {
                 startDate = idealDisbursementDate;
             }
             periodsInLoanTerm = periodsInLoanTerm.add(calculatePeriodsBetweenDatesByInterestMethod(startDate, firstRepaymentDate));
-            BigDecimal brokenPeriodInterestRate = this.annualNominalInterestRate
-                    .divide(BigDecimal.valueOf(this.paymentsInProvidedPeriod), mc).divide(loanTermPeriodsInYearBigDecimal, mc)
+            BigDecimal brokenPeriodInterestRate = this.annualNominalInterestRate.divide(loanTermPeriodsInYearBigDecimal, mc)
                     .divide(divisor, mc).multiply(periodsInLoanTerm);
             brokenPeiordInterest = this.principal.multiplyRetainScale(brokenPeriodInterestRate, mc.getRoundingMode());
             updateTotalInterestAccounted(brokenPeiordInterest);
@@ -1177,7 +1186,7 @@ public final class LoanApplicationTerms {
     private BigDecimal periodicInterestRate(final PaymentPeriodsInOneYearCalculator calculator, final MathContext mc,
             final DaysInMonthType daysInMonthType, final DaysInYearType daysInYearType, LocalDate periodStartDate, LocalDate periodEndDate,
             final InterestCalculationPeriodMethod interestCalculationPeriodMethod, boolean isForPMT) {
-        final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator, interestCalculationPeriodMethod) * this.paymentsInProvidedPeriod;
+        final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator, interestCalculationPeriodMethod);
 
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         final BigDecimal loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
@@ -1210,7 +1219,8 @@ public final class LoanApplicationTerms {
                     break;
                     case MONTHS:
                         if (daysInMonthType.isDaysInMonth_30()) {
-                            numberOfDaysInPeriod = loanTermFrequencyBigDecimal.multiply(BigDecimal.valueOf(30), mc);
+                            numberOfDaysInPeriod = loanTermFrequencyBigDecimal.multiply(BigDecimal.valueOf(30), mc).divide(
+                                    BigDecimal.valueOf(this.paymentsInProvidedPeriod), mc);
                         }
                         periodicInterestRate = oneDayOfYearInterestRate.multiply(numberOfDaysInPeriod, mc);
                     break;
@@ -1233,8 +1243,9 @@ public final class LoanApplicationTerms {
                 }
             break;
             case SAME_AS_REPAYMENT_PERIOD:
-                periodicInterestRate = this.annualNominalInterestRate.divide(loanTermPeriodsInYearBigDecimal, mc).divide(divisor, mc)
-                        .multiply(loanTermFrequencyBigDecimal);
+                periodicInterestRate = this.annualNominalInterestRate
+                        .divide(loanTermPeriodsInYearBigDecimal.multiply(BigDecimal.valueOf(this.paymentsInProvidedPeriod)), mc)
+                        .divide(divisor, mc).multiply(loanTermFrequencyBigDecimal);
             break;
         }
 
