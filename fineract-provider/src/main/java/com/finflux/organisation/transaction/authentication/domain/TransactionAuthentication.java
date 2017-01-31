@@ -15,6 +15,7 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.UniqueConstraint;
 
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
@@ -66,22 +67,26 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 	
 	@Column(name = "product_id", nullable = false)
 	private Long loanProductId;
+	
+    @ManyToOne
+    @JoinColumn(name = "identifier_type_id", nullable = false)
+    private CodeValue identificationType;
 
 	public static TransactionAuthentication newTransactionAuthentication(final Integer productTypeId,
 			final Integer transationTypeId, final PaymentType paymentTypeId, final BigDecimal amountGreaterThan,
 			final Role secondAppUserRoleId, final boolean isSecondAppUserEnabled,
 			final SecondaryAuthenticationService authenticationTypeId, final AppUser lastModifiedById, 
-			final Long loanProduct) {
+			final Long loanProduct,final CodeValue identificationType) {
 		final Date lastModifiedDate = DateUtils.getLocalDateTimeOfTenant().toDate();
 		return new TransactionAuthentication(productTypeId, transationTypeId, paymentTypeId, amountGreaterThan,
 				secondAppUserRoleId, isSecondAppUserEnabled, authenticationTypeId, lastModifiedDate, lastModifiedById,
-				loanProduct);
+				loanProduct, identificationType);
 	}
 
 	private TransactionAuthentication(final Integer portfolioType, final Integer transactionTypeId,
 			PaymentType pamentTypeId, final BigDecimal amountGreaterThan, final Role secondAppUserRoleId,
 			final boolean isSecondAppUserEnabled, final SecondaryAuthenticationService authenticationTypeId,
-			final Date lastModifiedDate, final AppUser lastModifiedById, final Long loanProductId) {
+			final Date lastModifiedDate, final AppUser lastModifiedById, final Long loanProductId, final CodeValue identificationType) {
 		this.portfolioType = portfolioType;
 		this.transactionTypeId = transactionTypeId;
 		this.paymentTypeId = pamentTypeId;
@@ -92,11 +97,12 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 		this.lastModifiedDate = lastModifiedDate;
 		this.lastModifiedById = lastModifiedById;
 		this.loanProductId = loanProductId;
+		this.identificationType = identificationType;
 	}
 
 	public Map<String, Object> update(final JsonCommand command, final AppUser modifiedUser,
 			final SecondaryAuthenticationService secondaryAuthenticationType, final PaymentType paymentType,
-			final Long loanProductId) {
+			final Long loanProductId, final CodeValue identificationType) {
 		final Map<String, Object> actualChanges = new LinkedHashMap<>(5);
 
 		if (command.hasParameter(TransactionAuthenticationApiConstants.AMOUNT)) {
@@ -145,6 +151,16 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 						.integerValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID);
 				actualChanges.put(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID, newValue);
 				this.paymentTypeId = paymentType;
+			}
+		}
+		
+		if (command.hasParameter(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID)) {
+			if (command.isChangeInLongParameterNamed(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID,
+					this.identificationType.getId())) {
+				final Integer newValue = command
+						.integerValueOfParameterNamed(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID);
+				actualChanges.put(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID, newValue);
+				this.identificationType = identificationType;
 			}
 		}
 
@@ -198,6 +214,10 @@ public class TransactionAuthentication extends AbstractPersistable<Long> {
 	
 	public Long getProductId(){
 		return this.loanProductId;
+	}
+
+	public CodeValue getIdentificationType() {
+		return this.identificationType;
 	}
 
 }

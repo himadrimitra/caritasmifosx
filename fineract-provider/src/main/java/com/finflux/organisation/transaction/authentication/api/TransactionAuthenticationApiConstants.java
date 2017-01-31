@@ -16,6 +16,8 @@ public class TransactionAuthenticationApiConstants {
 	public static final String SECOUND_APP_USER_ROLE_ID = "secondAppUserRoleId";
 	public static final String ENABLE_SECOND_APP_USER = "enableSecondAppUser";
 	public static final String PRODUCT_ID = "productId";
+	public static final String IDENTIFIER_TYPE_ID = "identificationTypeId";
+
 
 	public static final String CREATE_ACTION = "CREATE";
 	public static final String UPDATE_ACTION = "UPDATE";
@@ -54,9 +56,9 @@ public class TransactionAuthenticationApiConstants {
 
 	public static Set<String> TRANSACTION_AUTHENTICATION_REQUEST_DATA_PARAMETER = new HashSet<>(
 			Arrays.asList(LOCALE, TRANSACTION_TYPE_ID, PORTFOLIO_TYPE_ID, PAYMENT_TYPE_ID, AMOUNT,
-					AUTHENTICATION_TYPE_ID, SECOUND_APP_USER_ROLE_ID, ENABLE_SECOND_APP_USER, PRODUCT_ID));
+					AUTHENTICATION_TYPE_ID, SECOUND_APP_USER_ROLE_ID, ENABLE_SECOND_APP_USER, PRODUCT_ID,IDENTIFIER_TYPE_ID));
 
 	public static Set<String> TRANSACTION_AUTHENTICATIOM_SERVICE_RESPONSE = new HashSet<>(
 			Arrays.asList(ID, PORTFOLIO_TYPE_ID, PAYMENT_TYPE_ID, AMOUNT, AUTHENTICATION_TYPE_ID,
-					SECOUND_APP_USER_ROLE_ID, IS_SECOND_APP_USER_ENABLED));
+					SECOUND_APP_USER_ROLE_ID, IS_SECOND_APP_USER_ENABLED,IDENTIFIER_TYPE_ID));
 }

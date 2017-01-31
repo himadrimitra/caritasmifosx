@@ -134,9 +134,11 @@ public class ClientDataForAuthenticationAssembler {
 
 		String aadhaarNumber = null;
 		if(secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar OTP") || secondaryAuthenticationService.getName().equalsIgnoreCase("Aadhaar fingerprint")){
-		 aadhaarNumber = getAadhaarNumberOfClient(loan.getClientId());
-	}
+		 aadhaarNumber = getAadhaarNumberOfClient(loan.getClientId(), transactionAuthenticationData.getIdentificationType().getId());
+		}
 
+	
+		 
 		if (locationType.equals(TransactionAuthenticationApiConstants.PINCODE)) {
 			return ClientDataForAuthentication.newInsatance(externalAuthenticationServiceData, aadhaarNumber,
 					authenticationType, clientAuthData, locationType, pincode, null, null);
@@ -147,13 +149,14 @@ public class ClientDataForAuthenticationAssembler {
 
 	}
 
-	public String getAadhaarNumberOfClient(final Long clientId) {
+	public String getAadhaarNumberOfClient(final Long clientId,final Long identifierTypeId) {
 		Collection<CodeValueData> codeValues = this.codeValueReadPlatformService
 				.retrieveCodeValuesByCode("Customer Identifier");
 		CodeValueData customerDocumentType = null;
 		for (CodeValueData codeValue : codeValues) {
-			if (codeValue.getName().toLowerCase().contains("aadhaar")) {
+			if (codeValue.getId().equals(identifierTypeId)) {
 				customerDocumentType = codeValue;
+				break;
 			}
 		}
 
@@ -177,4 +180,5 @@ public class ClientDataForAuthenticationAssembler {
 		return aadhaarNumber;
 
 	}
+	
 }

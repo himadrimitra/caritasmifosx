@@ -86,7 +86,9 @@ public class TransactionAuthenticationDataValidator {
 				.extractLongNamed(TransactionAuthenticationApiConstants.AUTHENTICATION_TYPE_ID, element);
 		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.AUTHENTICATION_TYPE_ID)
 				.value(authenticationTypeId).notNull().longGreaterThanZero();
-
+		
+		final Long identificationTypeId = this.fromJsonHelper.extractLongNamed(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID,element);
+		dataValidatorBuilder.reset().parameter(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID).value(identificationTypeId).notNull().longGreaterThanZero();
 		// check of the transaction type actually applies to the product type
 		// provided.
 		// eg., Loan product can have transaction type disbursement or
