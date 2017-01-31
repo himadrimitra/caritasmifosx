@@ -2,11 +2,15 @@ package com.finflux.transaction.execution.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +28,7 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
     private final BankAccountTransactionRepositoryWrapper repositoryWrapper;
     private final BankTransactionDataValidator bankTransactionDataValidator;
     private final BankTransactionDataAssembler bankTransactionDataAssembler;
+    private final DateTimeFormatter dateFmt = DateTimeFormat.forPattern("YYYYMMdd");
 
     @Autowired
     public BankTransactionWriteServiceImpl(final BankAccountTransactionRepository repository,
@@ -68,9 +73,15 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
         Long activeTransactionCount = repository.countByEntityTypeAndEntityIdAndEntityTransactionIdAndStatusIsIn(
                 txn.getEntityType(), txn.getEntityId(), txn.getEntityTransactionId(),activeStatuses);
         if(activeTransactionCount == 0) {
-            this.repository.save(txn);
-            return txn.getId();
+            BankAccountTransaction transaction = this.repository.save(txn);
+            String referenceId= generateUniqueReferenceId(transaction.getId());
+            transaction.setInternalReferenceId(referenceId);
+            return transaction.getId();
         }
         return null;
+    }
+
+    private String generateUniqueReferenceId(Long id) {
+        return dateFmt.print(new DateTime())+"f"+id;
     }
 }

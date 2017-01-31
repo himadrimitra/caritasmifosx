@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * Created by dhirendra on 25/11/16.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RBLServerErrorResponse {
+public class RBLHttpErrorResponse {
 
         private String httpCode;
 

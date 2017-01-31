@@ -8,6 +8,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Map;
 
+import com.finflux.transaction.execution.provider.rbl.response.*;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -19,6 +20,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -43,10 +45,6 @@ import com.finflux.transaction.execution.provider.rbl.request.RBLFundTransferReq
 import com.finflux.transaction.execution.provider.rbl.request.RBLFundTransferStatusRequest;
 import com.finflux.transaction.execution.provider.rbl.request.RBLSinglePaymentRequest;
 import com.finflux.transaction.execution.provider.rbl.request.RBLSinglePaymentStatusRequest;
-import com.finflux.transaction.execution.provider.rbl.response.RBLFundTransferResponse;
-import com.finflux.transaction.execution.provider.rbl.response.RBLFundTransferStatusResponse;
-import com.finflux.transaction.execution.provider.rbl.response.RBLSinglePaymentResponse;
-import com.finflux.transaction.execution.provider.rbl.response.RBLSinglePaymentStatusResponse;
 import com.google.gson.Gson;
 
 /**
@@ -90,6 +88,7 @@ public class RBLBankTransferService implements BankTransferService {
 	private RestTemplate restTemplate;
 	private Boolean isConfigured = false;
 	private final ThirdPartyRequestResponseWritePlatformService requestResponseLogWriter;
+	private DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
 
 	// String rblEndPoint = "https://apideveloper.rblbank.com";
 	// String doSingleTxnResource = "/test/sb/rbl/v1/payments/corp/payment";
@@ -155,6 +154,7 @@ public class RBLBankTransferService implements BankTransferService {
 
 	@Override
 	public BankTransactionResponse doTransaction(Long internalBankTransactionId,
+												 String internalTransactionReference,
 												 BigDecimal amount, String reason,
 												 BankAccountDetailData debitAccount,
 												 BankAccountDetailData beneficiaryAccount,
@@ -166,8 +166,6 @@ public class RBLBankTransferService implements BankTransferService {
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 		headers.add("Authorization", "Basic " + authorizationCode);
 		headers.add("Content-Type", "application/json");
-
-		String internalTransactionReference = corporateId.substring(0,3)+internalBankTransactionId;
 
 		RBLSinglePaymentRequest.Header header = new RBLSinglePaymentRequest.Header(
 				internalTransactionReference, corporateId, makerUserId, checkerUserId, approverUserId);
@@ -252,7 +250,7 @@ public class RBLBankTransferService implements BankTransferService {
 					poNumber = paymentResponse.getBody().getPoNumber();
 					if(paymentResponse.getBody().getTxnTime()!=null){
 						txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(),
-								DateTimeFormat.forPattern("yyyy-MM-dd hh:mm:ss.S"));
+								dateTimeFormatter);
 					}
 				}
 			}
@@ -269,13 +267,22 @@ public class RBLBankTransferService implements BankTransferService {
 				}else {
 					txnStatus = TransactionStatus.SUCCESS;
 				}
-			}else {
+			}else if(STATUS_INITIATED.equalsIgnoreCase(requestStatus)){
+				txnStatus = TransactionStatus.PENDING;
+			} else{
 				txnStatus = TransactionStatus.PENDING;
 			}
 
 		} catch(HttpStatusCodeException e){
 			stopWatch.stop();
 			responseBody = e.getResponseBodyAsString();
+			if(responseBody!=null){
+				RBLHttpErrorResponse httpErrorResponse = gson.fromJson(responseBody,RBLHttpErrorResponse.class);
+				if(httpErrorResponse!=null) {
+					basicHttpResponse.setErrorMessage(httpErrorResponse.getMoreInformation());
+					basicHttpResponse.setErrorCode(httpErrorResponse.getHttpCode() + "-" + httpErrorResponse.getHttpMessage());
+				}
+			}
 			responseHttpStatus = e.getStatusCode();
 			responseHttpHeaders = e.getResponseHeaders();
 			logger.warn("RBL Initiate Transaction  HttpStatusCodeException Exception", e);
@@ -287,8 +294,13 @@ public class RBLBankTransferService implements BankTransferService {
 			logger.warn("RBL Initiate Transaction RestClientException", e);
 			basicHttpResponse.setSuccess(false);
 		} catch(Exception e){
-			stopWatch.stop();
-			responseBody = e.getMessage();
+			if(stopWatch.isStarted()){
+				stopWatch.stop();
+			}
+			if(responseBody==null) {
+				responseBody = e.getMessage();
+			}
+			basicHttpResponse.setErrorMessage(e.getMessage());
 			logger.warn("RBL Initiate Transaction unknown exception", e);
 			basicHttpResponse.setSuccess(false);
 		}
@@ -302,6 +314,7 @@ public class RBLBankTransferService implements BankTransferService {
 
 	@Override
 	public BankTransactionResponse getTransactionStatus(Long internalTxnId,
+														String internalTransactionReference,
 														String referenceNumber, Long makerId, Long checkerId,
 														Long approverId) {
 
@@ -309,7 +322,6 @@ public class RBLBankTransferService implements BankTransferService {
 		headers.add("Authorization", "Basic " + authorizationCode);
 		headers.add("Content-Type", "application/json");
 
-		String internalTransactionReference = corporateId.substring(0,3)+internalTxnId;
 		RBLSinglePaymentStatusRequest.Header header = new RBLSinglePaymentStatusRequest.Header(
 				internalTransactionReference, corporateId, makerId, checkerId, approverId);
 
@@ -392,7 +404,7 @@ public class RBLBankTransferService implements BankTransferService {
 					poNumber = paymentResponse.getBody().getPoNumber();
 					if(paymentResponse.getBody().getTxnTime()!=null){
 						txnTime = DateTime.parse(paymentResponse.getBody().getTxnTime(),
-								DateTimeFormat.forPattern("yyyy-MM-dd hh:mm:ss.S"));
+								dateTimeFormatter);
 					}
 				}
 			}
@@ -428,6 +440,13 @@ public class RBLBankTransferService implements BankTransferService {
 		} catch(HttpStatusCodeException e){
 			stopWatch.stop();
 			responseBody = e.getResponseBodyAsString();
+			if(responseBody!=null){
+				RBLHttpErrorResponse httpErrorResponse = gson.fromJson(responseBody,RBLHttpErrorResponse.class);
+				if(httpErrorResponse!=null) {
+					basicHttpResponse.setErrorMessage(httpErrorResponse.getMoreInformation());
+					basicHttpResponse.setErrorCode(httpErrorResponse.getHttpCode() + "-" + httpErrorResponse.getHttpMessage());
+				}
+			}
 			responseHttpStatus = e.getStatusCode();
 			responseHttpHeaders = e.getResponseHeaders();
 			logger.warn("RBL  Get Transaction Status HttpStatusCodeException Exception", e);
@@ -439,8 +458,13 @@ public class RBLBankTransferService implements BankTransferService {
 			logger.warn("RBL Get Transaction Status RestClientException", e);
 			basicHttpResponse.setSuccess(false);
 		} catch(Exception e){
-			stopWatch.stop();
-			responseBody = e.getMessage();
+			if(stopWatch.isStarted()){
+				stopWatch.stop();
+			}
+			if(responseBody==null) {
+				responseBody = e.getMessage();
+			}
+			basicHttpResponse.setErrorMessage(e.getMessage());
 			logger.warn("RBL Get Transaction Status unknown exception", e);
 			basicHttpResponse.setSuccess(false);
 		}

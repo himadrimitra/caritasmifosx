@@ -11,12 +11,12 @@ import com.finflux.transaction.execution.data.TransferType;
  */
 public interface BankTransferService {
 
-    BankTransactionResponse doTransaction(Long internalTxnId, BigDecimal amount, String reason, BankAccountDetailData debitAccount,
+    BankTransactionResponse doTransaction(Long internalTxnId, String internalTxnReferenceId, BigDecimal amount, String reason, BankAccountDetailData debitAccount,
                                           BankAccountDetailData beneficiaryAccount, TransferType transferType, String debitParticulars, String debitremarks,
                                           String beneficiaryParticulars, String beneficiaryRemarks, Long makerId, Long checkerId,
                                           Long approverId);
 
-    BankTransactionResponse getTransactionStatus(Long internalTxnId, String referenceNumber, Long makerId, Long checkerId,
+    BankTransactionResponse getTransactionStatus(Long internalTxnId, String internalTxnReferenceId, String referenceNumber, Long makerId, Long checkerId,
                                                  Long approverId);
 
     void getStatus(String externalTxnId);
