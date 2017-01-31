@@ -412,4 +412,20 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public boolean isLoanOfficerToCenterHierarchyEnabled() {
         return getGlobalConfigurationPropertyData("apply-loan-officer-to-center-hierarchy").isEnabled();
     }
+
+    @Override
+    public String getMaskedRegex() {
+        final String propertyName = "mask-regex";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        if (property.isEnabled()) return property.getValue();
+        return "\\w(?=.{4})";
+    }
+
+    @Override
+    public String getMaskedCharacter() {
+        final String propertyName = "mask-replacechar";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        if (property.isEnabled()) return property.getValue();
+        return "x";
+    }
 }

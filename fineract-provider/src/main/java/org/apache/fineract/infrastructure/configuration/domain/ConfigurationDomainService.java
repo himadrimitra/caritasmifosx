@@ -126,4 +126,8 @@ public interface ConfigurationDomainService {
     Integer retrieveMaxLoginAttempts();
 
     boolean isLoanOfficerToCenterHierarchyEnabled();
+
+    String getMaskedRegex();
+
+    String getMaskedCharacter();
 }

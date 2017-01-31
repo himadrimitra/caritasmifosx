@@ -2,7 +2,6 @@ package com.finflux.transaction.execution.service;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,13 +10,10 @@ import java.util.Map;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -28,7 +24,7 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.portfolio.external.data.ExternalServicePropertyData;
 import com.finflux.portfolio.external.data.ExternalServicesData;
-import com.finflux.portfolio.external.data.ExternalServicesReadService;
+import com.finflux.portfolio.external.service.ExternalServicesReadService;
 import com.finflux.task.data.TaskConfigEntityType;
 import com.finflux.task.data.TaskConfigKey;
 import com.finflux.task.data.TaskEntityType;
@@ -154,8 +150,8 @@ public class BankTransactionServiceImpl implements BankTransactionService {
 	@Override
 	public BankTransferService getBankTransferService(Long externalServiceId) {
 		ExternalServicesData externalServiceData = externalServicesReadService.findOneWithNotFoundException(externalServiceId);
-		List<ExternalServicePropertyData> extProperties =  externalServicesReadService.findPropertiesForExternalServices(externalServiceId);
-		Map<String,String> propertiesMap = getDecryptedMap(extProperties);
+		List<ExternalServicePropertyData> extProperties =  externalServicesReadService.findClearPropertiesForExternalServices(externalServiceId);
+		Map<String,String> propertiesMap = convertToKeyValueMap(extProperties);
 		return bankTransferProviderFactory.getBankTransferService( externalServiceData.getName(),propertiesMap);
 	}
 
@@ -173,41 +169,46 @@ public class BankTransactionServiceImpl implements BankTransactionService {
 		return transferTypeEnums;
 	}
 
-	private Map<String, String> getDecryptedMap(List<ExternalServicePropertyData> extProperties) {
+	private Map<String, String> convertToKeyValueMap(List<ExternalServicePropertyData> extProperties) {
 		Map<String,String> propertiesMap = new HashMap<>();
-		try {
-			IvParameterSpec ivParameterSpec = new IvParameterSpec(Hex.decodeHex(SECRET_IV.toCharArray()));
-			SecretKeySpec secretKeySpec = new SecretKeySpec(Hex.decodeHex(SECRET_KEY_1.toCharArray()), "AES");
-			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-
-			for(ExternalServicePropertyData propertyData: extProperties){
-				if(!propertyData.getEncrypted()) {
-					propertiesMap.put(propertyData.getName(), propertyData.getValue());
-				}else{
-					//decrypt value
-					try {
-						String decryptedValue = decrypt(cipher,secretKeySpec,ivParameterSpec,propertyData.getValue());
-						propertiesMap.put(propertyData.getName(), decryptedValue);
-					} catch (InvalidAlgorithmParameterException e) {
-						e.printStackTrace();
-					} catch (InvalidKeyException e) {
-						e.printStackTrace();
-					} catch (BadPaddingException e) {
-						e.printStackTrace();
-					} catch (IllegalBlockSizeException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			e.printStackTrace();
-		} catch (DecoderException e) {
-			e.printStackTrace();
+		for(ExternalServicePropertyData propertyData: extProperties) {
+			propertiesMap.put(propertyData.getName(), propertyData.getValue());
 		}
-		return  propertiesMap;
+		return propertiesMap;
+
+//		try {
+//			IvParameterSpec ivParameterSpec = new IvParameterSpec(Hex.decodeHex(SECRET_IV.toCharArray()));
+//			SecretKeySpec secretKeySpec = new SecretKeySpec(Hex.decodeHex(SECRET_KEY_1.toCharArray()), "AES");
+//			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+//
+//			for(ExternalServicePropertyData propertyData: extProperties){
+//				if(!propertyData.getEncrypted()) {
+//					propertiesMap.put(propertyData.getName(), propertyData.getValue());
+//				}else{
+//					//decrypt value
+//					try {
+//						String decryptedValue = decrypt(cipher,secretKeySpec,ivParameterSpec,propertyData.getValue());
+//						propertiesMap.put(propertyData.getName(), decryptedValue);
+//					} catch (InvalidAlgorithmParameterException e) {
+//						e.printStackTrace();
+//					} catch (InvalidKeyException e) {
+//						e.printStackTrace();
+//					} catch (BadPaddingException e) {
+//						e.printStackTrace();
+//					} catch (IllegalBlockSizeException e) {
+//						e.printStackTrace();
+//					}
+//				}
+//			}
+//
+//		} catch (NoSuchAlgorithmException e) {
+//			e.printStackTrace();
+//		} catch (NoSuchPaddingException e) {
+//			e.printStackTrace();
+//		} catch (DecoderException e) {
+//			e.printStackTrace();
+//		}
+//		return  propertiesMap;
 	}
 
 

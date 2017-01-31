@@ -291,6 +291,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder updateOtherExternalPropertiesForAService(Long serviceId) {
+        this.actionName = "UPDATE";
+        this.entityName = "OTHER_EXTERNAL_SERVICES_PROPERTIES";
+        this.entityId = serviceId;
+        this.href = "/otherexternalservices/" + serviceId + "/properties";
+        return this;
+    }
+
     public CommandWrapperBuilder initiateBankTransaction(Long transactionId) {
         this.actionName = "INITIATE";
         this.entityName = "BANK_TRANSACTION";

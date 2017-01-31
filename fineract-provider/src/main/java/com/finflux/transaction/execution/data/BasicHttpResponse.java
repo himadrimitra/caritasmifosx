@@ -48,7 +48,11 @@ public class BasicHttpResponse {
         }
 
         public void setErrorMessage(String errorMessage) {
-                this.errorMessage = errorMessage;
+                if(this.errorMessage!=null){
+                        this.errorMessage = this.errorMessage +" | "+errorMessage;
+                }else {
+                        this.errorMessage = errorMessage;
+                }
         }
 
         public Boolean getSuccess() {

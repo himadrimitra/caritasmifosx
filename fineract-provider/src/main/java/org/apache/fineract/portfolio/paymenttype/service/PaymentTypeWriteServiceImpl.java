@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
 import com.finflux.portfolio.bank.service.BankAccountDetailsWriteService;
-import com.finflux.portfolio.external.data.ExternalServicesReadService;
+import com.finflux.portfolio.external.service.ExternalServicesReadService;
 
 @Service
 public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {

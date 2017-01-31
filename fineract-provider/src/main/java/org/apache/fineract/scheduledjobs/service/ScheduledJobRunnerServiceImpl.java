@@ -744,20 +744,21 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 							approverId = makerCheckerData.getApproverUserId();
 						}
 						BankTransactionResponse response=bankTransferService.doTransaction(
-							txnDetail.getTransactionId(),txnDetail.getAmount(),transaction.getReason(),
+							txnDetail.getTransactionId(),transaction.getInternalReferenceId(),txnDetail.getAmount(),transaction.getReason(),
 							txnDetail.getDebiter(), txnDetail.getBeneficiary(),
 							TransferType.fromInt(transaction.getTransferType()),""+transaction.getId(),
 								transaction.getReason(),""+transaction.getId(),transaction.getReason(),
 								makerId,checkerId,approverId);
-						if(response.getSuccess()){
-							transaction.setErrorCode(response.getErrorCode());
-							transaction.setErrorMessage(response.getErrorMessage());
-							transaction.setReferenceNumber(response.getReferenceNumber());
-							transaction.setUtrNumber(response.getUtrNumber());
-							transaction.setPoNumber(response.getPoNumber());
-							if(response.getTransactionTime()!=null) {
-								transaction.setTransactionDate(response.getTransactionTime().toDate());
-							}
+						if(!response.getSuccess()){
+							logger.warn("Initiate Transaction failed for transaction:"+ transaction.getExternalServiceId());
+						}
+						transaction.setErrorCode(response.getErrorCode());
+						transaction.setErrorMessage(response.getErrorMessage());
+						transaction.setReferenceNumber(response.getReferenceNumber());
+						transaction.setUtrNumber(response.getUtrNumber());
+						transaction.setPoNumber(response.getPoNumber());
+						if(response.getTransactionTime()!=null) {
+							transaction.setTransactionDate(response.getTransactionTime().toDate());
 						}
 						transaction.setStatus(response.getTransactionStatus().getValue());
 						bankAccountTransactionRepository.save(transaction);
@@ -813,12 +814,12 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 							approverId = makerCheckerData.getApproverUserId();
 						}
 						BankTransactionResponse response=bankTransferService.getTransactionStatus(
-							transaction.getId(),transaction.getReferenceNumber(),makerId,checkerId,approverId);
-						if(response.getSuccess()){
+							transaction.getId(),transaction.getInternalReferenceId(),transaction.getReferenceNumber(),makerId,checkerId,approverId);
+						if(!response.getSuccess()){
 							logger.warn("Status update failed for transaction:"+ transaction.getExternalServiceId());
-							transaction.setErrorCode(response.getErrorCode());
-							transaction.setErrorMessage(response.getErrorMessage());
 						}
+						transaction.setErrorCode(response.getErrorCode());
+						transaction.setErrorMessage(response.getErrorMessage());
 						if(transaction.getReferenceNumber()==null){
 							transaction.setReferenceNumber(response.getReferenceNumber());
 						}
