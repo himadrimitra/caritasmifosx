@@ -2,6 +2,8 @@ package com.finflux.organisation.transaction.authentication.service;
 
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
+import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
@@ -35,6 +37,8 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 	private final SecondaryAuthenticationServiceRepositoryWrapper secondaryAuthenticationServiceRepository;
 	private final PaymentTypeRepositoryWrapper PaymentTypeRepository;
 	private final LoanProductReadPlatformService loanProductReadPlatformService;
+    private final CodeValueRepositoryWrapper codeValueRepository;
+
 
 	@Autowired
 	public TransactionAuthenticationWritePlatformServiceImpl(final TransactionAuthenticationDataValidator dataValidator,
@@ -42,7 +46,7 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 			final TransactionAuthenticationRepositoryWrapper repository, final PlatformSecurityContext context,
 			final SecondaryAuthenticationServiceRepositoryWrapper secondaryAuthenticationServiceRepository,
 			final PaymentTypeRepositoryWrapper PaymentTypeRepository,
-			final LoanProductReadPlatformService loanProductReadPlatformService) {
+			final LoanProductReadPlatformService loanProductReadPlatformService, final CodeValueRepositoryWrapper codeValueRepository) {
 		this.dataValidator = dataValidator;
 		this.dataAssembler = dataAssembler;
 		this.repository = repository;
@@ -50,6 +54,7 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 		this.secondaryAuthenticationServiceRepository = secondaryAuthenticationServiceRepository;
 		this.PaymentTypeRepository = PaymentTypeRepository;
 		this.loanProductReadPlatformService = loanProductReadPlatformService;
+		this.codeValueRepository = codeValueRepository;
 	}
 
 	@Override
@@ -96,10 +101,11 @@ public class TransactionAuthenticationWritePlatformServiceImpl
 			final PaymentType paymentType = this.PaymentTypeRepository.findOneWithNotFoundDetection(
 					command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID));
 			final Long loanProductId = command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PRODUCT_ID);
+			 final CodeValue identificationType = this.codeValueRepository.findOneWithNotFoundDetection(command.longValueOfParameterNamed(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID));
 			this.loanProductReadPlatformService
 					.checkLoanProductByIdExists(loanProductId);
 			final Map<String, Object> actualChanges = transactionAuthentication.update(command, currentUser,
-					secondaryAuthenticationType, paymentType, loanProductId);
+					secondaryAuthenticationType, paymentType, loanProductId,identificationType);
 			return new CommandProcessingResultBuilder() //
 					.withEntityId(transactionAuthentication.getId()).with(actualChanges) //
 					.build();
