@@ -5,7 +5,7 @@ INSERT INTO `stretchy_parameter` (`parameter_name`, `parameter_variable`, `param
 
 /*report*/
 
-INSERT INTO `stretchy_report` (`report_name`, `report_type`, `report_subtype`, `report_category`, `report_sql`, `description`, `core_report`, `use_report`, `track_usage`) VALUES ('Custom written-off report', 'Pentaho', NULL, 'Client', NULL, NULL, 0, 1, 0);
+INSERT INTO `stretchy_report` (`report_name`, `report_type`, `report_subtype`, `report_category`, `report_sql`, `description`, `core_report`, `use_report`, `track_usage`) VALUES ('Custom written-off report', 'Pentaho', NULL, 'Custom', NULL, NULL, 0, 1, 0);
 
 
 /*report parameter*/

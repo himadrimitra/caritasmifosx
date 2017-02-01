@@ -1,6 +1,6 @@
 /*report*/
 
-INSERT INTO `stretchy_report` (`report_name`, `report_type`, `report_subtype`, `report_category`, `report_sql`, `description`, `core_report`, `use_report`, `track_usage`) VALUES ('Aging summary- SEF (Arrears in months)', 'Pentaho', NULL, 'Loan', '(NULL)', '(NULL)', 1, 1, 0);
+INSERT INTO `stretchy_report` (`report_name`, `report_type`, `report_subtype`, `report_category`, `report_sql`, `description`, `core_report`, `use_report`, `track_usage`) VALUES ('Aging summary- SEF (Arrears in months)', 'Pentaho', NULL, 'Custom', '(NULL)', '(NULL)', 1, 1, 0);
 
 
 /*parameter*/

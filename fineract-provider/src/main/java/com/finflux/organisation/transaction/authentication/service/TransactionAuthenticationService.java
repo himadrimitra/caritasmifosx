@@ -118,7 +118,7 @@ public class TransactionAuthenticationService {
 				.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
 		if (secondaryAuthenticationService.isActive()) {
 			if (secondaryAuthenticationService.getName().equals(TransactionAuthenticationApiConstants.AADHAAR_OTP)) {
-				String aadhaarNumber = this.clientData.getAadhaarNumberOfClient(clientId);
+				String aadhaarNumber = this.clientData.getAadhaarNumberOfClient(clientId,transactionAuthentication.getIdentificationType().getId());
 				final GenerateOtpService generateOtpService = this.generateOtpFactory
 						.getOtpService(secondaryAuthenticationService.getAuthServiceClassName());
 				return generateOtpService.generateOtp(aadhaarNumber);
