@@ -24,6 +24,6 @@ public class SubmitBankTransactionCommandHandler implements NewCommandSourceHand
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.bankTransactionWriteService.submitTransaction(command.entityId());
+        return this.bankTransactionWriteService.submitTransaction(command.entityId(), command);
     }
 }

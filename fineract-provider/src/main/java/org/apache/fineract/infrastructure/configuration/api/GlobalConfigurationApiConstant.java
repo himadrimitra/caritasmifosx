@@ -35,5 +35,5 @@ public class GlobalConfigurationApiConstant {
     public static final Set<String> UPDATE_CONFIGURATION_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName, 
             ENABLED, VALUE, DATE_VALUE));
 
-    public static final Set<String> STRING_VALUE_CONFIGURATIONS = new HashSet<>(Arrays.asList("default-organisation-currency"));
+    public static final Set<String> STRING_VALUE_CONFIGURATIONS = new HashSet<>(Arrays.asList("default-organisation-currency","mask-regex","mask-replacechar"));
 }

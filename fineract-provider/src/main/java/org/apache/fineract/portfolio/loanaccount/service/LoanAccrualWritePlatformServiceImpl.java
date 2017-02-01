@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -47,11 +48,15 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.AppUserRepositoryWrapper;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -272,11 +277,14 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
     private void addAccrualAccounting(LoanScheduleAccrualData scheduleAccrualData, BigDecimal amount, BigDecimal interestportion,
             BigDecimal totalAccInterest, BigDecimal feeportion, BigDecimal totalAccFee, BigDecimal penaltyportion,
             BigDecimal totalAccPenalty, final LocalDate accruedTill) throws Exception {
+        Long currentUser = getCurrentUserId();
+        Date currentTime = DateUtils.getLocalDateTimeOfTenant().toDate();
         String transactionSql = "INSERT INTO m_loan_transaction  (loan_id,office_id,is_reversed,transaction_type_enum,transaction_date,amount,interest_portion_derived,"
-                + "fee_charges_portion_derived,penalty_charges_portion_derived, submitted_on_date) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)";
+                + "fee_charges_portion_derived,penalty_charges_portion_derived, submitted_on_date,createdby_id,created_date,lastmodifiedby_id,lastmodified_date)"
+                + " VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         this.jdbcTemplate.update(transactionSql, scheduleAccrualData.getLoanId(), scheduleAccrualData.getOfficeId(),
                 LoanTransactionType.ACCRUAL.getValue(), accruedTill.toDate(), amount, interestportion, feeportion, penaltyportion,
-                DateUtils.getDateOfTenant());
+                DateUtils.getDateOfTenant(),currentUser,currentTime,currentUser,currentTime);
         @SuppressWarnings("deprecation")
         final Long transactonId = this.jdbcTemplate.queryForLong("SELECT LAST_INSERT_ID()");
 
@@ -512,5 +520,18 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
         final Map<String, Object> accountingBridgeData = loan.deriveAccountingBridgeData(applicationCurrency.toData(),
                 existingTransactionIds, existingReversedTransactionIds, isAccountTransfer);
         this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
+    }
+    
+    public Long getCurrentUserId() {
+
+        Long currentUser = null;
+        final SecurityContext securityContext = SecurityContextHolder.getContext();
+        if (securityContext != null) {
+            final Authentication authentication = securityContext.getAuthentication();
+            if (authentication != null) {
+                currentUser = ((AppUser) authentication.getPrincipal()).getId();
+            }
+        }
+        return currentUser;
     }
 }

@@ -30,14 +30,15 @@ import java.util.Set;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
-import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
+import org.apache.fineract.infrastructure.jobs.service.JobExecuter;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.infrastructure.jobs.service.JobRunner;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.office.domain.Office;
@@ -61,16 +62,19 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     private final LoanWritePlatformService loanWritePlatformService;
     private final LoanUtilService loanUtilService;
     private final HolidayRepositoryWrapper holidayRepository;
+    private final JobExecuter jobExecuter;
 
     @Autowired
     public LoanSchedularServiceImpl(final ConfigurationDomainService configurationDomainService,
             final LoanReadPlatformService loanReadPlatformService, final LoanWritePlatformService loanWritePlatformService,
-            final LoanUtilService loanUtilService, final HolidayRepositoryWrapper holidayRepository) {
+            final LoanUtilService loanUtilService, final HolidayRepositoryWrapper holidayRepository,
+            final JobExecuter jobExecuter) {
         this.configurationDomainService = configurationDomainService;
         this.loanReadPlatformService = loanReadPlatformService;
         this.loanWritePlatformService = loanWritePlatformService;
         this.loanUtilService = loanUtilService;
         this.holidayRepository = holidayRepository;
+        this.jobExecuter = jobExecuter;
     }
 
     @Override
@@ -127,84 +131,31 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     @Override
     @CronTarget(jobName = JobName.RECALCULATE_INTEREST_FOR_LOAN)
     public void recalculateInterest() throws JobExecutionException {
-        Map<String, String> jobParams = ThreadLocalContextUtil.getJobParams();
-        int numberOfThreads = 1;
-        if (jobParams.containsKey("number-of-threads")) {
-            numberOfThreads = Integer.parseInt(jobParams.get("number-of-threads"));
-            if (numberOfThreads == 0) {
-                numberOfThreads = 1;
-            }
-        }
         List<Long> loanIds = this.loanReadPlatformService.fetchLoansForInterestRecalculation();
-
-        if (!loanIds.isEmpty()) {
-            int loanSize = loanIds.size();
-            final StringBuilder sb = new StringBuilder();
-            if (numberOfThreads <= 1 || numberOfThreads > loanSize) {
-                Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
-                Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
-                recalculateInterest(sb, maxNumberOfRetries, maxIntervalBetweenRetries, loanIds);
-            } else {
-                int subListSize = loanSize / numberOfThreads;
-                List<StringBuilder> bufferes = new ArrayList<>(numberOfThreads);
-                try {
-                    List<Thread> threads = new ArrayList<>();
-                    for (int threadNumber = 0; threadNumber < numberOfThreads; threadNumber++) {
-                        final StringBuilder threadsb = new StringBuilder();
-                        bufferes.add(threadsb);
-                        boolean completeList = false;
-                        if (threadNumber == numberOfThreads - 1) {
-                            completeList = true;
-                        }
-                        List<Long> subList = subList(loanIds, threadNumber, subListSize, completeList);
-                        if (subList.size() > 0) {
-                            Thread thread = new Thread(new RecalculateInterestThread(subList, threadsb));
-                            thread.start();
-                            threads.add(thread);
-                        }
-                        if (loanSize <= (threadNumber + 1) * subListSize) {
-                            break;
-                        }
-                    }
-                    for (Thread thread : threads) {
-                        thread.join();
-                    }
-                    for (StringBuilder threadsb : bufferes) {
-                        sb.append(threadsb.toString());
-                    }
-                } catch (InterruptedException e) {
-                    sb.append("Interest recalculation for loans failed " + e.getMessage());
-                }
-            }
-
-            if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
-        }
-
+        JobRunner<List<Long>> runner = new RecalculateInterestJobRunner();
+        final String errors = this.jobExecuter.executeJob(loanIds, runner);
+        if (errors.length() > 0) { throw new JobExecutionException(errors); }
     }
     
-    private class RecalculateInterestThread implements Runnable {
+    private  class RecalculateInterestJobRunner implements JobRunner<List<Long>>{
 
-        Integer maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
-        Integer maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
-        final List<Long> loanIds;
-        final FineractPlatformTenant tenant;
-        final StringBuilder sb;
+        final Integer maxNumberOfRetries;
+        final Integer maxIntervalBetweenRetries;
         final Boolean ignoreOverdue;
-
-        public RecalculateInterestThread(final List<Long> loanIds, final StringBuilder sb) {
-            this.loanIds = loanIds;
-            this.tenant = ThreadLocalContextUtil.getTenant();
-            this.sb = sb;
-            this.ignoreOverdue = ThreadLocalContextUtil.getIgnoreOverdue();
-        }
-
+        
+        public RecalculateInterestJobRunner() {
+            maxNumberOfRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxRetriesOnDeadlock();
+            maxIntervalBetweenRetries = ThreadLocalContextUtil.getTenant().getConnection().getMaxIntervalBetweenRetries();
+            ignoreOverdue = ThreadLocalContextUtil.getIgnoreOverdue();
+        }        
+        
         @Override
-        public void run() {
-            ThreadLocalContextUtil.setTenant(tenant);
-            ThreadLocalContextUtil.setIgnoreOverdue(ignoreOverdue);
-            recalculateInterest(sb, maxNumberOfRetries, maxIntervalBetweenRetries, loanIds);
+        public void runJob(final List<Long> loanIds, final StringBuilder sb) {
+            ThreadLocalContextUtil.setIgnoreOverdue(this.ignoreOverdue);
+            recalculateInterest(sb, this.maxNumberOfRetries, this.maxIntervalBetweenRetries, loanIds);
+            
         }
-
+        
     }
 
     private StringBuilder recalculateInterest(final StringBuilder sb, Integer maxNumberOfRetries, Integer maxIntervalBetweenRetries,
@@ -252,15 +203,6 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
             }
         }
         return sb;
-    }
-
-    private List<Long> subList(List<Long> list, int counter, int sublistSize, boolean completeList) {
-        int fromIndex = counter * sublistSize;
-        int toIndex = fromIndex + sublistSize;
-        if (completeList || toIndex > list.size()) {
-            toIndex = list.size();
-        }
-        return list.subList(fromIndex, toIndex);
     }
 
     @Override

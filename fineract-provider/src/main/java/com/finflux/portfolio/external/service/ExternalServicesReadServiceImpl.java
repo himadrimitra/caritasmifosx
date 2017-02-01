@@ -1,4 +1,4 @@
-package com.finflux.portfolio.external.data;
+package com.finflux.portfolio.external.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,6 +7,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.finflux.common.security.service.PlatformCryptoService;
+import com.finflux.portfolio.external.ExternalServiceType;
+import com.finflux.portfolio.external.data.ExternalServicePropertyData;
+import com.finflux.portfolio.external.data.ExternalServicesData;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +27,13 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
 
     private final JdbcTemplate jdbcTemplate;
     private final ExternalServicesPropertiesMapper propertiesMapper = new ExternalServicesPropertiesMapper();
+    private final PlatformCryptoService platformCryptoService ;
 
     @Autowired
-    public ExternalServicesReadServiceImpl(final RoutingDataSource dataSource) {
+    public ExternalServicesReadServiceImpl(final RoutingDataSource dataSource,
+                                           final PlatformCryptoService platformCryptoService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.platformCryptoService = platformCryptoService;
     }
 
     @Override
@@ -49,9 +57,42 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
     }
 
     @Override
-    public List<ExternalServicePropertyData> findPropertiesForExternalServices(Long id) {
+    public Collection<ExternalServicesData> findAllExternalServices() {
+        ExternalServicesMapper externalServicesMapper = new ExternalServicesMapper();
+        String sql = "select " + externalServicesMapper.schema() ;
+        return this.jdbcTemplate.query(sql, externalServicesMapper);
+    }
+
+    @Override
+    public List<ExternalServicePropertyData> findClearPropertiesForExternalServices(Long id) {
         String sql = "select " + propertiesMapper.schema() + " where esp.external_service_id = ?";
-        return this.jdbcTemplate.query(sql, propertiesMapper, id);
+        List<ExternalServicePropertyData> externalServicePropertyDataList =  this.jdbcTemplate.query(sql, propertiesMapper, id);
+        if(externalServicePropertyDataList!=null){
+            for(ExternalServicePropertyData propertyData: externalServicePropertyDataList){
+                if(propertyData.getEncrypted()){
+                    //set Clear Values
+                    propertyData.setValue(platformCryptoService.decrypt(propertyData.getValue()));
+                    propertyData.setEncrypted(false);
+                }
+            }
+        }
+        return externalServicePropertyDataList;
+    }
+
+    @Override
+    public List<ExternalServicePropertyData> findMaskedPropertiesForExternalServices(Long id) {
+        String sql = "select " + propertiesMapper.schema() + " where esp.external_service_id = ?";
+        List<ExternalServicePropertyData> externalServicePropertyDataList =  this.jdbcTemplate.query(sql, propertiesMapper, id);
+        if(externalServicePropertyDataList!=null){
+            for(ExternalServicePropertyData propertyData: externalServicePropertyDataList){
+                if(propertyData.getEncrypted()){
+                    String decryptedValue = platformCryptoService.decrypt(propertyData.getValue());
+                    String maskedValue = platformCryptoService.mask(decryptedValue);
+                    propertyData.setValue(maskedValue);
+                }
+            }
+        }
+        return externalServicePropertyDataList;
     }
 
     private class ExternalServicesMapper implements RowMapper<ExternalServicesData> {
@@ -69,7 +110,8 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
             final String name = rs.getString("name");
             final String displayCode = rs.getString("displayCode");
             final Integer type = JdbcSupport.getInteger(rs, "type");
-            return new ExternalServicesData(id, name, displayCode, type);
+            final EnumOptionData enumType = ExternalServiceType.fromInt(type).getEnumOptionData();
+            return new ExternalServicesData(id, name, displayCode, enumType);
         }
 
     }

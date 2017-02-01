@@ -100,7 +100,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName,
             LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName,
             LoanApiConstants.upfrontChargesAmountParamName,LoanApiConstants.expectedDisbursalPaymentTypeParamName,LoanApiConstants.expectedRepaymentPaymentTypeParamName,
-            LoanApiConstants.skipAuthenticationRule, LoanApiConstants.syncRepaymentsWithMeeting));
+            LoanApiConstants.skipAuthenticationRule, LoanApiConstants.syncRepaymentsWithMeeting,LoanProductConstants.brokenPeriodMethodTypeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
@@ -512,6 +512,12 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             final Long expectedRepaymentPaymentTypeId = this.fromApiJsonHelper.extractLongNamed(expectedRepaymentPaymentTypeParameterName, element);
             baseDataValidator.reset().parameter(expectedRepaymentPaymentTypeParameterName).value(expectedRepaymentPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
         }
+        
+        final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.brokenPeriodMethodTypeParamName, element,
+                Locale.getDefault());
+        baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType).ignoreIfNull()
+                .inMinMaxRange(0, 1);
+        
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -964,6 +970,13 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         if (this.fromApiJsonHelper.parameterExists(expectedDisbursalPaymentTypeParameterName, element)) {
             final Long expectedRepaymentPaymentTypeId = this.fromApiJsonHelper.extractLongNamed(expectedRepaymentPaymentTypeParameterName, element);
             baseDataValidator.reset().parameter(expectedRepaymentPaymentTypeParameterName).value(expectedRepaymentPaymentTypeId).ignoreIfNull().integerGreaterThanZero();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.brokenPeriodMethodTypeParamName, element)) {
+            final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(
+                    LoanProductConstants.brokenPeriodMethodTypeParamName, element, Locale.getDefault());
+            baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType)
+                    .ignoreIfNull().inMinMaxRange(0, 1);
         }
 
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);

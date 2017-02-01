@@ -52,7 +52,7 @@ import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
 import com.finflux.portfolio.bank.service.BankAccountDetailsReadService;
 import com.finflux.portfolio.external.ExternalServiceType;
 import com.finflux.portfolio.external.data.ExternalServicesData;
-import com.finflux.portfolio.external.data.ExternalServicesReadService;
+import com.finflux.portfolio.external.service.ExternalServicesReadService;
 
 @Path("/paymenttypes")
 @Component

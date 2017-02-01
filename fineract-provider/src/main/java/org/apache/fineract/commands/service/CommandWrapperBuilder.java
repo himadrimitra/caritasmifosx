@@ -26,6 +26,8 @@ import org.apache.fineract.portfolio.paymenttype.api.PaymentTypeApiResourceConst
 import org.apache.fineract.portfolio.savings.DepositsApiConstants;
 import org.apache.fineract.useradministration.api.PasswordPreferencesApiConstants;
 
+import com.sun.jersey.multipart.FormDataMultiPart;
+
 public class CommandWrapperBuilder {
 
     private Long officeId;
@@ -44,11 +46,12 @@ public class CommandWrapperBuilder {
     private Long templateId;
     private String option;
     private Integer entityTypeId;
+    private FormDataMultiPart formDataMultiPart;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
                 this.entityName, this.entityId, this.subentityId, this.href, this.json, this.transactionId, this.productId,
-                this.templateId, this.option, entityTypeId);
+                this.templateId, this.option, entityTypeId, this.formDataMultiPart);
     }
 
     public CommandWrapperBuilder withLoanId(final Long withLoanId) {
@@ -3803,4 +3806,30 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder assignFund(Long fundId, String options) {
+        this.actionName = "ASSIGN";
+        this.entityName = "FUND";
+        this.entityId = fundId;
+        this.href = (options.equalsIgnoreCase("fromcsv"))?"/funds/"+fundId+"/assign":"/funds/"+fundId;
+        return this;
+    }
+    public CommandWrapperBuilder activateFund(Long fundId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "FUND";
+        this.entityId = fundId;
+        this.href = "/funds/"+fundId+ "?command=activate";
+        return this;
+    }
+    public CommandWrapperBuilder deactivateFund(Long fundId) {
+        this.actionName = "DEACTIVATE";
+        this.entityName = "FUND";
+        this.entityId = fundId;
+        this.href = "/funds/"+fundId+ "?command=deactivate";
+        return this;
+    }
+    
+    public CommandWrapperBuilder withFormDataMultiPart(final FormDataMultiPart formDataMultiPart) {
+        this.formDataMultiPart = formDataMultiPart;
+        return this;
+    }
 }

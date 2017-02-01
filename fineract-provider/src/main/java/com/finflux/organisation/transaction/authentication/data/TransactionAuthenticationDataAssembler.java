@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.fineract.infrastructure.codes.domain.CodeValue;
+import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -45,6 +47,7 @@ public class TransactionAuthenticationDataAssembler {
 	private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 	private final TransactionAuthenticationReadPlatformService readPlatformService;
 	private final LoanProductReadPlatformService loanProductReadPlatformService;
+    private final CodeValueRepositoryWrapper codeValueRepository;
 
 	@Autowired
 	public TransactionAuthenticationDataAssembler(final FromJsonHelper fromJsonHelper,
@@ -53,13 +56,14 @@ public class TransactionAuthenticationDataAssembler {
 			final PaymentTypeRepositoryWrapper paymentTypeRepository,
 			final TransactionAuthenticationReadPlatformService readPlatformService,
 			final TransactionAuthenticationRepositoryWrapper transactionAuthenticationRepositoryWrapper,
-			final LoanProductReadPlatformService loanProductReadPlatformService) {
+			final LoanProductReadPlatformService loanProductReadPlatformService, CodeValueRepositoryWrapper codeValueRepository) {
 		this.fromJsonHelper = fromJsonHelper;
 		this.context = context;
 		this.secondaryAuthenticationServiceRepository = secondaryAuthenticationServiceRepository;
 		this.paymentTypeRepository = paymentTypeRepository;
 		this.readPlatformService = readPlatformService;
 		this.loanProductReadPlatformService = loanProductReadPlatformService;
+		this.codeValueRepository = codeValueRepository;
 	}
 
 	public TransactionAuthentication transactionAuthenticationDataAssembler(final JsonCommand command) {
@@ -78,7 +82,7 @@ public class TransactionAuthenticationDataAssembler {
 				.extractBigDecimalNamed(TransactionAuthenticationApiConstants.AMOUNT, element, locale);
 		final Long secondAppUserRoleId = this.fromJsonHelper
 				.extractLongNamed(TransactionAuthenticationApiConstants.SECOUND_APP_USER_ROLE_ID, element);
-
+		final Long identificationTypeId = this.fromJsonHelper.extractLongNamed(TransactionAuthenticationApiConstants.IDENTIFIER_TYPE_ID, element);
 		// SECOND PHASE
 		// final RoleData roleData =
 		// this.roleReadPlatformService.retrieveOne(secondAppUserRoleId);
@@ -97,9 +101,10 @@ public class TransactionAuthenticationDataAssembler {
 		final Long authenticationTypeId = this.fromJsonHelper
 				.extractLongNamed(TransactionAuthenticationApiConstants.AUTHENTICATION_TYPE_ID, element);
 		final SecondaryAuthenticationService secondaryAuthenticationType = this.secondaryAuthenticationServiceRepository.findOneWithNotFoundDetection(authenticationTypeId);
+		 final CodeValue identificationType = this.codeValueRepository.findOneWithNotFoundDetection(identificationTypeId);
 		this.loanProductReadPlatformService.checkLoanProductByIdExists(productId);
 		return TransactionAuthentication.newTransactionAuthentication(portfolioTypeId, transactionTypeId, paymentType,
-				amountGreaterThan, role, isSecondAppUserEnabled, secondaryAuthenticationType, currentUser, productId);
+				amountGreaterThan, role, isSecondAppUserEnabled, secondaryAuthenticationType, currentUser, productId, identificationType);
 
 	}
 	

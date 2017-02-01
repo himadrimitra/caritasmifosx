@@ -15,6 +15,7 @@ import com.finflux.task.data.TaskExecutionData;
 import com.finflux.task.data.TaskInfoData;
 import com.finflux.task.data.TaskNoteData;
 import com.finflux.task.data.TaskTemplateData;
+import com.finflux.task.data.*;
 
 public interface TaskPlatformReadService {
 
@@ -42,4 +43,6 @@ public interface TaskPlatformReadService {
     List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId);
 
     Collection<TaskActivityData> retrieveAllTaskActivityData();
+    TaskMakerCheckerData getMakerCheckerData(Long taskId);
+
 }

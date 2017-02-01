@@ -23,6 +23,9 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "account_number", nullable = false)
     private String accountNumber;
+    
+    @Column(name = "account_type_enum", nullable = false)
+    private Integer accountType;
 
     @Column(name = "ifsc_code", nullable = false)
     private String ifscCode;
@@ -45,7 +48,7 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
     protected BankAccountDetails() {}
 
     private BankAccountDetails(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
-            final String email, final String bankName, final String bankCity) {
+            final String email, final String bankName, final String bankCity, final Integer accountType) {
         this.name = name;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;
@@ -54,16 +57,18 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
         this.status = BankAccountDetailStatus.INITIATED.getValue();
         this.bankName = bankName;
         this.bankCity = bankCity;
+        this.accountType = accountType;
     }
 
+    
     public static BankAccountDetails create(final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email, final String bankName, final String bankCity) {
-        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity);
+            final String mobileNumber, final String email, final String bankName, final String bankCity, final Integer accountType) {
+        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity, accountType);
     }
 
     public static BankAccountDetails copy(BankAccountDetails bankAccountDetails) {
         return new BankAccountDetails(bankAccountDetails.name, bankAccountDetails.accountNumber, bankAccountDetails.ifscCode,
-                bankAccountDetails.mobileNumber, bankAccountDetails.email, bankAccountDetails.bankName, bankAccountDetails.bankCity);
+                bankAccountDetails.mobileNumber, bankAccountDetails.email, bankAccountDetails.bankName, bankAccountDetails.bankCity, bankAccountDetails.accountType);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -81,7 +86,7 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(BankAccountDetailConstants.accountNumberParameterName, newValue);
             this.accountNumber = StringUtils.defaultIfEmpty(newValue, null);
         }
-
+        
         if (command.isChangeInStringParameterNamed(BankAccountDetailConstants.ifscCodeParameterName, this.ifscCode)) {
             final String newValue = command.stringValueOfParameterNamed(BankAccountDetailConstants.ifscCodeParameterName);
             actualChanges.put(BankAccountDetailConstants.ifscCodeParameterName, newValue);
@@ -99,7 +104,23 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(BankAccountDetailConstants.emailParameterName, newValue);
             this.email = StringUtils.defaultIfEmpty(newValue, null);
         }
-
+        if (command.isChangeInStringParameterNamed(BankAccountDetailConstants.bankNameParameterName, this.bankName)) {
+            final String newValue = command.stringValueOfParameterNamed(BankAccountDetailConstants.bankNameParameterName);
+            actualChanges.put(BankAccountDetailConstants.bankNameParameterName, newValue);
+            this.bankName = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        if (command.isChangeInStringParameterNamed(BankAccountDetailConstants.bankCityParameterName, this.bankCity)) {
+            final String newValue = command.stringValueOfParameterNamed(BankAccountDetailConstants.bankCityParameterName);
+            actualChanges.put(BankAccountDetailConstants.bankCityParameterName, newValue);
+            this.bankCity = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        
+        if (command.isChangeInIntegerParameterNamed(BankAccountDetailConstants.accountTypeIdParamName, this.accountType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(BankAccountDetailConstants.accountTypeIdParamName);
+            actualChanges.put(BankAccountDetailConstants.accountTypeIdParamName, newValue);
+            this.accountType =BankAccountType.fromInt(newValue).getValue();
+        }
+        
         return actualChanges;
     }
 
@@ -137,5 +158,8 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
 
     public String getBankCity() {
         return bankCity;
+    }
+    public Integer getAccountType() {
+        return this.accountType;
     }
 }

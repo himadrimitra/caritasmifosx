@@ -49,6 +49,9 @@ public final class LoanSummary {
 
     @Column(name = "principal_outstanding_derived", scale = 6, precision = 19)
     private BigDecimal totalPrincipalOutstanding;
+    
+    @Column(name = "principal_net_disbursed_derived", scale = 6, precision = 19)
+    private BigDecimal totalNetPrincipalDisbursed;
 
     @Column(name = "interest_charged_derived", scale = 6, precision = 19)
     private BigDecimal totalInterestCharged;
@@ -119,16 +122,18 @@ public final class LoanSummary {
     @Column(name = "total_outstanding_derived", scale = 6, precision = 19)
     private BigDecimal totalOutstanding;
 
-    public static LoanSummary create(final BigDecimal totalFeeChargesDueAtDisbursement) {
-        return new LoanSummary(totalFeeChargesDueAtDisbursement);
+    public static LoanSummary create(final BigDecimal totalFeeChargesDueAtDisbursement, final Money principal) {
+        return new LoanSummary(totalFeeChargesDueAtDisbursement,principal);
+        
     }
 
     protected LoanSummary() {
         //
     }
 
-    private LoanSummary(final BigDecimal totalFeeChargesDueAtDisbursement) {
+    private LoanSummary(final BigDecimal totalFeeChargesDueAtDisbursement, final Money principal) {
         this.totalFeeChargesDueAtDisbursement = totalFeeChargesDueAtDisbursement;
+        this.totalNetPrincipalDisbursed = principal.minus(this.totalFeeChargesDueAtDisbursement).getAmount();
     }
 
     public void updateTotalFeeChargesDueAtDisbursement(final BigDecimal totalFeeChargesDueAtDisbursement) {
@@ -283,6 +288,8 @@ public final class LoanSummary {
         final Money totalOutstanding = Money.of(currency, this.totalPrincipalOutstanding).plus(this.totalInterestOutstanding)
                 .plus(this.totalFeeChargesOutstanding).plus(this.totalPenaltyChargesOutstanding);
         this.totalOutstanding = totalOutstanding.getAmount();
+        
+        this.totalNetPrincipalDisbursed = principal.minus(this.totalFeeChargesDueAtDisbursement).getAmount();
     }
 
     public BigDecimal getTotalPrincipalDisbursed() {
@@ -339,5 +346,10 @@ public final class LoanSummary {
     
     public BigDecimal getTotalExpectedRepayment() {
         return this.totalExpectedRepayment;
+    }
+
+    
+    public void setTotalNetPrincipalDisbursed(BigDecimal totalNetPrincipalDisbursed) {
+        this.totalNetPrincipalDisbursed = totalNetPrincipalDisbursed;
     }
 }

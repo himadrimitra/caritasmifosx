@@ -53,6 +53,7 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.springframework.util.StringUtils;
 
 import com.google.gson.JsonElement;
 
@@ -281,9 +282,6 @@ public class CalendarUtils {
             if (!nthDays.isEmpty())
                 nthDay = (Integer) nthDays.get(0);
             NumberList monthDays = recur.getMonthDayList();
-            Integer monthDay = null;
-            if (!monthDays.isEmpty())
-                monthDay = (Integer) monthDays.get(0);
             WeekDayList weekdays = recur.getDayList();
             WeekDay weekDay = null;
             if (!weekdays.isEmpty()) 
@@ -298,20 +296,30 @@ public class CalendarUtils {
                     humanReadable = "Every " + recur.getInterval() + " months on " + nthDayName.getCode().toLowerCase() + " "
                             + weekdayType.getCode().toLowerCase();
                 }
-            } else if (monthDay != null) {
-                if (monthDay == -1) {
-                    if (recur.getInterval() == 1 || recur.getInterval() == -1) {
-                        humanReadable = "Monthly on last day";
+            } else if (!monthDays.isEmpty()) {
+                if(monthDays.size() == 1){
+                    int monthDay = (int) monthDays.get(0);
+                    if (monthDay == -1) {
+                        if (recur.getInterval() == 1 || recur.getInterval() == -1) {
+                            humanReadable = "Monthly on last day";
+                        } else {
+                            humanReadable = "Every " + recur.getInterval() + " months on last day";
+                        }
                     } else {
-                        humanReadable = "Every " + recur.getInterval() + " months on last day";
+                        if (recur.getInterval() == 1 || recur.getInterval() == -1) {
+                            humanReadable = "Monthly on day " + monthDay;
+                        } else {
+                            humanReadable = "Every " + recur.getInterval() + " months on day " + monthDay;
+                        }
                     }
-                } else {
-                    if (recur.getInterval() == 1 || recur.getInterval() == -1) {
-                        humanReadable = "Monthly on day " + monthDay;
-                    } else {
-                        humanReadable = "Every " + recur.getInterval() + " months on day " + monthDay;
+                }else{
+                    int interval = recur.getInterval();
+                    if(interval == -1){
+                        interval = 1;
                     }
+                    humanReadable = "Every " + interval + " months on day " + StringUtils.collectionToCommaDelimitedString(monthDays);
                 }
+               
             } else {
                 if (recur.getInterval() == 1 || recur.getInterval() == -1) {
                 humanReadable = "Monthly on day " + startDate.getDayOfMonth();
@@ -561,7 +569,7 @@ public class CalendarUtils {
             boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays) {
         
         boolean isCalledFirstTime = true;
-        return getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate.plusDays(1), loanRepaymentInterval, frequency,
+        return getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate, loanRepaymentInterval, frequency,
                 workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
     }
     

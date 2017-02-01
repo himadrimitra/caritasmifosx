@@ -2,9 +2,9 @@ package com.finflux.portfolio.external.data;
 
 public class ExternalServicePropertyData {
 
-    private final String name;
-    private final String value;
-    private final Boolean isEncrypted;
+    private String name;
+    private String value;
+    private Boolean isEncrypted;
 
     public ExternalServicePropertyData(final String name, final String value, final Boolean isEncrypted) {
         this.name = name;
@@ -22,5 +22,17 @@ public class ExternalServicePropertyData {
 
     public Boolean getEncrypted() {
         return isEncrypted;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public void setEncrypted(Boolean encrypted) {
+        isEncrypted = encrypted;
     }
 }

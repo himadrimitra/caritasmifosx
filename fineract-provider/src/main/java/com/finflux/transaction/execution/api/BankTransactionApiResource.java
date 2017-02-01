@@ -7,14 +7,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
-import com.finflux.commands.service.CommandWrapperBuilder;
-import com.finflux.transaction.execution.data.BankTransactionDetail;
-import com.finflux.transaction.execution.data.BankTransactionEntityType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.exception.UnrecognizedQueryParamException;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
@@ -23,6 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.finflux.commands.service.CommandWrapperBuilder;
+import com.finflux.transaction.execution.data.BankTransactionDetail;
+import com.finflux.transaction.execution.data.BankTransactionEntityType;
 import com.finflux.transaction.execution.service.BankTransactionService;
 
 /**
@@ -81,6 +82,21 @@ public class BankTransactionApiResource {
     }
 
     @SuppressWarnings("unchecked")
+    @GET
+    @Path("{transactionId}/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveTransactionTemplate(@PathParam("transactionId") final Long transactionId,
+                                         @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
+        final BankTransactionDetail transaction = this.bankTransactionService.getTransactionDetail(transactionId);
+        List<EnumOptionData> supportedTransfers = this.bankTransactionService.geetSupportedTransfers(transactionId);
+        transaction.setSupportedTransferTypes(supportedTransfers);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, transaction);
+    }
+
+    @SuppressWarnings("unchecked")
     @POST
     @Path("{transactionId}")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -100,6 +116,9 @@ public class BankTransactionApiResource {
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }else if (is(commandParam, "submit")) {
             CommandWrapper commandRequest = builder.submitBankTransaction(transactionId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else if (is(commandParam, "retry")) {
+            CommandWrapper commandRequest = builder.retryBankTransaction(transactionId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
         if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "activate", "deactivate" }); }

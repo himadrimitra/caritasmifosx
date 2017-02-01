@@ -1,6 +1,5 @@
 package com.finflux.transaction.execution.service;
 
-import java.math.BigDecimal;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -11,16 +10,10 @@ import org.apache.fineract.portfolio.common.service.BusinessEventListner;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
-import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.finflux.portfolio.bank.data.BankAccountDetailData;
-import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
-import com.finflux.portfolio.bank.exception.BankAccountDetailNotFoundException;
 import com.finflux.portfolio.bank.service.BankAccountDetailsReadService;
-import com.finflux.transaction.execution.data.BankTransactionRequest;
-import com.finflux.transaction.execution.data.BankTransactionEntityType;
 
 @Component
 public class BankTransactionListenerForLoanActions implements BusinessEventListner {
@@ -28,13 +21,17 @@ public class BankTransactionListenerForLoanActions implements BusinessEventListn
     private final BusinessEventNotifierService businessEventNotifierService;
     private final BankAccountDetailsReadService bankAccountDetailsReadService;
     private final BankTransactionService bankTransactionService;
+    private final LoanBankTransactionHandler loanBankTransactionHandler;
 
     @Autowired
     public BankTransactionListenerForLoanActions(final BusinessEventNotifierService businessEventNotifierService,
-                                                 final BankAccountDetailsReadService bankAccountDetailsReadService, final BankTransactionService bankTransactionService) {
+                                                 final BankAccountDetailsReadService bankAccountDetailsReadService,
+                                                 final BankTransactionService bankTransactionService,
+                                                 final LoanBankTransactionHandler loanBankTransactionHandler) {
         this.businessEventNotifierService = businessEventNotifierService;
         this.bankAccountDetailsReadService = bankAccountDetailsReadService;
         this.bankTransactionService = bankTransactionService;
+        this.loanBankTransactionHandler = loanBankTransactionHandler;
     }
 
     @PostConstruct
@@ -55,36 +52,8 @@ public class BankTransactionListenerForLoanActions implements BusinessEventListn
         if (loanTransactionEntity != null) {
             Loan loan = (Loan) loanEntity;
             LoanTransaction loanTransaction = (LoanTransaction) loanTransactionEntity;
-            createBankTransfer(loan, loanTransaction);
+            loanBankTransactionHandler.createBankTransfer(loan,loanTransaction);
         }
 
     }
-
-    private void createBankTransfer(final Loan loan, final LoanTransaction loanTransaction) {
-        if (loanTransaction.getPaymentDetail() != null) {
-            PaymentType paymentType = loanTransaction.getPaymentDetail().getPaymentType();
-            if (paymentType.getExternalServiceId() != null) {
-                BankAccountDetailData fromAccount = this.bankAccountDetailsReadService.retrieveOneBy(
-                        BankAccountDetailEntityType.PAYMENTTYPES, paymentType.getId());
-                if (fromAccount == null) { throw new BankAccountDetailNotFoundException(paymentType.getId(),
-                        BankAccountDetailEntityType.PAYMENTTYPES.getValue()); }
-
-                BankAccountDetailData toAccount = this.bankAccountDetailsReadService.retrieveOneBy(BankAccountDetailEntityType.CLIENTS,
-                        loan.getClientId());
-                if (toAccount == null) { throw new BankAccountDetailNotFoundException(loan.getClientId(),
-                        BankAccountDetailEntityType.CLIENTS.getValue()); }
-                Long entityId = loan.getId();
-                Long entityTransactionId = loanTransaction.getId();
-                Long externalServiceId = paymentType.getExternalServiceId();
-                BigDecimal amount = loanTransaction.getAmount();
-                String reason = "Loan "+entityId+"-"+entityTransactionId;
-                BankTransactionRequest bankTransactionRequest = new BankTransactionRequest(fromAccount, toAccount,
-                        BankTransactionEntityType.LOANS.getValue(), entityId, entityTransactionId, amount,reason);
-                this.bankTransactionService.transactionEntry(externalServiceId, bankTransactionRequest);
-
-            }
-        }
-
-    }
-
 }

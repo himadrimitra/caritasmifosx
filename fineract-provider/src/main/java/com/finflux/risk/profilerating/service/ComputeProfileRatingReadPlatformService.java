@@ -12,4 +12,8 @@ public interface ComputeProfileRatingReadPlatformService {
     List<Map<String, Object>> getAllClientIdsFromOffice(final Long officeId);
 
     List<Map<String, Object>> getAllCenterIdsFromOffice(final Long officeId);
+
+    List<Map<String, Object>> getAllGroupIdsFromOffice(final Long officeId);
+
+    List<Map<String, Object>> getAllVillageIdsFromOffice(Long officeId);
 }

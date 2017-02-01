@@ -3,11 +3,11 @@ package com.finflux.transaction.execution.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 
-import com.finflux.transaction.execution.data.BankTransactionEntityType;
+import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
 import com.finflux.portfolio.bank.domain.BankAccountDetailStatus;
+import com.finflux.portfolio.bank.domain.BankAccountType;
 import com.finflux.transaction.execution.data.BankTransactionDetail;
+import com.finflux.transaction.execution.data.BankTransactionEntityType;
 import com.finflux.transaction.execution.data.TransactionStatus;
 import com.finflux.transaction.execution.data.TransferType;
 
@@ -26,14 +28,11 @@ public class BankTransactionReadPlatformServiceImpl
 		BankTransactionReadPlatformService {
 
 	private final JdbcTemplate jdbcTemplate;
-	private final PlatformSecurityContext context;
 	private final AccountTransactionDetailMapper transactionDetailMapper = new AccountTransactionDetailMapper();
 
 	@Autowired
 	public BankTransactionReadPlatformServiceImpl(
-			final PlatformSecurityContext context,
 			final RoutingDataSource dataSource) {
-		this.context = context;
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
@@ -86,7 +85,11 @@ public class BankTransactionReadPlatformServiceImpl
 			StringBuilder sb = new StringBuilder();
 			sb.append(" bat.id as transactionId,bat.entity_type as entityType,bat.entity_id as entityId, ");
 			sb.append(" bat.entity_transaction_id as entityTxnId,bat.amount as amount,bat.status as status, ");
-			sb.append(" bat.transfer_type as transferType, ");
+			sb.append(" bat.transfer_type as transferType, bat.reference_number as referenceNumber, ");
+			sb.append(" bat.utr_number as utrNumber, bat.po_number as poNumber, ");
+			sb.append(" bat.error_code as errorCode, bat.error_message as errorMessage, ");
+			sb.append(" bat.transaction_date as transactionDate, ");
+			sb.append(" debbad.account_type_enum as  debAccountType,");
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
 			sb.append(" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
@@ -95,6 +98,7 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" benbad.account_number as benAccountNumber,  benbad.ifsc_code as benIfscCode, ");
 			sb.append(" benbad.mobile_number as benMobile, benbad.email as benEmail, benbad.status_id as benStatus, ");
 			sb.append(" benbad.bank_name as benBankName, benbad.bank_city as benBankCity, ");
+			sb.append(" benbad.account_type_enum as benAccountType, ");
 			sb.append(" bat.reference_number as referenceNumber ");
 			sb.append(" from f_bank_account_transaction bat ");
 			sb.append(" left join f_bank_account_details debbad on bat.debit_account = debbad.id ");
@@ -113,6 +117,12 @@ public class BankTransactionReadPlatformServiceImpl
 			final BigDecimal amount = rs.getBigDecimal("amount");
 			final Integer status = rs.getInt("status");
 			final Integer transferType = rs.getInt("transferType");
+			final String referenceNumber = rs.getString("referenceNumber");
+			final String utrNumber = rs.getString("utrNumber");
+			final String poNumber = rs.getString("poNumber");
+			final String errorCode = rs.getString("errorCode");
+			final String errorMessage = rs.getString("errorMessage");
+			final Date transactionDate = rs.getTimestamp("transactionDate");
 
 			final Long debitAccountid = rs.getLong("debitAccountid");
 			final String debitAccountName = rs.getString("debitAccountName");
@@ -124,12 +134,13 @@ public class BankTransactionReadPlatformServiceImpl
 			final Integer debitStatus = rs.getInt("debitStatus");
 			final String debBankCity = rs.getString("debBankCity");
 			final String debBankName = rs.getString("debBankName");
+		        final Integer debAccountType = JdbcSupport.getInteger(rs, "debAccountType");
 
 			final BankAccountDetailData debitAccount = new BankAccountDetailData(
 					debitAccountid, debitAccountName, debitAccountNumber,
 					debitIfscCode, debitMobile, debitEmail,debBankName, debBankCity,
 					BankAccountDetailStatus
-							.bankAccountDetailStatusEnumDate(debitStatus));
+							.bankAccountDetailStatusEnumDate(debitStatus), BankAccountType.bankAccountType(debAccountType));
 
 			final Long benAccountid = rs.getLong("benAccountid");
 			final String benAccountName = rs.getString("benAccountName");
@@ -140,18 +151,20 @@ public class BankTransactionReadPlatformServiceImpl
 			final Integer benStatus = rs.getInt("benStatus");
 			final String benBankCity = rs.getString("benBankCity");
 			final String benBankName = rs.getString("benBankName");
+			final Integer benAccountType = JdbcSupport.getInteger(rs, "benAccountType");
 
 			final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(
 					benAccountid, benAccountName, benAccountNumber,
 					benIfscCode, benMobile, benEmail,benBankName, benBankCity,
 					BankAccountDetailStatus
-							.bankAccountDetailStatusEnumDate(benStatus));
+							.bankAccountDetailStatusEnumDate(benStatus), BankAccountType.bankAccountType(benAccountType));
 
 			BankTransactionDetail accountTransactionDetail = new BankTransactionDetail(
 					transactionId, debitAccount, beneficiaryAccount,
 					entityType, entityId, entityTxnId, amount, TransferType
 							.fromInt(transferType).getEnumOptionData(),
-					TransactionStatus.fromInt(status).getEnumOptionData());
+					TransactionStatus.fromInt(status).getEnumOptionData(),
+					referenceNumber, utrNumber, poNumber, errorCode, errorMessage,transactionDate);
 
 			return accountTransactionDetail;
 		}

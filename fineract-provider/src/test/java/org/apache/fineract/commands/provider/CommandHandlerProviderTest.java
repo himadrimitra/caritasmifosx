@@ -34,6 +34,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import com.sun.jersey.multipart.FormDataMultiPart;
+
 @RunWith(SpringJUnit4ClassRunner.class)
 @WebAppConfiguration
 @ActiveProfiles("basicauth")
@@ -53,10 +55,10 @@ public class CommandHandlerProviderTest {
             final Long testCommandId = 815L;
 
             final NewCommandSourceHandler registeredHandler = this.commandHandlerProvider.getHandler("HUMAN", "UPDATE", null);
-
+            FormDataMultiPart formDataMultiPart = null;
             final CommandProcessingResult result =
                     registeredHandler.processCommand(
-                            JsonCommand.fromExistingCommand(testCommandId, null, null, null, null, null, null, null, null, null));
+                            JsonCommand.fromExistingCommand(testCommandId, null, null, null, null, null, null, null, null, null, formDataMultiPart));
             Assert.assertEquals(testCommandId, result.commandId());
         } catch (UnsupportedCommandException ucex) {
             Assert.fail();

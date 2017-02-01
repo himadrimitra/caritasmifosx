@@ -102,6 +102,7 @@ public class Holiday extends AbstractPersistable<Long> {
     @JoinTable(name = "m_holiday_office", joinColumns = @JoinColumn(name = "holiday_id"), inverseJoinColumns = @JoinColumn(name = "office_id"))
     private Set<Office> offices;
 
+
     public static Holiday createNew(final Set<Office> offices, final JsonCommand command) {
         final String name = command.stringValueOfParameterNamed(HolidayApiConstants.nameParamName);
         final LocalDate fromDate = command.localDateValueOfParameterNamed(HolidayApiConstants.fromDateParamName);
@@ -133,13 +134,20 @@ public class Holiday extends AbstractPersistable<Long> {
             actualChanges.put(nameParamName, newValue);
             this.name = StringUtils.defaultIfEmpty(newValue, null);
         }
-
+        
         if (command.isChangeInStringParameterNamed(descriptionParamName, this.description)) {
             final String newValue = command.stringValueOfParameterNamed(descriptionParamName);
             actualChanges.put(descriptionParamName, newValue);
             this.description = StringUtils.defaultIfEmpty(newValue, null);
         }
 
+        final String reshedulingType = "reshedulingType";
+        if (command.isChangeInIntegerParameterNamed(reshedulingType,this.reshedulingType)) {
+            final Integer newValue =command.integerValueOfParameterNamed(reshedulingType);
+            actualChanges.put(reshedulingType, newValue);
+            this.reshedulingType = RescheduleType.fromInt(newValue).getValue();
+        }       
+        
         if (currentStatus.isPendingActivation()) {
             if (command.isChangeInLocalDateParameterNamed(fromDateParamName, getFromDateLocalDate())) {
                 final String valueAsInput = command.stringValueOfParameterNamed(fromDateParamName);
@@ -190,6 +198,7 @@ public class Holiday extends AbstractPersistable<Long> {
                 this.extendRepaymentReschedule = newValue;
             }
             
+                 
         } else {
             if (command.isChangeInLocalDateParameterNamed(fromDateParamName, getFromDateLocalDate())) {
                 baseDataValidator.reset().parameter(fromDateParamName).failWithCode("cannot.edit.holiday.in.active.state");

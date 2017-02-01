@@ -82,6 +82,7 @@ dependencies {
                 [group: 'org.hibernate', name: 'hibernate-ehcache', version: '4.3.6.Final'],
                 [group: 'com.github.spullara.mustache.java', name: 'compiler', version: '0.8.12'],
                 [group: 'com.jayway.jsonpath', name: 'json-path', version: '0.9.1'],
+				[group: 'net.sf.opencsv', name: 'opencsv', version: '2.3'],
 
                 // Although fineract (at the time of writing) doesn't have any compile time dep. on this,
                 // it's useful to have this for the Spring Boot TestRestTemplate http://docs.spring.io/spring-boot/docs/current-SNAPSHOT/reference/htmlsingle/#boot-features-rest-templates-test-utility

@@ -1,11 +1,13 @@
 package com.finflux.transaction.execution.service;
 
-import com.finflux.transaction.execution.data.BankTransactionDetail;
-import com.finflux.transaction.execution.data.BankTransactionRequest;
-import com.finflux.transaction.execution.data.BankTransactionEntityType;
-import com.finflux.transaction.execution.provider.BankTransferService;
-
 import java.util.List;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
+import com.finflux.transaction.execution.data.BankTransactionDetail;
+import com.finflux.transaction.execution.data.BankTransactionEntityType;
+import com.finflux.transaction.execution.data.BankTransactionRequest;
+import com.finflux.transaction.execution.provider.BankTransferService;
 
 /**
  * Created by dhirendra on 23/11/16.
@@ -24,4 +26,5 @@ public interface BankTransactionService {
 
         BankTransferService getBankTransferService(Long externalServiceId);
 
+        List<EnumOptionData> geetSupportedTransfers(Long transactionId);
 }

@@ -107,6 +107,7 @@ import org.apache.fineract.portfolio.loanaccount.service.LoanScheduleValidator;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
+import org.apache.fineract.portfolio.loanproduct.domain.BrokenPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
@@ -254,6 +255,14 @@ public class LoanScheduleAssembler {
 
         boolean isEmiBasedOnDisbursements = loanProduct.getLoanProductRelatedDetail().isEmiBasedOnDisbursements();
         InterestCalculationPeriodMethod pmtCalculationPeriodMethod = loanProduct.getLoanProductRelatedDetail().getPmtCalculationPeriodMethod();
+        BrokenPeriodMethod brokenPeriodMethod = BrokenPeriodMethod.DISTRIBUTE_EQUALLY;
+        final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(LoanProductConstants.brokenPeriodMethodTypeParamName,
+                element);
+        if(brokenPeriodType == null){
+            brokenPeriodMethod = loanProduct.getLoanProductRelatedDetail().getBrokenPeriodMethod();
+        }else{
+            brokenPeriodMethod = BrokenPeriodMethod.fromInt(brokenPeriodType);
+        }
         
         final BigDecimal interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("interestRatePerPeriod", element);
         final PeriodFrequencyType interestRatePeriodFrequencyType = loanProduct.getInterestPeriodFrequencyType();
@@ -293,7 +302,7 @@ public class LoanScheduleAssembler {
             this.loanScheduleValidator.validateRepaymentFrequencyIsSameAsMeetingFrequency(meetingPeriodFrequency.getValue(), repaymentFrequencyType,
                     CalendarUtils.getInterval(calendar.getRecurrence()), repaymentEvery);
         } else {
-            if (repaymentPeriodFrequencyType == PeriodFrequencyType.MONTHS && nthDay != null && nthDay != NthDayType.INVALID.getValue()) {
+            if (repaymentPeriodFrequencyType.isMonthly() && nthDay != null && nthDay != NthDayType.INVALID.getValue()) {
                 LocalDate calendarStartDate = repaymentsStartingFromDate;
                 if (calendarStartDate == null) calendarStartDate = expectedDisbursementDate;
                 calendar = createLoanCalendar(calendarStartDate, repaymentEvery, CalendarFrequencyType.MONTHLY, dayOfWeek, nthDay, repeatsOnDayOfMonth);
@@ -507,7 +516,7 @@ public class LoanScheduleAssembler {
                 detailDTO, allowCompoundingOnEod, isSubsidyApplicable,
                 firstEmiAmount, loanProduct.getAdjustedInstallmentInMultiplesOf(), 
                 loanProduct.adjustFirstEMIAmount(),considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(),
-                loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod);
+                loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,

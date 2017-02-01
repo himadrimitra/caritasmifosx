@@ -1,9 +1,9 @@
 package com.finflux.transaction.execution.data;
 
-import org.apache.fineract.infrastructure.core.data.EnumOptionData;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 /**
  * Created by dhirendra on 25/11/16.
@@ -16,7 +16,8 @@ public enum TransactionStatus {
         SUCCESS(5, "transactionStatus.success"),
         FAILED(6, "transactionStatus.failed"),
         CLOSED(7, "transactionStatus.closed"),
-        ERROR(8, "transactionStatus.error");
+        ERROR(8, "transactionStatus.error"),
+        RETRIED(9, "transactionStatus.retried");
 
         private static final Map<Integer, TransactionStatus> intToEnumMap = new HashMap<>();
 

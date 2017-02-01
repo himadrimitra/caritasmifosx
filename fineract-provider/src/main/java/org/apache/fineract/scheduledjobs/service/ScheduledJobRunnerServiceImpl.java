@@ -19,15 +19,11 @@
 package org.apache.fineract.scheduledjobs.service;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
-import com.finflux.transaction.execution.data.BankTransactionDetail;
-import com.finflux.transaction.execution.data.BankTransactionResponse;
-import com.finflux.transaction.execution.data.TransactionStatus;
-import com.finflux.transaction.execution.data.TransferType;
-import com.finflux.transaction.execution.domain.BankAccountTransaction;
-import com.finflux.transaction.execution.domain.BankAccountTransactionRepository;
-import com.finflux.transaction.execution.provider.BankTransferService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -61,11 +57,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.finflux.transaction.execution.service.BankTransactionReadPlatformService;
-import com.finflux.transaction.execution.service.BankTransactionService;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.TaskMakerCheckerData;
+import com.finflux.task.service.TaskPlatformReadService;
+import com.finflux.transaction.execution.data.BankTransactionDetail;
+import com.finflux.transaction.execution.data.BankTransactionResponse;
+import com.finflux.transaction.execution.data.TransactionStatus;
+import com.finflux.transaction.execution.data.TransferType;
+import com.finflux.transaction.execution.domain.BankAccountTransaction;
+import com.finflux.transaction.execution.domain.BankAccountTransactionRepository;
+import com.finflux.transaction.execution.provider.BankTransferService;
+import com.finflux.transaction.execution.service.BankTransactionReadPlatformService;
+import com.finflux.transaction.execution.service.BankTransactionService;
 
 @Service(value = "scheduledJobRunnerService")
 public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService {
@@ -91,6 +98,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	private final BankTransactionService bankTransactionService;
 	private final BankTransactionReadPlatformService accountTransferReadPlatformService;
 	private final BankAccountTransactionRepository bankAccountTransactionRepository;
+	private final TaskPlatformReadService taskPlatformReadService;
 
 	@Autowired
 	public ScheduledJobRunnerServiceImpl(
@@ -105,7 +113,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			final CalendarReadPlatformService calanderReadPlatformService,
 			final BankTransactionService bankTransactionService,
 			final BankTransactionReadPlatformService accountTransferReadPlatformService,
-			final BankAccountTransactionRepository bankAccountTransactionRepository) {
+			final BankAccountTransactionRepository bankAccountTransactionRepository,
+			final TaskPlatformReadService taskPlatformReadService) {
 		this.dataSourceServiceFactory = dataSourceServiceFactory;
 		this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
 		this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
@@ -118,6 +127,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		this.bankTransactionService = bankTransactionService;
 		this.accountTransferReadPlatformService = accountTransferReadPlatformService;
 		this.bankAccountTransactionRepository = bankAccountTransactionRepository;
+		this.taskPlatformReadService = taskPlatformReadService;
 	}
 
 	@Transactional
@@ -722,23 +732,40 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 				for(BankAccountTransaction transaction:entry.getValue()){
 					try{
 						BankTransactionDetail txnDetail = bankTransactionService.getTransactionDetail(transaction.getId());
+						Long makerId = null;
+						Long checkerId = null;
+						Long approverId = null;
+						TaskExecutionData taskExecutionData = taskPlatformReadService.getTaskDetailsByEntityTypeAndEntityId(TaskEntityType.BANK_TRANSACTION,
+								txnDetail.getTransactionId());
+						if(taskExecutionData!=null){
+							TaskMakerCheckerData makerCheckerData = taskPlatformReadService.getMakerCheckerData(taskExecutionData.getId());
+							makerId = makerCheckerData.getMakerUserId();
+							checkerId = makerCheckerData.getCheckerUserId();
+							approverId = makerCheckerData.getApproverUserId();
+						}
 						BankTransactionResponse response=bankTransferService.doTransaction(
-							""+txnDetail.getTransactionId(),txnDetail.getAmount(),transaction.getReason(),
+							txnDetail.getTransactionId(),transaction.getInternalReferenceId(),txnDetail.getAmount(),transaction.getReason(),
 							txnDetail.getDebiter(), txnDetail.getBeneficiary(),
 							TransferType.fromInt(transaction.getTransferType()),""+transaction.getId(),
-								transaction.getReason(),""+transaction.getId(),transaction.getReason());
+								transaction.getReason(),""+transaction.getId(),transaction.getReason(),
+								makerId,checkerId,approverId);
 						if(!response.getSuccess()){
-							transaction.setErrorCode(response.getErrorCode());
-							transaction.setErrorMessage(response.getErrorMessage());
-							logger.warn("Transaction "+txnDetail.getTransactionId() +" failed");
+							logger.warn("Initiate Transaction failed for transaction:"+ transaction.getExternalServiceId());
+						}
+						transaction.setErrorCode(response.getErrorCode());
+						transaction.setErrorMessage(response.getErrorMessage());
+						transaction.setReferenceNumber(response.getReferenceNumber());
+						transaction.setUtrNumber(response.getUtrNumber());
+						transaction.setPoNumber(response.getPoNumber());
+						if(response.getTransactionTime()!=null) {
+							transaction.setTransactionDate(response.getTransactionTime().toDate());
 						}
 						transaction.setStatus(response.getTransactionStatus().getValue());
-						transaction.setReferenceNumber(response.getReferenceNumber());
 						bankAccountTransactionRepository.save(transaction);
 					}catch (Exception e){
 						logger.error("Initiation failed for transaction "
 							+ transaction.getId()
-							+ " with message " + e.getLocalizedMessage());
+							+ " with message " + e.getMessage(),e);
 						errorMsg.append(
 							"Initiation failed for transaction Id:")
 							.append(transaction.getId())
@@ -774,18 +801,43 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			if(bankTransferService!=null && entry.getValue()!=null && !entry.getValue().isEmpty()){
 				for(BankAccountTransaction transaction:entry.getValue()){
 					try{
+						Long makerId = null;
+						Long checkerId = null;
+						Long approverId = null;
+						BankTransactionDetail txnDetail = bankTransactionService.getTransactionDetail(transaction.getId());
+						TaskExecutionData taskExecutionData = taskPlatformReadService.getTaskDetailsByEntityTypeAndEntityId(TaskEntityType.BANK_TRANSACTION,
+								txnDetail.getTransactionId());
+						if(taskExecutionData!=null){
+							TaskMakerCheckerData makerCheckerData = taskPlatformReadService.getMakerCheckerData(taskExecutionData.getId());
+							makerId = makerCheckerData.getMakerUserId();
+							checkerId = makerCheckerData.getCheckerUserId();
+							approverId = makerCheckerData.getApproverUserId();
+						}
 						BankTransactionResponse response=bankTransferService.getTransactionStatus(
-							""+transaction.getId(),transaction.getReferenceNumber(),"","","");
+							transaction.getId(),transaction.getInternalReferenceId(),transaction.getReferenceNumber(),makerId,checkerId,approverId);
 						if(!response.getSuccess()){
 							logger.warn("Status update failed for transaction:"+ transaction.getExternalServiceId());
-						}else {
-							transaction.setStatus(response.getTransactionStatus().getValue());
-							bankAccountTransactionRepository.save(transaction);
 						}
+						transaction.setErrorCode(response.getErrorCode());
+						transaction.setErrorMessage(response.getErrorMessage());
+						if(transaction.getReferenceNumber()==null){
+							transaction.setReferenceNumber(response.getReferenceNumber());
+						}
+						if(transaction.getUtrNumber()==null){
+							transaction.setUtrNumber(response.getUtrNumber());
+						}
+						if(transaction.getPoNumber()==null){
+							transaction.setPoNumber(response.getPoNumber());
+						}
+						if(transaction.getTransactionDate()==null && response.getTransactionTime()!=null){
+							transaction.setTransactionDate(response.getTransactionTime().toDate());
+						}
+						transaction.setStatus(response.getTransactionStatus().getValue());
+						bankAccountTransactionRepository.save(transaction);
 					}catch (Exception e){
 						logger.error("Status update failed for transaction Id:"
 							+ transaction.getId()
-							+ " with message " + e.getLocalizedMessage());
+							+ " with message " + e.getMessage(),e);
 						errorMsg.append(
 							"| Status update failed for transaction Id: ")
 							.append(transaction.getId()).append(" with error:")

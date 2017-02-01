@@ -17,12 +17,15 @@ public class BankAccountDetailConstants {
     public static final String bankNameParameterName = "bankName";
     public static final String bankCityParameterName = "bankCity";
     public static final String newBankAccountDetailId = "newBankAccountDetailId";
+    public static final String accountTypeIdParamName = "accountTypeId";
+    public static final String localeParameterName = "locale";
 
+    
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParameterName,
             accountNumberParameterName, ifscCodeParameterName, mobileNumberParameterName, emailParameterName,
-            bankNameParameterName, bankCityParameterName));
+            bankNameParameterName, bankCityParameterName,accountTypeIdParamName,localeParameterName));
 
     public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParameterName,
             accountNumberParameterName, ifscCodeParameterName, mobileNumberParameterName, emailParameterName,
-            bankNameParameterName, bankCityParameterName));
+            bankNameParameterName, bankCityParameterName,accountTypeIdParamName,localeParameterName));
 }

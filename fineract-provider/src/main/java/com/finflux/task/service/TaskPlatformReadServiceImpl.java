@@ -2,13 +2,7 @@ package com.finflux.task.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -40,21 +34,7 @@ import org.springframework.util.CollectionUtils;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.task.api.TaskApiConstants;
-import com.finflux.task.data.LoanProductTaskSummaryData;
-import com.finflux.task.data.TaskActionLogData;
-import com.finflux.task.data.TaskActionType;
-import com.finflux.task.data.TaskActivityData;
-import com.finflux.task.data.TaskActivityType;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.data.TaskExecutionData;
-import com.finflux.task.data.TaskInfoData;
-import com.finflux.task.data.TaskNoteData;
-import com.finflux.task.data.TaskPriority;
-import com.finflux.task.data.TaskStatusType;
-import com.finflux.task.data.TaskSummaryData;
-import com.finflux.task.data.TaskTemplateData;
-import com.finflux.task.data.TaskType;
-import com.finflux.task.data.WorkFlowSummaryData;
+import com.finflux.task.data.*;
 import com.finflux.task.exception.TaskNotFoundException;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -508,6 +488,34 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
     }
 
     @Override
+    public TaskMakerCheckerData getMakerCheckerData(Long taskId) {
+
+        List<TaskActionLogData> taskActionLogDatas = getActionLogs(taskId);
+        Long makerUserId = null;
+        String makerUserName = null;
+        Long checkerUserId = null;
+        String checkerUserName = null;
+        Long approverUserId = null;
+        String approverUserName = null;
+        if(taskActionLogDatas!=null) {
+            for (TaskActionLogData taskActionLogData: taskActionLogDatas) {
+                if(TaskActionType.ACTIVITYCOMPLETE.getValue().longValue() == taskActionLogData.getAction().getId().longValue()){
+                    makerUserId = taskActionLogData.getActionByUserId();
+                    makerUserName = taskActionLogData.getActionBy();
+                }else if(TaskActionType.REVIEW.getValue().longValue() == taskActionLogData.getAction().getId().longValue()){
+                    checkerUserId = taskActionLogData.getActionByUserId();
+                    checkerUserName = taskActionLogData.getActionBy();
+                }else if(TaskActionType.APPROVE.getValue().longValue() == taskActionLogData.getAction().getId().longValue()){
+                    approverUserId = taskActionLogData.getActionByUserId();
+                    approverUserName = taskActionLogData.getActionBy();
+                }
+            }
+        }
+        return new TaskMakerCheckerData(taskId,makerUserId,makerUserName,checkerUserId,checkerUserName,approverUserId,
+                approverUserName);
+    }
+
+    @Override
     public List<RoleData> getRolesForAnAction(Long actionGroupId, Long actionId) {
         final String sql = "SELECT " + roleDataMapper.schema() + " WHERE ta.action_group_id = ? and ta.action = ?";
         return this.jdbcTemplate.query(sql, roleDataMapper, actionGroupId, actionId);
@@ -549,9 +557,12 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
         public TaskActionLogDataMapper() {
             final StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.append(" tal.id as id, tal.task_id as taskId, ").append("tal.action as action, ")
-                    .append(" CONCAT(appuser.firstname,' ',appuser.lastname) AS actionBy, ").append(" tal.action_on as actionOn ")
-                    .append(" from f_task_action_log tal ").append(" LEFT JOIN m_appuser appuser ON appuser.id = tal.action_by ");
+            sqlBuilder.append(" tal.id as id, tal.task_id as taskId, ")
+                    .append(" tal.action as action, tal.action_by as actionByUserId, ")
+                    .append(" CONCAT(appuser.firstname,' ',appuser.lastname) AS actionBy, ")
+                    .append(" tal.action_on as actionOn ")
+                    .append(" from f_task_action_log tal ")
+                    .append(" LEFT JOIN m_appuser appuser ON appuser.id = tal.action_by ");
             this.schemaSql = sqlBuilder.toString();
         }
 
@@ -567,9 +578,10 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             final Integer action = rs.getInt("action");
             EnumOptionData actionEnumData = TaskActionType.fromInt(action).getEnumOptionData();
             final String actionBy = rs.getString("actionBy");
+            final Long actionById = rs.getLong("actionByUserId");
             final Date actionOn = rs.getTimestamp("actionOn");
 
-            return TaskActionLogData.instance(id, actionEnumData, actionOn, actionBy);
+            return TaskActionLogData.instance(id, actionEnumData, actionOn, actionById, actionBy);
         }
 
     }

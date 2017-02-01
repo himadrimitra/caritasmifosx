@@ -1,7 +1,7 @@
 package com.finflux.transaction.execution.domain;
 
 import java.math.BigDecimal;
-import java.sql.Date;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -15,6 +15,9 @@ import org.apache.fineract.useradministration.domain.AppUser;
 public class BankAccountTransaction
 		extends
 			AbstractAuditableCustom<AppUser, Long> {
+
+	@Column(name = "internal_reference_id")
+	private String internalReferenceId;
 
 	@Column(name = "entity_type")
 	private Integer entityType;
@@ -217,5 +220,13 @@ public class BankAccountTransaction
 
 	public void setReason(String reason) {
 		this.reason = reason;
+	}
+
+	public String getInternalReferenceId() {
+		return internalReferenceId;
+	}
+
+	public void setInternalReferenceId(String internalReferenceId) {
+		this.internalReferenceId = internalReferenceId;
 	}
 }

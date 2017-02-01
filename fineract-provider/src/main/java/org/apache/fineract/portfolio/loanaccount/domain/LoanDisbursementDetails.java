@@ -51,6 +51,9 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
 
     @Column(name = "principal", scale = 6, precision = 19, nullable = false)
     private BigDecimal principal;
+    
+    @Column(name = "principal_net_disbursed", scale = 6, precision = 19, nullable = true)
+    private BigDecimal netPrincipalDisbursed;
 
     protected LoanDisbursementDetails() {
 
@@ -60,6 +63,7 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.actualDisbursementDate = actualDisbursementDate;
         this.principal = principal;
+        this.netPrincipalDisbursed = principal;
      }
 
     public void updateLoan(final Loan loan) {
@@ -145,6 +149,24 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
     public void updateExpectedDisbursementDateAndAmount(Date expectedDisbursementDate, BigDecimal principal) {
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.principal = principal;
+    }
+    
+    public boolean isDisbursed(){
+        return this.actualDisbursementDate != null;
+    }
+
+    
+    public void setNetPrincipalDisbursed(BigDecimal netPrincipalDisbursed) {
+        this.netPrincipalDisbursed = netPrincipalDisbursed;
+    }
+
+    
+    public BigDecimal getNetPrincipalDisbursed() {
+        return this.netPrincipalDisbursed;
+    }
+    
+    public void resetNetPrincipalDisbursed() {
+         this.netPrincipalDisbursed = this.principal;
     }
 
 }
