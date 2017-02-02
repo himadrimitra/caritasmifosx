@@ -4,7 +4,8 @@ public enum CreditBureauEntityType {
 
     INVALID(0, "creditBureauEntityType.invalid"), //
     LOANAPPLICATION(1, "creditBureauEntityType.loanApplication"), //
-    LOAN(2, "creditBureauEntityType.loan");
+    LOAN(2, "creditBureauEntityType.loan"), //
+    CLIENT(3, "creditBureauEntityType.client");
 
     final private Integer value;
     final private String code;
