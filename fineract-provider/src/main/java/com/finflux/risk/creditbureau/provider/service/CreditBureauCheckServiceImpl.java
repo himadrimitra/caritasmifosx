@@ -301,57 +301,45 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
     @SuppressWarnings("null")
     @Override
     public CreditBureauFileContentData getCreditBureauReportFileContent(final String entityType, final Long entityId) {
-        if (entityType == null) { return null; }
-        Long loanApplicationId = null;
-        Long loanId = null;
-        Long trancheDisbursalId = null;
-        if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
-            loanApplicationId = entityId;
-        } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
-            loanId = entityId;
-            final LoanApplicationReference loanApplicationReference = this.loanApplicationReferenceRepository.findOneByLoanId(loanId);
-            if(loanApplicationReference != null){
-                loanApplicationId = loanApplicationReference.getId();
-            }
-            if (loanId != null) {
-                final Map<String, Object> data = this.loanReadPlatformServiceImpl.retrieveDisbursalDataMap(loanId);
-                if (data.get("trancheDisbursalId") != null) {
-                    trancheDisbursalId = (Long) data.get("trancheDisbursalId");
+        try {
+            if (entityType == null) { return null; }
+            Long loanApplicationId = null;
+            Long loanId = null;
+            Long trancheDisbursalId = null;
+            if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
+                loanApplicationId = entityId;
+            } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
+                loanId = entityId;
+                final LoanApplicationReference loanApplicationReference = this.loanApplicationReferenceRepository.findOneByLoanId(loanId);
+                if (loanApplicationReference != null) {
+                    loanApplicationId = loanApplicationReference.getId();
+                }
+                if (loanId != null) {
+                    final Map<String, Object> data = this.loanReadPlatformServiceImpl.retrieveDisbursalDataMap(loanId);
+                    if (data.get("trancheDisbursalId") != null) {
+                        trancheDisbursalId = (Long) data.get("trancheDisbursalId");
+                    }
                 }
             }
-        }
-        final StringBuilder sb = new StringBuilder(100);
-        sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
-        sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
-        sb.append("WHERE lcbe.is_active = 1 ");
-        if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
-            sb.append("AND lcbe.loan_application_id = ? ");
-            return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(),
-                    new Object[] { loanApplicationId });
-        } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
-            sb.append("AND lcbe.loan_id = ? AND lcbe.tranche_disbursal_id = ? ");
-            return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] { loanId,
-                    trancheDisbursalId });
-        }
-        return null;
-
-    }
-    
-    @Override
-    public CreditBureauFileContentData getCreditBureauReportFileContent(boolean isLatestdata, final SearchParameters searchParameters) {
-        StringBuilder sb = new StringBuilder(100);
-        sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
-        sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
-        Long clientId = null;
-        if (searchParameters.isClientIdPassed()) {
-            clientId = searchParameters.getClientId();
-            if (isLatestdata) {
-                sb.append("WHERE lcbe.id = (select max(fcet.id) from  f_loan_creditbureau_enquiry fcet where fcet.client_id = ?) ");
-            } else {
-                sb.append("WHERE lcbe.client_id = ? ");
+            final StringBuilder sb = new StringBuilder(100);
+            sb.append("SELECT lcbe.file_type AS reportFileTypeId, lcbe.file_content AS fileContent ");
+            sb.append("FROM f_loan_creditbureau_enquiry lcbe ");
+            sb.append("WHERE lcbe.is_active = 1 ");
+            if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOANAPPLICATION.toString())) {
+                sb.append("AND lcbe.loan_application_id = ? ");
+                return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(),
+                        new Object[] { loanApplicationId });
+            } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.LOAN.toString())) {
+                sb.append("AND lcbe.loan_id = ? AND lcbe.tranche_disbursal_id = ? ");
+                return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] { loanId,
+                        trancheDisbursalId });
+            } else if (entityType != null && entityType.equalsIgnoreCase(CreditBureauEntityType.CLIENT.toString())) {
+                //Get Only Latest Client CB Report
+                sb.append("AND lcbe.client_id = ? ORDER BY lcbe.id DESC LIMIT 0, 1 ");
+                return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(),
+                        new Object[] { entityId });
             }
-            return this.jdbcTemplate.queryForObject(sb.toString(), new CreditBureauFileContantDataExtractor(), new Object[] { clientId });
-        }
+        } catch (final EmptyResultDataAccessException e) {}
         return null;
     }
 
