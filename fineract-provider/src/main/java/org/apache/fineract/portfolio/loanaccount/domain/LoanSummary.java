@@ -136,8 +136,9 @@ public final class LoanSummary {
         this.totalNetPrincipalDisbursed = principal.minus(this.totalFeeChargesDueAtDisbursement).getAmount();
     }
 
-    public void updateTotalFeeChargesDueAtDisbursement(final BigDecimal totalFeeChargesDueAtDisbursement) {
+    public void updateTotalFeeChargesDueAtDisbursementAndNetPrincipal(final BigDecimal totalFeeChargesDueAtDisbursement, final Money principal) {
         this.totalFeeChargesDueAtDisbursement = totalFeeChargesDueAtDisbursement;
+        this.totalNetPrincipalDisbursed = principal.minus(this.totalFeeChargesDueAtDisbursement).getAmount();
     }
 
     public Money getTotalFeeChargesDueAtDisbursement(final MonetaryCurrency currency) {

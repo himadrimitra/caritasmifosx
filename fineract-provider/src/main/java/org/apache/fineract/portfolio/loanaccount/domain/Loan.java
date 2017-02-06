@@ -575,9 +575,15 @@ public class Loan extends AbstractPersistable<Long> {
             final Money principal = this.loanRepaymentScheduleDetail.getPrincipal();
             this.summary = LoanSummary.create(feeChargesDueAtDisbursement,principal);
         } else {
-            this.summary.updateTotalFeeChargesDueAtDisbursement(feeChargesDueAtDisbursement);
+        	final Money principal = this.loanRepaymentScheduleDetail.getPrincipal();
+            this.summary.updateTotalFeeChargesDueAtDisbursementAndNetPrincipal(feeChargesDueAtDisbursement,principal);
         }
         return this.summary;
+    }
+    
+    private LoanSummary updateSummaryWithTotalFeeChargesDueAtDisbursement() {
+    	final BigDecimal feeChargesDueAtDisbursement = deriveSumTotalOfChargesDueAtDisbursement();
+        return updateSummaryWithTotalFeeChargesDueAtDisbursement(feeChargesDueAtDisbursement);
     }
     
     private BigDecimal deriveSumTotalOfChargesDueAtDisbursement() {
@@ -2867,6 +2873,7 @@ public class Loan extends AbstractPersistable<Long> {
         		loanCharge.setActive(false);
         	}
         }
+        updateSummaryWithTotalFeeChargesDueAtDisbursement();
     }
 
     public LoanScheduleModel regenerateScheduleModel(final ScheduleGeneratorDTO scheduleGeneratorDTO) {
@@ -5836,6 +5843,17 @@ public class Loan extends AbstractPersistable<Long> {
     private void recalculateSchedule(final ScheduleGeneratorDTO generatorDTO, final AppUser currentUser) {
         if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             regenerateRepaymentScheduleWithInterestRecalculation(generatorDTO, currentUser);
+            if (!this.isOpen()) {
+                for (LoanCharge loanCharge : charges) {
+                    if (loanCharge.isDueAtDisbursement()) {
+                        if (!loanCharge.isWaived()) {
+                            recalculateLoanCharge(loanCharge, generatorDTO.getPenaltyWaitPeriod());
+                        }
+                    }
+                }
+            }
+            updateSummaryWithTotalFeeChargesDueAtDisbursement();
+
         } else {
             regenerateRepaymentSchedule(generatorDTO, currentUser);
         }
