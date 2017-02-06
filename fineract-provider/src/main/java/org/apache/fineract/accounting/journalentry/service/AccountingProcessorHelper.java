@@ -677,7 +677,7 @@ public class AccountingProcessorHelper {
             createDebitJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
         }
     }
-
+    
     public void createCreditJournalEntryOrReversalForLoanCharges(final Office office, final String currencyCode,
             final int accountMappingTypeId, final Long loanProductId, final Long loanId, final String transactionId,
             final Date transactionDate, final BigDecimal totalAmount, final Boolean isReversal,
@@ -686,17 +686,41 @@ public class AccountingProcessorHelper {
          * Map to track each account and the net credit to be made for a
          * particular account
          ***/
+        final Map<GLAccount, BigDecimal> creditDetailsMap = constructCreditJournalEntryOrReversalForLoanChargesAccountMap(
+                accountMappingTypeId, loanProductId, totalAmount, chargePaymentDTOs);
+        for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
+            final GLAccount account = entry.getKey();
+            BigDecimal amount = entry.getValue();
+            if (isReversal) {
+                createDebitJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
+            } else {
+                createCreditJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
+            }
+        }
+    }
+
+    /**
+     * As discussed with Pramod Nuthakki : This method was refactored from the method createCreditJournalEntryOrReversalForLoanCharges
+     * @param accountMappingTypeId
+     * @param loanProductId
+     * @param totalAmount
+     * @param chargePaymentDTOs
+     * @return
+     */
+    public Map<GLAccount, BigDecimal> constructCreditJournalEntryOrReversalForLoanChargesAccountMap(final int accountMappingTypeId,
+            final Long loanProductId, final BigDecimal totalAmount, final List<ChargePaymentDTO> chargePaymentDTOs) {
         final Map<GLAccount, BigDecimal> creditDetailsMap = new LinkedHashMap<>();
+        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         for (final ChargePaymentDTO chargePaymentDTO : chargePaymentDTOs) {
             final Long chargeId = chargePaymentDTO.getChargeId();
             final GLAccount chargeSpecificAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountMappingTypeId, chargeId);
-            BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();            
+            BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
             BigDecimal totalTaxAmount = BigDecimal.ZERO;
             List<TaxPaymentDTO> taxPaymentDTOs = chargePaymentDTO.getTaxPaymentDTO();
             // adjust net credit amount if the account is already present in the
             // map
             if (taxPaymentDTOs != null) {
-                for (TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {                    
+                for (TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
                     if (taxPaymentDTO.getAmount() != null) {
                         BigDecimal taxAmount = taxPaymentDTO.getAmount();
                         GLAccount taxGLAccount = null;
@@ -705,6 +729,7 @@ public class AccountingProcessorHelper {
                         } else {
                             taxGLAccount = chargeSpecificAccount;
                         }
+                        totalCreditedAmount = totalCreditedAmount.add(taxAmount);
                         if (creditDetailsMap.containsKey(taxGLAccount)) {
                             final BigDecimal existingAmount = creditDetailsMap.get(taxGLAccount);
                             taxAmount = taxAmount.add(existingAmount);
@@ -715,35 +740,23 @@ public class AccountingProcessorHelper {
                 }
             }
             chargeSpecificAmount = chargeSpecificAmount.subtract(totalTaxAmount);
+            totalCreditedAmount = totalCreditedAmount.add(chargeSpecificAmount);
             if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
                 final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
                 chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
             }
             creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
-            
         }
 
-        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
-        for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
-            final GLAccount account = entry.getKey();
-            BigDecimal amount = entry.getValue();
-                       
-            totalCreditedAmount = totalCreditedAmount.add(amount);
-            if (isReversal) {
-                createDebitJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
-            } else {
-                createCreditJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
-            }
-        }
-
-       // TODO: Vishwas Temporary validation to be removed before moving to
+        // TODO: Vishwas Temporary validation to be removed before moving to
         // release branch
         if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
                 "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
                 "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
                 totalCreditedAmount, totalAmount); }
+        return creditDetailsMap;
     }
-
+    
     private void createCashBasedCreditJournalEntriesAndReversalsForLoans(final Office office, final String currencyCode, final Long loanId,
             final String transactionId, final Date transactionDate, final Boolean isReversal, final GLAccount account,
             final BigDecimal amount) {
