@@ -18,10 +18,6 @@
  */
 package org.apache.fineract.portfolio.client.data;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.CompareToBuilder;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -35,8 +31,11 @@ import org.apache.fineract.portfolio.accountdetails.data.SavingsAccountSummaryDa
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
-import org.apache.fineract.portfolio.village.data.VillageData;
 import org.joda.time.LocalDate;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Immutable data object representing client data.
@@ -104,6 +103,8 @@ final public class ClientData implements Comparable<ClientData> {
     private Collection<LoanAccountSummaryData> loanAccountSummaryDatas;
     private Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas;
     private final Collection<CodeValueData> closureReasons;
+
+    private Collection<ClientData> possibleClientMatches = null;
 
     public static ClientData template(final Long officeId, final LocalDate joinedDate, final Collection<OfficeData> officeOptions,
             final Collection<StaffData> staffOptions, final Collection<CodeValueData> narrations,
@@ -393,6 +394,55 @@ final public class ClientData implements Comparable<ClientData> {
 
     }
 
+    public static ClientData instanceDedup(final Long id, final String firstname, final String middlename, final String lastname,
+            final String fullname, final String displayName, final String mobileNo, final LocalDate dateOfBirth, final CodeValueData gender,
+            final EnumOptionData legalForm, final ClientNonPersonData clientNonPerson) {
+
+        final String accountNo = null;
+        final EnumOptionData status = null;
+        final CodeValueData subStatus = null;
+        final Long officeId = null;
+        final String officeName = null;
+        final Long transferToOfficeId = null;
+        final String transferToOfficeName = null;
+        final String externalId = null;
+        final String alternateMobileNo = null;
+        final LocalDate activationDate = null;
+        final Long imageId = null;
+        final Long staffId = null;
+        final String staffName = null;
+        final ClientTimelineData timeline = null;
+        final Long savingsProductId = null;
+        final String savingsProductName = null;
+        final Long savingsAccountId = null;
+        final CodeValueData clientType = null;
+        final CodeValueData clientClassification = null;
+        final Collection<OfficeData> allowedOffices = null;
+        final Collection<GroupGeneralData> groups = null;
+        final Collection<StaffData> staffOptions = null;
+        final Collection<CodeValueData> closureReasons = null;
+        final Collection<CodeValueData> genderOptions = null;
+        final Collection<SavingsProductData> savingProductOptions = null;
+        final Collection<SavingsAccountData> savingAccountOptions = null;
+        final Collection<CodeValueData> clientTypeOptions = null;
+        final Collection<CodeValueData> clientClassificationOptions = null;
+        final Collection<CodeValueData> clientNonPersonConstitutionOptions = null;
+        final Collection<CodeValueData> clientNonPersonMainBusinessLineOptions = null;
+        final List<EnumOptionData> clientLegalFormOptions = null;
+        final CodeValueData closureReason = null;
+        final Collection<LoanAccountSummaryData> loanAccountSummaryDatas = null;
+        final Collection<SavingsAccountSummaryData> savingsAccountSummaryDatas = null;
+
+        return new ClientData(accountNo, status, subStatus, officeId, officeName, transferToOfficeId, transferToOfficeName, id, firstname,
+                middlename, lastname, fullname, displayName, externalId, mobileNo, alternateMobileNo, dateOfBirth, gender, activationDate,
+                imageId, staffId,staffName, allowedOffices, groups, staffOptions, closureReasons, genderOptions, timeline,
+                savingProductOptions,savingsProductId, savingsProductName, savingsAccountId, savingAccountOptions, clientType,
+                clientClassification, clientTypeOptions,clientClassificationOptions, clientNonPersonConstitutionOptions,
+                clientNonPersonMainBusinessLineOptions, clientNonPerson,clientLegalFormOptions, legalForm, loanAccountSummaryDatas,
+                savingsAccountSummaryDatas, closureReasons, closureReason);
+
+    }
+
     public static ClientData instance(final Long id, final String accountNo, final String displayName, final EnumOptionData status) {
         final CodeValueData subStatus = null;
         final Long officeId = null;
@@ -673,5 +723,8 @@ final public class ClientData implements Comparable<ClientData> {
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
-   
+
+    public void setPossibleClientMatches(final Collection<ClientData> possibleClientMatches) {
+        this.possibleClientMatches = possibleClientMatches;
+    }
 }

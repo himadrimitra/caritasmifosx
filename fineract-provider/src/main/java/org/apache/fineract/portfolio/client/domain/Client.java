@@ -237,6 +237,9 @@ public final class Client extends AbstractPersistable<Long> {
 	@JoinColumn(name = "reopened_by_userid", nullable = true)
 	private AppUser reopenedBy;
 
+    @Column(name = "is_force_activated", nullable = false)
+    private boolean isForceActivated = false;
+
     public static Client createNew(final AppUser currentUser, final Office clientOffice, final Group clientParentGroup, final Staff staff,
             final SavingsProduct savingsProduct, final CodeValue gender, final CodeValue clientType, final CodeValue clientClassification,
             final Integer legalForm, final JsonCommand command) {
@@ -1084,4 +1087,7 @@ public final class Client extends AbstractPersistable<Long> {
 		this.legalForm = legalForm;
 	}
 
+    public void setForceActivate() {
+	    this.isForceActivated = true;
+    }
 }
