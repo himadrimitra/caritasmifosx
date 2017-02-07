@@ -3806,6 +3806,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder updateDedupWeightage(final Long legalForm) {
+        this.actionName = "UPDATE";
+        this.entityName = "CLIENTDEDUPWEIGHTAGES";
+        this.entityId = legalForm;
+        this.href = "/clientdedup/weightages/"+legalForm;
+        return this;
+    }
+	
     public CommandWrapperBuilder assignFund(Long fundId, String options) {
         this.actionName = "ASSIGN";
         this.entityName = "FUND";

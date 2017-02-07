@@ -42,6 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -55,6 +56,7 @@ import org.apache.fineract.portfolio.accountdetails.data.AccountSummaryCollectio
 import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
+import org.apache.fineract.portfolio.deduplication.service.DeDuplicationService;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountData;
@@ -78,6 +80,9 @@ public class ClientsApiResource {
     private final AccountDetailsReadPlatformService accountDetailsReadPlatformService;
     private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
     private final GroupReadPlatformService groupReadPlatformService;
+    private final ConfigurationDomainService configurationDomainService;
+    private final DeDuplicationService deDuplicationService;
+
     @Autowired
     public ClientsApiResource(final PlatformSecurityContext context, final ClientReadPlatformService readPlatformService,
             final ToApiJsonSerializer<ClientData> toApiJsonSerializer,
@@ -85,6 +90,7 @@ public class ClientsApiResource {
             final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final AccountDetailsReadPlatformService accountDetailsReadPlatformService,
+            final ConfigurationDomainService configurationDomainService, final DeDuplicationService deDuplicationService,
             final SavingsAccountReadPlatformService savingsAccountReadPlatformService, GroupReadPlatformService groupReadPlatformService) {
         this.context = context;
         this.clientReadPlatformService = readPlatformService;
@@ -95,6 +101,8 @@ public class ClientsApiResource {
         this.accountDetailsReadPlatformService = accountDetailsReadPlatformService;
         this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
         this.groupReadPlatformService = groupReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
+        this.deDuplicationService = deDuplicationService;
     }
 
     @GET
@@ -220,6 +228,28 @@ public class ClientsApiResource {
 
         return this.toApiJsonSerializer.serialize(settings, clientData, ClientApiConstants.CLIENT_RESPONSE_DATA_PARAMETERS);
     }
+
+    @GET
+    @Path("{clientId}/template")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveTemplateForClient(@PathParam("clientId") final Long clientId, @Context final UriInfo uriInfo,
+            @QueryParam("command") final String commandParam) {
+
+        this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
+
+        ClientData clientData = null;
+        if (is(commandParam, "activate")) {
+            clientData = this.clientReadPlatformService.retrieveOne(clientId);
+            if(this.configurationDomainService.isCustomerDeDuplicationEnabled()){
+                clientData.setPossibleClientMatches(this.deDuplicationService.getDuplicationMatches(clientId));
+            }
+        }
+
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        return this.toApiJsonSerializer.serialize(settings, clientData);
+    }
+
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })

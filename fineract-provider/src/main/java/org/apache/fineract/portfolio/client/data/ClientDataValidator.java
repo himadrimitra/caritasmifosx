@@ -19,14 +19,7 @@
 package org.apache.fineract.portfolio.client.data;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
@@ -39,6 +32,7 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.deduplication.exception.DuplicateEntityEntryException;
 import org.apache.fineract.portfolio.deduplication.service.DeDuplicationService;
 import org.apache.fineract.portfolio.validations.domain.EntityValiDationType;
 import org.apache.fineract.portfolio.validations.service.FieldRegexValidator;
@@ -817,20 +811,17 @@ public final class ClientDataValidator {
     
 	public void validateForClientDuplication(Client client, boolean creation) {
 		if(configurationDomainService.isCustomerDeDuplicationEnabled()){
-		String table = "m_client";
-		Map<String, Object> clientDeDuplicationData = new LinkedHashMap<String, Object>();
-		clientDeDuplicationData.put("firstname", client.getFirstname());
-		clientDeDuplicationData.put("middlename", client.getMiddlename());
-		clientDeDuplicationData.put("lastname", client.getLastname());
-		clientDeDuplicationData.put("date_of_birth",  client.dateOfBirthLocalDate());
-		clientDeDuplicationData.put("mobile_no", client.getMobileNo());
-		clientDeDuplicationData.put("fullname", client.getFirstname());
-		clientDeDuplicationData.put("display_name", client.getDisplayName());
-		clientDeDuplicationData.put("external_id", client.getExternalId());
-		clientDeDuplicationData.put("name", client.getOfficeName());
-		clientDeDuplicationData.put("account_no", client.getAccountNumber());
-		
-		this.deDuplicationService.duplicationCheck(clientDeDuplicationData, table, creation);
+		    if(creation){
+                throw new DuplicateEntityEntryException("error.client.dedup.enabled.activate.cannot.be.done.along.with.creation",
+                        "Customer De-Duplication is enabled, activate cannot be completed along with create Client");
+            }else {
+                Collection<ClientData> possibleMatches = this.deDuplicationService.getDuplicationMatches(client.getId());
+                if(possibleMatches != null && possibleMatches.size() > 0){
+                    throw new DuplicateEntityEntryException("error.client.possible.duplicate.clients",
+                            "Possible duplicate clients with the same data, action cannot be completed",
+                            client.getId(), possibleMatches);
+                }
+            }
 		}
 	}
     

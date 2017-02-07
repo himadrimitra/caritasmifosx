@@ -42,5 +42,13 @@ public class ClientNonPersonData {
 		this.mainBusinessLine = mainBusinessLine;
 		this.remarks = remarks;
 	}
-        
+
+	public ClientNonPersonData(String incorpNo) {
+		this.constitution = null;
+		this.incorpNumber = incorpNo;
+		this.incorpValidityTillDate = null;
+		this.mainBusinessLine = null;
+		this.remarks = null;
+	}
+
 }

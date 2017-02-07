@@ -6,9 +6,17 @@
 
 package org.apache.fineract.portfolio.deduplication.service;
 
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.deduplication.data.DeduplicationData;
+
+import java.util.Collection;
 import java.util.Map;
 
 public interface DeDuplicationService {
 	
 	void duplicationCheck(Map<String, Object> data, String table, boolean creation);
+
+	Collection<ClientData> getDuplicationMatches(long clientId);
+
+	Collection<DeduplicationData> getDedupWeightages();
 }
