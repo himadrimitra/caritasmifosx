@@ -252,6 +252,10 @@ public final class LoanApplicationTerms {
     
     private int paymentsInProvidedPeriod = 1;
     
+    private BigDecimal flatInterestRate;
+    
+    private boolean allowNegativeBalance;
+    
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency currency, final Integer loanTermFrequency,
             final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer numberOfRepayments, final Integer repaymentEvery,
             final PeriodFrequencyType repaymentPeriodFrequencyType, Integer nthDay, DayOfWeekType weekDayType,
@@ -2096,5 +2100,30 @@ public final class LoanApplicationTerms {
     
     public void setIdealDisbursementDate(LocalDate idealDisbursementDate) {
         this.idealDisbursementDate = idealDisbursementDate;
+    }
+
+    
+    public BigDecimal getFlatInterestRate() {
+        return this.flatInterestRate;
+    }
+
+    
+    public void setFlatInterestRate(BigDecimal flatInterestRate) {
+        this.flatInterestRate = flatInterestRate;
+    }
+
+    
+    public boolean isAllowNegativeBalance() {
+        return this.allowNegativeBalance;
+    }
+
+    
+    public void setAllowNegativeBalance(boolean allowNegativeBalance) {
+        this.allowNegativeBalance = allowNegativeBalance;
+    }
+
+    
+    public PeriodFrequencyType getInterestRatePeriodFrequencyType() {
+        return this.interestRatePeriodFrequencyType;
     }
 }

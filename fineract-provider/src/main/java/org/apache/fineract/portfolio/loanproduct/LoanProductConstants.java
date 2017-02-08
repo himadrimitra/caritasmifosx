@@ -152,4 +152,5 @@ public interface LoanProductConstants {
     public static final String closeLoanOnOverpayment = "closeLoanOnOverpayment";
     
     public static final String weeksInYearType = "weeksInYearType";
+    public static final String isFlatInterestRateParamName = "isFlatInterestRate";
 }

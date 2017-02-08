@@ -770,6 +770,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.total_waived_derived as totalWaived,");
             sb.append(" l.total_writtenoff_derived as totalWrittenOff,");
             sb.append(" l.writeoff_reason_cv_id as writeoffReasonId,");
+            sb.append(" l.flat_interest_rate as flatInterestRate,");
             sb.append(" codev.code_value as writeoffReason,");
             sb.append(" l.total_outstanding_derived as totalOutstanding,");
             sb.append(" l.total_overpaid_derived as totalOverpaid,");
@@ -1155,6 +1156,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             	final String repaymenPaymentTypeName = rs.getString("repaymenPaymentTypeName");
             	expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);            	
             } 
+            final BigDecimal flatInterestRate = rs.getBigDecimal("flatInterestRate");
+            
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
                     isLoanProductLinkedToFloatingRate, fundId, fundName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName,
@@ -1169,7 +1172,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType, daysInYearType,
                     isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
                     minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
-                    topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType);
+                    topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate);
         }
     }
     
@@ -2798,6 +2801,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.interest_rate_differential as interestRateDifferential, ");
             sb.append(" l.create_standing_instruction_at_disbursement as createStandingInstructionAtDisbursement, ");
             sb.append(" l.broken_period_method_enum as brokenPeriodMethodType,");
+            sb.append(" l.flat_interest_rate as flatInterestRate,");
             sb.append(" l.is_topup as isTopup ");
             sb.append(" from m_loan l");
             this.loanSql = sb.toString();
@@ -3011,6 +3015,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             if (brokenPeriodTypeId != null) {
                 brokenPeriodMethodType = LoanEnumerations.brokenPeriodMethodType(brokenPeriodTypeId);
             }
+            final BigDecimal flatInterestRate = rs.getBigDecimal("flatInterestRate");
             
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, groupData, loanType, loanProductId,
                     fundId, loanPurposeId, loanOfficerId, currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid,
@@ -3022,7 +3027,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     timeline, loanSummary, feeChargesDueAtDisbursementCharged, syncDisbursementWithMeeting, loanCounter,
                     loanProductCounter, fixedEmiAmount, outstandingLoanBalance, inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType,
                     daysInYearType, isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement,
-                    loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType);
+                    loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate);
         }
     }
 
