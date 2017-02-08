@@ -124,6 +124,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.financial.function.IRRCalculator;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
@@ -440,6 +441,9 @@ public class Loan extends AbstractPersistable<Long> {
     @ManyToOne(optional = true,fetch=FetchType.LAZY)
     @JoinColumn(name = "expected_repayment_payment_type_id", nullable = true)
     private PaymentType expectedRepaymentPaymentType;
+    
+    @Column(name = "flat_interest_rate", scale = 6, precision = 19, nullable = true)
+    private BigDecimal flatInterestRate;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -1440,6 +1444,14 @@ public class Loan extends AbstractPersistable<Long> {
             final boolean recalculateLoanSchedule = !(actualChanges.size() == 1 && actualChanges.containsKey("inArrearsTolerance"));
             actualChanges.put("recalculateLoanSchedule", recalculateLoanSchedule);
             isChargesModified = true;
+        }
+        final String interestRatePerPeriodParamName = "interestRatePerPeriod";
+        if(actualChanges.containsKey(interestRatePerPeriodParamName)){
+            if(getFlatInterestRate() != null){
+                final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(interestRatePerPeriodParamName);
+                this.flatInterestRate = newValue;
+                actualChanges.put("recalculateLoanSchedule", true);
+            }
         }
 
         final String dateFormatAsInput = command.dateFormat();
@@ -6219,7 +6231,34 @@ public class Loan extends AbstractPersistable<Long> {
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
                 this.loanProduct.isAdjustInterestForRounding());
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
+        updateInterestRate(loanApplicationTerms);
         return loanApplicationTerms;
+    }
+    
+    private void updateInterestRate(final LoanApplicationTerms loanApplicationTerms) {
+        if (getFlatInterestRate() != null) {
+            if (!this.isOpen()) {
+                loanApplicationTerms.setFlatInterestRate(getFlatInterestRate());
+                double annualIrr = IRRCalculator.calculateIrr(loanApplicationTerms);
+                final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+                final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+                final MathContext mc = new MathContext(8, roundingMode);
+                BigDecimal totalInterest = loanApplicationTerms.getPrincipal().getAmount().multiply(getFlatInterestRate())
+                        .divide(divisor, mc);
+                BigDecimal emi = loanApplicationTerms.getPrincipal().getAmount().add(totalInterest)
+                        .divide(BigDecimal.valueOf(loanApplicationTerms.getNumberOfRepayments()), mc);
+                loanApplicationTerms.setFixedEmiAmount(emi);
+                loanApplicationTerms.updateAnnualNominalInterestRate(BigDecimal.valueOf(annualIrr));
+                if (loanApplicationTerms.getInterestRatePeriodFrequencyType().isMonthly()) {
+                    double monthlyRate = annualIrr / 12;
+                    loanApplicationTerms.updateInterestRatePerPeriod(BigDecimal.valueOf(monthlyRate));
+                } else {
+                    loanApplicationTerms.updateInterestRatePerPeriod(BigDecimal.valueOf(annualIrr));
+                }
+                this.getLoanRepaymentScheduleDetail().updateInterestRate(loanApplicationTerms.getAnnualNominalInterestRate());
+            }
+            loanApplicationTerms.setAllowNegativeBalance(true);
+        }
     }
 
     public BigDecimal constructLoanTermVariations(FloatingRateDTO floatingRateDTO, BigDecimal annualNominalInterestRate,
@@ -7611,6 +7650,21 @@ public class Loan extends AbstractPersistable<Long> {
     
     public Fund getFund() {
         return this.fund;
+    }
+
+    
+    public BigDecimal getFlatInterestRate() {
+        return this.flatInterestRate;
+    }
+
+    
+    public void setFlatInterestRate(BigDecimal flatInterestRate) {
+        this.flatInterestRate = flatInterestRate;
+    }
+
+    
+    public void setFixedEmiAmount(BigDecimal fixedEmiAmount) {
+        this.fixedEmiAmount = fixedEmiAmount;
     }
     
 }

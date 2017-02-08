@@ -100,6 +100,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplica
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.financial.function.IRRCalculator;
 import org.apache.fineract.portfolio.loanaccount.serialization.VariableLoanScheduleFromApiJsonValidator;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanChargeAssembler;
@@ -197,7 +198,36 @@ public class LoanScheduleAssembler {
         final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
         if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
 
-        return assembleLoanApplicationTermsFrom(element, loanProduct, considerAllDisbursmentsInSchedule);
+        LoanApplicationTerms terms = assembleLoanTerms(element, considerAllDisbursmentsInSchedule, loanProduct);
+        
+        
+        return terms;
+    }
+
+    public LoanApplicationTerms assembleLoanTerms(final JsonElement element, final boolean considerAllDisbursmentsInSchedule,
+            final LoanProduct loanProduct) {
+        LoanApplicationTerms terms = assembleLoanApplicationTermsFrom(element, loanProduct, considerAllDisbursmentsInSchedule);
+        if (loanProduct.isFlatInterestRate()) {
+            final BigDecimal interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("interestRatePerPeriod",
+                    element);
+            terms.setFlatInterestRate(interestRatePerPeriod);
+            terms.setAllowNegativeBalance(true);
+            double annualIrr = IRRCalculator.calculateIrr(terms);
+            final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+            final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+            final MathContext mc = new MathContext(8, roundingMode);
+            BigDecimal totalInterest = terms.getPrincipal().getAmount().multiply(interestRatePerPeriod).divide(divisor, mc);
+            BigDecimal emi = terms.getPrincipal().getAmount().add(totalInterest).divide(BigDecimal.valueOf(terms.getNumberOfRepayments()), mc);
+            terms.setFixedEmiAmount(emi);
+            terms.updateAnnualNominalInterestRate(BigDecimal.valueOf(annualIrr));
+            if (terms.getInterestRatePeriodFrequencyType().isMonthly()) {
+                double monthlyRate = annualIrr / 12;
+                terms.updateInterestRatePerPeriod(BigDecimal.valueOf(monthlyRate));
+            } else {
+                terms.updateInterestRatePerPeriod(BigDecimal.valueOf(annualIrr));
+            }
+        }
+        return terms;
     }
 
     private LoanApplicationTerms assembleLoanApplicationTermsFrom(final JsonElement element, final LoanProduct loanProduct,

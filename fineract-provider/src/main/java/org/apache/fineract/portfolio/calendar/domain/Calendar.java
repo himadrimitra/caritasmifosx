@@ -598,7 +598,7 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
         return "";
     }
 
-    private static String constructRecurrence(final CalendarFrequencyType frequencyType, final Integer interval,
+    public static String constructRecurrence(final CalendarFrequencyType frequencyType, final Integer interval,
             final Integer repeatsOnDay, final Integer repeatsOnNthDayOfMonth, final Collection<Integer> repeatsOnDayOfMonth) {
         final StringBuilder recurrenceBuilder = new StringBuilder(200);
 

@@ -36,6 +36,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -599,6 +600,21 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         this.annualNominalInterestRate = aprCalculator.calculateFrom(this.interestPeriodFrequencyType, this.nominalInterestRatePerPeriod);
     }
 
+    public void updateInterestRate(final BigDecimal irrRate) {
+        this.annualNominalInterestRate = irrRate;
+        if (getInterestPeriodFrequencyType().isMonthly()) {
+            BigDecimal nominalInterestRatePerPeriod = irrRate.divide(BigDecimal.valueOf(12), MoneyHelper.getRoundingMode());
+            updateNominalInterestRatePerPeriod(nominalInterestRatePerPeriod);
+        } else {
+            updateNominalInterestRatePerPeriod(irrRate);
+        }
+    }
+    
+    private void updateNominalInterestRatePerPeriod(final BigDecimal nominalInterestRatePerPeriod) {
+        this.nominalInterestRatePerPeriod = nominalInterestRatePerPeriod;
+    }
+
+    
     public boolean hasCurrencyCodeOf(final String currencyCode) {
         return this.currency.getCode().equalsIgnoreCase(currencyCode);
     }

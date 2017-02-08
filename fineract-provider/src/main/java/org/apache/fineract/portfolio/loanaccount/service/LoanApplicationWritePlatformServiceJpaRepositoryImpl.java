@@ -117,6 +117,7 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationNotInS
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.financial.function.IRRCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleAssembler;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleCalculationPlatformService;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCommandFromApiJsonHelper;
@@ -830,7 +831,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final Set<LoanCollateral> possiblyModifedLoanCollateralItems = this.loanCollateralAssembler
                     .fromParsedJson(command.parsedJson());
 
-
+            
             final Map<String, Object> changes = existingLoanApplication.loanApplicationModification(command, possiblyModifedLoanCharges,
                     possiblyModifedLoanCollateralItems, this.aprCalculator, isChargeModified);
 
@@ -1045,13 +1046,17 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     this.groupLoanIndividualMonitoringRepository.delete(existingGlimList);
                 }
             }    
-            	        
+           
 	        if (changes.containsKey("recalculateLoanSchedule")) {
 	            changes.remove("recalculateLoanSchedule");
 	
 	            final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
 	            final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
 	            final boolean considerAllDisbursmentsInSchedule = true;
+	            if(existingLoanApplication.getFlatInterestRate() != null){
+	                LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule, existingLoanApplication.getLoanProduct());
+	                existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
+	            }
 	            final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false, considerAllDisbursmentsInSchedule);
 	            existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
 	            existingLoanApplication.recalculateAllCharges();
