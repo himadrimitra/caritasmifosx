@@ -57,7 +57,7 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         return this.type;
     }
 
-    public void setType(String type) {
+    public void setType(final String type) {
         this.type = type;
     }
 
@@ -65,15 +65,15 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         return this.request;
     }
 
-    public void setRequest(String full_request) {
-        this.request = full_request;
+    public void setRequest(final String request) {
+        this.request = request;
     }
 
     public Integer getStatus() {
         return status;
     }
 
-    public void setStatus(Integer status) {
+    public void setStatus(final Integer status) {
         this.status = status;
     }
 
@@ -81,7 +81,7 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         return loanCreditBureauEnquiries;
     }
 
-    public void setLoanCreditBureauEnquiries(List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries) {
+    public void setLoanCreditBureauEnquiries(final List<LoanCreditBureauEnquiry> loanCreditBureauEnquiries) {
         this.loanCreditBureauEnquiries.clear();
         this.loanCreditBureauEnquiries.addAll(loanCreditBureauEnquiries);
     }
@@ -90,7 +90,7 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         return creditBureauProduct;
     }
 
-    public void setCreditBureauProduct(CreditBureauProduct creditBureauProduct) {
+    public void setCreditBureauProduct(final CreditBureauProduct creditBureauProduct) {
         this.creditBureauProduct = creditBureauProduct;
     }
 
@@ -98,7 +98,7 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         return acknowledgementNumber;
     }
 
-    public void setAcknowledgementNumber(String acknowledgementNumber) {
+    public void setAcknowledgementNumber(final String acknowledgementNumber) {
         this.acknowledgementNumber = acknowledgementNumber;
     }
 
@@ -106,7 +106,7 @@ public class CreditBureauEnquiry extends AbstractAuditableCustom<AppUser, Long> 
         return response;
     }
 
-    public void setResponse(String response) {
+    public void setResponse(final String response) {
         this.response = response;
     }
 }
