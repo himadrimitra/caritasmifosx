@@ -544,7 +544,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
             Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
             if (loan.getFund() == null
                     || !(loan.getFund().getFacilityType().label().equalsIgnoreCase(FundApiConstants.buyoutParam) || loan.getFund()
-                            .getFacilityType().label().equalsIgnoreCase(FundApiConstants.secuterizationParam))) {
+                            .getFacilityType().label().equalsIgnoreCase(FundApiConstants.securitizationParam))) {
                 loan.updateFund(fund);
                 List<FundMappingHistory> historyList = this.fundMappingHistoryRepository.findPreviousHistoryByLoan(loanId);
                 FundMappingHistory previousFundMappingHistory = null;

@@ -1,0 +1,1 @@
+UPDATE `m_code_value` SET `code_value`='Securitization' WHERE  `code_value` = 'Secuterization';
