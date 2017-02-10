@@ -24,6 +24,8 @@ public class CgtApiConstants {
     public static final String cgtStatusCompleteParamName = "complete";
     public static final String completedDateParamName = "completedDate";
     public static final String rejectedDateParamName = "rejectedDate";
+    public static final String minumumCgtDaysParamName = "minumumCgtDays";
+    public static final String maximumCgtDaysParamName = "maximumCgtDays";
 
     public static final Set<String> CGT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(entityTypeParamName,
             locationParamName, loanOfficerIdParamName, secondaryLoanOfficerIdParamName, clientIdsParamName, expectedStartDateParamName,

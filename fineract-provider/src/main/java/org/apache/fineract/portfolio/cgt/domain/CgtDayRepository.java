@@ -17,6 +17,6 @@ public interface CgtDayRepository extends JpaRepository<CgtDay, Long>, JpaSpecif
 	Collection<CgtDay> findByCgtId(Long parentId);
 	
 	@Query(FIND_NEW_CGTS_FOR_CGT_ID)
-	Collection<CgtDay> findNewCgtDaysForCgtId(@Param("newCgtDay") Integer newCgtDay, @Param("cgtId") Long cgtId);
+	Collection<CgtDay> findNewCgtDaysForCgtId(@Param("newCgtDay") Integer newCgtDay, @Param("cgtId") Cgt cgtId);
 	
 }

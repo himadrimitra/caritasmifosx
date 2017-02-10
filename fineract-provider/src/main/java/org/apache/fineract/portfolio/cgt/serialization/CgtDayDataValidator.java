@@ -15,9 +15,11 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.cgt.api.CgtApiConstants;
 import org.apache.fineract.portfolio.cgt.api.CgtDayApiConstants;
 import org.apache.fineract.portfolio.group.api.GroupingTypesApiConstants;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 
 @Component
@@ -70,22 +72,36 @@ public class CgtDayDataValidator {
 
     }
 
-    public void validateForCompleteCgtDay(final JsonCommand command) {
+	public void validateForCompleteCgtDay(final JsonCommand command) {
 
-        final String json = command.json();
+		final String json = command.json();
 
-        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
+		if (StringUtils.isBlank(json)) {
+			throw new InvalidJsonException();
+		}
 
-        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, CgtDayApiConstants.CGT_DAY_COMPLETE_REQUEST_DATA_PARAMETERS);
+		final JsonElement element = this.fromApiJsonHelper.parse(json);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+		final Type typeOfMap = new TypeToken<Map<String, Object>>() {
+		}.getType();
+		this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json,
+				CgtDayApiConstants.CGT_DAY_COMPLETE_REQUEST_DATA_PARAMETERS);
 
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
-                .resource(CgtDayApiConstants.CGT_DAY_RESOURCE_NAME);
+		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
-        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+		final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+				.resource(CgtDayApiConstants.CGT_DAY_RESOURCE_NAME);
 
-    }
+		LocalDate completedDate = null;
+		
+			completedDate = this.fromApiJsonHelper.extractLocalDateNamed(CgtApiConstants.completedDateParamName,
+					element);
+			baseDataValidator.reset().parameter(CgtApiConstants.completedDateParamName).value(completedDate)
+					.notBlank().notNull();
+		
+
+		throwExceptionIfValidationWarningsExist(dataValidationErrors);
+
+	}
 
 }

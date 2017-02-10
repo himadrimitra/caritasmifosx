@@ -6,7 +6,7 @@ import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainR
 public class CgtDaysCannotBeGreaterThanMaxCgtException extends AbstractPlatformDomainRuleException {
 
     public CgtDaysCannotBeGreaterThanMaxCgtException(final Long maxCgtDayCount, String defaultUserMessage) {
-        super("error.msg.cgt.days.cannot.be.created.more.than."+maxCgtDayCount+"", "CGT Days cannot be created more than "+maxCgtDayCount+"", defaultUserMessage);
+        super("error.msg.cgt.days.cannot.be.created.more.than."+maxCgtDayCount+"", defaultUserMessage, maxCgtDayCount);
     }
 
 }
