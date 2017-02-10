@@ -4,8 +4,8 @@ ALTER TABLE `m_loan`
 ALTER TABLE `m_loan`
 	ADD CONSTRAINT `FK_loan_purpose_id_m_loan` FOREIGN KEY (`loan_purpose_id`) REFERENCES `f_loan_purpose` (`id`);
 	
-INSERT IGNORE INTO `f_loan_purpose` (`name`, `description`, `is_active`, `createdby_id`, `created_date`, `lastmodifiedby_id`, `lastmodified_date`)
-SELECT v.code_value,v.code_description,v.is_active,'1', CURDATE(),'1', CURDATE()
+INSERT INTO `f_loan_purpose` (`name`,`short_name`,`description`, `is_active`, `createdby_id`, `created_date`, `lastmodifiedby_id`, `lastmodified_date`)
+SELECT v.code_value,CONCAT(SUBSTR(v.code_value, 1, 4),'_',v.id),v.code_description,v.is_active,'1', CURDATE(),'1', CURDATE()
 FROM m_code_value v
 INNER JOIN m_code c ON c.id = v.code_id
 WHERE c.code_name = 'LoanPurpose';
@@ -17,8 +17,7 @@ JOIN f_loan_purpose lp ON lp.name = cv.code_value SET l.loan_purpose_id = lp.id;
 ALTER TABLE `m_loan`
 	DROP FOREIGN KEY `FK_m_loanpurpose_codevalue`;
 	
-ALTER TABLE `m_loan`
-	DROP COLUMN `loanpurpose_cv_id`;
+-- ALTER TABLE `m_loan` DROP COLUMN `loanpurpose_cv_id`;
 	
 ALTER TABLE `f_loan_application_reference`
 	DROP FOREIGN KEY `FK_m_code_value_id_to_f_loan_application_reference_product_id`;
