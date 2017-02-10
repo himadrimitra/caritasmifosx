@@ -250,15 +250,11 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
             totalDebitAmount = totalDebitAmount.add(feesAmount); 
             BigDecimal totalTaxAmount = addTaxDetailsToGLAccount(loanTransactionDTO.getTaxPaymentDTOs(), accountMap);
             if (isIncomeFromFee) {
-                GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-                if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(feesAmount.subtract(totalTaxAmount));
-                    accountMap.put(account, amount);
-                } else {
-                    accountMap.put(account, feesAmount.subtract(totalTaxAmount));
+                if (loanTransactionDTO.getFeePayments() != null && !loanTransactionDTO.getFeePayments().isEmpty()) {
+                    accountMap.putAll(this.helper.constructCreditJournalEntryOrReversalForLoanChargesAccountMap(
+                            ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), loanProductId, feesAmount,
+                            loanTransactionDTO.getFeePayments()));
                 }
-
             } else {
                 GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
@@ -276,13 +272,10 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
             totalDebitAmount = totalDebitAmount.add(penaltiesAmount);
             BigDecimal totalTaxAmount = addTaxDetailsToGLAccount(loanTransactionDTO.getTaxPaymentDTOs(), accountMap);
             if (isIncomeFromFee) {
-                GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-                if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(penaltiesAmount.subtract(totalTaxAmount));
-                    accountMap.put(account, amount);
-                } else {
-                    accountMap.put(account, penaltiesAmount.subtract(totalTaxAmount));
+                if (loanTransactionDTO.getPenaltyPayments() != null && !loanTransactionDTO.getPenaltyPayments().isEmpty()) {
+                    accountMap.putAll(this.helper.constructCreditJournalEntryOrReversalForLoanChargesAccountMap(
+                            ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue(), loanProductId, penaltiesAmount,
+                            loanTransactionDTO.getPenaltyPayments()));
                 }
             } else {
                 GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
@@ -293,7 +286,6 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                 } else {
                     accountMap.put(account, penaltiesAmount.subtract(totalTaxAmount));
                 }
-
             }
         }
 

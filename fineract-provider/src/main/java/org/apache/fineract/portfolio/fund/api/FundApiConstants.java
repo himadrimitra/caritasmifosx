@@ -112,7 +112,7 @@ public class FundApiConstants {
     public static final String repaymentSchedule = "repaymentSchedule";
     public static final String ownParam = "Own";
     public static final String buyoutParam = "Buyout";
-    public static final String secuterizationParam = "Secuterization";
+    public static final String securitizationParam = "Securitization";
     public static final String trancheDisburseParam = "trancheDisburse";
     public static final String loanProductsParam = "loanProducts";
 

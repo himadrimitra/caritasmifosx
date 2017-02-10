@@ -95,7 +95,7 @@ public class PaymentTypeApiResource {
         this.securityContext.authenticatedUser().validateHasReadPermission(PaymentTypeApiResourceConstants.resourceNameForPermissions);
         Collection<ExternalServicesData> externalServiceOptions = this.externalServicesReadService
                 .findExternalServicesByType(ExternalServiceType.BANK_TRANSFER.getValue());
-        final PaymentTypeData paymentTypes = PaymentTypeData.template(externalServiceOptions);
+        final PaymentTypeData paymentTypes = PaymentTypeData.template(externalServiceOptions,bankAccountDetailsReadService.bankAccountTypeOptions());
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.jsonSerializer.serialize(settings, paymentTypes, PaymentTypeApiResourceConstants.RESPONSE_DATA_PARAMETERS);
     }
@@ -129,7 +129,8 @@ public class PaymentTypeApiResource {
         if (template) {
             Collection<ExternalServicesData> externalServiceOptions = this.externalServicesReadService
                     .findExternalServicesByType(ExternalServiceType.BANK_TRANSFER.getValue());
-            paymentTypes = PaymentTypeData.withTemplate(paymentTypes, externalServiceOptions);
+            paymentTypes = PaymentTypeData.withTemplate(paymentTypes, externalServiceOptions,
+                    bankAccountDetailsReadService.bankAccountTypeOptions());
         }
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());

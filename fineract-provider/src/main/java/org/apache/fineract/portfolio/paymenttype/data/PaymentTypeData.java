@@ -21,7 +21,9 @@ package org.apache.fineract.portfolio.paymenttype.data;
 import java.util.Collection;
 
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
+import com.finflux.portfolio.bank.domain.BankAccountType;
 import com.finflux.portfolio.external.data.ExternalServicesData;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class PaymentTypeData {
 
@@ -36,8 +38,11 @@ public class PaymentTypeData {
 
     private Collection<ExternalServicesData> externalServiceOptions;
 
+    private Collection<EnumOptionData> bankAccountTypeOptions;
+
     public PaymentTypeData(final Long id, final String name, final String description, final Boolean isCashPayment, final Long position,
-            final Long externalServiceId, final BankAccountDetailData bankAccountDetails, final Collection<ExternalServicesData> externalServiceOptions) {
+            final Long externalServiceId, final BankAccountDetailData bankAccountDetails, final Collection<ExternalServicesData> externalServiceOptions,
+                           final Collection<EnumOptionData> bankAccountTypeOptions) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -46,6 +51,7 @@ public class PaymentTypeData {
         this.externalServiceId = externalServiceId;
         this.bankAccountDetails = bankAccountDetails;
         this.externalServiceOptions = externalServiceOptions;
+        this.bankAccountTypeOptions = bankAccountTypeOptions;
     }
 
     public static PaymentTypeData instance(final Long id, final String name, final String description, final Boolean isCashPayment,
@@ -53,8 +59,9 @@ public class PaymentTypeData {
         Long externalServiceId = null;
         BankAccountDetailData bankAccountDetails = null;
         final Collection<ExternalServicesData> externalServiceOptions = null;
+        final Collection<EnumOptionData> bankAccountTypeOptions = null;
         return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
-                externalServiceOptions);
+                externalServiceOptions,bankAccountTypeOptions);
     }
 
     public static PaymentTypeData instance(final Long id, final String name, final String description, final Boolean isCashPayment,
@@ -62,13 +69,16 @@ public class PaymentTypeData {
 
         BankAccountDetailData bankAccountDetails = null;
         final Collection<ExternalServicesData> externalServiceOptions = null;
+        final Collection<EnumOptionData> bankAccountTypeOptions = null;
         return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
-                externalServiceOptions);
+                externalServiceOptions, bankAccountTypeOptions);
     }
 
     public static PaymentTypeData instance(final PaymentTypeData paymentTypeData, final BankAccountDetailData bankAccountDetails) {
+        final Collection<EnumOptionData> bankAccountTypeOptions = null;
         return new PaymentTypeData(paymentTypeData.id, paymentTypeData.name, paymentTypeData.description, paymentTypeData.isCashPayment,
-                paymentTypeData.position, paymentTypeData.externalServiceId, bankAccountDetails, paymentTypeData.externalServiceOptions);
+                paymentTypeData.position, paymentTypeData.externalServiceId, bankAccountDetails, paymentTypeData.externalServiceOptions,
+                bankAccountTypeOptions);
     }
 
     public static PaymentTypeData instance(final Long id, final String name) {
@@ -78,11 +88,13 @@ public class PaymentTypeData {
         Long externalServiceId = null;
         BankAccountDetailData bankAccountDetails = null;
         final Collection<ExternalServicesData> externalServiceOptions = null;
+        final Collection<EnumOptionData> bankAccountTypeOptions = null;
         return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
-                externalServiceOptions);
+                externalServiceOptions, bankAccountTypeOptions);
     }
 
-    public static PaymentTypeData template(final Collection<ExternalServicesData> externalServiceOptions) {
+    public static PaymentTypeData template(final Collection<ExternalServicesData> externalServiceOptions,
+                                           final Collection<EnumOptionData> bankAccountTypeOptions) {
         final Long id = null;
         final String name = null;
         String description = null;
@@ -91,14 +103,14 @@ public class PaymentTypeData {
         Long externalServiceId = null;
         BankAccountDetailData bankAccountDetails = null;
         return new PaymentTypeData(id, name, description, isCashPayment, position, externalServiceId, bankAccountDetails,
-                externalServiceOptions);
+                externalServiceOptions,bankAccountTypeOptions);
     }
 
     public static PaymentTypeData withTemplate(final PaymentTypeData paymentTypeData,
-            final Collection<ExternalServicesData> externalServiceOptions) {
+            final Collection<ExternalServicesData> externalServiceOptions,final Collection<EnumOptionData> bankAccountTypeOptions) {
         return new PaymentTypeData(paymentTypeData.id, paymentTypeData.name, paymentTypeData.description, paymentTypeData.isCashPayment,
                 paymentTypeData.position, paymentTypeData.externalServiceId, paymentTypeData.bankAccountDetails,
-                externalServiceOptions);
+                externalServiceOptions,bankAccountTypeOptions);
     }
 
     public Long getId() {
@@ -117,7 +129,8 @@ public class PaymentTypeData {
         Long externalServiceId = null;
         BankAccountDetailData bankAccountDetails = null;
         final Collection<ExternalServicesData> externalServiceOptions = null;
+        final Collection<EnumOptionData> bankAccountTypeOptions = null;
         return new PaymentTypeData(paymentTypeId, paymentTypeName, description, isCashPayment, position, externalServiceId,
-                bankAccountDetails, externalServiceOptions);
+                bankAccountDetails, externalServiceOptions,bankAccountTypeOptions);
     }
 }

@@ -823,13 +823,13 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 						if(transaction.getReferenceNumber()==null){
 							transaction.setReferenceNumber(response.getReferenceNumber());
 						}
-						if(transaction.getUtrNumber()==null){
+						if(response.getUtrNumber()!=null){
 							transaction.setUtrNumber(response.getUtrNumber());
 						}
-						if(transaction.getPoNumber()==null){
+						if(response.getPoNumber()!=null){
 							transaction.setPoNumber(response.getPoNumber());
 						}
-						if(transaction.getTransactionDate()==null && response.getTransactionTime()!=null){
+						if(response.getTransactionTime()!=null){
 							transaction.setTransactionDate(response.getTransactionTime().toDate());
 						}
 						transaction.setStatus(response.getTransactionStatus().getValue());

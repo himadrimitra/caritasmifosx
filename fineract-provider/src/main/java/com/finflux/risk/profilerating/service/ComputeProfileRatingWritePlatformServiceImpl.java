@@ -23,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.finflux.risk.profilerating.api.ComputeProfileRatingApiConstants;
@@ -106,36 +108,39 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
 
     private void processComputeAllProfileRatings(final List<ProfileRatingRun> profileRatingRuns, final JsonCommand command) {
         if (command.hasParameter(ComputeProfileRatingApiConstants.entityIdParamName)) {
-            computeAllProfileRatings(profileRatingRuns, command, this.context);
+            computeAllProfileRatings(profileRatingRuns, command);
         } else {
             /**
              * If we are execute multiple recodes then it should be in back
              * ground execution process
              */
             this.executorService.execute(new RunBackGroundProcessForProfileRatings(ThreadLocalContextUtil.getTenant(), profileRatingRuns,
-                    command, this.context));
+                    command, SecurityContextHolder.getContext().getAuthentication()));
         }
     }
 
     class RunBackGroundProcessForProfileRatings implements Runnable, ApplicationListener<ContextClosedEvent> {
 
         private final FineractPlatformTenant tenant;
-        final List<ProfileRatingRun> profileRatingRuns;
-        final JsonCommand command;
-        final PlatformSecurityContext context;
+        private final List<ProfileRatingRun> profileRatingRuns;
+        private final JsonCommand command;
+        private final Authentication auth;
 
         public RunBackGroundProcessForProfileRatings(final FineractPlatformTenant tenant, final List<ProfileRatingRun> profileRatingRuns,
-                final JsonCommand command, final PlatformSecurityContext context) {
+                final JsonCommand command, final Authentication auth) {
             this.tenant = tenant;
             this.profileRatingRuns = profileRatingRuns;
             this.command = command;
-            this.context = context;
+            this.auth = auth;
         }
 
         @Override
         public void run() {
             ThreadLocalContextUtil.setTenant(this.tenant);
-            computeAllProfileRatings(this.profileRatingRuns, this.command, this.context);
+            if (this.auth != null) {
+                SecurityContextHolder.getContext().setAuthentication(this.auth);
+            }
+            computeAllProfileRatings(this.profileRatingRuns, this.command);
         }
 
         @SuppressWarnings("unused")
@@ -146,12 +151,8 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
         }
     }
 
-    public void computeAllProfileRatings(final List<ProfileRatingRun> profileRatingRuns, final JsonCommand command,
-            final PlatformSecurityContext context) {
+    public void computeAllProfileRatings(final List<ProfileRatingRun> profileRatingRuns, final JsonCommand command) {
         if (profileRatingRuns != null && !profileRatingRuns.isEmpty()) {
-            if (context != null) {
-                this.context = context;
-            }
             for (final ProfileRatingRun profileRatingRun : profileRatingRuns) {
                 processEachProfileRatingRun(profileRatingRun, command);
             }
