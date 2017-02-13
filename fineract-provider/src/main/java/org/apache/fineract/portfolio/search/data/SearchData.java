@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.search.data;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class SearchData {
@@ -39,11 +40,12 @@ public class SearchData {
     private final String groupName;
     private final String centerName;
     private final String officeName;
+    private final CodeValueData reason;
 
     public SearchData(final Long entityId, final String entityAccountNo, final String entityExternalId, final String entityName,
             final String entityType, final Long parentId, final String parentName, final String parentType, final String entityMobileNo,
             final EnumOptionData entityStatus, final BigDecimal systemValue, final BigDecimal userValue, final String groupName,
-            final String centerName, final String officeName) {
+            final String centerName, final String officeName, final CodeValueData reason) {
 
         this.entityId = entityId;
         this.entityAccountNo = entityAccountNo;
@@ -60,6 +62,7 @@ public class SearchData {
         this.groupName = groupName;
         this.centerName = centerName;
         this.officeName = officeName;
+        this.reason = reason;
     }
 
     public Long getEntityId() {
