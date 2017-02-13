@@ -13,10 +13,15 @@ public interface CgtRepository extends JpaRepository<Cgt, Long>, JpaSpecificatio
     public static final String FIND_ACTIVE_OR_IN_PROGRESS_CGTS = "from Cgt cgt where "
             + " (cgt.cgtStatus = :newCgt or cgt.cgtStatus = :inProgressCgt) and cgt.entityType =:entityId and cgt.entityTypeId =:entityTypeId";
 
+    public static final String FIND_IN_PROGRESS_CGTS = "from Cgt cgt where "
+            + " (cgt.cgtStatus = :status) and cgt.entityType =:entityId and cgt.entityTypeId =:entityTypeId";
+
     Collection<Cgt> findByEntityTypeId(final Integer entityId);
 
     @Query(FIND_ACTIVE_OR_IN_PROGRESS_CGTS)
-    List<Cgt> findActiveOrInProgressCgts(@Param("newCgt") Integer newCgt, @Param("inProgressCgt") Integer inProgressCgt, @Param("entityId") Integer entityId, 
+	List<Cgt> findActiveOrInProgressCgts(@Param("newCgt") Integer newCgt, @Param("inProgressCgt") Integer inProgressCgt, @Param("entityId") Integer entityId, 
             @Param("entityTypeId") Integer entityTypeId);
+    @Query(FIND_IN_PROGRESS_CGTS)
+    List<Cgt> finadInProgressCgts(@Param("status") Integer status, @Param("entityId") Integer entityId,  @Param("entityTypeId") Integer entityTypeId);
 
 }

@@ -59,6 +59,8 @@ public class CgtWritePlatformServiceImpl implements CgtWritePlatformService {
     @Transactional
     public CommandProcessingResult createCgt(final JsonCommand command) {
 
+    	this.cgtDataValidator.validateForCreateCgt(command);
+    	
         final Integer entityId = command.integerValueOfParameterNamed(CgtApiConstants.entityIdParamName);
         final Integer entityType = command.integerValueOfParameterNamed(CgtApiConstants.entityTypeParamName);
 
@@ -66,7 +68,6 @@ public class CgtWritePlatformServiceImpl implements CgtWritePlatformService {
                 CgtStatusType.IN_PROGRESS.getValue(), entityId, entityType);
         if (!activeOrInprogresscgts.isEmpty()) { throw new CgtCannotBeCreatedException(
                 "CGT cannot be created until all existing CGT are in completed state"); }
-        this.cgtDataValidator.validateForCreateCgt(command);
 
         final String location = command.stringValueOfParameterNamed(CgtApiConstants.locationParamName);
         final Long loanOfficerId = command.longValueOfParameterNamed(CgtApiConstants.loanOfficerIdParamName);
@@ -75,7 +76,8 @@ public class CgtWritePlatformServiceImpl implements CgtWritePlatformService {
 
         final Set<Client> activeClients = this.assembleSetOfClients(command, entityId.toString());
         final String uniqueId = MathUtility.randomNameGenerator("CGT_", 9);
-        final Date actualStartDate = DateUtils.getLocalDateTimeOfTenant().toDate();
+        //final Date actualStartDate = DateUtils.getLocalDateTimeOfTenant().toDate();
+        final Date actualStartDate = null;
         final Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetection(loanOfficerId);
         Set<Note> notes = new HashSet<>(1);
         Cgt cgtEntity = Cgt.newCgt(uniqueId, expectedStartDate.toDate(), expectedEndDate.toDate(), actualStartDate, activeClients,

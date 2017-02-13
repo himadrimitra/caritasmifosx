@@ -1,8 +1,10 @@
 package org.apache.fineract.portfolio.cgt.domain;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,14 +22,18 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.portfolio.cgt.api.CgtApiConstants;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.joda.time.LocalDate;
 
 import com.google.gson.JsonArray;
 
@@ -97,7 +103,30 @@ public class Cgt extends AbstractAuditableCustom<AppUser, Long> {
         this.location = location;
         this.loanOfficer = loanOfficer;
         this.notes = notes;
+        validate();
     }
+    
+	private void validate() {
+		final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+		validateExpectedStartDate(dataValidationErrors);
+		if (!dataValidationErrors.isEmpty()) {
+			throw new PlatformApiDataValidationException(dataValidationErrors);
+		}
+
+	}
+
+	private void validateExpectedStartDate(final List<ApiParameterError> dataValidationErrors) {
+		if (getExpectedEndDate() != null && getExpectedStartDate() != null
+				&& getExpectedStartDate().after(getExpectedEndDate())) {
+
+			final String defaultUserMessage = "expected end date cannot be before the expected start date";
+			final ApiParameterError error = ApiParameterError.parameterError(
+					"error.msg.cgt.expected.start.date.cannot.be.after.the.expected.end.date", defaultUserMessage,
+					CgtApiConstants.expectedEndDateParamName, this.expectedEndDate);
+
+			dataValidationErrors.add(error);
+		}
+	}
 
     public static Cgt newCgt(final String uniqueId, final Date expectedStartDate, final Date expectedEndDate, final Date actualStartDate,
             final Set<Client> clientMembers, final Integer entityType, final Integer entityTypeId, final Integer cgtStatus,
@@ -202,13 +231,19 @@ public class Cgt extends AbstractAuditableCustom<AppUser, Long> {
         return this.expectedEndDate;
     }
 
-    public Date getActualStartDate() {
-        return this.actualStartDate;
-    }
+	public LocalDate getActualStartLocalDate() {
+		if (this.actualStartDate != null) {
+			return new LocalDate(this.actualStartDate);
+		}
+		return null;
+	}
 
-    public Date getActualEndDate() {
-        return this.actualEndDate;
-    }
+	public LocalDate getActualEndLocalDate() {
+		if (this.actualEndDate != null) {
+			return new LocalDate(this.actualEndDate);
+		}
+		return null;
+	}
 
     public Set<Client> getClientMembers() {
         return this.clientMembers;
@@ -244,6 +279,10 @@ public class Cgt extends AbstractAuditableCustom<AppUser, Long> {
 
     public void updateCgtStatus(final Integer cgtStatus) {
         this.cgtStatus = cgtStatus;
+    }
+    
+    public void updateActualStartDate(final Date actualStartDate){
+    	this.actualStartDate = actualStartDate;
     }
 
 }

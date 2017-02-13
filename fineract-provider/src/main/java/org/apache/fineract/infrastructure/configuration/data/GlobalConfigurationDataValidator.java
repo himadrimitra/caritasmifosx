@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -48,10 +49,13 @@ import com.google.gson.reflect.TypeToken;
 public class GlobalConfigurationDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
-	public GlobalConfigurationDataValidator(final FromJsonHelper fromApiJsonHelper){
+	public GlobalConfigurationDataValidator(final FromJsonHelper fromApiJsonHelper,
+			final ConfigurationDomainService configurationDomainService){
 		this.fromApiJsonHelper = fromApiJsonHelper;
+		this.configurationDomainService = configurationDomainService;
 	}
 
     public void validateForUpdate(final String configurationName, final JsonCommand command) {
@@ -74,6 +78,9 @@ public class GlobalConfigurationDataValidator {
 			if (!STRING_VALUE_CONFIGURATIONS.contains(configurationName)) {
 				final Long valueStr = this.fromApiJsonHelper.extractLongNamed(VALUE, element);
 				baseDataValidator.reset().parameter(ENABLED).value(valueStr).zeroOrPositiveAmount();
+				if(valueStr != null){
+				validateForCgtDays(configurationName, valueStr, baseDataValidator);
+				}
 			}
 		}
         
@@ -86,4 +93,18 @@ public class GlobalConfigurationDataValidator {
 
     }
     
+	private void validateForCgtDays(final String configurationName, final Long value,
+			final DataValidatorBuilder baseDataValidator) {
+		if (configurationName.equals("min-cgt-days")) {
+			Long maximumCgtDays = configurationDomainService.getMaxCgtDays();
+			if (maximumCgtDays != null) {
+				baseDataValidator.reset().parameter(VALUE).value(value).notGreaterThanMax(maximumCgtDays.intValue());
+			}
+		} else if (configurationName.equals("max-cgt-days")) {
+			Long minumumCgtDays = configurationDomainService.getMinCgtDays();
+			if (minumumCgtDays != null) {
+				baseDataValidator.reset().parameter(VALUE).value(value).notLessThanMin(minumumCgtDays.intValue());
+			}
+		}
+	}
 }
