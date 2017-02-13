@@ -115,7 +115,10 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
         }
         LoanEnquiryReferenceData loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(
                 loanApplicationId, creditBureauProduct.getId(), loanId, trancheDisbursalId);
-        Boolean isCBReportExpired = loanEnquiryReferenceData.isCBReportGeneratedDaysGreaterThanStalePeriod(stalePeriod);
+        Boolean isCBReportExpired = false;
+        if(loanEnquiryReferenceData != null && !loanEnquiryReferenceData.getStatus().isInValid()){
+            isCBReportExpired = loanEnquiryReferenceData.isCBReportGeneratedDaysGreaterThanStalePeriod(stalePeriod);
+        }
         if (loanEnquiryReferenceData == null || loanEnquiryReferenceData.getStatus().isInValid()
                 || isCBReportExpired) {
             // fire new request
