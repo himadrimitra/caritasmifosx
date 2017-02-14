@@ -25,6 +25,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -96,13 +97,14 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             if (searchConditions.isClientSearch()) {
                 sqlBuilder
                         .append(" (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
-                                + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum, null as parentType");
+                                + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum, null as parentType,"
+                                + " c.closure_reason_cv_id AS reasonId, cvclosurereason.code_description AS reasonValue");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(",g.display_name as groupName, ce.display_name as centerName, null as officeName ");
                 } else {
                     sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
                 }
-                sqlBuilder.append(" from m_client c join m_office o on o.id = c.office_id ");
+                sqlBuilder.append(" from m_client c join m_office o on o.id = c.office_id left join m_code_value cvclosurereason ON cvclosurereason.id = c.closure_reason_cv_id ");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder
                             .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
@@ -115,7 +117,8 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             if (searchConditions.isLoanSeach()) {
                 sqlBuilder
                         .append(" (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
-                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, l.loan_status_id as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType ");
+                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, l.loan_status_id as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType,"
+                                + " null AS reasonId, null AS reasonValue ");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(",gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
                 } else {
@@ -134,7 +137,8 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             if (searchConditions.isSavingSeach()) {
                 sqlBuilder
                         .append(" (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
-                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, s.status_enum as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType ");
+                                + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, s.status_enum as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType,"
+                                + " null AS reasonId, null AS reasonValue ");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(", gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
                 } else {
@@ -153,14 +157,15 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             if (searchConditions.isClientIdentifierSearch()) {
                 sqlBuilder
                         .append(" (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
-                                + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum, null as parentType ");
+                                + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum, null as parentType,"
+                                + " c.closure_reason_cv_id AS reasonId, cvclosurereason.code_description AS reasonValue ");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
                 } else {
                     sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
                 }
                 sqlBuilder
-                        .append(" from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id ");
+                        .append(" from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id left join m_code_value cvclosurereason ON cvclosurereason.id = c.closure_reason_cv_id ");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder
                             .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
@@ -171,7 +176,8 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             if (searchConditions.isGroupSearch()) {
                 sqlBuilder
                         .append(" (select IF(g.level_id=1,'CENTER','GROUP') as entityType, g.id as entityId, g.display_name as entityName, g.external_id as entityExternalId, g.account_no as entityAccountNo "
-                                + " , g.office_id as parentId, o.name as parentName, null as entityMobileNo, g.status_enum as entityStatusEnum, null as parentType ");
+                                + " , g.office_id as parentId, o.name as parentName, null as entityMobileNo, g.status_enum as entityStatusEnum, null as parentType,"
+                                + " null AS reasonId, null AS reasonValue ");
                 if (configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, null as officeName ");
                 } else {
@@ -226,7 +232,12 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             Integer status = null;
             BigDecimal userValue = null;
             BigDecimal systemValue = null;
-            
+            CodeValueData reason = null;
+			final Long closurereasonId = JdbcSupport.getLong(rs, "reasonId");
+			if (closurereasonId != null) {
+				final String closurereasonValue = rs.getString("reasonValue");
+				reason = CodeValueData.instance(closurereasonId, closurereasonValue);
+			}
             EnumOptionData entityStatus = new EnumOptionData(0L, "", "");
 
             if (entityType.equalsIgnoreCase("client") || entityType.equalsIgnoreCase("clientidentifier")) {
@@ -255,7 +266,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             }
 
             return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType, 
-                    entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName);
+                    entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName, reason);
         }
 
     }
