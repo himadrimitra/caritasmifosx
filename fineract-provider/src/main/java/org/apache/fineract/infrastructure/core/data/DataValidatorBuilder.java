@@ -985,5 +985,42 @@ public class DataValidatorBuilder {
         }
         return this;
     }
+    
+	public DataValidatorBuilder validateMinimumDaysBetweenTwoDates(final LocalDate startDate, final LocalDate endDate,
+			final Long days) {
+		if (startDate != null && endDate != null && days != null) {
+			if (endDate.isBefore(startDate.plusDays(days.intValue()))) {
+				final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(this.resource)
+						.append(".").append(this.parameter)
+						.append(".minimum.days.between.start.date.and.end.date.should.be");
+				final StringBuilder defaultEnglishMessage = new StringBuilder("The ").append(this.parameter)
+						.append(" minumum days between start date and end datw should be ").append(days);
+				final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
+						defaultEnglishMessage.toString(), this.parameter, endDate, startDate, days);
+				this.dataValidationErrors.add(error);
+			}
+
+		}
+		return this;
+	}
+	
+	public DataValidatorBuilder validateMaximumDaysBetweenTwoDates(final LocalDate startDate, final LocalDate endDate,
+			final Long days) {
+		if (startDate != null && endDate != null && days != null) {
+			if (endDate.isAfter(startDate.plusDays(days.intValue()))) {
+				final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(this.resource)
+						.append(".").append(this.parameter)
+						.append(".maximum.days.between.startDate.and.and.end.date.should.be");
+				final StringBuilder defaultEnglishMessage = new StringBuilder("The ").append(this.parameter)
+						.append(" maxium days between start date and end datw should be ").append(days);
+				final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
+						defaultEnglishMessage.toString(), this.parameter, endDate, startDate, days);
+				this.dataValidationErrors.add(error);
+			}
+
+		}
+		return this;
+	}
+
 
 }

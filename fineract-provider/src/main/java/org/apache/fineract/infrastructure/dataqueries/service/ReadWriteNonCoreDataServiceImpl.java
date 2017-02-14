@@ -1158,8 +1158,13 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                             constrainBuilder, codeMappings, removeMappings, isConstraintApproach);
                     String name = (column.getAsJsonObject().has("name")) ? column.getAsJsonObject().get("name").getAsString() : null;
                     String newName = (column.getAsJsonObject().has("newName")) ? column.getAsJsonObject().get("newName").getAsString() : name;
-                    String sql = "UPDATE `x_registered_table_metadata` SET column_name = '"+newName+"' WHERE column_name = '"+name+"' AND registered_table_id = "+xRegisterTableId+"";
-                    this.jdbcTemplate.execute(sql.toString());
+                    String displayName = (column.getAsJsonObject().has("displayName")) ? column.getAsJsonObject().get("displayName").getAsString() : null;
+                    StringBuilder updateSqlBuilder = new StringBuilder("UPDATE `x_registered_table_metadata` SET column_name = '"+newName+"' ");
+                    if(displayName != null){
+                    	updateSqlBuilder.append(", display_name = '"+displayName+"' ");
+                    }
+                    updateSqlBuilder.append("WHERE column_name = '"+name+"' AND registered_table_id = "+xRegisterTableId);
+                    this.jdbcTemplate.execute(updateSqlBuilder.toString());
                  
                 }
                 updateXRegisteredDisplayRules(datatableName, changeColumns, false);

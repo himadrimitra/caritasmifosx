@@ -1,6 +1,7 @@
 package org.apache.fineract.portfolio.cgt.service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +18,7 @@ import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.cgt.api.CgtApiConstants;
 import org.apache.fineract.portfolio.cgt.api.CgtDayApiConstants;
+import org.apache.fineract.portfolio.cgt.data.CgtDayData;
 import org.apache.fineract.portfolio.cgt.domain.Cgt;
 import org.apache.fineract.portfolio.cgt.domain.CgtDay;
 import org.apache.fineract.portfolio.cgt.domain.CgtDayClient;
@@ -24,6 +26,11 @@ import org.apache.fineract.portfolio.cgt.domain.CgtDayClientAttendanceStatusType
 import org.apache.fineract.portfolio.cgt.domain.CgtDayRepository;
 import org.apache.fineract.portfolio.cgt.domain.CgtRepository;
 import org.apache.fineract.portfolio.cgt.domain.CgtStatusType;
+import org.apache.fineract.portfolio.cgt.exception.CgtCannotBeCreatedException;
+import org.apache.fineract.portfolio.cgt.exception.CgtCopletedDayCannotBeScheduledDateException;
+import org.apache.fineract.portfolio.cgt.exception.CgtDayCannotBeAfterFutureCgtDaysException;
+import org.apache.fineract.portfolio.cgt.exception.CgtDayCannotBeBeforeActualCgtStartDateException;
+import org.apache.fineract.portfolio.cgt.exception.CgtDayCannotBeBeforePreviousCgtDayException;
 import org.apache.fineract.portfolio.cgt.exception.CgtDaysCannotBeGreaterThanMaxCgtException;
 import org.apache.fineract.portfolio.cgt.exception.CgtGlobalConfigurationNotEnabledException;
 import org.apache.fineract.portfolio.cgt.exception.CgtHasNoClientsException;
@@ -35,6 +42,7 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 
 @Service
 public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformService {
@@ -45,11 +53,13 @@ public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformServic
     private final ConfigurationDomainService configurationDomainService;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
     private final NoteRepository noteRepository;
+    private final CgtDayReadPlatformService cgtDayReadPlatformService;
 
     @Autowired
     private CgtDayWritePlatformServiceImpl(final CgtDayDataValidator cgtDayDataValidator, final CgtRepository cgtRepository,
             final ConfigurationDomainService configurationDomainService, final CgtDayRepository cgtDayRepository,
-            final StaffRepositoryWrapper staffRepositoryWrapper, final NoteRepository noteRepository) {
+            final StaffRepositoryWrapper staffRepositoryWrapper, final NoteRepository noteRepository,
+            final CgtDayReadPlatformService cgtDayReadPlatformService) {
 
         this.cgtDayDataValidator = cgtDayDataValidator;
         this.cgtRepository = cgtRepository;
@@ -57,6 +67,7 @@ public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformServic
         this.cgtDayRepository = cgtDayRepository;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
         this.noteRepository = noteRepository;
+        this.cgtDayReadPlatformService = cgtDayReadPlatformService;
 
     }
 
@@ -73,16 +84,28 @@ public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformServic
         }
         Long maxCgtDays = this.configurationDomainService.getMaxCgtDays();
         final Cgt cgt = this.cgtRepository.findOne(command.subentityId());
+		if (cgtDayCreationType.equals("startCgtDay")) {
+			final List<Cgt> activeOrInprogresscgts = this.cgtRepository.finadInProgressCgts(
+					CgtStatusType.IN_PROGRESS.getValue(),  cgt.getEntityType(), cgt.getEntityTypeId());
+			if (!activeOrInprogresscgts.isEmpty()) {
+				throw new CgtCannotBeCreatedException(
+						"CGT cannot be created until all existing CGT are in completed state");
+			}
+		}
         final String location = cgt.getLocation();
         final Staff loanOfficer = cgt.getLoanOfficer();
-        LocalDate scheduledDate = new LocalDate(cgt.getExpectedStartDate());
+        if(cgt.getActualStartLocalDate() == null){
+        	final Date actualStartDate = DateUtils.getLocalDateTimeOfTenant().toDate();
+        	cgt.updateActualStartDate(actualStartDate);
+        }
+        LocalDate scheduledDate = new LocalDate(cgt.getActualStartLocalDate());
         Date completedDate = null;
         int cgtDayCount = this.cgtDayRepository.findByCgtId(command.subentityId()).size();
         if (cgtDayCount >= 1) {
             scheduledDate = scheduledDate.plusDays(cgtDayCount);
         }
         
-        if (cgtDayCount >= maxCgtDays) {
+        if (this.configurationDomainService.isMaxCgtDaysEnabled() && cgtDayCount >= maxCgtDays) {
             String errorMessage = "CGT Days cannot be created more than " + maxCgtDays + "";
             throw new CgtDaysCannotBeGreaterThanMaxCgtException(maxCgtDays, errorMessage);
         }
@@ -131,7 +154,9 @@ public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformServic
             final Staff newValue = this.staffRepositoryWrapper.findOneWithNotFoundDetection(loanOfficerId);
             cgtDayEntity.updateLoanOfficer(newValue);
         }
-
+        
+        validateForUpdate(cgtDayEntity);
+        
         this.cgtDayRepository.save(cgtDayEntity);
 
         return new CommandProcessingResultBuilder() //
@@ -156,7 +181,8 @@ public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformServic
                 this.noteRepository.save(note);
             }
         }
-
+        validateForComplete(cgtDayEntity);
+        
         this.cgtDayRepository.save(cgtDayEntity);
 
         return new CommandProcessingResultBuilder() //
@@ -193,5 +219,52 @@ public class CgtDayWritePlatformServiceImpl implements CgtDayWritePlatformServic
 
         return clientMembers;
     }
+ 
+    private void validateForComplete(){
+    	
+    }
+    
+	private void validateForUpdate(CgtDay cgtDayEntity) {
+		LocalDate scheduledDate = new LocalDate(cgtDayEntity.getScheduledDate());
+		Cgt cgt = cgtRepository.findOne(cgtDayEntity.getCgt().getId());
+		LocalDate actualStartDate = new LocalDate(cgt.getActualStartLocalDate());
+		if (scheduledDate.isBefore(actualStartDate)) {
+			String defaultUserMessage = "Cgt day cannot be before actual start date";
+			throw new CgtDayCannotBeBeforeActualCgtStartDateException(actualStartDate, defaultUserMessage);
+		}
+		String currentDayName = cgtDayEntity.getCgtDayName();
+		int currentDayNumber = Integer.parseInt(currentDayName.substring(8));
+		List<CgtDay> cgtDays = new ArrayList<CgtDay>(this.cgtDayRepository
+				.findNewCgtDaysForCgtId(CgtStatusType.NEW.getValue(), cgt));
+		for (CgtDay cgtDay : cgtDays) {
+			int dayNumber = Integer.parseInt(cgtDay.getCgtDayName().substring(8));
+			LocalDate scheduledDayDate = new LocalDate(cgtDay.getScheduledDate());
+			if (currentDayNumber > 1 && dayNumber != currentDayNumber && dayNumber < currentDayNumber
+					&& !scheduledDate.isAfter(scheduledDayDate)) {
+				String defaultUserMessage = "Cgt Day cannot be before or on previous cgt day " + scheduledDayDate + " "
+						+ cgtDay.getCgtDayName();
+				throw new CgtDayCannotBeBeforePreviousCgtDayException(scheduledDayDate, cgtDay.getCgtDayName(),
+						defaultUserMessage);
+			}
+			if (currentDayNumber > 1 && dayNumber != currentDayNumber && dayNumber > currentDayNumber
+					&& !scheduledDate.isBefore(scheduledDayDate)) {
+				String defaultUserMessage = "Cgt Day cannot be after or on future cgt day " + scheduledDayDate + " "
+						+ cgtDay.getCgtDayName();
+				throw new CgtDayCannotBeAfterFutureCgtDaysException(scheduledDayDate, cgtDay.getCgtDayName(),
+						defaultUserMessage);
+			}
+		}
+	}
+	
+	private void validateForComplete(CgtDay cgtDayEntity) {
+		LocalDate completedDate = new LocalDate(cgtDayEntity.getCompletedDate());
+		CgtDay cgtDay = this.cgtDayRepository.findOne(cgtDayEntity.getId());
+		if (completedDate.isBefore(new LocalDate(cgtDay.getScheduledDate()))
+				|| completedDate.isAfter(DateUtils.getLocalDateTimeOfTenant().toLocalDate())) {
+			String defaultUserMessage = "copleted date cannot be before scheduled date or current date";
+			throw new CgtCopletedDayCannotBeScheduledDateException(new LocalDate(cgtDayEntity.getScheduledDate()),
+					cgtDayEntity.getCgtDayName(), defaultUserMessage);
+		}
 
+	}
 }
