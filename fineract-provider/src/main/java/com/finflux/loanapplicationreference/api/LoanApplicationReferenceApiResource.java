@@ -1,20 +1,7 @@
 package com.finflux.loanapplicationreference.api;
 
-import java.util.Collection;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
-
+import com.finflux.loanapplicationreference.data.*;
+import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -28,11 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import com.finflux.loanapplicationreference.data.LoanApplicationChargeData;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
-import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
-import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.UriInfo;
+import java.util.Collection;
 
 @Path("/loanapplicationreferences")
 @Component
@@ -170,6 +157,43 @@ public class LoanApplicationReferenceApiResource {
             final CommandWrapper commandRequest = builder.updateLoanApplicationReference(loanApplicationReferenceId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @GET
+    @Path("{loanApplicationReferenceId}/coapplicants")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveCoApplicants(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @Context final UriInfo uriInfo) {
+
+        this.context.authenticatedUser().validateHasReadPermission(
+                LoanApplicationReferenceApiConstants.COAPPLICANTS_RESOURCE_NAME);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final Collection<CoApplicantData> coapplicantData = this.loanApplicationReferenceReadPlatformService
+                .retrieveCoApplicants(loanApplicationReferenceId);
+        return this.toApiJsonSerializer.serialize(settings, coapplicantData);
+    }
+
+    @POST
+    @Path("{loanApplicationReferenceId}/coapplicants")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String addCoApplicant(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @QueryParam("clientId") final Long clientId) {
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().addCoApplicant(loanApplicationReferenceId, clientId).build();
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        return this.toApiJsonSerializer.serialize(result);
+    }
+
+    @DELETE
+    @Path("{loanApplicationReferenceId}/coapplicants/{coapplicantId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String deleteCoApplicant(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @PathParam("coapplicantId") final Long coapplicantId) {
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().deleteCoApplicant(loanApplicationReferenceId, coapplicantId).build();
+        final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         return this.toApiJsonSerializer.serialize(result);
     }
 

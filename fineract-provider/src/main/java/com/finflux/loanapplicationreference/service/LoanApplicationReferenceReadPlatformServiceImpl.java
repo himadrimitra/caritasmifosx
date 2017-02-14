@@ -7,12 +7,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.finflux.loanapplicationreference.data.*;
 import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.accountdetails.service.AccountEnumerations;
+import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
@@ -31,12 +33,6 @@ import com.finflux.fingerprint.data.FingerPrintData;
 import com.finflux.fingerprint.services.FingerPrintReadPlatformServices;
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
 import com.finflux.infrastructure.external.authentication.service.ExternalAuthenticationServicesReadPlatformService;
-import com.finflux.loanapplicationreference.data.LoanApplicationChargeData;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
-import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
-import com.finflux.loanapplicationreference.data.LoanApplicationSanctionTrancheData;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
 import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
 import com.finflux.organisation.transaction.authentication.data.TransactionAuthenticationData;
@@ -121,9 +117,13 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     @Override
     public Collection<LoanApplicationReferenceData> retrieveAll(final Long clientId) {
         try {
-            String sql = "SELECT " + this.dataMapper.schema();
+            String sql = null;
             if (clientId != null) {
-                sql += " WHERE lar.client_id = " + clientId;
+                sql = "SELECT IF(ISNULL(coapp.client_id), false, true) as isCoApplicant, " + this.dataMapper.schema();
+                sql += " LEFT JOIN f_loan_coapplicants_mapping coapp ON coapp.loan_application_reference_id = lar.id and lar.client_id != " + clientId;
+                sql += " WHERE lar.client_id = "+ clientId+" OR coapp.client_id = " + clientId;
+            }else{
+                sql = "SELECT false as isCoApplicant, " + this.dataMapper.schema();
             }
             return this.jdbcTemplate.query(sql, this.dataMapper);
         } catch (EmptyResultDataAccessException e) {
@@ -134,7 +134,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     @Override
     public LoanApplicationReferenceData retrieveOne(final Long loanApplicationReferenceId) {
         try {
-            final String sql = "SELECT " + this.dataMapper.schema() + " WHERE lar.id = ? ";
+            final String sql = "SELECT false as isCoApplicant, " + this.dataMapper.schema() + " WHERE lar.id = ? ";
             return this.jdbcTemplate.queryForObject(sql, this.dataMapper, new Object[] { loanApplicationReferenceId });
         } catch (EmptyResultDataAccessException e) {
             return null;
@@ -236,6 +236,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final BigDecimal fixedEmiAmount = rs.getBigDecimal("fixedEmiAmount");
             final Integer noOfTranche = JdbcSupport.getIntegeActualValue(rs, "noOfTranche");
             final LocalDate submittedOnDate = JdbcSupport.getLocalDate(rs, "submittedOnDate");
+            final Boolean isCoApplicant = rs.getBoolean("isCoApplicant");
 			PaymentTypeData expectedDisbursalPaymentType = null;
 			final Integer expectedDisbursalPaymentTypeId = JdbcSupport.getInteger(rs,"expectedDisbursalPaymentTypeId");
 			if (expectedDisbursalPaymentTypeId != null) {
@@ -291,7 +292,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
                     repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
-                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData);
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant);
         }
     }
 
@@ -498,4 +499,44 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
 
 		return this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap );
 	}
+
+    @Override
+    public Collection<CoApplicantData> retrieveCoApplicants(final Long loanApplicationReferenceId) {
+        CoApplicantMapper mapper = new CoApplicantMapper();
+        return this.jdbcTemplate.query(mapper.schema(), mapper,  new Object[] { loanApplicationReferenceId });
+    }
+
+    private static final class CoApplicantMapper implements RowMapper<CoApplicantData> {
+
+        private final String schemaSql;
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        public CoApplicantMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder();
+            sqlBuilder.append("select coapp.id as id, ");
+            sqlBuilder.append("coapp.client_id as clientId, ");
+            sqlBuilder.append("cl.display_name as displayName, ");
+            sqlBuilder.append("cl.status_enum as statusEnum, ");
+            sqlBuilder.append("cl.account_no as accountNo ");
+            sqlBuilder.append("from f_loan_coapplicants_mapping as coapp ");
+            sqlBuilder.append("left join m_client as cl on coapp.client_id = cl.id ");
+            sqlBuilder.append("where coapp.loan_application_reference_id = ?");
+            this.schemaSql = sqlBuilder.toString();
+        }
+
+        @Override
+        public CoApplicantData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum)
+                throws SQLException {
+            final Long id = JdbcSupport.getLongActualValue(rs, "id");
+            final Long clientId = JdbcSupport.getLongActualValue(rs, "clientId");
+            final String displayName = rs.getString("displayName");
+            final Integer statusEnum = JdbcSupport.getInteger(rs, "statusEnum");
+            final EnumOptionData status = ClientEnumerations.status(statusEnum);
+            final String accountNo = rs.getString("accountNo");
+            return new CoApplicantData(id, clientId, displayName, status, accountNo);
+        }
+    }
 }

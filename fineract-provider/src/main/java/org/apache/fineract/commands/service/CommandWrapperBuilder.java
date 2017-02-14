@@ -3840,4 +3840,21 @@ public class CommandWrapperBuilder {
         this.formDataMultiPart = formDataMultiPart;
         return this;
     }
+
+    public CommandWrapperBuilder addCoApplicant(final Long loanApplicationReferenceId, final Long clientId) {
+        this.actionName = "CREATE";
+        this.entityName = "COAPPLICANTS";
+        this.entityId = loanApplicationReferenceId;
+        this.clientId = clientId;
+        this.href = "/loanapplicationreferences/"+loanApplicationReferenceId+"/coapplicants?clientId="+clientId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteCoApplicant(final Long loanApplicationReferenceId, final Long coapplicantId) {
+        this.actionName = "DELETE";
+        this.entityName = "COAPPLICANTS";
+        this.entityId = coapplicantId;
+        this.href = "/loanapplicationreferences/"+loanApplicationReferenceId+"/coapplicants/"+coapplicantId;
+        return this;
+    }
 }

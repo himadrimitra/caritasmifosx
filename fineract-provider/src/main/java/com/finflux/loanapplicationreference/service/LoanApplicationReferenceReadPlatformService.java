@@ -3,10 +3,7 @@ package com.finflux.loanapplicationreference.service;
 import java.util.Collection;
 import java.util.Map;
 
-import com.finflux.loanapplicationreference.data.LoanApplicationChargeData;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceData;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceTemplateData;
-import com.finflux.loanapplicationreference.data.LoanApplicationSanctionData;
+import com.finflux.loanapplicationreference.data.*;
 
 public interface LoanApplicationReferenceReadPlatformService {
 
@@ -23,4 +20,6 @@ public interface LoanApplicationReferenceReadPlatformService {
     LoanApplicationSanctionData retrieveSanctionDataByLoanAppRefId(final Long loanApplicationReferenceId);
     
     Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(final Long loanApplicationReferenceId);
+
+    Collection<CoApplicantData> retrieveCoApplicants(Long loanApplicationReferenceId);
 }
