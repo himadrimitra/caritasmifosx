@@ -59,7 +59,7 @@ public class LoanBankTransactionHandler {
                 Long entityTransactionId = loanTransaction.getId();
                 Long externalServiceId = paymentType.getExternalServiceId();
                 BigDecimal amount = loanTransaction.getAmount();
-                String reason = "Loan "+entityId+"-"+entityTransactionId;
+                String reason = "LT"+entityTransactionId;
                 BankTransactionRequest bankTransactionRequest = new BankTransactionRequest(loan.getClient(),fromAccount, toAccount,
                         BankTransactionEntityType.LOANS.getValue(), entityId, entityTransactionId, amount,reason);
                 this.bankTransactionService.transactionEntry(externalServiceId, bankTransactionRequest);
