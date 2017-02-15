@@ -18,4 +18,9 @@ public interface LoanApplicationReferenceWritePlatformService {
     CommandProcessingResult undoApprove(final Long loanApplicationReferenceId, final JsonCommand command);
 
     CommandProcessingResult disburse(final Long loanApplicationReferenceId, final JsonCommand command);
+
+    CommandProcessingResult addCoApplicant(final JsonCommand command);
+
+    CommandProcessingResult deleteCoApplicant(final JsonCommand command);
+
 }

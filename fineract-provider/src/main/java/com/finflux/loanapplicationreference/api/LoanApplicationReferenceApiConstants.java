@@ -13,7 +13,9 @@ public class LoanApplicationReferenceApiConstants {
     public static final String INITIATECREDITBUREAUENQUIRY_RESOURCE_NAME = "INITIATE_CREDIT_BUREAU_ENQUIRY";
 
     public static final String CREDITBUREAUREPORT_RESOURCE_NAME = "CREDIT_BUREAU_REPORT";
-    
+
+    public static final String COAPPLICANTS_RESOURCE_NAME = "COAPPLICANTS";
+
     public static final String externalIdOneParamName = "externalIdOne";
 
     public static final String externalIdTwoParamName = "externalIdTwo";

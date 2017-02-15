@@ -1,8 +1,22 @@
 package com.finflux.loanapplicationreference.service;
 
-import java.math.BigDecimal;
-import java.util.*;
-
+import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConstants;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataValidator;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
+import com.finflux.loanapplicationreference.domain.LoanCoApplicant;
+import com.finflux.loanapplicationreference.domain.LoanCoApplicantRepository;
+import com.finflux.loanapplicationreference.exception.InvalidLoanApplicationReferenceStatusException;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskConfigKey;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.TaskPlatformWriteService;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -15,6 +29,7 @@ import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAcce
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
@@ -23,7 +38,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateEx
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModelPeriod;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleCalculationPlatformService;
-import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanApplicationWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
@@ -33,6 +47,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
+import org.apache.fineract.portfolio.products.exception.ResourceNotFoundException;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,20 +55,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConstants;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataValidator;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
-import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
-import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
-import com.finflux.task.data.TaskConfigEntityType;
-import com.finflux.task.data.TaskConfigKey;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.domain.TaskConfigEntityTypeMapping;
-import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
-import com.finflux.task.service.TaskPlatformWriteService;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import java.math.BigDecimal;
+import java.util.*;
 
 @Service
 public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApplicationReferenceWritePlatformService {
@@ -79,6 +82,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final ClientRepositoryWrapper clientRepository;
+    private final LoanCoApplicantRepository coApplicantRepository;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
 
@@ -95,6 +100,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final TaskPlatformWriteService taskPlatformWriteService, final ConfigurationDomainService configurationDomainService,
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
             final PaymentTypeRepositoryWrapper paymentTypeRepository,
+            final ClientRepositoryWrapper clientRepository,
+            final LoanCoApplicantRepository coApplicantRepository,
             final FineractEntityAccessUtil fineractEntityAccessUtil) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
@@ -115,6 +122,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
         this.paymentTypeRepository = paymentTypeRepository;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.clientRepository = clientRepository;
+        this.coApplicantRepository = coApplicantRepository;
     }
 
     @Override
@@ -418,6 +427,36 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                 .withCommandId(command.commandId()) //
                 .withEntityId(loanApplicationReferenceId) //
                 .with(changes) //
+                .build();
+    }
+
+    @Override
+    public CommandProcessingResult addCoApplicant(final JsonCommand command) {
+        final LoanApplicationReference loanAppln = this.repository.findOneWithNotFoundDetection(command.entityId());
+        if(!loanAppln.getStatusEnum().equals(LoanApplicationReferenceStatus.APPLICATION_CREATED.getValue())
+            && !loanAppln.getStatusEnum().equals(LoanApplicationReferenceStatus.APPLICATION_IN_APPROVE_STAGE.getValue())){
+            throw new InvalidLoanApplicationReferenceStatusException();
+        }
+        final Client client = this.clientRepository.findOneWithNotFoundDetection(command.getClientId());
+        final LoanCoApplicant coApplicant = LoanCoApplicant.instance(loanAppln.getId(), client.getId());
+        this.coApplicantRepository.save(coApplicant);
+
+        return new CommandProcessingResultBuilder() //
+                .withCommandId(command.commandId()) //
+                .withEntityId(coApplicant.getId()) //
+                .build();
+    }
+
+    @Override
+    public CommandProcessingResult deleteCoApplicant(final JsonCommand command) {
+        final LoanCoApplicant coApplicant = this.coApplicantRepository.findOne(command.entityId());
+        if(coApplicant == null){
+            throw new ResourceNotFoundException();
+        }
+        this.coApplicantRepository.delete(coApplicant);
+        return new CommandProcessingResultBuilder() //
+                .withCommandId(command.commandId()) //
+                .withEntityId(command.entityId())
                 .build();
     }
 
