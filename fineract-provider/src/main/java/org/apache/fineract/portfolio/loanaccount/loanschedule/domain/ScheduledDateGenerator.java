@@ -48,4 +48,7 @@ public interface ScheduledDateGenerator {
     AdjustedDateDetailsDTO adjustNextRepaymentDateBasedOnWorkingDaysExemption(LocalDate dueRepaymentPeriodDate,
 			HolidayDetailDTO holidayDetailDTO, String reccuringString, LocalDate seedDate,
 			LoanApplicationTerms loanApplicationTerms);
+
+    LocalDate calculateInterestStartDateForPeriod(LoanApplicationTerms loanApplicationTerms, LocalDate periodStartDate,
+            LocalDate idealDisbursementDate, LocalDate firstRepaymentdate);
 }

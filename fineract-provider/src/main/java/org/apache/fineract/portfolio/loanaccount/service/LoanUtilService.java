@@ -19,12 +19,14 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
@@ -38,6 +40,7 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
@@ -63,9 +66,11 @@ import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultPaymentPeriodsInOneYearCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.DefaultScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.PaymentPeriodsInOneYearCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRelatedDetail;
@@ -547,5 +552,56 @@ public class LoanUtilService {
         return scheduledDateGenerator.getRepaymentPeriodDate(loanTermPeriodFrequencyType, repaidEvery, disbursalDate);
     }
     
+    public static Money calculateBrokenPeriodInterest(final LoanApplicationTerms loanApplicationTerms, final Money interestPosted) {
+        LocalDate firstRepaymentdate = loanApplicationTerms.getCalculatedRepaymentsStartingFromLocalDate();
+        Money brokenPeriodInterest = loanApplicationTerms.getPrincipal().zero();
+        LocalDate idealDisbursementDate = null;
+        if (firstRepaymentdate != null && loanApplicationTerms.isPartialPeriodCalcualtionAllowed()) {
+            final ScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
+            final PaymentPeriodsInOneYearCalculator paymentPeriodsInOneYearCalculator = new DefaultPaymentPeriodsInOneYearCalculator();
+            idealDisbursementDate = scheduledDateGenerator.idealDisbursementDateBasedOnFirstRepaymentDate(
+                    loanApplicationTerms.getLoanTermPeriodFrequencyType(), loanApplicationTerms.getRepaymentEvery(), firstRepaymentdate,
+                    loanApplicationTerms.getLoanCalendar(), loanApplicationTerms.getHolidayDetailDTO(), loanApplicationTerms);
+            if (interestPosted == null) {
+                LocalDate periodStartDateApplicableForInterest = scheduledDateGenerator
+                        .calculateInterestStartDateForPeriod(loanApplicationTerms, loanApplicationTerms.getExpectedDisbursementDate(),
+                                idealDisbursementDate, firstRepaymentdate);
+                if (idealDisbursementDate.isAfter(periodStartDateApplicableForInterest)) {
+                    final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+                    final MathContext mc = new MathContext(8, roundingMode);
+                    Map<LocalDate,Money> principals = loanApplicationTerms.principalDisbursementsInPeriod(periodStartDateApplicableForInterest, idealDisbursementDate);
+                    Money principal = brokenPeriodInterest.zero();
+                    LocalDate startDate = periodStartDateApplicableForInterest;
+                    for(Map.Entry<LocalDate, Money> mapEntry: principals.entrySet()){
+                        if(startDate.isEqual(mapEntry.getKey())){
+                            principal = principal.plus(mapEntry.getValue());
+                        } else {
+                            brokenPeriodInterest = brokenPeriodInterest.plus(loanApplicationTerms.calculateBrokenPeriodInterest(
+                                    paymentPeriodsInOneYearCalculator, mc, startDate, mapEntry.getKey(), principal));
+                            principal = principal.plus(mapEntry.getValue());
+                            startDate = mapEntry.getKey();
+                        }
+                    }
+                    brokenPeriodInterest = brokenPeriodInterest.plus(loanApplicationTerms.calculateBrokenPeriodInterest(
+                            paymentPeriodsInOneYearCalculator, mc, startDate, idealDisbursementDate,
+                            principal));
+                }
+            } else {
+                brokenPeriodInterest = interestPosted;
+            }
+        }
+        loanApplicationTerms.setBrokenPeriodInterest(brokenPeriodInterest);
+        if (brokenPeriodInterest.isGreaterThanZero()) {
+            switch (loanApplicationTerms.getBrokenPeriodMethod()) {
+                case POST_INTEREST:
+                    loanApplicationTerms.addBrokenPeriodInterestToPrincipal(brokenPeriodInterest);
+                    loanApplicationTerms.updateInterestChargedFromDate(idealDisbursementDate);
+                break;
+                default:
+                break;
+            }
+        }
+        return brokenPeriodInterest;
+    }
 
 }

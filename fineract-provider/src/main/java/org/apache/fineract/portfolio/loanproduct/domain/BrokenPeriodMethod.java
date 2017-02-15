@@ -1,7 +1,8 @@
 package org.apache.fineract.portfolio.loanproduct.domain;
 
 public enum BrokenPeriodMethod {
-    DISTRIBUTE_EQUALLY(0, "brokenPeriodMethod.distribute.equally"), ADJUST_IN_FIRST_EMI(1, "brokenPeriodMethod.adjust.in.first.emi");
+    DISTRIBUTE_EQUALLY(0, "brokenPeriodMethod.distribute.equally"), ADJUST_IN_FIRST_EMI(1, "brokenPeriodMethod.adjust.in.first.emi"), POST_INTEREST(
+            2, "brokenPeriodMethod.post.interest");
 
     private final Integer value;
     private final String code;
@@ -26,6 +27,9 @@ public enum BrokenPeriodMethod {
             case 1:
                 repaymentMethod = BrokenPeriodMethod.ADJUST_IN_FIRST_EMI;
             break;
+            case 2:
+                repaymentMethod = BrokenPeriodMethod.POST_INTEREST;
+            break;
             default:
                 repaymentMethod = BrokenPeriodMethod.DISTRIBUTE_EQUALLY;
             break;
@@ -39,5 +43,9 @@ public enum BrokenPeriodMethod {
 
     public boolean isDistributeEqually() {
         return this.value.equals(BrokenPeriodMethod.DISTRIBUTE_EQUALLY.getValue());
+    }
+    
+    public boolean isPostInterest() {
+        return this.value.equals(BrokenPeriodMethod.POST_INTEREST.getValue());
     }
 }

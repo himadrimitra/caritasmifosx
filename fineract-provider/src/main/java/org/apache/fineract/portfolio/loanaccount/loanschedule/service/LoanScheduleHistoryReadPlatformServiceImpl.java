@@ -80,6 +80,7 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
         private final Collection<DisbursementData> disbursementData;
         private LocalDate lastDueDate;
         private BigDecimal outstandingLoanPrincipalBalance;
+        private final BigDecimal interestPosted;
 
         public LoanScheduleArchiveResultSetExtractor(final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedLoanData,
                 Collection<DisbursementData> disbursementData) {
@@ -89,6 +90,7 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
             this.lastDueDate = this.disbursement.disbursementDate();
             this.outstandingLoanPrincipalBalance = this.disbursement.amount();
             this.disbursementData = disbursementData;
+            this.interestPosted = repaymentScheduleRelatedLoanData.getInterestPostedAmount();
         }
 
         public String schema() {
@@ -138,11 +140,11 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
                     for (DisbursementData data : disbursementData) {
                         if (periods.size() == 0) {
                             if (fromDate.equals(this.disbursement.disbursementDate()) && data.disbursementDate().equals(fromDate)) {
-                                principal = principal.add(data.amount());
+                                principal = principal.add(data.amount()).add(interestPosted);
                                 final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                                        data.disbursementDate(), data.amount(), this.totalFeeChargesDueAtDisbursement, data.isDisbursed());
+                                        data.disbursementDate(), principal, this.totalFeeChargesDueAtDisbursement, data.isDisbursed());
                                 periods.add(periodData);
-                                this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(data.amount());
+                                this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(principal);
                             } 
                         } else if (data.isDueForDisbursement(fromDate, dueDate)  && data.isDisbursed()) {
                             principal = principal.add(data.amount());

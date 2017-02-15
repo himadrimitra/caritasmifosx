@@ -394,4 +394,36 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
         }
         return new AdjustedDateDetailsDTO(scheduleDate, actualDate, isRepaymentSheduleExtended);
     }
+    
+    /**
+     * calculates Interest stating date as per the settings
+     * 
+     * @param firstRepaymentdate
+     *            TODO
+     * @param boolean1
+     * @param localDate
+     */
+  
+    @Override
+    public LocalDate calculateInterestStartDateForPeriod(final LoanApplicationTerms loanApplicationTerms, LocalDate periodStartDate,
+            final LocalDate idealDisbursementDate, final LocalDate firstRepaymentdate) {
+        final Boolean isInterestChargedFromDateSameAsDisbursalDateEnabled = loanApplicationTerms
+                .isInterestChargedFromDateSameAsDisbursalDateEnabled();
+        final LocalDate expectedDisbursementDate = loanApplicationTerms.getExpectedDisbursementDate();
+        LocalDate periodStartDateApplicableForInterest = periodStartDate;
+        if (periodStartDate.isBefore(idealDisbursementDate) || firstRepaymentdate.isAfter(periodStartDate)) {
+            if (loanApplicationTerms.getInterestChargedFromLocalDate() != null) {
+                if (periodStartDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())
+                        || loanApplicationTerms.getInterestChargedFromLocalDate().isAfter(periodStartDate)) {
+                    periodStartDateApplicableForInterest = loanApplicationTerms.getInterestChargedFromLocalDate();
+                }
+            } else if (loanApplicationTerms.getInterestChargedFromLocalDate() == null
+                    && isInterestChargedFromDateSameAsDisbursalDateEnabled) {
+                periodStartDateApplicableForInterest = expectedDisbursementDate;
+            } else if (periodStartDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())) {
+                periodStartDateApplicableForInterest = idealDisbursementDate;
+            }
+        }
+        return periodStartDateApplicableForInterest;
+    }
 }
