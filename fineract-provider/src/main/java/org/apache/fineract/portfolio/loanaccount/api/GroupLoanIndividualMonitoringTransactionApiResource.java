@@ -32,13 +32,11 @@ import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSer
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringData;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringTransactionData;
-import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
-import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -54,7 +52,6 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final GroupLoanIndividualMonitoringReadPlatformService glimReadPlatformService;
     private final LoanRepositoryWrapper loanRepositoryWrapper;
-    private final LoanReadPlatformService loanReadPlatformService;
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final GroupLoanIndividualMonitoringRepository glimRepository;
 
@@ -65,7 +62,6 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
             final GroupLoanIndividualMonitoringReadPlatformService glimReadPlatformService,
             final LoanRepositoryWrapper loanRepositoryWrapper,
-            final LoanReadPlatformService loanReadPlatformService,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,
             final GroupLoanIndividualMonitoringRepository glimRepository) {
         this.context = context;
@@ -74,7 +70,6 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.glimReadPlatformService = glimReadPlatformService;
         this.loanRepositoryWrapper = loanRepositoryWrapper;
-        this.loanReadPlatformService = loanReadPlatformService;
         this.glimTransactionAssembler = glimTransactionAssembler;
         this.glimRepository = glimRepository;
     }
@@ -88,15 +83,13 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
         this.context.authenticatedUser().validateHasReadPermission("loan");
         BigDecimal transactionAmount = BigDecimal.ZERO;
         List<GroupLoanIndividualMonitoringData> groupLoanIndividualMonitoringData = null;
-        LoanTransactionData loanTransactionData = null;
         if (is(commandParam, "repayment")) {
-            loanTransactionData = this.loanReadPlatformService.retrieveLoanTransactionTemplate(loanId);
             groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
                     .retrieveAllActiveGlimByLoanId(loanId);
             Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
             loan.updateDefautGlimMembers(this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true));
             groupLoanIndividualMonitoringData = this.glimTransactionAssembler.handleGLIMRepaymentTemplate(
-                    groupLoanIndividualMonitoringData, loanTransactionData, loan, transactionDate);
+                    groupLoanIndividualMonitoringData, loan, transactionDate);
             for (GroupLoanIndividualMonitoringData glimData : groupLoanIndividualMonitoringData) {
                 transactionAmount = transactionAmount.add(glimData.getInstallmentAmount());
             }

@@ -111,7 +111,7 @@ public class GroupLoanIndividualMonitoring extends AbstractPersistable<Long> {
     private BigDecimal transactionAmount;
 
     @Transient
-    private Map<String, BigDecimal> processedTransactionMap = new HashMap<String, BigDecimal>();
+    private Map<String, BigDecimal> processedTransactionMap = new HashMap<>();
 
     @Column(name = "is_active", nullable = true)
     private Boolean isActive;
@@ -119,6 +119,9 @@ public class GroupLoanIndividualMonitoring extends AbstractPersistable<Long> {
     @ManyToOne
     @JoinColumn(name = "writeoff_reason_cv_id", nullable = true)
     private CodeValue writeOffReason;
+    
+    @Column(name = "overpaid_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal overpaidAmount;
 
     public GroupLoanIndividualMonitoring() {
 
@@ -489,4 +492,15 @@ public class GroupLoanIndividualMonitoring extends AbstractPersistable<Long> {
         return isOutstandingBalanceZero;
     }
 
+    
+    public BigDecimal getOverpaidAmount() {
+        return this.overpaidAmount;
+    }
+
+    
+    public void setOverpaidAmount(BigDecimal overpaidAmount) {
+        this.overpaidAmount = overpaidAmount;
+    }
+    
+    
 }

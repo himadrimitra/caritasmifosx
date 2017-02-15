@@ -85,12 +85,44 @@ public class GroupLoanIndividualMonitoringAssembler {
                     BigDecimal transactionAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
                     if (MathUtility.isGreaterThanZero(glim.getPrincipalWrittenOffAmount())
                             && MathUtility.isGreaterThanZero(transactionAmount) && !isRecoveryPayment) { throw new ClientAlreadyWriteOffException(); }
-                    glim.updateTransactionAmount(transactionAmount);
+                    BigDecimal totalAmount = MathUtility.add(glim.getTotalPaidAmount(),glim.getWaivedChargeAmount(),glim.getWaivedInterestAmount(),transactionAmount);
+                    if(totalAmount.subtract(glim.getTotalPaybleAmount()).compareTo(BigDecimal.ZERO)>0){
+                        BigDecimal overpaidAmount = totalAmount.subtract(glim.getTotalPaybleAmount());
+                        glim.updateTransactionAmount(transactionAmount.subtract(overpaidAmount));
+                        glim.setOverpaidAmount(overpaidAmount);
+                    }else{
+                        glim.updateTransactionAmount(transactionAmount);
+                    }
+                    
                 }
                 glimMembers.add(glim);
             }
         }
         return glimMembers;
+    }
+    
+    public BigDecimal getTotalOverpaidAmount(final JsonCommand command, boolean isRecoveryPayment){
+        BigDecimal totalOverPaidAmount = BigDecimal.ZERO; 
+        if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+            JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
+            for (JsonElement clientMember : clientMembers) {
+                JsonObject member = clientMember.getAsJsonObject();
+                Long glimId = member.get(LoanApiConstants.idParameterName).getAsLong();
+                GroupLoanIndividualMonitoring glim = this.glimRepositoryWrapper.findOneWithNotFoundDetection(glimId);
+                if (member.has(LoanApiConstants.transactionAmountParamName)) {
+                    BigDecimal transactionAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
+                    if (MathUtility.isGreaterThanZero(glim.getPrincipalWrittenOffAmount())
+                            && MathUtility.isGreaterThanZero(transactionAmount) && !isRecoveryPayment) { throw new ClientAlreadyWriteOffException(); }
+                    BigDecimal totalAmount = MathUtility.add(glim.getTotalPaidAmount(),glim.getWaivedChargeAmount(),glim.getWaivedInterestAmount(),transactionAmount);
+                    if(totalAmount.subtract(glim.getTotalPaybleAmount()).compareTo(BigDecimal.ZERO)>0){
+                        BigDecimal overpaidAmount = totalAmount.subtract(glim.getTotalPaybleAmount());
+                        totalOverPaidAmount = MathUtility.add(overpaidAmount,totalOverPaidAmount);
+                    }
+                    
+                }
+            }
+        }
+        return totalOverPaidAmount;
     }
 
     public List<GroupLoanIndividualMonitoring> updateFromJson(final JsonElement element, final String amountType, Loan loan,
@@ -563,8 +595,7 @@ public class GroupLoanIndividualMonitoringAssembler {
     }
 
     // update EMI amount for Glim Loan
-    public void updateInstallmentAmountForGlim(List<GroupLoanIndividualMonitoring> glimList, LoanApplicationTerms loanApplicationTerms,
-            Set<LoanCharge> charges) {
+    public void updateInstallmentAmountForGlim(List<GroupLoanIndividualMonitoring> glimList, LoanApplicationTerms loanApplicationTerms) {
         BigDecimal totalInstallmentAmount = BigDecimal.ZERO;
         BigDecimal installmentAmountWithoutFee = BigDecimal.ZERO;
         Integer numberOfInstallments = loanApplicationTerms.getNumberOfRepayments();
@@ -633,7 +664,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             glim.setPaidInterestAmount(MathUtility.add(glim.getPaidInterestAmount(), processedTransactionMap.get("processedInterest")));
             glim.setPaidPrincipalAmount(MathUtility.add(glim.getPaidPrincipalAmount(), processedTransactionMap.get("processedPrincipal")));
             glim.setPaidAmount(MathUtility.add(glim.getTotalPaidAmount(),
-                    processedTransactionMap.get("processedinstallmentTransactionAmount")));
+                    processedTransactionMap.get("processedinstallmentTransactionAmount"),glimTransaction.getOverpaidAmount()));
             if (isRecoveryRepayment) {
                 glim.setChargeWrittenOffAmount(MathUtility.subtract(glim.getChargeWrittenOffAmount(),
                         processedTransactionMap.get("processedCharge")));
@@ -660,7 +691,6 @@ public class GroupLoanIndividualMonitoringAssembler {
             if (writeOfAmount.compareTo(BigDecimal.ZERO) > 0) {
                 isWriteOf = true;
             }
-            if (glimData.isClientSelected() && glimData.getIsActive()) { return false; }
         }
         return isWriteOf;
     }
