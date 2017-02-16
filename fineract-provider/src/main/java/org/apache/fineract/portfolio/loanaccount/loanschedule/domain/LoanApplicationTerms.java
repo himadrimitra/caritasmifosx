@@ -594,7 +594,9 @@ public final class LoanApplicationTerms {
             int interval = CalendarUtils.getInterval(recurrence);
             if(type.isMonthly() && interval == 1){
                 Collection<Integer> onDayList = CalendarUtils.getMonthOnDay(recurrence);
-                this.paymentsInProvidedPeriod = onDayList.size();
+                if(onDayList.size() > 0){
+                	this.paymentsInProvidedPeriod = onDayList.size();
+                }
             }
         }
     }
