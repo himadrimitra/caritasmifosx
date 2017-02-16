@@ -12,7 +12,18 @@ public enum TaskEntityType {
     INVALID(0, "taskEntityType.invalid","invalid"), //
     LOAN_APPLICATION(1, "taskEntityType.loanapplication", "loanApplication"), //
     ADHOC(2, "taskEntityType.adhoc","adhoc"),
-    BANK_TRANSACTION(3, "taskEntityType.banktransaction","bankTransaction");//
+    BANK_TRANSACTION(3, "taskEntityType.banktransaction","bankTransaction"),//
+    CENTER(4,"taskEntityType.center","center"),
+    CLIENT(5,"taskEntityType.client","client"),
+    VILLAGE(6,"taskEntityType.village","village"),
+    BANK(7,"taskEntityType.bank","bank"),
+    OFFICE(8,"taskEntityType.office","office"),
+    TEMPLATE_TASK_CENTER(9,"taskEntityType.template_task_center","center"),
+    TEMPLATE_TASK_CLIENT(10,"taskEntityType.template_task_client","client"),
+    TEMPLATE_TASK_VILLAGE(11,"taskEntityType.template_task_village","village"),
+    TEMPLATE_TASK_BANK(12,"taskEntityType.template_task_bank","bank"),
+    TEMPLATE_TASK_OFFICE(13,"taskEntityType.template_task_office","office");
+  
 
     private final Integer value;
     private final String code;
@@ -54,20 +65,6 @@ public enum TaskEntityType {
 
     public String getCode() {
         return this.code;
-    }
-
-    public static TaskEntityType fromInt(final Integer frequency) {
-        TaskEntityType taskEntityType = TaskEntityType.INVALID;
-        if (frequency != null) {
-            switch (frequency) {
-                case 1:
-                    taskEntityType = TaskEntityType.LOAN_APPLICATION;
-                break;
-                default:
-                break;
-            }
-        }
-        return taskEntityType;
     }
 
     public static TaskEntityType fromInt(final int i) {

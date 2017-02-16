@@ -29,6 +29,16 @@ import com.finflux.kyc.address.data.AddressData;
 
 public class VillageData {
 
+    
+    public Long getVillageId() {
+        return this.villageId;
+    }
+
+    
+    public String getVillageName() {
+        return this.villageName;
+    }
+
     private final Long villageId;
     private final String externalId;
     private final Long officeId;

@@ -3705,6 +3705,19 @@ public class CommandWrapperBuilder {
         this.href = "/task/adhoc";
         return this;
     }
+    public CommandWrapperBuilder createTaskConfigTemplate() {
+        this.actionName = "CREATE";
+        this.entityName = "TASKCONFIGTEMPLATE";
+        this.href = "/tasktemplate";
+        return this;
+    }
+    
+    public CommandWrapperBuilder assignTask() {
+        this.actionName = "CREATE";
+        this.entityName = "TEMPLATETASK";
+        this.href = "/taskassign";
+        return this;
+    }
     
     public CommandWrapperBuilder createBankAccountDetail(final String supportedEntityType, final Long supportedEntityId,
             final Integer entityTypeId) {
@@ -3855,6 +3868,13 @@ public class CommandWrapperBuilder {
         this.entityName = "COAPPLICANTS";
         this.entityId = coapplicantId;
         this.href = "/loanapplicationreferences/"+loanApplicationReferenceId+"/coapplicants/"+coapplicantId;
+		return this;
+    }
+    public CommandWrapperBuilder updateTaskConfigTemplate(Long templateId) {
+        this.actionName="UPDATE";
+        this.entityName="TASKCONFIGTEMPLATE";
+        this.entityId=templateId;
+        this.href="/tasktemplate/"+templateId;
         return this;
     }
 }

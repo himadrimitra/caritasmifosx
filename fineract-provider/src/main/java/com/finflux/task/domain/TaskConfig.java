@@ -66,7 +66,15 @@ public class TaskConfig extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "taskConfig", orphanRemoval = true)
     private Set<Task> tasks = new HashSet<>();
 
-    public TaskConfig() {}
+    public TaskConfig() {};
+    
+    public TaskConfig(TaskActivity taskactivity,String taskName, String shortName, Integer taskType)
+    {
+        this.taskActivity=taskactivity;
+        this.name=taskName;
+        this.shortName=shortName;
+        this.taskType=taskType;
+    }
 
     public String getName() {
         return this.name;
