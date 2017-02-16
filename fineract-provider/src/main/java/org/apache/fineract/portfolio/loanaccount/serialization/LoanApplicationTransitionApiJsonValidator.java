@@ -34,6 +34,11 @@ import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.apache.fineract.useradministration.domain.Role;
+import org.apache.fineract.useradministration.domain.RoleBasedLimit;
+import org.apache.fineract.useradministration.exception.RoleBasedLoanApprovalLimitException;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -135,5 +140,21 @@ public final class LoanApplicationTransitionApiJsonValidator {
         baseDataValidator.reset().parameter(LoanApiConstants.noteParameterName).value(note).notExceedingLengthOf(1000);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+    
+    public static void validateRoleBasedApprovalLimit(AppUser currentUser, BigDecimal approvedLoanAmount , String currencyCode) {
+        /** Get All roles for this user **/
+        Set<Role> roleSet = currentUser.getRoles();
+        for (Role role : roleSet) {
+            if (role.getRoleBasedLimits() != null) {
+                // find the approval limit with same currency as this loan
+                for (RoleBasedLimit roleBasedLimit : role.getRoleBasedLimits()) {
+                    BigDecimal maxLoanApprovalAmountForRole = roleBasedLimit.getMaxLoanApprovalAmount();
+                    if (roleBasedLimit.getApplicationCurrency().getCode().equalsIgnoreCase(currencyCode)
+                            && (MathUtility.isGreater(approvedLoanAmount, maxLoanApprovalAmountForRole))) { throw new RoleBasedLoanApprovalLimitException(
+                            "error.msg.amount.exceeding.approval.limit", maxLoanApprovalAmountForRole); }
+                }
+            }
+        }
     }
 }

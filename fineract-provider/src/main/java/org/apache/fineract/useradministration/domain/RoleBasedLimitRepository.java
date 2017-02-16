@@ -18,9 +18,12 @@
  */
 package org.apache.fineract.useradministration.domain;
 
+import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface RoleBasedLimitRepository extends JpaRepository<RoleBasedLimit, Long>, JpaSpecificationExecutor<RoleBasedLimit>{
+public interface RoleBasedLimitRepository extends JpaRepository<RoleBasedLimit, Long>, JpaSpecificationExecutor<RoleBasedLimit> {
+
+    RoleBasedLimit findByRoleAndApplicationCurrency(Role role, ApplicationCurrency applicationCurrency);
 
 }

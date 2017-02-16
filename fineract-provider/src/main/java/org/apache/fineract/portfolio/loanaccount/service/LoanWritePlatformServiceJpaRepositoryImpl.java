@@ -389,8 +389,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         checkForProductMixRestrictions(loan);
         
         // validate for glim application
-        if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
-        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command, LoanApiConstants.principalDisbursedParameterName);
+        if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+            boolean validateForApprovalLimits = false;
+            GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command,
+                    LoanApiConstants.principalDisbursedParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits);
         }
         
         LocalDate recalculateFrom = null;

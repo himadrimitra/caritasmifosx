@@ -138,8 +138,10 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
+import org.apache.fineract.useradministration.data.RoleBasedLimitData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.Role;
+import org.apache.fineract.useradministration.domain.RoleBasedLimit;
 import org.apache.fineract.useradministration.exception.RoleBasedLoanApprovalLimitException;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -1370,7 +1372,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         final AppUser currentUser = getAppUserIfPresent();
         LocalDate expectedDisbursementDate = null;
         this.loanApplicationTransitionApiJsonValidator.validateApproval(command.json());
-        validateRoleBasedLimit(currentUser, command);
+        
         final Loan loan = retrieveLoanBy(loanId);
 
         final JsonArray disbursementDataArray = command.arrayOfParameterNamed(LoanApiConstants.disbursementDataParameterName);
@@ -1383,9 +1385,14 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             this.validateMultiDisbursementData(command, expectedDisbursementDate);
         }
         
-        // validate for GLIM application
-        if(command.hasParameter(LoanApiConstants.clientMembersParamName)){
-        	GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command, LoanApiConstants.approvedLoanAmountParameterName);
+        // validate for GLIM application along with role based approval limits
+        if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+            boolean validateForApprovalLimits = true;
+            GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command,
+                    LoanApiConstants.approvedLoanAmountParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits);
+        } else {
+            LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser, command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName),
+                    loan.getCurrencyCode());
         }
 
         checkClientOrGroupActive(loan);
@@ -1720,16 +1727,4 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
     }
 
-    private void validateRoleBasedLimit(AppUser currentUser, JsonCommand command){
-        Set<Role> roleSet = currentUser.getRoles();
-        BigDecimal approvedLoanAmount = command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName);
-        for (Role role : roleSet) {
-			if(role.getRoleBasedLimit() != null && role.getRoleBasedLimit().getLoanApproval() != null && approvedLoanAmount != null){
-				if(MathUtility.isGreater(approvedLoanAmount, role.getRoleBasedLimit().getLoanApproval())){
-					throw new RoleBasedLoanApprovalLimitException("error.msg.amount.exceeding.approval.limit", role.getRoleBasedLimit().getLoanApproval());
-				}
-			}
-		}
-    }
-    
 }

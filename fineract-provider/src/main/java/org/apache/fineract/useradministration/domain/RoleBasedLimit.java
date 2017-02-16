@@ -22,37 +22,57 @@ import java.math.BigDecimal;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
+import org.apache.fineract.useradministration.data.RoleBasedLimitData;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_role_based_limit")
 public class RoleBasedLimit extends AbstractPersistable<Long> {
-	
-	@Column(name = "loan_approval", scale = 6, precision = 19, nullable = true)
-    private BigDecimal loanApproval;
 
-	public RoleBasedLimit(BigDecimal loanApproval) {
-		this.loanApproval = loanApproval;
-	}
+    @Column(name = "max_loan_approval_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal maxLoanApprovalAmount;
 
-	protected RoleBasedLimit() {
-		//
-	}
-	
-	public RoleBasedLimit instance(BigDecimal loanApproval){
-		return new RoleBasedLimit(loanApproval);
-	}
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "role_id")
+    private Role role;
 
-	public BigDecimal getLoanApproval() {
-		return this.loanApproval;
-	}
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "currency_id")
+    private ApplicationCurrency applicationCurrency;
 
-	public void setLoanApproval(BigDecimal loanApproval) {
-		this.loanApproval = loanApproval;
-	}
-	
-	
-	
+    protected RoleBasedLimit() {
+        //
+    }
+
+    public RoleBasedLimit(Role role, ApplicationCurrency applicationCurrency, BigDecimal maxLoanApprovalAmount) {
+        super();
+        this.role = role;
+        this.applicationCurrency = applicationCurrency;
+        this.maxLoanApprovalAmount = maxLoanApprovalAmount;
+    }
+
+    public BigDecimal getMaxLoanApprovalAmount() {
+        return this.maxLoanApprovalAmount;
+    }
+
+    public void setMaxLoanApprovalAmount(BigDecimal maxLoanApprovalAmount) {
+        this.maxLoanApprovalAmount = maxLoanApprovalAmount;
+    }
+
+    public RoleBasedLimitData toData() {
+        return new RoleBasedLimitData(this.getId(), this.applicationCurrency.getCode(), this.applicationCurrency.toData(),
+                this.maxLoanApprovalAmount);
+    }
+
+    
+    public ApplicationCurrency getApplicationCurrency() {
+        return this.applicationCurrency;
+    }
+
+
 }

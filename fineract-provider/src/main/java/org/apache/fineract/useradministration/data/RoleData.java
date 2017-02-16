@@ -20,6 +20,9 @@ package org.apache.fineract.useradministration.data;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
+
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
 
 /**
  * Immutable data object for role data.
@@ -30,19 +33,20 @@ public class RoleData implements Serializable {
     private final String name;
     private final String description;
     private final Boolean disabled;
-    private RoleBasedLimitData roleBasedLimit;
+    private List<RoleBasedLimitData> roleBasedLimits;
+    private List<CurrencyData> currencyOptions;
 
     public RolePermissionsData toRolePermissionData(final Collection<PermissionData> permissionUsageData) {
         return new RolePermissionsData(this.id, this.name, this.description, this.disabled, permissionUsageData);
     }
 
     public RoleData(final Long id, final String name, final String description, final Boolean disabled,
-    		RoleBasedLimitData roleBasedLimit) {
+    		List<RoleBasedLimitData> roleBasedLimits) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.disabled = disabled;
-        this.roleBasedLimit = roleBasedLimit;
+        this.roleBasedLimits = roleBasedLimits;
     }
 
     @Override
@@ -72,14 +76,20 @@ public class RoleData implements Serializable {
         return disabled;
     }
 
-	public RoleBasedLimitData getRoleBasedLimit() {
-		return this.roleBasedLimit;
-	}
+    public List<RoleBasedLimitData> getRoleBasedLimits() {
+        return this.roleBasedLimits;
+    }
 
-	public void setRoleBasedLimit(RoleBasedLimitData roleBasedLimit) {
-		this.roleBasedLimit = roleBasedLimit;
-	}
-    
-    
+    public void setRoleBasedLimits(List<RoleBasedLimitData> roleBasedLimits) {
+        this.roleBasedLimits = roleBasedLimits;
+    }
+
+    public void setCurrencyOptions(List<CurrencyData> currencyOptions) {
+        this.currencyOptions = currencyOptions;
+    }
+
+    public List<CurrencyData> getCurrencyOptions() {
+        return this.currencyOptions;
+    }
     
 }
