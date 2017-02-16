@@ -185,7 +185,7 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
                     idMapList = getGroupIds(profileRatingRun, entityId);
                 } else if (ProfileRatingType.CENTER.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
                     dataLayerKey = DataLayerKey.CENETR_ID;
-                    taskConfigKey = TaskConfigKey.CENETR_ID;
+                    taskConfigKey = TaskConfigKey.CENTER_ID;
                     idMapList = getCenterIds(profileRatingRun, entityId);
                 } else if (ProfileRatingType.CENTER.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
                     dataLayerKey = DataLayerKey.VILLAGE_ID;

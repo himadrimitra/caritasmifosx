@@ -5,7 +5,7 @@ package com.finflux.task.data;
  */
 public enum TaskConfigKey {
     CLIENT_ID("clientId"), //
-    CENETR_ID("centerId"), //
+    CENTER_ID("centerId"), //
     GROUP_ID("groupId"), //
     VILLAGE_ID("villageId"), //
     OFFICE_ID("officeId"), //
@@ -16,8 +16,10 @@ public enum TaskConfigKey {
     BODY("body"),
     BANK_TRANSACTION_ID("bankTransactionId"),
     LOAN_ID("loanId"),
-    LOAN_TRANSACTION_ID("loanTransactionId");
-
+    LOAN_TRANSACTION_ID("loanTransactionId"),
+    TASKTEMPLATEENTITY_TYPE("taskTemplateEntityType"),
+    TASKTEMPLATEENTITY_ID("taskTemplateEntityId"),
+    BANK_ID("bankId");
     private String value;
 
     TaskConfigKey(String value) {

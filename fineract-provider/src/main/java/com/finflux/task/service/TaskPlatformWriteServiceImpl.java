@@ -1,7 +1,11 @@
 package com.finflux.task.service;
 
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.commands.domain.CommandSource;
 import org.apache.fineract.commands.domain.CommandSourceRepository;
@@ -16,8 +20,17 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.finflux.task.data.*;
-import com.finflux.task.domain.*;
+import com.finflux.task.data.TaskActionType;
+import com.finflux.task.data.TaskConfigKey;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskPriority;
+import com.finflux.task.data.TaskStatusType;
+import com.finflux.task.data.TaskType;
+import com.finflux.task.domain.Task;
+import com.finflux.task.domain.TaskActivity;
+import com.finflux.task.domain.TaskConfig;
+import com.finflux.task.domain.TaskConfigRepositoryWrapper;
+import com.finflux.task.domain.TaskRepositoryWrapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -54,17 +67,29 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     @SuppressWarnings("unused")
     @Transactional
     @Override
-    public void createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,
+    public Long createTaskFromConfig(final Long taskConfigId, final TaskEntityType entityType, final Long entityId, final Client client,AppUser assignedTo,final Date dueDate,
             final Office office, final Map<TaskConfigKey, String> configValues, String description) {
 
-        Map<String, String> customConfigMap = new HashMap<>();
-        for (Map.Entry<TaskConfigKey, String> config : configValues.entrySet()) {
-            customConfigMap.put(config.getKey().getValue(), config.getValue());
+        if(assignedTo==null)
+        {
+            assignedTo=this.context.authenticatedUser();
         }
-
-        Task parentTask = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, taskConfigId, description);
+        Map<String, String> customConfigMap = new HashMap<>();
+        if(configValues!=null)
+        {
+            for (Map.Entry<TaskConfigKey, String> config : configValues.entrySet()) 
+            {
+            customConfigMap.put(config.getKey().getValue(), config.getValue());
+            }
+        }
+        Task parentTask = createTaskFromConfig(entityType, entityId, client,assignedTo,dueDate, office, customConfigMap, taskConfigId, description);
 
         parentTask.setStatus(TaskStatusType.INITIATED.getValue());
+        
+        if(TaskType.SINGLE.getValue().equals(parentTask.getTaskType()))
+        {
+            taskExecutionService.updateActionAndAssignedTo(assignedTo,parentTask,TaskStatusType.fromInt(parentTask.getStatus()));
+        }
         parentTask = this.taskRepository.save(parentTask);
 
         final List<Long> childTaskConfigIds = this.taskPlatformReadService.getChildTaskConfigIds(taskConfigId);
@@ -73,12 +98,12 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
             int index = 0;
             final List<Task> tasks = new ArrayList<Task>();
             for (final Long cTaskConfigId : childTaskConfigIds) {
-                Task task = createTaskFromConfig(entityType, entityId, client, office, customConfigMap, cTaskConfigId, description);
+                Task task = createTaskFromConfig(entityType, entityId, client,null,null ,office, customConfigMap, cTaskConfigId, description);
                 task.setParent(parentTask);
                 if (index == 0) {
                     TaskStatusType status = TaskStatusType.INITIATED;
                     task.setStatus(status.getValue());
-                    taskExecutionService.updateActionAndAssignedTo(context.authenticatedUser(),task, status);
+                    taskExecutionService.updateActionAndAssignedTo(assignedTo,task, status);
                 }
                 tasks.add(task);
                 index++;
@@ -87,9 +112,10 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 this.taskRepository.save(tasks);
             }
         }
+        return parentTask.getId();
     }
 
-    private Task createTaskFromConfig(TaskEntityType entityType, Long entityId, Client client, Office office,
+    private Task createTaskFromConfig(TaskEntityType entityType, Long entityId, Client client,AppUser user,Date dueDate, Office office,
             Map<String, String> customConfigMap, Long cTaskConfigId, String description) {
         final TaskConfig taskConfig = this.taskConfigRepository.findOneWithNotFoundDetection(cTaskConfigId);
         TaskStatusType status = TaskStatusType.INACTIVE;
@@ -101,15 +127,13 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         configValueMap.putAll(customConfigMap);
         final String configValueStr = new Gson().toJson(configValueMap);
         final Task parent = null;
-        final Date dueDate = null;
         final Integer currentAction = null;
-        final AppUser assignedTo = null;
         final String criteriaResult = null;
         final Integer criteriaAction = null;
 
         return Task.create(parent, taskConfig.getName(), taskConfig.getShortName(), entityType.getValue(), entityId,
                 taskConfig.getTaskType(), taskConfig, status.getValue(), TaskPriority.MEDIUM.getValue(), dueDate, currentAction,
-                assignedTo, taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
+                user, taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
                 taskConfig.getRejectionLogic(), configValueStr, client, office, taskConfig.getActionGroupId(), criteriaResult,
                 criteriaAction, taskConfig.getTaskActivity(), description);
     }

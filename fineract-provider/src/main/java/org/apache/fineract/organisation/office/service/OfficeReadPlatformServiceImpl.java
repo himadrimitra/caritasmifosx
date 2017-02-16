@@ -170,7 +170,6 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
 
         return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { hierarchySearchString });
     }
-
     @Override
     @Cacheable(value = "officesForDropdown", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat(#root.target.context.authenticatedUser().getOffice().getHierarchy()+'ofd')")
     public Collection<OfficeData> retrieveAllOfficesForDropdown() {

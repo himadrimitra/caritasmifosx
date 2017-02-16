@@ -48,6 +48,7 @@ import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundEx
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.products.exception.ResourceNotFoundException;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,9 +173,11 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     final Map<TaskConfigKey, String> map = new HashMap<>();
                     map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
                     map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
+                    AppUser assignedTo=null;
+                    Date dueDate=null;
                     String description = constructDescription(loanProduct, loanApplicationReference, client);
                     this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                            TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),
+                            TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),assignedTo,dueDate,
                             loanApplicationReference.getClient().getOffice(), map, description);
                 }
             }

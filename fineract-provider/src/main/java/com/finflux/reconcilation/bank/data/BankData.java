@@ -13,6 +13,21 @@ public class BankData {
     private final String glCode;
     private boolean supportSimplifiedStatement;
 
+    
+    public Long getId() {
+        return this.id;
+    }
+
+    
+    public Long getGlAccount() {
+        return this.glAccount;
+    }
+
+    
+    public String getGlCode() {
+        return this.glCode;
+    }
+
     public BankData(final Long id, final String name, final Long glAccount, final String glCode, boolean supportSimplifiedStatement) {
         this.id = id;
         this.name = name;
