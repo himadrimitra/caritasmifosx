@@ -350,7 +350,7 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
                         new Object[] { entityId });
             }
         } catch (final EmptyResultDataAccessException e) {}
-        return null;
+        return new CreditBureauFileContentData();
     }
 
     private static final class CreditBureauFileContantDataExtractor implements RowMapper<CreditBureauFileContentData> {
