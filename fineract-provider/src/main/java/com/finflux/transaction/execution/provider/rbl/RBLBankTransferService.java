@@ -8,6 +8,8 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finflux.transaction.execution.provider.rbl.response.*;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
@@ -83,6 +85,8 @@ public class RBLBankTransferService implements BankTransferService {
 	private final String authorizationCode;
 	private final String clientId;
 	private final String clientSecret;
+
+	private final ObjectMapper jacksonMapper = new ObjectMapper();
 	private final Gson gson = new Gson();
 	private String validationResource;
 	private RestTemplate restTemplate;
@@ -191,6 +195,7 @@ public class RBLBankTransferService implements BankTransferService {
 				header, body, signature);
 		RBLFundTransferRequest rblFundTransferRequest = new RBLFundTransferRequest(
 				singlePaymentRequest);
+
 		// Gson gson = new Gson();
 		// String requestData = gson.toJson(rblFundTransferRequest);
 		// System.out.println(requestData);
@@ -214,7 +219,7 @@ public class RBLBankTransferService implements BankTransferService {
 		StopWatch stopWatch = new StopWatch();
 		String completeUrl = rblEndPoint + builder.build().toUriString();
 		Long requestLogId = requestResponseLogWriter.registerRequest(ThirdPartyRequestEntityType.BANKTRANSACTION,internalBankTransactionId,
-				HttpMethod.POST,rblEndPoint+doSingleTxnResource,gson.toJson(rblFundTransferRequest));
+				HttpMethod.POST,rblEndPoint+doSingleTxnResource,convertToJsonStr(rblFundTransferRequest));
 		stopWatch.start();
 		try {
 			ResponseEntity<RBLFundTransferResponse> response = restTemplate
@@ -222,7 +227,7 @@ public class RBLBankTransferService implements BankTransferService {
 							request, RBLFundTransferResponse.class);
 
 			stopWatch.stop();
-			responseBody = gson.toJson(response.getBody());
+			responseBody = convertToJsonStr(response.getBody());
 			responseHttpHeaders = response.getHeaders();
 			responseHttpStatus = response.getStatusCode();
 
@@ -312,6 +317,15 @@ public class RBLBankTransferService implements BankTransferService {
 				referenceNumber, txnStatus, utrNumber,poNumber, txnTime);
 	}
 
+	private String convertToJsonStr(Object object) {
+		try {
+			return jacksonMapper.writeValueAsString(object);
+		} catch (JsonProcessingException e) {
+			logger.warn("Json Parse Exception",e);
+			return null;
+		}
+	}
+
 	@Override
 	public BankTransactionResponse getTransactionStatus(Long internalTxnId,
 														String internalTransactionReference,
@@ -364,7 +378,7 @@ public class RBLBankTransferService implements BankTransferService {
 		HttpHeaders responseHttpHeaders = null;
 		StopWatch stopWatch = new StopWatch();
 		Long requestLogId = requestResponseLogWriter.registerRequest(ThirdPartyRequestEntityType.BANKTRANSACTION,internalTxnId,
-				HttpMethod.POST,rblEndPoint+doSingleTxnResource,gson.toJson(rblFundTransferStatusRequest));
+				HttpMethod.POST,rblEndPoint+doSingleTxnResource,convertToJsonStr(rblFundTransferStatusRequest));
 		stopWatch.start();
 		try {
 			ResponseEntity<RBLFundTransferStatusResponse> response = restTemplate
@@ -372,7 +386,7 @@ public class RBLBankTransferService implements BankTransferService {
 							request, RBLFundTransferStatusResponse.class);
 
 			stopWatch.stop();
-			responseBody = gson.toJson(response.getBody());
+			responseBody = convertToJsonStr(response.getBody());
 			responseHttpHeaders = response.getHeaders();
 			responseHttpStatus = response.getStatusCode();
 
