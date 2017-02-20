@@ -118,6 +118,10 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
             else if (loanTransactionDTO.getTransactionType().isRefundForActiveLoans()) {
                 createJournalEntriesForRefundForActiveLoan(loanDTO, loanTransactionDTO, office);
             }
+            /** Logic to Post Broken Period Interest **/
+            else if(loanTransactionDTO.getTransactionType().isBrokenPeriodInterestPosting()){
+                createJournalEntriesForBrokenPeriodInterest(loanDTO, loanTransactionDTO, office);
+            }
         }
     }
 
@@ -603,6 +607,26 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
 					loanProductId, null, loanId, transactionId,
 					transactionDate, principalAmount, isReversal, loanDTO.getWriteOffReasonId());
         }
+    }
+    
+    private void createJournalEntriesForBrokenPeriodInterest(final LoanDTO loanDTO, final LoanTransactionDTO loanTransactionDTO,
+            final Office office) {
+        // loan properties
+        final Long loanProductId = loanDTO.getLoanProductId();
+        final Long loanId = loanDTO.getLoanId();
+        final String currencyCode = loanDTO.getCurrencyCode();
+
+        // transaction properties
+        final String transactionId = loanTransactionDTO.getTransactionId();
+        final Date transactionDate = loanTransactionDTO.getTransactionDate();
+        final BigDecimal disbursalAmount = loanTransactionDTO.getAmount();
+        final boolean isReversal = loanTransactionDTO.isReversed();
+        final Long paymentTypeId = loanTransactionDTO.getPaymentTypeId();
+
+        this.helper.createCashBasedJournalEntriesAndReversalsForLoan(office, currencyCode,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), ACCRUAL_ACCOUNTS_FOR_LOAN.INTEREST_ON_LOANS.getValue(), loanProductId,
+                paymentTypeId, loanId, transactionId, transactionDate, disbursalAmount, isReversal, loanDTO.getWriteOffReasonId());
+
     }
 
 }

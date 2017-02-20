@@ -30,7 +30,7 @@ public class DisbursementData implements Comparable<DisbursementData> {
     private final Long id;
     private final LocalDate expectedDisbursementDate;
     private final LocalDate actualDisbursementDate;
-    private final BigDecimal principal;
+    private BigDecimal principal;
     private final String loanChargeId;
     private final BigDecimal chargeAmount;
 
@@ -100,6 +100,11 @@ public class DisbursementData implements Comparable<DisbursementData> {
 
     public String getLoanChargeId() {
         return this.loanChargeId;
+    }
+
+    
+    public void addBrokenPeriodInterest(BigDecimal interest) {
+        this.principal = this.principal.add(interest);
     }
 
 }

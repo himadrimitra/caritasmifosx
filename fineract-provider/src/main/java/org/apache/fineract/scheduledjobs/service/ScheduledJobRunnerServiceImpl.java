@@ -144,7 +144,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		updateSqlBuilder.append("join (");
 		updateSqlBuilder.append("SELECT ml.id AS loanId,");
 		updateSqlBuilder
-				.append("ml.principal_amount as principal_disbursed_derived, ");
+				.append(" if(ml.broken_period_method_enum   = 2,  ml.principal_amount + IFNULL(ml.broken_period_interest,0),ml.principal_amount) as principal_disbursed_derived, ");
 		updateSqlBuilder
 				.append("SUM(IFNULL(mr.principal_completed_derived,0)) as principal_repaid_derived, ");
 		updateSqlBuilder

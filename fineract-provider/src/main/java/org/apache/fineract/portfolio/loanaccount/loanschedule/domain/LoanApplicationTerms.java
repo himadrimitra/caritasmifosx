@@ -24,7 +24,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
@@ -91,7 +93,7 @@ public final class LoanApplicationTerms {
     private Money principal;
     private final LocalDate expectedDisbursementDate;
     private final LocalDate repaymentsStartingFromDate;
-    private final LocalDate calculatedRepaymentsStartingFromDate;
+    private LocalDate calculatedRepaymentsStartingFromDate;
     /**
      * Integer representing the number of 'repayment frequencies' or
      * installments where 'grace' should apply to the principal component of a
@@ -134,6 +136,7 @@ public final class LoanApplicationTerms {
      * </p>
      */
     private LocalDate interestChargedFromDate;
+    private final LocalDate actualinterestChargedFromDate;
     private final Money inArrearsTolerance;
 
     private final Integer graceOnArrearsAgeing;
@@ -255,6 +258,8 @@ public final class LoanApplicationTerms {
     private BigDecimal flatInterestRate;
     
     private boolean allowNegativeBalance;
+    
+    private Money brokenPeriodInterest;
     
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency currency, final Integer loanTermFrequency,
             final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer numberOfRepayments, final Integer repaymentEvery,
@@ -538,6 +543,7 @@ public final class LoanApplicationTerms {
         this.interestPaymentGrace = interestPaymentGrace;
         this.interestChargingGrace = interestChargingGrace;
         this.interestChargedFromDate = interestChargedFromDate;
+        this.actualinterestChargedFromDate = interestChargedFromDate;
 
         this.inArrearsTolerance = inArrearsTolerance;
         this.multiDisburseLoan = multiDisburseLoan;
@@ -598,7 +604,9 @@ public final class LoanApplicationTerms {
             int interval = CalendarUtils.getInterval(recurrence);
             if(type.isMonthly() && interval == 1){
                 Collection<Integer> onDayList = CalendarUtils.getMonthOnDay(recurrence);
-                this.paymentsInProvidedPeriod = onDayList.size();
+                if(onDayList.size() > 0){
+                	this.paymentsInProvidedPeriod = onDayList.size();
+                }
             }
         }
     }
@@ -855,13 +863,7 @@ public final class LoanApplicationTerms {
 
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
 
-        final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator);
-        final BigDecimal loanTermPeriodsInYearBigDecimal;
-        if(this.interestCalculationPeriodMethod.isSameAsRepayment()){
-            loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear * this.paymentsInProvidedPeriod);
-        }else{
-            loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
-        }
+        final BigDecimal loanTermPeriodsInYearBigDecimal = calculateLoanTermPeriodsInYear(calculator);
 
         BigDecimal loanTermFrequencyBigDecimal = BigDecimal.ZERO;
         LocalDate startDate = getActualInterestChargedFromDate();
@@ -886,13 +888,7 @@ public final class LoanApplicationTerms {
         LocalDate firstRepaymentDate = getCalculatedRepaymentsStartingFromLocalDate();
         if (isFirstInstallmentCalculationRequired()) {
             final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
-            final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator);
-            final BigDecimal loanTermPeriodsInYearBigDecimal;
-            if(this.interestCalculationPeriodMethod.isSameAsRepayment()){
-                loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear * this.paymentsInProvidedPeriod);
-            }else{
-                loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
-            }
+            final BigDecimal loanTermPeriodsInYearBigDecimal = calculateLoanTermPeriodsInYear(calculator);
             BigDecimal periodsInLoanTerm = BigDecimal.ZERO;
             LocalDate startDate = getActualInterestChargedFromDate();
             if (startDate.isBefore(idealDisbursementDate)) {
@@ -909,6 +905,35 @@ public final class LoanApplicationTerms {
 
     }
 
+    private BigDecimal calculateLoanTermPeriodsInYear(final PaymentPeriodsInOneYearCalculator calculator) {
+        final long loanTermPeriodsInOneYear = calculatePeriodsInOneYear(calculator);
+        final BigDecimal loanTermPeriodsInYearBigDecimal;
+        if(this.interestCalculationPeriodMethod.isSameAsRepayment()){
+            loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear * this.paymentsInProvidedPeriod);
+        }else{
+            loanTermPeriodsInYearBigDecimal = BigDecimal.valueOf(loanTermPeriodsInOneYear);
+        }
+        return loanTermPeriodsInYearBigDecimal;
+    }
+    
+    public Money calculateBrokenPeriodInterest(final PaymentPeriodsInOneYearCalculator calculator, final MathContext mc,
+            LocalDate startDate, LocalDate endDate) {
+        Money principal = this.principal;
+        return calculateBrokenPeriodInterest(calculator, mc, startDate, endDate, principal);
+    }
+
+    public Money calculateBrokenPeriodInterest(final PaymentPeriodsInOneYearCalculator calculator, final MathContext mc,
+            LocalDate startDate, LocalDate endDate, Money principal) {
+        Money brokenPeiordInterest =principal.zero();
+        final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+        final BigDecimal loanTermPeriodsInYearBigDecimal = calculateLoanTermPeriodsInYear(calculator);
+        BigDecimal periodsInLoanTerm = calculatePeriodsBetweenDatesByInterestMethod(startDate, endDate);
+        BigDecimal brokenPeriodInterestRate = this.annualNominalInterestRate.divide(loanTermPeriodsInYearBigDecimal, mc)
+                .divide(divisor, mc).multiply(periodsInLoanTerm);
+        brokenPeiordInterest = principal.multiplyRetainScale(brokenPeriodInterestRate, mc.getRoundingMode());
+        return brokenPeiordInterest;
+    }
+
     public boolean isFirstInstallmentCalculationRequired() {
         LocalDate firstRepaymentDate = getCalculatedRepaymentsStartingFromLocalDate();
         return firstRepaymentDate != null && getInterestMethod().isFlat() && getBrokenPeriodMethod().isAdjustmentInFirstEMI()
@@ -916,7 +941,7 @@ public final class LoanApplicationTerms {
                 && !isInterestPaymentGraceApplicableForThisPeriod(1);
     }
 
-    private boolean isPartialPeriodCalcualtionAllowed() {
+    public boolean isPartialPeriodCalcualtionAllowed() {
         return getInterestCalculationPeriodMethod().isDaily() || allowPartialPeriodInterestCalcualtion();
     }
 
@@ -1537,7 +1562,12 @@ public final class LoanApplicationTerms {
         if(this.pmtCalculationPeriodMethod != null){
             pmtCalculationMethod = this.pmtCalculationPeriodMethod.getValue();
         }
-        return LoanProductRelatedDetail.createFrom(currency, this.principal.getAmount(), this.interestRatePerPeriod,
+        Money principal = this.principal;
+        if(this.brokenPeriodMethod.isPostInterest()){
+            principal = principal.minus(getBrokenPeriodInterest());
+        }
+        
+        return LoanProductRelatedDetail.createFrom(currency, principal.getAmount() , this.interestRatePerPeriod,
                 this.interestRatePeriodFrequencyType, this.annualNominalInterestRate, this.interestMethod,
                 this.interestCalculationPeriodMethod, this.allowPartialPeriodInterestCalcualtion, this.repaymentEvery,
                 this.repaymentPeriodFrequencyType, this.numberOfRepayments, this.principalGrace, this.recurringMoratoriumOnPrincipalPeriods, this.interestPaymentGrace,
@@ -2125,5 +2155,67 @@ public final class LoanApplicationTerms {
     
     public PeriodFrequencyType getInterestRatePeriodFrequencyType() {
         return this.interestRatePeriodFrequencyType;
+    }
+     
+    public Money getBrokenPeriodInterest() {
+        return this.brokenPeriodInterest;
+    }
+
+    public void setBrokenPeriodInterest(Money brokenPeriodInterest) {
+        this.brokenPeriodInterest = brokenPeriodInterest;
+    }
+
+    public void setCalculatedRepaymentsStartingFromDate(LocalDate calculatedRepaymentsStartingFromDate) {
+        this.calculatedRepaymentsStartingFromDate = calculatedRepaymentsStartingFromDate;
+    }
+    
+    public void addBrokenPeriodInterestToPrincipal(Money brokenPeriodInterest){
+        this.principal = this.principal.plus(brokenPeriodInterest);
+        if (isMultiDisburseLoan()) {
+            for (DisbursementData disbursement : getDisbursementDatas()) {
+                if (disbursement.disbursementDate().isEqual(getExpectedDisbursementDate())) {
+                    disbursement.addBrokenPeriodInterest(brokenPeriodInterest.getAmount());
+                    break;
+                }
+            }
+        }
+    }
+    
+    
+    public Map<LocalDate,Money> principalDisbursementsInPeriod(final LocalDate interestChargedFromDate, final LocalDate toDate){
+        Map<LocalDate,Money> principals = new TreeMap<>();
+        principals.put(interestChargedFromDate, this.principal);
+       
+        if (isMultiDisburseLoan()) {
+            principals.clear();
+            for (DisbursementData disbursement : getDisbursementDatas()) {
+                if (isConsiderAllDisbursmentsInSchedule() || disbursement.isDisbursed()) {
+                    if (disbursement.disbursementDate().isAfter(interestChargedFromDate)
+                            && disbursement.disbursementDate().isBefore(toDate)) {
+                        updateMapWithAmount(principals, this.principal.zero().plus(disbursement.amount()), disbursement.disbursementDate());
+                    } else if (!disbursement.disbursementDate().isAfter(interestChargedFromDate)) {
+                        updateMapWithAmount(principals, this.principal.zero().plus(disbursement.amount()), interestChargedFromDate);
+                    }
+                }
+            }
+        }
+        return principals;
+    }
+    
+    private void updateMapWithAmount(final Map<LocalDate, Money> map, final Money amount, final LocalDate amountApplicableDate) {
+        Money principalPaid = amount;
+        if (map.containsKey(amountApplicableDate)) {
+            principalPaid = map.get(amountApplicableDate).plus(principalPaid);
+        }
+        map.put(amountApplicableDate, principalPaid);
+    }
+
+    
+    public Date getInterestChargedFromDateFromUser() {
+        Date dateValue = null;
+        if (this.actualinterestChargedFromDate != null) {
+            dateValue = this.actualinterestChargedFromDate.toDate();
+        }
+        return dateValue;
     }
 }

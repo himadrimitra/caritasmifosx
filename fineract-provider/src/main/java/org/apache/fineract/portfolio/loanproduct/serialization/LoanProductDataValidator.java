@@ -749,7 +749,7 @@ public final class LoanProductDataValidator {
         final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.brokenPeriodMethodTypeParamName, element,
                 Locale.getDefault());
         baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType).ignoreIfNull()
-                .inMinMaxRange(0, 1);
+                .inMinMaxRange(0, 2);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -1740,7 +1740,7 @@ public final class LoanProductDataValidator {
             final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(
                     LoanProductConstants.brokenPeriodMethodTypeParamName, element, Locale.getDefault());
             baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType)
-                    .ignoreIfNull().inMinMaxRange(0, 1);
+                    .ignoreIfNull().inMinMaxRange(0, 2);
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -1764,6 +1764,7 @@ public final class LoanProductDataValidator {
     public void validateAdvancedAccountingMapping(final DataValidatorBuilder baseDataValidator, final JsonElement element, String arrayParamName, 
     		String propertyIdParamName, String accountIdParamName){
     	if (this.fromApiJsonHelper.parameterExists(arrayParamName, element)) {
+    		List<Long> existingpropertyIds = new ArrayList<>();
             final JsonArray accountMappingArray = this.fromApiJsonHelper.extractJsonArrayNamed(arrayParamName, element);
             if (accountMappingArray != null && accountMappingArray.size() > 0) {
                 int i = 0;
@@ -1779,6 +1780,13 @@ public final class LoanProductDataValidator {
                     baseDataValidator.reset()
                             .parameter(arrayParamName + "[" + i + "]." + accountIdParamName)
                             .value(accountId).notNull().integerGreaterThanZero();
+                    if(existingpropertyIds.contains(propertyId)){
+                    	 baseDataValidator.reset()
+                         .parameter(arrayParamName + "[" + i + "]." + propertyIdParamName)
+                         .value(propertyId).failWithCode("duplicate");
+                    }else{
+                    	existingpropertyIds.add(propertyId);	
+                    }
                     i++;
                 } while (i < accountMappingArray.size());
             }

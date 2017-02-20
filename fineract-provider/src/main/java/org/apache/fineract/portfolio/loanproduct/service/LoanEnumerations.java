@@ -421,6 +421,10 @@ public class LoanEnumerations {
                 optionData = new LoanTransactionEnumData(LoanTransactionType.REVOKE_SUBSIDY.getValue().longValue(),
                         LoanTransactionType.REVOKE_SUBSIDY.getCode(), "Revoke Subsidy");
             break;
+            case BROKEN_PERIOD_INTEREST_POSTING:
+                optionData = new LoanTransactionEnumData(LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING.getValue().longValue(),
+                        LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING.getCode(), "Broken Period Interest Posting");
+            break;
             default:
             break;
         }
@@ -812,6 +816,10 @@ public class LoanEnumerations {
             case ADJUST_IN_FIRST_EMI:
                 optionData = new EnumOptionData(BrokenPeriodMethod.ADJUST_IN_FIRST_EMI.getValue().longValue(),
                         BrokenPeriodMethod.ADJUST_IN_FIRST_EMI.getCode(), "Add to first installment interest");
+            break;
+            case POST_INTEREST:
+                optionData = new EnumOptionData(BrokenPeriodMethod.POST_INTEREST.getValue().longValue(),
+                        BrokenPeriodMethod.POST_INTEREST.getCode(), "Post interest");
             break;
             default:
                 optionData = new EnumOptionData(BrokenPeriodMethod.DISTRIBUTE_EQUALLY.getValue().longValue(),

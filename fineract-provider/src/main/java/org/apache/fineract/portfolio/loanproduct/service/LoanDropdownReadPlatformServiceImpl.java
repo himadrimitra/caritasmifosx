@@ -235,7 +235,7 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
     @Override
     public List<EnumOptionData> retrieveBrokenPeriodMethodTypeOptions() {
         final List<EnumOptionData> brokenPeriodMethodTypeOptions = Arrays.asList(LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.DISTRIBUTE_EQUALLY),
-                LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.ADJUST_IN_FIRST_EMI));
+                LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.ADJUST_IN_FIRST_EMI), LoanEnumerations.brokenPeriodMethodType(BrokenPeriodMethod.POST_INTEREST));
         return brokenPeriodMethodTypeOptions;
     }
 }

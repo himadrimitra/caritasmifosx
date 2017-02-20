@@ -117,7 +117,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationNotInS
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleModel;
-import org.apache.fineract.portfolio.loanaccount.loanschedule.financial.function.IRRCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleAssembler;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleCalculationPlatformService;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCommandFromApiJsonHelper;
@@ -138,11 +137,7 @@ import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
-import org.apache.fineract.useradministration.data.RoleBasedLimitData;
 import org.apache.fineract.useradministration.domain.AppUser;
-import org.apache.fineract.useradministration.domain.Role;
-import org.apache.fineract.useradministration.domain.RoleBasedLimit;
-import org.apache.fineract.useradministration.exception.RoleBasedLoanApprovalLimitException;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1055,10 +1050,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 	            final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
 	            final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
 	            final boolean considerAllDisbursmentsInSchedule = true;
+	            LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule);
+	            existingLoanApplication.setBrokenPeriodInterest(terms.getBrokenPeriodInterest().getAmount());
 	            if(existingLoanApplication.getFlatInterestRate() != null){
-	                LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule, existingLoanApplication.getLoanProduct());
-	                existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
-	            }
+                        existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
+                    }
 	            final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false, considerAllDisbursmentsInSchedule);
 	            existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
 	            existingLoanApplication.recalculateAllCharges();

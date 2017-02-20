@@ -145,7 +145,12 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         final String hierarchySearchString = hierarchy + "%";
 
         final StringBuilder sqlBuilder = new StringBuilder(200);
-        sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
+		if (parameters.isOrderByRequested()) {
+			sqlBuilder.append("select SQL_CALC_FOUND_ROWS * from (select ");
+		} else {
+			sqlBuilder.append("select SQL_CALC_FOUND_ROWS");
+		}
+        
         sqlBuilder.append(this.allGroupTypesDataMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
@@ -156,11 +161,11 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
         }
 
         if (parameters.isOrderByRequested()) {
-            sqlBuilder.append(" order by ").append(searchParameters.getOrderBy()).append(' ').append(searchParameters.getSortOrder());
+            sqlBuilder.append(" order by ").append(searchParameters.getOrderBy()).append(' ').append(searchParameters.getSortOrder()).append(" ) tempTable ");
         }
 
         if (parameters.isLimited()) {
-            sqlBuilder.append(" limit ").append(searchParameters.getLimit());
+				sqlBuilder.append(" limit ").append(searchParameters.getLimit());
             if (searchParameters.isOffset()) {
                 sqlBuilder.append(" offset ").append(searchParameters.getOffset());
             }

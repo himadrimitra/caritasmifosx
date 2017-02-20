@@ -51,7 +51,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.imp
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.HeavensFamilyLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.impl.InterestPrincipalPenaltyFeesOrderLoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.exception.ClientAlreadyWriteOffException;
-import org.apache.fineract.portfolio.loanaccount.exception.ClientCanNotExceedPaybleAmount;
 import org.apache.fineract.portfolio.loanaccount.service.GroupLoanIndividualMonitoringTransactionAssembler;
 import org.joda.time.LocalDate;
 
@@ -249,8 +248,21 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                 loanTransaction.updateOverPayments(transactionAmountUnprocessed);
             }
         }
+        if(loanTransaction.getLoan().isGLIMLoan()){
+            List<GroupLoanIndividualMonitoring> glimList = loanTransaction.getLoan().getGroupLoanIndividualMonitoringList();            
+            if(getOverpaidAmountByGlim(glimList,currency).compareTo(Money.zero(currency))>0){
+                onLoanOverpayment(loanTransaction, getOverpaidAmountByGlim(glimList,currency)); 
+                loanTransaction.updateOverPayments(getOverpaidAmountByGlim(glimList,currency));
+            }
+        }
     }
-
+    public Money getOverpaidAmountByGlim(List<GroupLoanIndividualMonitoring> glimList, final MonetaryCurrency currency){
+        BigDecimal overpiadAmount = BigDecimal.ZERO;
+        for (GroupLoanIndividualMonitoring glim : glimList) {
+            overpiadAmount = MathUtility.add(overpiadAmount,glim.getOverpaidAmount());
+        }
+        return Money.of(currency, overpiadAmount);
+    }
     private Money handleTransactionAndCharges(final LoanTransaction loanTransaction, final MonetaryCurrency currency,
             final List<LoanRepaymentScheduleInstallment> installments, final Set<LoanCharge> charges, final Money chargeAmountToProcess,
             final boolean isFeeCharge) {
@@ -288,6 +300,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         return transactionAmountUnprocessed;
     }
 
+    @SuppressWarnings("null")
     private Money processTransaction(final LoanTransaction loanTransaction, final MonetaryCurrency currency,
             final List<LoanRepaymentScheduleInstallment> installments, Money amountToProcess) {
         int installmentIndex = 0;
@@ -304,7 +317,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         if (isGLIMLoan) {
         List<GroupLoanIndividualMonitoring> glimMembers =  (loan == null)?null:loan.getGroupLoanIndividualMonitoringList();        
         Set<LoanCharge>   charges= loan.charges();
-        Map<Long,BigDecimal> chargeAmountMap = new HashMap<Long, BigDecimal>();
+        Map<Long,BigDecimal> chargeAmountMap = new HashMap<>();
             for (LoanCharge loanCharge : charges) {
                 chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
             }
@@ -314,19 +327,21 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                     Money transactionAmountPerClient = Money.of(currency, glimMember.getTransactionAmount());
                     Money penaltyPortion = Money.zero(currency);
 
-                    Map<String, BigDecimal> processedTransactionMap = new HashMap<String, BigDecimal>();
+                    Map<String, BigDecimal> processedTransactionMap = new HashMap<>();
                     processedTransactionMap.put("processedCharge", BigDecimal.ZERO);
                     processedTransactionMap.put("processedInterest", BigDecimal.ZERO);
                     processedTransactionMap.put("processedPrincipal", BigDecimal.ZERO);
+                    processedTransactionMap.put("overPaidAmount", BigDecimal.ZERO);
                     processedTransactionMap.put("processedinstallmentTransactionAmount", BigDecimal.ZERO);
 
-                    Map<String, BigDecimal> installmentPaidMap = new HashMap<String, BigDecimal>();
+                    Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
                     installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
                     installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
                     installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
+                    installmentPaidMap.put("overPaidAmount", BigDecimal.ZERO);
                     installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
                     Set<GroupLoanIndividualMonitoringCharge> glimCharges = glimMember.getGroupLoanIndividualMonitoringCharges();
-                    Map<Long,BigDecimal> glimChargeAmountMap = new HashMap<Long, BigDecimal>();
+                    Map<Long,BigDecimal> glimChargeAmountMap = new HashMap<>();
                     for (GroupLoanIndividualMonitoringCharge glimloanCharge : glimCharges) {
                     	glimChargeAmountMap.put(glimloanCharge.getCharge().getId(), MathUtility.zeroIfNull(glimloanCharge.getPaidCharge()));
             		}
@@ -551,7 +566,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
             for (Long chargeId : chargeAmountMap.keySet()) {
                 if (chargeId == loanCharge.getCharge().getId()) {
                     Money amountRemaining = Money.of(currency, chargeAmountMap.get(chargeId));
-                    Set<LoanCharge> chargeSet = new HashSet<LoanCharge>();
+                    Set<LoanCharge> chargeSet = new HashSet<>();
                     chargeSet.add(loanCharge);
                     while (amountRemaining.isGreaterThanZero()) {
                         final LoanCharge unpaidCharge = findEarliestUnpaidChargeFromUnOrderedSet(chargeSet, currency);
@@ -643,7 +658,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         Money  transactionAmountPerClient = Money.of(currency, glimMember.getTransactionAmount());
         Loan loan = loanTransaction.getLoan();
         
-        Map<String, BigDecimal> installmentPaidMap = new HashMap<String, BigDecimal>();
+        Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
         installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
         installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
         installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
@@ -1017,14 +1032,10 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         final LoanTransaction loanTransaction = groupLoanIndividualMonitoringTransaction.getLoanTransaction();
         final GroupLoanIndividualMonitoring glim = groupLoanIndividualMonitoringTransaction
                 .getGroupLoanIndividualMonitoring();
-        BigDecimal totalAmount = individualTransactionAmount.add(zeroIfNull(glim.getTotalPaidAmount())).add(zeroIfNull(glim.getWaivedChargeAmount())).add(zeroIfNull(glim.getWaivedInterestAmount()));
         BigDecimal writeOfAmount = zeroIfNull(glim.getPrincipalWrittenOffAmount()).add(zeroIfNull(glim.getInterestWrittenOffAmount())).add(zeroIfNull(glim.getChargeWrittenOffAmount()));
 		if(writeOfAmount.compareTo(BigDecimal.ZERO)>0 && individualTransactionAmount.compareTo(BigDecimal.ZERO)>0 && !loanTransaction.getTypeOf().isRecoveryRepayment()){
 			throw new ClientAlreadyWriteOffException();
 		}
-        if(glim.getTotalPaybleAmount().subtract(totalAmount).compareTo(BigDecimal.ZERO)<0){
-        	throw new ClientCanNotExceedPaybleAmount();
-        }
         Loan loan = loanTransaction.getLoan();
         MonetaryCurrency currency = loan.getCurrency();
         
@@ -1036,8 +1047,6 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         
         Money penaltyPortion = Money.zero(currency);
         
-        //BigDecimal interestToBePaidByClient = GroupLoanIndividualMonitoringTransactionAssembler.getInterestSplit(glim, individualTransactionAmount, loan, BigDecimal.ZERO);
-
         Money interestPortion = Money.of(currency, processedTransactionMap.get("processedInterest"));
                 
         Money principalPortion = Money.of(currency,processedTransactionMap.get("processedPrincipal"));

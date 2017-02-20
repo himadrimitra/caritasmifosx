@@ -343,6 +343,7 @@ public class LoanAssembler {
             loanApplication.setFlatInterestRate(loanApplicationTerms.getFlatInterestRate());
             loanApplication.setFixedEmiAmount(loanApplicationTerms.getFixedEmiAmount());
         }
+        loanApplication.setBrokenPeriodInterest(loanApplicationTerms.getBrokenPeriodInterest().getAmount());
         return loanApplication;
     }
 

@@ -45,6 +45,9 @@ public class GroupLoanIndividualMonitoringTransaction extends AbstractPersistabl
 
     @Column(name = "total_amount", scale = 6, precision = 19, nullable = true)
     private BigDecimal totalAmount;
+    
+    @Column(name = "overpaid_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal overpaidAmount;
 
     protected GroupLoanIndividualMonitoringTransaction() {
 
@@ -166,5 +169,17 @@ public class GroupLoanIndividualMonitoringTransaction extends AbstractPersistabl
     public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
     }
+
+    
+    public BigDecimal getOverpaidAmount() {
+        return this.overpaidAmount;
+    }
+
+    
+    public void setOverpaidAmount(BigDecimal overpaidAmount) {
+        this.overpaidAmount = overpaidAmount;
+    }
+    
+    
 
 }

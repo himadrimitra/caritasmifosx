@@ -3,6 +3,7 @@ package com.finflux.transaction.execution.service;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -130,8 +132,10 @@ public class BankTransactionServiceImpl implements BankTransactionService {
 				}
 				description.append(" | Client: ").append(client.getDisplayName())
 						.append("(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()));
+				final AppUser assignedTo = null;
+				final Date dueDate = null;
 				this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-						TaskEntityType.BANK_TRANSACTION, txnId, client,
+						TaskEntityType.BANK_TRANSACTION, txnId, client,assignedTo,dueDate,
 						client.getOffice(), map, description.toString());
 			}
 		}
