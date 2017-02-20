@@ -163,8 +163,8 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         changes.put("clientMembers", clientMembers);
         this.glimAssembler.updateGLIMAfterRepayment(glimTransactions, isRecoveryRepayment);
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
-        this.glimTransactionAssembler.updateLoanWriteOffStatusForGLIM(loan);
-
+        this.glimTransactionAssembler.updateLoanStatusForGLIM(loan);
+        
         return commandProcessingResultBuilder.withCommandId(command.commandId()) //
                 .withTransactionId(loanTransaction.getId().toString()) //
                 .withLoanId(loanId) //
@@ -448,7 +448,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 loanTransaction, glimMembers, writeoffReason, clientMembers);
         changes.put("clientMembers", clientMembers);
         this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
-        this.glimTransactionAssembler.updateLoanWriteOffStatusForGLIM(loan);
+        this.glimTransactionAssembler.updateLoanStatusForGLIM(loan);
 
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //

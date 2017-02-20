@@ -971,4 +971,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isBrokenPeriodInterestPosting() {
         return getTypeOf().isBrokenPeriodInterestPosting() && isNotReversed();
     }
+    
+    public BigDecimal getOverPaymentPortion() {
+        return this.overPaymentPortion;
+    }
+
+    
+    public void setOverPaymentPortion(BigDecimal overPaymentPortion) {
+        this.overPaymentPortion = overPaymentPortion;
+    }
+    
 }

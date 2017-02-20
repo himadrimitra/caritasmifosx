@@ -29,7 +29,6 @@ import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringData;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
-import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepositoryWrapper;
@@ -95,11 +94,18 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                 if (MathUtility.isGreaterThanZero(individualTransactionAmount)) {
                     GroupLoanIndividualMonitoring groupLoanIndividualMonitoring = this.groupLoanIndividualMonitoringRepositoryWrapper
                             .findOneWithNotFoundDetection(glimId);
-                    GroupLoanIndividualMonitoringTransaction groupLoanIndividualMonitoringTransaction = GroupLoanIndividualMonitoringTransaction
+                    GroupLoanIndividualMonitoringTransaction glimTransaction = GroupLoanIndividualMonitoringTransaction
                             .instance(groupLoanIndividualMonitoring, loanTransaction, loanTransaction.getTypeOf().getValue());
-                    loanRepaymentScheduleTransactionProcessor.handleGLIMRepayment(groupLoanIndividualMonitoringTransaction,
+                    
+                    loanRepaymentScheduleTransactionProcessor.handleGLIMRepayment(glimTransaction,
                             individualTransactionAmount);
-                    glimTransactions.add(groupLoanIndividualMonitoringTransaction);
+                    for(GroupLoanIndividualMonitoring glim: loanTransaction.getLoan().getGroupLoanIndividualMonitoringList()){
+                        if(glim.getId().intValue()==glimId.intValue()){
+                            glimTransaction.setOverpaidAmount(glim.getOverpaidAmount());
+                            glimTransaction.setTotalAmount(individualTransactionAmount);
+                        }
+                    }
+                    glimTransactions.add(glimTransaction);
                     clientMembersJson.add(GroupLoanIndividualMonitoringDataChanges.createNew(glimId, individualTransactionAmount));
                 }
 
@@ -169,7 +175,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
     }
 
     public List<GroupLoanIndividualMonitoringData> handleGLIMRepaymentTemplate(List<GroupLoanIndividualMonitoringData> glimData,
-            LoanTransactionData loanTransactionData, Loan loan, Date transactionDate) {
+            Loan loan, Date transactionDate) {
         LocalDate transactionDateAsLocalDate = (transactionDate == null) ? DateUtils.getLocalDateOfTenant() : new LocalDate(transactionDate);
         transactionDateAsLocalDate = new LocalDate(transactionDate);
         List<LoanRepaymentScheduleInstallment> loanRepaymentScheduleInstallment = loan.getRepaymentScheduleInstallments();
@@ -469,7 +475,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         return splitMap;
     }
 
-    public void updateLoanWriteOffStatusForGLIM(Loan loan) {
+    public void updateLoanStatusForGLIM(Loan loan) {
         List<GroupLoanIndividualMonitoring> glimMembersForStatusUpdate = this.glimRepository.findByLoanIdAndIsClientSelected(loan.getId(),
                 true);
         for (GroupLoanIndividualMonitoring glim : glimMembersForStatusUpdate) {
@@ -478,17 +484,31 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                         glim.getChargeWrittenOffAmount());
                 BigDecimal outStandingAmount = MathUtility.subtract(glim.getTotalPaybleAmount(), MathUtility.add(glim.getTotalPaidAmount(),
                         glim.getWaivedChargeAmount(), glim.getWaivedInterestAmount(), totalAmountWrittenOff));
-                if (MathUtility.isZero(outStandingAmount)) {
+                if (MathUtility.isZero(outStandingAmount) || MathUtility.isNegative(outStandingAmount)) {
                     glim.setIsActive(false);
                 }
             }
         }
         this.glimRepository.save(glimMembersForStatusUpdate);
-        Boolean isGlimWriteOff = this.glimAssembler.isGLIMApplicableForWriteOf(glimMembersForStatusUpdate);
-        if (isGlimWriteOff) {
-            loan.setLoanStatus(LoanStatus.CLOSED_WRITTEN_OFF.getValue());
-            this.loanRepository.save(loan);
+        boolean isLoanCompleted = isLoanCompleted(glimMembersForStatusUpdate);
+        if(isLoanCompleted){
+            Boolean isGlimWriteOff = this.glimAssembler.isGLIMApplicableForWriteOf(glimMembersForStatusUpdate);
+            if (isGlimWriteOff) {
+                loan.setLoanStatus(LoanStatus.CLOSED_WRITTEN_OFF.getValue());
+                this.loanRepository.save(loan);
+            }else if(MathUtility.isGreaterThanZero(loan.getTotalOverpaid())){
+                loan.setLoanStatus(LoanStatus.OVERPAID.getValue());
+                this.loanRepository.save(loan);
+            }
         }
+        
+    }
+    
+    public boolean isLoanCompleted(List<GroupLoanIndividualMonitoring> glimMembersForStatusUpdate){
+        for (GroupLoanIndividualMonitoring glimData : glimMembersForStatusUpdate) {            
+            if (glimData.isClientSelected() && glimData.getIsActive()) { return false; }
+        }
+        return true;
     }
 
     public Collection<GroupLoanIndividualMonitoringTransaction> writeOffForClients(final LoanTransaction loanTransaction,

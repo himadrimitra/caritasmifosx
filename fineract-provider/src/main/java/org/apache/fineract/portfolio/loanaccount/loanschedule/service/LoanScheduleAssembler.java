@@ -652,7 +652,7 @@ public class LoanScheduleAssembler {
         if(glimList != null && !glimList.isEmpty()) {
             this.groupLoanIndividualMonitoringAssembler.adjustRoundOffValuesToApplicableCharges(loanCharges, loanApplicationTerms.getNumberOfRepayments(),
                     glimList);
-            this.groupLoanIndividualMonitoringAssembler.updateInstallmentAmountForGlim(glimList, loanApplicationTerms, loanCharges);
+            this.groupLoanIndividualMonitoringAssembler.updateInstallmentAmountForGlim(glimList, loanApplicationTerms);
             loanApplicationTerms.updateTotalInterestDueForGlim(glimList);
         }
         final LoanScheduleGenerator loanScheduleGenerator = this.loanScheduleFactory.create(loanApplicationTerms.getInterestMethod());

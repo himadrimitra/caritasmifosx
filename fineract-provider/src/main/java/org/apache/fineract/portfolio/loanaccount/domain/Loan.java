@@ -2910,7 +2910,7 @@ public class Loan extends AbstractPersistable<Long> {
         //capitalization of charges
         this.setTotalCapitalizedCharges(LoanUtilService.getCapitalizedChargeAmount(this.getLoanCharges()));
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(scheduleGeneratorDTO);
-        updateInstallmentAmountForGlim(loanApplicationTerms, charges());
+        updateInstallmentAmountForGlim(loanApplicationTerms);
         loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);        
         final LoanScheduleGenerator loanScheduleGenerator = scheduleGeneratorDTO.getLoanScheduleFactory().create(interestMethod);
         final BigDecimal firstFixedInstallmentEmiAmount = GroupLoanIndividualMonitoringAssembler.calculateGlimFirstInstallmentAmount(loanApplicationTerms);
@@ -3407,10 +3407,9 @@ public class Loan extends AbstractPersistable<Long> {
                 chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
             }
             for (GroupLoanIndividualMonitoringTransaction glimTransaction : glimTransactions) {
-
+                
                 if (MathUtility.isGreaterThanZero(glimTransaction.getTotalAmount())) {
-                    GroupLoanIndividualMonitoring glimMember = glimTransaction.getGroupLoanIndividualMonitoring();
-
+                    GroupLoanIndividualMonitoring glimMember = glimTransaction.getGroupLoanIndividualMonitoring();                  
                     BigDecimal feeAmount = glimTransaction.getFeePortion();
                     BigDecimal interestAmount = glimTransaction.getInterestPortion();
                     BigDecimal principalAmount = glimTransaction.getPrincipalPortion();
@@ -3423,9 +3422,7 @@ public class Loan extends AbstractPersistable<Long> {
                     BigDecimal totalAmount = MathUtility.add(totalPaidAmount, totalWaivedAmount, totalWrittenOffAmount);
                     BigDecimal totalDueAmountPerClient = MathUtility.add(glimMember.getDisbursedAmount(), glimMember.getInterestAmount(),
                             glimMember.getChargeAmount());
-
                     Money transactionAmountPerClient = Money.of(getCurrency(), glimTransaction.getTotalAmount());
-
                     Map<String, BigDecimal> processedTransactionMap = new HashMap<>();
                     processedTransactionMap.put("processedCharge", BigDecimal.ZERO);
                     processedTransactionMap.put("processedInterest", BigDecimal.ZERO);
@@ -3564,6 +3561,7 @@ public class Loan extends AbstractPersistable<Long> {
                     glimMember.setPaidInterestAmount(glimMember.getPaidInterestAmount().subtract(interestAmount));
                     glimMember.setPaidPrincipalAmount(glimMember.getPaidPrincipalAmount().subtract(principalAmount));
                     glimMember.setPaidAmount(glimMember.getTotalPaidAmount().subtract(glimTransaction.getTotalAmount()));
+                    glimMember.setOverpaidAmount(MathUtility.subtract(glimMember.getOverpaidAmount(), glimTransaction.getOverpaidAmount()));
                     removeGlimTransactions.add(glimTransaction);
             	}
             }
@@ -3615,9 +3613,12 @@ public class Loan extends AbstractPersistable<Long> {
          * FIXME: Vishwas, skipping post loan transaction checks for Loan
          * recoveries
          **/
-        if (loanTransaction.isNotRecoveryRepayment()) {
+        if(this.isGLIMLoan() && loanTransaction.getOverPaymentPortion()!= null && loanTransaction.getOverPaymentPortion().compareTo(BigDecimal.ZERO)>0){
+            this.processIncomeAccrualTransactionOnLoanClosure(loanTransaction.getTransactionDate());
+        }else if (loanTransaction.isNotRecoveryRepayment()) {
             doPostLoanTransactionChecks(loanTransaction.getTransactionDate(), loanLifecycleStateMachine);
         }
+        
 
         if (this.loanProduct.isMultiDisburseLoan()) {
             BigDecimal totalDisbursed = getDisbursedAmount();
@@ -3645,7 +3646,7 @@ public class Loan extends AbstractPersistable<Long> {
             for (Long chargeId : chargeAmountMap.keySet()) {
                 if (chargeId == loanCharge.getCharge().getId()) {
                     Money amountRemaining = Money.of(getCurrency(), chargeAmountMap.get(chargeId));
-                    Set<LoanCharge> chargeSet = new HashSet<LoanCharge>();
+                    Set<LoanCharge> chargeSet = new HashSet<>();
                     chargeSet.add(loanCharge);
                     while (amountRemaining.isGreaterThanZero()) {
                         final LoanCharge unpaidCharge = findLatestPaidChargeFromUnOrderedSet(chargeSet, getCurrency());
@@ -6163,7 +6164,7 @@ public class Loan extends AbstractPersistable<Long> {
         final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
         final MathContext mc = new MathContext(8, roundingMode);
         final LoanApplicationTerms loanApplicationTerms = constructLoanApplicationTerms(generatorDTO);
-        updateInstallmentAmountForGlim(loanApplicationTerms, charges());
+        updateInstallmentAmountForGlim(loanApplicationTerms);
         loanApplicationTerms.updateTotalInterestDueForGlim(this.glimList);
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
@@ -6902,7 +6903,7 @@ public class Loan extends AbstractPersistable<Long> {
         return this.glimList;
     }
     
-    public void updateInstallmentAmountForGlim(LoanApplicationTerms loanApplicationTerms, Set<LoanCharge> charges) {
+    public void updateInstallmentAmountForGlim(LoanApplicationTerms loanApplicationTerms) {
         BigDecimal totalInstallmentAmount = BigDecimal.ZERO;
         BigDecimal installmentAmountWithoutFee = BigDecimal.ZERO;
         Integer numberOfInstallments = loanApplicationTerms.getNumberOfRepayments();
@@ -6932,7 +6933,6 @@ public class Loan extends AbstractPersistable<Long> {
     public BigDecimal calculateInstallmentAmount(BigDecimal installmentAmount, final BigDecimal totalFeeCharges, final Integer numberOfRepayments) {
         BigDecimal feePerInstallment = BigDecimal.ZERO;
         if(installmentAmount != null){
-            /*feePerInstallment = totalFeeCharges.divide(BigDecimal.valueOf(numberOfRepayments.doubleValue()), MoneyHelper.getRoundingModeForGlimEmiAmount());*/
             feePerInstallment = BigDecimal.valueOf(totalFeeCharges.doubleValue() / numberOfRepayments.doubleValue());
             installmentAmount = installmentAmount.subtract(feePerInstallment);
         }
