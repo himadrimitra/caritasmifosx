@@ -16,6 +16,8 @@ import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonit
 import org.apache.fineract.portfolio.loanaccount.exception.ClientSharesNotEqualToPrincipalAmountException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidClientShareInGroupLoanException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
+import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationTransitionApiJsonValidator;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -52,17 +54,21 @@ public class GroupLoanIndividualMonitoringDataValidator {
 
     }
     
-    public static void validateForGroupLoanIndividualMonitoringTransaction(final JsonCommand command, String totalAmountType) {
+    public static void validateForGroupLoanIndividualMonitoringTransaction(final JsonCommand command, String totalAmountType,
+            AppUser currentUser, String currencyCode, boolean validateApprovalLimits) {
         JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (JsonElement clientMember : clientMembers) {
             JsonObject member = clientMember.getAsJsonObject();
             if (member.has(LoanApiConstants.transactionAmountParamName)) {
-                totalAmount = totalAmount.add(member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal());
+                BigDecimal memberDisbursalAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
+                if (validateApprovalLimits) {
+                    LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser, memberDisbursalAmount, currencyCode);
+                }
+                totalAmount = totalAmount.add(memberDisbursalAmount);
             }
         }
         if (command.bigDecimalValueOfParameterNamed(totalAmountType).doubleValue() != totalAmount.doubleValue()) { throw new ClientSharesNotEqualToPrincipalAmountException(); }
-
     }
 
     public static boolean isClientsAmountValid(JsonArray clientMembers) {

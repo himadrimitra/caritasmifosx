@@ -24,22 +24,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.portfolio.collaterals.api.PledgeApiConstants;
 import org.apache.fineract.useradministration.api.AppUserApiConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 @Component
@@ -48,7 +49,8 @@ public final class RoleDataValidator {
     /**
      * The parameters supported for this command.
      */
-    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("id", "name", "description",AppUserApiConstant.roleBasedLimit));
+    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("id", "name", "description",
+            AppUserApiConstant.ROLE_BASED_LIMITS, AppUserApiConstant.LOCALE));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -73,14 +75,9 @@ public final class RoleDataValidator {
 
         final String description = this.fromApiJsonHelper.extractStringNamed("description", element);
         baseDataValidator.reset().parameter("description").value(description).notBlank().notExceedingLengthOf(500);
-        
-        if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.roleBasedLimit,element)){
-        	final JsonElement roleBasedElement = element.getAsJsonObject().get(AppUserApiConstant.roleBasedLimit);
-        	if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.loanApproval, roleBasedElement)){
-            	final BigDecimal loanApproval = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(AppUserApiConstant.loanApproval, roleBasedElement);
-                baseDataValidator.reset().parameter(AppUserApiConstant.loanApproval).value(loanApproval).ignoreIfNull().positiveAmount();        		
-        	}        	
-        }
+
+        validateRoleBasedLimits(baseDataValidator, element);
+
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
@@ -104,19 +101,41 @@ public final class RoleDataValidator {
             final String description = this.fromApiJsonHelper.extractStringNamed("description", element);
             baseDataValidator.reset().parameter("description").value(description).notBlank().notExceedingLengthOf(500);
         }
-        
-        if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.roleBasedLimit,element)){
-        	final JsonElement roleBasedElement = element.getAsJsonObject().get(AppUserApiConstant.roleBasedLimit);
-        	if(this.fromApiJsonHelper.parameterExists(AppUserApiConstant.loanApproval, roleBasedElement)){
-            	final BigDecimal loanApproval = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(AppUserApiConstant.loanApproval, roleBasedElement);
-                baseDataValidator.reset().parameter(AppUserApiConstant.loanApproval).value(loanApproval).ignoreIfNull().positiveAmount();        		
-        	}        	
-        }
+
+        validateRoleBasedLimits(baseDataValidator, element);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+    }
+
+    public void validateRoleBasedLimits(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        if (this.fromApiJsonHelper.parameterExists(AppUserApiConstant.ROLE_BASED_LIMITS, element)) {
+            final JsonArray roleBasedLimitsArray = this.fromApiJsonHelper.extractJsonArrayNamed(AppUserApiConstant.ROLE_BASED_LIMITS,
+                    element);
+            final JsonObject topLevelJsonObject = element.getAsJsonObject();
+            final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonObject);
+            if (roleBasedLimitsArray != null && roleBasedLimitsArray.size() > 0) {
+                for (int i = 0; i < roleBasedLimitsArray.size(); i++) {
+                    final JsonObject jsonObject = roleBasedLimitsArray.get(i).getAsJsonObject();
+                    /** Extract and validate max approval Amount **/
+                    final BigDecimal maxLoanApprovalAmount = this.fromApiJsonHelper.extractBigDecimalNamed(
+                            AppUserApiConstant.LOAN_APPROVAL_AMOUNT_LIMIT, jsonObject, locale);
+                    baseDataValidator
+                            .reset()
+                            .parameter(
+                                    AppUserApiConstant.ROLE_BASED_LIMITS + "[" + i + "]." + AppUserApiConstant.LOAN_APPROVAL_AMOUNT_LIMIT)
+                            .value(maxLoanApprovalAmount).notNull().positiveAmount();
+                    /** Extract and validate currency Code **/
+                    final String currencyCode = this.fromApiJsonHelper.extractStringNamed(AppUserApiConstant.CURRENCY_CODE, jsonObject);
+                    baseDataValidator.reset()
+                            .parameter(AppUserApiConstant.ROLE_BASED_LIMITS + "[" + i + "]." + AppUserApiConstant.CURRENCY_CODE)
+                            .value(currencyCode).notBlank().notExceedingLengthOf(3);
+
+                }
+            }
+        }
     }
 }

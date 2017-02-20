@@ -22,6 +22,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -75,5 +76,9 @@ public class OrganisationCurrency extends AbstractPersistable<Long> {
 
     public final MonetaryCurrency toMonetaryCurrency() {
         return new MonetaryCurrency(this.code, this.decimalPlaces, this.inMultiplesOf);
+    }
+    
+    public CurrencyData toData() {
+        return new CurrencyData(this.code, this.name, this.decimalPlaces, this.inMultiplesOf, this.displaySymbol, this.nameCode);
     }
 }

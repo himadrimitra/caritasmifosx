@@ -1,46 +1,37 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements. See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership. The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
 package org.apache.fineract.useradministration.data;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.organisation.monetary.data.CurrencyData;
+
 public class RoleBasedLimitData {
-	
-	private final Long id;
-    private BigDecimal loanApproval;
-    
-	public RoleBasedLimitData(Long id, BigDecimal loanApproval) {
-		this.id = id;
-		this.loanApproval = loanApproval;
-	}
 
-	public Long getId() {
-		return this.id;
-	}
+    private final Long roleBasedLimitId;
+    private final String currencyCode;
+    private final CurrencyData currencyData;
+    private BigDecimal maxLoanApprovalAmount;
 
-	public BigDecimal getLoanApproval() {
-		return this.loanApproval;
-	}
+    public RoleBasedLimitData(Long roleBasedLimitId, String currencyCode, CurrencyData currencyData, BigDecimal maxLoanApprovalAmount) {
+        this.currencyData = currencyData;
+        this.maxLoanApprovalAmount = maxLoanApprovalAmount;
+        this.currencyCode = currencyCode;
+        this.roleBasedLimitId = roleBasedLimitId;
+    }
 
-	public void setLoanApproval(BigDecimal loanApproval) {
-		this.loanApproval = loanApproval;
-	}
-    
-    
+    public BigDecimal getLoanApproval() {
+        return this.maxLoanApprovalAmount;
+    }
+
+    public CurrencyData getCurrencyData() {
+        return this.currencyData;
+    }
+
+    public String getCurrencyCode() {
+        return currencyCode;
+    }
+
+    public Long getRoleBasedLimitId() {
+        return roleBasedLimitId;
+    }
+
 }
