@@ -440,6 +440,9 @@ public class Loan extends AbstractPersistable<Long> {
     @ManyToOne(optional = true,fetch=FetchType.LAZY)
     @JoinColumn(name = "expected_repayment_payment_type_id", nullable = true)
     private PaymentType expectedRepaymentPaymentType;
+    
+    @Column(name = "broken_period_interest", scale = 6, precision = 19, nullable = true)
+    private BigDecimal brokenPeriodInterest;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -1426,7 +1429,7 @@ public class Loan extends AbstractPersistable<Long> {
             final Money recoveredAmount = calculateTotalRecoveredPayments();
             this.totalRecovered = recoveredAmount.getAmountDefaultedToNullIfZero();
 
-            final Money principal = this.loanRepaymentScheduleDetail.getPrincipal();
+            final Money principal = getPrincipalWithBrokenPeriodInterest();
             this.summary.updateSummary(loanCurrency(), principal, this.repaymentScheduleInstallments, this.loanSummaryWrapper,
                     isDisbursed(), this.charges);
             updateLoanOutstandingBalaces();
@@ -2183,7 +2186,7 @@ public class Loan extends AbstractPersistable<Long> {
         this.submittedBy = currentUser;
         this.expectedDisbursementDate = loanApplicationTerms.getExpectedDisbursementDate().toDate();
         this.expectedFirstRepaymentOnDate = loanApplicationTerms.getRepaymentStartFromDate();
-        this.interestChargedFromDate = loanApplicationTerms.getInterestChargedFromDate();
+        this.interestChargedFromDate = loanApplicationTerms.getInterestChargedFromDateFromUser();
 
         updateLoanScheduleDependentDerivedFields();
 
@@ -2537,7 +2540,8 @@ public class Loan extends AbstractPersistable<Long> {
                 LoanStatus.fromInt(this.loanStatus));
 
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
-
+        boolean isInApprovedState = isApproved();
+        
         this.loanStatus = statusEnum.getValue();
         actualChanges.put("status", LoanEnumerations.status(this.loanStatus));
 
@@ -2578,9 +2582,30 @@ public class Loan extends AbstractPersistable<Long> {
                     actualDisbursementDate);
             this.loanTransactions.add(interestAppliedTransaction);
         }
+        
+        if (this.repaymentScheduleDetail().getBrokenPeriodMethod().isPostInterest() && getBrokenPeriodInterest().isGreaterThanZero()) {
+            Money interestPostedAmount = retriveBrokenPeriodPostedAmount();
+            Money postInterest = getBrokenPeriodInterest().minus(interestPostedAmount);
+            if (postInterest.isGreaterThanZero()) {
+                LoanTransaction brokenPeriodInterest = LoanTransaction.brokenPeriodInterestPosting(getOffice(), postInterest,
+                        actualDisbursementDate);
+                brokenPeriodInterest.updateLoan(this);
+                this.loanTransactions.add(brokenPeriodInterest);
+            }
+        }
 
         return reprocessTransactionForDisbursement();
 
+    }
+    
+    private Money retriveBrokenPeriodPostedAmount(){
+        Money interestPostedAmount = Money.zero(getCurrency()); 
+        for(LoanTransaction transaction : this.getLoanTransactions()){
+            if(transaction.getTypeOf().isBrokenPeriodInterestPosting() && transaction.isNotReversed()){
+                interestPostedAmount = interestPostedAmount.plus(transaction.getAmount());
+            }
+        }
+        return interestPostedAmount;
     }
     
     private List<LoanDisbursementDetails> getDisbursedLoanDisbursementDetails() {
@@ -5451,27 +5476,31 @@ public class Loan extends AbstractPersistable<Long> {
     
 
     public LocalDate getLastUserTransactionDate() {
-        LocalDate currentTransactionDate = getDisbursementDate();
-        for (final LoanTransaction previousTransaction : this.loanTransactions) {
-            if (!(previousTransaction.isReversed() || previousTransaction.isAccrual() || previousTransaction.isIncomePosting())) {
-                if (currentTransactionDate.isBefore(previousTransaction.getTransactionDate())) {
-                    currentTransactionDate = previousTransaction.getTransactionDate();
-                }
+        Collection<Integer> transactionType = new ArrayList<>();
+        transactionType.add(LoanTransactionType.ACCRUAL.getValue());
+        transactionType.add(LoanTransactionType.INCOME_POSTING.getValue());
+        boolean excludeTypes = true;
+        return getLastTransactioDateOfType(transactionType, excludeTypes);
+    }
+    
+    private LocalDate getLastTransactioDateOfType(Collection<Integer> transactionType, boolean excludeTypes) {
+        int size = this.getLoanTransactions().size();
+        LocalDate lastTansactionDate = getDisbursementDate();
+        for (int i = size - 1; i >= 0; i--) {
+            LoanTransaction loanTransaction = this.getLoanTransactions().get(i);
+            if (loanTransaction.isNotReversed() && (transactionType.contains(loanTransaction.getTypeOf().getValue()) ^ excludeTypes)) {
+                lastTansactionDate = loanTransaction.getTransactionDate();
+                break;
             }
         }
-        return currentTransactionDate;
+        return lastTansactionDate;
     }
 
     public LocalDate getLastRepaymentDate() {
-        LocalDate currentTransactionDate = getDisbursementDate();
-        for (final LoanTransaction previousTransaction : this.loanTransactions) {
-            if (previousTransaction.isRepayment()) {
-                if (currentTransactionDate.isBefore(previousTransaction.getTransactionDate())) {
-                    currentTransactionDate = previousTransaction.getTransactionDate();
-                }
-            }
-        }
-        return currentTransactionDate;
+        Collection<Integer> transactionType = new ArrayList<>();
+        transactionType.add(LoanTransactionType.REPAYMENT.getValue());
+        boolean excludeTypes = false;
+        return getLastTransactioDateOfType(transactionType, excludeTypes);
     }
 
     public LocalDate getLastUserTransactionForChargeCalc() {
@@ -6237,6 +6266,17 @@ public class Loan extends AbstractPersistable<Long> {
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
                 this.loanProduct.isAdjustInterestForRounding());
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
+        if (this.isSubmittedAndPendingApproval()
+                || this.isApproved()
+                || (this.isMultiDisburmentLoan() && getLastUserTransactionDate().isBefore(
+                        loanApplicationTerms.getCalculatedRepaymentsStartingFromLocalDate()))) {
+            final Money interestPosted = null;
+            Money brokenPeriodInterest = LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, interestPosted);
+            setBrokenPeriodInterest(brokenPeriodInterest.getAmount());
+        } else {
+            LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, getBrokenPeriodInterest());
+        }
+        
         return loanApplicationTerms;
     }
 
@@ -6308,7 +6348,7 @@ public class Loan extends AbstractPersistable<Long> {
         Money outstanding = Money.zero(getCurrency());
         List<LoanTransaction> loanTransactions = retreiveListOfTransactionsExcludeAccruals();
         for (LoanTransaction loanTransaction : loanTransactions) {
-            if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting()) {
+            if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting() || loanTransaction.isBrokenPeriodInterestPosting()) {
                 outstanding = outstanding.plus(loanTransaction.getAmount(getCurrency()));
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
             } else if(!loanTransaction.isRecoveryRepayment()) {
@@ -7629,6 +7669,29 @@ public class Loan extends AbstractPersistable<Long> {
     
     public Fund getFund() {
         return this.fund;
+    }
+    
+    public Money getPrincipalWithBrokenPeriodInterest() {
+        Money principal = this.loanRepaymentScheduleDetail.getPrincipal();
+        switch (this.loanRepaymentScheduleDetail.getBrokenPeriodMethod()) {
+            case POST_INTEREST:
+                principal = principal.plus(this.brokenPeriodInterest);
+            break;
+
+            default:
+            break;
+        }
+        return principal;
+    }
+
+    
+    public Money getBrokenPeriodInterest() {
+        return  Money.of(getCurrency(), this.brokenPeriodInterest);
+    }
+
+    
+    public void setBrokenPeriodInterest(BigDecimal brokenPeriodInterest) {
+        this.brokenPeriodInterest = brokenPeriodInterest;
     }
     
 }

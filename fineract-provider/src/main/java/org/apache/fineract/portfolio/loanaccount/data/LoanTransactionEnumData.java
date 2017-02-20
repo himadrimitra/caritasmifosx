@@ -50,6 +50,7 @@ public class LoanTransactionEnumData {
     private final boolean addSubsidy;
     private final boolean revokeSubsidy;
     private final boolean realizationSubsidy;
+    private final boolean brokenPeriodInterestPosting;
 
     public LoanTransactionEnumData(final Long id, final String code, final String value) {
         this.id = id;
@@ -74,6 +75,7 @@ public class LoanTransactionEnumData {
         this.addSubsidy = Long.valueOf(LoanTransactionType.ADD_SUBSIDY.getValue()).equals(this.id);
         this.revokeSubsidy = Long.valueOf(LoanTransactionType.REVOKE_SUBSIDY.getValue()).equals(this.id);
         this.realizationSubsidy = Long.valueOf(LoanTransactionSubType.REALIZATION_SUBSIDY.getValue()).equals(this.id);
+        this.brokenPeriodInterestPosting = Long.valueOf(LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING.getValue()).equals(this.id);
     }
 
     public Long id() {
@@ -169,6 +171,11 @@ public class LoanTransactionEnumData {
 
     public boolean isRealizationSubsidy() {
         return this.realizationSubsidy;
+    }
+
+    
+    public boolean isBrokenPeriodInterestPosting() {
+        return this.brokenPeriodInterestPosting;
     }
 
 }

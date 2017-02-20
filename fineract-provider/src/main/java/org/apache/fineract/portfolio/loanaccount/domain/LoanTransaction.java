@@ -173,6 +173,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return new LoanTransaction(null, office, LoanTransactionType.DISBURSEMENT, loanTransactionSubType,paymentDetail, amount.getAmount(), disbursementDate,
                 externalId);
     }
+    
+    public static LoanTransaction brokenPeriodInterestPosting(final Office office, final Money amount, final LocalDate disbursementDate) {
+        final Integer loanTransactionSubType = null;
+        final PaymentDetail paymentDetail = null;
+        final String externalId = null;
+        return new LoanTransaction(null, office, LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING, loanTransactionSubType, paymentDetail,
+                amount.getAmount(), disbursementDate, externalId);
+    }
 
     public static LoanTransaction repayment(final Office office, final Money amount, final PaymentDetail paymentDetail,
             final LocalDate paymentDate, final String externalId) {
@@ -882,7 +890,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     }
 
     public Boolean isAllowTypeTransactionAtTheTimeOfLastUndo() {
-        return isDisbursement() || isAccrual() || isRepaymentAtDisbursement();
+        return isDisbursement() || isAccrual() || isRepaymentAtDisbursement() || isBrokenPeriodInterestPosting();
     }
 
     public void updateCreatedDate(Date createdDate) {
@@ -958,5 +966,9 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     public BigDecimal getAmount() {
         return this.amount;
+    }
+    
+    public boolean isBrokenPeriodInterestPosting() {
+        return getTypeOf().isBrokenPeriodInterestPosting() && isNotReversed();
     }
 }

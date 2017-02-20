@@ -228,10 +228,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             LocalDate scheduledDueDate = adjustedDateDetailsDTO.getChangedScheduleDate();
             
             // calculated interest start date for the period
-            LocalDate periodStartDateApplicableForInterest = calculateInterestStartDateForPeriod(loanApplicationTerms,
-                    scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate,
-                    loanApplicationTerms.isInterestChargedFromDateSameAsDisbursalDateEnabled(),
-                    loanApplicationTerms.getExpectedDisbursementDate());
+            LocalDate periodStartDateApplicableForInterest = this.scheduledDateGenerator.calculateInterestStartDateForPeriod(loanApplicationTerms,
+                    scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate);
             if (isFirstRepayment) {
                 Money capitalizedAmount = LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, 0).negated();
                 processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), capitalizedAmount,
@@ -304,10 +302,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             if (currentPeriodParams.isSkipCurrentLoop()) {
                 continue;
             }
-            periodStartDateApplicableForInterest = calculateInterestStartDateForPeriod(loanApplicationTerms,
-                    scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate,
-                    loanApplicationTerms.isInterestChargedFromDateSameAsDisbursalDateEnabled(),
-                    loanApplicationTerms.getExpectedDisbursementDate());
+            periodStartDateApplicableForInterest = this.scheduledDateGenerator.calculateInterestStartDateForPeriod(loanApplicationTerms,
+                    scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate);
 
             // backup for pre-close transaction
             updateCompoundingDetails(scheduleParams, periodStartDateApplicableForInterest);
@@ -813,10 +809,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                             int periodDays = Days.daysBetween(scheduleParams.getPeriodStartDate(), transactionDate).getDays();
                             // calculates period start date for interest
                             // calculation as per the configuration
-                            periodStartDateApplicableForInterest = calculateInterestStartDateForPeriod(loanApplicationTerms,
-                                    scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate,
-                                    loanApplicationTerms.isInterestChargedFromDateSameAsDisbursalDateEnabled(),
-                                    loanApplicationTerms.getExpectedDisbursementDate());
+                            periodStartDateApplicableForInterest = this.scheduledDateGenerator.calculateInterestStartDateForPeriod(loanApplicationTerms,
+                                    scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate);
 
                             int daysInPeriodApplicable = Days.daysBetween(periodStartDateApplicableForInterest, transactionDate).getDays();
                             Money interestForThisinstallment = Money.zero(currency);
@@ -1972,34 +1966,6 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         return map;
     }
 
-    /**
-     * calculates Interest stating date as per the settings
-     * 
-     * @param firstRepaymentdate
-     *            TODO
-     * @param boolean1
-     * @param localDate
-     */
-    private LocalDate calculateInterestStartDateForPeriod(final LoanApplicationTerms loanApplicationTerms, LocalDate periodStartDate,
-            final LocalDate idealDisbursementDate, final LocalDate firstRepaymentdate,
-            final Boolean isInterestChargedFromDateSameAsDisbursalDateEnabled, final LocalDate expectedDisbursementDate) {
-        LocalDate periodStartDateApplicableForInterest = periodStartDate;
-        if (periodStartDate.isBefore(idealDisbursementDate) || firstRepaymentdate.isAfter(periodStartDate)) {
-            if (loanApplicationTerms.getInterestChargedFromLocalDate() != null) {
-                if (periodStartDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())
-                        || loanApplicationTerms.getInterestChargedFromLocalDate().isAfter(periodStartDate)) {
-                    periodStartDateApplicableForInterest = loanApplicationTerms.getInterestChargedFromLocalDate();
-                }
-            } else if (loanApplicationTerms.getInterestChargedFromLocalDate() == null
-                    && isInterestChargedFromDateSameAsDisbursalDateEnabled) {
-                periodStartDateApplicableForInterest = expectedDisbursementDate;
-            } else if (periodStartDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())) {
-                periodStartDateApplicableForInterest = idealDisbursementDate;
-            }
-        }
-        return periodStartDateApplicableForInterest;
-    }
-
     private void updateMapWithAmount(final Map<LocalDate, Money> map, final Money amount, final LocalDate amountApplicableDate) {
         Money principalPaid = amount;
         if (map.containsKey(amountApplicableDate)) {
@@ -2881,10 +2847,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final LocalDate idealDisbursementDate = this.scheduledDateGenerator.idealDisbursementDateBasedOnFirstRepaymentDate(
                     loanApplicationTerms.getLoanTermPeriodFrequencyType(), loanApplicationTerms.getRepaymentEvery(), firstRepaymentdate,
                     loanApplicationTerms.getLoanCalendar(), loanApplicationTerms.getHolidayDetailDTO(), loanApplicationTerms);
-            LocalDate periodStartDateApplicableForInterest = calculateInterestStartDateForPeriod(loanApplicationTerms,
-                    loanApplicationTerms.getExpectedDisbursementDate(), idealDisbursementDate, firstRepaymentdate,
-                    loanApplicationTerms.isInterestChargedFromDateSameAsDisbursalDateEnabled(),
-                    loanApplicationTerms.getExpectedDisbursementDate());
+            LocalDate periodStartDateApplicableForInterest = this.scheduledDateGenerator.calculateInterestStartDateForPeriod(
+                    loanApplicationTerms, loanApplicationTerms.getExpectedDisbursementDate(), idealDisbursementDate, firstRepaymentdate);
             int totalInterestDays = Days.daysBetween(periodStartDateApplicableForInterest, firstRepaymentdate).getDays() - 30;
             if (totalInterestDays > 0) {
 

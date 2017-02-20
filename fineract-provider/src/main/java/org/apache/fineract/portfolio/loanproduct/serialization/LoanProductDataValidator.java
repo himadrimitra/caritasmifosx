@@ -749,7 +749,7 @@ public final class LoanProductDataValidator {
         final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.brokenPeriodMethodTypeParamName, element,
                 Locale.getDefault());
         baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType).ignoreIfNull()
-                .inMinMaxRange(0, 1);
+                .inMinMaxRange(0, 2);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -1740,7 +1740,7 @@ public final class LoanProductDataValidator {
             final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(
                     LoanProductConstants.brokenPeriodMethodTypeParamName, element, Locale.getDefault());
             baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType)
-                    .ignoreIfNull().inMinMaxRange(0, 1);
+                    .ignoreIfNull().inMinMaxRange(0, 2);
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

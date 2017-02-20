@@ -502,7 +502,7 @@ public class LoanScheduleAssembler {
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
         final boolean considerFutureDisbursmentsInSchedule = true;
-        return LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
+        LoanApplicationTerms loanApplicationTerms =  LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
                 interestRatePerPeriod, interestRatePeriodFrequencyType, annualNominalInterestRate, interestCalculationPeriodMethod,
                 allowPartialPeriodInterestCalcualtion, principalMoney, expectedDisbursementDate, repaymentsStartingFromDate,
@@ -517,6 +517,8 @@ public class LoanScheduleAssembler {
                 firstEmiAmount, loanProduct.getAdjustedInstallmentInMultiplesOf(), 
                 loanProduct.adjustFirstEMIAmount(),considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(),
                 loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
+        LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, null);
+        return  loanApplicationTerms;
     }
 
     private CalendarInstance createCalendarForSameAsRepayment(final Integer repaymentEvery,

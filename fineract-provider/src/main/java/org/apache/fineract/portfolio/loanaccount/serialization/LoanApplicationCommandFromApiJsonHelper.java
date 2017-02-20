@@ -516,7 +516,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.brokenPeriodMethodTypeParamName, element,
                 Locale.getDefault());
         baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType).ignoreIfNull()
-                .inMinMaxRange(0, 1);
+                .inMinMaxRange(0, 2);
         
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
@@ -976,7 +976,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             final Integer brokenPeriodType = this.fromApiJsonHelper.extractIntegerNamed(
                     LoanProductConstants.brokenPeriodMethodTypeParamName, element, Locale.getDefault());
             baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType)
-                    .ignoreIfNull().inMinMaxRange(0, 1);
+                    .ignoreIfNull().inMinMaxRange(0, 2);
         }
 
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);

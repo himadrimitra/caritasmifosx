@@ -54,7 +54,8 @@ public enum LoanTransactionType {
     REFUND_FOR_ACTIVE_LOAN(18, "loanTransactionType.refund"), //
     INCOME_POSTING(19,"loanTransactionType.incomePosting"), //
     ADD_SUBSIDY(50, "loanTransactionType.addSubsidy"), //
-    REVOKE_SUBSIDY(51, "loanTransactionType.revokeSubsidy");
+    REVOKE_SUBSIDY(51, "loanTransactionType.revokeSubsidy"),//
+    BROKEN_PERIOD_INTEREST_POSTING(52,"loanTransactionType.brokenPeriodInterestPosting"); 
 
     private final Integer value;
     private final String code;
@@ -138,6 +139,9 @@ public enum LoanTransactionType {
             case 51:
                 loanTransactionType = LoanTransactionType.REVOKE_SUBSIDY;
             break;
+            case 52:
+                loanTransactionType = LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING;
+            break;
             default:
                 loanTransactionType = LoanTransactionType.INVALID;
             break;
@@ -194,5 +198,9 @@ public enum LoanTransactionType {
     
     public boolean isRevokeSubsidy() {
         return this.value.equals(LoanTransactionType.REVOKE_SUBSIDY.getValue());
+    }
+    
+    public boolean isBrokenPeriodInterestPosting() {
+        return this.value.equals(LoanTransactionType.BROKEN_PERIOD_INTEREST_POSTING.getValue());
     }
 }
