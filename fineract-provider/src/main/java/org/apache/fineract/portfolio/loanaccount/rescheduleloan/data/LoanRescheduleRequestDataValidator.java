@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -68,8 +69,9 @@ public class LoanRescheduleRequestDataValidator {
         if (StringUtils.isBlank(jsonString)) { throw new InvalidJsonException(); }
 
         final Type typeToken = new TypeToken<Map<String, Object>>() {}.getType();
+        Set<String> REQUEST_DATA_PARAMETERS = loan.isGLIMLoan()? RescheduleLoansApiConstants.CREATE_REQUEST_DATA_PARAMETERS :RescheduleLoansApiConstants.CREATE_REQUEST_DATA_PARAMETERS;
         this.fromJsonHelper
-                .checkForUnsupportedParameters(typeToken, jsonString, RescheduleLoansApiConstants.CREATE_REQUEST_DATA_PARAMETERS);
+                .checkForUnsupportedParameters(typeToken, jsonString, REQUEST_DATA_PARAMETERS);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder dataValidatorBuilder = new DataValidatorBuilder(dataValidationErrors).resource(StringUtils
