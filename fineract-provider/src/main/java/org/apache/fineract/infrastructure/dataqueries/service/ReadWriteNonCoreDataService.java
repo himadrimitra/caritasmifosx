@@ -37,7 +37,7 @@ public interface ReadWriteNonCoreDataService {
     void registerDatatable(JsonCommand command);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGISTER_DATATABLE')")
-    void registerDatatable(String dataTableName, String applicationTableName, final Long scopingCriteriaEnum);
+    void registerDatatable(String dataTableName, String applicationTableName, final Long scopingCriteriaEnum, String dataTableDisplayName);
 
     @PreAuthorize(value = "hasAnyRole('ALL_FUNCTIONS', 'REGISTER_DATATABLE')")
     void registerDatatable(JsonCommand command, String permissionTable);

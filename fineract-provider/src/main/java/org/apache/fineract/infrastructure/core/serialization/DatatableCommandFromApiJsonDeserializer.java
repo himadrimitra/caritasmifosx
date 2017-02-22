@@ -51,14 +51,14 @@ public class DatatableCommandFromApiJsonDeserializer {
      */
     private final Set<String> supportedParametersForCreate = new HashSet<>(Arrays.asList("datatableName", "apptableName", "multiRow", "columns", 
             DataTableApiConstant.scopeParamName, DataTableApiConstant.idParamName, DataTableApiConstant.allowedValuesParamName,
-            DataTableApiConstant.scopingCriteriaEnumParamName));
+            DataTableApiConstant.scopingCriteriaEnumParamName,DataTableApiConstant.dataTableDisplayNameParam));
     private final Set<String> supportedParametersForCreateColumns = new HashSet<>(Arrays.asList("name", "type", "length",
             "mandatory", "code", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
             DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName));
     private final Set<String> supportedParametersForUpdate = new HashSet<>(Arrays.asList("apptableName", "changeColumns",
             "addColumns", "dropColumns", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
             DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName,
-            DataTableApiConstant.scopeParamName, DataTableApiConstant.idParamName, DataTableApiConstant.allowedValuesParamName, DataTableApiConstant.scopingCriteriaEnumParamName));
+            DataTableApiConstant.scopeParamName, DataTableApiConstant.idParamName, DataTableApiConstant.allowedValuesParamName, DataTableApiConstant.scopingCriteriaEnumParamName,DataTableApiConstant.dataTableDisplayNameParam));
     private final Set<String> supportedParametersForAddColumns = new HashSet<>(Arrays.asList("name", "type", "length", "mandatory",
             "after", "code", DataTableApiConstant.displayNameParamName, DataTableApiConstant.diplayPositionParamName, DataTableApiConstant.visibleParamName, 
             DataTableApiConstant.dependsOnWithParamName, DataTableApiConstant.visibilityCriteriaParamName, DataTableApiConstant.mandatoryIfVisibleParamName,
@@ -131,6 +131,10 @@ public class DatatableCommandFromApiJsonDeserializer {
         final String datatableName = this.fromApiJsonHelper.extractStringNamed("datatableName", element);
         baseDataValidator.reset().parameter("datatableName").value(datatableName).notBlank().notExceedingLengthOf(50)
                 .matchesRegularExpression(DATATABLE_NAME_REGEX_PATTERN);
+        
+		final String dataTableDisplayName = this.fromApiJsonHelper.extractStringNamed("dataTableDisplayName", element);
+		baseDataValidator.reset().parameter("dataTableDisplayName").value(dataTableDisplayName).ignoreIfNull()
+				.notExceedingLengthOf(100);
 
         final String apptableName = this.fromApiJsonHelper.extractStringNamed("apptableName", element);
         baseDataValidator.reset().parameter("apptableName").value(apptableName).notBlank().notExceedingLengthOf(50)
@@ -157,7 +161,7 @@ public class DatatableCommandFromApiJsonDeserializer {
                 baseDataValidator.reset().parameter("mandatory").value(mandatory).ignoreIfNull().notBlank().isOneOfTheseValues(true, false);
                 
                 final String displayName = this.fromApiJsonHelper.extractStringNamed("displayName", column);
-                baseDataValidator.reset().parameter("displayName").value(displayName).ignoreIfNull().matchesRegularExpression(DATATABLE_COLUMN_NAME_REGEX_PATTERN);
+                baseDataValidator.reset().parameter("displayName").value(displayName).ignoreIfNull().notExceedingLengthOf(100);
                 
                 final Long displayPosition = this.fromApiJsonHelper.extractLongNamed("displayPosition", column);
                 baseDataValidator.reset().parameter("displayPosition").value(displayPosition).ignoreIfNull().longZeroOrGreater();
@@ -237,6 +241,9 @@ public class DatatableCommandFromApiJsonDeserializer {
 
         final JsonArray changeColumns = this.fromApiJsonHelper.extractJsonArrayNamed("changeColumns", element);
         baseDataValidator.reset().parameter("changeColumns").value(changeColumns).ignoreIfNull().jsonArrayNotEmpty();
+		final String dataTableDisplayName = this.fromApiJsonHelper.extractStringNamed("dataTableDisplayName", element);
+		baseDataValidator.reset().parameter("dataTableDisplayName").value(dataTableDisplayName).ignoreIfNull()
+				.notExceedingLengthOf(100);
 
         if (changeColumns != null) {
             for (final JsonElement column : changeColumns) {
