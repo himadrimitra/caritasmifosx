@@ -130,7 +130,6 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     private final CodeValueReadPlatformService codeValueReadPlatformService;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final SavingsProductReadPlatformService savingsProductReadPlatformService;
-
     // private final GlobalConfigurationWritePlatformServiceJpaRepositoryImpl
     // configurationWriteService;
 
@@ -169,7 +168,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
 
         // PERMITTED datatables
-        final String sql = "select id, application_table_name, registered_table_name, scoping_criteria_enum" + " from x_registered_table " + " where exists"
+        final String sql = "select id, application_table_name, registered_table_name, scoping_criteria_enum,registered_table_display_name" + " from x_registered_table " + " where exists"
                 + " (select 'f'" + " from m_appuser_role ur " + " join m_role r on r.id = ur.role_id"
                 + " left join m_role_permission rp on rp.role_id = r.id" + " left join m_permission p on p.id = rp.permission_id"
                 + " where ur.appuser_id = " + this.context.authenticatedUser().getId()
@@ -185,19 +184,20 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final String appTableName = rs.getString("application_table_name");
             final String registeredDatatableName = rs.getString("registered_table_name");
             final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
+            final String registeredDataTableDisplayName = rs.getString("registered_table_display_name");
             if (associatedEntityId != null && scopingCriteriaEnum != null && scopingCriteriaEnum > 0) {
                 isEntityIdAssociatedWithDatatable = isEntityIdAssociatedWithDatatable(id, associatedEntityId, scopingCriteriaEnum);
                 if (isEntityIdAssociatedWithDatatable) {
                     final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                             .fillResultsetColumnHeaders(registeredDatatableName);
 
-                    datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null));
+                    datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null, registeredDataTableDisplayName));
                 }
             } else {
                 final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                         .fillResultsetColumnHeaders(registeredDatatableName);
 
-                datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null));
+                datatables.add(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null, registeredDataTableDisplayName));
             }
         }
 
@@ -230,7 +230,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     public DatatableData retrieveDatatable(final String datatable) {
 
         // PERMITTED datatables
-        final String sql = "select id, application_table_name, registered_table_name, scoping_criteria_enum" + " from x_registered_table " + " where exists"
+        final String sql = "select id, application_table_name, registered_table_name, scoping_criteria_enum,registered_table_display_name" + " from x_registered_table " + " where exists"
                 + " (select 'f'" + " from m_appuser_role ur " + " join m_role r on r.id = ur.role_id"
                 + " left join m_role_permission rp on rp.role_id = r.id" + " left join m_permission p on p.id = rp.permission_id"
                 + " where ur.appuser_id = " + this.context.authenticatedUser().getId() + " and registered_table_name='" + datatable + "'"
@@ -246,11 +246,11 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final String registeredDatatableName = rs.getString("registered_table_name");
             final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
             final List<ScopeCriteriaData> scopeCriteriaData = this.genericDataService.fetchDatatableScopesByIdAndScopingCriteria(id, scopingCriteriaEnum);
-            
+            final String registeredDataTableDisplayName = rs.getString("registered_table_display_name");
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
 
-            datatableData = DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData);
+            datatableData = DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData, registeredDataTableDisplayName);
         }
 
         return datatableData;
@@ -262,12 +262,12 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
 
     @Transactional
     @Override
-    public void registerDatatable(final String dataTableName, final String applicationTableName, final Long scopingCriteriaEnum) {
+    public void registerDatatable(final String dataTableName, final String applicationTableName, final Long scopingCriteriaEnum, String dataTableDisplayName) {
 
         Integer category = DataTableApiConstant.CATEGORY_DEFAULT;
 
         final String permissionSql = this._getPermissionSql(dataTableName);
-        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum);
+        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum, dataTableDisplayName);
 
     }
 
@@ -280,38 +280,42 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final Long scopingCriteriaEnum = null;
 
         Integer category = this.getCategory(command);
-
+        final String dataTableDisplayName = null;
         this.dataTableValidator.validateDataTableRegistration(command.json());
         final String permissionSql = this._getPermissionSql(dataTableName);
-        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum);
+        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum, dataTableDisplayName);
 
     }
 
-    @Transactional
+	@Transactional
     @Override
     public void registerDatatable(final JsonCommand command, final String permissionSql) {
         final String applicationTableName = this.getTableName(command.getUrl());
         final String dataTableName = this.getDataTableName(command.getUrl());
         final Long scopingCriteriaEnum = null;
-        
+        final String dataTableDisplayName = null;
         Integer category = this.getCategory(command);
 
         this.dataTableValidator.validateDataTableRegistration(command.json());
 
-        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum);
+        this._registerDataTable(applicationTableName, dataTableName, category, permissionSql, scopingCriteriaEnum, dataTableDisplayName);
 
     }
 
     @Transactional
     private void _registerDataTable(final String applicationTableName, final String dataTableName, final Integer category,
-            final String permissionsSql, Long scopingCriteriaEnum) {
+            final String permissionsSql, Long scopingCriteriaEnum, String dataTableDisplayName) {
 
         validateAppTable(applicationTableName);
         assertDataTableExists(dataTableName);
+		String displayName = null;
+		if (dataTableDisplayName != null) {
+			displayName = "'" + dataTableDisplayName + "'";
+		}
 
-        final String registerDatatableSql = "insert into x_registered_table (registered_table_name, application_table_name,category, "
-                + "scoping_criteria_enum ) values ('" + dataTableName + "', '" + applicationTableName + "', '" + category + "', "
-                        + ""+scopingCriteriaEnum+")";
+		final String registerDatatableSql = "insert into x_registered_table (registered_table_name, application_table_name,category,scoping_criteria_enum, "
+				+ "registered_table_display_name ) values ('" + dataTableName + "',  '" + applicationTableName + "', '"
+				+ category + "',  " + scopingCriteriaEnum + ", " + displayName + ")";
 
         try {
 
@@ -574,6 +578,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final JsonElement element = this.fromJsonHelper.parse(command.json());
             final JsonArray columns = this.fromJsonHelper.extractJsonArrayNamed("columns", element);
             datatableName = this.fromJsonHelper.extractStringNamed("datatableName", element);
+            final String dataTableDisplayName = this.fromJsonHelper.extractStringNamed("dataTableDisplayName", element);
             final String apptableName = this.fromJsonHelper.extractStringNamed("apptableName", element);
             Boolean multiRow = this.fromJsonHelper.extractBooleanNamed("multiRow", element);
             final Long scopingCriteriaEnum = this.fromJsonHelper.extractLongNamed("scopingCriteriaEnum", element);
@@ -646,7 +651,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             sqlBuilder = sqlBuilder.append(") ENGINE=InnoDB DEFAULT CHARSET=utf8;");
             this.jdbcTemplate.execute(sqlBuilder.toString());
 
-            registerDatatable(datatableName, apptableName, scopingCriteriaEnum);
+            registerDatatable(datatableName, apptableName, scopingCriteriaEnum, dataTableDisplayName);
             registerColumnCodeMapping(codeMappings);
             registerDatatableMetadata(datatableName, columns);
             boolean isCreateDataTable = true;
@@ -1036,6 +1041,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final JsonArray addColumns = this.fromJsonHelper.extractJsonArrayNamed("addColumns", element);
             final JsonArray dropColumns = this.fromJsonHelper.extractJsonArrayNamed("dropColumns", element);
             final String apptableName = this.fromJsonHelper.extractStringNamed("apptableName", element);
+            final String dataTableDisplayName = this.fromJsonHelper.extractStringNamed("dataTableDisplayName", element);
             final Long scopingCriteriaEnum = this.fromJsonHelper.extractLongNamed("scopingCriteriaEnum", element);
             final JsonObject jsonObject = element.getAsJsonObject();
             JsonElement scope = jsonObject.get(DataTableApiConstant.scopeParamName);
@@ -1047,9 +1053,9 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             for (final ResultsetColumnHeaderData columnHeader : columnHeaderData) {
                 mapColumnNameDefinition.put(columnHeader.getColumnName(), columnHeader);
             }
-
+            
             final boolean isConstraintApproach = this.configurationDomainService.isConstraintApproachEnabledForDatatables();
-
+            updateTableDisplayName(dataTableDisplayName, datatableName);
             if (!StringUtils.isBlank(apptableName)) {
                 validateAppTable(apptableName);
 
@@ -1080,7 +1086,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                     this.jdbcTemplate.execute(sqlBuilder.toString());
 
                     deregisterDatatable(datatableName);
-                    registerDatatable(datatableName, apptableName, scopingCriteriaEnum);
+                    registerDatatable(datatableName, apptableName, scopingCriteriaEnum, dataTableDisplayName);
                 }
             }
 
@@ -1230,6 +1236,15 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         String updateSql = "UPDATE `x_registered_table` SET scoping_criteria_enum = "+scopingCriteriaEnum+" where id = "+xRegisterTableId+"";
         this.jdbcTemplate.execute(updateSql);
     }
+
+	private void updateTableDisplayName(final String displayName, String xRegisterTableName) {
+		if (displayName != null) {
+			String updateSql = "UPDATE `x_registered_table` SET registered_table_display_name = '" + displayName
+					+ "' where registered_table_name = '" + xRegisterTableName + "'";
+			this.jdbcTemplate.execute(updateSql);
+		}
+
+	}
 
     @Transactional
     @Override

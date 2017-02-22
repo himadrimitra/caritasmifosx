@@ -33,23 +33,24 @@ public class DatatableData {
     private final List<ResultsetColumnHeaderData> columnHeaderData;
     private final Long scopingCriteriaEnum;
     private final List<ScopeCriteriaData> scopeCriteriaData;
+    private final String registeredTableDisplayName;
 
 
     public static DatatableData create(final Integer id, final String applicationTableName, final String registeredTableName,
-            final List<ResultsetColumnHeaderData> columnHeaderData, Long scopingCriteriaEnum, List<ScopeCriteriaData> scopeCriteriaData) {
-        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData);
+            final List<ResultsetColumnHeaderData> columnHeaderData, Long scopingCriteriaEnum, List<ScopeCriteriaData> scopeCriteriaData, String registeredTableDisplayName) {
+        return new DatatableData(id, applicationTableName, registeredTableName, columnHeaderData, scopingCriteriaEnum, scopeCriteriaData, registeredTableDisplayName);
     }
 
     private DatatableData(final Integer id, final String applicationTableName, final String registeredTableName,
             final List<ResultsetColumnHeaderData> columnHeaderData, final Long scopingCriteriaEnum,
-            List<ScopeCriteriaData> scopeCriteriaData) {
+            List<ScopeCriteriaData> scopeCriteriaData, final String registeredTableDisplayName) {
         this.id = id;
         this.applicationTableName = applicationTableName;
         this.registeredTableName = registeredTableName;
         this.columnHeaderData = columnHeaderData;
         this.scopingCriteriaEnum = scopingCriteriaEnum;
         this.scopeCriteriaData = scopeCriteriaData;
-
+        this.registeredTableDisplayName = registeredTableDisplayName;
     }
     
     public Integer getId() {

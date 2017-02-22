@@ -48,5 +48,6 @@ public class DataTableApiConstant {
     public static final String idParamName = "id";
     public static final String allowedValuesParamName = "allowedValues";
     public static final String scopingCriteriaEnumParamName = "scopingCriteriaEnum";
+    public static final String dataTableDisplayNameParam = "dataTableDisplayName";
 
 }

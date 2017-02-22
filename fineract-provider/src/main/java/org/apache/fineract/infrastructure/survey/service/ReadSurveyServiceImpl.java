@@ -76,9 +76,9 @@ public class ReadSurveyServiceImpl implements ReadSurveyService {
             final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
-
+            final String registeredDataTableDisplayName= rs.getString("registered_table_display_name");
             surveyDataTables.add(SurveyDataTableData.create(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, 
-                    scopingCriteriaEnum, null),
+                    scopingCriteriaEnum, null, registeredDataTableDisplayName),
                     enabled));
         }
 
@@ -118,8 +118,9 @@ public class ReadSurveyServiceImpl implements ReadSurveyService {
             final Long scopingCriteriaEnum = null;
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
                     .fillResultsetColumnHeaders(registeredDatatableName);
+            final String registeredDataTableDisplayName= rs.getString("registered_table_display_name");
 
-            datatableData = SurveyDataTableData.create(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null),
+            datatableData = SurveyDataTableData.create(DatatableData.create(id, appTableName, registeredDatatableName, columnHeaderData, scopingCriteriaEnum, null, registeredDataTableDisplayName),
                     enabled);
 
         }
