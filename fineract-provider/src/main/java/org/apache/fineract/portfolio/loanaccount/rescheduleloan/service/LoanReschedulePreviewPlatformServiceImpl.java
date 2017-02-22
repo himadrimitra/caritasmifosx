@@ -61,17 +61,20 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
     private final LoanScheduleGeneratorFactory loanScheduleFactory;
     private final LoanSummaryWrapper loanSummaryWrapper;
     private final DefaultScheduledDateGenerator scheduledDateGenerator = new DefaultScheduledDateGenerator();
+    private final GlimLoanRescheduleService glimLoanRescheduleService;
 
     @Autowired
     public LoanReschedulePreviewPlatformServiceImpl(final LoanRescheduleRequestRepository loanRescheduleRequestRepository,
             final LoanUtilService loanUtilService,
             final LoanRepaymentScheduleTransactionProcessorFactory loanRepaymentScheduleTransactionProcessorFactory,
-            final LoanScheduleGeneratorFactory loanScheduleFactory, final LoanSummaryWrapper loanSummaryWrapper) {
+            final LoanScheduleGeneratorFactory loanScheduleFactory, final LoanSummaryWrapper loanSummaryWrapper,
+            final GlimLoanRescheduleService glimLoanRescheduleService) {
         this.loanRescheduleRequestRepository = loanRescheduleRequestRepository;
         this.loanUtilService = loanUtilService;
         this.loanRepaymentScheduleTransactionProcessorFactory = loanRepaymentScheduleTransactionProcessorFactory;
         this.loanScheduleFactory = loanScheduleFactory;
         this.loanSummaryWrapper = loanSummaryWrapper;
+        this.glimLoanRescheduleService = glimLoanRescheduleService;
     }
 
     @Override
@@ -102,7 +105,12 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
                 Date endDate = dueDateVariationInCurrentRequest.fetchDateValue().minusDays(1).toDate();
                 calendarHistory.updateEndDate(endDate);
                 loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
-                loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                if(loan.isGLIMLoan()){
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue());
+                }else{
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                }
+                
             }
         }
         loanApplicationTerms.getLoanTermVariations().getDueDateVariation().removeAll(removeLoanTermVariationsData);
@@ -145,14 +153,16 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
         final LoanScheduleGenerator loanScheduleGenerator = this.loanScheduleFactory.create(loanApplicationTerms.getInterestMethod());
         final LoanLifecycleStateMachine loanLifecycleStateMachine = null;
         loan.setHelpers(loanLifecycleStateMachine, this.loanSummaryWrapper, this.loanRepaymentScheduleTransactionProcessorFactory);
+        if (loan.isGLIMLoan()) { return this.glimLoanRescheduleService.getGlimLoanScheduleModels(loan, scheduleGeneratorDTO,
+                loanApplicationTerms, rescheduleFromDate); }
         final LoanScheduleDTO loanSchedule = loanScheduleGenerator.rescheduleNextInstallments(mathContext, loanApplicationTerms,
                 loan, loanApplicationTerms.getHolidayDetailDTO(),loan.getLoanTransactions(),
                 loanRepaymentScheduleTransactionProcessor, rescheduleFromDate);
         final LoanScheduleModel loanScheduleModel = loanSchedule.getLoanScheduleModel();
         LoanScheduleModel loanScheduleModels = LoanScheduleModel.withLoanScheduleModelPeriods(loanScheduleModel.getPeriods(),
-                loanScheduleModel);
-        
+                loanScheduleModel);        
         return loanScheduleModels;
     }
-    
+   
 }
+

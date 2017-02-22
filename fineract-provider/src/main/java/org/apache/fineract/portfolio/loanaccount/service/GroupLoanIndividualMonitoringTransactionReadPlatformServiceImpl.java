@@ -85,4 +85,14 @@ public class GroupLoanIndividualMonitoringTransactionReadPlatformServiceImpl imp
         return this.jdbcTemplate.query(sql, rm, new Object[] { transactionId });
     }
 
+
+    @Override
+    public GroupLoanIndividualMonitoringTransactionData retriveGlimTransaction(Long transactionId, Long glimId) {
+        GroupLoanIndividualMonitoringTransactionMapper rm = new GroupLoanIndividualMonitoringTransactionMapper();
+
+        String sql = "select " + rm.schema() + " where glimTransaction.loan_transaction_id = ? and glimTransaction.glim_id = ? group by mc.client_id";
+
+        return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { transactionId , glimId});
+    }
+
 }
