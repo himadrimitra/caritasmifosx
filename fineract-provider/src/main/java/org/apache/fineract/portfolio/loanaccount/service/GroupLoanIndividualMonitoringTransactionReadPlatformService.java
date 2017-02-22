@@ -8,5 +8,7 @@ import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitor
 public interface GroupLoanIndividualMonitoringTransactionReadPlatformService {
     
     List<GroupLoanIndividualMonitoringTransactionData> retriveGlimTransaction(Long transactionId);
+    
+    GroupLoanIndividualMonitoringTransactionData retriveGlimTransaction(Long transactionId, Long glimId);
 
 }
