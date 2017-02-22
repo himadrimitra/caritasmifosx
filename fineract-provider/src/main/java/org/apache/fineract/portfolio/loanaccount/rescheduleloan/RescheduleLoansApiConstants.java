@@ -53,7 +53,11 @@ public class RescheduleLoansApiConstants {
             graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
             newInterestRateParamName, rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
             loanIdParamName, adjustedDueDateParamName, recalculateInterestParamName, newInstallmentAmountParamName));
-
+    
+    public static final Set<String> GLIM_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
+            rescheduleFromDateParamName,rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
+            loanIdParamName, adjustedDueDateParamName));
+    
     // reject action request parameters
     public static final String rejectedOnDateParam = "rejectedOnDate";
 

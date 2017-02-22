@@ -1199,7 +1199,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         if (loan.isGLIMLoan()) {
             List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
             loan.updateDefautGlimMembers(defaultGlimMembers);
-            List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, false);
+            boolean isRecoveryPayment = false;
+            final boolean isFromAdjustRepayment = true;
+            List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment, isFromAdjustRepayment, transactionId);
             loan.updateGlim(glimMembers);
         }
         final String noteText = command.stringValueOfParameterNamed("note");
@@ -1253,6 +1255,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_ADJUST_TRANSACTION, changedTransactionEntityMap);           	
         
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_ADJUST_TRANSACTION, entityMap);
+        if(loan.isGLIMLoan()){
+            this.glimTransactionAssembler.updateLoanStatusForGLIM(loan); 
+        }
         return new CommandProcessingResultBuilder() //
                 .withCommandId(command.commandId()) //
                 .withEntityId(transactionId) //
@@ -2556,6 +2561,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private void updateScheduleDates(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO) {
         final LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
         LocalDate currentDate = DateUtils.getLocalDateOfTenant();
+        updateScheduleDates(loan, scheduleGeneratorDTO, loanApplicationTerms, currentDate);
+    }
+    
+    @Override
+    public void updateScheduleDates(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO,
+            final LoanApplicationTerms loanApplicationTerms, LocalDate currentDate) {
         LocalDate actualRepaymentDate = loanApplicationTerms.getExpectedDisbursementDate();
         LocalDate lastActualRepaymentDate = actualRepaymentDate;
         LocalDate lastScheduledDate = actualRepaymentDate;

@@ -714,38 +714,40 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
             throw new CalendarDateException("new.start.date.before.existing.date", defaultUserMessage, newMeetingStartDate,
                     getStartDateLocalDate());
         } else {
+            updateStartDateAndNthDayAndDayOfWeek(newMeetingStartDate);
+        }
+    }
+    
+    public void updateStartDateAndNthDayAndDayOfWeek(LocalDate newMeetingStartDate) {
+        this.startDate = newMeetingStartDate.toDate();
 
-            this.startDate = newMeetingStartDate.toDate();
+        /*
+         * If meeting start date is changed then there is possibilities of
+         * recurring day may change, so derive the recurring day and update it
+         * if it is changed. For weekly type is weekday and for monthly type it
+         * is day of the month
+         */
 
-            /*
-             * If meeting start date is changed then there is possibilities of
-             * recurring day may change, so derive the recurring day and update
-             * it if it is changed. For weekly type is weekday and for monthly
-             * type it is day of the month
-             */
+        CalendarFrequencyType calendarFrequencyType = CalendarUtils.getFrequency(this.recurrence);
+        Integer interval = CalendarUtils.getInterval(this.recurrence);
+        Integer repeatsOnDay = null;
+        Integer weekOfMonth = null;
+        Collection<Integer> repeatsOnDayOfMonth = null;
 
-            CalendarFrequencyType calendarFrequencyType = CalendarUtils.getFrequency(this.recurrence);
-            Integer interval = CalendarUtils.getInterval(this.recurrence);
-            Integer repeatsOnDay = null;
-            Integer weekOfMonth = null;
-            Collection<Integer> repeatsOnDayOfMonth = null;
+        /*
+         * Repeats on day, need to derive based on the start date
+         */
 
-            /*
-             * Repeats on day, need to derive based on the start date
-             */
+        if (calendarFrequencyType.isWeekly()) {
+            repeatsOnDay = newMeetingStartDate.getDayOfWeek();
+        } else if (calendarFrequencyType.isMonthly()) {
+            repeatsOnDay = newMeetingStartDate.getDayOfWeek();
+            weekOfMonth = getWeekOfMonth(newMeetingStartDate);
+        }
 
-            if (calendarFrequencyType.isWeekly()) {
-                repeatsOnDay = newMeetingStartDate.getDayOfWeek();
-            } else if (calendarFrequencyType.isMonthly()) {
-                repeatsOnDay = newMeetingStartDate.getDayOfWeek();
-                weekOfMonth = getWeekOfMonth(newMeetingStartDate);
-            }
-
-            // TODO cover other recurrence also
-            if (!isNthDayFrequency()) {
-                this.recurrence = constructRecurrence(calendarFrequencyType, interval, repeatsOnDay, weekOfMonth, repeatsOnDayOfMonth);
-            }
-
+        // TODO cover other recurrence also
+        if (!isNthDayFrequency()) {
+            this.recurrence = constructRecurrence(calendarFrequencyType, interval, repeatsOnDay, weekOfMonth, repeatsOnDayOfMonth);
         }
     }
 

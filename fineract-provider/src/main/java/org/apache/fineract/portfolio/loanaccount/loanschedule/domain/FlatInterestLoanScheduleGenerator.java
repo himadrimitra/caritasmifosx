@@ -63,6 +63,7 @@ public class FlatInterestLoanScheduleGenerator extends AbstractLoanScheduleGener
         if (!loanApplicationTerms.getLoanTermVariations().hasVariations(variations)) {
             Money emiAmount = principalForThisInstallment.plus(interestForThisInstallment);
             double roundedEmiAmount = loanApplicationTerms.roundInstallmentInMultiplesOf(emiAmount.getAmount().doubleValue());
+            loanApplicationTerms.setFixedEmiAmount(BigDecimal.valueOf(roundedEmiAmount));
             if (loanApplicationTerms.isPrincipalGraceApplicableForThisPeriod(periodNumber)) {
                 interestForThisInstallment = interestForThisInstallment.minus(emiAmount.minus(BigDecimal.valueOf(roundedEmiAmount)));
             } else {

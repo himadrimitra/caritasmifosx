@@ -33,6 +33,7 @@ import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
+import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringTransactionData;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
@@ -59,21 +60,24 @@ public class GroupLoanIndividualMonitoringAssembler {
     private final FromJsonHelper fromApiJsonHelper;
     private final GroupLoanIndividualMonitoringRepositoryWrapper glimRepositoryWrapper;
     private final GroupLoanIndividualMonitoringChargeRepositoryWrapper glimChrageRepository;
+    private final GroupLoanIndividualMonitoringTransactionReadPlatformService glimTransactionReadPlatformService;
 
     @Autowired
     public GroupLoanIndividualMonitoringAssembler(CodeValueRepository codeValueRepository, final ClientRepositoryWrapper clientRepository,
             final ChargeRepositoryWrapper chargeRepository, final FromJsonHelper fromApiJsonHelper,
             final GroupLoanIndividualMonitoringRepositoryWrapper glimRepositoryWrapper,
-            final GroupLoanIndividualMonitoringChargeRepositoryWrapper glimChrageRepository) {
+            final GroupLoanIndividualMonitoringChargeRepositoryWrapper glimChrageRepository,
+            final GroupLoanIndividualMonitoringTransactionReadPlatformService glimTransactionReadPlatformService) {
         this.codeValueRepository = codeValueRepository;
         this.clientRepository = clientRepository;
         this.chargeRepository = chargeRepository;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.glimRepositoryWrapper = glimRepositoryWrapper;
         this.glimChrageRepository = glimChrageRepository;
+        this.glimTransactionReadPlatformService = glimTransactionReadPlatformService;
     }
 
-    public List<GroupLoanIndividualMonitoring> assembleGlimFromJson(final JsonCommand command, boolean isRecoveryPayment) {
+    public List<GroupLoanIndividualMonitoring> assembleGlimFromJson(final JsonCommand command, boolean isRecoveryPayment, boolean isFromAdjustRepayment, Long transactionId) {
         List<GroupLoanIndividualMonitoring> glimMembers = new ArrayList<>();
         if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
             JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
@@ -85,7 +89,7 @@ public class GroupLoanIndividualMonitoringAssembler {
                     BigDecimal transactionAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
                     if (MathUtility.isGreaterThanZero(glim.getPrincipalWrittenOffAmount())
                             && MathUtility.isGreaterThanZero(transactionAmount) && !isRecoveryPayment) { throw new ClientAlreadyWriteOffException(); }
-                    BigDecimal totalAmount = MathUtility.add(glim.getTotalPaidAmount(),glim.getWaivedChargeAmount(),glim.getWaivedInterestAmount(),transactionAmount);
+                    BigDecimal totalAmount = getTotalAmount(transactionAmount, isFromAdjustRepayment, transactionId, glim);
                     if(totalAmount.subtract(glim.getTotalPaybleAmount()).compareTo(BigDecimal.ZERO)>0){
                         BigDecimal overpaidAmount = totalAmount.subtract(glim.getTotalPaybleAmount());
                         glim.updateTransactionAmount(transactionAmount.subtract(overpaidAmount));
@@ -99,6 +103,18 @@ public class GroupLoanIndividualMonitoringAssembler {
             }
         }
         return glimMembers;
+    }
+    
+    public BigDecimal getTotalAmount(BigDecimal transactionAmount, boolean isFromAdjustRepayment, Long transactionId, GroupLoanIndividualMonitoring glim){
+        BigDecimal totalAmount = MathUtility.add(glim.getTotalPaidAmount(),glim.getWaivedChargeAmount(),glim.getWaivedInterestAmount(),transactionAmount);
+        if(isFromAdjustRepayment && transactionId != null){
+            GroupLoanIndividualMonitoringTransactionData glimTransactionData = this.glimTransactionReadPlatformService.retriveGlimTransaction(transactionId, glim.getId());
+            if(glimTransactionData != null){
+                totalAmount = totalAmount.subtract(glimTransactionData.getTransactionAmount());
+            }
+            
+        }
+        return totalAmount;
     }
     
     public BigDecimal getTotalOverpaidAmount(final JsonCommand command, boolean isRecoveryPayment){
