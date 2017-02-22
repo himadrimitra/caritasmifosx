@@ -1082,9 +1082,9 @@ public final class LoanApplicationTerms {
     private Money calculateTotalInterestPerInstallmentWithoutGrace(final PaymentPeriodsInOneYearCalculator calculator, final MathContext mc) {
 
         final Money totalInterestForLoanTerm = calculateTotalFlatInterestDueWithoutGrace(calculator, mc);
-        Money interestPerInstallment = totalInterestForLoanTerm.dividedBy(Long.valueOf(this.actualNumberOfRepayments) - defaultToZeroIfNull(this.excludePeriodsForCalculation), mc.getRoundingMode());
+        final Money interestLeft = totalInterestForLoanTerm.minus(this.totalInterestAccounted);
+        Money interestPerInstallment = interestLeft.dividedBy(Long.valueOf(this.actualNumberOfRepayments) - defaultToZeroIfNull(this.excludePeriodsForCalculation), mc.getRoundingMode());
         if (this.excludePeriodsForCalculation < this.periodsCompleted || isBrokenPeriodInterestApplied()) {
-            Money interestLeft = this.totalInterestDue.minus(this.totalInterestAccounted);
             int periodsDone = getCompletedInterestPeriods();
             interestPerInstallment = interestLeft.dividedBy(Long.valueOf(this.actualNumberOfRepayments)
                     - periodsDone, mc.getRoundingMode());
@@ -1162,7 +1162,7 @@ public final class LoanApplicationTerms {
                 final Money interestPerGracePeriod = calculateTotalInterestPerInstallmentWithoutGrace(calculator, mc);
 
                 final Money totalInterestFree = interestPerGracePeriod.multipliedBy(getInterestChargingGrace());
-                final Money realTotalInterestForLoan = totalInterestForLoanTerm.minus(totalInterestFree);
+                final Money realTotalInterestForLoan = totalInterestForLoanTerm.minus(totalInterestFree).minus(this.totalInterestAccounted);
 
                 Integer interestPaymentDuePeriods = calculateNumberOfRemainingInterestPaymentPeriods(this.actualNumberOfRepayments,
                         this.excludePeriodsForCalculation);
@@ -2074,9 +2074,8 @@ public final class LoanApplicationTerms {
     }
 
     public boolean isAdjustInterestForRounding() {
-                return this.adjustInterestForRounding
-                                && this.interestMethod.isDecliningBalnce();
-        }
+        return this.adjustInterestForRounding;
+    }
     
     public Integer getAdjustedInstallmentInMultiplesOf() {
                 return this.adjustedInstallmentInMultiplesOf;
