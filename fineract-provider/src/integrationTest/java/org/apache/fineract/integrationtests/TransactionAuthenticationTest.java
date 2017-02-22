@@ -1,6 +1,9 @@
 package org.apache.fineract.integrationtests;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.integrationtests.common.PaymentTypeHelper;
 import org.apache.fineract.integrationtests.common.TransactionAuthenticationHelper;
@@ -8,6 +11,7 @@ import org.apache.fineract.integrationtests.common.Utils;
 import org.apache.fineract.integrationtests.common.accounting.Account;
 import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
+import org.apache.fineract.integrationtests.common.system.CodeHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,9 +58,10 @@ public class TransactionAuthenticationTest {
 		Integer transactionTypeId = 1;
 		BigDecimal amountGreaterThan = new BigDecimal(12000);
 		Long authenticationTypeId = new Long(1);
+		Integer aadhaarCodeValueId = generateIdentificationTypeId();
 		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
 				requestSpec, responseSpec, locale, productTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
-				authenticationTypeId, loanProductID);
+				authenticationTypeId, loanProductID,aadhaarCodeValueId);
 		Assert.assertNotNull(transactionAuthenticationId);
 		
 		Integer deleted = (Integer) TransactionAuthenticationHelper.deleteTransactionAuthentication(requestSpec, responseSpec, transactionAuthenticationId);
@@ -84,5 +89,38 @@ public class TransactionAuthenticationTest {
 		}
 		final String loanProductJSON = builder.build(null);
 		return this.loanTransactionHelper.getLoanProductId(loanProductJSON);
+	}
+	private Integer generateIdentificationTypeId(){
+		System.out.println("--------------------------------CREATE CODE VALUE-------------------");
+		String aadhaar = "Aadhaar";
+		HashMap code = CodeHelper.getCodeByName(requestSpec, responseSpec, "Customer Identifier");
+		System.out.println("the code is " + code);
+		Integer codeId = (Integer) code.get("id");
+		HashMap<String, Object> codeValue = CodeHelper.retrieveOrCreateCodeValue(codeId, requestSpec, responseSpec);
+		System.out.println("the code value is " + codeValue);
+		boolean hasAadhaarCodeValue = false;
+		Integer aadhaarCodeValueId = null;
+		for (Map.Entry<String, Object> entry : codeValue.entrySet()) {
+			if (entry.getKey().equals("name")) {
+				if (entry.getValue().equals(aadhaar)) {
+					hasAadhaarCodeValue = true;
+				}
+			}
+		}
+
+		if (!hasAadhaarCodeValue) {
+			aadhaarCodeValueId = (Integer) CodeHelper.createCodeValue(requestSpec, responseSpec, codeId, aadhaar, 0,
+					"subResourceId");
+		} else {
+			List<HashMap<String, Object>> codeValues = CodeHelper.getCodeValuesForCode(this.requestSpec,
+					this.responseSpec, codeId, "");
+			System.out.println("the code values are " + codeValues);
+			for (HashMap<String, Object> value : codeValues) {
+				if (value.get("name").equals(aadhaar)) {
+					aadhaarCodeValueId = (Integer) value.get("id");
+				}
+			}
+		}
+		return aadhaarCodeValueId;
 	}
 }
