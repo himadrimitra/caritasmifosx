@@ -108,12 +108,12 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         final String savingswhereClauseForGroup = " where sa.group_id = ? and sa.client_id is null order by sa.status_enum ASC, sa.account_no ASC";
         final String savingswhereClauseForMembers = " where sa.group_id = ? and sa.client_id is not null order by sa.status_enum ASC, sa.account_no ASC";
         boolean isGlimLoanInClientProfile = false;
-        final List<LoanAccountSummaryData> groupLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForGroup, new Object[] { groupId },
+        final List<LoanAccountSummaryData> groupLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForGroup, new Object[] { null, groupId },
         		isGlimLoanInClientProfile);
         final List<SavingsAccountSummaryData> groupSavingsAccounts = retrieveAccountDetails(savingswhereClauseForGroup,
                 new Object[] { groupId });
         final List<LoanAccountSummaryData> memberLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForMembers,
-                new Object[] { groupId }, isGlimLoanInClientProfile);
+                new Object[] { null, groupId }, isGlimLoanInClientProfile);
         final List<SavingsAccountSummaryData> memberSavingsAccounts = retrieveAccountDetails(savingswhereClauseForMembers,
                 new Object[] { groupId });
         return new AccountSummaryCollectionData(groupLoanAccounts, groupSavingsAccounts, memberLoanAccounts, memberSavingsAccounts, null);
@@ -135,8 +135,8 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         // Check if client exists
         this.clientReadPlatformService.retrieveOne(clientId);
         boolean isGlimLoanInClientProfile = false;
-        final String loanWhereClause = " where l.client_id = ? and l.loan_officer_id = ? and l.loan_type_enum = ?";
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, loanOfficerId, AccountType.INDIVIDUAL.getValue() },
+        final String loanWhereClause = " where (l.client_id = ?  or coapp.client_id = ?) and l.loan_officer_id = ? and l.loan_type_enum = ?";
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, clientId, clientId, loanOfficerId, AccountType.INDIVIDUAL.getValue() },
         		isGlimLoanInClientProfile);
     }
 
@@ -146,13 +146,13 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         this.groupReadPlatformService.retrieveOne(groupId);
         final String loanWhereClause = " where l.group_id = ? and l.client_id is null and l.loan_officer_id = ?";
         boolean isGlimLoanInClientProfile = false;
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { groupId, loanOfficerId }, isGlimLoanInClientProfile);
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { null, groupId, loanOfficerId }, isGlimLoanInClientProfile);
     }
 
     @Override public Collection<LoanAccountSummaryData> retrieveClientActiveLoanAccountSummary(final Long clientId) {
-        final String loanWhereClause = " where l.client_id = ? and l.loan_status_id = 300 ";
+        final String loanWhereClause = " where (l.client_id = ?  or coapp.client_id = ? ) and l.loan_status_id = 300 ";
         boolean isGlimLoanInClientProfile = false;
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId }, isGlimLoanInClientProfile);
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, clientId, clientId }, isGlimLoanInClientProfile);
     }
 
     private List<LoanAccountSummaryData> retrieveLoanAccountDetails(final String loanwhereClause, final Object[] inputs, boolean isGlimLoanInClientProfile) {
