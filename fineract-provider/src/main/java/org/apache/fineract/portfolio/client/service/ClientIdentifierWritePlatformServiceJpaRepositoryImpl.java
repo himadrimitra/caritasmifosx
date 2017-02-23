@@ -85,8 +85,14 @@ public class ClientIdentifierWritePlatformServiceJpaRepositoryImpl implements Cl
         try {
             final Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
 
-            final CodeValue documentType = this.codeValueRepository.findOneWithNotFoundDetection(clientIdentifierCommand
-                    .getDocumentTypeId());
+            CodeValue documentType = null;
+            if(null == clientIdentifierCommand.getSystemIdentifier()){
+                documentType = this.codeValueRepository.findOneWithNotFoundDetection(clientIdentifierCommand
+                        .getDocumentTypeId());
+            }else{
+                documentType = this.codeValueRepository.findOneBySystemIdentifier(clientIdentifierCommand
+                        .getSystemIdentifier());
+            }
             documentTypeId = documentType.getId();
             documentTypeLabel = documentType.label();
             fieldRegexValidator.validateForFieldName(EntityValiDationType.CLIENTIDENTIFIER.getValue(), command);

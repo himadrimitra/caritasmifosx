@@ -133,4 +133,18 @@ public class CodeValueReadPlatformServiceImpl implements CodeValueReadPlatformSe
 
         return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { codeValueName });
     }
+
+    @Override
+    public CodeValueData retrieveSystemIdentifierCodeValue(final Long codeId, final String systemIdentifier) {
+        try {
+            this.context.authenticatedUser();
+
+            final CodeValueDataMapper rm = new CodeValueDataMapper();
+            final String sql = "select " + rm.schema() + " where c.id = ? and cv.system_identifier = ? order by position";
+
+            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { codeId, systemIdentifier });
+        } catch (final EmptyResultDataAccessException e) {
+            throw new CodeValueNotFoundException(systemIdentifier);
+        }
+    }
 }

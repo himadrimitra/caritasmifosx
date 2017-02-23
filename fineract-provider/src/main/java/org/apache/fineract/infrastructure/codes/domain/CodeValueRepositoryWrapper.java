@@ -62,5 +62,11 @@ public class CodeValueRepositoryWrapper {
         if (codeValue == null) { throw new CodeValueNotFoundException(codeName, label); }
         return codeValue;
     }
+
+    public CodeValue findOneBySystemIdentifier(final String systemIdentifier){
+        final CodeValue codeValue = this.repository.findBySystemIdentifier(systemIdentifier);
+        if (codeValue == null) { throw new CodeValueNotFoundException(systemIdentifier); }
+        return codeValue;
+    }
     
 }

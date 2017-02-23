@@ -52,4 +52,6 @@ public interface CodeValueReadPlatformService {
     Collection<CodeValueData> retrieveCodeValuesByCode(final String code, String sqlSearch);
 	
     CodeValueData retriveCodeValueByCodeValueName(final String codeValueName);
+
+    CodeValueData retrieveSystemIdentifierCodeValue(Long codeId, String systemIdentifier);
 }
