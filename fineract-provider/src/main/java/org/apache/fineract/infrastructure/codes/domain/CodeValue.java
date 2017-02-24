@@ -63,6 +63,9 @@ public class CodeValue extends AbstractPersistable<Long> {
     @Column(name = "parent_id")
     private Long parentId;
 
+    @Column(name = "system_identifier")
+    private String systemIdentifier;
+
     public static CodeValue createNew(final Code code, final String label, final int position, final String description,
             final boolean isActive, final Integer codeScore, final boolean mandatory, final Long parentId) {
         return new CodeValue(code, label, position, description, isActive, codeScore, mandatory, parentId);
@@ -181,5 +184,9 @@ public class CodeValue extends AbstractPersistable<Long> {
     
     public Code getCode() {
         return this.code;
+    }
+
+    public String getSystemIdentifier(){
+        return this.systemIdentifier;
     }
 }

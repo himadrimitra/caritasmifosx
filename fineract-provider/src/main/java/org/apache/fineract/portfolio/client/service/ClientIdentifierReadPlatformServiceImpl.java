@@ -88,6 +88,29 @@ public class ClientIdentifierReadPlatformServiceImpl implements ClientIdentifier
 
     }
 
+    @Override
+    public ClientIdentifierData retrieveClientIdentifier(final Long clientId, final String systemIdentifier) {
+        try {
+            final AppUser currentUser = this.context.authenticatedUser();
+            final String hierarchy = currentUser.getOffice().getHierarchy();
+            final String hierarchySearchString = hierarchy + "%";
+
+            final ClientIdentityMapper rm = new ClientIdentityMapper();
+
+            String sql = "select " + rm.schema();
+
+            sql += " and cv.system_identifier = ?";
+
+            final ClientIdentifierData clientIdentifierData = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { clientId,
+                    hierarchySearchString, systemIdentifier });
+
+            return clientIdentifierData;
+        } catch (final EmptyResultDataAccessException e) {
+            throw new ClientIdentifierNotFoundException(systemIdentifier);
+        }
+
+    }
+
     private static final class ClientIdentityMapper implements RowMapper<ClientIdentifierData> {
 
         public ClientIdentityMapper() {}

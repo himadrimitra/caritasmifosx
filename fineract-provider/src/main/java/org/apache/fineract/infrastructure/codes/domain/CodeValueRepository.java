@@ -26,4 +26,6 @@ public interface CodeValueRepository extends JpaRepository<CodeValue, Long>, Jpa
     CodeValue findByCodeNameAndId(String codeName, Long id);
     
     CodeValue findByCodeNameAndLabel (String codeName, String label);
+
+    CodeValue findBySystemIdentifier(String systemIdentifier);
 }

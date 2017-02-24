@@ -23,14 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -86,14 +79,19 @@ public class CodeValuesApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveAllCodeValues(@Context final UriInfo uriInfo, @PathParam("codeId") final Long codeId) {
+    public String retrieveAllCodeValues(@Context final UriInfo uriInfo, @PathParam("codeId") final Long codeId,
+            @QueryParam("type") final String systemIdentifier) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<CodeValueData> codeValues = this.readPlatformService.retrieveAllCodeValues(codeId);
-
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, codeValues, this.RESPONSE_DATA_PARAMETERS);
+
+        if(null != systemIdentifier){
+            final CodeValueData codeValue = this.readPlatformService.retrieveSystemIdentifierCodeValue(codeId, systemIdentifier);
+            return this.toApiJsonSerializer.serialize(settings, codeValue, this.RESPONSE_DATA_PARAMETERS);
+        }else{
+            final Collection<CodeValueData> codeValues = this.readPlatformService.retrieveAllCodeValues(codeId);
+            return this.toApiJsonSerializer.serialize(settings, codeValues, this.RESPONSE_DATA_PARAMETERS);
+        }
     }
 
     @GET

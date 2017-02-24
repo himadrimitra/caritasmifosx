@@ -29,4 +29,8 @@ public class ClientIdentifierNotFoundException extends AbstractPlatformResourceN
     public ClientIdentifierNotFoundException(final Long id) {
         super("error.msg.clientIdentifier.id.invalid", "Client Identifier with the primary key " + id + " does not exist", id);
     }
+
+    public ClientIdentifierNotFoundException(final String systemIdentifier) {
+        super("error.msg.clientIdentifier.type.invalid", "Client Identifier with the system code value type of  '" + systemIdentifier + "' does not exist", systemIdentifier);
+    }
 }

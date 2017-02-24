@@ -26,6 +26,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepository;
 import org.apache.fineract.infrastructure.codes.domain.CodeValueRepositoryWrapper;
 import org.apache.fineract.infrastructure.codes.exception.CodeNotFoundException;
+import org.apache.fineract.infrastructure.codes.exception.SystemDefinedCodeValueCannotBeDeletedException;
 import org.apache.fineract.infrastructure.codes.serialization.CodeValueCommandFromApiJsonDeserializer;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -153,6 +154,10 @@ public class CodeValueWritePlatformServiceJpaRepositoryImpl implements CodeValue
             if (code == null) { throw new CodeNotFoundException(codeId); }
 
             final CodeValue codeValueToDelete = this.codeValueRepositoryWrapper.findOneWithNotFoundDetection(codeValueId);
+
+            if(null != codeValueToDelete.getSystemIdentifier()){
+                throw new SystemDefinedCodeValueCannotBeDeletedException(codeValueId);
+            }
 
             final boolean removed = code.remove(codeValueToDelete);
             if (removed) {
