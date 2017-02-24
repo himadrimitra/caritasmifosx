@@ -2326,9 +2326,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 // process the installment only if recalculate from date is
                 // greater than due date
                 if (installment.getDueDate().isAfter(lastInstallmentDate) || isFirstRepayment) {
-                    if (totalCumulativePrincipal.isGreaterThanOrEqualTo(loanApplicationTerms.getTotalDisbursedAmount())) {
-                        break;
-                    }
+             //       if (totalCumulativePrincipal.isGreaterThanOrEqualTo(loanApplicationTerms.getTotalDisbursedAmount())) {
+               //         break;
+                //    }
                     LocalDate previousRepaymentDate = actualRepaymentDate;
                     ArrayList<LoanTermVariationsData> dueDateVariationsDataList = new ArrayList<>();
                     actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(actualRepaymentDate,
@@ -2562,11 +2562,19 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, final LocalDate rescheduleFrom,
             MonetaryCurrency currency) {
         List<LoanRepaymentScheduleInstallment> newRepaymentScheduleInstallments = new ArrayList<>();
+        List<LoanRepaymentScheduleInstallment> interestRecalcualtedPeriods = new ArrayList<>();
         int lastInterestAvilablePeriod = 0;
         int processedPeriod = 0;
         for (LoanRepaymentScheduleInstallment installment : repaymentScheduleInstallments) {
             if (installment.getDueDate().isBefore(rescheduleFrom)) {
-                newRepaymentScheduleInstallments.add(installment);
+                if(installment.isRecalculatedInterestComponent()){
+                    interestRecalcualtedPeriods.add(installment);
+                }else{
+                    newRepaymentScheduleInstallments.addAll(interestRecalcualtedPeriods);
+                    interestRecalcualtedPeriods.clear();
+                    newRepaymentScheduleInstallments.add(installment);
+                }
+               
                 if(installment.getInterestCharged(currency).isGreaterThanZero()){
                     lastInterestAvilablePeriod = installment.getInstallmentNumber();
                 }
@@ -2575,7 +2583,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 break;
             }
         }
-        
+       
         // this block is to remove the periods till last interest available
         // period.
         // if the last retained period is interest grace period then we
@@ -2592,7 +2600,6 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         }
         return newRepaymentScheduleInstallments;
     }
-
     /**
      * Method identifies the early paid amounts for a installment and update the
      * principal map for further calculations
