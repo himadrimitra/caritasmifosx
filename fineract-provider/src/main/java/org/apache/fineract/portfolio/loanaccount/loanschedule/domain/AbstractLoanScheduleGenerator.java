@@ -1107,6 +1107,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 modifiedScheduledDueDate = loanTermVariationsData.getDateValue();
                 if (!loanTermVariationsData.isSpecificToInstallment()) {
                     scheduleParams.setActualRepaymentDate(modifiedScheduledDueDate);
+                    loanApplicationTerms.setSeedDate(modifiedScheduledDueDate);
                 }
                 loanTermVariationsData.setProcessed(true);
             }
@@ -2354,6 +2355,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         LoanTermVariationsData variation = loanApplicationTerms.getLoanTermVariations().nextDueDateVariation();
                         if (!variation.isSpecificToInstallment()) {
                             actualRepaymentDate = variation.getDateValue();
+                            loanApplicationTerms.setSeedDate(actualRepaymentDate);
                         }
                         lastInstallmentDate = variation.getDateValue();
                         dueDateVariationsDataList.add(variation);
