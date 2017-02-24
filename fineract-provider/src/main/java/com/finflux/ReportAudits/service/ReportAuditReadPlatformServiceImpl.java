@@ -106,10 +106,12 @@ public class ReportAuditReadPlatformServiceImpl implements ReportAuditReadPlatfo
 		duration = duration%3600;
 		long diffInMinutes = (duration)/60;
 		duration = duration%60;
+		float diffInMilli = duration%1000;
 		String hours = (diffInHours<10)?"0"+diffInHours:diffInHours+"";
 		String minutes = (diffInMinutes<10)?"0"+diffInMinutes:diffInMinutes+"";
 		String seconds = (duration<10)?"0"+duration:duration+"";
-		return hours+":"+minutes+":"+seconds;
+		String millis = (duration<10)?"0"+diffInMilli:diffInMilli+"";
+		return hours+":"+minutes+":"+seconds+":"+millis;
 	}
 
 	@Override
