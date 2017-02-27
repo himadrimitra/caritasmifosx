@@ -19,7 +19,8 @@ public enum TaskConfigKey {
     LOAN_TRANSACTION_ID("loanTransactionId"),
     TASKTEMPLATEENTITY_TYPE("taskTemplateEntityType"),
     TASKTEMPLATEENTITY_ID("taskTemplateEntityId"),
-    BANK_ID("bankId");
+    BANK_ID("bankId"),
+    LOANAPPLICATION_COAPPLICANT_ID("loanApplicationCoApplicantId"),;
     private String value;
 
     TaskConfigKey(String value) {

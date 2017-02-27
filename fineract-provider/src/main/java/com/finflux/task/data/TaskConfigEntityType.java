@@ -12,7 +12,10 @@ public enum TaskConfigEntityType {
     INVALID(0, "taskConfigEntityType.invalid"), //
     LOANPRODUCT(1, "taskConfigEntityType.loanproduct"), //
     ADHOC(2, "taskConfigEntityType.adhoc"),//
-    BANKTRANSACTION(3, "taskConfigEntityType.banktransaction");//
+    BANKTRANSACTION(3, "taskConfigEntityType.banktransaction"),
+    GROUPONBARDING(4, "taskConfigEntityType.grouponboarding"),
+    LOANPRODUCT_APPLICANT(5, "taskConfigEntityType.loanproductapplicant"),
+    LOANPRODUCT_COAPPLICANT(6, "taskConfigEntityType.loanproductcoapplicant");//
 
     private final Integer value;
     private final String code;

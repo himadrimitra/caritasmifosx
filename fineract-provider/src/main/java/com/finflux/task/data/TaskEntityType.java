@@ -22,8 +22,10 @@ public enum TaskEntityType {
     TEMPLATE_TASK_CLIENT(10,"taskEntityType.template_task_client","client"),
     TEMPLATE_TASK_VILLAGE(11,"taskEntityType.template_task_village","village"),
     TEMPLATE_TASK_BANK(12,"taskEntityType.template_task_bank","bank"),
-    TEMPLATE_TASK_OFFICE(13,"taskEntityType.template_task_office","office");
-  
+    TEMPLATE_TASK_OFFICE(13,"taskEntityType.template_task_office","office"),
+    GROUP_ONBOARDING(14, "taskEntityType.grouponbarding","groupOnboarding"),
+    LOAN_APPLICATION_APPLICANT(15, "taskEntityType.loanapplicationMainClient", "loanApplicationApplicant"),
+    LOAN_APPLICATION_COAPPLICANT(16, "taskEntityType.loanapplicationCoApplicant", "loanApplicationCoApplicant");//
 
     private final Integer value;
     private final String code;

@@ -88,7 +88,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
     @Override
     @Transactional
-    public CommandProcessingResult doActionOnTask(AppUser appUser, Long taskId, TaskActionType actionType) {
+    public CommandProcessingResult doActionOnTask(AppUser performingUser, Long taskId, TaskActionType actionType) {
         Task task = taskRepository.findOneWithNotFoundDetection(taskId);
         TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
         if (actionType != null && status != null) {
@@ -96,18 +96,18 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                 // not supported action
             }
             if (actionType.isCheckPermission()) {
-                checkUserhasActionPrivilege(appUser, task, actionType);
+                checkUserhasActionPrivilege(performingUser, task, actionType);
             }
             if (actionType.getToStatus() != null) {
                 if(status.isCompleted())
                 {
                     return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
                 }
-                TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), appUser);
+                TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), performingUser);
                 if (TaskActionType.CRITERIACHECK.equals(actionType)) {
                     runCriteriaCheckAndPopulate(task);
                     task.setStatus(TaskActionType.CRITERIACHECK.getToStatus().getValue());
-                    updateAssignedTo(appUser, task,TaskActionType.fromInt(task.getCurrentAction()));
+                    updateAssignedTo(performingUser, task,TaskActionType.fromInt(task.getCurrentAction()));
                 }else{
                     TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
 
@@ -117,13 +117,13 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                         return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
                     }
                     task.setStatus(newStatus.getValue());
-                    updateActionAndAssignedTo(appUser,task, newStatus);
+                    updateActionAndAssignedTo(performingUser,task, newStatus);
                 }
                 // update assigned-to if current user has next action
                 task = taskRepository.save(task);
                 actionLogRepository.save(actionLog);
                 if (task.getParent() != null) {
-                    notifyParentTask(appUser, task.getParent(), task, status, TaskStatusType.fromInt(task.getStatus()));
+                    notifyParentTask(performingUser, task.getParent(), task, status, TaskStatusType.fromInt(task.getStatus()));
                 }
             }
         }

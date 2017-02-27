@@ -45,6 +45,7 @@ public class TaskExecutionData implements Serializable{
     private EnumOptionData taskType;
     private LocalDate createdOn;
     private String description;
+    private TaskExecutionData activeTaskData;
 
     private TaskExecutionData(final Long id, final Long parentId, final String name, final String shortName,
             final EnumOptionData entityType, final Long entityId, final EnumOptionData status, final EnumOptionData priority,
@@ -318,4 +319,6 @@ public class TaskExecutionData implements Serializable{
     public void setAssignedRoles(List<RoleData> assignedRoles) {
         this.assignedRoles = assignedRoles;
     }
+
+
 }

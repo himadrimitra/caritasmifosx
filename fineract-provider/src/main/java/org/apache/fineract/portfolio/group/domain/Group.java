@@ -772,5 +772,8 @@ public final class Group extends AbstractPersistable<Long> {
     public Set<GroupRole> getGroupRoles() {
         return this.groupRoles;
     }
-	
+
+    public String getName() {
+        return name;
+    }
 }
