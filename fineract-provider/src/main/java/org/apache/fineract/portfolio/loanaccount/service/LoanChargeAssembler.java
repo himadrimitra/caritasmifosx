@@ -135,25 +135,34 @@ public class LoanChargeAssembler {
                             .extractLocalDateNamed("dueDate", loanChargeElement, dateFormat, locale);
                     final Integer chargePaymentMode = this.fromApiJsonHelper.extractIntegerNamed("chargePaymentMode", loanChargeElement,
                             locale);
+
+                    final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
+
+                    if (chargeDefinition.isOverdueInstallment()) {
+
+                        final String defaultUserMessage = "Installment charge cannot be added to the loan.";
+                        throw new LoanChargeCannotBeAddedException("loanCharge", "overdue.charge", defaultUserMessage, null,
+                                chargeDefinition.getName());
+                    }
+                    
+                    ChargeTimeType chargeTime = null;
+                    if (chargeTimeType != null) {
+                        chargeTime = ChargeTimeType.fromInt(chargeTimeType);
+                    }
+                    ChargeCalculationType chargeCalculation = null;
+                    if (chargeCalculationType != null) {
+                        chargeCalculation = ChargeCalculationType.fromInt(chargeCalculationType);
+                    }
+                    
                     if (id == null) {
-                        final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeId);
-
-                        if (chargeDefinition.isOverdueInstallment()) {
-
-                            final String defaultUserMessage = "Installment charge cannot be added to the loan.";
-                            throw new LoanChargeCannotBeAddedException("loanCharge", "overdue.charge", defaultUserMessage, null,
-                                    chargeDefinition.getName());
-                        }
                         
-                        ChargeTimeType chargeTime = null;
-                        if (chargeTimeType != null) {
-                            chargeTime = ChargeTimeType.fromInt(chargeTimeType);
-                        }
-                        ChargeCalculationType chargeCalculation = null;
-                        if (chargeCalculationType != null) {
-                            chargeCalculation = ChargeCalculationType.fromInt(chargeCalculationType);
-                        }
-                        validateLoanAmountFallsInSlab(principal, chargeDefinition, chargeCalculation);
+						String loanTypeStr = this.fromApiJsonHelper.extractStringNamed("loanType", element);
+						
+						if (loanTypeStr.equals(LoanApiConstants.GLIM)) {
+							validateUpfrontChargesAmount(loanChargeElement, chargeDefinition, chargeCalculation, locale);
+						} else {
+							validateLoanAmountFallsInSlab(principal, chargeDefinition, chargeCalculation);
+						}
 
                         ChargePaymentMode chargePaymentModeEnum = null;
                         if (chargePaymentMode != null) {
@@ -250,7 +259,12 @@ public class LoanChargeAssembler {
                             // LoanChargeNotFoundException(loanChargeId);
                         }
                         if (loanCharge != null) {
-                            validateLoanAmountFallsInSlab(principal, loanCharge.getCharge(), null);
+                            String loanTypeStr = this.fromApiJsonHelper.extractStringNamed("loanType", element);
+                        	if (loanTypeStr.equals(LoanApiConstants.GLIM)) {
+                        		validateUpfrontChargesAmount(loanChargeElement, chargeDefinition, chargeCalculation, locale);
+    						} else {
+    							validateLoanAmountFallsInSlab(principal, loanCharge.getCharge(), null);
+    						}
                             if (!isMultiDisbursal && loanCharge.isInstalmentFee()
                                     && loanCharge.getCharge().isPercentageOfDisbursementAmount()) {
                             	if(clientMemberJsonArray!=null && clientMemberJsonArray.size()>0){
@@ -270,6 +284,17 @@ public class LoanChargeAssembler {
         }
         return loanCharges;
     }
+    
+	private void validateUpfrontChargesAmount(final JsonObject loanChargeElement, final Charge chargeDefinition,
+			final ChargeCalculationType chargeCalculation, final Locale locale) {
+		final JsonArray upfrontChargesAmountArray = loanChargeElement.get("upfrontChargesAmount").getAsJsonArray();
+		for (int j = 0; j < upfrontChargesAmountArray.size(); j++) {
+			final JsonObject upfrontChargesAmountObject = upfrontChargesAmountArray.get(j).getAsJsonObject();
+			BigDecimal transactionAmount = this.fromApiJsonHelper
+					.extractBigDecimalNamed("transactionAmount", upfrontChargesAmountObject, locale);
+			validateLoanAmountFallsInSlab(transactionAmount, chargeDefinition, chargeCalculation);
+		}
+	}
 
     private void validateLoanAmountFallsInSlab(final BigDecimal principal, final Charge chargeDefinition,
             ChargeCalculationType chargeCalculation) {
