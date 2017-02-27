@@ -120,7 +120,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                                 .isOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
                     } else if (chargeTimeType.equals(ChargeTimeType.UPFRONT_FEE.getValue())) {
                         baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
-                                .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue());
+                                .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.SLAB_BASED.getValue());
                     } else {
                         baseDataValidator.reset().parameter("ChargeTimeType").value(chargeTimeType)
                                 .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.UPFRONT_FEE.getValue());
@@ -463,7 +463,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                             .isOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
                 } else if (chargeTimeType.equals(ChargeTimeType.UPFRONT_FEE.getValue())) {
                     baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
-                            .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue());
+                            .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue(), ChargeCalculationType.SLAB_BASED.getValue());
                 } else {
                     baseDataValidator.reset().parameter("ChargeTimeType").value(chargeTimeType)
                             .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.UPFRONT_FEE.getValue());

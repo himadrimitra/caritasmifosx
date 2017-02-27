@@ -139,6 +139,7 @@ public interface LoanApiConstants {
     public static final String glimIdParamName = "glimId";
     public static final String isClientSelectedParamName = "isClientSelected";
     public static final String upfrontChargesAmountParamName = "upfrontChargesAmount";
+    public static final String GLIM = "glim";
 
     // glim repayment constants
     public static final String principalPortionParamName = "principalPortion";
