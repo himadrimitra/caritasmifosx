@@ -167,6 +167,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append(",lar.external_id_two AS externalIdTwo ");
             sqlBuilder.append(",lar.loan_id AS loanId ");
             sqlBuilder.append(",lar.client_id AS clientId ");
+            sqlBuilder.append(",cl.display_name AS clientName ");
             sqlBuilder.append(",lar.loan_officer_id AS loanOfficerId ");
             sqlBuilder.append(",lar.group_id AS groupId ");
             sqlBuilder.append(",sf.display_name AS loanOfficerName ");
@@ -196,6 +197,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             sqlBuilder.append("lep.disbursal_3_emi as lepdisbursalEmi3, lep.disbursal_4_emi as lepdisbursalEmi4 ");
             sqlBuilder.append("FROM f_loan_application_reference lar ");
             sqlBuilder.append("INNER JOIN m_product_loan lp ON lp.id = lar.loan_product_id ");
+            sqlBuilder.append("LEFT JOIN m_client cl ON cl.id = lar.client_id ");
             sqlBuilder.append("LEFT JOIN m_staff sf ON sf.id = lar.loan_officer_id ");
             sqlBuilder.append("LEFT JOIN f_loan_purpose loanPurpose ON loanPurpose.id = lar.loan_purpose_id ");
             sqlBuilder.append("LEFT JOIN m_payment_type pt_disburse ON pt_disburse.id = lar.expected_disbursal_payment_type_id ");
@@ -213,6 +215,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final String externalIdTwo = rs.getString("externalIdTwo");
             final Long loanId = JdbcSupport.getLongActualValue(rs, "loanId");
             final Long clientId = JdbcSupport.getLongActualValue(rs, "clientId");
+            final String clientName = rs.getString("clientName");
             final Long loanOfficerId = JdbcSupport.getLongActualValue(rs, "loanOfficerId");
             final String loanOfficerName = rs.getString("loanOfficerName");
             final Long groupId = JdbcSupport.getLongActualValue(rs, "groupId");
@@ -292,7 +295,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
                     externalIdTwo, loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId,
                     loanProductName, loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency,
                     repayEvery, termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, 
-                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant);
+                    expectedDisbursalPaymentType, expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
         }
     }
 
@@ -504,6 +507,12 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     public Collection<CoApplicantData> retrieveCoApplicants(final Long loanApplicationReferenceId) {
         CoApplicantMapper mapper = new CoApplicantMapper();
         return this.jdbcTemplate.query(mapper.schema(), mapper,  new Object[] { loanApplicationReferenceId });
+    }
+
+    @Override
+    public CoApplicantData retrieveOneCoApplicant(final Long loanApplicationReferenceId,  final Long coApplicantId) {
+        CoApplicantMapper mapper = new CoApplicantMapper();
+        return this.jdbcTemplate.queryForObject(mapper.schema()+" and coapp.id = ?", mapper,  new Object[] { loanApplicationReferenceId,coApplicantId });
     }
 
     private static final class CoApplicantMapper implements RowMapper<CoApplicantData> {

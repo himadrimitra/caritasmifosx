@@ -197,6 +197,20 @@ public class LoanApplicationReferenceApiResource {
         return this.toApiJsonSerializer.serialize(result);
     }
 
+    @GET
+    @Path("{loanApplicationReferenceId}/coapplicants/{coapplicantId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String deleteCoApplicant(@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+                                    @PathParam("coapplicantId") final Long coapplicantId, @Context final UriInfo uriInfo) {
+        this.context.authenticatedUser().validateHasReadPermission(
+                LoanApplicationReferenceApiConstants.COAPPLICANTS_RESOURCE_NAME);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        final CoApplicantData coapplicantData = this.loanApplicationReferenceReadPlatformService
+                .retrieveOneCoApplicant(loanApplicationReferenceId,coapplicantId);
+        return this.toApiJsonSerializer.serialize(settings, coapplicantData);
+    }
+
     private boolean is(final String commandParam, final String commandValue) {
         return StringUtils.isNotBlank(commandParam) && commandParam.trim().equalsIgnoreCase(commandValue);
     }

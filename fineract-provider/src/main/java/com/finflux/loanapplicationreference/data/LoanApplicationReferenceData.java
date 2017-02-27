@@ -16,6 +16,7 @@ public class LoanApplicationReferenceData {
     private final String externalIdTwo;
     private final Long loanId;
     private final Long clientId;
+    private final String clientName;
     private final Long loanOfficerId;
     private final String loanOfficerName;
     private final Long groupId;
@@ -47,7 +48,7 @@ public class LoanApplicationReferenceData {
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
-            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant) {
+            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName) {
         this.loanApplicationReferenceId = loanApplicationReferenceId;
         this.loanApplicationReferenceNo = loanApplicationReferenceNo;
         this.externalIdOne = externalIdOne;
@@ -76,6 +77,7 @@ public class LoanApplicationReferenceData {
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
         this.loanEMIPackData = loanEMIPackData;
         this.isCoApplicant = isCoApplicant;
+        this.clientName = clientName;
 
     }
 
@@ -87,13 +89,13 @@ public class LoanApplicationReferenceData {
             final Integer repayEvery, final EnumOptionData termPeriodFrequency, final Integer termFrequency,
             final BigDecimal fixedEmiAmount, final Integer noOfTranche, final LocalDate submittedOnDate,
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType,
-            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant) {
+            final LoanEMIPackData loanEMIPackData, final Boolean isCoApplicant, final String clientName) {
 
         return new LoanApplicationReferenceData(loanApplicationReferenceId, loanApplicationReferenceNo, externalIdOne, externalIdTwo,
                 loanId, clientId, loanOfficerId, loanOfficerName, groupId, status, accountType, loanProductId, loanProductName,
                 loanPurposeId, loanPurpose, loanAmountRequested, numberOfRepayments, repaymentPeriodFrequency, repayEvery,
                 termPeriodFrequency, termFrequency, fixedEmiAmount, noOfTranche, submittedOnDate, expectedDisbursalPaymentType,
-                expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant);
+                expectedRepaymentPaymentType, loanEMIPackData, isCoApplicant, clientName);
     }
 
     public Long getLoanApplicationReferenceId() {

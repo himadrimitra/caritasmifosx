@@ -22,4 +22,6 @@ public interface LoanApplicationReferenceReadPlatformService {
     Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(final Long loanApplicationReferenceId);
 
     Collection<CoApplicantData> retrieveCoApplicants(Long loanApplicationReferenceId);
+
+    CoApplicantData retrieveOneCoApplicant(Long loanApplicationReferenceId, Long coApplicantId);
 }

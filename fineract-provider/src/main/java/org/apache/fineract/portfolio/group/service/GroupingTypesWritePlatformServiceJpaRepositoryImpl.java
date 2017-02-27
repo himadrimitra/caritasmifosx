@@ -18,14 +18,15 @@
  */
 package org.apache.fineract.portfolio.group.service;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskConfigKey;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.TaskPlatformWriteService;
+import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -78,6 +79,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
@@ -127,6 +129,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
     private final LoanReadPlatformService loanReadPlatformService;
     private final BusinessEventNotifierService businessEventNotifierService;
     private final LoanApplicationReferenceRepository loanApplicationReferenceRepository;
+    private final TaskPlatformWriteService taskPlatformWriteService;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
 
     @Autowired
     public GroupingTypesWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -140,7 +144,9 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final AccountNumberGenerator accountNumberGenerator,
             final VillageRepositoryWrapper villageRepository, final LoanReadPlatformService loanReadPlatformService,
             final BusinessEventNotifierService businessEventNotifierService,
-            final LoanApplicationReferenceRepository loanApplicationReferenceRepository) {
+            final LoanApplicationReferenceRepository loanApplicationReferenceRepository,
+            final TaskPlatformWriteService taskPlatformWriteService,
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository) {
         this.context = context;
         this.groupRepository = groupRepository;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
@@ -163,6 +169,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         this.loanReadPlatformService = loanReadPlatformService;
         this.businessEventNotifierService = businessEventNotifierService;
         this.loanApplicationReferenceRepository = loanApplicationReferenceRepository;
+        this.taskPlatformWriteService = taskPlatformWriteService;
+        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
     }
 
     private CommandProcessingResult createGroupingType(final JsonCommand command, final GroupTypes groupingType, final Long centerId) {
@@ -251,12 +259,21 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             generateAccountNumberIfRequired(newGroup);
 
             this.groupRepository.saveAndFlush(newGroup);
+
+            //Create Workflow
+            boolean isWorkflowCreated = createGroupWorkflow(newGroup);
+            final Map<String, Object> changes = new LinkedHashMap<>(5);
+
+            if(isWorkflowCreated) {
+                changes.put("isWorkflowCreated", isWorkflowCreated);
+            }
             newGroup.captureStaffHistoryDuringCenterCreation(staff, activationDate);
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withOfficeId(groupOffice.getId()) //
                     .withGroupId(newGroup.getId()) //
                     .withEntityId(newGroup.getId()) //
+                    .with(changes)
                     .setRollbackTransaction(rollbackTransaction)//
                     .build();
 
@@ -264,6 +281,32 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
             handleGroupDataIntegrityIssues(command, dve, groupingType);
             return CommandProcessingResult.empty();
         }
+    }
+
+    private boolean createGroupWorkflow(Group group) {
+
+        if (this.configurationDomainService.isWorkFlowEnabled()) {
+            /**
+             * Checking is loan product mapped with task configuration
+             * entity type LOAN_PRODUCT
+             */
+            final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
+                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.GROUPONBARDING.getValue(), -1L);
+            if (taskConfigEntityTypeMapping != null) {
+                final Long groupId = group.getId();
+                final Map<TaskConfigKey, String> map = new HashMap<>();
+                map.put(TaskConfigKey.GROUP_ID, String.valueOf(groupId));
+                Client client = null;
+                AppUser assignedTo = null;
+                Date dueDate = null;
+                String description = "On-boarding for group" + group.getName() + " (#"+ group.getId()+") ";
+                this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
+                        TaskEntityType.GROUP_ONBOARDING, group.getId(), client,assignedTo,dueDate,
+                        group.getOffice(), map, description);
+                return true;
+            }
+        }
+        return false;
     }
 
     private void generateAccountNumberIfRequired(Group newGroup){
