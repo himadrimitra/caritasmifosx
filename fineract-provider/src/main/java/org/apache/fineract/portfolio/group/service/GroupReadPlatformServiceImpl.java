@@ -280,7 +280,9 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             final String sql = "SELECT " + hm.schema() + " where g.id = ? ";
             return this.jdbcTemplate.queryForObject(sql, hm, new Object[] { groupGeneralData.getId() });
         } catch (final EmptyResultDataAccessException e) {
-            return null;
+        	
+        	// If group doesn't have parentId  we send back groupDetail
+            return groupGeneralData;
         }
     }
 	
