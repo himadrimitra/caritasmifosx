@@ -205,7 +205,7 @@ public final class Report extends AbstractPersistable<Long> {
         if (!actualChanges.isEmpty()) {
             if (isCoreReport()) {
                 for (final String key : actualChanges.keySet()) {
-                    if (!(key.equals("useReport"))) { throw new PlatformDataIntegrityException(
+                    if(!(key.equals("useReport") || key.equals("trackUsage"))) { throw new PlatformDataIntegrityException(
                             "error.msg.only.use.report.can.be.updated.for.core.report",
                             "Only the Use Report field can be updated for Core Reports", key); }
                 }
@@ -255,7 +255,7 @@ public final class Report extends AbstractPersistable<Long> {
         baseDataValidator.reset().parameter("reportCategory").value(this.reportCategory).notExceedingLengthOf(45);
 
         if (StringUtils.isNotBlank(this.reportType)) {
-            if ((this.reportType.equals("Table")) || (this.reportType.equals("Chart"))) {
+            if ((this.reportType.equals("Table")) || (this.reportType.equals("Chart")) || (this.reportType.equals("Pentaho"))) {
                 baseDataValidator.reset().parameter("reportSql").value(this.reportSql)
                         .cantBeBlankWhenParameterProvidedIs("reportType", this.reportType);
             } else {
