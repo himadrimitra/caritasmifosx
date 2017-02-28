@@ -42,6 +42,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
+import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductBorrowerCycleVariationData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductGuaranteeData;
@@ -233,7 +234,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lca.loan_transaction_strategy_id as transactionProcessingStrategyBoolean,lca.interest_calculated_in_period_enum as interestCalcPeriodBoolean, lca.arrearstolerance_amount as arrearsToleranceBoolean, "
                     + "lca.repay_every as repaymentFrequencyBoolean, lca.moratorium as graceOnPrincipalAndInterestBoolean, lca.grace_on_arrears_ageing as graceOnArrearsAgingBoolean, "
                     + "lp.is_linked_to_floating_interest_rates as isLinkedToFloatingInterestRates, "
-                    + "lp.broken_period_method_enum as brokenPeriodMethodType,"
+                    + "lp.broken_period_method_enum as brokenPeriodMethodType, lp.allow_negative_loan_balances as allowNegativeLoanBalance, "
+                    + "lp.consider_future_disbursements_in_schedule as considerFutureDisbursementsInSchedule, lp.consider_all_disbursements_in_schedule as considerAllDisbursementsInSchedule,"
                     + "lfr.floating_rates_id as floatingRateId, "
                     + "fr.name as floatingRateName, "
                     + "lfr.interest_rate_differential as interestRateDifferential, "
@@ -380,6 +382,9 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             }
 
             final Boolean multiDisburseLoan = rs.getBoolean("multiDisburseLoan");
+            final Boolean allowNegativeLoanBalance = rs.getBoolean(LoanProductConstants.allowNegativeLoanBalance);
+            final Boolean considerFutureDisbursementsInSchedule = rs.getBoolean(LoanProductConstants.considerFutureDisbursementsInSchedule);
+            final Boolean considerAllDisbursementsInSchedule = rs.getBoolean(LoanProductConstants.considerAllDisbursementsInSchedule);
             final Integer maxTrancheCount = rs.getInt("maxTrancheCount");
             final Boolean isEmiBasedOnDisbursements = rs.getBoolean("isEmiBasedOnDisbursements") ;
             final BigDecimal outstandingLoanBalance = rs.getBigDecimal("outstandingLoanBalance");
@@ -517,7 +522,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
                     weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, 
-                    brokenPeriodMethodType, isFlatInterestRate);
+                    brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule);
         }
     }
 

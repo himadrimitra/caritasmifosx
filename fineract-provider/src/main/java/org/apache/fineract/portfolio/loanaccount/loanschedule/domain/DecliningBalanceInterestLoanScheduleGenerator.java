@@ -61,7 +61,7 @@ public class DecliningBalanceInterestLoanScheduleGenerator extends AbstractLoanS
     @Override
     public PrincipalInterest calculatePrincipalInterestComponentsForPeriod(final PaymentPeriodsInOneYearCalculator calculator,
             final double interestCalculationGraceOnRepaymentPeriodFraction, final Money totalCumulativePrincipal,
-            @SuppressWarnings("unused") final Money totalCumulativeInterest,
+            final Money totalCumulativeInterest,
             @SuppressWarnings("unused") final Money totalInterestDueForLoan, final Money cumulatingInterestPaymentDueToGrace,
             final Money outstandingBalance, final LoanApplicationTerms loanApplicationTerms, final int periodNumber, final MathContext mc,
             final TreeMap<LocalDate, Money> principalVariation, final Map<LocalDate, Money> compoundingMap,
@@ -125,19 +125,24 @@ public class DecliningBalanceInterestLoanScheduleGenerator extends AbstractLoanS
         }
         
 
-        final PrincipalInterest result = loanApplicationTerms.calculateTotalInterestForPeriod(calculator,
+        final PrincipalInterest result =  loanApplicationTerms.calculateTotalInterestForPeriod(calculator,
                 interestCalculationGraceOnRepaymentPeriodFraction, periodNumber, mc, cumulatingInterestDueToGrace,
                 balanceForInterestCalculation, interestStartDate, periodEndDate);
         
         interestForThisInstallment = interestForThisInstallment.plus(result.interest());
         cumulatingInterestDueToGrace = result.interestPaymentDueToGrace();
-
+        interestForThisInstallment = loanApplicationTerms.adjustInterestBasedOnTotalInterestForSchedule(interestForThisInstallment, totalCumulativeInterest);
         Money interestForPeriod = interestForThisInstallment;
         if (interestForPeriod.isGreaterThanZero()) {
-            interestForPeriod = interestForPeriod.minus(cumulatingInterestPaymentDueToGrace);
-        } else {
+            if(cumulatingInterestPaymentDueToGrace.isGreaterThanZero()){
+                interestForPeriod = interestForPeriod.minus(cumulatingInterestPaymentDueToGrace);
+            }else{
+                interestForPeriod = interestForPeriod.plus(cumulatingInterestPaymentDueToGrace);
+            }
+        } else if(cumulatingInterestPaymentDueToGrace.isGreaterThanZero()){
             interestForPeriod = cumulatingInterestDueToGrace.minus(cumulatingInterestPaymentDueToGrace);
         }
+       
         Money principalForThisInstallment = loanApplicationTerms.calculateTotalPrincipalForPeriod(calculator, outstandingBalance,
                 periodNumber, mc, interestForPeriod);
 

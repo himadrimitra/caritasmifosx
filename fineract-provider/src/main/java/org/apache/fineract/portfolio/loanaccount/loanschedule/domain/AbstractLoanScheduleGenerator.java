@@ -218,7 +218,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             isFirstRepayment = false;
         }
-        while (!scheduleParams.getOutstandingBalance().isZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
+        while (scheduleParams.getOutstandingBalance().isGreaterThanZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
             LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
                     scheduleParams.getActualRepaymentDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO));
@@ -341,7 +341,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             currentPeriodParams.plusPrincipalForThisPeriod(currentPeriodParams.getPrepaymentAmount());
             
 
-            if (scheduleParams.getOutstandingBalance().isLessThanZero() || !isNextRepaymentAvailable) {
+            if ((scheduleParams.getOutstandingBalance().isLessThanZero() && !loanApplicationTerms.isAllowNegativeBalance()) || !isNextRepaymentAvailable) {
                 currentPeriodParams.plusPrincipalForThisPeriod(scheduleParams.getOutstandingBalance());
                 scheduleParams.setOutstandingBalance(Money.zero(currency));
             }

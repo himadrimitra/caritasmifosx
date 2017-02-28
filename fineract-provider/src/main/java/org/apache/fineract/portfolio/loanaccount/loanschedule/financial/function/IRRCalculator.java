@@ -1,37 +1,24 @@
 package org.apache.fineract.portfolio.loanaccount.loanschedule.financial.function;
 
-import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
-import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.joda.time.LocalDate;
 
 public class IRRCalculator {
-    
-    public static double calculateIrr(final LoanApplicationTerms terms){
-        BigDecimal flatInterestRate = terms.getFlatInterestRate();
+
+    public static double calculateIrr(final LoanApplicationTerms terms) {
         int numberOfRepayments = terms.getNumberOfRepayments();
-        Map<LocalDate, Money> disbursements = new HashMap<>();
-        MonetaryCurrency currency = terms.getPrincipal().getCurrency();
-        if(terms.isMultiDisburseLoan()){
-            for (DisbursementData disbursementData : terms.getDisbursementDatas()) {
-                disbursements.put(disbursementData.disbursementDate(),Money.of(currency,disbursementData.getPrincipal()));
-            }
-        }else{
-            disbursements.put(terms.getExpectedDisbursementDate(), terms.getPrincipal());
-        }
+        Map<LocalDate, Money> disbursements = terms.getDisbursementsAsMap();
         LocalDate disburseDate = terms.getExpectedDisbursementDate();
         LocalDate firstRepaymentDate = terms.getCalculatedRepaymentsStartingFromLocalDate();
         LocalDate calendarStartDate = firstRepaymentDate;
@@ -53,48 +40,41 @@ public class IRRCalculator {
         }
         final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
         final MathContext mc = new MathContext(8, roundingMode);
-        return calculateIrr(flatInterestRate, numberOfRepayments, disbursements, currency, mc, calendarStartDate, recurrence, firstRepaymentDate);
-        
-        
-    }
-    
+        Money emi = terms.calculateEmiWithFlatInterestRate(mc);
+        return calculateIrr(numberOfRepayments, disbursements, calendarStartDate, recurrence, firstRepaymentDate, emi);
 
-    public static double calculateIrr(final BigDecimal flatInterestRate, final int numberOfRepayments, Map<LocalDate, Money> disbursements,
-            final MonetaryCurrency currency, final MathContext mc, final LocalDate seedDate, final String recurrence,
-            final LocalDate firstRepaymentDate) {
-        final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+    }
+
+    public static double calculateIrr(final int numberOfRepayments, Map<LocalDate, Money> disbursements, final LocalDate seedDate,
+            final String recurrence, final LocalDate firstRepaymentDate, final Money emi) {
         final Map<LocalDate, Money> values = new TreeMap<>();
-        BigDecimal totalPrincipal = BigDecimal.ZERO;
         for (Map.Entry<LocalDate, Money> disbursement : disbursements.entrySet()) {
             values.put(disbursement.getKey(), disbursement.getValue().negated());
-            totalPrincipal = totalPrincipal.add(disbursement.getValue().getAmount());
         }
 
-        BigDecimal totalInterest = totalPrincipal.multiply(flatInterestRate).divide(divisor, mc);
-        BigDecimal emi = totalPrincipal.add(totalInterest).divide(BigDecimal.valueOf(numberOfRepayments), mc);
-        Money emiMoney = Money.of(currency, emi);
-        addToMap(values, firstRepaymentDate, emiMoney);
+        addToMap(values, firstRepaymentDate, emi);
         LocalDate dueDate = firstRepaymentDate;
         for (int i = 1; i < numberOfRepayments; i++) {
             dueDate = CalendarUtils.getNextRecurringDate(recurrence, seedDate, dueDate);
-            addToMap(values, dueDate, emiMoney);
+            addToMap(values, dueDate, emi);
         }
 
         double[] dates = new double[values.size()];
         double[] amounts = new double[values.size()];
         int i = 0;
         for (Map.Entry<LocalDate, Money> entry : values.entrySet()) {
-            dates[i] = XIRRData.getExcelDateValue( new GregorianCalendar(entry.getKey().getYear(), entry.getKey().getMonthOfYear()-1, entry.getKey().getDayOfMonth()) );
+            dates[i] = XIRRData.getExcelDateValue(new GregorianCalendar(entry.getKey().getYear(), entry.getKey().getMonthOfYear() - 1,
+                    entry.getKey().getDayOfMonth()));
             amounts[i] = entry.getValue().getAmount().doubleValue();
             i++;
         }
 
-        XIRRData data = new XIRRData(values.size(), 0.1, amounts, dates);
-        double xirrValue = XIRR.xirr( data );
-        double dividend = (double)1/12;
-        double XIRRpow = Math.pow(xirrValue,dividend);
-        double monthlyRate =  XIRRpow - 1;
-        double annumRate = monthlyRate * 12 ;
+        XIRRData data = new XIRRData(values.size(), 1.1, amounts, dates);
+        double xirrValue = XIRR.xirr(data);
+        double dividend = (double) 1 / 12;
+        double XIRRpow = Math.pow(xirrValue, dividend);
+        double monthlyRate = XIRRpow - 1;
+        double annumRate = monthlyRate * 12;
         return annumRate * 100;
     }
 

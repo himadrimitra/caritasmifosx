@@ -179,9 +179,10 @@ public class LoanApplicationTimelineData {
 
     public RepaymentScheduleRelatedLoanData repaymentScheduleRelatedData(final CurrencyData currency, final BigDecimal principal,
             final BigDecimal approvedPrincipal, final BigDecimal inArrearsTolerance, final BigDecimal totalFeeChargesAtDisbursement,
-            BigDecimal interestPostedAmount) {
+            BigDecimal interestPostedAmount, boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursementsInSchedule) {
         return new RepaymentScheduleRelatedLoanData(this.expectedDisbursementDate, this.actualDisbursementDate, currency, principal,
-                inArrearsTolerance, totalFeeChargesAtDisbursement, interestPostedAmount);
+                inArrearsTolerance, totalFeeChargesAtDisbursement, interestPostedAmount, considerFutureDisbursmentsInSchedule,
+                considerAllDisbursementsInSchedule);
     }
     
     public LocalDate getDisbursementDate(){

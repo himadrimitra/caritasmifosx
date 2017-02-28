@@ -88,6 +88,7 @@ import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeAddedExc
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.domain.LoanCollateral;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -447,6 +448,9 @@ public class Loan extends AbstractPersistable<Long> {
 
     @Column(name = "broken_period_interest", scale = 6, precision = 19, nullable = true)
     private BigDecimal brokenPeriodInterest;
+    
+    @Column(name = "calculated_installment_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal calculatedInstallmentAmount;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -1440,7 +1444,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    public void updateLoanSummarAndStatus() {
+    public void updateLoanSummaryAndStatus() {
         updateLoanSummaryDerivedFields();
         doPostLoanTransactionChecks(getLastUserTransactionDate(), loanLifecycleStateMachine);
     }
@@ -2552,7 +2556,6 @@ public class Loan extends AbstractPersistable<Long> {
                 LoanStatus.fromInt(this.loanStatus));
 
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
-        boolean isInApprovedState = isApproved();
         
         this.loanStatus = statusEnum.getValue();
         actualChanges.put("status", LoanEnumerations.status(this.loanStatus));
@@ -2673,6 +2676,7 @@ public class Loan extends AbstractPersistable<Long> {
                 this.fixedEmiAmount = emiAmount;
             }
             isEmiAmountChanged = true;
+            
         }
         if (rescheduledRepaymentDate != null) {
             final boolean isSpecificToInstallment = false;
@@ -2681,12 +2685,32 @@ public class Loan extends AbstractPersistable<Long> {
                     LoanStatus.ACTIVE.getValue());
             this.loanTermVariations.add(loanVariationTerms);
         }
+       
+       
 
         if (isRepaymentScheduleRegenerationRequiredForDisbursement(actualDisbursementDate) || recalculateSchedule || isEmiAmountChanged
                 || rescheduledRepaymentDate != null
                 || fetchRepaymentScheduleInstallment(1).getDueDate().isBefore(DateUtils.getLocalDateOfTenant()) || isDisbursementMissed()) {
-            recalculateSchedule(scheduleGeneratorDTO, currentUser);
+            boolean generateSchedule = !isAllPaymentsDone() && getMaturityDate().isAfter(actualDisbursementDate);
+            if (generateSchedule) {
+                recalculateSchedule(scheduleGeneratorDTO, currentUser);
+                if(this.getFlatInterestRate() != null){
+                    this.calculatedInstallmentAmount = scheduleGeneratorDTO.getCalculatedInstallmentAmount();
+                }
+            }
         }
+    }
+
+    private boolean isAllPaymentsDone() {
+        boolean paymentsDone = false;
+        if (this.loanProduct.isMultiDisburseLoan()) {
+            BigDecimal plannedPrincipal = getPlannedDisbursalAmount();
+            BigDecimal principalAccounted = this.summary.getAccountedPrincipal();
+            if (plannedPrincipal.compareTo(principalAccounted) != 1) {
+                paymentsDone = true;
+            }
+        }
+        return paymentsDone;
     }
 
     public boolean canDisburse(final LocalDate actualDisbursementDate) {
@@ -2790,7 +2814,7 @@ public class Loan extends AbstractPersistable<Long> {
                 }
 
             }
-            updateLoanSummaryDerivedFields();
+            updateLoanSummaryAndStatus();
         }
 
         return changedTransactionDetail;
@@ -2852,6 +2876,14 @@ public class Loan extends AbstractPersistable<Long> {
         return principal;
     }
 
+    public BigDecimal getPlannedDisbursalAmount() {
+        BigDecimal principal = BigDecimal.ZERO;
+        for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
+            principal = principal.add(disbursementDetail.principal());
+        }
+        return principal;
+    }
+    
     private void removeDisbursementDetail() {
         Set<LoanDisbursementDetails> details = new HashSet<>(this.disbursementDetails);
         for (LoanDisbursementDetails disbursementDetail : details) {
@@ -2933,7 +2965,7 @@ public class Loan extends AbstractPersistable<Long> {
             loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
             this.firstEmiAmount = firstInstallmentEmiAmount;
             loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
-        }else if(this.loanProduct.isAdjustInterestForRounding() && !this.isOpen()){
+        }else if(this.loanProduct.isAdjustInterestForRounding()){
         	loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
         }
         final LoanScheduleModel loanSchedule = loanScheduleGenerator.generate(mc, loanApplicationTerms, charges(),
@@ -3192,7 +3224,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
         final LoanRepaymentScheduleProcessingWrapper wrapper = new LoanRepaymentScheduleProcessingWrapper();
         wrapper.reprocess(getCurrency(), getDisbursementDate(), this.repaymentScheduleInstallments, charges());
-
+        this.calculatedInstallmentAmount = null;
         updateLoanSummaryDerivedFields();
     }
 
@@ -3392,7 +3424,7 @@ public class Loan extends AbstractPersistable<Long> {
 
         if (this.loanProduct.isMultiDisburseLoan() && adjustedTransaction == null) {
             BigDecimal totalDisbursed = getDisbursedAmount();
-            if (totalDisbursed.compareTo(this.summary.getTotalPrincipalRepaid()) < 0) {
+            if (totalDisbursed.compareTo(this.summary.getTotalPrincipalRepaid()) < 0 && !this.loanProduct.allowNegativeLoanBalances()) {
                 final String errorMessage = "The transaction cannot be done before the loan disbursement: "
                         + getApprovedOnDate().toString();
                 throw new InvalidLoanStateTransitionException("transaction", "cannot.be.done.before.disbursement", errorMessage);
@@ -3805,11 +3837,13 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void doPostLoanTransactionChecks(final LocalDate transactionDate, final LoanLifecycleStateMachine loanLifecycleStateMachine) {
 
-        if (isOverPaid()) {
+        boolean canChnageStatus = (!this.loanProduct().allowNegativeLoanBalances() || getPlannedDisbursalAmount().compareTo(
+                this.summary.getTotalPrincipalDisbursed()) == 0);
+        if (isOverPaid() && canChnageStatus) {
             // FIXME - kw - update account balance to negative amount.
             handleLoanOverpayment(loanLifecycleStateMachine);
             this.processIncomeAccrualTransactionOnLoanClosure(transactionDate);
-        }else if (this.summary.isRepaidInFull(loanCurrency())) {
+        } else if (this.summary.isRepaidInFull(loanCurrency()) && canChnageStatus) {
             handleLoanRepaymentInFull(transactionDate, loanLifecycleStateMachine);
         }
     }
@@ -4239,7 +4273,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     private boolean isOverPaid() {
     	
-        return calculateTotalOverpayment().isGreaterThanZero();
+        return calculateTotalOverpayment().isGreaterThanZero() ;
     }
 
     private Money calculateTotalOverpayment() {
@@ -5955,7 +5989,7 @@ public class Loan extends AbstractPersistable<Long> {
          */
         this.loanTransactions.addAll(changedTransactionDetail.getNewTransactionMappings().values());
 
-        updateLoanSummaryDerivedFields();
+        updateLoanSummaryAndStatus();
 
         this.loanTransactions.removeAll(changedTransactionDetail.getNewTransactionMappings().values());
 
@@ -6301,9 +6335,9 @@ public class Loan extends AbstractPersistable<Long> {
                 scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable,
                 firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(), 
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
-                this.loanProduct.isAdjustInterestForRounding());
+                this.loanProduct.isAdjustInterestForRounding(), this.loanProduct.allowNegativeLoanBalances());
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
-        updateInterestRate(loanApplicationTerms);
+        updateInterestRate(loanApplicationTerms,scheduleGeneratorDTO);
         if (this.isSubmittedAndPendingApproval()
                 || this.isApproved()
                 || (this.isMultiDisburmentLoan() && getLastUserTransactionDate().isBefore(
@@ -6318,19 +6352,36 @@ public class Loan extends AbstractPersistable<Long> {
         return loanApplicationTerms;
     }
     
-    private void updateInterestRate(final LoanApplicationTerms loanApplicationTerms) {
+    private void updateInterestRate(final LoanApplicationTerms loanApplicationTerms, final ScheduleGeneratorDTO scheduleGeneratorDTO) {
         if (getFlatInterestRate() != null) {
+            loanApplicationTerms.setFlatInterestRate(getFlatInterestRate());
+            final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+            final MathContext mc = new MathContext(8, roundingMode);
+            Money emi = loanApplicationTerms.calculateEmiWithFlatInterestRate(mc);
+
+            Money interest = null;
+            if (this.isOpen()) {
+                loanApplicationTerms.setAdjustInterestForRounding(false);
+                interest = Money.of(getCurrency(), this.summary.getTotalInterestCharged());
+            } else if (loanApplicationTerms.isAdjustInterestForRounding()) {
+                Money totalPayment = emi.multipliedBy(loanApplicationTerms.getNumberOfRepayments());
+                Money principal = loanApplicationTerms.getPrincipalToBeScheduled();
+                interest = totalPayment.minus(principal);
+            } else {
+                interest = loanApplicationTerms.calculateFlatInterestRate(mc);
+            }
+            loanApplicationTerms.setTotalInterestForSchedule(interest);
+            loanApplicationTerms.setTotalPrincipalForSchedule(loanApplicationTerms.getPrincipalToBeScheduled());
+            if (loanApplicationTerms.getFixedEmiAmount() == null) {
+                BigDecimal emiAmount = emi.getAmount();
+                if (this.calculatedInstallmentAmount != null) {
+                    emiAmount = this.calculatedInstallmentAmount;
+                }
+                loanApplicationTerms.setFixedEmiAmount(emiAmount);
+                scheduleGeneratorDTO.setCalculatedInstallmentAmount(emiAmount);
+            }
             if (!this.isOpen()) {
-                loanApplicationTerms.setFlatInterestRate(getFlatInterestRate());
                 double annualIrr = IRRCalculator.calculateIrr(loanApplicationTerms);
-                final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
-                final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
-                final MathContext mc = new MathContext(8, roundingMode);
-                BigDecimal totalInterest = loanApplicationTerms.getPrincipal().getAmount().multiply(getFlatInterestRate())
-                        .divide(divisor, mc);
-                BigDecimal emi = loanApplicationTerms.getPrincipal().getAmount().add(totalInterest)
-                        .divide(BigDecimal.valueOf(loanApplicationTerms.getNumberOfRepayments()), mc);
-                loanApplicationTerms.setFixedEmiAmount(emi);
                 loanApplicationTerms.updateAnnualNominalInterestRate(BigDecimal.valueOf(annualIrr));
                 if (loanApplicationTerms.getInterestRatePeriodFrequencyType().isMonthly()) {
                     double monthlyRate = annualIrr / 12;
@@ -6340,7 +6391,6 @@ public class Loan extends AbstractPersistable<Long> {
                 }
                 this.getLoanRepaymentScheduleDetail().updateInterestRate(loanApplicationTerms.getAnnualNominalInterestRate());
             }
-            loanApplicationTerms.setAllowNegativeBalance(true);
         }
     }
 

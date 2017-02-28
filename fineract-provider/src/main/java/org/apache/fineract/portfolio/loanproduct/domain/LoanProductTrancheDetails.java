@@ -38,18 +38,51 @@ public class LoanProductTrancheDetails {
 
     @Column(name = "max_outstanding_loan_balance", scale = 6, precision = 19, nullable = false)
     private BigDecimal outstandingLoanBalance;
+    
+    @Column(name = "allow_negative_loan_balances")
+    private boolean allowNegativeLoanBalances;
+    
+    @Column(name = "consider_future_disbursements_in_schedule")
+    private boolean considerFutureDisbursementsInSchedule;
+    
+    @Column(name = "consider_all_disbursements_in_schedule")
+    private boolean considerAllDisbursementsInSchedule;
 
     protected LoanProductTrancheDetails() {
         // TODO Auto-generated constructor stub
     }
 
-    public LoanProductTrancheDetails(final boolean multiDisburseLoan, final Integer maxTrancheCount, final BigDecimal outstandingLoanBalance) {
+    public LoanProductTrancheDetails(final boolean multiDisburseLoan, final Integer maxTrancheCount,
+            final BigDecimal outstandingLoanBalance, final boolean allowNegativeLoanBalances, 
+            final boolean considerFutureDisbursementsInSchedule, final boolean considerAllDisbursementsInSchedule) {
         this.multiDisburseLoan = multiDisburseLoan;
         this.maxTrancheCount = maxTrancheCount;
         this.outstandingLoanBalance = outstandingLoanBalance;
+        this.allowNegativeLoanBalances = allowNegativeLoanBalances;
+        this.considerFutureDisbursementsInSchedule = considerFutureDisbursementsInSchedule;
+        this.considerAllDisbursementsInSchedule = considerAllDisbursementsInSchedule;
     }
 
     public void update(final JsonCommand command, final Map<String, Object> actualChanges, final String localeAsInput) {
+        
+        if(command.isChangeInBooleanParameterNamed(LoanProductConstants.allowNegativeLoanBalance, this.allowNegativeLoanBalances)){
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.allowNegativeLoanBalance);
+            actualChanges.put(LoanProductConstants.allowNegativeLoanBalance, newValue);
+            this.allowNegativeLoanBalances = newValue;
+        }
+        
+        if(command.isChangeInBooleanParameterNamed(LoanProductConstants.considerFutureDisbursementsInSchedule, this.considerFutureDisbursementsInSchedule)){
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.considerFutureDisbursementsInSchedule);
+            actualChanges.put(LoanProductConstants.considerFutureDisbursementsInSchedule, newValue);
+            this.considerFutureDisbursementsInSchedule = newValue;
+        }
+        
+        if(command.isChangeInBooleanParameterNamed(LoanProductConstants.considerAllDisbursementsInSchedule, this.considerAllDisbursementsInSchedule)){
+            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.considerAllDisbursementsInSchedule);
+            actualChanges.put(LoanProductConstants.considerAllDisbursementsInSchedule, newValue);
+            this.considerAllDisbursementsInSchedule = newValue;
+        }
+        
         if (command.isChangeInBooleanParameterNamed(LoanProductConstants.multiDisburseLoanParameterName, this.multiDisburseLoan)) {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.multiDisburseLoanParameterName);
             actualChanges.put(LoanProductConstants.multiDisburseLoanParameterName, newValue);
@@ -88,5 +121,17 @@ public class LoanProductTrancheDetails {
     public Integer maxTrancheCount() {
         return this.maxTrancheCount;
     }
+    
+    public boolean isAllowNegativeLoanBalances() {
+        return this.allowNegativeLoanBalances;
+    }
 
+    public boolean isConsiderFutureDisbursementsInSchedule() {
+        return this.considerFutureDisbursementsInSchedule;
+    }
+
+    
+    public boolean isConsiderAllDisbursementsInSchedule() {
+        return this.considerAllDisbursementsInSchedule;
+    }
 }

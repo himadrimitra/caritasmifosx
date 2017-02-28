@@ -215,6 +215,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
     
     @Column(name = "is_flat_interest_rate", nullable = false)
     private boolean isFlatInterestRate;
+    
 
     public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
             final List<ProductLoanCharge> productLoanCharges, final JsonCommand command, final AprCalculator aprCalculator, FloatingRate floatingRate) {
@@ -312,9 +313,15 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.multiDisburseLoanParameterName);
         Integer maxTrancheCount = null;
         BigDecimal outstandingLoanBalance = null;
+        boolean allowNegativeLoanBalance = false;
+        boolean considerFutureDisbursementsInSchedule = false;
+        boolean considerAllDisbursementsInSchedule = false;
         if (multiDisburseLoan) {
             outstandingLoanBalance = command.bigDecimalValueOfParameterNamed(LoanProductConstants.outstandingLoanBalanceParameterName);
             maxTrancheCount = command.integerValueOfParameterNamed(LoanProductConstants.maxTrancheCountParameterName);
+            allowNegativeLoanBalance = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.allowNegativeLoanBalance);
+            considerFutureDisbursementsInSchedule = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.considerFutureDisbursementsInSchedule);
+            considerAllDisbursementsInSchedule = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.considerAllDisbursementsInSchedule);
         }
 
         final Integer graceOnArrearsAgeing = command.integerValueOfParameterNamed(LoanProductConstants.graceOnArrearsAgeingParameterName);
@@ -401,20 +408,21 @@ public class LoanProduct extends AbstractPersistable<Long> {
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
                 annualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion, repaymentEvery,
-                repaymentFrequencyType, numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods,
-                graceOnInterestPayment, graceOnInterestCharged, amortizationMethod, inArrearsTolerance, productLoanCharges, accountingRuleType,
-                includeInBorrowerCycle, startDate, closeDate, externalId, useBorrowerCycle, loanProductBorrowerCycleVariations,
-                multiDisburseLoan, maxTrancheCount, outstandingLoanBalance, graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType,
-                daysInYearType, isInterestRecalculationEnabled, interestRecalculationSettings,
-                minimumDaysBetweenDisbursalAndFirstRepayment, holdGuarantorFunds, loanProductGuaranteeDetails,
-                principalThresholdForLastInstallment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineEmiAmount,
-                installmentAmountInMultiplesOf, loanConfigurableAttributes, isLinkedToFloatingInterestRates, floatingRate,
-                interestRateDifferential, minDifferentialLendingRate, maxDifferentialLendingRate, defaultDifferentialLendingRate,
-                isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed, minimumGapBetweenInstallments,
-                maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, 
-                syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, 
-                loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod, isFlatInterestRate);
+                repaymentFrequencyType, numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, graceOnPrincipalPayment,
+                recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, amortizationMethod,
+                inArrearsTolerance, productLoanCharges, accountingRuleType, includeInBorrowerCycle, startDate, closeDate, externalId,
+                useBorrowerCycle, loanProductBorrowerCycleVariations, multiDisburseLoan, maxTrancheCount, outstandingLoanBalance,
+                graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
+                interestRecalculationSettings, minimumDaysBetweenDisbursalAndFirstRepayment, holdGuarantorFunds,
+                loanProductGuaranteeDetails, principalThresholdForLastInstallment, accountMovesOutOfNPAOnlyOnArrearsCompletion,
+                canDefineEmiAmount, installmentAmountInMultiplesOf, loanConfigurableAttributes, isLinkedToFloatingInterestRates,
+                floatingRate, interestRateDifferential, minDifferentialLendingRate, maxDifferentialLendingRate,
+                defaultDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed,
+                minimumGapBetweenInstallments, maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount,
+                closeLoanOnOverpayment, syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm,
+                maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod,
+                isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule);
 
     }
 
@@ -629,14 +637,14 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final InterestCalculationPeriodMethod interestCalculationPeriodMethod, final boolean considerPartialPeriodInterest,
             final Integer repayEvery, final PeriodFrequencyType repaymentFrequencyType, final Integer defaultNumberOfInstallments,
             final Integer defaultMinNumberOfInstallments, final Integer defaultMaxNumberOfInstallments,
-            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods, final Integer graceOnInterestPayment, final Integer graceOnInterestCharged,
-            final AmortizationMethod amortizationMethod, final BigDecimal inArrearsTolerance, final List<ProductLoanCharge> charges,
-            final AccountingRuleType accountingRuleType, final boolean includeInBorrowerCycle, final LocalDate startDate,
-            final LocalDate closeDate, final String externalId, final boolean useBorrowerCycle,
-            final Set<LoanProductBorrowerCycleVariations> loanProductBorrowerCycleVariations, final boolean multiDisburseLoan,
-            final Integer maxTrancheCount, final BigDecimal outstandingLoanBalance, final Integer graceOnArrearsAgeing,
-            final Integer overdueDaysForNPA, final DaysInMonthType daysInMonthType, final DaysInYearType daysInYearType,
-            final boolean isInterestRecalculationEnabled,
+            final Integer graceOnPrincipalPayment, final Integer recurringMoratoriumOnPrincipalPeriods,
+            final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
+            final BigDecimal inArrearsTolerance, final List<ProductLoanCharge> charges, final AccountingRuleType accountingRuleType,
+            final boolean includeInBorrowerCycle, final LocalDate startDate, final LocalDate closeDate, final String externalId,
+            final boolean useBorrowerCycle, final Set<LoanProductBorrowerCycleVariations> loanProductBorrowerCycleVariations,
+            final boolean multiDisburseLoan, final Integer maxTrancheCount, final BigDecimal outstandingLoanBalance,
+            final Integer graceOnArrearsAgeing, final Integer overdueDaysForNPA, final DaysInMonthType daysInMonthType,
+            final DaysInYearType daysInYearType, final boolean isInterestRecalculationEnabled,
             final LoanProductInterestRecalculationDetails productInterestRecalculationDetails,
             final Integer minimumDaysBetweenDisbursalAndFirstRepayment, final boolean holdGuarantorFunds,
             final LoanProductGuaranteeDetails loanProductGuaranteeDetails, final BigDecimal principalThresholdForLastInstallment,
@@ -646,12 +654,13 @@ public class LoanProduct extends AbstractPersistable<Long> {
             BigDecimal minDifferentialLendingRate, BigDecimal maxDifferentialLendingRate, BigDecimal defaultDifferentialLendingRate,
             Boolean isFloatingInterestRateCalculationAllowed, final Boolean isVariableInstallmentsAllowed,
             final Integer minimumGapBetweenInstallments, final Integer maximumGapBetweenInstallments,
-            Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment, 
-            final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment, 
+            Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment,
+            final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment,
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
             final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
-            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements, 
-            final Integer brokenPeriodMethod, final boolean isFlatInterestRate) {
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements,
+            final Integer brokenPeriodMethod, final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances,
+            final boolean considerFutureDisbursementScheduleInLoans, final boolean considerAllDisbursementsInSchedule) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -717,7 +726,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
             loanConfigurableAttributes.updateLoanProduct(this);
         }
 
-        this.loanProducTrancheDetails = new LoanProductTrancheDetails(multiDisburseLoan, maxTrancheCount, outstandingLoanBalance);
+        this.loanProducTrancheDetails = new LoanProductTrancheDetails(multiDisburseLoan, maxTrancheCount, outstandingLoanBalance,
+                allowNegativeLoanBalances, considerFutureDisbursementScheduleInLoans, considerAllDisbursementsInSchedule);
         this.overdueDaysForNPA = overdueDaysForNPA;
         this.productInterestRecalculationDetails = productInterestRecalculationDetails;
         this.minimumDaysBetweenDisbursalAndFirstRepayment = minimumDaysBetweenDisbursalAndFirstRepayment;
@@ -1194,7 +1204,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             actualChanges.put(LoanProductConstants.isFlatInterestRateParamName, newValue);
             this.isFlatInterestRate = newValue;
         }
-
+        
         return actualChanges;
     }
 
@@ -1571,5 +1581,16 @@ public class LoanProduct extends AbstractPersistable<Long> {
     public boolean isFlatInterestRate() {
         return this.isFlatInterestRate;
     }
+    
+    public boolean allowNegativeLoanBalances(){
+       return this.loanProducTrancheDetails.isAllowNegativeLoanBalances();
+    }
+    
+    public boolean considerFutureDisbursementsInSchedule(){
+        return this.loanProducTrancheDetails.isConsiderFutureDisbursementsInSchedule();
+     }
 
+    public boolean considerAllDisbursementsInSchedule() {
+        return this.loanProducTrancheDetails.isConsiderAllDisbursementsInSchedule();
+    }
 }

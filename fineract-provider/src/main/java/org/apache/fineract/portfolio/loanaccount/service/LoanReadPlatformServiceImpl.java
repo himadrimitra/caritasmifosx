@@ -719,6 +719,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" lp.allow_variabe_installments as isvariableInstallmentsAllowed, ");
             sb.append(" lp.allow_multiple_disbursals as multiDisburseLoan,");
             sb.append(" lp.can_define_fixed_emi_amount as canDefineInstallmentAmount,");
+            sb.append(" lp.consider_future_disbursements_in_schedule as considerFutureDisbursmentsInSchedule, lp.consider_all_disbursements_in_schedule as considerAllDisbursementsInSchedule,");
             sb.append(" c.id as clientId, c.account_no as clientAccountNo, c.display_name as clientName, IFNULL(c.mobile_no,null) as mobileNo, c.office_id as clientOfficeId,");
             sb.append(" g.id as groupId, g.account_no as groupAccountNo, g.display_name as groupName,");
             sb.append(" g.office_id as groupOfficeId, g.staff_id As groupStaffId , g.parent_id as groupParentId, (select mg.display_name from m_group mg where mg.id = g.parent_id) as centerName, ");
@@ -1080,7 +1081,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 brokenPeriodMethodType = LoanEnumerations.brokenPeriodMethodType(brokenPeriodTypeId);
             }
             final BigDecimal brokenPeriodInterest = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "brokenPeriodInterest");
-
+            final Boolean considerFutureDisbursmentsInSchedule = rs.getBoolean("considerFutureDisbursmentsInSchedule");
+            final Boolean considerAllDisbursementsInSchedule = rs.getBoolean("considerAllDisbursementsInSchedule");
 
             LoanInterestRecalculationData interestRecalculationData = null;
             if (isInterestRecalculationEnabled) {
@@ -1174,7 +1176,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
                     minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
                     topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate, 
-                    brokenPeriodInterest);
+                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule);
         }
     }
     
@@ -1396,6 +1398,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         private BigDecimal outstandingLoanPrincipalBalance;
         private BigDecimal totalPaidFeeCharges;
         private final BigDecimal interestPosted;
+        private final boolean considerFutureDisbursmentsInSchedule;
+        private final boolean considerAllDisbursementsInSchedule;
 
         public LoanScheduleResultSetExtractor(final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedLoanData,
                 Collection<DisbursementData> disbursementData, BigDecimal totalPaidFeeCharges) {
@@ -1407,6 +1411,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             this.disbursementData = disbursementData;
             this.totalPaidFeeCharges = totalPaidFeeCharges;
             this.interestPosted = repaymentScheduleRelatedLoanData.getInterestPostedAmount();
+            this.considerFutureDisbursmentsInSchedule = repaymentScheduleRelatedLoanData.isConsiderFutureDisbursmentsInSchedule();
+            this.considerAllDisbursementsInSchedule = repaymentScheduleRelatedLoanData.isConsiderAllDisbursementsInSchedule();
         }
 
         public String schema() {
@@ -1439,7 +1445,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 totalPrincipalDisbursed = Money.of(monCurrency, this.disbursement.amount()).getAmount();
             } else {
                 if (this.disbursement.isDisbursed()) {
-                    incluedeAllDisbursements = false;
+                    incluedeAllDisbursements = considerAllDisbursementsInSchedule;
                 }
                 for(DisbursementData data : disbursementData){
                     if(data.getChargeAmount() != null){
@@ -1497,7 +1503,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                                 }
                                 this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(principal);
                             }
-                        } else if (data.isDueForDisbursement(fromDate, dueDate) && (incluedeAllDisbursements || data.isDisbursed())) {
+                        } else if (data.isDueForDisbursement(fromDate, dueDate)
+                                && (incluedeAllDisbursements || data.isDisbursed() || (considerFutureDisbursmentsInSchedule && !data
+                                        .disbursementDate().isBefore(DateUtils.getLocalDateOfTenant())))) {
                             principal = principal.add(data.amount());
                             if (data.getChargeAmount() == null) {
                                 final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(

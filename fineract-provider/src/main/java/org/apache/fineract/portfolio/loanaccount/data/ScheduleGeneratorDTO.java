@@ -18,10 +18,13 @@
  */
 package org.apache.fineract.portfolio.loanaccount.data;
 
+import java.math.BigDecimal;
+
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.floatingrates.data.FloatingRateDTO;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGeneratorFactory;
 import org.joda.time.LocalDate;
@@ -45,6 +48,8 @@ public class ScheduleGeneratorDTO {
     final Boolean isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled;
     final boolean considerFutureDisbursmentsInSchedule;
     final boolean considerAllDisbursmentsInSchedule;
+    BigDecimal calculatedInstallmentAmount;
+    BUSINESS_EVENTS businessEvent;
 
 
     public ScheduleGeneratorDTO(final LoanScheduleGeneratorFactory loanScheduleFactory, final ApplicationCurrency applicationCurrency,
@@ -155,6 +160,26 @@ public class ScheduleGeneratorDTO {
     
     public boolean isConsiderAllDisbursmentsInSchedule() {
         return this.considerAllDisbursmentsInSchedule;
+    }
+
+    
+    public BigDecimal getCalculatedInstallmentAmount() {
+        return this.calculatedInstallmentAmount;
+    }
+
+    
+    public void setCalculatedInstallmentAmount(BigDecimal calculatedInstallmentAmount) {
+        this.calculatedInstallmentAmount = calculatedInstallmentAmount;
+    }
+
+    
+    public BUSINESS_EVENTS getBusinessEvent() {
+        return this.businessEvent;
+    }
+
+    
+    public void setBusinessEvent(BUSINESS_EVENTS businessEvent) {
+        this.businessEvent = businessEvent;
     }
 
 }
