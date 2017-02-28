@@ -360,7 +360,7 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
                 loanChargePaidData.put("isPenalty", chargeData.isPenalty());
                 loanChargePaidData.put("loanChargeId", chargeData.getId());
                 loanChargePaidData.put("amount", entry.getValue());
-
+                loanChargePaidData.put("isCapitalized", chargeData.isCapitalized());
                 loanChargesPaidData.add(loanChargePaidData);
             }
             thisTransactionData.put("loanChargesPaid", loanChargesPaidData);

@@ -505,7 +505,7 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
             for (ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getFeePayments()) {
                 chargePaymentDTOs.add(new ChargePaymentDTO(chargePaymentDTO.getChargeId(), chargePaymentDTO.getLoanChargeId(),
                         chargePaymentDTO.getAmount().floatValue() < 0 ? chargePaymentDTO.getAmount().multiply(new BigDecimal(-1))
-                                : chargePaymentDTO.getAmount()));
+                                : chargePaymentDTO.getAmount(), chargePaymentDTO.isCapitalized()));
             }
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), loanProductId, loanId, transactionId, transactionDate, feesAmount,
@@ -519,7 +519,7 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
             for (ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getPenaltyPayments()) {
                 chargePaymentDTOs.add(new ChargePaymentDTO(chargePaymentDTO.getChargeId(), chargePaymentDTO.getLoanChargeId(),
                         chargePaymentDTO.getAmount().floatValue() < 0 ? chargePaymentDTO.getAmount().multiply(new BigDecimal(-1))
-                                : chargePaymentDTO.getAmount()));
+                                : chargePaymentDTO.getAmount(), chargePaymentDTO.isCapitalized()));
             }
 
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
