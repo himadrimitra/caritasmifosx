@@ -465,25 +465,16 @@ public class LoanUtilService {
         return transactionAmountRemaining;
     }
     
-	public static Money getCapitalizedChargeBalance(final LoanApplicationTerms loanApplicationTerms, int periodNumber) {
-	    BigDecimal capitalizedAmount = BigDecimal.ZERO;
-	    MonetaryCurrency currency = loanApplicationTerms.getCurrency();
-	    Integer loanTerm = loanApplicationTerms.getNumberOfRepayments();
-	    if (loanApplicationTerms.getCapitalizedCharges() != null && loanApplicationTerms.getCapitalizedCharges().size() > 0 && periodNumber != loanTerm) {        	
+	public static Money getTotalCapitalizedCharge(final LoanApplicationTerms loanApplicationTerms) {
+		MonetaryCurrency currency = loanApplicationTerms.getCurrency();
+		Money capitalizedAmount = Money.zero(currency);	    
+	    if (loanApplicationTerms.getCapitalizedCharges() != null && loanApplicationTerms.getCapitalizedCharges().size() > 0) {        	
 	        for (LoanCharge loanCharge : loanApplicationTerms.getCapitalizedCharges()) {
-	            BigDecimal totalAmount = capitalizedAmount.add(loanCharge.getAmount(currency).getAmount());
-	            BigDecimal defaultAmount = MathUtility.getInstallmentAmount(totalAmount, loanTerm, currency, 1);
-	            if (periodNumber == 0) {
-	            	capitalizedAmount = capitalizedAmount.add(totalAmount);
-	            }else if(periodNumber != loanTerm-1){
-	            	capitalizedAmount = capitalizedAmount.add(defaultAmount);
-	            }else{
-	            	capitalizedAmount = capitalizedAmount.add(MathUtility.getInstallmentAmount(totalAmount, loanTerm, currency, loanTerm));
-	            }
+	            capitalizedAmount =capitalizedAmount.plus(loanCharge.getAmount(currency));
 	        }
 	        
 	    }
-	    return Money.of(currency, capitalizedAmount);
+	    return capitalizedAmount;
 	}
     
     public static BigDecimal getCapitalizedChargeAmount(Collection<LoanCharge> loanCharges){
