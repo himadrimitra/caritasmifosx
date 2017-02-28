@@ -192,7 +192,7 @@ public final class LoanApplicationTerms {
 
     private Money adjustPrincipalForFlatLoans;
 
-    private final LocalDate seedDate;
+    private LocalDate seedDate;
 
     private final CalendarHistoryDataWrapper calendarHistoryDataWrapper;
 
@@ -1881,7 +1881,7 @@ public final class LoanApplicationTerms {
     public LocalDate getSeedDate() {
         return this.seedDate;
     }
-
+    
     public CalendarHistoryDataWrapper getCalendarHistoryDataWrapper() {
         return this.calendarHistoryDataWrapper;
     }
@@ -2216,5 +2216,9 @@ public final class LoanApplicationTerms {
             dateValue = this.actualinterestChargedFromDate.toDate();
         }
         return dateValue;
+    }
+
+    public void setSeedDate(LocalDate seedDate) {
+        this.seedDate = seedDate;
     }
 }

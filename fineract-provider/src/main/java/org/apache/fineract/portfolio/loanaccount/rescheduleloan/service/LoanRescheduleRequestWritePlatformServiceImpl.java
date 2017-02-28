@@ -455,7 +455,11 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
                     calendarHistory.updateEndDate(endDate);
                     this.calendarHistoryRepository.save(calendarHistory);
                     loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
-                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                    if(loan.isGLIMLoan()){
+                    	loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue());
+                    }else{
+                    	 loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                    }                    
                 }
             }
             for (LoanRescheduleRequestToTermVariationMapping mapping : loanRescheduleRequest
