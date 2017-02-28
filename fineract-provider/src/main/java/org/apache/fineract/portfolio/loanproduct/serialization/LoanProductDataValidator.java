@@ -119,7 +119,9 @@ public final class LoanProductDataValidator {
             LoanProductConstants.canUseForTopup,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
             LoanProductConstants.adjustInterestForRoundingParamName, LoanProductConstants.isEmiBasedOnDisbursements,
             LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName,
-            LoanProductConstants.brokenPeriodMethodTypeParamName,LoanProductConstants.isFlatInterestRateParamName));
+            LoanProductConstants.brokenPeriodMethodTypeParamName,LoanProductConstants.isFlatInterestRateParamName,
+            LoanProductConstants.considerFutureDisbursementsInSchedule, LoanProductConstants.considerAllDisbursementsInSchedule,
+            LoanProductConstants.allowNegativeLoanBalance));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -889,6 +891,16 @@ public final class LoanProductDataValidator {
             final Integer interestType = this.fromApiJsonHelper.extractIntegerNamed("interestType", element, Locale.getDefault());
             baseDataValidator.reset().parameter("interestType").value(interestType).ignoreIfNull()
                     .integerSameAsNumber(InterestMethod.DECLINING_BALANCE.getValue());
+            
+            final boolean allowNegativeLoanBalance = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.allowNegativeLoanBalance, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.allowNegativeLoanBalance).value(allowNegativeLoanBalance)
+                    .ignoreIfNull();
+
+            final boolean considerFutureDisbursementsInSchedule = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.considerFutureDisbursementsInSchedule, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.considerFutureDisbursementsInSchedule)
+                    .value(considerFutureDisbursementsInSchedule).ignoreIfNull();
         }
     }
 

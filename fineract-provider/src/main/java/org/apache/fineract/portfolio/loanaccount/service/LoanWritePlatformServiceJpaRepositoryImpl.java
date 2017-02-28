@@ -76,9 +76,7 @@ import org.apache.fineract.portfolio.account.domain.AccountAssociationsRepositor
 import org.apache.fineract.portfolio.account.domain.AccountTransferDetailRepository;
 import org.apache.fineract.portfolio.account.domain.AccountTransferDetails;
 import org.apache.fineract.portfolio.account.domain.AccountTransferRecurrenceType;
-import org.apache.fineract.portfolio.account.domain.AccountTransferRepository;
 import org.apache.fineract.portfolio.account.domain.AccountTransferStandingInstruction;
-import org.apache.fineract.portfolio.account.domain.AccountTransferTransaction;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
 import org.apache.fineract.portfolio.account.domain.StandingInstructionPriority;
 import org.apache.fineract.portfolio.account.domain.StandingInstructionStatus;
@@ -170,6 +168,7 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanForeclosureExcept
 import org.apache.fineract.portfolio.loanaccount.exception.LoanMultiDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignmentException;
+import org.apache.fineract.portfolio.loanaccount.exception.LoanWriteOffException;
 import org.apache.fineract.portfolio.loanaccount.exception.MultiDisbursementDataRequiredException;
 import org.apache.fineract.portfolio.loanaccount.exception.SubsidyAmountExceedsPrincipalOutstandingException;
 import org.apache.fineract.portfolio.loanaccount.exception.SubsidyNotApplicableException;
@@ -245,7 +244,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanChargeReadPlatformService loanChargeReadPlatformService;
     private final LoanReadPlatformService loanReadPlatformService;
     private final FromJsonHelper fromApiJsonHelper;
-    private final AccountTransferRepository accountTransferRepository;
     private final CalendarRepository calendarRepository;
     private final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository;
     private final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService;
@@ -287,7 +285,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
             final LoanChargeReadPlatformService loanChargeReadPlatformService, final LoanReadPlatformService loanReadPlatformService,
-            final FromJsonHelper fromApiJsonHelper, final AccountTransferRepository accountTransferRepository,
+            final FromJsonHelper fromApiJsonHelper, 
             final CalendarRepository calendarRepository,
             final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
             final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService,
@@ -333,7 +331,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanChargeReadPlatformService = loanChargeReadPlatformService;
         this.loanReadPlatformService = loanReadPlatformService;
         this.fromApiJsonHelper = fromApiJsonHelper;
-        this.accountTransferRepository = accountTransferRepository;
         this.calendarRepository = calendarRepository;
         this.repaymentScheduleInstallmentRepository = repaymentScheduleInstallmentRepository;
         this.loanScheduleHistoryWritePlatformService = loanScheduleHistoryWritePlatformService;
@@ -399,8 +396,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         if (loan.isOpen() && loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             recalculateFrom = actualDisbursementDate;
         }
-        final boolean considerFutureDisbursmentsInSchedule = false;
-        final boolean considerAllDisbursmentsInSchedule =false;
+        final boolean considerFutureDisbursmentsInSchedule = loan.loanProduct().considerFutureDisbursementsInSchedule();
+        final boolean considerAllDisbursmentsInSchedule =loan.loanProduct().considerAllDisbursementsInSchedule();
         
 
 
@@ -778,8 +775,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     loan.getLoanTransactions().add(disbursementTransaction);
                 }
                 LocalDate recalculateFrom = null;
-                final boolean considerFutureDisbursmentsInSchedule = false;
-                final boolean considerAllDisbursmentsInSchedule =false;
+                final boolean considerFutureDisbursmentsInSchedule = loan.loanProduct().considerFutureDisbursementsInSchedule();
+                final boolean considerAllDisbursmentsInSchedule =loan.loanProduct().considerAllDisbursementsInSchedule();
+
                 final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                         considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
                 final LocalDate nextPossibleRepaymentDate = validateAndFetchNextRepaymentDate(loan, actualDisbursementDate, loanProduct,
@@ -1319,6 +1317,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }    
         
         checkClientOrGroupActive(loan);
+        if(loan.getSummary().getAccountedPrincipal().compareTo(BigDecimal.ZERO) != 1){
+            throw new LoanWriteOffException();
+        }
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_WRITTEN_OFF,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
         removeLoanCycle(loan);
@@ -1334,6 +1335,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
         
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        scheduleGeneratorDTO.setBusinessEvent(BUSINESS_EVENTS.LOAN_WRITTEN_OFF);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.closeAsWrittenOff(command, defaultLoanLifecycleStateMachine(),
                 changes, existingTransactionIds, existingReversedTransactionIds, currentUser, scheduleGeneratorDTO);
@@ -2981,7 +2983,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 changedTransactionDetail = loan.handleRegenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
             } else {
                 loan.regenerateRepaymentSchedule(scheduleGeneratorDTO, currentUser);
-                loan.processPostDisbursementTransactions();
+                changedTransactionDetail = loan.processTransactions();
             }
         }
 
@@ -2989,7 +2991,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         if (changedTransactionDetail != null) {
             for (Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
-                updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
+                this.loanTransactionRepository.save(mapEntry.getValue());
+                // update loan with references to the newly created
+                // transactions
+                loan.getLoanTransactions().add(mapEntry.getValue());
+                this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
             }
             Map<BUSINESS_ENTITY, Object> changedTransactionEntityMap = constructEntityMap(BUSINESS_ENTITY.CHANGED_TRANSACTION_DETAIL, changedTransactionDetail); 
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_DISBURSAL, changedTransactionEntityMap);
@@ -3154,14 +3160,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         this.guarantorDomainService.transaferFundsFromGuarantor(loan);
         return new CommandProcessingResultBuilder().withLoanId(loanId).build();
-    }
-
-    private void updateLoanTransaction(final Long loanTransactionId, final LoanTransaction newLoanTransaction) {
-        final AccountTransferTransaction transferTransaction = this.accountTransferRepository.findByToLoanTransactionId(loanTransactionId);
-        if (transferTransaction != null) {
-            transferTransaction.updateToLoanTransaction(newLoanTransaction);
-            this.accountTransferRepository.save(transferTransaction);
-        }
     }
 
     private void createLoanScheduleArchive(final Loan loan, final ScheduleGeneratorDTO scheduleGeneratorDTO) {

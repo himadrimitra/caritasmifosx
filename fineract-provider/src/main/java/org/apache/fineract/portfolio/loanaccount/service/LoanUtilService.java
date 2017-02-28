@@ -134,8 +134,8 @@ public class LoanUtilService {
         boolean considerAllDisbursmentsInSchedule =true;
         
         if(loan.isOpen()){
-            considerFutureDisbursmentsInSchedule = false;
-            considerAllDisbursmentsInSchedule = false;
+            considerFutureDisbursmentsInSchedule = loan.loanProduct().considerFutureDisbursementsInSchedule();
+            considerAllDisbursmentsInSchedule = loan.loanProduct().considerAllDisbursementsInSchedule();
         }
         
         return buildScheduleGeneratorDTO(loan, recalculateFrom, holidayDetailDTO, considerFutureDisbursmentsInSchedule,
@@ -186,7 +186,8 @@ public class LoanUtilService {
         ScheduleGeneratorDTO scheduleGeneratorDTO = new ScheduleGeneratorDTO(loanScheduleFactory, applicationCurrency,
                 calculatedRepaymentsStartingFromDate, holidayDetails, restCalendarInstance, compoundingCalendarInstance, recalculateFrom,
                 overdurPenaltyWaitPeriod, floatingRateDTO, calendar, calendarHistoryDataWrapper, isInterestChargedFromDateAsDisbursementDateEnabled,
-                numberOfDays, isSkipRepaymentOnFirstMonth, isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+                numberOfDays, isSkipRepaymentOnFirstMonth, isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, considerFutureDisbursmentsInSchedule, 
+                considerAllDisbursmentsInSchedule);
 
         return scheduleGeneratorDTO;
     }

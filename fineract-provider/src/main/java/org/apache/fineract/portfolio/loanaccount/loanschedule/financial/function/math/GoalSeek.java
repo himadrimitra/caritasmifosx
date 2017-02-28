@@ -212,7 +212,7 @@ public class GoalSeek {
 			log( "goalSeekNewton" ) ;
 		}
 
-		for (iterations = 0; iterations < 20; iterations++) {
+		for (iterations = 0; iterations < 30; iterations++) {
 			double x1 ;
             double y0 ;
             double df0 ;
@@ -270,6 +270,9 @@ public class GoalSeek {
 			 * just one side of the root.
 			 */
 			x1 = x0 - 1.000001 * y0 / df0;
+			while(x1 < 0){
+                            x1 =x1 + 1;
+			}
 			stepsize = Math.abs(x1 - x0) / (Math.abs(x0) + Math.abs(x1)) ;
 			if ( DEBUG_GOAL_SEEK ) {
 				log("   df0 = " + df0 ) ;

@@ -211,14 +211,11 @@ public class LoanScheduleAssembler {
             final BigDecimal interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("interestRatePerPeriod",
                     element);
             terms.setFlatInterestRate(interestRatePerPeriod);
-            terms.setAllowNegativeBalance(true);
             double annualIrr = IRRCalculator.calculateIrr(terms);
-            final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
             final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
             final MathContext mc = new MathContext(8, roundingMode);
-            BigDecimal totalInterest = terms.getPrincipal().getAmount().multiply(interestRatePerPeriod).divide(divisor, mc);
-            BigDecimal emi = terms.getPrincipal().getAmount().add(totalInterest).divide(BigDecimal.valueOf(terms.getNumberOfRepayments()), mc);
-            terms.setFixedEmiAmount(emi);
+            Money emi = terms.calculateEmiWithFlatInterestRate(mc);
+            terms.setFixedEmiAmount(emi.getAmount());
             terms.updateAnnualNominalInterestRate(BigDecimal.valueOf(annualIrr));
             if (terms.getInterestRatePeriodFrequencyType().isMonthly()) {
                 double monthlyRate = annualIrr / 12;
@@ -226,6 +223,16 @@ public class LoanScheduleAssembler {
             } else {
                 terms.updateInterestRatePerPeriod(BigDecimal.valueOf(annualIrr));
             }
+            Money interest = null;
+            if(terms.isAdjustInterestForRounding()){
+                Money totalPayment = emi.multipliedBy(terms.getNumberOfRepayments());
+                Money principal = terms.getPrincipalToBeScheduled();
+                interest = totalPayment.minus(principal);
+            }else{
+                interest = terms.calculateFlatInterestRate(mc);
+            }
+            terms.setTotalInterestForSchedule(interest);
+            terms.setTotalPrincipalForSchedule(terms.getPrincipalToBeScheduled());
         }
         return terms;
     }
@@ -531,8 +538,8 @@ public class LoanScheduleAssembler {
         final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
-        final boolean considerFutureDisbursmentsInSchedule = true;
-        LoanApplicationTerms loanApplicationTerms =  LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
+        final boolean considerFutureDisbursmentsInSchedule = loanProduct.considerFutureDisbursementsInSchedule();
+        LoanApplicationTerms loanApplicationTerms = LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
                 interestRatePerPeriod, interestRatePeriodFrequencyType, annualNominalInterestRate, interestCalculationPeriodMethod,
                 allowPartialPeriodInterestCalcualtion, principalMoney, expectedDisbursementDate, repaymentsStartingFromDate,
@@ -546,7 +553,8 @@ public class LoanScheduleAssembler {
                 detailDTO, allowCompoundingOnEod, isSubsidyApplicable,
                 firstEmiAmount, loanProduct.getAdjustedInstallmentInMultiplesOf(), 
                 loanProduct.adjustFirstEMIAmount(),considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(),
-                loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
+                loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, 
+                loanProduct.allowNegativeLoanBalances());
         LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, null);
         return  loanApplicationTerms;
     }

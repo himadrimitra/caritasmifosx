@@ -291,7 +291,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.save(glimTransaction);
             }
 
-            loan.updateLoanSummarAndStatus();
+            loan.updateLoanSummaryAndStatus();
             this.loanTransactionRepository.save(waiveLoanChargeTransaction);
             saveLoanWithDataIntegrityViolationChecks(loan);
 

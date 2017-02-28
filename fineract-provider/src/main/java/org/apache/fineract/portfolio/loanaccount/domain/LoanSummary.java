@@ -353,4 +353,10 @@ public final class LoanSummary {
     public void setTotalNetPrincipalDisbursed(BigDecimal totalNetPrincipalDisbursed) {
         this.totalNetPrincipalDisbursed = totalNetPrincipalDisbursed;
     }
+    
+    public BigDecimal getAccountedPrincipal(){
+        BigDecimal principalRepaid = getTotalPrincipalRepaid();
+        BigDecimal principalWrittenOff = getTotalPrincipalWrittenOff();
+        return principalRepaid.add(principalWrittenOff);
+    }
 }

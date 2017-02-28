@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -81,6 +82,8 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
         private LocalDate lastDueDate;
         private BigDecimal outstandingLoanPrincipalBalance;
         private final BigDecimal interestPosted;
+        private final boolean considerFutureDisbursmentsInSchedule;
+        private final boolean considerAllDisbursementsInSchedule;
 
         public LoanScheduleArchiveResultSetExtractor(final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedLoanData,
                 Collection<DisbursementData> disbursementData) {
@@ -91,6 +94,8 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
             this.outstandingLoanPrincipalBalance = this.disbursement.amount();
             this.disbursementData = disbursementData;
             this.interestPosted = repaymentScheduleRelatedLoanData.getInterestPostedAmount();
+            this.considerFutureDisbursmentsInSchedule = repaymentScheduleRelatedLoanData.isConsiderFutureDisbursmentsInSchedule();
+            this.considerAllDisbursementsInSchedule = repaymentScheduleRelatedLoanData.isConsiderAllDisbursementsInSchedule();
         }
 
         public String schema() {
@@ -146,7 +151,9 @@ public class LoanScheduleHistoryReadPlatformServiceImpl implements LoanScheduleH
                                 periods.add(periodData);
                                 this.outstandingLoanPrincipalBalance = this.outstandingLoanPrincipalBalance.add(principal);
                             } 
-                        } else if (data.isDueForDisbursement(fromDate, dueDate)  && data.isDisbursed()) {
+                        } else if (data.isDueForDisbursement(fromDate, dueDate)
+                                && (data.isDisbursed() || considerAllDisbursementsInSchedule || (considerFutureDisbursmentsInSchedule && !data
+                                        .disbursementDate().isBefore(DateUtils.getLocalDateOfTenant())))) {
                             principal = principal.add(data.amount());
                             final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
                                     data.disbursementDate(), data.amount(), BigDecimal.ZERO, data.isDisbursed());

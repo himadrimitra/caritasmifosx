@@ -35,10 +35,13 @@ public class RepaymentScheduleRelatedLoanData {
     private final BigDecimal inArrearsTolerance;
     private final BigDecimal totalFeeChargesAtDisbursement;
     private final BigDecimal interestPostedAmount;
+    private final boolean considerFutureDisbursmentsInSchedule;
+    private final boolean considerAllDisbursementsInSchedule;
 
     public RepaymentScheduleRelatedLoanData(final LocalDate expectedDisbursementDate, final LocalDate actualDisbursementDate,
             final CurrencyData currency, final BigDecimal principal,
-            final BigDecimal inArrearsTolerance, final BigDecimal totalFeeChargesAtDisbursement, final BigDecimal interestPostedAmount) {
+            final BigDecimal inArrearsTolerance, final BigDecimal totalFeeChargesAtDisbursement, final BigDecimal interestPostedAmount, 
+            final boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursementsInSchedule) {
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.actualDisbursementDate = actualDisbursementDate;
         this.currency = currency;
@@ -46,6 +49,8 @@ public class RepaymentScheduleRelatedLoanData {
         this.inArrearsTolerance = inArrearsTolerance;
         this.totalFeeChargesAtDisbursement = totalFeeChargesAtDisbursement;
         this.interestPostedAmount = interestPostedAmount;
+        this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
+        this.considerAllDisbursementsInSchedule = considerAllDisbursementsInSchedule;
     }
 
     public LocalDate disbursementDate() {
@@ -83,5 +88,15 @@ public class RepaymentScheduleRelatedLoanData {
     
     public BigDecimal getInterestPostedAmount() {
         return this.interestPostedAmount;
+    }
+
+    
+    public boolean isConsiderFutureDisbursmentsInSchedule() {
+        return this.considerFutureDisbursmentsInSchedule;
+    }
+
+    
+    public boolean isConsiderAllDisbursementsInSchedule() {
+        return this.considerAllDisbursementsInSchedule;
     }
 }

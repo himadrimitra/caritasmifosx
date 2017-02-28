@@ -153,4 +153,8 @@ public interface LoanProductConstants {
     
     public static final String weeksInYearType = "weeksInYearType";
     public static final String isFlatInterestRateParamName = "isFlatInterestRate";
+    
+    public static final String allowNegativeLoanBalance = "allowNegativeLoanBalance";
+    public static final String considerFutureDisbursementsInSchedule = "considerFutureDisbursementsInSchedule";
+    public static final String considerAllDisbursementsInSchedule = "considerAllDisbursementsInSchedule";
 }
