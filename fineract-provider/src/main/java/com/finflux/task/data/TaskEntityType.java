@@ -25,7 +25,8 @@ public enum TaskEntityType {
     TEMPLATE_TASK_OFFICE(13,"taskEntityType.template_task_office","office"),
     GROUP_ONBOARDING(14, "taskEntityType.grouponbarding","groupOnboarding"),
     LOAN_APPLICATION_APPLICANT(15, "taskEntityType.loanapplicationMainClient", "loanApplicationApplicant"),
-    LOAN_APPLICATION_COAPPLICANT(16, "taskEntityType.loanapplicationCoApplicant", "loanApplicationCoApplicant");//
+    LOAN_APPLICATION_COAPPLICANT(16, "taskEntityType.loanapplicationCoApplicant", "loanApplicationCoApplicant"),//
+	CLIENT_ONBOARDING(17,"taskEntityType.client_onboarding","client_onboarding");
 
     private final Integer value;
     private final String code;

@@ -19,12 +19,14 @@
 package org.apache.fineract.portfolio.client.service;
 
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -96,6 +98,12 @@ import com.finflux.kyc.address.data.AddressEntityTypeEnums;
 import com.finflux.kyc.address.service.AddressWritePlatformService;
 import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
 import com.finflux.risk.existingloans.service.ExistingLoanWritePlatformService;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskConfigKey;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.TaskPlatformWriteService;
 import com.google.gson.JsonElement;
 
 @Service
@@ -125,6 +133,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final FamilyDetailWritePlatromService familyDetailWritePlatromService;
     private final ExistingLoanWritePlatformService existingLoanWritePlatformService;
     private final BusinessEventNotifierService businessEventNotifierService;
+    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
+    private final TaskPlatformWriteService taskPlatformWriteService;
 
     @Autowired
     public ClientWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -140,7 +150,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final AddressWritePlatformService addressWritePlatformService,
             final FamilyDetailWritePlatromService familyDetailWritePlatromService,
             final ExistingLoanWritePlatformService existingLoanWritePlatformService,
-            final BusinessEventNotifierService businessEventNotifierService) {
+            final BusinessEventNotifierService businessEventNotifierService,
+            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
+            final TaskPlatformWriteService taskPlatformWriteService) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientNonPersonRepository = clientNonPersonRepository;
@@ -163,6 +175,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.familyDetailWritePlatromService = familyDetailWritePlatromService;
         this.existingLoanWritePlatformService = existingLoanWritePlatformService;
         this.businessEventNotifierService = businessEventNotifierService;
+        this.taskConfigEntityTypeMappingRepository=taskConfigEntityTypeMappingRepository;
+        this.taskPlatformWriteService=taskPlatformWriteService;
     }
 
     @Transactional
@@ -340,7 +354,16 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             
             if(isEntity)            
             	extractAndCreateClientNonPerson(newClient, command);
+            
+            //
+            Boolean isProductMappedToWorkFlow = false;
+            if (this.configurationDomainService.isWorkFlowEnabled()) 
+            {
+            	isProductMappedToWorkFlow=this.taskPlatformWriteService.createClientOnboardingWorkflow(newClient);
+                
+            }
 
+                    //
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withOfficeId(clientOffice.getId()) //
@@ -351,13 +374,12 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                     .setRollbackTransaction(rollbackTransaction)//
                     .setRollbackTransaction(result.isRollbackTransaction())//
                     .build();
-        } catch (final DataIntegrityViolationException dve) {
+        	}catch (final DataIntegrityViolationException dve) {
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
     }
-    
-    /**
+	/**
      * This method extracts ClientNonPerson details from Client command and creates a new ClientNonPerson record
      * @param client
      * @param command
