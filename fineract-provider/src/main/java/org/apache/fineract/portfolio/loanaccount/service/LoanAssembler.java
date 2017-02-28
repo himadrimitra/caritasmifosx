@@ -336,6 +336,7 @@ public class LoanAssembler {
         final boolean allowTransactionsOnHoliday = this.configurationDomainService.allowTransactionsOnHolidayEnabled();
         final LoanScheduleModel loanScheduleModel = this.loanScheduleAssembler.assembleLoanScheduleFrom(loanApplicationTerms,
                 isHolidayEnabled, holidays, workingDays, element,disbursementDetails, glimList);
+        loanApplication.setCalculatedInstallmentAmount(loanApplicationTerms.getFixedEmiAmount());
         loanApplication.loanApplicationSubmittal(currentUser, loanScheduleModel, loanApplicationTerms, defaultLoanLifecycleStateMachine(),
                 submittedOnDate, externalId, allowTransactionsOnHoliday, holidays, workingDays, allowTransactionsOnNonWorkingDay, glimList);
         loanApplication.updateDefautGlimMembers(glimList);

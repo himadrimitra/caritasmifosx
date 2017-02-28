@@ -2970,6 +2970,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
         final LoanScheduleModel loanSchedule = loanScheduleGenerator.generate(mc, loanApplicationTerms, charges(),
                 scheduleGeneratorDTO.getHolidayDetailDTO());
+        this.calculatedInstallmentAmount = loanApplicationTerms.getFixedEmiAmount();
         return loanSchedule;
     }
 
@@ -5605,7 +5606,8 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public List<LoanInstallmentCharge> generateInstallmentLoanCharges(final LoanCharge loanCharge) {
-        final List<LoanInstallmentCharge> loanChargePerInstallments = new ArrayList<>();
+    	final List<LoanInstallmentCharge> loanChargePerInstallments = new ArrayList<>();
+    	BigDecimal totalCapitalizAmount = BigDecimal.ZERO;
         if (loanCharge.isInstalmentFee()) {
             for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
             	if(installment.isRecalculatedInterestComponent()){
@@ -5633,7 +5635,17 @@ public class Loan extends AbstractPersistable<Long> {
                     }
                     amount = chargeAmountPerInstallment;
                 } else if (loanCharge.isInstalmentFee() && loanCharge.getChargeCalculation().isSlabBased()) {
-                	amount = MathUtility.getInstallmentAmount(loanCharge.amountOrPercentage(), this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(), installment.getInstallmentNumber());
+                	if(loanCharge.isCapitalized()){
+                		if(installment.getInstallmentNumber()!=this.fetchNumberOfInstallmensAfterExceptions()){
+                			amount = this.calculatedInstallmentAmount.subtract(installment.getPrincipal(this.getCurrency()).getAmount()).subtract(installment.getInterestCharged(this.getCurrency()).getAmount());
+                			totalCapitalizAmount = totalCapitalizAmount.add(amount);
+                		}else{
+                			amount =loanCharge.getAmount(this.getCurrency()).getAmount().subtract(totalCapitalizAmount);
+                		}
+                		
+                	}else{                		
+                		amount = MathUtility.getInstallmentAmount(loanCharge.amount(), this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(), installment.getInstallmentNumber());
+                	}
                 } else {
                     amount = calculateInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage(), installment)
                             .getAmount();
@@ -7821,5 +7833,16 @@ public class Loan extends AbstractPersistable<Long> {
     public void setBrokenPeriodInterest(BigDecimal brokenPeriodInterest) {
         this.brokenPeriodInterest = brokenPeriodInterest;
     }
+
+	public BigDecimal getCalculatedInstallmentAmount() {
+		return this.calculatedInstallmentAmount;
+	}
+
+	public void setCalculatedInstallmentAmount(
+			BigDecimal calculatedInstallmentAmount) {
+		this.calculatedInstallmentAmount = calculatedInstallmentAmount;
+	}
+    
+    
     
 }
