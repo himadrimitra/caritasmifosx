@@ -401,9 +401,9 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
     private Collection<LoanInstallmentChargeData> retrieveInstallmentLoanChargesForAccrual(Long loanChargeId) {
         final LoanInstallmentChargeAccrualMapper rm = new LoanInstallmentChargeAccrualMapper();
-        String sql = "select " + rm.schema() + " where lic.loan_charge_id= ?  group by lsi.installment";
+        final String sql = "select " + rm.schema() + " where lic.loan_charge_id= ?  group by lsi.installment";
         Collection<LoanInstallmentChargeData> chargeDatas = this.jdbcTemplate.query(sql, rm,
-                new Object[] { LoanTransactionType.ACCRUAL.getValue(), loanChargeId });
+                new Object[] { LoanTransactionType.ACCRUAL.getValue(), loanChargeId, loanChargeId });
         final Map<Integer, LoanInstallmentChargeData> installmentChargeDatas = new HashMap<>();
         for (LoanInstallmentChargeData installmentChargeData : chargeDatas) {
             installmentChargeDatas.put(installmentChargeData.getInstallmentNumber(), installmentChargeData);
@@ -435,7 +435,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("select lcp.loan_charge_id, lcp.amount as amount, lcp.installment_number ");
             sb.append(" from m_loan_charge_paid_by lcp ");
             sb.append(
-                    "inner join m_loan_transaction lt on lt.id = lcp.loan_transaction_id and lt.is_reversed = 0 and lt.transaction_type_enum = ?");
+                    "inner join m_loan_transaction lt on lt.id = lcp.loan_transaction_id and lt.is_reversed = 0 and lt.transaction_type_enum = ? and lcp.loan_charge_id = ? ");
             sb.append(") cp on  cp.loan_charge_id= lic.loan_charge_id and  cp.installment_number = lsi.installment ");
             schemaSql = sb.toString();
         }
@@ -463,7 +463,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
     private Collection<LoanInstallmentChargeData> updateInstallmentLoanChargesWithUnrecognizedIncome(final Long loanChargeId,
             final Map<Integer, LoanInstallmentChargeData> installmentChargeDatas) {
         final LoanInstallmentChargeUnRecognizedIncomeMapper rm = new LoanInstallmentChargeUnRecognizedIncomeMapper(installmentChargeDatas);
-        String sql = "select " + rm.schema() + " where cpb.loan_charge_id = ? group by cpb.installment_number  ";
+        final String sql = "select " + rm.schema() + " where cpb.loan_charge_id = ? group by cpb.installment_number  ";
         return this.jdbcTemplate.query(sql, rm, new Object[] { LoanTransactionType.WAIVE_CHARGES.getValue(), loanChargeId });
     }
 

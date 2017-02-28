@@ -581,6 +581,10 @@ public final class LoanRepaymentScheduleInstallment extends AbstractPersistable<
         this.feeAccrued = defaultToNullIfZero(feeCharges.getAmount());
         this.penaltyAccrued = defaultToNullIfZero(penalityCharges.getAmount());
     }
+    
+    public void setFeeAccrualPortion(final Money feeCharges) {
+        this.feeAccrued = defaultToNullIfZero(feeCharges.getAmount());
+    }
 
     public void updateDerivedFields(final MonetaryCurrency currency, final LocalDate actualDisbursementDate) {
         if (!this.obligationsMet && getTotalOutstanding(currency).isZero()) {
