@@ -1,23 +1,12 @@
 package com.finflux.loanapplicationreference.service;
 
-import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConstants;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataValidator;
-import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
-import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
-import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
-import com.finflux.loanapplicationreference.domain.LoanCoApplicant;
-import com.finflux.loanapplicationreference.domain.LoanCoApplicantRepository;
-import com.finflux.loanapplicationreference.exception.InvalidLoanApplicationReferenceStatusException;
-import com.finflux.task.data.TaskConfigEntityType;
-import com.finflux.task.data.TaskConfigKey;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.domain.TaskConfigEntityTypeMapping;
-import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
-import com.finflux.task.service.TaskPlatformWriteService;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import org.apache.commons.lang.WordUtils;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
@@ -48,7 +37,6 @@ import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundEx
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.products.exception.ResourceNotFoundException;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,8 +44,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.*;
+import com.finflux.loanapplicationreference.api.LoanApplicationReferenceApiConstants;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceDataValidator;
+import com.finflux.loanapplicationreference.data.LoanApplicationReferenceStatus;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
+import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepositoryWrapper;
+import com.finflux.loanapplicationreference.domain.LoanCoApplicant;
+import com.finflux.loanapplicationreference.domain.LoanCoApplicantRepository;
+import com.finflux.loanapplicationreference.exception.InvalidLoanApplicationReferenceStatusException;
+import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.TaskPlatformWriteService;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApplicationReferenceWritePlatformService {
@@ -162,9 +161,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                  * entity type LOAN_PRODUCT
                  */
                 //main workflow
-                isProductMappedToWorkFlow = createLoanApplicationWorkflow(loanApplicationReference, loanProduct);
+                isProductMappedToWorkFlow = this.taskPlatformWriteService.createLoanApplicationWorkflow(loanApplicationReference, loanProduct);
                 //applicant workflow
-                createLoanApplicationApplicantWorkflow(loanApplicationReference,loanProduct);
+                this.taskPlatformWriteService.createLoanApplicationApplicantWorkflow(loanApplicationReference,loanProduct);
             }
 
             final Map<String, Object> changes = new LinkedHashMap<>(5);
@@ -182,82 +181,6 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         }
     }
 
-    private Boolean createLoanApplicationWorkflow(LoanApplicationReference loanApplicationReference, LoanProduct loanProduct) {
-        Long loanProductId = loanProduct.getId();
-        final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-				.findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT.getValue(), loanProductId);
-        if (taskConfigEntityTypeMapping != null) {
-			final Long loanApplicationId = loanApplicationReference.getId();
-			final Long clientId = loanApplicationReference.getClient().getId();
-			Client client = loanApplicationReference.getClient();
-			final Map<TaskConfigKey, String> map = new HashMap<>();
-			map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
-			map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-			AppUser assignedTo=null;
-			Date dueDate=null;
-			String description = constructDescription(loanProduct, loanApplicationReference, client);
-			this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-					TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),assignedTo,dueDate,
-					loanApplicationReference.getClient().getOffice(), map, description);
-            return true;
-		}
-        return false;
-    }
-
-    private Boolean createLoanApplicationApplicantWorkflow(LoanApplicationReference loanApplicationReference, LoanProduct loanProduct) {
-        Long loanProductId = loanProduct.getId();
-        final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT_APPLICANT.getValue(), loanProductId);
-        if (taskConfigEntityTypeMapping != null) {
-            final Long loanApplicationId = loanApplicationReference.getId();
-            final Long clientId = loanApplicationReference.getClient().getId();
-            Client client = loanApplicationReference.getClient();
-            final Map<TaskConfigKey, String> map = new HashMap<>();
-            map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
-            map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-            AppUser assignedTo=null;
-            Date dueDate=null;
-            String description = loanProduct.getProductName() + " Main Applicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
-                    loanApplicationReference.getLoanApplicationReferenceNo() +" in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-                    loanApplicationReference.getLoanAmountRequested();
-            this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                    TaskEntityType.LOAN_APPLICATION_APPLICANT, loanApplicationId, loanApplicationReference.getClient(),assignedTo,dueDate,
-                    loanApplicationReference.getClient().getOffice(), map, description);
-            return true;
-        }
-        return false;
-    }
-
-    private Boolean createLoanApplicationCoApplicantWorkflow(Client client,LoanCoApplicant coApplicant, LoanApplicationReference loanApplicationReference, LoanProduct loanProduct) {
-        Long loanProductId = loanProduct.getId();
-        final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT_COAPPLICANT.getValue(), loanProductId);
-        if (taskConfigEntityTypeMapping != null) {
-            final Long loanApplicationId = loanApplicationReference.getId();
-            final Long clientId = client.getId();
-            final Map<TaskConfigKey, String> map = new HashMap<>();
-            map.put(TaskConfigKey.LOANAPPLICATION_COAPPLICANT_ID, String.valueOf(coApplicant.getId()));
-            map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
-            map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-            AppUser assignedTo=null;
-            Date dueDate=null;
-            String description = loanProduct.getProductName() + " Coapplicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
-                    loanApplicationReference.getLoanApplicationReferenceNo() +" in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-                    loanApplicationReference.getLoanAmountRequested();
-            this.taskPlatformWriteService.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                    TaskEntityType.LOAN_APPLICATION_COAPPLICANT, coApplicant.getId(), client,assignedTo,dueDate,
-                    client.getOffice(), map, description);
-            return true;
-        }
-        return false;
-    }
-
-    private String constructDescription(LoanProduct loanProduct, LoanApplicationReference applicationReference, Client client) {
-        String description = loanProduct.getProductName() + " application #" + applicationReference.getLoanApplicationReferenceNo() + " for "
-                + WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-                applicationReference.getLoanAmountRequested();
-        return description;
-    }
 
     @Override
     public CommandProcessingResult update(final Long loanApplicationReferenceId, JsonCommand command) {
@@ -501,7 +424,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
         //createcoapplicant workflow
         if (this.configurationDomainService.isWorkFlowEnabled()) {
-            createLoanApplicationCoApplicantWorkflow(client,coApplicant,loanAppln,loanAppln.getLoanProduct());
+            this.taskPlatformWriteService.createLoanApplicationCoApplicantWorkflow(client,coApplicant,loanAppln,loanAppln.getLoanProduct());
         }
 
         return new CommandProcessingResultBuilder() //
