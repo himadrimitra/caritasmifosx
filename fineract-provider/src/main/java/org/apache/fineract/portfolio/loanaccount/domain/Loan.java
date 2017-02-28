@@ -2813,7 +2813,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
         return disbursementDetails;
     }
-
+    
     private LoanDisbursementDetails fetchLastDisburseDetail() {
         LoanDisbursementDetails details = null;
         Date date = this.actualDisbursementDate;
@@ -3006,17 +3006,24 @@ public class Loan extends AbstractPersistable<Long> {
                     chargesPayment.getLoanChargesPaid().add(loanChargePaidBy);
                     disbursentMoney = disbursentMoney.plus(charge.amount());
                 }
-            } else if (disbursedOn.equals(new LocalDate(this.actualDisbursementDate))) {
+            }
+            
+            if (disbursedOn.equals(new LocalDate(this.actualDisbursementDate))) {
                 /**
                  * create a Charge applied transaction if Up front Accrual, None
                  * or Cash based accounting is enabled
                  **/
                 if (isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()) {
                     handleChargeAppliedTransaction(charge, disbursedOn, currentUser);
+                } else if (charge.isCapitalized() && isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
+                    /**
+                     * Total capitalized charge Amount Accrual transaction
+                     */
+                    handleCapitalizedChargeAppliedTransaction(charge, disbursedOn);
                 }
             }
         }
-
+        
         if (disbursentMoney.isGreaterThanZero()) {
             final Money zero = Money.zero(getCurrency());
             chargesPayment.updateComponentsAndTotal(zero, zero, disbursentMoney, zero);
@@ -3049,6 +3056,23 @@ public class Loan extends AbstractPersistable<Long> {
             throw new InvalidLoanStateTransitionException("disbursal", "cannot.be.a.future.date", errorMessage, disbursedOn);
         }
 
+    }
+    
+    private void handleCapitalizedChargeAppliedTransaction(final LoanCharge loanCharge, final LocalDate transactionDate) {
+        final Money chargeAmount = loanCharge.getAmount(getCurrency());
+        Money feeCharges = chargeAmount;
+        Money penaltyCharges = Money.zero(loanCurrency());
+        final LoanTransaction applyLoanChargeTransaction = LoanTransaction.accrueLoanCharge(this, getOffice(), chargeAmount,
+                transactionDate, feeCharges, penaltyCharges);
+        for (final LoanInstallmentCharge loanInstallmentCharge : loanCharge.installmentCharges()) {
+            final Money perInstallmentChargeAmount = loanInstallmentCharge.getAmount(getCurrency());
+            final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(applyLoanChargeTransaction, loanCharge, Money.of(getCurrency(),
+                    perInstallmentChargeAmount.getAmount()).getAmount(), loanInstallmentCharge.getRepaymentInstallment()
+                    .getInstallmentNumber());
+            applyLoanChargeTransaction.getLoanChargesPaid().add(loanChargePaidBy);
+            loanInstallmentCharge.getRepaymentInstallment().setFeeAccrualPortion(perInstallmentChargeAmount);
+        }
+        this.loanTransactions.add(applyLoanChargeTransaction);
     }
 
     public LoanTransaction handlePayDisbursementTransaction(final Long chargeId, final LoanTransaction chargesPayment,
