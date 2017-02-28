@@ -12,4 +12,4 @@ INSERT IGNORE INTO `f_task_activity` (`name`, `identifier`, `config_values`, `su
 ('Client DeDuplication', 'clientdeduplication', NULL, NULL, 3),
 ('Address Activity', 'address', NULL, NULL, 3),
 ('Family Details Activity', 'familydetails', NULL, NULL, 3),
-('Client Activation Activity', 'clientActivation', NULL, NULL, 3),
+('Client Activation Activity', 'clientActivation', NULL, NULL, 3);
