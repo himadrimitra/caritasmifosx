@@ -892,12 +892,12 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter("interestType").value(interestType).ignoreIfNull()
                     .integerSameAsNumber(InterestMethod.DECLINING_BALANCE.getValue());
             
-            final boolean allowNegativeLoanBalance = this.fromApiJsonHelper.extractBooleanNamed(
+            final Boolean allowNegativeLoanBalance = this.fromApiJsonHelper.extractBooleanNamed(
                     LoanProductConstants.allowNegativeLoanBalance, element);
             baseDataValidator.reset().parameter(LoanProductConstants.allowNegativeLoanBalance).value(allowNegativeLoanBalance)
                     .ignoreIfNull();
 
-            final boolean considerFutureDisbursementsInSchedule = this.fromApiJsonHelper.extractBooleanNamed(
+            final Boolean considerFutureDisbursementsInSchedule = this.fromApiJsonHelper.extractBooleanNamed(
                     LoanProductConstants.considerFutureDisbursementsInSchedule, element);
             baseDataValidator.reset().parameter(LoanProductConstants.considerFutureDisbursementsInSchedule)
                     .value(considerFutureDisbursementsInSchedule).ignoreIfNull();
