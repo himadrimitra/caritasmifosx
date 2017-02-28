@@ -30,7 +30,6 @@ import org.apache.fineract.accounting.common.AccountingConstants.FINANCIAL_ACTIV
 import org.apache.fineract.accounting.journalentry.data.ChargePaymentDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanDTO;
 import org.apache.fineract.accounting.journalentry.data.LoanTransactionDTO;
-import org.apache.fineract.accounting.journalentry.data.TaxPaymentDTO;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -388,8 +387,9 @@ public class CashBasedAccountingProcessorForLoan implements AccountingProcessorF
             List<ChargePaymentDTO> chargePaymentDTOs = new ArrayList<>();
             
             for(ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getFeePayments()) {
-                chargePaymentDTOs.add(new ChargePaymentDTO(chargePaymentDTO.getChargeId(), chargePaymentDTO.getLoanChargeId(), 
-                        chargePaymentDTO.getAmount().floatValue() < 0 ? chargePaymentDTO.getAmount().multiply(new BigDecimal(-1)):chargePaymentDTO.getAmount() ));
+                chargePaymentDTOs.add(new ChargePaymentDTO(chargePaymentDTO.getChargeId(), chargePaymentDTO.getLoanChargeId(),
+                        chargePaymentDTO.getAmount().floatValue() < 0 ? chargePaymentDTO.getAmount().multiply(new BigDecimal(-1))
+                                : chargePaymentDTO.getAmount(), chargePaymentDTO.isCapitalized()));
             }
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,
                     CASH_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue(), loanProductId, loanId, transactionId, transactionDate, feesAmount,
@@ -401,8 +401,9 @@ public class CashBasedAccountingProcessorForLoan implements AccountingProcessorF
             List<ChargePaymentDTO> chargePaymentDTOs = new ArrayList<>();
             
             for(ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getPenaltyPayments()) {
-                chargePaymentDTOs.add(new ChargePaymentDTO(chargePaymentDTO.getChargeId(), chargePaymentDTO.getLoanChargeId(), 
-                        chargePaymentDTO.getAmount().floatValue() < 0 ? chargePaymentDTO.getAmount().multiply(new BigDecimal(-1)):chargePaymentDTO.getAmount() ));
+                chargePaymentDTOs.add(new ChargePaymentDTO(chargePaymentDTO.getChargeId(), chargePaymentDTO.getLoanChargeId(),
+                        chargePaymentDTO.getAmount().floatValue() < 0 ? chargePaymentDTO.getAmount().multiply(new BigDecimal(-1))
+                                : chargePaymentDTO.getAmount(), chargePaymentDTO.isCapitalized()));
             }
             
             this.helper.createCreditJournalEntryOrReversalForLoanCharges(office, currencyCode,

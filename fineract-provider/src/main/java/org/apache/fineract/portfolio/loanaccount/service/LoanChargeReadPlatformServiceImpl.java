@@ -68,21 +68,32 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
     private static final class LoanChargeMapper implements RowMapper<LoanChargeData> {
 
+        private final String sqlSchema;
+
+        private LoanChargeMapper() {
+            final StringBuilder sb = new StringBuilder(500);
+            sb.append("lc.id as id, c.id as chargeId, c.name as name, ");
+            sb.append("lc.amount as amountDue, lc.amount_paid_derived as amountPaid, lc.amount_waived_derived as amountWaived, ");
+            sb.append("lc.amount_writtenoff_derived as amountWrittenOff, lc.amount_outstanding_derived as amountOutstanding, ");
+            sb.append("lc.calculation_percentage as percentageOf, lc.calculation_on_amount as amountPercentageAppliedTo, ");
+            sb.append("lc.charge_time_enum as chargeTime, lc.is_penalty as penalty, ");
+            sb.append("lc.due_for_collection_as_of_date as dueAsOfDate, lc.charge_calculation_enum as chargeCalculation, ");
+            sb.append("lc.charge_payment_mode_enum as chargePaymentMode, lc.is_paid_derived as paid, lc.waived as waied, ");
+            sb.append("lc.min_cap as minCap, lc.max_cap as maxCap, ");
+            sb.append("lc.charge_amount_or_percentage as amountOrPercentage, c.is_glim_charge isGlimCharge, ");
+            sb.append("c.currency_code as currencyCode, oc.name as currencyName, ");
+            sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
+            sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
+            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized ");
+            sb.append("from m_charge c ");
+            sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
+            sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
+            sb.append("left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ");
+            this.sqlSchema = sb.toString();
+        }
+        
         public String schema() {
-            return "lc.id as id, c.id as chargeId, c.name as name, " + "lc.amount as amountDue, " + "lc.amount_paid_derived as amountPaid, "
-                    + "lc.amount_waived_derived as amountWaived, " + "lc.amount_writtenoff_derived as amountWrittenOff, "
-                    + "lc.amount_outstanding_derived as amountOutstanding, "
-                    + "lc.calculation_percentage as percentageOf, lc.calculation_on_amount as amountPercentageAppliedTo, "
-                    + "lc.charge_time_enum as chargeTime, " + "lc.is_penalty as penalty, "
-                    + "lc.due_for_collection_as_of_date as dueAsOfDate, " + "lc.charge_calculation_enum as chargeCalculation, "
-                    + "lc.charge_payment_mode_enum as chargePaymentMode, " + "lc.is_paid_derived as paid, " + "lc.waived as waied, "
-                    + "lc.min_cap as minCap, lc.max_cap as maxCap, " + "lc.charge_amount_or_percentage as amountOrPercentage, c.is_glim_charge isGlimCharge, "
-                    + "c.currency_code as currencyCode, oc.name as currencyName, "
-                    + "date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, "
-                    + "oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, "
-                    + "oc.internationalized_name_code as currencyNameCode from m_charge c "
-                    + "join m_organisation_currency oc on c.currency_code = oc.code " + "join m_loan_charge lc on lc.charge_id = c.id "
-                    + "left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ";
+            return this.sqlSchema;
         }
 
         @Override
@@ -128,6 +139,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final BigDecimal amountOrPercentage = rs.getBigDecimal("amountOrPercentage");
             final LocalDate disbursementDate = JdbcSupport.getLocalDate(rs, "disbursementDate");
             final boolean isGlimCharge = rs.getBoolean("isGlimCharge");
+            final boolean isCapitalized = rs.getBoolean("isCapitalized");
 
             if (disbursementDate != null) {
                 dueAsOfDate = disbursementDate;
@@ -135,7 +147,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
             return new LoanChargeData(id, chargeId, name, currency, amount, amountPaid, amountWaived, amountWrittenOff, amountOutstanding,
                     chargeTimeType, dueAsOfDate, chargeCalculationType, percentageOf, amountPercentageAppliedTo, penalty, paymentMode, paid,
-                    waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge);
+                    waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge, isCapitalized);
         }
     }
 
@@ -312,15 +324,15 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("lc.charge_time_enum as chargeTime, ");
             sb.append(" sum(cp.amount) as amountAccrued, ");
             sb.append("lc.is_penalty as penalty, ");
+            sb.append("lc.is_capitalized as isCapitalized, ");
             sb.append("lc.due_for_collection_as_of_date as dueAsOfDate ");
-            sb.append(" from m_loan_charge lc ");
+            sb.append("from m_loan_charge lc ");
             sb.append("left join (");
-            sb.append("select lcp.loan_charge_id, lcp.amount");
-            sb.append(" from m_loan_charge_paid_by lcp ");
+            sb.append("select lcp.loan_charge_id, lcp.amount ");
+            sb.append("from m_loan_charge_paid_by lcp ");
             sb.append(
                     "inner join m_loan_transaction lt on lt.id = lcp.loan_transaction_id and lt.is_reversed = 0 and lt.transaction_type_enum = ? and lt.loan_id = ?");
             sb.append(") cp on  cp.loan_charge_id= lc.id  ");
-
             schemaSql = sb.toString();
         }
 
@@ -342,8 +354,8 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
             final LocalDate dueAsOfDate = JdbcSupport.getLocalDate(rs, "dueAsOfDate");
             final boolean penalty = rs.getBoolean("penalty");
-
-            return new LoanChargeData(id, chargeId, dueAsOfDate, chargeTimeType, amount, amountAccrued, amountWaived, penalty);
+            final boolean isCapitalized = rs.getBoolean("isCapitalized");
+            return new LoanChargeData(id, chargeId, dueAsOfDate, chargeTimeType, amount, amountAccrued, amountWaived, penalty, isCapitalized);
         }
     }
 

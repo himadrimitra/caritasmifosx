@@ -327,7 +327,7 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         }
 
         return LoanChargeData.newLoanChargeDetails(this.id, this.name, this.currency, this.amount, percentage, this.chargeTimeType,
-                this.chargeCalculationType, this.penalty, this.chargePaymentMode, this.minCap, this.maxCap, this.isGlimCharge);
+                this.chargeCalculationType, this.penalty, this.chargePaymentMode, this.minCap, this.maxCap, this.isGlimCharge, this.isCapitalized);
     }
 
     public SavingsAccountChargeData toSavingsAccountChargeData() {

@@ -84,23 +84,27 @@ public class LoanChargeData {
     
     private boolean isGlimCharge;
     
+    private final boolean isCapitalized;
+    
 
     public static LoanChargeData template(final Collection<ChargeData> chargeOptions) {
+        final boolean isCapitalized = false;
         return new LoanChargeData(null, null, null, null, null, null, null, null, chargeOptions, false, null, false, false, null, null,
-                null, null, null, false);
+                null, null, null, false, isCapitalized);
     }
 
     /**
      * used when populating with details from charge definition (for crud on
      * charges)
      * @param isGlimCharge 
+     * @param isCapitalized 
      */
     public static LoanChargeData newLoanChargeDetails(final Long chargeId, final String name, final CurrencyData currency,
             final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
             final EnumOptionData chargeCalculationType, final boolean penalty, final EnumOptionData chargePaymentMode,
-            final BigDecimal minCap, final BigDecimal maxCap, boolean isGlimCharge) {
+            final BigDecimal minCap, final BigDecimal maxCap, boolean isGlimCharge, final boolean isCapitalized) {
         return new LoanChargeData(null, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, null, penalty,
-                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge);
+                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge, isCapitalized);
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
@@ -109,7 +113,7 @@ public class LoanChargeData {
             final EnumOptionData chargeCalculationType, final BigDecimal percentage, final BigDecimal amountPercentageAppliedTo,
             final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid, final boolean waived, final Long loanId,
             final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData,  boolean isGlimCharge) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, boolean isGlimCharge, final boolean isCapitalized) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -147,13 +151,14 @@ public class LoanChargeData {
         this.amountAccrued = null;
         this.amountUnrecognized = null;
         this.isGlimCharge = isGlimCharge;
+        this.isCapitalized = isCapitalized;
     }
 
     private LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
             final BigDecimal percentage, final EnumOptionData chargeTimeType, final EnumOptionData chargeCalculationType,
             final Collection<ChargeData> chargeOptions, final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid,
             final boolean waived, final Long loanId, final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge, final boolean isCapitalized) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -192,6 +197,7 @@ public class LoanChargeData {
         this.amountAccrued = null;
         this.amountUnrecognized = null;
         this.isGlimCharge  = isGlimCharge;
+        this.isCapitalized = isCapitalized;
     }
 
     public LoanChargeData(final Long id, final LocalDate dueAsOfDate, final BigDecimal amountOutstanding, EnumOptionData chargeTimeType,
@@ -223,10 +229,11 @@ public class LoanChargeData {
         this.installmentChargeData = installmentChargeData;
         this.amountAccrued = null;
         this.amountUnrecognized = null;
+        this.isCapitalized = false;
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final LocalDate dueAsOfDate, EnumOptionData chargeTimeType,
-            final BigDecimal amount, final BigDecimal amountAccrued, final BigDecimal amountWaived, final boolean penalty) {
+            final BigDecimal amount, final BigDecimal amountAccrued, final BigDecimal amountWaived, final boolean penalty, final boolean isCapitalized) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = null;
@@ -254,6 +261,7 @@ public class LoanChargeData {
         this.installmentChargeData = null;
         this.amountAccrued = amountAccrued;
         this.amountUnrecognized = null;
+        this.isCapitalized = isCapitalized;
     }
 
     public LoanChargeData(final BigDecimal amountUnrecognized, final LoanChargeData chargeData) {
@@ -284,6 +292,7 @@ public class LoanChargeData {
         this.installmentChargeData = null;
         this.amountAccrued = chargeData.amountAccrued;
         this.amountUnrecognized = amountUnrecognized;
+        this.isCapitalized = chargeData.isCapitalized;
     }
 
     public LoanChargeData(LoanChargeData chargeData, Collection<LoanInstallmentChargeData> installmentChargeData) {
@@ -314,6 +323,7 @@ public class LoanChargeData {
         this.installmentChargeData = installmentChargeData;
         this.amountAccrued = chargeData.amountAccrued;
         this.amountUnrecognized = chargeData.amountUnrecognized;
+        this.isCapitalized = chargeData.isCapitalized;
     }
 
     public LoanChargeData(final Long id, final LocalDate dueAsOfDate, final BigDecimal amountOrPercentage) {
@@ -344,6 +354,7 @@ public class LoanChargeData {
         this.installmentChargeData = null;
         this.amountAccrued = null;
         this.amountUnrecognized = null;
+        this.isCapitalized = false;
     }
 
     public boolean isChargePayable() {
@@ -412,5 +423,9 @@ public class LoanChargeData {
 
     public BigDecimal getAmountUnrecognized() {
         return this.amountUnrecognized;
+    }
+    
+    public boolean isCapitalized() {
+        return this.isCapitalized;
     }
 }

@@ -142,7 +142,9 @@ public class AccountingProcessorHelper {
                     final Long loanChargeId = (Long) loanChargePaid.get("loanChargeId");
                     final boolean isPenalty = (Boolean) loanChargePaid.get("isPenalty");
                     final BigDecimal chargeAmountPaid = (BigDecimal) loanChargePaid.get("amount");
-                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, loanChargeId, chargeAmountPaid);
+                    final boolean isCapitalized = (Boolean) loanChargePaid.get("isCapitalized");
+                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, loanChargeId, chargeAmountPaid,
+                            isCapitalized);
                     if (isPenalty) {
                         penaltyPaymentDetails.add(chargePaymentDTO);
                     } else {
@@ -219,7 +221,8 @@ public class AccountingProcessorHelper {
                     final Long savingsChargeId = (Long) savingsChargePaid.get("savingsChargeId");
                     final boolean isPenalty = (Boolean) savingsChargePaid.get("isPenalty");
                     final BigDecimal chargeAmountPaid = (BigDecimal) savingsChargePaid.get("amount");
-                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, savingsChargeId, chargeAmountPaid);
+                    final boolean isCapitalized = false;
+                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, savingsChargeId, chargeAmountPaid, isCapitalized);
                     if (isPenalty) {
                         penaltyPayments.add(chargePaymentDTO);
                     } else {
@@ -286,7 +289,8 @@ public class AccountingProcessorHelper {
                     final Long chargeId = (Long) chargePaid.get("chargeId");
                     final Long loanChargeId = (Long) chargePaid.get("sharesChargeId");
                     final BigDecimal chargeAmountPaid = (BigDecimal) chargePaid.get("amount");
-                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, loanChargeId, chargeAmountPaid);
+                    final boolean isCapitalized = false;
+                    final ChargePaymentDTO chargePaymentDTO = new ChargePaymentDTO(chargeId, loanChargeId, chargeAmountPaid, isCapitalized);
                     feePayments.add(chargePaymentDTO);
                 }
             }
@@ -398,23 +402,51 @@ public class AccountingProcessorHelper {
             final Integer accountTypeToBeDebited, final Integer accountTypeToBeCredited, final Long loanProductId, final Long loanId,
             final String transactionId, final Date transactionDate, final BigDecimal totalAmount, final Boolean isReversal,
             final List<ChargePaymentDTO> chargePaymentDTOs) {
-
-        GLAccount receivableAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountTypeToBeDebited, null);
+        final GLAccount receivableAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountTypeToBeDebited, null);
+        final Long paymentTypeId = null; 
+        final Long writeOffReasonId = null;
+        final GLAccount debitLoanPortfolioAccount = getLinkedGLAccountForLoanProduct(loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), paymentTypeId, writeOffReasonId);
         final Map<GLAccount, BigDecimal> creditDetailsMap = new LinkedHashMap<>();
+        final Map<GLAccount, BigDecimal> creditDetailsMapForCapitalizedCharges = new LinkedHashMap<>();
         for (final ChargePaymentDTO chargePaymentDTO : chargePaymentDTOs) {
             final Long chargeId = chargePaymentDTO.getChargeId();
             final GLAccount chargeSpecificAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountTypeToBeCredited, chargeId);
             BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
-
             // adjust net credit amount if the account is already present in the
             // map
-            if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
-                final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
-                chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
+            if(chargePaymentDTO.isCapitalized()){
+                if (creditDetailsMapForCapitalizedCharges.containsKey(chargeSpecificAccount)) {
+                    final BigDecimal existingAmount = creditDetailsMapForCapitalizedCharges.get(chargeSpecificAccount);
+                    chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
+                }
+                creditDetailsMapForCapitalizedCharges.put(chargeSpecificAccount, chargeSpecificAmount);
+            }else{
+                if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
+                    final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
+                    chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
+                }
+                creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
             }
-            creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
         }
+        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
+        if (!creditDetailsMap.isEmpty()) {
+            totalCreditedAmount = createAccrualBasedJournalEntriesAndReversalsForLoanCharges(office, currencyCode, loanId, transactionId,
+                    transactionDate, isReversal, creditDetailsMap, receivableAccount);
+        }
+        if (!creditDetailsMapForCapitalizedCharges.isEmpty()) {
+            totalCreditedAmount = totalCreditedAmount.add(createAccrualBasedJournalEntriesAndReversalsForLoanCharges(office, currencyCode,
+                    loanId, transactionId, transactionDate, isReversal, creditDetailsMapForCapitalizedCharges, debitLoanPortfolioAccount));
+        }
+        if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
+                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
+                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
+                totalCreditedAmount, totalAmount); }
+    }
 
+    private BigDecimal createAccrualBasedJournalEntriesAndReversalsForLoanCharges(final Office office, final String currencyCode,
+            final Long loanId, final String transactionId, final Date transactionDate, final Boolean isReversal,
+            final Map<GLAccount, BigDecimal> creditDetailsMap, final GLAccount receivableAccount) {
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
             final GLAccount account = entry.getKey();
@@ -428,11 +460,7 @@ public class AccountingProcessorHelper {
                 createCreditJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
             }
         }
-
-        if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
-                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
-                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
-                totalCreditedAmount, totalAmount); }
+        return totalCreditedAmount;
     }
 
     /**

@@ -755,6 +755,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 loanChargePaidData.put("isPenalty", chargePaidBy.getLoanCharge().isPenaltyCharge());
                 loanChargePaidData.put("loanChargeId", chargePaidBy.getLoanCharge().getId());
                 loanChargePaidData.put("amount", chargePaidBy.getAmount());
+                loanChargePaidData.put("isCapitalized", chargePaidBy.getLoanCharge().isCapitalized());
                 List<LoanChargeTaxDetailsPaidBy> taxDetails = chargePaidBy.getLoanChargeTaxDetailsPaidBy();
                 final List<Map<String, Object>> taxData = new ArrayList<>();
                 for (final LoanChargeTaxDetailsPaidBy taxDetail : taxDetails) {
