@@ -49,7 +49,6 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanInstallmentCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanInterestRecalcualtionAdditionalDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
@@ -326,14 +325,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             currentPeriodParams.setPrincipalForThisPeriod(principalInterestForThisPeriod.principal());
             Money actualPrincipal =principalInterestForThisPeriod.principal();
 
-            if(totalCapitalizedChargeAmount.isGreaterThanZero()){
-            	BigDecimal principalPlusCapitalizedFee = loanApplicationTerms.getFixedEmiAmount().subtract(principalInterestForThisPeriod.interest().getAmount()) ;
-            	BigDecimal totalAmount =  loanApplicationTerms.getPrincipal().getAmount().add(totalCapitalizedChargeAmount.getAmount());
-            	BigDecimal adjustedPrincipal = BigDecimal.valueOf(((loanApplicationTerms.getPrincipal().getAmount().doubleValue()*principalPlusCapitalizedFee.doubleValue())/totalAmount.doubleValue()));
-            	currentPeriodParams.setPrincipalForThisPeriod(Money.of(currency, adjustedPrincipal));
-            	capitalizedChargeForPeriods.add(principalPlusCapitalizedFee.subtract(adjustedPrincipal));
-            	installmentCapitalizedChargeAmount = Money.of(currency, principalPlusCapitalizedFee.subtract(adjustedPrincipal));
-            }
+            installmentCapitalizedChargeAmount = updateCapitalizedFee(loanApplicationTerms, currency, capitalizedChargeForPeriods,
+                    totalCapitalizedChargeAmount, installmentCapitalizedChargeAmount, currentPeriodParams, principalInterestForThisPeriod);
             // applies early payments on principal portion
             updatePrincipalPortionBasedOnPreviousEarlyPayments(currency, scheduleParams, currentPeriodParams);
 
@@ -465,6 +458,23 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 scheduleParams.getTotalCumulativeInterest().getAmount(), scheduleParams.getTotalFeeChargesCharged().getAmount(),
                 scheduleParams.getTotalPenaltyChargesCharged().getAmount(), scheduleParams.getTotalRepaymentExpected().getAmount(),
                 totalOutstanding);
+    }
+
+    private Money updateCapitalizedFee(final LoanApplicationTerms loanApplicationTerms, final MonetaryCurrency currency,
+            List<BigDecimal> capitalizedChargeForPeriods, Money totalCapitalizedChargeAmount, Money installmentCapitalizedChargeAmount,
+            ScheduleCurrentPeriodParams currentPeriodParams, PrincipalInterest principalInterestForThisPeriod) {
+        if (totalCapitalizedChargeAmount.isGreaterThanZero()) {
+            BigDecimal principalPlusCapitalizedFee = loanApplicationTerms.getFixedEmiAmount().subtract(
+                    principalInterestForThisPeriod.interest().getAmount());
+            BigDecimal totalAmount = loanApplicationTerms.getPrincipal().getAmount().add(totalCapitalizedChargeAmount.getAmount());
+            BigDecimal adjustedPrincipal = BigDecimal
+                    .valueOf(((loanApplicationTerms.getPrincipal().getAmount().doubleValue() * principalPlusCapitalizedFee.doubleValue()) / totalAmount
+                            .doubleValue()));
+            currentPeriodParams.setPrincipalForThisPeriod(Money.of(currency, adjustedPrincipal));
+            capitalizedChargeForPeriods.add(principalPlusCapitalizedFee.subtract(adjustedPrincipal));
+            installmentCapitalizedChargeAmount = Money.of(currency, principalPlusCapitalizedFee.subtract(adjustedPrincipal));
+        }
+        return installmentCapitalizedChargeAmount;
     }
 
     private void updateCompoundingDetails(final Collection<LoanScheduleModelPeriod> periods, final LoanScheduleParams params,

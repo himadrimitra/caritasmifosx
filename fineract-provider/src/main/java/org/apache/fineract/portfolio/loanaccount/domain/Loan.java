@@ -88,7 +88,6 @@ import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeAddedExc
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.domain.LoanCollateral;
-import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -5635,17 +5634,13 @@ public class Loan extends AbstractPersistable<Long> {
                     }
                     amount = chargeAmountPerInstallment;
                 } else if (loanCharge.isInstalmentFee() && loanCharge.getChargeCalculation().isSlabBased()) {
-                	if(loanCharge.isCapitalized()){
-                		if(installment.getInstallmentNumber()!=this.fetchNumberOfInstallmensAfterExceptions()){
-                			amount = this.calculatedInstallmentAmount.subtract(installment.getPrincipal(this.getCurrency()).getAmount()).subtract(installment.getInterestCharged(this.getCurrency()).getAmount());
-                			totalCapitalizAmount = totalCapitalizAmount.add(amount);
-                		}else{
-                			amount =loanCharge.getAmount(this.getCurrency()).getAmount().subtract(totalCapitalizAmount);
-                		}
-                		
-                	}else{                		
-                		amount = MathUtility.getInstallmentAmount(loanCharge.amount(), this.fetchNumberOfInstallmensAfterExceptions(), this.getCurrency(), installment.getInstallmentNumber());
-                	}
+                    if (loanCharge.isCapitalized()) {
+                        amount = getCapitalizedInstallmentChargeAmount(loanCharge, totalCapitalizAmount, installment);
+                        totalCapitalizAmount = totalCapitalizAmount.add(amount);
+                    } else {
+                        amount = MathUtility.getInstallmentAmount(loanCharge.amount(), this.fetchNumberOfInstallmensAfterExceptions(),
+                                this.getCurrency(), installment.getInstallmentNumber());
+                    }
                 } else {
                     amount = calculateInstallmentChargeAmount(loanCharge.getChargeCalculation(), loanCharge.getPercentage(), installment)
                             .getAmount();
@@ -5656,6 +5651,18 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         return loanChargePerInstallments;
+    }
+
+    private BigDecimal getCapitalizedInstallmentChargeAmount(final LoanCharge loanCharge, BigDecimal totalCapitalizAmount,
+            final LoanRepaymentScheduleInstallment installment) {
+        BigDecimal amount;
+        if(installment.getInstallmentNumber()!=this.fetchNumberOfInstallmensAfterExceptions()){
+        	amount = this.calculatedInstallmentAmount.subtract(installment.getPrincipal(this.getCurrency()).getAmount()).subtract(installment.getInterestCharged(this.getCurrency()).getAmount());
+        	
+        }else{
+        	amount =loanCharge.getAmount(this.getCurrency()).getAmount().subtract(totalCapitalizAmount);
+        }
+        return amount;
     }
 
     public void validateAccountStatus(final LoanEvent event) {
