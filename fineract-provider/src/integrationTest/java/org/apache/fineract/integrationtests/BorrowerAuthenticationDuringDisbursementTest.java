@@ -20,6 +20,7 @@ import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
 import org.apache.fineract.integrationtests.common.loans.LoanStatusChecker;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.apache.fineract.integrationtests.common.system.CodeHelper;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -218,10 +219,22 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 			for (HashMap<String, Object> value : codeValues) {
 				if (value.get("name").equals(aadhaar)) {
 					aadhaarCodeValueId = (Integer) value.get("id");
+					if(!(Boolean)value.get("isActive")){
+						activateTheCodeValue(codeId, aadhaarCodeValueId, value);
+					}
 				}
 			}
 		}
 		return aadhaarCodeValueId;
+	}
+	
+	private void activateTheCodeValue(final Integer codeId, final Integer aadhaarCodeValueId, 
+			final HashMap<String, Object> codeValue){
+		codeValue.put("isActive", true);
+		codeValue.remove("mandatory");
+		System.out.println("the code value is "+codeValue);
+		Integer resourceId = (Integer) CodeHelper.updateCodeValue(requestSpec, responseSpec, codeId, aadhaarCodeValueId, codeValue, "resourceId");
+		System.out.println("the resource Id is "+resourceId);
 	}
 
 	public void deleteAllExistingTransactionAuthenticationRules(final ArrayList<HashMap> listOfExistingRules) {
@@ -402,6 +415,13 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 				loanSchedule.get(4).get("principalDue"));
 		assertEquals("Checking for Interest Due for 4th Month", new Float("61.79"),
 				loanSchedule.get(4).get("interestOriginalDue"));
+	}
+	
+	@After
+	public void deleteAllTransactionAuthRules(){
+		ArrayList<HashMap> listOfTransactionAuthenticationRules = TransactionAuthenticationHelper
+				.getTransactionAuthenticationRules(requestSpec, responseSpec);
+		deleteAllExistingTransactionAuthenticationRules(listOfTransactionAuthenticationRules);
 	}
 
 }
