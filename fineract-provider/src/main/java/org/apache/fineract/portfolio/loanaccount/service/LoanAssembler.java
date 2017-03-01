@@ -342,7 +342,6 @@ public class LoanAssembler {
         loanApplication.updateDefautGlimMembers(glimList);
         if (loanProduct.isFlatInterestRate()) {
             loanApplication.setFlatInterestRate(loanApplicationTerms.getFlatInterestRate());
-            loanApplication.setFixedEmiAmount(loanApplicationTerms.getFixedEmiAmount());
         }
         loanApplication.setBrokenPeriodInterest(loanApplicationTerms.getBrokenPeriodInterest().getAmount());
         return loanApplication;
