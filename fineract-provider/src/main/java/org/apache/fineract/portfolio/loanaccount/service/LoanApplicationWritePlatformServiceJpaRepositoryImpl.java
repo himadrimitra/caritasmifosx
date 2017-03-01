@@ -1058,16 +1058,19 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 	            existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
 	            existingLoanApplication.recalculateAllCharges();
 	            // save GroupLoanIndividualMonitoring clients
-                    if (glimList.size() > 0) {
-                        existingLoanApplication.updateGlim(glimList);
-                        existingLoanApplication.updateDefautGlimMembers(glimList);
-                        // validate submitted on date with glim client activation
-                        // date
-                        GroupLoanIndividualMonitoringDataValidator.validateGlimClientActivationDate(
-                                existingLoanApplication.getSubmittedOnDate(), glimList);
-                        this.groupLoanIndividualMonitoringRepository.save(glimList);
-                    }
-	            
+	        }
+	        
+	        if(existingLoanApplication.isGLIMLoan()){
+	            // save GroupLoanIndividualMonitoring clients
+	        	if (glimList.size() > 0) {
+                    existingLoanApplication.updateGlim(glimList);
+                    existingLoanApplication.updateDefautGlimMembers(glimList);
+                    // validate submitted on date with glim client activation
+                    // date
+                    GroupLoanIndividualMonitoringDataValidator.validateGlimClientActivationDate(
+                            existingLoanApplication.getSubmittedOnDate(), glimList);
+                    this.groupLoanIndividualMonitoringRepository.save(glimList);
+                }
 	        }
 
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(),
