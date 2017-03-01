@@ -19,14 +19,12 @@
 package org.apache.fineract.portfolio.client.service;
 
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandProcessingService;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -99,10 +97,9 @@ import com.finflux.kyc.address.service.AddressWritePlatformService;
 import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
 import com.finflux.risk.existingloans.service.ExistingLoanWritePlatformService;
 import com.finflux.task.data.TaskConfigEntityType;
-import com.finflux.task.data.TaskConfigKey;
-import com.finflux.task.data.TaskEntityType;
-import com.finflux.task.domain.TaskConfigEntityTypeMapping;
+import com.finflux.task.data.WorkflowDTO;
 import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.CreateWorkflowTaskFactory;
 import com.finflux.task.service.TaskPlatformWriteService;
 import com.google.gson.JsonElement;
 
@@ -135,6 +132,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final BusinessEventNotifierService businessEventNotifierService;
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final TaskPlatformWriteService taskPlatformWriteService;
+    private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
 
     @Autowired
     public ClientWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -152,7 +150,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final ExistingLoanWritePlatformService existingLoanWritePlatformService,
             final BusinessEventNotifierService businessEventNotifierService,
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
-            final TaskPlatformWriteService taskPlatformWriteService) {
+            final TaskPlatformWriteService taskPlatformWriteService,
+            final CreateWorkflowTaskFactory createWorkflowTaskFactory) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientNonPersonRepository = clientNonPersonRepository;
@@ -177,6 +176,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.businessEventNotifierService = businessEventNotifierService;
         this.taskConfigEntityTypeMappingRepository=taskConfigEntityTypeMappingRepository;
         this.taskPlatformWriteService=taskPlatformWriteService;
+        this.createWorkflowTaskFactory=createWorkflowTaskFactory;
     }
 
     @Transactional
@@ -359,7 +359,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             Boolean isProductMappedToWorkFlow = false;
             if (this.configurationDomainService.isWorkFlowEnabled()) 
             {
-            	isProductMappedToWorkFlow=this.taskPlatformWriteService.createClientOnboardingWorkflow(newClient);
+            	WorkflowDTO workflowDTO=new WorkflowDTO(newClient);
+            	isProductMappedToWorkFlow=this.createWorkflowTaskFactory.create(TaskConfigEntityType.CLIENTONBOARDING).createWorkFlow(workflowDTO);
                 
             }
 

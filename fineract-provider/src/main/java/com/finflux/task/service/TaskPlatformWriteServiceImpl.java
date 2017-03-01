@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.WordUtils;
 import org.apache.fineract.commands.domain.CommandSource;
 import org.apache.fineract.commands.domain.CommandSourceRepository;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -15,17 +14,13 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.portfolio.client.domain.Client;
-import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.finflux.loanapplicationreference.domain.LoanApplicationReference;
-import com.finflux.loanapplicationreference.domain.LoanCoApplicant;
 import com.finflux.task.data.TaskActionType;
-import com.finflux.task.data.TaskConfigEntityType;
 import com.finflux.task.data.TaskConfigKey;
 import com.finflux.task.data.TaskEntityType;
 import com.finflux.task.data.TaskPriority;
@@ -34,8 +29,6 @@ import com.finflux.task.data.TaskType;
 import com.finflux.task.domain.Task;
 import com.finflux.task.domain.TaskActivity;
 import com.finflux.task.domain.TaskConfig;
-import com.finflux.task.domain.TaskConfigEntityTypeMapping;
-import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
 import com.finflux.task.domain.TaskConfigRepositoryWrapper;
 import com.finflux.task.domain.TaskRepositoryWrapper;
 import com.google.gson.Gson;
@@ -55,15 +48,13 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
     private final CommandSourceRepository commandSourceRepository;
     private final FromJsonHelper fromJsonHelper;
     private final PlatformSecurityContext context;
-    private final TaskConfigEntityTypeMappingRepository	taskConfigEntityTypeMappingRepository;
 
 
     @Autowired
     public TaskPlatformWriteServiceImpl(final TaskPlatformReadService taskPlatformReadService,
             final TaskConfigRepositoryWrapper taskConfigRepository, final TaskRepositoryWrapper taskRepository,
             final TaskExecutionService taskExecutionService, final CommandSourceRepository commandSourceRepository,
-            final FromJsonHelper fromJsonHelper,final PlatformSecurityContext context,
-            final TaskConfigEntityTypeMappingRepository	taskConfigEntityTypeMappingRepository) {
+            final FromJsonHelper fromJsonHelper,final PlatformSecurityContext context) {
         this.taskPlatformReadService = taskPlatformReadService;
         this.taskConfigRepository = taskConfigRepository;
         this.taskRepository = taskRepository;
@@ -71,7 +62,6 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         this.commandSourceRepository = commandSourceRepository;
         this.fromJsonHelper = fromJsonHelper;
         this.context = context;
-        this.taskConfigEntityTypeMappingRepository=taskConfigEntityTypeMappingRepository;
     }
 
     @SuppressWarnings("unused")
@@ -229,99 +219,5 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
         return makerUser;
     }
 
-	@Override
-	public Boolean createClientOnboardingWorkflow(Client client) 
-	{
-			final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                    .findOneByEntityTypeAndEntityId(TaskConfigEntityType.CLIENTONBOARDING.getValue(),-1L);
-            Client newClient=client;
-			if (taskConfigEntityTypeMapping != null) 
-			{
-                final Map<TaskConfigKey, String> map = new HashMap<>();
-                map.put(TaskConfigKey.CLIENT_ID, String.valueOf(newClient.getId()));
-                AppUser assignedTo=null;
-                Date dueDate=null;
-                String description = newClient.getId()+"- New Client "+ WordUtils.capitalizeFully(newClient.getFirstname()+" "+newClient.getLastname())+" for office - "+ WordUtils.capitalizeFully(newClient.getOfficeName());
-                this.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                        TaskEntityType.CLIENT_ONBOARDING, newClient.getId(),newClient,assignedTo,dueDate,
-                        newClient.getOffice(), map, description);
-                return true;
-			}
-			return false;
-	}
-	@Override
-	public Boolean createLoanApplicationWorkflow(LoanApplicationReference loanApplicationReference, LoanProduct loanProduct) {
-        Long loanProductId = loanProduct.getId();
-        final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-				.findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT.getValue(), loanProductId);
-        if (taskConfigEntityTypeMapping != null) {
-			final Long loanApplicationId = loanApplicationReference.getId();
-			final Long clientId = loanApplicationReference.getClient().getId();
-			Client client = loanApplicationReference.getClient();
-			final Map<TaskConfigKey, String> map = new HashMap<>();
-			map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
-			map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-			AppUser assignedTo=null;
-			Date dueDate=null;
-			String description = loanProduct.getProductName() + " application #" + loanApplicationReference.getLoanApplicationReferenceNo() + " for "
-	                + WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-	                loanApplicationReference.getLoanAmountRequested();
-			this.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-					TaskEntityType.LOAN_APPLICATION, loanApplicationId, loanApplicationReference.getClient(),assignedTo,dueDate,
-					loanApplicationReference.getClient().getOffice(), map, description);
-            return true;
-		}
-        return false;
-    }
-	
-	@Override
-	public Boolean createLoanApplicationApplicantWorkflow(LoanApplicationReference loanApplicationReference, LoanProduct loanProduct) {
-        Long loanProductId = loanProduct.getId();
-        final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT_APPLICANT.getValue(), loanProductId);
-        if (taskConfigEntityTypeMapping != null) {
-            final Long loanApplicationId = loanApplicationReference.getId();
-            final Long clientId = loanApplicationReference.getClient().getId();
-            Client client = loanApplicationReference.getClient();
-            final Map<TaskConfigKey, String> map = new HashMap<>();
-            map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
-            map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-            AppUser assignedTo=null;
-            Date dueDate=null;
-            String description = loanProduct.getProductName() + " Main Applicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
-                    loanApplicationReference.getLoanApplicationReferenceNo() +" in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-                    loanApplicationReference.getLoanAmountRequested();
-            this.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                    TaskEntityType.LOAN_APPLICATION_APPLICANT, loanApplicationId, loanApplicationReference.getClient(),assignedTo,dueDate,
-                    loanApplicationReference.getClient().getOffice(), map, description);
-            return true;
-        }
-        return false;
-    }
-	
-	@Override
-	public Boolean createLoanApplicationCoApplicantWorkflow(Client client,LoanCoApplicant coApplicant, LoanApplicationReference loanApplicationReference, LoanProduct loanProduct) {
-        Long loanProductId = loanProduct.getId();
-        final TaskConfigEntityTypeMapping taskConfigEntityTypeMapping = this.taskConfigEntityTypeMappingRepository
-                .findOneByEntityTypeAndEntityId(TaskConfigEntityType.LOANPRODUCT_COAPPLICANT.getValue(), loanProductId);
-        if (taskConfigEntityTypeMapping != null) {
-            final Long loanApplicationId = loanApplicationReference.getId();
-            final Long clientId = client.getId();
-            final Map<TaskConfigKey, String> map = new HashMap<>();
-            map.put(TaskConfigKey.LOANAPPLICATION_COAPPLICANT_ID, String.valueOf(coApplicant.getId()));
-            map.put(TaskConfigKey.CLIENT_ID, String.valueOf(clientId));
-            map.put(TaskConfigKey.LOANAPPLICATION_ID, String.valueOf(loanApplicationId));
-            AppUser assignedTo=null;
-            Date dueDate=null;
-            String description = loanProduct.getProductName() + " Coapplicant: "+WordUtils.capitalizeFully(client.getDisplayName())+"(" + client.getId()+") for loan application #" +
-                    loanApplicationReference.getLoanApplicationReferenceNo() +" in  " + WordUtils.capitalizeFully(client.getOfficeName()) + "| Amount: "+
-                    loanApplicationReference.getLoanAmountRequested();
-            this.createTaskFromConfig(taskConfigEntityTypeMapping.getTaskConfigId(),
-                    TaskEntityType.LOAN_APPLICATION_COAPPLICANT, coApplicant.getId(), client,assignedTo,dueDate,
-                    client.getOffice(), map, description);
-            return true;
-        }
-        return false;
-    }
 
 }

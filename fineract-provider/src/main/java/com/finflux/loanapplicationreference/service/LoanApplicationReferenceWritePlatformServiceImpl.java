@@ -52,7 +52,10 @@ import com.finflux.loanapplicationreference.domain.LoanApplicationReferenceRepos
 import com.finflux.loanapplicationreference.domain.LoanCoApplicant;
 import com.finflux.loanapplicationreference.domain.LoanCoApplicantRepository;
 import com.finflux.loanapplicationreference.exception.InvalidLoanApplicationReferenceStatusException;
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.WorkflowDTO;
 import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
+import com.finflux.task.service.CreateWorkflowTaskFactory;
 import com.finflux.task.service.TaskPlatformWriteService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -83,6 +86,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final ClientRepositoryWrapper clientRepository;
     private final LoanCoApplicantRepository coApplicantRepository;
+    private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
 
     private final String resourceNameForPermissionsForDisburseLoan = "DISBURSE_LOAN";
 
@@ -101,7 +105,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final PaymentTypeRepositoryWrapper paymentTypeRepository,
             final ClientRepositoryWrapper clientRepository,
             final LoanCoApplicantRepository coApplicantRepository,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil,
+            final CreateWorkflowTaskFactory createWorkflowTaskFactory) {
         this.context = context;
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.validator = validator;
@@ -122,6 +127,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.clientRepository = clientRepository;
         this.coApplicantRepository = coApplicantRepository;
+        this.createWorkflowTaskFactory=createWorkflowTaskFactory;
     }
 
     @Override
@@ -161,9 +167,11 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                  * entity type LOAN_PRODUCT
                  */
                 //main workflow
-                isProductMappedToWorkFlow = this.taskPlatformWriteService.createLoanApplicationWorkflow(loanApplicationReference, loanProduct);
+            
+            	WorkflowDTO workflowDTO=new WorkflowDTO(loanApplicationReference, loanProduct);
+                isProductMappedToWorkFlow = this.createWorkflowTaskFactory.create(TaskConfigEntityType.LOANPRODUCT).createWorkFlow(workflowDTO);
                 //applicant workflow
-                this.taskPlatformWriteService.createLoanApplicationApplicantWorkflow(loanApplicationReference,loanProduct);
+                this.createWorkflowTaskFactory.create(TaskConfigEntityType.LOANPRODUCT_APPLICANT).createWorkFlow(workflowDTO);
             }
 
             final Map<String, Object> changes = new LinkedHashMap<>(5);
@@ -424,7 +432,8 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
         //createcoapplicant workflow
         if (this.configurationDomainService.isWorkFlowEnabled()) {
-            this.taskPlatformWriteService.createLoanApplicationCoApplicantWorkflow(client,coApplicant,loanAppln,loanAppln.getLoanProduct());
+        	WorkflowDTO workflowDTO=new WorkflowDTO(client,coApplicant,loanAppln,loanAppln.getLoanProduct());
+        	this.createWorkflowTaskFactory.create(TaskConfigEntityType.LOANPRODUCT_COAPPLICANT).createWorkFlow(workflowDTO);
         }
 
         return new CommandProcessingResultBuilder() //
