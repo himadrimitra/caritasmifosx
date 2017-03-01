@@ -1260,7 +1260,7 @@ public class Loan extends AbstractPersistable<Long> {
                 if (this.loanProduct.isMultiDisburseLoan() && loanCharge.isTrancheDisbursementCharge()) {
                     loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().updateLoan(this);
                     for (final LoanDisbursementDetails loanDisbursementDetails : this.disbursementDetails) {
-                        if (loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().getId() == null) {
+                        if (loanDisbursementDetails.isActive() && loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().getId() == null) {
                             if (loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails().equals(loanDisbursementDetails)) {
                                 loanTrancheDisbursementCharge = new LoanTrancheDisbursementCharge(loanCharge, loanDisbursementDetails);
                                 loanCharge.updateLoanTrancheDisbursementCharge(loanTrancheDisbursementCharge);
@@ -1988,7 +1988,7 @@ public class Loan extends AbstractPersistable<Long> {
             removeChargesByDisbursementID(id);
             LoanDisbursementDetails loanDisbursementDetail = fetchLoanDisbursementsById(id);
             recalculateFromDate = getRecalculateFromDate(recalculateFromDate, loanDisbursementDetail.expectedDisbursementDateAsLocalDate());
-            this.disbursementDetails.remove(loanDisbursementDetail);
+            loanDisbursementDetail.setActive(false);
             actualChanges.put("recalculateLoanSchedule", true);
         }
         return recalculateFromDate;
@@ -2057,7 +2057,9 @@ public class Loan extends AbstractPersistable<Long> {
     private void resetNetDisburseAmount(){
         if (isMultiDisburmentLoan()) {
             for (LoanDisbursementDetails detail : this.disbursementDetails) {
+            	if(detail.isActive()){
                 detail.resetNetPrincipalDisbursed();
+            	}
             }
         }
     }
@@ -2097,7 +2099,7 @@ public class Loan extends AbstractPersistable<Long> {
     public LoanDisbursementDetails fetchLoanDisbursementsById(Long id) {
         LoanDisbursementDetails loanDisbursementDetail = null;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (id.equals(disbursementDetail.getId())) {
+            if (disbursementDetail.isActive() && id.equals(disbursementDetail.getId())) {
                 loanDisbursementDetail = disbursementDetail;
                 break;
             }
@@ -2108,7 +2110,7 @@ public class Loan extends AbstractPersistable<Long> {
     public LoanDisbursementDetails fetchLoanDisbursementByExpectedDisbursementDate(Date date) {
         LoanDisbursementDetails loanDisbursementDetail = null;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (date.equals(disbursementDetail.expectedDisbursementDate())) {
+            if (disbursementDetail.isActive() && date.equals(disbursementDetail.expectedDisbursementDate())) {
                 loanDisbursementDetail = disbursementDetail;
                 break;
             }
@@ -2119,7 +2121,9 @@ public class Loan extends AbstractPersistable<Long> {
     private List<Long> fetchDisbursementIds() {
         List<Long> list = new ArrayList<>();
         for (LoanDisbursementDetails disbursementDetails : this.disbursementDetails) {
+        	if(disbursementDetails.isActive()){
             list.add(disbursementDetails.getId());
+        	}
         }
         return list;
     }
@@ -2612,7 +2616,7 @@ public class Loan extends AbstractPersistable<Long> {
         List<LoanDisbursementDetails> ret = new ArrayList<>();
         if (this.disbursementDetails != null && this.disbursementDetails.size() > 0) {
             for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-                if (disbursementDetail.actualDisbursementDate() != null) {
+                if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() != null) {
                     ret.add(disbursementDetail);
                 }
             }
@@ -2629,7 +2633,7 @@ public class Loan extends AbstractPersistable<Long> {
         
         if (!this.disbursementDetails.isEmpty()) {
             for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-                if (disbursementDetail.actualDisbursementDate() != null
+                if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() != null
                         && disbursementDetail.actualDisbursementDate().equals(actualDisbursementDate.toDate())) {
                     final String errorMessage = "The Tranche disbursement date must be unique.";
                     throw new InvalidLoanStateTransitionException("transaction", "tranche.disbursement.date.must.be.unique", errorMessage, actualDisbursementDate);
@@ -2788,11 +2792,11 @@ public class Loan extends AbstractPersistable<Long> {
         Collection<LoanDisbursementDetails> disbursementDetails = new ArrayList<>();
         Date date = null;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (disbursementDetail.actualDisbursementDate() == null) {
+            if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() == null) {
                 if (date == null || disbursementDetail.expectedDisbursementDate().equals(date)) {
                     disbursementDetails.add(disbursementDetail);
                     date = disbursementDetail.expectedDisbursementDate();
-                } else if (disbursementDetail.expectedDisbursementDate().before(date)) {
+                } else if (disbursementDetail.isActive() && disbursementDetail.expectedDisbursementDate().before(date)) {
                     disbursementDetails.clear();
                     disbursementDetails.add(disbursementDetail);
                     date = disbursementDetail.expectedDisbursementDate();
@@ -2807,7 +2811,7 @@ public class Loan extends AbstractPersistable<Long> {
         Date date = this.actualDisbursementDate;
         if (date != null) {
             for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-                if (disbursementDetail.actualDisbursementDate() != null) {
+                if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() != null) {
                     if (disbursementDetail.actualDisbursementDate().after(date) || disbursementDetail.actualDisbursementDate().equals(date)) {
                         date = disbursementDetail.actualDisbursementDate();
                         details = disbursementDetail;
@@ -2821,7 +2825,7 @@ public class Loan extends AbstractPersistable<Long> {
     private boolean isDisbursementMissed() {
         boolean isDisbursementMissed = false;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (disbursementDetail.actualDisbursementDate() == null
+            if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() == null
                     && DateUtils.getLocalDateOfTenant().isAfter(disbursementDetail.expectedDisbursementDateAsLocalDate())) {
                 isDisbursementMissed = true;
                 break;
@@ -2833,7 +2837,7 @@ public class Loan extends AbstractPersistable<Long> {
     public BigDecimal getDisbursedAmount() {
         BigDecimal principal = BigDecimal.ZERO;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (disbursementDetail.actualDisbursementDate() != null) {
+            if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() != null) {
                 principal = principal.add(disbursementDetail.principal());
             }
         }
@@ -2843,7 +2847,7 @@ public class Loan extends AbstractPersistable<Long> {
     private void removeDisbursementDetail() {
         Set<LoanDisbursementDetails> details = new HashSet<>(this.disbursementDetails);
         for (LoanDisbursementDetails disbursementDetail : details) {
-            if (disbursementDetail.actualDisbursementDate() == null) {
+            if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() == null) {
                 this.disbursementDetails.remove(disbursementDetail);
             }
         }
@@ -2852,7 +2856,7 @@ public class Loan extends AbstractPersistable<Long> {
     private boolean isDisbursementAllowed() {
         boolean isAllowed = false;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (disbursementDetail.actualDisbursementDate() == null) {
+            if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() == null) {
                 isAllowed = true;
                 break;
             }
@@ -2863,7 +2867,7 @@ public class Loan extends AbstractPersistable<Long> {
     private boolean atleastOnceDisbursed() {
         boolean isDisbursed = false;
         for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-            if (disbursementDetail.actualDisbursementDate() != null) {
+            if (disbursementDetail.isActive() && disbursementDetail.actualDisbursementDate() != null) {
                 isDisbursed = true;
                 break;
             }
@@ -3085,7 +3089,9 @@ public class Loan extends AbstractPersistable<Long> {
             this.loanRepaymentScheduleDetail.setPrincipal(this.approvedPrincipal);
             if (this.loanProduct.isMultiDisburseLoan()) {
                 for (final LoanDisbursementDetails details : this.disbursementDetails) {
+                	if(details.isActive()){
                     details.updateActualDisbursementDate(null);
+                	}
                 }
             }
             boolean isEmiAmountChanged = this.loanTermVariations.size() > 0;
@@ -5203,7 +5209,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (!allowTransactionsOnNonWorkingDay) {
             if (this.isMultiDisburmentLoan()) {
                 for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-                    if (!WorkingDaysUtil.isWorkingDay(workingDays, disbursementDetail.getDisbursementDateAsLocalDate())) {
+                    if (disbursementDetail.isActive() && !WorkingDaysUtil.isWorkingDay(workingDays, disbursementDetail.getDisbursementDateAsLocalDate())) {
                         final String errorMessage = "Expected disbursement date cannot be on a non working day";
                         throw new LoanApplicationDateException("disbursement.date.on.non.working.day", errorMessage,
                                 disbursementDetail.getDisbursementDateAsLocalDate());
@@ -5221,7 +5227,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (!allowTransactionsOnHoliday) {
             if (this.isMultiDisburmentLoan()) {
                 for (LoanDisbursementDetails disbursementDetail : this.disbursementDetails) {
-                    if (HolidayUtil.isHoliday(disbursementDetail.getDisbursementDateAsLocalDate(), holidays)) {
+                    if (disbursementDetail.isActive() && HolidayUtil.isHoliday(disbursementDetail.getDisbursementDateAsLocalDate(), holidays)) {
                         final String errorMessage = "Expected disbursement date cannot be on a holiday";
                         throw new LoanApplicationDateException("disbursement.date.on.holiday", errorMessage,
                                 disbursementDetail.getDisbursementDateAsLocalDate());
@@ -6212,7 +6218,9 @@ public class Loan extends AbstractPersistable<Long> {
         DayOfWeekType dayOfWeekType = null;
         final List<DisbursementData> disbursementData = new ArrayList<>();
         for (LoanDisbursementDetails disbursementDetails : this.disbursementDetails) {
+        	if(disbursementDetails.isActive()){
             disbursementData.add(disbursementDetails.toData());
+        	}
         }
 
         Calendar calendar = scheduleGeneratorDTO.getCalendar();
@@ -6774,7 +6782,7 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         for (final LoanDisbursementDetails details : this.disbursementDetails) {
-            if (actualDisbursementDate.equals(new LocalDate(details.actualDisbursementDate()))) {
+            if (details.isActive() && actualDisbursementDate.equals(new LocalDate(details.actualDisbursementDate()))) {
                 this.loanRepaymentScheduleDetail.setPrincipal(getDisbursedAmount().subtract(details.principal()));
                 details.updateActualDisbursementDate(null);
                 recalculateDisbursementCharge(details, trancheCharges);
@@ -6856,8 +6864,8 @@ public class Loan extends AbstractPersistable<Long> {
         LocalDate nextRepaymentDate = DateUtils.getLocalDateOfTenant();
         if(this.isMultiDisburmentLoan()){
             for (LoanDisbursementDetails loanDisbursementDetail : loanDisbursementDetails) {
-                if (loanDisbursementDetail.actualDisbursementDate() == null
-                        || (actualDisbursementDate != null && loanDisbursementDetail.actualDisbursementDateAsLocalDate().isEqual(actualDisbursementDate))) {
+                if (loanDisbursementDetail.isActive() && loanDisbursementDetail.actualDisbursementDate() == null
+                        || loanDisbursementDetail.isActive() && (actualDisbursementDate != null && loanDisbursementDetail.actualDisbursementDateAsLocalDate().isEqual(actualDisbursementDate))) {
                     for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
                         if (installment.getDueDate().isAfter(loanDisbursementDetail.expectedDisbursementDateAsLocalDate())) {
                             nextRepaymentDate = installment.getDueDate();
@@ -7693,5 +7701,15 @@ public class Loan extends AbstractPersistable<Long> {
     public void setBrokenPeriodInterest(BigDecimal brokenPeriodInterest) {
         this.brokenPeriodInterest = brokenPeriodInterest;
     }
-    
+
+	public int getActiveTrancheCount() {
+		int size = 0;
+		for (LoanDisbursementDetails details : getDisbursementDetails()) {
+			if (details.isActive()) {
+				size += size;
+			}
+		}
+		return size;
+	}
+
 }
