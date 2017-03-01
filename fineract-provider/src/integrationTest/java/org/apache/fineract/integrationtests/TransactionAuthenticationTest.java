@@ -1,6 +1,7 @@
 package org.apache.fineract.integrationtests;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import org.apache.fineract.integrationtests.common.accounting.Account;
 import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.apache.fineract.integrationtests.common.system.CodeHelper;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,6 +70,7 @@ public class TransactionAuthenticationTest {
 		Assert.assertNotNull(deleted);
 	}
 	
+	
 	private Integer createLoanProduct(final boolean multiDisburseLoan, final String accountingRule,
 			final Account... accounts) {
 		System.out.println(
@@ -118,9 +121,42 @@ public class TransactionAuthenticationTest {
 			for (HashMap<String, Object> value : codeValues) {
 				if (value.get("name").equals(aadhaar)) {
 					aadhaarCodeValueId = (Integer) value.get("id");
+					if(!(Boolean)value.get("isActive")){
+						activateTheCodeValue(codeId, aadhaarCodeValueId, value);
+					}
 				}
 			}
 		}
 		return aadhaarCodeValueId;
+	}
+	
+	private void activateTheCodeValue(final Integer codeId, final Integer aadhaarCodeValueId, 
+			final HashMap<String, Object> codeValue){
+		codeValue.put("isActive", true);
+		codeValue.remove("mandatory");
+		System.out.println("the code value is "+codeValue);
+		Integer resourceId = (Integer) CodeHelper.updateCodeValue(requestSpec, responseSpec, codeId, aadhaarCodeValueId, codeValue, "resourceId");
+		System.out.println("the resource Id is "+resourceId);
+	}
+	
+	@After
+	public void deleteAllTransactionAuthRules(){
+		ArrayList<HashMap> listOfTransactionAuthenticationRules = TransactionAuthenticationHelper
+				.getTransactionAuthenticationRules(requestSpec, responseSpec);
+		deleteAllExistingTransactionAuthenticationRules(listOfTransactionAuthenticationRules);
+	}
+	
+	public void deleteAllExistingTransactionAuthenticationRules(final ArrayList<HashMap> listOfExistingRules) {
+		System.out.println("the transacton ruels are " + listOfExistingRules);
+		for (int i = 0; i < listOfExistingRules.size(); i++) {
+			System.out.println("the rules is " + listOfExistingRules.get(i));
+			HashMap<String, Object> rules = listOfExistingRules.get(i);
+
+			Integer ruleId = (Integer) rules.get("authenticationRuleId");
+			System.out.println("the rule id is " + listOfExistingRules.get(i).get("id"));
+			Integer deletedId = (Integer) TransactionAuthenticationHelper.deleteTransactionAuthentication(requestSpec,
+					responseSpec, ruleId);
+			Assert.assertNotNull(deletedId);
+		}
 	}
 }
