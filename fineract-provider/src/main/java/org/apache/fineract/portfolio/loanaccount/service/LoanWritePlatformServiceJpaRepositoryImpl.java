@@ -2931,15 +2931,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final String errorMessage = "For this loan product, disbursement details must be provided";
             throw new MultiDisbursementDataRequiredException(LoanApiConstants.disbursementDataParameterName, errorMessage);
         }
-
-        if (loan.getDisbursementDetails().size() > loan.loanProduct().maxTrancheCount()) {
+        if (loan.getActiveTrancheCount() > loan.loanProduct().maxTrancheCount()) {
             final String errorMessage = "Number of tranche shouldn't be greter than " + loan.loanProduct().maxTrancheCount();
             throw new ExceedingTrancheCountException(LoanApiConstants.disbursementDataParameterName, errorMessage, loan.loanProduct()
-                    .maxTrancheCount(), loan.getDisbursementDetails().size());
+                    .maxTrancheCount(), loan.getActiveTrancheCount());
         }
         LoanDisbursementDetails updateDetails = null;
         return processLoanDisbursementDetail(loan, loanId, command, updateDetails, recalculateFromDate);
-
+        
     }
 
     private CommandProcessingResult processLoanDisbursementDetail(final Loan loan, Long loanId, JsonCommand command,
