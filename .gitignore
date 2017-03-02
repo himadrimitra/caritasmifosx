@@ -3,15 +3,5 @@
 *.war
 *.ear
 *.DS*
-<<<<<<< 6740af46bc98df2b0ad4707849d48e48b9ebdb03
 *.iml
-*.ipr
-=======
-*.ipr
 *.idea
->>>>>>> Risk configuration module
-*.iws
-.classpath
-.project
-.settings/
-WebContent/
