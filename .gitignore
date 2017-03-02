@@ -11,3 +11,7 @@
 *.idea
 >>>>>>> Risk configuration module
 *.iws
+.classpath
+.project
+.settings/
+WebContent/
