@@ -633,7 +633,8 @@ public final class LoanApplicationTerms {
             // principal paid for period.
             adjusted = principalForPeriod.minus(totalPrincipalRemaining.abs());
         } else if (allowNegativeBalance && this.totalPrincipalForSchedule != null
-                && this.totalPrincipalForSchedule.minus(totalCumulativePrincipalToDate).isLessThanZero()) {
+                && (this.totalPrincipalForSchedule.minus(totalCumulativePrincipalToDate).isLessThanZero())
+                || isLastRepaymentPeriod(this.actualNumberOfRepayments, periodNumber)) {
             adjusted = principalForPeriod.minus(this.totalPrincipalForSchedule.minus(totalCumulativePrincipalToDate).abs());
         } else if (this.actualFixedEmiAmount != null) {
             final Money difference = this.principal.minus(totalCumulativePrincipalToDate);
