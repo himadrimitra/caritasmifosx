@@ -95,6 +95,7 @@ public class GroupLoanIndividualMonitoringAssembler {
                         glim.updateTransactionAmount(transactionAmount.subtract(overpaidAmount));
                         glim.setOverpaidAmount(overpaidAmount);
                     }else{
+                        glim.setOverpaidAmount(BigDecimal.ZERO);
                         glim.updateTransactionAmount(transactionAmount);
                     }
                     
