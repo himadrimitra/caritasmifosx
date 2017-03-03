@@ -84,7 +84,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("c.currency_code as currencyCode, oc.name as currencyName, ");
             sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
             sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
-            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized ");
+            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId ");
             sb.append("from m_charge c ");
             sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
             sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
@@ -140,14 +140,14 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final LocalDate disbursementDate = JdbcSupport.getLocalDate(rs, "disbursementDate");
             final boolean isGlimCharge = rs.getBoolean("isGlimCharge");
             final boolean isCapitalized = rs.getBoolean("isCapitalized");
-
+            final Long taxGroupId = rs.getLong("taxGroupId");
             if (disbursementDate != null) {
                 dueAsOfDate = disbursementDate;
             }
 
             return new LoanChargeData(id, chargeId, name, currency, amount, amountPaid, amountWaived, amountWrittenOff, amountOutstanding,
-                    chargeTimeType, dueAsOfDate, chargeCalculationType, percentageOf, amountPercentageAppliedTo, penalty, paymentMode, paid,
-                    waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge, isCapitalized);
+                    chargeTimeType, dueAsOfDate, chargeCalculationType, percentageOf, amountPercentageAppliedTo, penalty, paymentMode,
+                    paid, waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge, isCapitalized, taxGroupId);
         }
     }
 
@@ -247,11 +247,22 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
     private static final class LoanInstallmentChargeMapper implements RowMapper<LoanInstallmentChargeData> {
 
+        private final String sqlSchema;
+
+        LoanInstallmentChargeMapper() {
+            final StringBuilder sb = new StringBuilder(100);
+            sb.append(" lsi.installment as installmentNumber, lsi.duedate as dueAsOfDate, ");
+            sb.append("lic.amount_outstanding_derived as amountOutstanding,");
+            sb.append("lic.amount as  amount, lic.is_paid_derived as paid, ");
+            sb.append("lic.amount_waived_derived as amountWaived, lic.waived as waied, ");
+            sb.append("lic.amount_sans_tax as amountSansTax, lic.tax_amount as taxAmount ");
+            sb.append("from  m_loan_installment_charge lic ");
+            sb.append("join m_loan_repayment_schedule lsi on lsi.id = lic.loan_schedule_id ");
+            this.sqlSchema = sb.toString();
+        }
+
         public String schema() {
-            return " lsi.installment as installmentNumber, lsi.duedate as dueAsOfDate, "
-                    + "lic.amount_outstanding_derived as amountOutstanding," + "lic.amount as  amount, " + "lic.is_paid_derived as paid, "
-                    + "lic.amount_waived_derived as amountWaived, " + "lic.waived as waied " + "from  m_loan_installment_charge lic "
-                    + "join m_loan_repayment_schedule lsi on lsi.id = lic.loan_schedule_id ";
+            return this.sqlSchema;
         }
 
         @Override
@@ -263,8 +274,10 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final BigDecimal amountWaived = rs.getBigDecimal("amountWaived");
             final boolean paid = rs.getBoolean("paid");
             final boolean waived = rs.getBoolean("waied");
-
-            return new LoanInstallmentChargeData(installmentNumber, dueAsOfDate, amount, amountOutstanding, amountWaived, paid, waived);
+            final BigDecimal amountSansTax = rs.getBigDecimal("amountSansTax");
+            final BigDecimal taxAmount = rs.getBigDecimal("taxAmount");
+            return new LoanInstallmentChargeData(installmentNumber, dueAsOfDate, amount, amountOutstanding, amountWaived, paid, waived,
+                    amountSansTax, taxAmount);
         }
     }
 
@@ -319,13 +332,14 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
         public LoanChargeAccrualMapper() {
             StringBuilder sb = new StringBuilder(50);
             sb.append("lc.id as id, lc.charge_id as chargeId, ");
-            sb.append("lc.amount - IFNULL(lc.tax_amount,0) as amountDue, ");
+            sb.append("lc.amount as amountDue, ");
             sb.append("lc.amount_waived_derived as amountWaived, ");
             sb.append("lc.charge_time_enum as chargeTime, ");
             sb.append(" sum(cp.amount) as amountAccrued, ");
             sb.append("lc.is_penalty as penalty, ");
             sb.append("lc.is_capitalized as isCapitalized, ");
-            sb.append("lc.due_for_collection_as_of_date as dueAsOfDate ");
+            sb.append("lc.due_for_collection_as_of_date as dueAsOfDate, ");
+            sb.append("lc.tax_group_id as taxGroupId ");
             sb.append("from m_loan_charge lc ");
             sb.append("left join (");
             sb.append("select lcp.loan_charge_id, lcp.amount ");
@@ -355,7 +369,9 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final LocalDate dueAsOfDate = JdbcSupport.getLocalDate(rs, "dueAsOfDate");
             final boolean penalty = rs.getBoolean("penalty");
             final boolean isCapitalized = rs.getBoolean("isCapitalized");
-            return new LoanChargeData(id, chargeId, dueAsOfDate, chargeTimeType, amount, amountAccrued, amountWaived, penalty, isCapitalized);
+            final Long taxGroupId = rs.getLong("taxGroupId");
+            return new LoanChargeData(id, chargeId, dueAsOfDate, chargeTimeType, amount, amountAccrued, amountWaived, penalty,
+                    isCapitalized, taxGroupId);
         }
     }
 
@@ -440,7 +456,8 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("lic.is_paid_derived as paid, ");
             sb.append("lic.amount_waived_derived as amountWaived, ");
             sb.append(" sum(cp.amount) as amountAccrued, ");
-            sb.append("lic.waived as waied ");
+            sb.append("lic.waived as waied, ");
+            sb.append("lic.amount_sans_tax as amountSansTax, lic.tax_amount as taxAmount ");
             sb.append("from  m_loan_installment_charge lic ");
             sb.append("join m_loan_repayment_schedule lsi on lsi.id = lic.loan_schedule_id ");
             sb.append("left join (");
@@ -449,7 +466,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append(
                     "inner join m_loan_transaction lt on lt.id = lcp.loan_transaction_id and lt.is_reversed = 0 and lt.transaction_type_enum = ? and lcp.loan_charge_id = ? ");
             sb.append(") cp on  cp.loan_charge_id= lic.loan_charge_id and  cp.installment_number = lsi.installment ");
-            schemaSql = sb.toString();
+            this.schemaSql = sb.toString();
         }
 
         public String schema() {
@@ -466,9 +483,10 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final boolean paid = rs.getBoolean("paid");
             final boolean waived = rs.getBoolean("waied");
             final BigDecimal amountAccrued = rs.getBigDecimal("amountAccrued");
-
+            final BigDecimal amountSansTax = rs.getBigDecimal("amountSansTax");
+            final BigDecimal taxAmount = rs.getBigDecimal("taxAmount");
             return new LoanInstallmentChargeData(installmentNumber, dueAsOfDate, amount, amountOutstanding, amountWaived, paid, waived,
-                    amountAccrued);
+                    amountAccrued, amountSansTax, taxAmount);
         }
     }
 

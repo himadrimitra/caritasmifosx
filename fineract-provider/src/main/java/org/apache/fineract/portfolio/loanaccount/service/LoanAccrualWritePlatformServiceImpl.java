@@ -45,9 +45,15 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
+import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanChargeTaxDetailsPaidByData;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
+import org.apache.fineract.portfolio.tax.data.TaxComponentData;
+import org.apache.fineract.portfolio.tax.data.TaxGroupData;
+import org.apache.fineract.portfolio.tax.data.TaxGroupMappingsData;
+import org.apache.fineract.portfolio.tax.service.TaxReadPlatformService;
+import org.apache.fineract.portfolio.tax.service.TaxUtils;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.domain.AppUserRepositoryWrapper;
 import org.joda.time.Days;
@@ -71,12 +77,14 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
     private final AppUserRepositoryWrapper userRepository;
     private final LoanRepository loanRepository;
     private final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository;
+    private final TaxReadPlatformService taxReadPlatformService;
 
     @Autowired
     public LoanAccrualWritePlatformServiceImpl(final RoutingDataSource dataSource, final LoanReadPlatformService loanReadPlatformService,
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
             final LoanChargeReadPlatformService loanChargeReadPlatformService, final AppUserRepositoryWrapper userRepository,
-            final LoanRepository loanRepository, final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository) {
+            final LoanRepository loanRepository, final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
+            final TaxReadPlatformService taxReadPlatformService) {
         this.loanReadPlatformService = loanReadPlatformService;
         this.dataSource = dataSource;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
@@ -85,6 +93,7 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
         this.userRepository = userRepository;
         this.loanRepository = loanRepository;
         this.applicationCurrencyRepository = applicationCurrencyRepository;
+        this.taxReadPlatformService = taxReadPlatformService;
     }
 
     @Override
@@ -220,7 +229,7 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
     }
 
     @Transactional
-    public void addAccrualAccounting(LoanScheduleAccrualData scheduleAccrualData, final LocalDate lastAccrualDate) throws Exception {
+    public void addAccrualAccounting(final LoanScheduleAccrualData scheduleAccrualData, final LocalDate lastAccrualDate) throws Exception {
 
         BigDecimal amount = BigDecimal.ZERO;
         BigDecimal interestportion = null;
@@ -274,42 +283,88 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
         }
     }
 
-    private void addAccrualAccounting(LoanScheduleAccrualData scheduleAccrualData, BigDecimal amount, BigDecimal interestportion,
-            BigDecimal totalAccInterest, BigDecimal feeportion, BigDecimal totalAccFee, BigDecimal penaltyportion,
-            BigDecimal totalAccPenalty, final LocalDate accruedTill) throws Exception {
-        Long currentUser = getCurrentUserId();
-        Date currentTime = DateUtils.getLocalDateTimeOfTenant().toDate();
-        String transactionSql = "INSERT INTO m_loan_transaction  (loan_id,office_id,is_reversed,transaction_type_enum,transaction_date,amount,interest_portion_derived,"
-                + "fee_charges_portion_derived,penalty_charges_portion_derived, submitted_on_date,createdby_id,created_date,lastmodifiedby_id,lastmodified_date)"
-                + " VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        this.jdbcTemplate.update(transactionSql, scheduleAccrualData.getLoanId(), scheduleAccrualData.getOfficeId(),
+    private void addAccrualAccounting(final LoanScheduleAccrualData scheduleAccrualData, final BigDecimal amount,
+            final BigDecimal interestportion, final BigDecimal totalAccInterest, final BigDecimal feeportion, final BigDecimal totalAccFee,
+            final BigDecimal penaltyportion, final BigDecimal totalAccPenalty, final LocalDate accruedTill) throws Exception {
+        final Long currentUser = getCurrentUserId();
+        final Date currentTime = DateUtils.getLocalDateTimeOfTenant().toDate();
+        final StringBuilder transactionSql = new StringBuilder(100);
+        transactionSql.append("INSERT INTO m_loan_transaction (loan_id,office_id,is_reversed,transaction_type_enum,transaction_date,");
+        transactionSql.append("amount,interest_portion_derived,fee_charges_portion_derived,penalty_charges_portion_derived,");
+        transactionSql.append("submitted_on_date,createdby_id,created_date,lastmodifiedby_id,lastmodified_date)");
+        transactionSql.append(" VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        this.jdbcTemplate.update(transactionSql.toString(), scheduleAccrualData.getLoanId(), scheduleAccrualData.getOfficeId(),
                 LoanTransactionType.ACCRUAL.getValue(), accruedTill.toDate(), amount, interestportion, feeportion, penaltyportion,
                 DateUtils.getDateOfTenant(),currentUser,currentTime,currentUser,currentTime);
         @SuppressWarnings("deprecation")
         final Long transactonId = this.jdbcTemplate.queryForLong("SELECT LAST_INSERT_ID()");
 
-        Map<LoanChargeData, BigDecimal> applicableCharges = scheduleAccrualData.getApplicableCharges();
-        String chargespaidSql = "INSERT INTO m_loan_charge_paid_by (loan_transaction_id, loan_charge_id, amount,installment_number) VALUES (?,?,?,?)";
-        for (Map.Entry<LoanChargeData, BigDecimal> entry : applicableCharges.entrySet()) {
-            LoanChargeData chargeData = entry.getKey();
+        final Map<LoanChargeData, BigDecimal> applicableCharges = scheduleAccrualData.getApplicableCharges();
+        final String chargespaidSql = "INSERT INTO m_loan_charge_paid_by (loan_transaction_id, loan_charge_id, amount,installment_number) VALUES (?,?,?,?)";
+        for (final Map.Entry<LoanChargeData, BigDecimal> entry : applicableCharges.entrySet()) {
+            final LoanChargeData chargeData = entry.getKey();
             this.jdbcTemplate.update(chargespaidSql, transactonId, chargeData.getId(), entry.getValue(),
                     scheduleAccrualData.getInstallmentNumber());
+            @SuppressWarnings("deprecation")
+            final Long loanChargePaidById = this.jdbcTemplate.queryForLong("SELECT LAST_INSERT_ID()");
+            if (chargeData.getTaxGroupId() != null && chargeData.getTaxGroupId() > 0) {
+                if (chargeData.getTaxGroupData() == null) {
+                    final TaxGroupData taxGroupData = this.taxReadPlatformService.retrieveTaxGroupData(chargeData.getTaxGroupId());
+                    if (taxGroupData.getTaxAssociations() != null) {
+                        for (final TaxGroupMappingsData taxGroupMappingsData : taxGroupData.getTaxAssociations()) {
+                            if (taxGroupMappingsData.getTaxComponent() != null && taxGroupMappingsData.getTaxComponent().getId() != null) {
+                                final TaxComponentData taxComponent = this.taxReadPlatformService
+                                        .retrieveTaxComponentData(taxGroupMappingsData.getTaxComponent().getId());
+                                taxGroupMappingsData.setTaxComponent(taxComponent);
+                            }
+                        }
+                    }
+                    chargeData.setTaxGroupData(taxGroupData);
+                }
+                final String loanTaxChargesPaidSql = "INSERT INTO m_loan_charge_tax_details_paid_by (loan_charge_paid_by_id, tax_component_id, amount) VALUES (?,?,?)";
+                createLoanChargeTaxDetailsPaidBy(scheduleAccrualData, loanTaxChargesPaidSql, loanChargePaidById, accruedTill, chargeData,
+                        entry.getValue());
+            }
         }
-
-        Map<String, Object> transactionMap = toMapData(transactonId, amount, interestportion, feeportion, penaltyportion,
+        
+        final Map<String, Object> transactionMap = toMapData(transactonId, amount, interestportion, feeportion, penaltyportion,
                 scheduleAccrualData, accruedTill);
 
-        String repaymetUpdatesql = "UPDATE m_loan_repayment_schedule SET accrual_interest_derived=?, accrual_fee_charges_derived=?, "
-                + "accrual_penalty_charges_derived=? WHERE  id=?";
+        final String repaymetUpdatesql = "UPDATE m_loan_repayment_schedule SET accrual_interest_derived=?, accrual_fee_charges_derived=?, accrual_penalty_charges_derived=? WHERE  id=?";
         this.jdbcTemplate.update(repaymetUpdatesql, totalAccInterest, totalAccFee, totalAccPenalty,
                 scheduleAccrualData.getRepaymentScheduleId());
 
-        String updateLoan = "UPDATE m_loan  SET accrued_till=?  WHERE  id=?";
+        final String updateLoan = "UPDATE m_loan  SET accrued_till=?  WHERE  id=?";
         this.jdbcTemplate.update(updateLoan, accruedTill.toDate(), scheduleAccrualData.getLoanId());
         final Map<String, Object> accountingBridgeData = deriveAccountingBridgeData(scheduleAccrualData, transactionMap);
         this.journalEntryWritePlatformService.createJournalEntriesForLoan(accountingBridgeData);
     }
 
+    private void createLoanChargeTaxDetailsPaidBy(final LoanScheduleAccrualData accrualData, final String loanTaxChargesPaidSql,
+            final Long loanChargePaidById, final LocalDate transactionDate, final LoanChargeData loanChargeData, final BigDecimal amount) {
+        final TaxGroupData taxGroupData = loanChargeData.getTaxGroupData();
+        if (taxGroupData != null && amount.compareTo(BigDecimal.ZERO) == 1) {
+            final Map<TaxComponentData, BigDecimal> taxDetails = TaxUtils.splitTaxForLoanCharge(amount, transactionDate, taxGroupData,
+                    accrualData.getCurrencyData().decimalPlaces());
+            final BigDecimal totalTax = TaxUtils.totalTaxAmountData(taxDetails);
+            if (totalTax.compareTo(BigDecimal.ZERO) == 1) {
+                if (taxDetails != null && !taxDetails.isEmpty()) {
+                    final Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas = new ArrayList<>();
+                    for (final Map.Entry<TaxComponentData, BigDecimal> mapEntry : taxDetails.entrySet()) {
+                        final TaxComponentData taxComponentData = mapEntry.getKey();
+                        this.jdbcTemplate.update(loanTaxChargesPaidSql, loanChargePaidById, taxComponentData.getId(), mapEntry.getValue());
+                        final LoanChargeTaxDetailsPaidByData loanChargeTaxDetailsPaidByData = LoanChargeTaxDetailsPaidByData.instance(
+                                taxComponentData, mapEntry.getValue());
+                        loanChargeTaxDetailsPaidByDatas.add(loanChargeTaxDetailsPaidByData);
+                    }
+                    if (!loanChargeTaxDetailsPaidByDatas.isEmpty()) {
+                        loanChargeData.setLoanChargeTaxDetailsPaidByDatas(loanChargeTaxDetailsPaidByDatas);
+                    }
+                }
+            }
+        }
+    }
+    
     public Map<String, Object> deriveAccountingBridgeData(final LoanScheduleAccrualData loanScheduleAccrualData,
             final Map<String, Object> transactionMap) {
 
@@ -354,13 +409,28 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
         if (applicableCharges != null && !applicableCharges.isEmpty()) {
             final List<Map<String, Object>> loanChargesPaidData = new ArrayList<>();
             for (Map.Entry<LoanChargeData, BigDecimal> entry : applicableCharges.entrySet()) {
-                LoanChargeData chargeData = entry.getKey();
+                final LoanChargeData chargeData = entry.getKey();
                 final Map<String, Object> loanChargePaidData = new LinkedHashMap<>();
                 loanChargePaidData.put("chargeId", chargeData.getChargeId());
                 loanChargePaidData.put("isPenalty", chargeData.isPenalty());
                 loanChargePaidData.put("loanChargeId", chargeData.getId());
                 loanChargePaidData.put("amount", entry.getValue());
                 loanChargePaidData.put("isCapitalized", chargeData.isCapitalized());
+                final Collection<LoanChargeTaxDetailsPaidByData> taxDetails = chargeData.getLoanChargeTaxDetailsPaidByDatas();
+                if (!taxDetails.isEmpty()) {
+                    final List<Map<String, Object>> taxData = new ArrayList<>();
+                    for (final LoanChargeTaxDetailsPaidByData taxDetail : taxDetails) {
+                        final Map<String, Object> taxDetailsData = new HashMap<>();
+                        taxDetailsData.put("amount", taxDetail.getAmount());
+                        if (taxDetail.getTaxComponentData().getCreditAccount() != null) {
+                            taxDetailsData.put("creditAccountId", taxDetail.getTaxComponentData().getCreditAccount().getId());
+                        }
+                        taxData.add(taxDetailsData);
+                    }
+                    if (!taxData.isEmpty()) {
+                        loanChargePaidData.put("taxDetails", taxData);
+                    }
+                }
                 loanChargesPaidData.add(loanChargePaidData);
             }
             thisTransactionData.put("loanChargesPaid", loanChargesPaidData);
@@ -375,12 +445,12 @@ public class LoanAccrualWritePlatformServiceImpl implements LoanAccrualWritePlat
         final Map<LoanChargeData, BigDecimal> applicableCharges = new HashMap<>();
         BigDecimal dueDateFeeIncome = BigDecimal.ZERO;
         BigDecimal dueDatePenaltyIncome = BigDecimal.ZERO;
-        for (LoanChargeData loanCharge : chargesData) {
+        for (final LoanChargeData loanCharge : chargesData) {
             BigDecimal chargeAmount = BigDecimal.ZERO;
             if (loanCharge.getDueDate() == null) {
                 if (loanCharge.isInstallmentFee() && accrualData.getDueDateAsLocaldate().isEqual(endDate)) {
                     Collection<LoanInstallmentChargeData> installmentData = loanCharge.getInstallmentChargeData();
-                    for (LoanInstallmentChargeData installmentChargeData : installmentData) {
+                    for (final LoanInstallmentChargeData installmentChargeData : installmentData) {
 
                         if (installmentChargeData.getInstallmentNumber().equals(accrualData.getInstallmentNumber())) {
                             BigDecimal accruableForInstallment = installmentChargeData.getAmount();

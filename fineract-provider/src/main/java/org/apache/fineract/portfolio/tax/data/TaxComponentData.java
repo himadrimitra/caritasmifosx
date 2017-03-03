@@ -29,29 +29,18 @@ import org.joda.time.LocalDate;
 
 public class TaxComponentData {
 
-    @SuppressWarnings("unused")
     private final Long id;
-    @SuppressWarnings("unused")
     private final String name;
-    @SuppressWarnings("unused")
     private final BigDecimal percentage;
-    @SuppressWarnings("unused")
     private final EnumOptionData debitAccountType;
-    @SuppressWarnings("unused")
     private final GLAccountData debitAccount;
-    @SuppressWarnings("unused")
     private final EnumOptionData creditAccountType;
-    @SuppressWarnings("unused")
     private final GLAccountData creditAccount;
-    @SuppressWarnings("unused")
     private final LocalDate startDate;
-    @SuppressWarnings("unused")
     private final Collection<TaxComponentHistoryData> taxComponentHistories;
 
     // template options
-    @SuppressWarnings("unused")
     private final Map<String, List<GLAccountData>> glAccountOptions;
-    @SuppressWarnings("unused")
     private final Collection<EnumOptionData> glAccountTypeOptions;
 
     public static TaxComponentData instance(final Long id, final String name, final BigDecimal percentage,
@@ -107,6 +96,81 @@ public class TaxComponentData {
         this.taxComponentHistories = taxComponentHistories;
         this.glAccountOptions = glAccountOptions;
         this.glAccountTypeOptions = glAccountTypeOptions;
+    }
+
+    public BigDecimal getApplicablePercentage(final LocalDate date) {
+        BigDecimal percentage = null;
+        if (occursOnDayFrom(date)) {
+            percentage = getPercentage();
+        } else {
+            for (final TaxComponentHistoryData componentHistory : this.taxComponentHistories) {
+                if (componentHistory.occursOnDayFromAndUpToAndIncluding(date)) {
+                    percentage = componentHistory.getPercentage();
+                    break;
+                }
+            }
+        }
+        return percentage;
+    }
+
+    public BigDecimal getPercentage() {
+        return this.percentage;
+    }
+
+    private boolean occursOnDayFrom(final LocalDate target) {
+        return target != null && target.isAfter(this.startDate);
+    }
+
+    public Long getId() {
+        return this.id;
+    }
+
+    public static TaxComponentData lookup(final Long id, final String name, final LocalDate startDate, final BigDecimal percentage) {
+        final EnumOptionData debitAccountType = null;
+        final GLAccountData debitAcount = null;
+        final EnumOptionData creditAccountType = null;
+        final GLAccountData creditAcount = null;
+        final Collection<TaxComponentHistoryData> taxComponentHistories = null;
+        final Map<String, List<GLAccountData>> glAccountOptions = null;
+        final Collection<EnumOptionData> glAccountTypeOptions = null;
+        return new TaxComponentData(id, name, percentage, debitAccountType, debitAcount, creditAccountType, creditAcount, startDate,
+                taxComponentHistories, glAccountOptions, glAccountTypeOptions);
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public EnumOptionData getDebitAccountType() {
+        return this.debitAccountType;
+    }
+
+    public GLAccountData getDebitAccount() {
+        return this.debitAccount;
+    }
+
+    public EnumOptionData getCreditAccountType() {
+        return this.creditAccountType;
+    }
+
+    public GLAccountData getCreditAccount() {
+        return this.creditAccount;
+    }
+
+    public LocalDate getStartDate() {
+        return this.startDate;
+    }
+
+    public Collection<TaxComponentHistoryData> getTaxComponentHistories() {
+        return this.taxComponentHistories;
+    }
+
+    public Map<String, List<GLAccountData>> getGlAccountOptions() {
+        return this.glAccountOptions;
+    }
+
+    public Collection<EnumOptionData> getGlAccountTypeOptions() {
+        return this.glAccountTypeOptions;
     }
 
 }

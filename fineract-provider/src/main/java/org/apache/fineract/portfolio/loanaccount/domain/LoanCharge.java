@@ -159,7 +159,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
     
     @Column(name = "is_capitalized", nullable = true)
     private boolean isCapitalized;
-
+    
     public static LoanCharge createNewFromJson(final Loan loan, final Charge chargeDefinition, final JsonCommand command) {
         final LocalDate dueDate = command.localDateValueOfParameterNamed("dueDate");
         return createNewFromJson(loan, chargeDefinition, command, dueDate);
@@ -1290,18 +1290,19 @@ public class LoanCharge extends AbstractPersistable<Long> {
         }
     }
 
-    public void updateLoanChargeTaxDetails(final LocalDate transactionDate, final BigDecimal amount) {
+    public Map<String, BigDecimal> updateLoanChargeTaxDetails(final LocalDate transactionDate, final BigDecimal amount) {
+        final Map<String, BigDecimal> loanChargeTaxSplitDetails = new LinkedHashMap<>();
         if (amount.compareTo(BigDecimal.ZERO) == 1) {
             BigDecimal incomeAmount = BigDecimal.ZERO;
             BigDecimal taxAmount = BigDecimal.ZERO;
-            Map<TaxComponent, BigDecimal> taxDetails = TaxUtils.splitTaxForLoanCharge(amount, transactionDate,
+            final Map<TaxComponent, BigDecimal> taxDetails = TaxUtils.splitTaxForLoanCharge(amount, transactionDate,
                     this.taxGroup.getTaxGroupMappings(), amount.scale());
             if (taxDetails != null && !taxDetails.isEmpty()) {
             	BigDecimal totalTax = TaxUtils.totalTaxAmount(taxDetails);
                 if (totalTax.compareTo(BigDecimal.ZERO) == 1) {
                     this.getLoanChargeTaxDetails().clear();
                     incomeAmount = amount;
-                    for (Map.Entry<TaxComponent, BigDecimal> mapEntry : taxDetails.entrySet()) {
+                    for (final Map.Entry<TaxComponent, BigDecimal> mapEntry : taxDetails.entrySet()) {
                         this.getLoanChargeTaxDetails().add(new LoanChargeTaxDetails(mapEntry.getKey().getId(), mapEntry.getValue()));
                         incomeAmount = incomeAmount.subtract(mapEntry.getValue());
                     }
@@ -1309,8 +1310,11 @@ public class LoanCharge extends AbstractPersistable<Long> {
                 }
                 this.updateAmountSansTax(incomeAmount);
                 this.updateTaxAmount(taxAmount);
+                loanChargeTaxSplitDetails.put("incomeAmount", incomeAmount);
+                loanChargeTaxSplitDetails.put("taxAmount", taxAmount);
             }
         }
+        return loanChargeTaxSplitDetails;
     }
 
     public void updateTotalAmount() {
@@ -1363,6 +1367,5 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public void setCapitalized(boolean isCapitalized) {
         this.isCapitalized = isCapitalized;
     }
-    
     
 }

@@ -24,16 +24,38 @@ import org.joda.time.LocalDate;
 
 public class TaxComponentHistoryData {
 
-    @SuppressWarnings("unused")
     private final BigDecimal percentage;
-    @SuppressWarnings("unused")
     private final LocalDate startDate;
-    @SuppressWarnings("unused")
     private final LocalDate endDate;
 
     public TaxComponentHistoryData(final BigDecimal percentage, final LocalDate startDate, final LocalDate endDate) {
         this.percentage = percentage;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    public LocalDate startDate() {
+        LocalDate startDate = null;
+        if (this.startDate != null) {
+            startDate = new LocalDate(this.startDate);
+        }
+        return startDate;
+    }
+
+    public LocalDate endDate() {
+        LocalDate endDate = null;
+        if (this.endDate != null) {
+            endDate = new LocalDate(this.endDate);
+        }
+        return endDate;
+    }
+
+    public boolean occursOnDayFromAndUpToAndIncluding(final LocalDate target) {
+        if (this.endDate == null) { return target != null && target.isAfter(startDate()); }
+        return target != null && target.isAfter(startDate()) && !target.isAfter(endDate());
+    }
+
+    public BigDecimal getPercentage() {
+        return this.percentage;
     }
 }

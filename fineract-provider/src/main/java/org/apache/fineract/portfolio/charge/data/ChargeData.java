@@ -325,9 +325,14 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         if (this.chargeCalculationType.getId() == 2) {
             percentage = this.amount;
         }
+        Long taxGroupId = null;
+        if (this.taxGroup != null) {
+            taxGroupId = this.taxGroup.getId();
+        }
 
         return LoanChargeData.newLoanChargeDetails(this.id, this.name, this.currency, this.amount, percentage, this.chargeTimeType,
-                this.chargeCalculationType, this.penalty, this.chargePaymentMode, this.minCap, this.maxCap, this.isGlimCharge, this.isCapitalized);
+                this.chargeCalculationType, this.penalty, this.chargePaymentMode, this.minCap, this.maxCap, this.isGlimCharge,
+                this.isCapitalized, taxGroupId);
     }
 
     public SavingsAccountChargeData toSavingsAccountChargeData() {

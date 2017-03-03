@@ -198,7 +198,7 @@ public class TaxReadPlatformServiceImpl implements TaxReadPlatformService {
 
     }
 
-    private static final class TaxGroupMapper implements RowMapper<TaxGroupData> {
+    public static final class TaxGroupMapper implements RowMapper<TaxGroupData> {
 
         private final String schema;
         private final TaxGroupMappingsDataMapper taxGroupMappingsDataMapper = new TaxGroupMappingsDataMapper();
@@ -208,6 +208,7 @@ public class TaxReadPlatformServiceImpl implements TaxReadPlatformService {
             sb.append("tg.id as id, tg.name as name,");
             sb.append("tgm.id as mappingId,");
             sb.append("tc.id as taxComponentId, tc.name as taxComponentName,");
+            sb.append("tc.start_date as taxComponentStartDate,tc.percentage as taxComponentPercentage, ");
             sb.append("tgm.start_date as startDate, tgm.end_date as endDate ");
             sb.append(" from m_tax_group tg ");
             sb.append(" inner join m_tax_group_mappings tgm on tgm.tax_group_id = tg.id ");
@@ -245,13 +246,13 @@ public class TaxReadPlatformServiceImpl implements TaxReadPlatformService {
             final Long mappingId = rs.getLong("mappingId");
             final Long id = rs.getLong("taxComponentId");
             final String name = rs.getString("taxComponentName");
-            TaxComponentData componentData = TaxComponentData.lookup(id, name);
-
+            final LocalDate taxComponentStartDate = JdbcSupport.getLocalDate(rs, "taxComponentStartDate");
+            final BigDecimal taxComponentPercentage = rs.getBigDecimal("taxComponentPercentage");
+            final TaxComponentData componentData = TaxComponentData.lookup(id, name, taxComponentStartDate, taxComponentPercentage);
             final LocalDate startDate = JdbcSupport.getLocalDate(rs, "startDate");
             final LocalDate endDate = JdbcSupport.getLocalDate(rs, "endDate");
             return new TaxGroupMappingsData(mappingId, componentData, startDate, endDate);
         }
-
     }
 
     private static final class TaxComponentLookUpMapper implements RowMapper<TaxComponentData> {

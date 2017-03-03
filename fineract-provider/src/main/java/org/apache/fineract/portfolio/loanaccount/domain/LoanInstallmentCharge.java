@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -29,6 +30,7 @@ import javax.persistence.Table;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.tax.domain.TaxComponent;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -67,6 +69,12 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> implements 
     @Column(name = "waived", nullable = false)
     private boolean waived = false;
 
+    @Column(name = "amount_sans_tax", scale = 6, precision = 19, nullable = true)
+    private BigDecimal amountSansTax;
+    
+    @Column(name = "tax_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal taxAmount;
+    
     public LoanInstallmentCharge() {
         // TODO Auto-generated constructor stub
     }
@@ -81,8 +89,26 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> implements 
         this.amountWrittenOff = null;
         
         if (this.loancharge.getTaxGroup() != null) {
-            this.loancharge.updateLoanChargeTaxDetails(installment.getDueDate(), this.amount);
+            final Map<String, BigDecimal> loanChargeTaxSplitDetails = this.loancharge.updateLoanChargeTaxDetails(installment.getDueDate(), this.amount);
+            if(!loanChargeTaxSplitDetails.isEmpty()){
+                for (final Map.Entry<String, BigDecimal> mapEntry : loanChargeTaxSplitDetails.entrySet()) {
+                    if(mapEntry.getKey().equalsIgnoreCase("incomeAmount")){
+                        this.updateAmountSansTax(mapEntry.getValue());
+                    }
+                    if(mapEntry.getKey().equalsIgnoreCase("taxAmount")){
+                        this.updateTaxAmount(mapEntry.getValue());
+                    }
+                }
+            }
         }      
+    }
+
+    private void updateTaxAmount(final BigDecimal taxAmount) {
+        this.taxAmount = taxAmount;
+    }
+
+    private void updateAmountSansTax(final BigDecimal amountSansTax) {
+        this.amountSansTax = amountSansTax;
     }
 
     public void copyFrom(final LoanInstallmentCharge loanChargePerInstallment) {

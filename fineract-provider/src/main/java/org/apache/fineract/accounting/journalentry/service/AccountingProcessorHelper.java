@@ -239,7 +239,8 @@ public class AccountingProcessorHelper {
                     final BigDecimal taxAmount = (BigDecimal) taxData.get("amount");
                     final Long creditAccountId = (Long) taxData.get("creditAccountId");
                     final Long debitAccountId = (Long) taxData.get("debitAccountId");
-                    taxPayments.add(new TaxPaymentDTO(debitAccountId, creditAccountId, taxAmount, null));
+                    final Long loanChargeId = null;
+                    taxPayments.add(new TaxPaymentDTO(debitAccountId, creditAccountId, taxAmount, loanChargeId));
                 }
             }
     
@@ -408,19 +409,52 @@ public class AccountingProcessorHelper {
         final GLAccount debitLoanPortfolioAccount = getLinkedGLAccountForLoanProduct(loanProductId,
                 ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), paymentTypeId, writeOffReasonId);
         final Map<GLAccount, BigDecimal> creditDetailsMap = new LinkedHashMap<>();
-        final Map<GLAccount, BigDecimal> creditDetailsMapForCapitalizedCharges = new LinkedHashMap<>();
+        final Map<GLAccount, BigDecimal> creditDetailsForCapitalizedChargesMap = new LinkedHashMap<>();
+        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         for (final ChargePaymentDTO chargePaymentDTO : chargePaymentDTOs) {
             final Long chargeId = chargePaymentDTO.getChargeId();
             final GLAccount chargeSpecificAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountTypeToBeCredited, chargeId);
             BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
+            BigDecimal totalTaxAmount = BigDecimal.ZERO;
+            final List<TaxPaymentDTO> taxPaymentDTOs = chargePaymentDTO.getTaxPaymentDTO();
             // adjust net credit amount if the account is already present in the
             // map
+            if (taxPaymentDTOs != null) {
+                for (final TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
+                    if (taxPaymentDTO.getAmount() != null) {
+                        BigDecimal taxAmount = taxPaymentDTO.getAmount();
+                        GLAccount taxGLAccount = null;
+                        if (taxPaymentDTO.getCreditAccountId() != null) {
+                            taxGLAccount = getGLAccountById(taxPaymentDTO.getCreditAccountId());
+                        } else {
+                            taxGLAccount = chargeSpecificAccount;
+                        }
+                        totalCreditedAmount = totalCreditedAmount.add(taxAmount);
+                        if(chargePaymentDTO.isCapitalized()){
+                            if (creditDetailsForCapitalizedChargesMap.containsKey(taxGLAccount)) {
+                                final BigDecimal existingAmount = creditDetailsForCapitalizedChargesMap.get(taxGLAccount);
+                                taxAmount = taxAmount.add(existingAmount);
+                            }
+                            creditDetailsForCapitalizedChargesMap.put(taxGLAccount, taxAmount);
+                        }else{
+                            if (creditDetailsMap.containsKey(taxGLAccount)) {
+                                final BigDecimal existingAmount = creditDetailsMap.get(taxGLAccount);
+                                taxAmount = taxAmount.add(existingAmount);
+                            }
+                            creditDetailsMap.put(taxGLAccount, taxAmount);
+                        }
+                        totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
+                    }
+                }
+            }
+            chargeSpecificAmount = chargeSpecificAmount.subtract(totalTaxAmount);
+            totalCreditedAmount = totalCreditedAmount.add(chargeSpecificAmount);
             if(chargePaymentDTO.isCapitalized()){
-                if (creditDetailsMapForCapitalizedCharges.containsKey(chargeSpecificAccount)) {
-                    final BigDecimal existingAmount = creditDetailsMapForCapitalizedCharges.get(chargeSpecificAccount);
+                if (creditDetailsForCapitalizedChargesMap.containsKey(chargeSpecificAccount)) {
+                    final BigDecimal existingAmount = creditDetailsForCapitalizedChargesMap.get(chargeSpecificAccount);
                     chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
                 }
-                creditDetailsMapForCapitalizedCharges.put(chargeSpecificAccount, chargeSpecificAmount);
+                creditDetailsForCapitalizedChargesMap.put(chargeSpecificAccount, chargeSpecificAmount);
             }else{
                 if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
                     final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
@@ -429,14 +463,13 @@ public class AccountingProcessorHelper {
                 creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
             }
         }
-        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         if (!creditDetailsMap.isEmpty()) {
-            totalCreditedAmount = createAccrualBasedJournalEntriesAndReversalsForLoanCharges(office, currencyCode, loanId, transactionId,
+            createAccrualBasedJournalEntriesAndReversalsForLoanCharges(office, currencyCode, loanId, transactionId,
                     transactionDate, isReversal, creditDetailsMap, receivableAccount);
         }
-        if (!creditDetailsMapForCapitalizedCharges.isEmpty()) {
-            totalCreditedAmount = totalCreditedAmount.add(createAccrualBasedJournalEntriesAndReversalsForLoanCharges(office, currencyCode,
-                    loanId, transactionId, transactionDate, isReversal, creditDetailsMapForCapitalizedCharges, debitLoanPortfolioAccount));
+        if (!creditDetailsForCapitalizedChargesMap.isEmpty()) {
+            createAccrualBasedJournalEntriesAndReversalsForLoanCharges(office, currencyCode,
+                    loanId, transactionId, transactionDate, isReversal, creditDetailsForCapitalizedChargesMap, debitLoanPortfolioAccount);
         }
         if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
                 "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
@@ -448,16 +481,42 @@ public class AccountingProcessorHelper {
             final Long loanId, final String transactionId, final Date transactionDate, final Boolean isReversal,
             final Map<GLAccount, BigDecimal> creditDetailsMap, final GLAccount receivableAccount) {
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
+        final Map<GLAccount, BigDecimal> creditJournalEntriesMap = new LinkedHashMap<>();
+        final Map<GLAccount, BigDecimal> receivableAccountMap = new LinkedHashMap<>();
         for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
             final GLAccount account = entry.getKey();
-            final BigDecimal amount = entry.getValue();
+            BigDecimal amount = entry.getValue();
+            BigDecimal receivableAmount = entry.getValue();
             totalCreditedAmount = totalCreditedAmount.add(amount);
+
+            if (creditJournalEntriesMap.containsKey(account)) {
+                final BigDecimal existingAmount = creditJournalEntriesMap.get(account);
+                amount = amount.add(existingAmount);
+            }
+            creditJournalEntriesMap.put(account, amount);
+
+            if (receivableAccountMap.containsKey(receivableAccount)) {
+                final BigDecimal existingAmount = receivableAccountMap.get(receivableAccount);
+                receivableAmount = receivableAmount.add(existingAmount);
+            }
+            receivableAccountMap.put(receivableAccount, receivableAmount);
+        }
+        for (final Map.Entry<GLAccount, BigDecimal> entry : creditJournalEntriesMap.entrySet()) {
+            final GLAccount account = entry.getKey();
+            final BigDecimal amount = entry.getValue();
             if (isReversal) {
                 createDebitJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
+            } else {
+                createCreditJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
+            }
+
+        }
+        for (final Map.Entry<GLAccount, BigDecimal> entry : receivableAccountMap.entrySet()) {
+            final BigDecimal amount = entry.getValue();
+            if (isReversal) {
                 createCreditJournalEntryForLoan(office, currencyCode, receivableAccount, loanId, transactionId, transactionDate, amount);
             } else {
                 createDebitJournalEntryForLoan(office, currencyCode, receivableAccount, loanId, transactionId, transactionDate, amount);
-                createCreditJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
             }
         }
         return totalCreditedAmount;
@@ -1405,6 +1464,73 @@ public class AccountingProcessorHelper {
                     totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
                 }
             }
+        }
+        return totalTaxAmount;
+    }
+    
+    public Map<GLAccount, BigDecimal> constructCreditJournalEntryOrReversalForLoanChargesAccountMap(final Long loanProductId,
+            final Long paymentTypeId, final Long writeOffReasonId, final BigDecimal totalAmount,
+            final LoanTransactionDTO loanTransactionDTO, final Map<GLAccount, BigDecimal> accountMap, final boolean writeOff) {
+        if (loanTransactionDTO.getFeePayments() == null || loanTransactionDTO.getFeePayments().isEmpty()) { return accountMap; }
+        final GLAccount loanPortfolioAccount = getLinkedGLAccountForLoanProduct(loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), paymentTypeId, writeOffReasonId);
+        final GLAccount feesReceivableAccount = getLinkedGLAccountForLoanProduct(loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue(), paymentTypeId, writeOffReasonId);
+        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
+        BigDecimal totalCreditedCapitalizedChargeAmount = BigDecimal.ZERO;
+        BigDecimal totalCreditedNonCapitalizedChargeAmount = BigDecimal.ZERO;
+        for (final ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getFeePayments()) {
+            totalCreditedAmount = totalCreditedAmount.add(chargePaymentDTO.getAmount());
+            BigDecimal totalTaxAmount = BigDecimal.ZERO;
+            if (!writeOff && chargePaymentDTO.getTaxPaymentDTO() != null && !chargePaymentDTO.getTaxPaymentDTO().isEmpty()) {
+                totalTaxAmount = addTaxDetailsToGLAccount(chargePaymentDTO.getTaxPaymentDTO(), accountMap);
+            }
+            if (chargePaymentDTO.isCapitalized()) {
+                totalCreditedCapitalizedChargeAmount = totalCreditedCapitalizedChargeAmount.add(chargePaymentDTO.getAmount()).subtract(
+                        totalTaxAmount);
+            } else {
+                totalCreditedNonCapitalizedChargeAmount = totalCreditedNonCapitalizedChargeAmount.add(chargePaymentDTO.getAmount())
+                        .subtract(totalTaxAmount);
+            }
+        }
+        if (totalCreditedCapitalizedChargeAmount.compareTo(BigDecimal.ZERO) > 0) {
+            if (accountMap.containsKey(loanPortfolioAccount)) {
+                final BigDecimal amount = accountMap.get(loanPortfolioAccount).add(
+                        totalCreditedCapitalizedChargeAmount);
+                accountMap.put(loanPortfolioAccount, amount);
+            } else {
+                accountMap.put(loanPortfolioAccount, totalCreditedCapitalizedChargeAmount);
+            }
+        }
+        if (totalCreditedNonCapitalizedChargeAmount.compareTo(BigDecimal.ZERO) > 0) {
+            if (accountMap.containsKey(feesReceivableAccount)) {
+                final BigDecimal amount = accountMap.get(feesReceivableAccount).add(totalCreditedNonCapitalizedChargeAmount);
+                accountMap.put(feesReceivableAccount, amount);
+            } else {
+                accountMap.put(feesReceivableAccount, totalCreditedNonCapitalizedChargeAmount);
+            }
+        }
+        if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
+                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
+                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
+                totalCreditedAmount, totalAmount); }
+        return accountMap;
+    }
+
+    @SuppressWarnings("null")
+    public BigDecimal addTaxDetailsToGLAccount(final List<TaxPaymentDTO> taxPaymentDetails, Map<GLAccount, BigDecimal> accountMap) {
+        BigDecimal totalTaxAmount = BigDecimal.ZERO;
+        for(final TaxPaymentDTO taxPaymentDTO : taxPaymentDetails){
+            final GLAccount glAccount  = getGLAccountById(taxPaymentDTO.getCreditAccountId());
+            if(taxPaymentDTO != null){
+                if (accountMap.containsKey(glAccount)) {
+                    final BigDecimal amount = accountMap.get(glAccount).add(taxPaymentDTO.getAmount());
+                    accountMap.put(glAccount, amount);
+                } else {
+                    accountMap.put(glAccount, taxPaymentDTO.getAmount());
+                }
+                totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
+            }     
         }
         return totalTaxAmount;
     }
