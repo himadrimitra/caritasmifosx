@@ -3090,6 +3090,15 @@ public class CommandWrapperBuilder {
         this.href = "/clients" + "/" + clientId + "/familydetails/" + familyDetailsId;
         return this;
     }
+    
+    public CommandWrapperBuilder removeFamilyMemberAssociation(final Long clientId, final Long familyDetailsId) {
+        this.actionName = "DELETE";
+        this.entityName = "FAMILYMEMBERASSOCIATION";
+        this.entityId = familyDetailsId;
+        this.clientId = clientId;
+        this.href = "/clients" + "/" + clientId + "/familydetails/" + familyDetailsId;
+        return this;
+    }
 
     public CommandWrapperBuilder deleteFamilyDetails(final Long familyDetailsId, final Long clientId) {
         this.actionName = "DELETE";
