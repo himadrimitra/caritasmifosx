@@ -12,6 +12,7 @@ import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
 @Component
@@ -38,8 +39,25 @@ public class LoanDataAccessValidator implements CommandSourceValidator {
         Long loanId = null;
         loanId = command.getLoanId();
         if (loanId == null) {
-            loanId = command.entityId();
+            if (command.parsedJson().getAsJsonObject().has("loans")) {
+                if (command.parsedJson().getAsJsonObject().get("loans").isJsonArray()) {
+                    JsonArray loanIdsArray = command.parsedJson().getAsJsonObject().get("loans").getAsJsonArray();
+                    if (loanIdsArray != null) {
+                        for (JsonElement loanIdJsonObject : loanIdsArray) {
+                            loanId = loanIdJsonObject.getAsLong();
+                            validateCommand(loanId, appUser, command);
+                        }
+                    }
+                }
+            } else {
+                validateCommand(loanId, appUser, command);
+            }
+        } else {
+            validateCommand(loanId, appUser, command);
         }
+    }
+
+    public void validateCommand(Long loanId, AppUser appUser, JsonCommand command) {
         boolean hasAccess = true;
         if (loanId == null) {
             // Loan creation
@@ -60,6 +78,7 @@ public class LoanDataAccessValidator implements CommandSourceValidator {
             final String authorizationMessage = "User has no authority to modify Loan with id: " + loanId;
             throw new NoAuthorizationException(authorizationMessage);
         }
+
     }
 
 }
