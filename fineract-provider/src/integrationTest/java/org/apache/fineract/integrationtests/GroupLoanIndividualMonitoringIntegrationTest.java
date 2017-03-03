@@ -410,7 +410,7 @@ public class GroupLoanIndividualMonitoringIntegrationTest {
 				//
 				.withSubmittedOnDate("20 September 2011")
 				//
-				.withLoanType("group").withClientMembers(clientMembers)
+				.withLoanType("glim").withClientMembers(clientMembers)
 				.build(groupID.toString(), loanProductID.toString(), null);
 		System.out.println(loanApplicationJSON);
 		// return ;

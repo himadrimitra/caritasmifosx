@@ -1506,11 +1506,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             // If loan approved amount is not same as loan amount demanded, then
             // during undo, restore the demand amount to principal amount.
             if(loan.isGLIMLoan()){
-                List<GroupLoanIndividualMonitoring> glimList  = this.groupLoanIndividualMonitoringRepository.findByLoanIdAndIsClientSelected(loanId, true);
+                List<GroupLoanIndividualMonitoring> glimList  = this.groupLoanIndividualMonitoringRepository.findByLoanId(loanId);
                 HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
                 for (GroupLoanIndividualMonitoring glim : glimList) {
                     final BigDecimal proposedAmount = glim.getProposedAmount();
-                    if (proposedAmount != null) {
+                    if (MathUtility.isGreaterThanZero(proposedAmount)) {
                         glim.setIsClientSelected(true);
                         glim.setApprovedAmount(null);
                         this.groupLoanIndividualMonitoringAssembler.recalculateTotalFeeCharges(loan, chargesMap, proposedAmount,

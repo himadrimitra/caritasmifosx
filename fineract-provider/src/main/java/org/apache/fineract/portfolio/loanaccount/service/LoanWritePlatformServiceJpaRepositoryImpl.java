@@ -884,7 +884,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
             for (GroupLoanIndividualMonitoring glim : glimList) {
                 final BigDecimal approvedAmount = glim.getApprovedAmount();
-                if (approvedAmount != null) {
+                if (MathUtility.isGreaterThanZero(approvedAmount)) {
                     glimIds.add(glim.getId());
                     approvedGlimMembers.add(glim);
                     glim.setIsClientSelected(true);

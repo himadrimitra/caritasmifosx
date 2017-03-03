@@ -3567,7 +3567,7 @@ public class Loan extends AbstractPersistable<Long> {
                     glimMember.setPaidInterestAmount(glimMember.getPaidInterestAmount().subtract(interestAmount));
                     glimMember.setPaidPrincipalAmount(glimMember.getPaidPrincipalAmount().subtract(principalAmount));
                     glimMember.setPaidAmount(glimMember.getTotalPaidAmount().subtract(glimTransaction.getTotalAmount()));
-                    glimMember.setOverpaidAmount(MathUtility.subtract(glimMember.getOverpaidAmount(), glimTransaction.getOverpaidAmount()));
+                    glimMember.setOverpaidAmount(glimMember.getOverpaidAmount());
                     removeGlimTransactions.add(glimTransaction);
             	}
             }
@@ -4070,29 +4070,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
         
         if (this.isGLIMLoan()) {
-            LoanTransaction currentTransaction = transactionForAdjustment;
-            if (MathUtility.isGreaterThanZero(newTransactionDetail.getAmount())) {
-                currentTransaction = newTransactionDetail;
-            }
-            final int comparsion = currentTransaction.getTransactionDate().compareTo(getLastUserTransactionDate());
-            if (comparsion == 0) {
-                if (currentTransaction.getCreatedDate() != null && getLastUserTransaction() != null) {
-                    if (currentTransaction.getCreatedDate().compareTo(getLastUserTransaction().getCreatedDate()) == -1) {
-                        final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
-                        throw new InvalidLoanTransactionTypeException("transaction",
-                                "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan", errorMessage);
-                    }
-                }
-            } else if (currentTransaction.getTransactionDate().isBefore(getLastUserTransactionDate())) {
-                final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
-                throw new InvalidLoanTransactionTypeException("transaction", "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan",
-                        errorMessage);
-            }
-            if (transactionForAdjustment.isWaiver()) {
-                final String errorMessage = "Only transactions of type repayment can be adjusted for GLIM loan.";
-                throw new InvalidLoanTransactionTypeException("transaction", "adjustment.is.only.allowed.to.repayment.for.glim.loan",
-                        errorMessage);
-            }
+            validateModifiedGlimTransaction(newTransactionDetail, transactionForAdjustment);
         }
         
         handleAccrualsForClosedLoanTransactionReversal();
@@ -4138,6 +4116,29 @@ public class Loan extends AbstractPersistable<Long> {
         return changedTransactionDetail;
     }
 
+    private void validateModifiedGlimTransaction(final LoanTransaction newTransactionDetail, final LoanTransaction transactionForAdjustment) {
+        if (transactionForAdjustment.isWaiver()) {
+            final String errorMessage = "Only transactions of type repayment can be adjusted for GLIM loan.";
+            throw new InvalidLoanTransactionTypeException("transaction", "adjustment.is.only.allowed.to.repayment.for.glim.loan",
+                    errorMessage);
+        }
+        LoanTransaction currentTransaction = transactionForAdjustment;
+        if (MathUtility.isGreaterThanZero(newTransactionDetail.getAmount())) {
+            currentTransaction = newTransactionDetail;
+        }
+        List<Long> excludedTransactionIds = new ArrayList<>();
+        excludedTransactionIds.add(transactionForAdjustment.getId());
+        LoanTransaction lastGlimLoanTransaction = getLastUserTransaction(excludedTransactionIds);
+        final int comparsion = currentTransaction.getTransactionDate().compareTo(lastGlimLoanTransaction.getTransactionDate());
+        if (comparsion == -1
+                || (comparsion == 0 && (lastGlimLoanTransaction.getCreatedDate().isAfter(transactionForAdjustment.getCreatedDate())))) {
+            final String errorMessage = "undo or edit before last transaction is not allowed for GLIM loan.";
+            throw new InvalidLoanTransactionTypeException("transaction",
+                    "undo.or.edit.before.last.transaction.is.not.allowed.for.glim.loan", errorMessage);
+        }
+
+    }
+    
     private void handleAccrualsForClosedLoanTransactionReversal() {
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct() && !isInterestRecalculationEnabledForProduct()
                 && (status().isOverpaid() || status().isClosedObligationsMet())) {
@@ -5493,10 +5494,10 @@ public class Loan extends AbstractPersistable<Long> {
     private LocalDate getLastTransactioDateOfType(Collection<Integer> transactionType, boolean excludeTypes) {
         int size = this.getLoanTransactions().size();
         LocalDate lastTansactionDate = getDisbursementDate();
-        for (int i = size - 1; i >= 0; i--) {
+        for (int i = size - 1; i >= 0; i--) {            
             LoanTransaction loanTransaction = this.getLoanTransactions().get(i);
             if (loanTransaction.isNotReversed() && (transactionType.contains(loanTransaction.getTypeOf().getValue()) ^ excludeTypes)) {
-                lastTansactionDate = loanTransaction.getTransactionDate();
+                lastTansactionDate = loanTransaction.getTransactionDate(); 
                 break;
             }
         }
@@ -7435,13 +7436,13 @@ public class Loan extends AbstractPersistable<Long> {
                 Money transactionAmountPerClient = Money.of(getCurrency(), glimMember.getTransactionAmount());
                 Loan loan = loanTransaction.getLoan();
 
-                Map<String, BigDecimal> installmentPaidMap = new HashMap<String, BigDecimal>();
+                Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
                 installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
                 installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
                 
-                Map<Long, BigDecimal> feeChargesWriteOffPerInstallments = new HashMap<Long, BigDecimal>();
+                Map<Long, BigDecimal> feeChargesWriteOffPerInstallments = new HashMap<>();
 
                 // determine how much is written off in total and breakdown for
                 // principal, interest and charges
@@ -7652,13 +7653,14 @@ public class Loan extends AbstractPersistable<Long> {
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
     }
 
-    public LoanTransaction getLastUserTransaction() {
-        LocalDate currentTransactionDate = getDisbursementDate();
+    public LoanTransaction getLastUserTransaction(List<Long> excludedTransactionIds) {
         LoanTransaction lastUserTransaction = null;
-        for (final LoanTransaction previousTransaction : this.loanTransactions) {
-            if (!(previousTransaction.isReversed() || previousTransaction.isAccrual() || previousTransaction.isIncomePosting())) {
-                if (currentTransactionDate.isBefore(previousTransaction.getTransactionDate())) {
-                    lastUserTransaction = previousTransaction;
+        for (int i = this.loanTransactions.size() - 1; i >= 0; i--) {
+            LoanTransaction transaction = this.getLoanTransactions().get(i);
+            if (!(transaction.isReversed() || transaction.isAccrual() || transaction.isIncomePosting())) {
+                if (excludedTransactionIds == null || !excludedTransactionIds.contains(transaction.getId())) {
+                    lastUserTransaction = transaction;
+                    break;
                 }
             }
         }
