@@ -10,6 +10,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
@@ -93,16 +94,28 @@ public class FamilyDetailApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String update(@PathParam("familyDetailsId") final Long familyDetailsId, @PathParam("clientId") final Long clientId,
-            final String apiRequestBodyAsJson) {
+            final String apiRequestBodyAsJson, @QueryParam("command") final String command) {
+    	if(command!= null && command.equals(FamilyDetailsApiConstants.removeFamilyMemberClientAssociation)){
+    		final CommandWrapper commandRequest = new CommandWrapperBuilder() //
+					.removeFamilyMemberAssociation(clientId, familyDetailsId) //
+					.withJson(apiRequestBodyAsJson) //
+					.build(); //
 
-        final CommandWrapper commandRequest = new CommandWrapperBuilder() //
-                .updateFamilyDetails(clientId, familyDetailsId) //
-                .withJson(apiRequestBodyAsJson) //
-                .build(); //
+			final CommandProcessingResult result = this.portfolioCommandSourceWritePlatformService
+					.logCommandSource(commandRequest);
 
-        final CommandProcessingResult result = this.portfolioCommandSourceWritePlatformService.logCommandSource(commandRequest);
+			return this.toApiJsonSerializer.serialize(result);
+    	}else {
+			final CommandWrapper commandRequest = new CommandWrapperBuilder() //
+					.updateFamilyDetails(clientId, familyDetailsId) //
+					.withJson(apiRequestBodyAsJson) //
+					.build(); //
 
-        return this.toApiJsonSerializer.serialize(result);
+			final CommandProcessingResult result = this.portfolioCommandSourceWritePlatformService
+					.logCommandSource(commandRequest);
+
+			return this.toApiJsonSerializer.serialize(result);
+    	}
     }
 
     @DELETE

@@ -142,4 +142,19 @@ public class FamilyDetailWritePlatformServiceImp implements FamilyDetailWritePla
         }
     }
 
+	@Override
+	public CommandProcessingResult deleteFamilyMemberAssociation(final Long clientId, final Long familyDetailId) {
+		try {
+			this.context.authenticatedUser();
+			this.clientRepository.findOneWithNotFoundDetection(clientId);
+			final FamilyDetail familyDetail = this.familyDetailsRepository.findOne(familyDetailId);
+			familyDetail.removeFamilyMemberAssociation();
+			return new CommandProcessingResultBuilder() //
+					.withEntityId(familyDetailId) //
+					.build();
+		} catch (final DataIntegrityViolationException dve) {
+			return CommandProcessingResult.empty();
+		}
+	}
+
 }

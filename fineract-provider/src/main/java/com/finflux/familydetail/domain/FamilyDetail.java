@@ -77,13 +77,17 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "is_deceased", length = 1, nullable = true)
     private Boolean isDeceased;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_reference", nullable = true)
+    private Client clientReference;
 
     protected FamilyDetail() {}
 
     public FamilyDetail(final Client client, final CodeValue salutation, final String firstname, final String middlename,
             final String lastname, final CodeValue relationship, final CodeValue gender, final LocalDate dateOfBirth, final Integer age,
             final IncomeExpense occupation, final CodeValue education, final Boolean isDependent, final Boolean isSeriousIllness,
-            final Boolean isDeceased) {
+            final Boolean isDeceased, final Client clientReference) {
         this.client = client;
         this.salutation = salutation;
         this.firstname = firstname;
@@ -100,14 +104,24 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
         this.isDependent = isDependent;
         this.isSeriousIllness = isSeriousIllness;
         this.isDeceased = isDeceased;
+        this.clientReference = clientReference;
     }
 
     public static FamilyDetail create(final Client client, final CodeValue salutation, final String firstname, final String middlename,
             final String lastname, final CodeValue relationship, final CodeValue gender, final LocalDate dateOfBirth, final Integer age,
             final IncomeExpense occupation, final CodeValue education, final Boolean isDependent, final Boolean isSeriousIllness,
-            final Boolean isDeceased) {
+            final Boolean isDeceased) {   
+    	final Client familyMemberClient = null;
         return new FamilyDetail(client, salutation, firstname, middlename, lastname, relationship, gender, dateOfBirth, age, occupation,
-                education, isDependent, isSeriousIllness, isDeceased);
+                education, isDependent, isSeriousIllness, isDeceased, familyMemberClient);
+    }
+    
+    public static FamilyDetail create(final Client client, final CodeValue salutation, final String firstname, final String middlename,
+            final String lastname, final CodeValue relationship, final CodeValue gender, final LocalDate dateOfBirth, final Integer age,
+            final IncomeExpense occupation, final CodeValue education, final Boolean isDependent, final Boolean isSeriousIllness,
+            final Boolean isDeceased, final Client clientReference) {   
+        return new FamilyDetail(client, salutation, firstname, middlename, lastname, relationship, gender, dateOfBirth, age, occupation,
+                education, isDependent, isSeriousIllness, isDeceased, clientReference);
     }
 
     public Client getClient() {
@@ -236,8 +250,15 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(FamilyDetailsApiConstants.isSeriousIllnessParamName, newValue);
             this.isSeriousIllness = newValue;
         }
-        return actualChanges;
-    }
+        
+		if (command.isChangeInLongParameterNamed(FamilyDetailsApiConstants.ClientReference,
+				this.clientReference())) {
+			final Long newValue = command
+					.longValueOfParameterNamed(FamilyDetailsApiConstants.ClientReference);
+			actualChanges.put(FamilyDetailsApiConstants.ClientReference, newValue);
+		}
+		return actualChanges;
+	}
 
     public LocalDate dateOfBirthLocalDate() {
         LocalDate dateOfBirth = null;
@@ -286,6 +307,14 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
         }
         return genderId;
     }
+    
+    public Long clientReference() {
+        Long clientReferenceId = null;
+        if (this.clientReference != null) {
+        	clientReferenceId = this.clientReference.getId();
+        }
+        return clientReferenceId;
+    }
 
     public Long occupationalDetsilsId() {
         Long occupationalDetsilsId = null;
@@ -313,5 +342,13 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
 
     public void updateEducation(final CodeValue education) {
         this.education = education;
+    }
+    
+    public void updateFamilyMemberClient(final Client clientReference){
+    	this.clientReference = clientReference;
+    }
+    
+    public void removeFamilyMemberAssociation(){
+    	this.clientReference = null;
     }
 }

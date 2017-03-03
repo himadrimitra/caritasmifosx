@@ -500,6 +500,42 @@
 								<td></td>
 								<td></td>
 							</tr>
+                            <tr>
+								<td><a href="#family_details">Family Details</a></td>
+								<td>clients/3/familydetails</td>
+								<td></td>
+								<td><a href="#List_family_details">List All Family Details</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+                            <tr>
+								<td></td>
+								<td>clients/3/familydetails</td>
+								<td></td>
+								<td><a href="#create_family_details">Add Family Detail</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+                            <tr>
+								<td></td>
+								<td>clients/3/familydetails/{familyDetailsId}</td>
+								<td></td>
+								<td><a href="#family_detail_edit">Edit Family Detail</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+                            <tr>
+								<td></td>
+								<td>clients/3/familydetails/{familyDetailsId}</td>
+								<td></td>
+								<td><a href="#family_detail_get">GET Family Detail</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
 						</table>
 					</div>
 				</div>
@@ -15796,6 +15832,162 @@ GET https://DomainName/api/v1/holidays/{holidayId}
 				</code>
 			</div>
 		</div>
+<a id="family_details" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
+<div class="method-section">
+                 <div class="method-description">
+                     <h4>Family Details</h4>
+                 </div>
+</div>
+<a id="List_family_details" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>List of Family Details</h4>
+                     <p>Returns the list family details.</p>
+                     <p>Example Requests:</p>
+                     <p>The key clientReference : refers to the exiting client id. i.e, this family member is an exiting customer of the institution</p>
+                     <div class=apiClick>clients/{clientId}/familydetails</div>
+                 </div>
+                 <div class="method-example">
+                     <code class="method-declaration">
+                         GET https://DomainName/api/v1/clients/3/familydetails
+                     </code>
+                     <code class="method-response">
+                         [{
+                            "id": 22,
+                            "firstname": "harsh",
+                            "lastname": "n",
+                            "gender": {
+                                "id": 23,
+                                "name": "Male"
+                            },
+                            "isDependent": false,
+                            "isSeriousIllness": false,
+                            "isDeceased": false,
+                            "clientReference": 1
+                        },
+                        {
+                            "id": 23,
+                            "firstname": "kiarn",
+                            "lastname": "kuamr",
+                            "relationship": {
+                                "id": 27,
+                                "name": "Husband"
+                            },
+                            "gender": {
+                                "id": 23,
+                                "name": "Male"
+                            },
+                            "isDependent": true,
+                            "isSeriousIllness": false,
+                            "isDeceased": false
+                        }]
+                     </code>
+                 </div>
+             </div>
+
+<a id="create_family_details" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Add Family Detail</h4>
+                     <p></p>
+                     <p>Example Requests:</p>
+                     <p>The key clientReference : refers to the exiting client id. i.e, this family member is an exiting customer of the institution</p>
+                     <div class=apiClick>clients/{clientId}/familydetails</div>
+                 </div>
+                     <div class="method-example">
+                        <code class="method-declaration">
+                            POST https://DomainName/api/v1/clients/3/familydetails
+                         </code>
+                    <code class="method-request">
+                        Request Body:
+                        {
+                            "firstname": "paravanu",
+                            "lastname": "Narayan",
+                            "isDependent": true,
+                            "dateFormat": "dd MMMM yyyy",
+                            "locale": "en"
+                        }
+                                        </code>
+                                        <code class="method-response">
+                        {
+                            "clientId": 3,
+                            "resourceId": 24
+                        }
+                    </code>
+                </div>
+             </div>
+
+
+<a id="family_detail_edit" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Edit Family Detail</h4>
+                     <p></p>
+                     <p>Example Requests:</p>
+                     <div class=apiClick>clients/{clientId}/familydetails{familyDetailId}</div>
+                 </div>
+                     <div class="method-example">
+                        <code class="method-declaration">
+                            PUT https://DomainName/api/v1/clients/3/familydetails/24
+                         </code>
+                    <code class="method-request">
+                        Request Body:
+                        {
+                            "firstname": "Parvathi",
+                            "lastname": "k",
+                            "isDependent": true,
+                            "isSeriousIllness": false,
+                            "isDeceased": false,
+                            "clientReference": 2,
+                            "dateFormat": "dd MMMM yyyy",
+                            "locale": "en"
+                        }
+                                        </code>
+                                        <code class="method-response">
+                        {
+                            "clientId": 3,
+                            "resourceId": 24,
+                            "changes": {
+                                "firstname": "Parvathi",
+                                "lastname": "k",
+                                "isDeceased": false,
+                                "isSeriousIllness": false,
+                                "clientReference": 2
+                            }
+                        }
+                    </code>
+                </div>
+             </div>
+
+
+<a id="family_detail_get" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Get Family Detail</h4>
+                     <p></p>
+                     <p>Example Requests:</p>
+                     <div class=apiClick>clients/{clientId}/familydetails{familyDetailId}</div>
+                 </div>
+                     <div class="method-example">
+                        <code class="method-declaration">
+                            GET https://DomainName/api/v1/clients/3/familydetails/24
+                         </code>
+                        <code class="method-response">
+                        {
+                            "id": 24,
+                            "firstname": "Parvathi",
+                            "lastname": "k",
+                            "isDependent": true,
+                            "isSeriousIllness": false,
+                            "isDeceased": false,
+                            "clientReference": 2
+                        }
+                    </code>
+                </div>
+             </div>
+
+
+
 
 		<a id="holidays_update" name="holidays_update" class="old-syle-anchor">&nbsp;</a>
 		<div class="method-section">

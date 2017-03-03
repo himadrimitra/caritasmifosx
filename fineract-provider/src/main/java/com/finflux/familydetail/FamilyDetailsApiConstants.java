@@ -38,15 +38,19 @@ public class FamilyDetailsApiConstants {
 
     public static final String localeParamName = "locale";
     public static final String dateFormatParamName = "dateFormat";
+    public static final String ClientReference = "clientReference";
+    public static final String removeFamilyMemberClientAssociation = "removeFamilyMemberClientAssociation";
 
     public static final Set<String> CREATE_FAMILYDETAILS_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(clientParamName,
             salutationIdParamName, firstnameParamName, middlenameParamName, lastnameParamName, relationshipIdParamName, genderIdParamName,
             dateOfBirthParamName, ageParamName, occupationDetailsIdParamName, educationParamName, educationIdParamName,
-            isDependentParamName, isSeriousIllnessParamName, isDeceasedParamName, localeParamName, dateFormatParamName));
+            isDependentParamName, isSeriousIllnessParamName, isDeceasedParamName, localeParamName, dateFormatParamName,
+            ClientReference));
 
     public static final Set<String> UPDATE_FAMILYDETAILS_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(clientParamName,
             salutationIdParamName, firstnameParamName, middlenameParamName, lastnameParamName, relationshipIdParamName, genderIdParamName,
             dateOfBirthParamName, ageParamName, occupationDetailsIdParamName, educationParamName, educationIdParamName,
-            isDependentParamName, isSeriousIllnessParamName, isDeceasedParamName, localeParamName, dateFormatParamName));
+            isDependentParamName, isSeriousIllnessParamName, isDeceasedParamName, localeParamName, dateFormatParamName,
+            ClientReference));
 
 }

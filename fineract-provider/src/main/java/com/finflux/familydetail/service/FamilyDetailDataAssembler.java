@@ -11,6 +11,7 @@ import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.portfolio.client.domain.Client;
+import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,13 +31,16 @@ public class FamilyDetailDataAssembler {
     private final FromJsonHelper fromApiJsonHelper;
     private final CodeValueRepositoryWrapper codeValueRepository;
     private final IncomeExpenseRepositoryWrapper incomeExpenseRepository;
+    private final ClientRepositoryWrapper clientRepository;
 
     @Autowired
     public FamilyDetailDataAssembler(final FromJsonHelper fromApiJsonHelper, final CodeValueRepositoryWrapper codeValueRepository,
-            final IncomeExpenseRepositoryWrapper incomeExpenseRepository) {
+            final IncomeExpenseRepositoryWrapper incomeExpenseRepository,
+            final ClientRepositoryWrapper clientRepository) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.codeValueRepository = codeValueRepository;
         this.incomeExpenseRepository = incomeExpenseRepository;
+        this.clientRepository = clientRepository;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -76,7 +80,7 @@ public class FamilyDetailDataAssembler {
 
         final String middlename = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middlenameParamName, element);
 
-        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.middlenameParamName, element);
+        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.lastnameParamName, element);
 
         final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipIdParamName, element);
         CodeValue relationship = null;
@@ -113,9 +117,21 @@ public class FamilyDetailDataAssembler {
                 element);
 
         final Boolean isDeceased = this.fromApiJsonHelper.extractBooleanNamed(FamilyDetailsApiConstants.isDeceasedParamName, element);
-
+        
+		final Long clientReferenceId = this.fromApiJsonHelper
+				.extractLongNamed(FamilyDetailsApiConstants.ClientReference, element);
+		
+		/*
+		 * familyMemberClient : this family member is an existing customer of this 
+		 * financial institution.
+		 * */
+		Client clientReference = null;
+		if (clientReferenceId != null) {
+			clientReference = this.clientRepository.findOneWithNotFoundDetection(clientReferenceId);
+		}
+		
         return FamilyDetail.create(client, salutaion, firstname, middlename, lastname, relationship, gender, dateOfBirth, age, occupation,
-                education, isDependent, isSeriousIllness, isDeceased);
+                education, isDependent, isSeriousIllness, isDeceased, clientReference);
     }
 
     public Map<String, Object> assembleUpdateForm(final FamilyDetail familyDetail, final JsonCommand command) {
@@ -156,7 +172,14 @@ public class FamilyDetailDataAssembler {
                     familyDetail.updateEducation(education);
                 }
             }
-        }
+            
+			if (changes.containsKey(FamilyDetailsApiConstants.ClientReference)) {
+				final Long clientReferenceId = (Long) changes.get(FamilyDetailsApiConstants.ClientReference);
+				final Client familyMemberClient = this.clientRepository
+						.findOneWithNotFoundDetection(clientReferenceId);
+				familyDetail.updateFamilyMemberClient(familyMemberClient);
+			}
+		}
         return changes;
     }
 }

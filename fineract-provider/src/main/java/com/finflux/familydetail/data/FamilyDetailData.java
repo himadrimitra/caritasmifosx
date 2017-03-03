@@ -22,6 +22,7 @@ public class FamilyDetailData {
     private final Boolean isDependent;
     private final Boolean isSeriousIllness;
     private final Boolean isDeceased;
+    private final Long clientReference;
 
     public FamilyDetailData(Long id, String firstname, String middlename, String lastname, CodeValueData salutation,
             CodeValueData relationship, CodeValueData gender, Date dateOfBirth, Integer age, CodeValueData education,
@@ -40,6 +41,28 @@ public class FamilyDetailData {
         this.isDependent = isDependent;
         this.isSeriousIllness = isSeriousIllness;
         this.isDeceased = isDeceased;
+        this.clientReference = null;
+    }
+    
+    public FamilyDetailData(Long id, String firstname, String middlename, String lastname, CodeValueData salutation,
+            CodeValueData relationship, CodeValueData gender, Date dateOfBirth, Integer age, CodeValueData education,
+            IncomeExpenseData occupation, final Boolean isDependent, final Boolean isSeriousIllness, final Boolean isDeceased,
+            final Long clientReference) {
+        this.id = id;
+        this.firstname = firstname;
+        this.middlename = middlename;
+        this.lastname = lastname;
+        this.salutation = salutation;
+        this.relationship = relationship;
+        this.gender = gender;
+        this.dateOfBirth = dateOfBirth;
+        this.age = age;
+        this.education = education;
+        this.occupation = occupation;
+        this.isDependent = isDependent;
+        this.isSeriousIllness = isSeriousIllness;
+        this.isDeceased = isDeceased;
+        this.clientReference = clientReference;
     }
 
     public Long getId() {
