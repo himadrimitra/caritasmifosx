@@ -1608,7 +1608,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
     }
     
     public boolean collectInterestUpfront(){
-        return false;
+        return this.collectInterestUpfront;
     }
     
 }

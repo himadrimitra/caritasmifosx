@@ -175,6 +175,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                             scheduleParams.getPeriodNumber(), mc, scheduleParams.getPrincipalToBeScheduled());
                 }
             }
+            
         }
 
         // charges which depends on total loan interest will be added to this
@@ -233,6 +234,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     previousRepaymentDate, scheduledDueDate, interestRatesForInstallments, this.paymentPeriodsInOneYearCalculator, mc);
 
             scheduledDueDate = termVariationParams.getScheduledDueDate();
+            
             // Updates total days in term
             scheduleParams.addLoanTermInDays(Days.daysBetween(scheduleParams.getPeriodStartDate(), scheduledDueDate).getDays());
             if (termVariationParams.isSkipPeriod()) {
@@ -276,6 +278,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                             loanApplicationTerms.getRepaymentEvery());
             ScheduleCurrentPeriodParams currentPeriodParams = new ScheduleCurrentPeriodParams(currency,
                     interestCalculationGraceOnRepaymentPeriodFraction);
+            
+            applyUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods, scheduledDueDate,
+                    currentPeriodParams);
 
             if (loanApplicationTerms.isMultiDisburseLoan()) {
                 updateBalanceBasedOnDisbursement(mc, loanApplicationTerms, chargesDueAtTimeOfDisbursement, scheduleParams, periods,
@@ -459,6 +464,39 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 scheduleParams.getTotalCumulativeInterest().getAmount(), scheduleParams.getTotalFeeChargesCharged().getAmount(),
                 scheduleParams.getTotalPenaltyChargesCharged().getAmount(), scheduleParams.getTotalRepaymentExpected().getAmount(),
                 totalOutstanding);
+    }
+
+    private void applyUpfrontInterestCollection(final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO,
+            final MonetaryCurrency currency, LoanScheduleParams scheduleParams, Collection<LoanScheduleModelPeriod> periods,
+            LocalDate scheduledDueDate, ScheduleCurrentPeriodParams currentPeriodParams) {
+        if (loanApplicationTerms.collectInterestUpfront() && scheduleParams.getPeriodNumber() == 1) {
+            if (!scheduledDueDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())) {
+                addInstallmentForUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods);
+            } else {
+                scheduleParams.reduceOutstandingBalance(loanApplicationTerms.getTotalInterestForSchedule());
+                currentPeriodParams.plusPrepaymentAmount(loanApplicationTerms.getTotalInterestForSchedule());
+            }
+        }
+    }
+
+    private void addInstallmentForUpfrontInterestCollection(final LoanApplicationTerms loanApplicationTerms,
+            final HolidayDetailDTO holidayDetailDTO, final MonetaryCurrency currency, LoanScheduleParams scheduleParams,
+            Collection<LoanScheduleModelPeriod> periods) {
+        scheduleParams.reduceOutstandingBalance(loanApplicationTerms.getTotalInterestForSchedule());
+        LoanScheduleModelPeriod installment = LoanScheduleModelRepaymentPeriod.repayment(scheduleParams.getInstalmentNumber(),
+                scheduleParams.getPeriodStartDate(), loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms.getTotalInterestForSchedule(),
+                scheduleParams.getOutstandingBalance(), Money.zero(currency),
+                Money.zero(currency), Money.zero(currency),
+                loanApplicationTerms.getTotalInterestForSchedule(), true);
+        periods.add(installment);
+        scheduleParams.incrementInstalmentNumber();
+        scheduleParams.addTotalCumulativePrincipal(loanApplicationTerms.getTotalInterestForSchedule());
+        scheduleParams.addTotalRepaymentExpected(loanApplicationTerms.getTotalInterestForSchedule());
+        LocalDate amountApplicableDate = installment.periodDueDate();
+        if (loanApplicationTerms.isInterestRecalculationEnabled()) {
+            amountApplicableDate = getNextRestScheduleDate(installment.periodDueDate().minusDays(1), loanApplicationTerms, holidayDetailDTO);
+        }
+        updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), loanApplicationTerms.getTotalInterestForSchedule(), amountApplicableDate);
     }
 
     private Money updateCapitalizedFee(final LoanApplicationTerms loanApplicationTerms, final MonetaryCurrency currency,
@@ -3170,23 +3208,20 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final MonetaryCurrency currency = scheduleParams.getCurrency();
             if (scheduleParams.getOutstandingBalance().isZero()) {
                 if (loanApplicationTerms.isAdjustInterestForRounding() && currentPeriodParams.getPrincipalForThisPeriod().isGreaterThanZero()) {
+                    Money amountForAdjust = scheduleParams.getOutstandingBalance().zero();
                     if (loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() != null
                             && loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() > 0) {
-                        Money amountForAdjust = Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount())
+                        amountForAdjust = Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount())
                                 .negate());
-                        installment.addInterestAmount(amountForAdjust);
-                        if(loanApplicationTerms.getInterestMethod().isFlat()){
-                            loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().plus(amountForAdjust));
-                        }
-                        currentPeriodParams.plusInterestForThisPeriod(amountForAdjust);
                     } else {
-                        Money amountForAdjust = Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount()));
-                        installment.addInterestAmount(amountForAdjust);
-                        if(loanApplicationTerms.getInterestMethod().isFlat()){
-                            loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().plus(amountForAdjust));
-                        }
-                        currentPeriodParams.plusInterestForThisPeriod(amountForAdjust);
+                        amountForAdjust = Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount()));
                     }
+                    installment.addInterestAmount(amountForAdjust);
+                    if(loanApplicationTerms.getInterestMethod().isFlat()){
+                        loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().plus(amountForAdjust));
+                    }
+                    currentPeriodParams.plusInterestForThisPeriod(amountForAdjust);
+                    scheduleParams.addTotalRepaymentExpected(amountForAdjust);
                 }
             } else if (scheduleParams.getPeriodNumber() == 1 && loanApplicationTerms.getFirstEmiAmount() != null) {
                 BigDecimal roundedFirstEmiAmount = loanApplicationTerms.roundAdjustedEmiAmount(loanApplicationTerms.getFirstEmiAmount());

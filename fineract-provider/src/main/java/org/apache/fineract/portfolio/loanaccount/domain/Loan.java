@@ -6401,6 +6401,9 @@ public class Loan extends AbstractPersistable<Long> {
                 Money totalPayment = emi.multipliedBy(loanApplicationTerms.getNumberOfRepayments());
                 Money principal = loanApplicationTerms.getPrincipalToBeScheduled();
                 interest = totalPayment.minus(principal);
+                if(loanApplicationTerms.collectInterestUpfront()){
+                    interest = interest.plus(loanApplicationTerms.calculateInterestWithFlatInterestRate(mc));
+                }
             } else {
                 interest = loanApplicationTerms.calculateInterestWithFlatInterestRate(mc);
             }

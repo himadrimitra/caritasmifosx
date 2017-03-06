@@ -2288,7 +2288,10 @@ public final class LoanApplicationTerms {
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         MonetaryCurrency currency = getPrincipal().getCurrency();
         BigDecimal totalPrincipal = getPrincipalToBeScheduled().plus(this.discountOnDisbursalAmount).getAmount();
-        BigDecimal totalInterest = totalPrincipal.multiply(flatInterestRate).divide(divisor, mc);
+        BigDecimal totalInterest = BigDecimal.ZERO;
+        if (!collectInterestUpfront()) {
+            totalInterest = totalPrincipal.multiply(flatInterestRate).divide(divisor, mc);
+        }
         BigDecimal emi = totalPrincipal.add(totalInterest).divide(BigDecimal.valueOf(numberOfRepayments), mc);
         return Money.of(currency, BigDecimal.valueOf(roundInstallmentInMultiplesOf(emi.doubleValue())));
     }
@@ -2351,8 +2354,8 @@ public final class LoanApplicationTerms {
     }
 
     
-    public boolean isCollectInterestUpfront() {
-        return this.collectInterestUpfront;
+    public boolean collectInterestUpfront() {
+        return this.collectInterestUpfront && getFlatInterestRate() != null;
     }
     
 }
