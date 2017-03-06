@@ -60,6 +60,7 @@ import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.JsonParserHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
@@ -450,6 +451,11 @@ public class Loan extends AbstractPersistable<Long> {
     
     @Column(name = "calculated_installment_amount", scale = 6, precision = 19, nullable = true)
     private BigDecimal calculatedInstallmentAmount;
+    
+    @Column(name = "discount_on_disbursal_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal discountOnDisbursalAmount;
+    
+    
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -2738,6 +2744,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public Money adjustDisburseAmount(final JsonCommand command, final LocalDate actualDisbursementDate) {
+        setDiscountOnDisbursalAmount(command);
         Money disburseAmount = this.loanRepaymentScheduleDetail.getPrincipal().zero();
         BigDecimal principalDisbursed = command.bigDecimalValueOfParameterNamed(LoanApiConstants.principalDisbursedParameterName);
         if (this.actualDisbursementDate == null) {
@@ -3202,7 +3209,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void updateLoanToPreDisbursalState() {
         this.actualDisbursementDate = null;
-        
+        this.discountOnDisbursalAmount = null;
         this.accruedTill = null;
         reverseExistingTransactions();
 
@@ -5377,6 +5384,12 @@ public class Loan extends AbstractPersistable<Long> {
         return this.loanTransactions;
     }
     
+    public List<LoanTransaction> getOrderedLoanTransactions() {
+        final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
+        Collections.sort(this.loanTransactions, transactionComparator);
+        return this.loanTransactions;
+    }
+    
     public void addLoanTransaction(final LoanTransaction loanTransaction) {
         this.loanTransactions.add(loanTransaction) ;
     }
@@ -5557,8 +5570,9 @@ public class Loan extends AbstractPersistable<Long> {
     private LocalDate getLastTransactioDateOfType(Collection<Integer> transactionType, boolean excludeTypes) {
         int size = this.getLoanTransactions().size();
         LocalDate lastTansactionDate = getDisbursementDate();
+        List<LoanTransaction> transactions = this.getOrderedLoanTransactions();
         for (int i = size - 1; i >= 0; i--) {
-            LoanTransaction loanTransaction = this.getLoanTransactions().get(i);
+            LoanTransaction loanTransaction = transactions.get(i);
             if (loanTransaction.isNotReversed() && (transactionType.contains(loanTransaction.getTypeOf().getValue()) ^ excludeTypes)) {
                 lastTansactionDate = loanTransaction.getTransactionDate();
                 break;
@@ -6354,7 +6368,8 @@ public class Loan extends AbstractPersistable<Long> {
                 scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable,
                 firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(), 
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
-                this.loanProduct.isAdjustInterestForRounding(), this.loanProduct.allowNegativeLoanBalances());
+                this.loanProduct.isAdjustInterestForRounding(), this.loanProduct.allowNegativeLoanBalances(), this.loanProduct.collectInterestUpfront(), 
+                this.discountOnDisbursalAmount);
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
         updateInterestRate(loanApplicationTerms,scheduleGeneratorDTO);
         if (this.isSubmittedAndPendingApproval()
@@ -6387,7 +6402,7 @@ public class Loan extends AbstractPersistable<Long> {
                 Money principal = loanApplicationTerms.getPrincipalToBeScheduled();
                 interest = totalPayment.minus(principal);
             } else {
-                interest = loanApplicationTerms.calculateFlatInterestRate(mc);
+                interest = loanApplicationTerms.calculateInterestWithFlatInterestRate(mc);
             }
             loanApplicationTerms.setTotalInterestForSchedule(interest);
             loanApplicationTerms.setTotalPrincipalForSchedule(loanApplicationTerms.getPrincipalToBeScheduled());
@@ -7849,7 +7864,26 @@ public class Loan extends AbstractPersistable<Long> {
 			BigDecimal calculatedInstallmentAmount) {
 		this.calculatedInstallmentAmount = calculatedInstallmentAmount;
 	}
+
     
+    public BigDecimal getDiscountOnDisburseAmount() {
+        return this.discountOnDisbursalAmount;
+    }
+
     
+    public void setDiscountOnDisbursalAmount(final JsonCommand command) {
+        if (command.hasParameter(LoanApiConstants.discountOnDisbursalAmountParameterName)) {
+            if (this.isApproved() && this.loanProduct().isFlatInterestRate()) {
+                BigDecimal disbursalDiscountAmount = command
+                        .bigDecimalValueOfParameterNamed(LoanApiConstants.discountOnDisbursalAmountParameterName);
+                this.discountOnDisbursalAmount = disbursalDiscountAmount;
+            } else {
+                final List<String> unsupportedParameters = new ArrayList<>(1);
+                unsupportedParameters.add(LoanApiConstants.discountOnDisbursalAmountParameterName);
+                throw new UnsupportedParameterException(unsupportedParameters);
+            }
+        }
+
+    }
     
 }

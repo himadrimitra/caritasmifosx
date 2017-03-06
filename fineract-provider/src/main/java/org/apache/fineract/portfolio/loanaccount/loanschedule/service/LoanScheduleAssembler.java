@@ -229,7 +229,7 @@ public class LoanScheduleAssembler {
                 Money principal = terms.getPrincipalToBeScheduled();
                 interest = totalPayment.minus(principal);
             }else{
-                interest = terms.calculateFlatInterestRate(mc);
+                interest = terms.calculateInterestWithFlatInterestRate(mc);
             }
             terms.setTotalInterestForSchedule(interest);
             terms.setTotalPrincipalForSchedule(terms.getPrincipalToBeScheduled());
@@ -538,6 +538,7 @@ public class LoanScheduleAssembler {
         final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
+        final BigDecimal discountOnDisburseAmount = null;
         final boolean considerFutureDisbursmentsInSchedule = loanProduct.considerFutureDisbursementsInSchedule();
         LoanApplicationTerms loanApplicationTerms = LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
@@ -554,7 +555,7 @@ public class LoanScheduleAssembler {
                 firstEmiAmount, loanProduct.getAdjustedInstallmentInMultiplesOf(), 
                 loanProduct.adjustFirstEMIAmount(),considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(),
                 loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, 
-                loanProduct.allowNegativeLoanBalances());
+                loanProduct.allowNegativeLoanBalances(), loanProduct.collectInterestUpfront(), discountOnDisburseAmount);
         LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, null);
         return  loanApplicationTerms;
     }

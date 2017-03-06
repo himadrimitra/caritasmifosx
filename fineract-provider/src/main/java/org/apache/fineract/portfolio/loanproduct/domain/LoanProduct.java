@@ -1593,4 +1593,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
     public boolean considerAllDisbursementsInSchedule() {
         return this.loanProducTrancheDetails.isConsiderAllDisbursementsInSchedule();
     }
+    
+    public boolean collectInterestUpfront(){
+        return false;
+    }
+    
 }
