@@ -269,6 +269,10 @@ public final class LoanApplicationTerms {
     
     private Money totalCumulativeNegativeInterest;
     
+    private final BigDecimal discountOnDisbursalAmount;
+    
+    private final boolean collectInterestUpfront;
+    
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency currency, final Integer loanTermFrequency,
             final PeriodFrequencyType loanTermPeriodFrequencyType, final Integer numberOfRepayments, final Integer repaymentEvery,
             final PeriodFrequencyType repaymentPeriodFrequencyType, Integer nthDay, DayOfWeekType weekDayType,
@@ -294,7 +298,7 @@ public final class LoanApplicationTerms {
             final Integer adjustedInstallmentInMultiplesOf, final boolean adjustFirstEMIAmount, final boolean considerFutureDisbursmentsInSchedule, 
             final boolean considerAllDisbursmentsInSchedule, final Integer weeksInYearType,
             final boolean adjustInterestForRounding, final boolean isEmiBasedOnDisbursements, InterestCalculationPeriodMethod pmtCalculationPeriodMethod, 
-            final BrokenPeriodMethod brokenPeriodMethod, boolean allowNegativeBalance) {
+            final BrokenPeriodMethod brokenPeriodMethod, boolean allowNegativeBalance, final boolean collectInterestUpfront, final BigDecimal discountOnDisbursalAmount) {
 
         final LoanRescheduleStrategyMethod rescheduleStrategyMethod = null;
         return new LoanApplicationTerms(currency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments, repaymentEvery,
@@ -310,7 +314,8 @@ public final class LoanApplicationTerms {
                 isInterestChargedFromDateSameAsDisbursalDateEnabled, numberOfdays, isSkipRepaymentOnFirstDayofMonth, holidayDetailDTO,
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, 
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, weeksInYearType, adjustInterestForRounding,
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, allowNegativeBalance);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, allowNegativeBalance, collectInterestUpfront, 
+                discountOnDisbursalAmount);
     }
 
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency applicationCurrency, final Integer loanTermFrequency,
@@ -330,7 +335,7 @@ public final class LoanApplicationTerms {
             final HolidayDetailDTO holidayDetailDTO, final boolean allowCompoundingOnEod, final boolean isSubsidyApplicable,
             final BigDecimal firstEmiAmount, final Integer adjustedInstallmentInMultiplesOf, final boolean adjustFirstEMIAmount,
             boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursmentsInSchedule, final boolean adjustInterestForRounding,
-            final boolean allowNegativeBalance) {
+            final boolean allowNegativeBalance, final boolean collectInterestUpfront, final BigDecimal discountOnDisbursalAmount) {
 
         return assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, nthDay, dayOfWeek,
                 expectedDisbursementDate, repaymentsStartingFromDate, calculatedRepaymentsStartingFromDate, inArrearsTolerance,
@@ -340,7 +345,8 @@ public final class LoanApplicationTerms {
                 rescheduleStrategyMethod, loanCalendar, approvedAmount, annualNominalInterestRate, loanTermVariations,
                 calendarHistoryDataWrapper, numberOfdays, isSkipRepaymentOnFirstDayofMonth, holidayDetailDTO, allowCompoundingOnEod, 
                 isSubsidyApplicable, firstEmiAmount, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, 
-                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, adjustInterestForRounding, allowNegativeBalance);
+                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, adjustInterestForRounding, allowNegativeBalance, 
+                collectInterestUpfront, discountOnDisbursalAmount);
     }
 
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency applicationCurrency, final Integer loanTermFrequency,
@@ -360,7 +366,7 @@ public final class LoanApplicationTerms {
             final boolean isSkipRepaymentOnFirstDayofMonth, final HolidayDetailDTO holidayDetailDTO, final boolean allowCompoundingOnEod, 
             final boolean isSubsidyApplicable, final BigDecimal firstEmiAmount, final Integer adjustedInstallmentInMultiplesOf,
             final boolean adjustFirstEMIAmount, final boolean considerFutureDisbursmentsInSchedule, final boolean considerAllDisbursmentsInSchedule,
-            final boolean adjustInterestForRounding, boolean allowNegativeBalance) {
+            final boolean adjustInterestForRounding, boolean allowNegativeBalance, boolean collectInterestUpfront, BigDecimal discountOnDisbursalAmount) {
 
         final Integer numberOfRepayments = loanProductRelatedDetail.getNumberOfRepayments();
         final Integer repaymentEvery = loanProductRelatedDetail.getRepayEvery();
@@ -401,7 +407,7 @@ public final class LoanApplicationTerms {
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, 
                 loanProductRelatedDetail.getWeeksInYearType(), adjustInterestForRounding,
                 loanProductRelatedDetail.isEmiBasedOnDisbursements(), loanProductRelatedDetail.getPmtCalculationPeriodMethod(), 
-                loanProductRelatedDetail.getBrokenPeriodMethod(), allowNegativeBalance);
+                loanProductRelatedDetail.getBrokenPeriodMethod(), allowNegativeBalance, collectInterestUpfront, discountOnDisbursalAmount);
     }
 
     public static LoanApplicationTerms assembleFrom(final ApplicationCurrency applicationCurrency, final Integer loanTermFrequency,
@@ -419,7 +425,8 @@ public final class LoanApplicationTerms {
             boolean isSkipRepaymentOnFirstDayofMonth, final HolidayDetailDTO holidayDetailDTO, final boolean allowCompoundingOnEod,
             final boolean isSubsidyApplicable, final BigDecimal firstEmiAmount, final Integer adjustedInstallmentInMultiplesOf,
             final boolean adjustFirstEMIAmount, boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursmentsInSchedule,
-            final Integer weeksInYearTpe, final boolean adjustInterestForRounding, boolean allowNegativeBalance) {
+            final Integer weeksInYearTpe, final boolean adjustInterestForRounding, boolean allowNegativeBalance, boolean collectInterestUpfront, 
+            BigDecimal discountOnDisbursalAmount) {
 
         final Integer numberOfRepayments = loanProductRelatedDetail.getNumberOfRepayments();
         final Integer repaymentEvery = loanProductRelatedDetail.getRepayEvery();
@@ -465,7 +472,7 @@ public final class LoanApplicationTerms {
                 allowCompoundingOnEod, isSubsidyApplicable, firstEmiAmount, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, 
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, weeksInYearTpe, adjustInterestForRounding,
                 loanProductRelatedDetail.isEmiBasedOnDisbursements(), loanProductRelatedDetail.getPmtCalculationPeriodMethod(), 
-                loanProductRelatedDetail.getBrokenPeriodMethod(), allowNegativeBalance);
+                loanProductRelatedDetail.getBrokenPeriodMethod(), allowNegativeBalance, collectInterestUpfront, discountOnDisbursalAmount);
 
     }
 
@@ -496,7 +503,7 @@ public final class LoanApplicationTerms {
                 applicationTerms.considerFutureDisbursmentsInSchedule, applicationTerms.considerAllDisbursmentsInSchedule, applicationTerms.weeksInYearType,
                 applicationTerms.adjustInterestForRounding,
                 applicationTerms.isEmiBasedOnDisbursements, applicationTerms.pmtCalculationPeriodMethod, applicationTerms.brokenPeriodMethod, 
-                applicationTerms.allowNegativeBalance);
+                applicationTerms.allowNegativeBalance, applicationTerms.collectInterestUpfront, applicationTerms.discountOnDisbursalAmount);
     }
 
     private LoanApplicationTerms(final ApplicationCurrency currency, final Integer loanTermFrequency,
@@ -525,7 +532,8 @@ public final class LoanApplicationTerms {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final boolean considerFutureDisbursmentsInSchedule,
             final boolean considerAllDisbursmentsInSchedule, final Integer weeksInYearType, final boolean adjustInterestForRounding,
             final boolean isEmiBasedOnDisbursements, final InterestCalculationPeriodMethod pmtCalculationPeriodMethod, 
-            final BrokenPeriodMethod brokenPeriodMethod, final boolean allowNegativeBalance) {
+            final BrokenPeriodMethod brokenPeriodMethod, final boolean allowNegativeBalance, final boolean collectInterestUpfront, 
+            final BigDecimal discountOnDisbursalAmount) {
         this.currency = currency;
         this.loanTermFrequency = loanTermFrequency;
         this.loanTermPeriodFrequencyType = loanTermPeriodFrequencyType;
@@ -620,6 +628,8 @@ public final class LoanApplicationTerms {
             }
         }
         this.allowNegativeBalance = allowNegativeBalance;
+        this.collectInterestUpfront = collectInterestUpfront;
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
     }
 
     public Money adjustPrincipalIfLastRepaymentPeriod(final Money principalForPeriod, final Money totalCumulativePrincipalToDate,
@@ -2277,18 +2287,18 @@ public final class LoanApplicationTerms {
     public Money calculateEmiWithFlatInterestRate(final MathContext mc) {
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         MonetaryCurrency currency = getPrincipal().getCurrency();
-        BigDecimal totalPrincipal = getPrincipalToBeScheduled().getAmount();
+        BigDecimal totalPrincipal = getPrincipalToBeScheduled().plus(this.discountOnDisbursalAmount).getAmount();
         BigDecimal totalInterest = totalPrincipal.multiply(flatInterestRate).divide(divisor, mc);
         BigDecimal emi = totalPrincipal.add(totalInterest).divide(BigDecimal.valueOf(numberOfRepayments), mc);
         return Money.of(currency, BigDecimal.valueOf(roundInstallmentInMultiplesOf(emi.doubleValue())));
     }
     
-    public Money calculateFlatInterestRate(final MathContext mc) {
+    public Money calculateInterestWithFlatInterestRate(final MathContext mc) {
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         MonetaryCurrency currency = getPrincipal().getCurrency();
-        BigDecimal totalPrincipal = getPrincipalToBeScheduled().getAmount();
+        BigDecimal totalPrincipal = getPrincipalToBeScheduled().plus(this.discountOnDisbursalAmount).getAmount();
         BigDecimal totalInterest = totalPrincipal.multiply(flatInterestRate).divide(divisor, mc);
-        return Money.of(currency, totalInterest);
+        return Money.of(currency, totalInterest).plus(this.discountOnDisbursalAmount);
     }
     
 
@@ -2338,6 +2348,11 @@ public final class LoanApplicationTerms {
     
     public void setAdjustInterestForRounding(boolean adjustInterestForRounding) {
         this.adjustInterestForRounding = adjustInterestForRounding;
+    }
+
+    
+    public boolean isCollectInterestUpfront() {
+        return this.collectInterestUpfront;
     }
     
 }

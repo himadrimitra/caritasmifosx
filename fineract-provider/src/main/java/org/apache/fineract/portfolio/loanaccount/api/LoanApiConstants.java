@@ -156,4 +156,5 @@ public interface LoanApiConstants {
     
     public static final String skipAuthenticationRule = "skipAuthenticationRule";
     public static final String syncRepaymentsWithMeeting = "syncRepaymentsWithMeeting";
+    public static final String discountOnDisbursalAmountParameterName = "discountOnDisbursalAmount";
 }
