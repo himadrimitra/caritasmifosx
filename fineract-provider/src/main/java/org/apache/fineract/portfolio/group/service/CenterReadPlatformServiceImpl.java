@@ -388,7 +388,11 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         final String hierarchySearchString = hierarchy + "%";
 
         final StringBuilder sqlBuilder = new StringBuilder(200);
-        sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
+		if (parameters.isOrderByRequested()) {
+			sqlBuilder.append("select SQL_CALC_FOUND_ROWS * from (select ");
+		} else {
+			sqlBuilder.append("select SQL_CALC_FOUND_ROWS");
+		}
         sqlBuilder.append(this.centerMapper.schema());
         sqlBuilder.append(" where o.hierarchy like ?");
 
@@ -399,7 +403,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         }
 
         if (searchParameters.isOrderByRequested()) {
-            sqlBuilder.append(" order by ").append(searchParameters.getOrderBy()).append(' ').append(searchParameters.getSortOrder());
+            sqlBuilder.append(" order by ").append(searchParameters.getOrderBy()).append(' ').append(searchParameters.getSortOrder()).append(" ) tempTable ");
         }
 
         if (searchParameters.isLimited()) {
