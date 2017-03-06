@@ -529,6 +529,15 @@
 							</tr>
                             <tr>
 								<td></td>
+								<td>clients/{clientId}/familydetails/{familyDetailId}?command=removeFamilyMemberClientAssociation</td>
+								<td></td>
+								<td><a href="#family_detail_remove_association">Remove Family Member Association </a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+                            <tr>
+								<td></td>
 								<td>clients/3/familydetails/{familyDetailsId}</td>
 								<td></td>
 								<td><a href="#family_detail_get">GET Family Detail</a></td>
@@ -15889,13 +15898,15 @@ GET https://DomainName/api/v1/holidays/{holidayId}
              <div class="method-section">
                  <div class="method-description">
                      <h4>Add Family Detail</h4>
-                     <p></p>
+                     <p>The Family Member can be an existing customer of the institution. Search for the Client and add him/her as the 
+                     family member.</p>
                      <p>Example Requests:</p>
                      <p>The key clientReference : refers to the exiting client id. i.e, this family member is an exiting customer of the institution</p>
                      <div class=apiClick>clients/{clientId}/familydetails</div>
                  </div>
                      <div class="method-example">
                         <code class="method-declaration">
+                            (Famlily Member is not an customer of the institution)
                             POST https://DomainName/api/v1/clients/3/familydetails
                          </code>
                     <code class="method-request">
@@ -15905,6 +15916,29 @@ GET https://DomainName/api/v1/holidays/{holidayId}
                             "lastname": "Narayan",
                             "isDependent": true,
                             "dateFormat": "dd MMMM yyyy",
+                            "locale": "en"
+                        }
+                                        </code>
+                                        <code class="method-response">
+                        {
+                            "clientId": 3,
+                            "resourceId": 24
+                        }
+                    </code>
+                </div>
+                 <div class="method-example">
+                        <code class="method-declaration">
+                            (Famlily Member is an customer of the institution)
+                            POST https://DomainName/api/v1/clients/3/familydetails
+                         </code>
+                    <code class="method-request">
+                        Request Body:
+                        {
+                            "firstname": "paravanu",
+                            "lastname": "Narayan",
+                            "isDependent": true,
+                            "dateFormat": "dd MMMM yyyy",
+                            "clientReference": 2,
                             "locale": "en"
                         }
                                         </code>
@@ -15959,6 +15993,23 @@ GET https://DomainName/api/v1/holidays/{holidayId}
                 </div>
              </div>
 
+<a id="family_detail_remove_association" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
+             <div class="method-section">
+                 <div class="method-description">
+                     <h4>Remove Family Member Association</h4>
+                     <p>Removes the Family member linked as an existing customer.</p>
+                     <p>Example Requests:</p>
+                     <div class=apiClick>clients/{clientId}/familydetails/{familyDetailId}?command=removeFamilyMemberClientAssociation</div>
+                 </div>
+                     <div class="method-example">
+                        <code class="method-declaration">
+                            PUT https://DomainName/api/v1/clients/3/familydetails/24?command=removeFamilyMemberClientAssociation
+                         </code>
+                        <code class="method-response">
+                        {"resourceId":24}
+                    </code>
+                </div>
+             </div>
 
 <a id="family_detail_get" name="configs_globalconfig_retrieve_survey" class="old-syle-anchor">&nbsp;</a>
              <div class="method-section">
