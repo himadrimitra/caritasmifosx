@@ -228,6 +228,9 @@ public class LoanScheduleAssembler {
                 Money totalPayment = emi.multipliedBy(terms.getNumberOfRepayments());
                 Money principal = terms.getPrincipalToBeScheduled();
                 interest = totalPayment.minus(principal);
+                if(terms.collectInterestUpfront()){
+                    interest = interest.plus(terms.calculateInterestWithFlatInterestRate(mc));
+                }
             }else{
                 interest = terms.calculateInterestWithFlatInterestRate(mc);
             }
