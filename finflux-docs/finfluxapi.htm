@@ -15488,6 +15488,12 @@
                     <tr>
                         <td class=fielddesc>Specifies if select attributes may be overridden for individual loan accounts.<br>
                     </tr>
+					<tr class=alt>
+                        <td>collectInterestUpfront</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>If selected as true, Interest will be collected at the time of disbursement.<br>
+                    </tr>
                 </table>
             </div>
         </div>
@@ -15621,6 +15627,7 @@
                     "value": "CASH BASED"
                     },
                     "principalThresholdForLastInstalment":0
+                    "collectInterestUpfront": false
                     }
                     ]
                 </code>
@@ -16500,6 +16507,7 @@
                     "code":"interestRecalculationFrequencyType.monthly",
                     "value":"Monthly"
                     }]
+                    "collectInterestUpfront": false
                     }
                 </code>
             </div>
@@ -16716,6 +16724,7 @@
                     "multiDisburseLoan":true,"maxTrancheCount":3,"outstandingLoanBalance":36000.000000,
                     "overdueDaysForNPA":2,
                     "principalThresholdForLastInstalment":50
+                    "collectInterestUpfront": false
                     ]
                     }
                 </code>
@@ -16759,7 +16768,7 @@
                             numberOfRepaymentVariationsForBorrowerCycle,
                             interestRateVariationsForBorrowerCycle,
                             multiDisburseLoan,maxTrancheCount,allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule
-                            outstandingLoanBalance,overdueDaysForNPA,holdGuaranteeFunds, principalThresholdForLastInstalment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineInstallmentAmount, installmentAmountInMultiplesOf, allowAttributeOverrides, allowPartialPeriodInterestCalcualtion,isFlatInterestRate
+                            outstandingLoanBalance,overdueDaysForNPA,holdGuaranteeFunds, principalThresholdForLastInstalment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineInstallmentAmount, installmentAmountInMultiplesOf, allowAttributeOverrides, allowPartialPeriodInterestCalcualtion,isFlatInterestRate,collectInterestUpfront
                         </td>
                     </tr>
                 </table>
@@ -16916,6 +16925,7 @@
                     "isInterestRecalculationEnabled":"false",
                     "holdGuaranteeFunds":"false",
                     "principalThresholdForLastInstallment":20
+                    "collectInterestUpfront": false
                     }
                 </code>
                 <code class="method-response">

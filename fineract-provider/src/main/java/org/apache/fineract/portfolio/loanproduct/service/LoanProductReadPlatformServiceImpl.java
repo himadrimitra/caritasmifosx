@@ -247,7 +247,8 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lvi.minimum_gap as minimumGap, "
                     + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, "
                     + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, "
-                    + "lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding"
+                    + "lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding ,"
+                    + "lp.collect_interest_upfront AS collectInterestUpfront"
                     + " from m_product_loan lp "
                     + " left join m_fund f on f.id = lp.fund_id "
                     + " left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id "
@@ -503,6 +504,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final EnumOptionData weeksInYearType = LoanEnumerations.weeksInYearType(WeeksInYearType.fromInt(weeksInYearTypeInteger));
             final boolean isMinDurationApplicableForAllDisbursements = rs.getBoolean("isMinDurationApplicableForAllDisbursements");
             final boolean isFlatInterestRate = rs.getBoolean("isFlatInterestRate");
+            final boolean collectInterestUpfront = rs.getBoolean("collectInterestUpfront");
             
             return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                     numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
@@ -520,9 +522,9 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
-                    minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
-                    weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, 
-                    brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule);
+                    minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, 
+                    brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule,
+                    collectInterestUpfront);
         }
     }
 

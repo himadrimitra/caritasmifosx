@@ -145,6 +145,8 @@ public interface LoanProductConstants {
     
     public static final String canUseForTopup = "canUseForTopup";
     
+    public static final String collectInterestUpfront = "collectInterestUpfront";
+    
     //Subsidy related constants
     public static final String isSubsidyApplicableParamName = "isSubsidyApplicable";
     public static final String createSubsidyAccountMappingsParamName = "createSubsidyAccountMappings";
