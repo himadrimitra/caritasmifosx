@@ -392,7 +392,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
 
     public static LoanTransaction writeoff(final Loan loan, final Office office, final LocalDate writeOffDate, final String externalId) {
         final Integer loanTransactionSubType = null;
-        return new LoanTransaction(loan, office, LoanTransactionType.WRITEOFF, loanTransactionSubType,null, writeOffDate, externalId);
+        return new LoanTransaction(loan, office, LoanTransactionType.WRITEOFF, loanTransactionSubType,BigDecimal.ZERO, writeOffDate, externalId);
     }
     
     public static LoanTransaction writeOffForGlimLoan(final Loan loan, final Office office, final LocalDate writeOffDate, final String externalId,final Integer subTypeOf) {
