@@ -111,7 +111,7 @@ public class LoanChargePaidBy extends AbstractPersistable<Long> {
     public void createLoanChargeTaxDetailsPaidBy(final LocalDate transactionDate) {
         if (this.loanCharge.getTaxGroup() != null && this.amount.compareTo(BigDecimal.ZERO) == 1) {
             BigDecimal incomeAmount = BigDecimal.ZERO;
-            Map<TaxComponent, BigDecimal> taxDetails = TaxUtils.splitTaxForLoanCharge(this.amount, transactionDate, this.loanCharge
+            final Map<TaxComponent, BigDecimal> taxDetails = TaxUtils.splitTaxForLoanCharge(this.amount, transactionDate, this.loanCharge
                     .getTaxGroup().getTaxGroupMappings(), this.amount.scale());
             BigDecimal totalTax = TaxUtils.totalTaxAmount(taxDetails);
             if (totalTax.compareTo(BigDecimal.ZERO) == 1) {

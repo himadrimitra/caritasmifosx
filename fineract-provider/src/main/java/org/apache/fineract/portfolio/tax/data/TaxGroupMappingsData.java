@@ -24,11 +24,8 @@ public class TaxGroupMappingsData {
 
     @SuppressWarnings("unused")
     private final Long id;
-    @SuppressWarnings("unused")
-    private final TaxComponentData taxComponent;
-    @SuppressWarnings("unused")
+    private TaxComponentData taxComponent;
     private final LocalDate startDate;
-    @SuppressWarnings("unused")
     private final LocalDate endDate;
 
     public TaxGroupMappingsData(final Long id, final TaxComponentData taxComponent, final LocalDate startDate, final LocalDate endDate) {
@@ -36,5 +33,18 @@ public class TaxGroupMappingsData {
         this.taxComponent = taxComponent;
         this.startDate = startDate;
         this.endDate = endDate;
+    }
+
+    public TaxComponentData getTaxComponent() {
+        return this.taxComponent;
+    }
+
+    public boolean occursOnDayFromAndUpToAndIncluding(final LocalDate target) {
+        if (this.endDate == null) { return target != null && target.isAfter(this.startDate); }
+        return target != null && target.isAfter(this.startDate) && !target.isAfter(this.endDate);
+    }
+    
+    public void setTaxComponent(final TaxComponentData taxComponent) {
+        this.taxComponent = taxComponent;
     }
 }

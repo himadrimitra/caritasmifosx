@@ -748,30 +748,35 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         }
 
         if (!this.loanChargesPaid.isEmpty()) {
-            final List<Map<String, Object>> loanChargesPaidData = new ArrayList<>();
-            for (final LoanChargePaidBy chargePaidBy : this.loanChargesPaid) {
-                final Map<String, Object> loanChargePaidData = new LinkedHashMap<>();
-                loanChargePaidData.put("chargeId", chargePaidBy.getLoanCharge().getCharge().getId());
-                loanChargePaidData.put("isPenalty", chargePaidBy.getLoanCharge().isPenaltyCharge());
-                loanChargePaidData.put("loanChargeId", chargePaidBy.getLoanCharge().getId());
-                loanChargePaidData.put("amount", chargePaidBy.getAmount());
-                loanChargePaidData.put("isCapitalized", chargePaidBy.getLoanCharge().isCapitalized());
-                List<LoanChargeTaxDetailsPaidBy> taxDetails = chargePaidBy.getLoanChargeTaxDetailsPaidBy();
-                final List<Map<String, Object>> taxData = new ArrayList<>();
-                for (final LoanChargeTaxDetailsPaidBy taxDetail : taxDetails) {
-                    final Map<String, Object> taxDetailsData = new HashMap<>();
-                    taxDetailsData.put("amount", taxDetail.getAmount());
-                    if(taxDetail.getTaxComponent().getCreditAcount() != null) {
-                        taxDetailsData.put("creditAccountId", taxDetail.getTaxComponent().getCreditAcount().getId());
-                    }
-                    taxData.add(taxDetailsData);
-                }
-                loanChargePaidData.put("taxDetails", taxData);
-                loanChargesPaidData.add(loanChargePaidData);
-            }
+            final List<Map<String, Object>> loanChargesPaidData = loanChargesPaidDataMap(this.loanChargesPaid);
             thisTransactionData.put("loanChargesPaid", loanChargesPaidData);
         }
         return thisTransactionData;
+    }
+
+    public List<Map<String, Object>> loanChargesPaidDataMap(final Set<LoanChargePaidBy> loanChargesPaid) {
+        final List<Map<String, Object>> loanChargesPaidData = new ArrayList<>();
+        for (final LoanChargePaidBy chargePaidBy : loanChargesPaid) {
+            final Map<String, Object> loanChargePaidData = new LinkedHashMap<>();
+            loanChargePaidData.put("chargeId", chargePaidBy.getLoanCharge().getCharge().getId());
+            loanChargePaidData.put("isPenalty", chargePaidBy.getLoanCharge().isPenaltyCharge());
+            loanChargePaidData.put("loanChargeId", chargePaidBy.getLoanCharge().getId());
+            loanChargePaidData.put("amount", chargePaidBy.getAmount());
+            loanChargePaidData.put("isCapitalized", chargePaidBy.getLoanCharge().isCapitalized());
+            final List<LoanChargeTaxDetailsPaidBy> taxDetails = chargePaidBy.getLoanChargeTaxDetailsPaidBy();
+            final List<Map<String, Object>> taxData = new ArrayList<>();
+            for (final LoanChargeTaxDetailsPaidBy taxDetail : taxDetails) {
+                final Map<String, Object> taxDetailsData = new HashMap<>();
+                taxDetailsData.put("amount", taxDetail.getAmount());
+                if(taxDetail.getTaxComponent().getCreditAcount() != null) {
+                    taxDetailsData.put("creditAccountId", taxDetail.getTaxComponent().getCreditAcount().getId());
+                }
+                taxData.add(taxDetailsData);
+            }
+            loanChargePaidData.put("taxDetails", taxData);
+            loanChargesPaidData.add(loanChargePaidData);
+        }
+        return loanChargesPaidData;
     }
 
     public Loan getLoan() {

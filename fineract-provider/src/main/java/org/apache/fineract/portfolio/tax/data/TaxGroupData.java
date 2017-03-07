@@ -60,4 +60,16 @@ public class TaxGroupData {
         this.taxComponents = taxComponents;
     }
 
+    public Long getId() {
+        return this.id;
+    }
+
+    public Collection<TaxGroupMappingsData> getTaxAssociations() {
+        return this.taxAssociations;
+    }
+
+    public Collection<TaxComponentData> getTaxComponents() {
+        return this.taxComponents;
+    }
+
 }
