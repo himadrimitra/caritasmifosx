@@ -224,28 +224,23 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
         final boolean isReversal = loanTransactionDTO.isReversed();
 
         BigDecimal totalDebitAmount = new BigDecimal(0);
-
-        Map<GLAccount, BigDecimal> accountMap = new HashMap<>();
+        
+        final Map<GLAccount, BigDecimal> accountMap = new HashMap<>();
 
         // handle principal payment or writeOff (and reversals)
         if (principalAmount != null && !(principalAmount.compareTo(BigDecimal.ZERO) == 0)) {
             totalDebitAmount = totalDebitAmount.add(principalAmount);
-            GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
+            final GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                     ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-            accountMap.put(account, principalAmount);
+            this.helper.addOrUpdateAccountMapWithAmount(accountMap, account, principalAmount);
         }
 
         // handle interest payment of writeOff (and reversals)
         if (interestAmount != null && !(interestAmount.compareTo(BigDecimal.ZERO) == 0)) {
             totalDebitAmount = totalDebitAmount.add(interestAmount);
-            GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
+            final GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                     ACCRUAL_ACCOUNTS_FOR_LOAN.INTEREST_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-            if (accountMap.containsKey(account)) {
-                BigDecimal amount = accountMap.get(account).add(interestAmount);
-                accountMap.put(account, amount);
-            } else {
-                accountMap.put(account, interestAmount);
-            }
+            this.helper.addOrUpdateAccountMapWithAmount(accountMap, account, interestAmount);
         }
 
         // handle fees payment of writeOff (and reversals)
@@ -276,28 +271,19 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                 final BigDecimal totalTaxAmount = this.helper.addTaxDetailsToGLAccount(loanTransactionDTO.getTaxPaymentDTOs(), accountMap);
                 final GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.PENALTIES_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-                if (accountMap.containsKey(account)) {
-                    BigDecimal amount = accountMap.get(account).add(penaltiesAmount.subtract(totalTaxAmount));
-                    accountMap.put(account, amount);
-                } else {
-                    accountMap.put(account, penaltiesAmount.subtract(totalTaxAmount));
-                }
+                this.helper.addOrUpdateAccountMapWithAmount(accountMap, account, penaltiesAmount.subtract(totalTaxAmount));
             }
         }
 
+        // handle over payment of writeOff (and reversals)
         if (overPaymentAmount != null && !(overPaymentAmount.compareTo(BigDecimal.ZERO) == 0)) {
             totalDebitAmount = totalDebitAmount.add(overPaymentAmount);
-            GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
+            final GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                     ACCRUAL_ACCOUNTS_FOR_LOAN.OVERPAYMENT.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-            if (accountMap.containsKey(account)) {
-                BigDecimal amount = accountMap.get(account).add(overPaymentAmount);
-                accountMap.put(account, amount);
-            } else {
-                accountMap.put(account, overPaymentAmount);
-            }
+            this.helper.addOrUpdateAccountMapWithAmount(accountMap, account, overPaymentAmount);
         }
 
-        for (Entry<GLAccount, BigDecimal> entry : accountMap.entrySet()) {
+        for (final Entry<GLAccount, BigDecimal> entry : accountMap.entrySet()) {
             this.helper.createCreditJournalEntryOrReversalForLoan(office, currencyCode, loanId, transactionId, transactionDate,
                     entry.getValue(), isReversal, entry.getKey());
         }
