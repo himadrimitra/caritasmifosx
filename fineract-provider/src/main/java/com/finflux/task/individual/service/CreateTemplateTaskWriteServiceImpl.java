@@ -69,7 +69,7 @@ public class CreateTemplateTaskWriteServiceImpl implements CreateTemplateTaskWri
         TaskConfig taskConfig= taskConfigTemplate.getTaskConfig();
         TaskConfigTemplateEntityType taskConfigTemplateEntityType = TaskConfigTemplateEntityType.fromInt(taskConfigTemplate.getEntity());
         TaskEntityType taskEntity=taskConfigTemplateEntityType.getCorrespondingTaskEntity();
-        String description=TaskConfigTemplateEntityType.fromInt(taskConfigTemplate.getEntity()).name();
+        String description=form.getDescription();
         Map<TaskConfigKey, String> configValues = new HashMap<>();
         Office office=this.context.authenticatedUser().getOffice();
         configValues.put(taskConfigTemplateEntityType.getCorrespondingTaskConfigKey(), String.valueOf(form.getEntity_id()));

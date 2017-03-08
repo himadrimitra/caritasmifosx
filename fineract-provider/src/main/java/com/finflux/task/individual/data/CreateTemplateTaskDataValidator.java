@@ -48,6 +48,9 @@ public class CreateTemplateTaskDataValidator
         
         final String templateId = this.fromApiJsonHelper.extractStringNamed(CreateTemplateTaskApiConstants.TemplateIdParamName, element);
         baseDataValidator.reset().parameter(CreateTemplateTaskApiConstants.TemplateIdParamName).value(templateId).notNull();
+        
+        final String description = this.fromApiJsonHelper.extractStringNamed(CreateTemplateTaskApiConstants.descriptionParamName, element);
+        baseDataValidator.reset().parameter(CreateTemplateTaskApiConstants.descriptionParamName).value(description).notExceedingLengthOf(250);
 
         final String userId = this.fromApiJsonHelper.extractStringNamed(CreateTemplateTaskApiConstants.UserIdParamName, element);
         baseDataValidator.reset().parameter(CreateTemplateTaskApiConstants.UserIdParamName).value(userId).notNull()

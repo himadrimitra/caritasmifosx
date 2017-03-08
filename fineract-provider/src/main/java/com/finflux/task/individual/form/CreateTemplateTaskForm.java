@@ -9,11 +9,20 @@ public class CreateTemplateTaskForm
     private long userId;
     private String duedate;
     private String duetime;
+    private String description;
     
+    public String getDescription() {
+        return this.description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public long getTemplateId() {
         return this.templateId;
     }
-    
+  
     public void setTemplateId(long templateId) {
         this.templateId = templateId;
     }
