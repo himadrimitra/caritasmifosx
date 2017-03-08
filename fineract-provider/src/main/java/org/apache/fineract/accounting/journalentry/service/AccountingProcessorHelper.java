@@ -422,26 +422,16 @@ public class AccountingProcessorHelper {
             if (taxPaymentDTOs != null) {
                 for (final TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
                     if (taxPaymentDTO.getAmount() != null) {
-                        BigDecimal taxAmount = taxPaymentDTO.getAmount();
-                        GLAccount taxGLAccount = null;
+                        final BigDecimal taxAmount = taxPaymentDTO.getAmount();
+                        GLAccount taxGLAccount = chargeSpecificAccount;
                         if (taxPaymentDTO.getCreditAccountId() != null) {
                             taxGLAccount = getGLAccountById(taxPaymentDTO.getCreditAccountId());
-                        } else {
-                            taxGLAccount = chargeSpecificAccount;
                         }
                         totalCreditedAmount = totalCreditedAmount.add(taxAmount);
-                        if(chargePaymentDTO.isCapitalized()){
-                            if (creditDetailsForCapitalizedChargesMap.containsKey(taxGLAccount)) {
-                                final BigDecimal existingAmount = creditDetailsForCapitalizedChargesMap.get(taxGLAccount);
-                                taxAmount = taxAmount.add(existingAmount);
-                            }
-                            creditDetailsForCapitalizedChargesMap.put(taxGLAccount, taxAmount);
-                        }else{
-                            if (creditDetailsMap.containsKey(taxGLAccount)) {
-                                final BigDecimal existingAmount = creditDetailsMap.get(taxGLAccount);
-                                taxAmount = taxAmount.add(existingAmount);
-                            }
-                            creditDetailsMap.put(taxGLAccount, taxAmount);
+                        if (chargePaymentDTO.isCapitalized()) {
+                            addOrUpdateAccountMapWithAmount(creditDetailsForCapitalizedChargesMap, taxGLAccount, taxAmount);
+                        } else {
+                            addOrUpdateAccountMapWithAmount(creditDetailsMap, taxGLAccount, taxAmount);
                         }
                         totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
                     }
@@ -449,18 +439,10 @@ public class AccountingProcessorHelper {
             }
             chargeSpecificAmount = chargeSpecificAmount.subtract(totalTaxAmount);
             totalCreditedAmount = totalCreditedAmount.add(chargeSpecificAmount);
-            if(chargePaymentDTO.isCapitalized()){
-                if (creditDetailsForCapitalizedChargesMap.containsKey(chargeSpecificAccount)) {
-                    final BigDecimal existingAmount = creditDetailsForCapitalizedChargesMap.get(chargeSpecificAccount);
-                    chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
-                }
-                creditDetailsForCapitalizedChargesMap.put(chargeSpecificAccount, chargeSpecificAmount);
-            }else{
-                if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
-                    final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
-                    chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
-                }
-                creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
+            if (chargePaymentDTO.isCapitalized()) {
+                addOrUpdateAccountMapWithAmount(creditDetailsForCapitalizedChargesMap, chargeSpecificAccount, chargeSpecificAmount);
+            } else {
+                addOrUpdateAccountMapWithAmount(creditDetailsMap, chargeSpecificAccount, chargeSpecificAmount);
             }
         }
         if (!creditDetailsMap.isEmpty()) {
@@ -477,29 +459,17 @@ public class AccountingProcessorHelper {
                 totalCreditedAmount, totalAmount); }
     }
 
-    private BigDecimal createAccrualBasedJournalEntriesAndReversalsForLoanCharges(final Office office, final String currencyCode,
+    private void createAccrualBasedJournalEntriesAndReversalsForLoanCharges(final Office office, final String currencyCode,
             final Long loanId, final String transactionId, final Date transactionDate, final Boolean isReversal,
             final Map<GLAccount, BigDecimal> creditDetailsMap, final GLAccount receivableAccount) {
-        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         final Map<GLAccount, BigDecimal> creditJournalEntriesMap = new LinkedHashMap<>();
         final Map<GLAccount, BigDecimal> receivableAccountMap = new LinkedHashMap<>();
         for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
             final GLAccount account = entry.getKey();
-            BigDecimal amount = entry.getValue();
-            BigDecimal receivableAmount = entry.getValue();
-            totalCreditedAmount = totalCreditedAmount.add(amount);
-
-            if (creditJournalEntriesMap.containsKey(account)) {
-                final BigDecimal existingAmount = creditJournalEntriesMap.get(account);
-                amount = amount.add(existingAmount);
-            }
-            creditJournalEntriesMap.put(account, amount);
-
-            if (receivableAccountMap.containsKey(receivableAccount)) {
-                final BigDecimal existingAmount = receivableAccountMap.get(receivableAccount);
-                receivableAmount = receivableAmount.add(existingAmount);
-            }
-            receivableAccountMap.put(receivableAccount, receivableAmount);
+            final BigDecimal amount = entry.getValue();
+            final BigDecimal receivableAmount = entry.getValue();
+            addOrUpdateAccountMapWithAmount(creditJournalEntriesMap, account, amount);
+            addOrUpdateAccountMapWithAmount(receivableAccountMap, receivableAccount, receivableAmount);
         }
         for (final Map.Entry<GLAccount, BigDecimal> entry : creditJournalEntriesMap.entrySet()) {
             final GLAccount account = entry.getKey();
@@ -509,7 +479,6 @@ public class AccountingProcessorHelper {
             } else {
                 createCreditJournalEntryForLoan(office, currencyCode, account, loanId, transactionId, transactionDate, amount);
             }
-
         }
         for (final Map.Entry<GLAccount, BigDecimal> entry : receivableAccountMap.entrySet()) {
             final BigDecimal amount = entry.getValue();
@@ -519,7 +488,6 @@ public class AccountingProcessorHelper {
                 createDebitJournalEntryForLoan(office, currencyCode, receivableAccount, loanId, transactionId, transactionDate, amount);
             }
         }
-        return totalCreditedAmount;
     }
 
     /**
@@ -803,36 +771,26 @@ public class AccountingProcessorHelper {
             final GLAccount chargeSpecificAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountMappingTypeId, chargeId);
             BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
             BigDecimal totalTaxAmount = BigDecimal.ZERO;
-            List<TaxPaymentDTO> taxPaymentDTOs = chargePaymentDTO.getTaxPaymentDTO();
+            final List<TaxPaymentDTO> taxPaymentDTOs = chargePaymentDTO.getTaxPaymentDTO();
             // adjust net credit amount if the account is already present in the
             // map
             if (taxPaymentDTOs != null) {
                 for (TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
                     if (taxPaymentDTO.getAmount() != null) {
-                        BigDecimal taxAmount = taxPaymentDTO.getAmount();
-                        GLAccount taxGLAccount = null;
+                        final BigDecimal taxAmount = taxPaymentDTO.getAmount();
+                        GLAccount taxGLAccount = chargeSpecificAccount;
                         if (taxPaymentDTO.getCreditAccountId() != null) {
                             taxGLAccount = getGLAccountById(taxPaymentDTO.getCreditAccountId());
-                        } else {
-                            taxGLAccount = chargeSpecificAccount;
                         }
                         totalCreditedAmount = totalCreditedAmount.add(taxAmount);
-                        if (creditDetailsMap.containsKey(taxGLAccount)) {
-                            final BigDecimal existingAmount = creditDetailsMap.get(taxGLAccount);
-                            taxAmount = taxAmount.add(existingAmount);
-                        }
-                        creditDetailsMap.put(taxGLAccount, taxAmount);
+                        addOrUpdateAccountMapWithAmount(creditDetailsMap,taxGLAccount,taxAmount);
                         totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
                     }
                 }
             }
             chargeSpecificAmount = chargeSpecificAmount.subtract(totalTaxAmount);
             totalCreditedAmount = totalCreditedAmount.add(chargeSpecificAmount);
-            if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
-                final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
-                chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
-            }
-            creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
+            addOrUpdateAccountMapWithAmount(creditDetailsMap, chargeSpecificAccount, chargeSpecificAmount);
         }
 
         // TODO: Vishwas Temporary validation to be removed before moving to
@@ -1115,15 +1073,10 @@ public class AccountingProcessorHelper {
         for (final ChargePaymentDTO chargePaymentDTO : chargePaymentDTOs) {
             final GLAccount chargeSpecificAccount = getLinkedGLAccountForShareCharges(shareProductId, accountTypeToBeCredited.getValue(),
                     chargePaymentDTO.getChargeId());
-            BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
-
+            final BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
             // adjust net credit amount if the account is already present in the
             // map
-            if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
-                final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
-                chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
-            }
-            creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
+            addOrUpdateAccountMapWithAmount(creditDetailsMap, chargeSpecificAccount, chargeSpecificAmount);
         }
 
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
@@ -1146,17 +1099,11 @@ public class AccountingProcessorHelper {
         for (final ChargePaymentDTO chargePaymentDTO : chargePaymentDTOs) {
             final GLAccount chargeSpecificAccount = getLinkedGLAccountForShareCharges(shareProductId, accountTypeToBeCredited.getValue(),
                     chargePaymentDTO.getChargeId());
-            BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
-
+            final BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
             // adjust net credit amount if the account is already present in the
             // map
-            if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
-                final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
-                chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
-            }
-            creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
+            addOrUpdateAccountMapWithAmount(creditDetailsMap, chargeSpecificAccount, chargeSpecificAmount);
         }
-
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
             final GLAccount account = entry.getKey();
@@ -1382,18 +1329,12 @@ public class AccountingProcessorHelper {
         for (final ClientChargePaymentDTO clientChargePaymentDTO : clientChargePaymentDTOs) {
             if (clientChargePaymentDTO.getIncomeAccountId() != null) {
                 final GLAccount chargeSpecificAccount = getGLAccountById(clientChargePaymentDTO.getIncomeAccountId());
-                BigDecimal chargeSpecificAmount = clientChargePaymentDTO.getAmount();
-
+                final BigDecimal chargeSpecificAmount = clientChargePaymentDTO.getAmount();
                 // adjust net credit amount if the account is already present in
                 // the map
-                if (creditDetailsMap.containsKey(chargeSpecificAccount)) {
-                    final BigDecimal existingAmount = creditDetailsMap.get(chargeSpecificAccount);
-                    chargeSpecificAmount = chargeSpecificAmount.add(existingAmount);
-                }
-                creditDetailsMap.put(chargeSpecificAccount, chargeSpecificAmount);
+                addOrUpdateAccountMapWithAmount(creditDetailsMap, chargeSpecificAccount, chargeSpecificAmount);
             }
         }
-
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         for (final Map.Entry<GLAccount, BigDecimal> entry : creditDetailsMap.entrySet()) {
             final GLAccount account = entry.getKey();
@@ -1451,7 +1392,7 @@ public class AccountingProcessorHelper {
             final Date transactionDate, final Boolean isReversal, List<TaxPaymentDTO> taxPaymentDTOs, final GLAccount account,
             BigDecimal totalTaxAmount, final Long loanChargeId) {
         if (taxPaymentDTOs != null) {
-            for (TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
+            for (final TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
                 if (taxPaymentDTO.getAmount() != null && taxPaymentDTO.getLoanChargeId().equals(loanChargeId)) {
                     if (taxPaymentDTO.getCreditAccountId() != null) {
                         final GLAccount glAccount = getGLAccountById(taxPaymentDTO.getCreditAccountId());
@@ -1482,9 +1423,18 @@ public class AccountingProcessorHelper {
         for (final ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getFeePayments()) {
             totalCreditedAmount = totalCreditedAmount.add(chargePaymentDTO.getAmount());
             BigDecimal totalTaxAmount = BigDecimal.ZERO;
+            /**
+             * Add tax splits for each GL accounts to accountMap. Do not
+             * calculate the tax for waivers and write-offs
+             **/
             if (!writeOff && chargePaymentDTO.getTaxPaymentDTO() != null && !chargePaymentDTO.getTaxPaymentDTO().isEmpty()) {
                 totalTaxAmount = addTaxDetailsToGLAccount(chargePaymentDTO.getTaxPaymentDTO(), accountMap);
             }
+
+            /***
+             * Track charge amounts separately for capitalized and non
+             * capitalized charges
+             **/
             if (chargePaymentDTO.isCapitalized()) {
                 totalCreditedCapitalizedChargeAmount = totalCreditedCapitalizedChargeAmount.add(chargePaymentDTO.getAmount()).subtract(
                         totalTaxAmount);
@@ -1494,21 +1444,10 @@ public class AccountingProcessorHelper {
             }
         }
         if (totalCreditedCapitalizedChargeAmount.compareTo(BigDecimal.ZERO) > 0) {
-            if (accountMap.containsKey(loanPortfolioAccount)) {
-                final BigDecimal amount = accountMap.get(loanPortfolioAccount).add(
-                        totalCreditedCapitalizedChargeAmount);
-                accountMap.put(loanPortfolioAccount, amount);
-            } else {
-                accountMap.put(loanPortfolioAccount, totalCreditedCapitalizedChargeAmount);
-            }
+            addOrUpdateAccountMapWithAmount(accountMap, loanPortfolioAccount, totalCreditedCapitalizedChargeAmount);
         }
         if (totalCreditedNonCapitalizedChargeAmount.compareTo(BigDecimal.ZERO) > 0) {
-            if (accountMap.containsKey(feesReceivableAccount)) {
-                final BigDecimal amount = accountMap.get(feesReceivableAccount).add(totalCreditedNonCapitalizedChargeAmount);
-                accountMap.put(feesReceivableAccount, amount);
-            } else {
-                accountMap.put(feesReceivableAccount, totalCreditedNonCapitalizedChargeAmount);
-            }
+            addOrUpdateAccountMapWithAmount(accountMap, feesReceivableAccount, totalCreditedNonCapitalizedChargeAmount);
         }
         if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
                 "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
@@ -1518,20 +1457,32 @@ public class AccountingProcessorHelper {
     }
 
     @SuppressWarnings("null")
-    public BigDecimal addTaxDetailsToGLAccount(final List<TaxPaymentDTO> taxPaymentDetails, Map<GLAccount, BigDecimal> accountMap) {
+    public BigDecimal addTaxDetailsToGLAccount(final List<TaxPaymentDTO> taxPaymentDetails, final Map<GLAccount, BigDecimal> accountMap) {
         BigDecimal totalTaxAmount = BigDecimal.ZERO;
-        for(final TaxPaymentDTO taxPaymentDTO : taxPaymentDetails){
-            final GLAccount glAccount  = getGLAccountById(taxPaymentDTO.getCreditAccountId());
-            if(taxPaymentDTO != null){
-                if (accountMap.containsKey(glAccount)) {
-                    final BigDecimal amount = accountMap.get(glAccount).add(taxPaymentDTO.getAmount());
-                    accountMap.put(glAccount, amount);
-                } else {
-                    accountMap.put(glAccount, taxPaymentDTO.getAmount());
-                }
+        for (final TaxPaymentDTO taxPaymentDTO : taxPaymentDetails) {
+            final GLAccount glAccount = getGLAccountById(taxPaymentDTO.getCreditAccountId());
+            if (taxPaymentDTO != null) {
+                addOrUpdateAccountMapWithAmount(accountMap, glAccount, taxPaymentDTO.getAmount());
                 totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
-            }     
+            }
         }
         return totalTaxAmount;
+    }
+
+    /**
+     * Adding or updating the account map with Debit or Credit Amount
+     * @param accountMap
+     * @param glAccount
+     * @param amount
+     * @return
+     */
+    public BigDecimal addOrUpdateAccountMapWithAmount(final Map<GLAccount, BigDecimal> accountMap, final GLAccount glAccount,
+            BigDecimal amount) {
+        if (accountMap.containsKey(glAccount)) {
+            final BigDecimal existingAmount = accountMap.get(glAccount);
+            amount = amount.add(existingAmount);
+        }
+        accountMap.put(glAccount, amount);
+        return amount;
     }
 }
