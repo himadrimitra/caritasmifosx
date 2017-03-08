@@ -35,7 +35,6 @@ import org.apache.fineract.portfolio.client.domain.ClientStatus;
 import org.apache.fineract.portfolio.group.data.CenterData;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.domain.GroupingTypeStatus;
-import org.apache.fineract.portfolio.interestratechart.data.InterestRateChartSlabData;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -90,25 +89,43 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
 
             groupSummary.setLoans(groupLoanAccounts);
         }
-        
+
         final StaffAccountSummaryCollectionDataMapper staffAccountSummaryCollectionDataMapper = new StaffAccountSummaryCollectionDataMapper();
-        final String dataSql = "select "+staffAccountSummaryCollectionDataMapper.schema()+" order by cn.id,g.id,cl.id";
-        Collection <CenterData> staffAccountSummaryCollectionData = this.jdbcTemplate.query(dataSql, staffAccountSummaryCollectionDataMapper, new Object[] { 
-        		ClientStatus.ACTIVE.getValue(), GroupingTypeStatus.ACTIVE.getValue(), loanOfficerId, LoanStatus.ACTIVE.getValue(),
-        		});
-        
-      
-        return  new StaffAccountSummaryCollectionData( clientSummaryList, groupSummaryList,staffAccountSummaryCollectionData);
+        final String dataSql = "select " + staffAccountSummaryCollectionDataMapper.schema() + " order by cn.id,g.id,cl.id";
+        Collection<CenterData> staffAccountSummaryCollectionData = this.jdbcTemplate.query(dataSql, staffAccountSummaryCollectionDataMapper,
+                new Object[] { ClientStatus.ACTIVE.getValue(), GroupingTypeStatus.ACTIVE.getValue(), loanOfficerId,
+                        LoanStatus.ACTIVE.getValue() });
+
+        final String groupWithHierarchySql = queryForGroupWithHierarchy();
+        Collection<CenterData> groupLoansWithHierarchyData = this.jdbcTemplate.query(groupWithHierarchySql,
+                staffAccountSummaryCollectionDataMapper, new Object[] { GroupingTypeStatus.ACTIVE.getValue(), loanOfficerId });
+
+        staffAccountSummaryCollectionData.addAll(groupLoansWithHierarchyData);
+        return new StaffAccountSummaryCollectionData(clientSummaryList, groupSummaryList, staffAccountSummaryCollectionData);
+    }
+
+    private String queryForGroupWithHierarchy() {
+        final StringBuilder sqlQueryForGroupWithHierarchy = new StringBuilder();
+        sqlQueryForGroupWithHierarchy.append("select distinct ");
+        sqlQueryForGroupWithHierarchy.append("lp.name as productName, lp.short_name as shortProductName, ");
+        sqlQueryForGroupWithHierarchy.append("loan.account_no as loanAcountNo, ");
+        sqlQueryForGroupWithHierarchy.append("loan.id as id,g.id as groupId, g.display_name as groupName, ");
+        sqlQueryForGroupWithHierarchy
+                .append("cn.id as centerId,loan.client_id as clientId, cn.display_name as Centername from m_loan loan ");
+        sqlQueryForGroupWithHierarchy.append("join  m_product_loan AS lp ON lp.id = loan.product_id ");
+        sqlQueryForGroupWithHierarchy.append("inner join m_group g on g.id = loan.group_id and g.status_enum = ? ");
+        sqlQueryForGroupWithHierarchy.append("inner join m_group cn on cn.id = g.parent_id ");
+        sqlQueryForGroupWithHierarchy.append("where loan.loan_officer_id = ? and loan.client_id is null ");
+
+        return sqlQueryForGroupWithHierarchy.toString();
+
     }
 
     private static final class StaffClientMapper implements RowMapper<StaffAccountSummaryCollectionData.LoanAccountSummary> {
 
         public String schema() {
-            return " c.id as id, c.display_name as displayName from m_client c "
-                    + " join m_loan l on c.id = l.client_id "
-            		+ " left join m_group_client gc on gc.client_id = c.id "
-                    + " where l.loan_officer_id = ?"
-                    + " and gc.client_id is null";
+            return " c.id as id, c.display_name as displayName from m_client c " + " join m_loan l on c.id = l.client_id "
+                    + " left join m_group_client gc on gc.client_id = c.id " + " where l.loan_officer_id = ?" + " and gc.client_id is null";
         }
 
         @Override
@@ -137,60 +154,64 @@ public class BulkLoansReadPlatformServiceImpl implements BulkLoansReadPlatformSe
             return new StaffAccountSummaryCollectionData.LoanAccountSummary(id, name);
         }
     }
-    
-    private static final class StaffAccountSummaryCollectionDataMapper implements ResultSetExtractor<Collection<CenterData>>{
-		public String schema() {
-			return " lp.name as productName, lp.short_name as shortProductName, "
-					+ "loan.account_no as loanAcountNo, "
-					+ "loan.id as id,cl.id as clientId, cl.display_name as clientName, "
-					+ "g.id as groupId, g.display_name as groupName, "
-					+ "cn.id as centerId, cn.display_name as Cetername " + "from m_loan loan "
-					+ "join  m_product_loan AS lp ON lp.id = loan.product_id "
-					+ "inner join m_client cl on cl.id = loan.client_id and cl.status_enum = ? "
-					+ "inner join m_group g on g.id = loan.group_id and g.status_enum = ? "
-					+ "inner join m_group cn on cn.id = g.parent_id "
-					+ "where loan.loan_officer_id = ? and loan.loan_status_id = ? ";
-		}
-    	@Override
-        public Collection <CenterData> extractData(ResultSet rs)  throws SQLException,DataAccessException {
-    		 List<CenterData> centerDataList = new ArrayList<>();
-    	
-    		 CenterData tempcenterData = null;
-    		 GroupGeneralData tempgroupGeneralData = null;
-    		 ClientData tempclientData = null;
-    		 Long centerIdTemp = null;
-    		 Long groupIdTemp = null;
-    		 Long clientidTemp = null;
-    		 while (rs.next()) {
-    			 Long centerId = JdbcSupport.getLong(rs, "centerId");
-    			 if(centerIdTemp == null || centerId.longValue() != centerIdTemp.longValue()){
-    				 centerIdTemp = centerId;
-    				 CenterData centerData = CenterData.formCenterData(centerId, rs.getString("Cetername"));
-    				 tempcenterData = centerData;
-    				 centerDataList.add(tempcenterData);
-    			 }
-    			 
-    			 Long groupId = JdbcSupport.getLong(rs, "groupId");
-    			 if(groupIdTemp == null || groupIdTemp.longValue() != groupId.longValue()){
-    				 groupIdTemp = groupId;
-    				 GroupGeneralData groupGeneralData = GroupGeneralData.formGroupData(groupId, rs.getString("groupName"));
-    				 tempgroupGeneralData = groupGeneralData;
-    				 tempcenterData.addGroups(tempgroupGeneralData);
-    			 }
-    			 
-    			 Long  clientId = JdbcSupport.getLong(rs, "clientId");
-    			 if(clientidTemp == null || clientidTemp.longValue() != clientId.longValue()){
-    				 clientidTemp = clientId;
-    				 ClientData clientData = ClientData.formClientData(clientId,  rs.getString("clientName"));
-    				 tempclientData = clientData;
-    				 tempgroupGeneralData.addClients(tempclientData);
-    			 }
-    			 
-    			 LoanAccountSummaryData loanAccountSummaryData = LoanAccountSummaryData.formLoanAccountSummaryData(JdbcSupport.getLong(rs, "id"),
-    					 rs.getString("loanAcountNo"), rs.getString("productName"));
-    			 tempclientData.addLoanAccountSummaryData(loanAccountSummaryData);
-    		 }
-            
+
+    private static final class StaffAccountSummaryCollectionDataMapper implements ResultSetExtractor<Collection<CenterData>> {
+
+        public String schema() {
+            return " lp.name as productName, lp.short_name as shortProductName, " + "loan.account_no as loanAcountNo, "
+                    + "loan.id as id,cl.id as clientId, cl.display_name as clientName, " + "g.id as groupId, g.display_name as groupName, "
+                    + "cn.id as centerId, cn.display_name as Centername " + "from m_loan loan "
+                    + "join  m_product_loan AS lp ON lp.id = loan.product_id "
+                    + "inner join m_client cl on cl.id = loan.client_id and cl.status_enum = ? "
+                    + "inner join m_group g on g.id = loan.group_id and g.status_enum = ? "
+                    + "inner join m_group cn on cn.id = g.parent_id " + "where loan.loan_officer_id = ? and loan.loan_status_id = ? ";
+        }
+
+        @Override
+        public Collection<CenterData> extractData(ResultSet rs) throws SQLException, DataAccessException {
+            List<CenterData> centerDataList = new ArrayList<>();
+
+            CenterData tempcenterData = null;
+            GroupGeneralData tempgroupGeneralData = null;
+            ClientData tempclientData = null;
+            Long centerIdTemp = null;
+            Long groupIdTemp = null;
+            Long clientidTemp = null;
+            while (rs.next()) {
+                Long centerId = JdbcSupport.getLong(rs, "centerId");
+                if (centerIdTemp == null || centerId.longValue() != centerIdTemp.longValue()) {
+                    centerIdTemp = centerId;
+                    CenterData centerData = CenterData.formCenterData(centerId, rs.getString("Centername"));
+                    tempcenterData = centerData;
+                    centerDataList.add(tempcenterData);
+                }
+
+                Long groupId = JdbcSupport.getLong(rs, "groupId");
+                if (groupIdTemp == null || groupIdTemp.longValue() != groupId.longValue()) {
+                    groupIdTemp = groupId;
+                    GroupGeneralData groupGeneralData = GroupGeneralData.formGroupData(groupId, rs.getString("groupName"));
+                    tempgroupGeneralData = groupGeneralData;
+                    tempcenterData.addGroups(tempgroupGeneralData);
+                }
+                if (rs.getObject("clientId") != null) {
+                    Long clientId = JdbcSupport.getLong(rs, "clientId");
+                    if (clientidTemp == null || clientidTemp.longValue() != clientId.longValue()) {
+                        clientidTemp = clientId;
+                        ClientData clientData = ClientData.formClientData(clientId, rs.getString("clientName"));
+                        tempclientData = clientData;
+                        tempgroupGeneralData.addClients(tempclientData);
+                    }
+                }
+
+                LoanAccountSummaryData loanAccountSummaryData = LoanAccountSummaryData.formLoanAccountSummaryData(
+                        JdbcSupport.getLong(rs, "id"), rs.getString("loanAcountNo"), rs.getString("productName"));
+                if (rs.getObject("clientId") != null) {
+                    tempclientData.addLoanAccountSummaryData(loanAccountSummaryData);
+                } else {
+                    tempgroupGeneralData.addLoanAccountSummaryData(loanAccountSummaryData);
+                }
+            }
+
             return centerDataList;
         }
     }
