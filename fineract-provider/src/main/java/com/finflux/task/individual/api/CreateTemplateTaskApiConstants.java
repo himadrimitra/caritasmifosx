@@ -15,8 +15,9 @@ public class CreateTemplateTaskApiConstants
     public static final String DueDateParamName = "duedate";
     public static final String DueTimeParamName = "duetime";
     public static final String DateFormat = "dateFormat";
+    public static final String descriptionParamName = "description";
     public static final String Locale = "locale";
     
     public static final Set<String> ASSIGN_TASK_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(
-            TemplateIdParamName, UserIdParamName,EntityIdParamName,DueDateParamName,Locale,DateFormat,DueTimeParamName));
+            TemplateIdParamName,descriptionParamName, UserIdParamName,EntityIdParamName,DueDateParamName,Locale,DateFormat,DueTimeParamName));
 }
