@@ -3170,7 +3170,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanLifecycleStateMachine loanLifecycleStateMachine, final List<Long> existingTransactionIds,
             final List<Long> existingReversedTransactionIds, final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser) {
 
-        validateAccountStatus(LoanEvent.LOAN_REPAYMENT_OR_WAIVER);
+        validateAccountStatus(LoanEvent.WAIVER);
 
         validateActivityNotBeforeClientOrGroupTransferDate(LoanEvent.LOAN_REPAYMENT_OR_WAIVER,
                 waiveInterestTransaction.getTransactionDate());
@@ -3191,6 +3191,7 @@ public class Loan extends AbstractPersistable<Long> {
             final AppUser currentUser, Boolean isHolidayValidationDone) {
         HolidayDetailDTO holidayDetailDTO = null;
         LoanEvent event = null;
+        
         if (isRecoveryRepayment) {
             event = LoanEvent.LOAN_RECOVERY_PAYMENT;
         } else {
@@ -3199,8 +3200,13 @@ public class Loan extends AbstractPersistable<Long> {
         if (!isHolidayValidationDone) {
             holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
         }        
-        if(!(this.isGLIMLoan() && isRecoveryRepayment)){
-        	validateAccountStatus(event);
+        if(!(this.isGLIMLoan() && isRecoveryRepayment)){            
+            if(repaymentTransaction.getTypeOf().getValue().equals(LoanTransactionType.REPAYMENT.getValue())){
+                validateAccountStatus(LoanEvent.LOAN_REPAYMENT);
+            }else{
+                validateAccountStatus(LoanEvent.WAIVER);
+            }
+        	
         }        
         validateActivityNotBeforeClientOrGroupTransferDate(event, repaymentTransaction.getTransactionDate());
         validateActivityNotBeforeLastTransactionDate(event, repaymentTransaction.getTransactionDate());
@@ -5629,11 +5635,19 @@ public class Loan extends AbstractPersistable<Long> {
                     dataValidationErrors.add(error);
                 }
             break;
-            case LOAN_REPAYMENT_OR_WAIVER:
+            case WAIVER:
                 if (!isOpen()) {
-                    final String defaultUserMessage = "Loan Repayment or Waiver is not allowed. Loan Account is not active.";
+                    final String defaultUserMessage = "Loan Waiver is not allowed. Loan Account is not active.";
                     final ApiParameterError error = ApiParameterError.generalError(
-                            "error.msg.loan.repayment.or.waiver.account.is.not.active", defaultUserMessage);
+                            "error.msg.loan.waiver.account.is.not.active", defaultUserMessage);
+                    dataValidationErrors.add(error);
+                }
+            break;
+            case LOAN_REPAYMENT:
+                if (!LoanApiConstants.loanStatusAllowedForPayment.contains(this.status())) {
+                    final String defaultUserMessage = "Loan Repayment is not allowed. Loan Account is not active.";
+                    final ApiParameterError error = ApiParameterError.generalError(
+                            "error.msg.loan.repayment.account.is.not.active", defaultUserMessage);
                     dataValidationErrors.add(error);
                 }
             break;
