@@ -370,7 +370,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     currentPeriodParams.getFeeChargesForInstallment(), currentPeriodParams.getPenaltyChargesForInstallment(),
                     totalInstallmentDue, !isCompletePeriod);
             emiDetails.setEmiAmount(loanApplicationTerms.getFixedEmiAmount());
-            emiDetails.setLastEmiAmount(currentPeriodParams.getPrincipalForThisPeriod().plus(currentPeriodParams.getInterestForThisPeriod()).getAmount());
+            emiDetails.setLastEmiAmount(currentPeriodParams.getPrincipalForThisPeriod()
+                    .plus(currentPeriodParams.getInterestForThisPeriod()).plus(installmentCapitalizedChargeAmount).getAmount());
             adjustInterestForRoundingEMIAmount(loanApplicationTerms, emiDetails,scheduleParams, installment, currentPeriodParams);
 
             addLoanRepaymentScheduleInstallment(scheduleParams.getInstallments(), installment);
