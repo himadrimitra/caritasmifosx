@@ -200,17 +200,27 @@ public class LoanScheduleValidator {
     public void validateRepaymentFrequencyIsSameAsMeetingFrequency(final Integer meetingFrequency, final Integer repaymentFrequency,
             final Integer meetingInterval, final Integer repaymentInterval) {
         // meeting with daily frequency should allow loan products with any
-        // frequency.
+        // frequency.String 
+        String userMessageGlobalisationCode = "loanapplication.repayment.interval";
+        String developerMessage = null;
+    	final boolean isMonthlyLoansSyncWithWeeklyMeetings = configurationDomainService.isMonthlyLoansSyncWithWeeklyMeetings();
         if (!PeriodFrequencyType.DAYS.getValue().equals(meetingFrequency)) {
             // repayment frequency must match with meeting frequency
+
             if (!meetingFrequency.equals(repaymentFrequency)) {
-                throw new MeetingFrequencyMismatchException("loanapplication.repayment.frequency",
-                        "Loan repayment frequency period must match that of meeting frequency period", repaymentFrequency);
+                if ((isMonthlyLoansSyncWithWeeklyMeetings && meetingFrequency.equals(PeriodFrequencyType.WEEKS.getValue())
+                        && repaymentFrequency.equals(PeriodFrequencyType.MONTHS.getValue()))) {
+                    //interval should be same or multiple of meeting interval
+                    if ((repaymentFrequency * 4) % meetingInterval != 0) {
+                        developerMessage = "Loan repayment repaid every # must equal or multiple of meeting interval " + meetingInterval;
+                    }
+                } else {
+                    throw new MeetingFrequencyMismatchException("loanapplication.repayment.frequency",
+                            "Loan repayment frequency period must match that of meeting frequency period", repaymentFrequency);
+                }
             } else if (meetingFrequency.equals(repaymentFrequency)) {
                 // repayment frequency is same as meeting frequency repayment
                 // interval should be same or multiple of meeting interval
-                String userMessageGlobalisationCode = "loanapplication.repayment.interval";
-                String developerMessage = null;
                 if (configurationDomainService.isForceLoanRepaymentFrequencyMatchWithMeetingFrequencyEnabled()
                         && (repaymentInterval != meetingInterval)) {
                     developerMessage = "Loan repayment frequency period must match that of meeting frequency period and "
@@ -219,9 +229,9 @@ public class LoanScheduleValidator {
                     // throw exception: Loan product frequency/interval
                     developerMessage = "Loan repayment repaid every # must equal or multiple of meeting interval " + meetingInterval;
                 }
-                if (developerMessage != null) { throw new MeetingFrequencyMismatchException(userMessageGlobalisationCode, developerMessage,
-                        meetingInterval, repaymentInterval); }
             }
+            if (developerMessage != null) { throw new MeetingFrequencyMismatchException(userMessageGlobalisationCode, developerMessage,
+                    meetingInterval, repaymentInterval); }
         }
     }
 

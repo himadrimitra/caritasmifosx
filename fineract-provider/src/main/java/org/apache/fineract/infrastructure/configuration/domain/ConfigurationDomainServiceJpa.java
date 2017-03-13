@@ -428,4 +428,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         if (property.isEnabled()) return property.getValue();
         return "x";
     }
+
+    @Override
+    public boolean isMonthlyLoansSyncWithWeeklyMeetings() {
+        final String propertyName = "sync-monthly-loans-to-weekly-meetings";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
+    }
 }

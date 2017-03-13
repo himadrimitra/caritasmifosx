@@ -130,4 +130,6 @@ public interface ConfigurationDomainService {
     String getMaskedRegex();
 
     String getMaskedCharacter();
+    
+    boolean isMonthlyLoansSyncWithWeeklyMeetings();
 }

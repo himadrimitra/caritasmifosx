@@ -513,6 +513,9 @@ public class CalendarUtils {
         if (recur == null) { return null; }
         LocalDate startDate = disbursementDate;
         final LocalDate seedDate = calendar.getStartDateLocalDate();
+        
+        final Integer repaymentInterval = getMeetingIntervalFromFrequency(loanRepaymentInterval, frequency, recur);
+        
         // Recurring dates should follow loanRepaymentInterval.
         // e.g.
         // for weekly meeting interval is 1
@@ -523,7 +526,7 @@ public class CalendarUtils {
         if(meetingInterval < 1){
         	meetingInterval = 1;
         }
-        int rep = loanRepaymentInterval / meetingInterval;
+        int rep = repaymentInterval / meetingInterval;
 
         // Recurring dates should follow loanRepayment frequency.
         // e.g.
@@ -580,6 +583,8 @@ public class CalendarUtils {
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
         if (recur == null) { return null; }
         LocalDate tmpDate = repaymentDate;
+        
+        final Integer repaymentInterval = getMeetingIntervalFromFrequency(loanRepaymentInterval, frequency, recur);
         /*
          * Recurring dates should follow loanRepaymentInterval.
          * 
@@ -587,12 +592,11 @@ public class CalendarUtils {
          * with fortnightly frequency will have interval of 2, to generate right
          * set of meeting dates reset interval same as loan repayment interval.
          */
-        
         int meetingInterval = recur.getInterval();
         if(meetingInterval < 1){
         	meetingInterval = 1;
         }
-        int rep = loanRepaymentInterval / meetingInterval;
+        int rep = repaymentInterval / meetingInterval;
 
         /*
          * Recurring dates should follow loanRepayment frequency. //e.g. daily
@@ -777,5 +781,19 @@ public class CalendarUtils {
             monthDayList = recur.getMonthDayList();
         }
         return monthDayList;
+    }
+
+    public static Integer getMeetingIntervalFromFrequency(final Integer loanRepaymentInterval, final String frequency, final Recur recur) {
+        final Integer interval = 4;
+        Integer repaymentInterval = loanRepaymentInterval;
+        /*
+         * check loanRepaymentInterval equal to 1, if repayments frequency is
+         * monthly and meeting frequency is weekly, then generate repayments
+         * schedule as every 4 weeks
+         */
+        if (frequency.equals(Recur.MONTHLY) && recur.getFrequency().equals(Recur.WEEKLY)) {
+            repaymentInterval = loanRepaymentInterval*interval;
+        }
+        return repaymentInterval;
     }
 }
