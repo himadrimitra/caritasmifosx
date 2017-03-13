@@ -322,13 +322,13 @@ public class GroupGeneralData {
         this.activeClientMembers.add(clientData);
     }
 
-    public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName, final EnumOptionData status) {
+    public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName, final EnumOptionData status, final String externalId) {
         final Collection<ClientData> clientMembers = null;
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
         final boolean isShowLoanDetailsInCenterPageEnabled = false;
         final VillageData villageData = null;
-        return new GroupGeneralData(groupId, accountNo, groupName, null, status, null, null, null, null, null, null, null, null, null,
+        return new GroupGeneralData(groupId, accountNo, groupName, externalId, status, null, null, null, null, null, null, null, null, null,
                 clientMembers, null, null, null, null, null, groupRoles, null, null, null, null, closureReasons, null,
                 isShowLoanDetailsInCenterPageEnabled, villageData);
     }
@@ -338,7 +338,7 @@ public class GroupGeneralData {
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
         final VillageData villageData = null;
-        return new GroupGeneralData(generalData.id, generalData.accountNo, generalData.name, null, generalData.status, null, null, null,
+        return new GroupGeneralData(generalData.id, generalData.accountNo, generalData.name, generalData.externalId, generalData.status, null, null, null,
                 null, null, null, null, null, null, clientMembers, null, null, null, null, null, groupRoles, null, null, null, null,
                 closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData);
     }
