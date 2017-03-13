@@ -93,6 +93,20 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
 
         public String searchSchema(final SearchConditions searchConditions) {
             final StringBuilder sqlBuilder = new StringBuilder(200);
+            
+            boolean searchUnderOfficeHierarchy = false;
+            String officeHierarchy = null; 
+            if (searchConditions.getofficeId() != null) {
+                final Long officeId = searchConditions.getofficeId();
+                searchUnderOfficeHierarchy = true;
+                /** For Head Office, reset the search hierarchy **/
+                if (officeId == 1) {
+                    officeHierarchy = "'%.%'";
+                } else {
+                    officeHierarchy = "'%" + officeId + ".%'";
+                }
+
+            }
 
             if (searchConditions.isClientSearch()) {
                 sqlBuilder
@@ -111,6 +125,9 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 }
                 sqlBuilder
                         .append(" where o.hierarchy like :hierarchy and (c.account_no like :search or c.display_name like :search or c.external_id like :search or c.mobile_no like :search ))");
+				
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                
                 sqlBuilder.append(" union ");
 
             }
@@ -131,7 +148,10 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                             .append(" left join m_group_client as gc on gc.client_id = l.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
                 }
                 sqlBuilder
-                        .append(" where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (l.account_no like :search or l.external_id like :search)) ");
+                        .append(" where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (l.account_no like :search or l.external_id like :search))");
+                
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                
                 sqlBuilder.append(" union ");
             }
             if (searchConditions.isSavingSeach()) {
@@ -152,6 +172,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 }
                 sqlBuilder
                         .append(" where (o.hierarchy IS NULL OR o.hierarchy like :hierarchy) and (s.account_no like :search or s.external_id like :search))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
             if (searchConditions.isClientIdentifierSearch()) {
@@ -171,6 +192,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                             .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
                 }
                 sqlBuilder.append(" where o.hierarchy like :hierarchy and ci.document_key like :search ) ");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
             if (searchConditions.isGroupSearch()) {
@@ -189,6 +211,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 }
                 sqlBuilder
                         .append(" where o.hierarchy like :hierarchy and (g.account_no like :search or g.display_name like :search or g.external_id like :search or g.id like :search ))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
             if (searchConditions.isPledgeSearch()) {
@@ -197,7 +220,8 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                                 + " , c.id as parentId, o.name as parentName, p.status as status, p.system_value as systemValue, p.user_value as userValue, null as entityMobileNo, null as entityStatusEnum, null as parentType  ");
                 sqlBuilder.append(", null as groupName, null as centerName,null as officeName ");
                 sqlBuilder
-                        .append(" from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search)) ");
+                        .append(" from m_pledge p left join m_client c on p.client_id = c.id left join m_office o on c.office_id = o.id where (p.seal_number like :search or p.pledge_number like :search or p.status like :search))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
             if (searchConditions.isVillageSearch()) {
@@ -207,11 +231,20 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 sqlBuilder.append(", null as groupName, null as centerName,null as officeName ");
                 sqlBuilder
                         .append(" from chai_villages v join m_office o on o.id = v.office_id where o.hierarchy like :hierarchy and (v.village_name like :search or v.external_id like :search))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
             sqlBuilder.replace(sqlBuilder.lastIndexOf("union"), sqlBuilder.length(), "");
             // remove last occurrence of "union all" string
             return sqlBuilder.toString();
+        }
+
+        private void scopeSearchUnderBranchHierarchy(final StringBuilder sqlBuilder, boolean searchUnderOfficeHierarchy,
+                String officeHierarchy) {
+            if (searchUnderOfficeHierarchy) {
+                final String append = " and o.hierarchy like " + officeHierarchy + ")";
+                sqlBuilder.replace(sqlBuilder.lastIndexOf(")"), sqlBuilder.length(), append);
+            }
         }
 
         @Override

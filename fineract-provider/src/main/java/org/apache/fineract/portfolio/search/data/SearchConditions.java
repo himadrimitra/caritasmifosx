@@ -32,11 +32,13 @@ public class SearchConditions {
     private final Boolean clientIdentifierSearch;
     private final Boolean pledgeSearch;
     private  Boolean exactMatch;
+    private final Long officeId;
 
-    public SearchConditions(final String searchQueryParam, final String searchResource, Boolean exactMatch) {
+    public SearchConditions(final String searchQueryParam, final String searchResource, Boolean exactMatch, final Long officeId) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.exactMatch=exactMatch;
+        this.officeId = officeId;
         this.clientSearch = (null == searchResource || searchResource.toLowerCase().contains(
                 SEARCH_SUPPORTED_RESOURCES.CLIENTS.name().toLowerCase())) ? true : false;
         this.groupSearch = (null == searchResource || searchResource.toLowerCase().contains(
@@ -55,7 +57,7 @@ public class SearchConditions {
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
             final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, final Boolean pledgeSearch, 
-            final Boolean villageSearch, Boolean exactMatch) {
+            final Boolean villageSearch, Boolean exactMatch, final Long officeId) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.clientSearch = clientSearch;
@@ -66,6 +68,7 @@ public class SearchConditions {
         this.clientIdentifierSearch = clientIdentifierSearch;
         this.pledgeSearch = pledgeSearch;
         this.exactMatch=exactMatch;
+        this.officeId = officeId;
     }
 
     public String getSearchQuery() {
@@ -98,12 +101,16 @@ public class SearchConditions {
         return this.savingSeach;
     }
 
-	public Boolean isClientIdentifierSearch() {
+    public Boolean isClientIdentifierSearch() {
         return this.clientIdentifierSearch;
     }
-	
-	public Boolean isPledgeSearch(){
-		 return this.pledgeSearch;
-	}
+
+    public Boolean isPledgeSearch() {
+        return this.pledgeSearch;
+    }
+
+    public Long getofficeId() {
+        return this.officeId;
+    }
 
 }
