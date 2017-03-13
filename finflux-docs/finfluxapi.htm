@@ -40826,6 +40826,8 @@ Request Body:
                 <br>
                 <div class=apiClick>search?query=Petra&resource=clients,groups&exactMatch=true</div>
                 <br>
+				<div class=apiClick>search?query=Petra&resource=clients,groups&exactMatch=true&officeID=2</div>
+                <br>
                 <table class=matrixHeading>
                     <tr class="matrixHeadingBG">
                         <td><div class="fineractHeading2">Parameters</div></td>
@@ -40856,6 +40858,15 @@ Request Body:
                         </td>
                         <td class=fielddesc>
                             Scoped resources on which search can be performed. If there is no exactMatch parameter passed then search will be performed for all partial matches <a href="#search">scoped</a> resources.
+                        </td>
+                    </tr>
+					<tr>
+                        <td>
+                            officeID
+                            <br><i>(non-mandatory)</i>
+                        </td>
+                        <td class=fielddesc>
+                            If present, search shall be carried out only under this office's hierarchy <a href="#search">scoped</a> resources.
                         </td>
                     </tr>
                 </table>
@@ -40907,7 +40918,7 @@ Request Body:
                 </code>
 
                 <code class="method-declaration">
-                    GET https://DomainName/api/v1/search?query=000000001&exactMatch=true
+                    GET https://DomainName/api/v1/search?query=000000001&exactMatch=true&officeID=2
                 </code>
                 <code class="method-response">
                     [{
