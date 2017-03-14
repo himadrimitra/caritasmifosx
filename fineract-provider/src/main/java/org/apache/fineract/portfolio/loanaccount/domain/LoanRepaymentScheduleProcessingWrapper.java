@@ -94,28 +94,15 @@ public class LoanRepaymentScheduleProcessingWrapper {
                             amount = amount.add(period.getPrincipal(monetaryCurrency).getAmount());
                         }
                         if (loanCharge.getChargeCalculation().isPercentageOfDisbursementAmount()) {
-                            BigDecimal installmentChargePerClient = BigDecimal.ZERO;
-                            for (GroupLoanIndividualMonitoring glim : loanCharge.getLoan().getDefautGlimMembers()) {
-                                Set<GroupLoanIndividualMonitoringCharge> charges = glim.getGroupLoanIndividualMonitoringCharges();
-                                for (GroupLoanIndividualMonitoringCharge glimCharge : charges) {
-                                    if (loanCharge.getCharge().getId() == glimCharge.getCharge().getId()) {
-                                        BigDecimal chargeAmount = glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount()
-                                                : glimCharge.getRevisedFeeAmount();
-                                        BigDecimal perInstallmentCharge = MathUtility.divide(chargeAmount, numberOfRepayments, loanCharge
-                                                .getLoan().getCurrency());
-                                        if (period.getInstallmentNumber() == numberOfRepayments) {
-                                            installmentChargePerClient = MathUtility.add(
-                                                    installmentChargePerClient,
-                                                    MathUtility.subtract(chargeAmount,
-                                                            MathUtility.multiply(perInstallmentCharge, numberOfRepayments - 1)));
-                                        } else {
-                                            installmentChargePerClient = MathUtility.add(installmentChargePerClient, perInstallmentCharge);
-                                        }
-
-                                    }
-                                }
+                            if(loanCharge.getLoan().isGlimPaymentAsGroup()){                                
+                                LoanInstallmentCharge loanInstallmentCharge = loanCharge.getInstallmentLoanCharge(installmentNumber);
+                                cumulative = cumulative.plus(loanInstallmentCharge.getAmount());
+                            }else{                                
+                                BigDecimal installmentChargePerClient = BigDecimal.ZERO;
+                                installmentChargePerClient = glimInstallmentChargePerClient(period, numberOfRepayments, loanCharge,
+                                        installmentChargePerClient);
+                                cumulative = cumulative.plus(installmentChargePerClient);
                             }
-                            cumulative = cumulative.plus(installmentChargePerClient);
                         } else {
                             BigDecimal loanChargeAmt = amount.multiply(loanCharge.getPercentage()).divide(BigDecimal.valueOf(100));
                             cumulative = cumulative.plus(loanChargeAmt);
@@ -146,6 +133,31 @@ public class LoanRepaymentScheduleProcessingWrapper {
         }
 
         return cumulative;
+    }
+    
+    private BigDecimal glimInstallmentChargePerClient(LoanRepaymentScheduleInstallment period, Integer numberOfRepayments,
+            final LoanCharge loanCharge, BigDecimal installmentChargePerClient) {
+        for (GroupLoanIndividualMonitoring glim : loanCharge.getLoan().getDefautGlimMembers()) {
+            Set<GroupLoanIndividualMonitoringCharge> charges = glim.getGroupLoanIndividualMonitoringCharges();
+            for (GroupLoanIndividualMonitoringCharge glimCharge : charges) {
+                if (loanCharge.getCharge().getId() == glimCharge.getCharge().getId()) {
+                    BigDecimal chargeAmount = glimCharge.getRevisedFeeAmount() == null ? glimCharge.getFeeAmount()
+                            : glimCharge.getRevisedFeeAmount();
+                    BigDecimal perInstallmentCharge = MathUtility.divide(chargeAmount, numberOfRepayments, loanCharge
+                            .getLoan().getCurrency());
+                    if (period.getInstallmentNumber() == numberOfRepayments) {
+                        installmentChargePerClient = MathUtility.add(
+                                installmentChargePerClient,
+                                MathUtility.subtract(chargeAmount,
+                                        MathUtility.multiply(perInstallmentCharge, numberOfRepayments - 1)));
+                    } else {
+                        installmentChargePerClient = MathUtility.add(installmentChargePerClient, perInstallmentCharge);
+                    }
+
+                }
+            }
+        }
+        return installmentChargePerClient;
     }
 
     private Money calculateChargesWithPercentage(final Money totalPrincipal, final Money totalInterest, Money cumulative,

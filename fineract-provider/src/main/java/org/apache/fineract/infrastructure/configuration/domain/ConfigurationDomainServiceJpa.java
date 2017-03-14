@@ -428,4 +428,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         if (property.isEnabled()) return property.getValue();
         return "x";
     }
+
+    @Override
+    public boolean isGlimPaymentAsGroup() {
+        final String propertyName = "glim-payment-as-group";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
+    }
 }
