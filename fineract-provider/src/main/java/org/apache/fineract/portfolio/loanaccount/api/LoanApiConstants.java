@@ -163,4 +163,6 @@ public interface LoanApiConstants {
     public static final String syncRepaymentsWithMeeting = "syncRepaymentsWithMeeting";
     
     public static final Set<LoanStatus> loanStatusAllowedForPayment = new HashSet<>(Arrays.asList(LoanStatus.ACTIVE ,LoanStatus.CLOSED_OBLIGATIONS_MET ,LoanStatus.OVERPAID ));
+    public static final Set<Integer> EXCLUDED_STATUS_FOR_GLIM_PAYMENT_AS_GROUP = new HashSet<>(Arrays.asList(
+            LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(), LoanStatus.APPROVED.getValue()));
 }

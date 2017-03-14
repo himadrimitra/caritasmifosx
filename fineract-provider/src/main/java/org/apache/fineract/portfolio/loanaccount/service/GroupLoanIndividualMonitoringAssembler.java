@@ -92,8 +92,14 @@ public class GroupLoanIndividualMonitoringAssembler {
                     BigDecimal totalAmount = getTotalAmount(transactionAmount, isFromAdjustRepayment, transactionId, glim);
                     if(totalAmount.subtract(glim.getTotalPaybleAmount()).compareTo(BigDecimal.ZERO)>0){
                         BigDecimal overpaidAmount = totalAmount.subtract(glim.getTotalPaybleAmount());
-                        glim.updateTransactionAmount(transactionAmount.subtract(overpaidAmount));
-                        glim.setOverpaidAmount(overpaidAmount);
+                        if(MathUtility.isGreater(transactionAmount, overpaidAmount)){
+                            glim.updateTransactionAmount(transactionAmount.subtract(overpaidAmount));
+                            glim.setOverpaidAmount(overpaidAmount);
+                        }else{
+                            glim.updateTransactionAmount(BigDecimal.ZERO);
+                            glim.setOverpaidAmount(overpaidAmount);
+                        }
+                        
                     }else{
                         glim.setOverpaidAmount(BigDecimal.ZERO);
                         glim.updateTransactionAmount(transactionAmount);

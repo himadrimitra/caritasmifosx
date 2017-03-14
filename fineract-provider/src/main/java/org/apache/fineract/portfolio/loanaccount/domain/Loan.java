@@ -443,6 +443,9 @@ public class Loan extends AbstractPersistable<Long> {
     
     @Column(name = "broken_period_interest", scale = 6, precision = 19, nullable = true)
     private BigDecimal brokenPeriodInterest;
+    
+    @Column(name = "glim_payment_as_group", nullable = false)
+    private boolean isGlimPaymentAsGroup;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -5301,7 +5304,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     public boolean isGLIMLoan() {
-        return AccountType.fromInt(this.loanType).isGLIMAccount();
+        if (isGlimPaymentAsGroup()) { return (AccountType.fromInt(this.loanType).isGLIMAccount() && LoanApiConstants.EXCLUDED_STATUS_FOR_GLIM_PAYMENT_AS_GROUP
+                .contains(this.status().getValue())); }
+        return (AccountType.fromInt(this.loanType).isGLIMAccount());
     }
 
     public void updateInterestRateFrequencyType() {
@@ -7728,4 +7733,15 @@ public class Loan extends AbstractPersistable<Long> {
 		return size;
 	}
 
+    
+    public boolean isGlimPaymentAsGroup() {
+        return this.isGlimPaymentAsGroup;
+    }
+
+    
+    public void setGlimPaymentAsGroup(boolean isGlimPaymentAsGroup) {
+        this.isGlimPaymentAsGroup = isGlimPaymentAsGroup;
+    }
+    
+    	
 }

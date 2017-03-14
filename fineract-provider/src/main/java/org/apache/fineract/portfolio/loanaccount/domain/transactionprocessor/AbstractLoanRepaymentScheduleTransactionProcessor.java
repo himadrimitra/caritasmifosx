@@ -243,7 +243,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
             if (loanTransaction.isWaiver()) {
                 loanTransaction.updateComponentsAndTotal(transactionAmountUnprocessed.zero(), transactionAmountUnprocessed.zero(),
                         transactionAmountUnprocessed.zero(), transactionAmountUnprocessed.zero());
-            } else {
+            } else if(!loanTransaction.getLoan().isGLIMLoan()){
                 onLoanOverpayment(loanTransaction, transactionAmountUnprocessed);
                 loanTransaction.updateOverPayments(transactionAmountUnprocessed);
             }
@@ -257,11 +257,16 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
         }
     }
     public Money getOverpaidAmountByGlim(List<GroupLoanIndividualMonitoring> glimList, final MonetaryCurrency currency){
-        BigDecimal overpiadAmount = BigDecimal.ZERO;
-        for (GroupLoanIndividualMonitoring glim : glimList) {
-            overpiadAmount = MathUtility.add(overpiadAmount,glim.getOverpaidAmount());
+        BigDecimal overpaidAmount = BigDecimal.ZERO;
+        for (GroupLoanIndividualMonitoring glim : glimList) {            
+            if(MathUtility.isGreater(glim.getTotalPaidAmount(), glim.getTotalPaybleAmount())){
+                BigDecimal alreadyOverPaidAmount = MathUtility.subtract(glim.getTotalPaidAmount(), glim.getTotalPaybleAmount());
+                overpaidAmount =   MathUtility.add(overpaidAmount,glim.getOverpaidAmount().subtract(alreadyOverPaidAmount));
+            }else{
+                overpaidAmount =   MathUtility.add(overpaidAmount,glim.getOverpaidAmount());
+            }
         }
-        return Money.of(currency, overpiadAmount);
+        return Money.of(currency, overpaidAmount);
     }
     private Money handleTransactionAndCharges(final LoanTransaction loanTransaction, final MonetaryCurrency currency,
             final List<LoanRepaymentScheduleInstallment> installments, final Set<LoanCharge> charges, final Money chargeAmountToProcess,
