@@ -37,10 +37,13 @@ public class CountryReadPlatformServiceImpl implements CountryReadPlatformServic
     }
 
     @Override
-    public CountryData retrieveOne(final Long countryId) {
+    public CountryData retrieveOne(final Long countryId,final boolean isTemplateRequired) {
         try {
+            Collection<StateData> stateDatas = null;
             if (countryId != null && countryId > 0) {
-                final Collection<StateData> stateDatas = this.stateReadPlatformService.retrieveAllStateDataByCountryId(countryId);
+                if(isTemplateRequired){
+                stateDatas = this.stateReadPlatformService.retrieveAllStateDataByCountryId(countryId);
+                }
                 final CountryDataMapper dataMapper = new CountryDataMapper(stateDatas);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE c.id = ? ";
                 return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { countryId });
@@ -50,11 +53,14 @@ public class CountryReadPlatformServiceImpl implements CountryReadPlatformServic
     }
 
     @Override
-    public Collection<CountryData> retrieveAllCountryDataByCountryIds(final List<Long> countryIds) {
+    public Collection<CountryData> retrieveAllCountryDataByCountryIds(final List<Long> countryIds,final boolean isTemplateRequired) {
         try {
             if (countryIds != null && !countryIds.isEmpty()) {
                 final String countryIdsStr = StringUtils.join(countryIds, ',');
-                final Collection<StateData> stateDatas = this.stateReadPlatformService.retrieveAllStateDataByCountryIds(countryIds);
+                Collection<StateData> stateDatas = null;
+                if(isTemplateRequired){
+                stateDatas = this.stateReadPlatformService.retrieveAllStateDataByCountryIds(countryIds);
+                }
                 final CountryDataMapper dataMapper = new CountryDataMapper(stateDatas);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE c.id IN (" + countryIdsStr + ") ";
                 return this.jdbcTemplate.query(sql, dataMapper);

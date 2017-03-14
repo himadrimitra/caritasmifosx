@@ -7,9 +7,9 @@ import com.finflux.infrastructure.gis.state.data.StateData;
 
 public interface StateReadPlatformService {
 
-    StateData retrieveOne(final Long stateId);
+    StateData retrieveOne(final Long stateId,final boolean isTemplateRequired);
 
-    Collection<StateData> retrieveAllStateDataByStateIds(final List<Long> stateIds);
+    Collection<StateData> retrieveAllStateDataByStateIds(final List<Long> stateIds,final boolean isTemplateRequired);
 
     Collection<StateData> retrieveAllStateDataByCountryId(final Long countryId);
 

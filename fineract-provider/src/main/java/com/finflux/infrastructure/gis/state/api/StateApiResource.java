@@ -72,10 +72,10 @@ public class StateApiResource {
     public String retrieveOne(@PathParam("stateId") final Long stateId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(StateApiConstants.STATE_RESOURCE_NAME);
-
-        final StateData stateData = this.stateReadPlatformService.retrieveOne(stateId);
-
+        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        final StateData stateData = this.stateReadPlatformService.retrieveOne(stateId, settings.isTemplate());
 
         return this.toApiJsonSerializer.serialize(settings, stateData);
     }

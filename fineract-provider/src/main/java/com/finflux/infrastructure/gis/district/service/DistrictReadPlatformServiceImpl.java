@@ -36,10 +36,13 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
     }
 
     @Override
-    public DistrictData retrieveOne(final Long districtId) {
+    public DistrictData retrieveOne(final Long districtId, final boolean isTemplateRequired) {
         try {
             if (districtId != null && districtId > 0) {
-                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictId(districtId);
+                Collection<TalukaData> talukaDatas= null;
+                if(isTemplateRequired){
+                talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictId(districtId);
+                }
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id = ? ";
                 return this.jdbcTemplate.queryForObject(sql, dataMapper, new Object[] { districtId });
@@ -49,11 +52,14 @@ public class DistrictReadPlatformServiceImpl implements DistrictReadPlatformServ
     }
 
     @Override
-    public Collection<DistrictData> retrieveAllDistrictDataByDistrictIds(final List<Long> districtIds) {
+    public Collection<DistrictData> retrieveAllDistrictDataByDistrictIds(final List<Long> districtIds, final boolean isTemplateRequired) {
         try {
             if (districtIds != null && !districtIds.isEmpty()) {
                 final String districtIdsStr = StringUtils.join(districtIds, ',');
-                final Collection<TalukaData> talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
+                Collection<TalukaData> talukaDatas = null;
+                if(isTemplateRequired){
+                talukaDatas = this.talukaReadPlatformService.retrieveAllTalukaDataByDistrictIds(districtIds);
+                }
                 final DistrictDataMapper dataMapper = new DistrictDataMapper(talukaDatas);
                 final String sql = "SELECT " + dataMapper.schema() + " WHERE d.id IN (" + districtIdsStr + ") ";
                 return this.jdbcTemplate.query(sql, dataMapper);

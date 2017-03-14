@@ -84,12 +84,12 @@ public class AddressApiResource {
             @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
-
-        final Collection<AddressData> addressDatas = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(entityType,
-                entityId);
-
+        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-
+       
+           final Collection<AddressData> addressDatas = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(entityType,
+                entityId,settings.isTemplate());
+        
         return this.toApiJsonSerializer.serialize(settings, addressDatas, AddressApiConstants.ADDRESS_RESPONSE_DATA_PARAMETERS);
     }
 
@@ -102,10 +102,10 @@ public class AddressApiResource {
             @PathParam("addressId") final Long addressId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(AddressApiConstants.ADDRESSES_RESOURCE_NAME);
-
-        final AddressData addressData = this.addressReadPlatformService.retrieveOne(entityType, entityId, addressId);
-
+        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        final AddressData addressData = this.addressReadPlatformService.retrieveOne(entityType, entityId, addressId,settings.isTemplate());
 
         return this.toApiJsonSerializer.serialize(settings, addressData, AddressApiConstants.ADDRESS_RESPONSE_DATA_PARAMETERS);
     }
