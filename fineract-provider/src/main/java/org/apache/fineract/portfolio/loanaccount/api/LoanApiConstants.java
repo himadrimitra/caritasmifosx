@@ -18,6 +18,12 @@
  */
 package org.apache.fineract.portfolio.loanaccount.api;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
+
 public interface LoanApiConstants {
 
     public static final String emiAmountParameterName = "fixedEmiAmount";
@@ -155,4 +161,6 @@ public interface LoanApiConstants {
     
     public static final String skipAuthenticationRule = "skipAuthenticationRule";
     public static final String syncRepaymentsWithMeeting = "syncRepaymentsWithMeeting";
+    
+    public static final Set<LoanStatus> loanStatusAllowedForPayment = new HashSet<>(Arrays.asList(LoanStatus.ACTIVE ,LoanStatus.CLOSED_OBLIGATIONS_MET ,LoanStatus.OVERPAID ));
 }

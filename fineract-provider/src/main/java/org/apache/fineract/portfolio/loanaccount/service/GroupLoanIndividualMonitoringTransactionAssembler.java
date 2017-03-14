@@ -174,75 +174,88 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         return glimTransactions;
     }
 
-    public List<GroupLoanIndividualMonitoringData> handleGLIMRepaymentTemplate(List<GroupLoanIndividualMonitoringData> glimData,
-            Loan loan, Date transactionDate) {
-        LocalDate transactionDateAsLocalDate = (transactionDate == null) ? DateUtils.getLocalDateOfTenant() : new LocalDate(transactionDate);
+    public List<GroupLoanIndividualMonitoringData> handleGLIMRepaymentTemplate(List<GroupLoanIndividualMonitoringData> glimData, Loan loan,
+            Date transactionDate) {
+        LocalDate transactionDateAsLocalDate = (transactionDate == null) ? DateUtils.getLocalDateOfTenant()
+                : new LocalDate(transactionDate);
         transactionDateAsLocalDate = new LocalDate(transactionDate);
         List<LoanRepaymentScheduleInstallment> loanRepaymentScheduleInstallment = loan.getRepaymentScheduleInstallments();
         MonetaryCurrency currency = loan.getCurrency();
         for (GroupLoanIndividualMonitoringData glimIndividualData : glimData) {
-            BigDecimal installmentAmount = BigDecimal.ZERO;
-            BigDecimal interestAmount = BigDecimal.ZERO;
-            BigDecimal chargeAmount = BigDecimal.ZERO;
-            BigDecimal waivedChargeAmount = BigDecimal.ZERO;
-            BigDecimal waivedInterestAmount = BigDecimal.ZERO;
-            BigDecimal defaultInstallmentAmount = glimIndividualData.getInstallmentAmount();
-            Boolean isChargeWaived = MathUtility.isGreaterThanZero(glimIndividualData.getWaivedChargeAmount());
-            Boolean isInterestWaived = MathUtility.isGreaterThanZero(glimIndividualData.getWaivedInterestAmount());
-            List<GroupLoanIndividualMonitoringCharge> glimCharges = this.glimChargeRepository.findByGlimId(glimIndividualData.getId());
-
-            for (int i = 0; i < loanRepaymentScheduleInstallment.size(); i++) {
-                LoanRepaymentScheduleInstallment scheduleInstallment = loanRepaymentScheduleInstallment.get(i);
-                LocalDate dueDate = scheduleInstallment.getDueDate();
-                BigDecimal installmentCharge = BigDecimal.ZERO;
-                BigDecimal installmentInterest = BigDecimal.ZERO;
-
-                if (dueDate.isBefore(transactionDateAsLocalDate) || dueDate.isEqual(transactionDateAsLocalDate) || i == 0) {
-                    if (scheduleInstallment.getInstallmentNumber() == loanRepaymentScheduleInstallment.size()) {
-                        installmentCharge = glimIndividualData.getChargeAmount().subtract(chargeAmount);
-                        installmentInterest = glimIndividualData.getInterestAmount().subtract(interestAmount);
-                    } else {
-                        installmentCharge = getDefaultChargeSharePerInstallment(loan, glimIndividualData.getId(), scheduleInstallment.getInstallmentNumber());
-
-                        installmentInterest = getDefaultInterestSharePerInstallment(loan, glimIndividualData.getId(),
-                                glimIndividualData.getInterestAmount(), scheduleInstallment.getInterestCharged(currency).getAmount(), loan
-                                        .getSummary().getTotalInterestCharged());
-                    }
-                    if(loan.getLoanProduct().adjustFirstEMIAmount() && i==0){
-                    	installmentAmount = MathUtility.subtract(MathUtility.add(glimIndividualData.getDisbursedAmount(),  glimIndividualData.getInterestAmount()),  MathUtility.multiply(defaultInstallmentAmount, loanRepaymentScheduleInstallment.size()-1));
-                    }else{
-                    	installmentAmount = installmentAmount.add(defaultInstallmentAmount);
-                    }
-                    
-                    for (GroupLoanIndividualMonitoringCharge glimCharge : glimCharges) {
-                        if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()
-                                && scheduleInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
-                            installmentAmount = installmentAmount.add(glimCharge.getFeeAmount() );
-                        }
-                    }
-                    
-                    chargeAmount = chargeAmount.add(installmentCharge);
-                    interestAmount = interestAmount.add(installmentInterest);
-                } else {
-                    break;
-                }
+            if (glimIndividualData.getIsActive()) {
+                getGlimTransactionAmount(loan, transactionDateAsLocalDate, loanRepaymentScheduleInstallment, currency, glimIndividualData);
+            } else {
+                glimIndividualData.setTransactionAmount(BigDecimal.ZERO);
             }
-            installmentAmount = installmentAmount.subtract(MathUtility.zeroIfNull(glimIndividualData.getPaidAmount()));
-            if (isChargeWaived) {
-                waivedChargeAmount = chargeAmount.subtract(MathUtility.zeroIfNull(glimIndividualData.getPaidChargeAmount()));
-                waivedChargeAmount = waivedChargeAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : waivedChargeAmount;
-            }
-            if (isInterestWaived) {
-                waivedInterestAmount = interestAmount.subtract(MathUtility.zeroIfNull(glimIndividualData.getPaidInterestAmount()));
-                waivedInterestAmount = waivedInterestAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : waivedInterestAmount;
-            }
-            installmentAmount = installmentAmount.subtract(waivedChargeAmount).subtract(waivedInterestAmount);
-            installmentAmount = installmentAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : installmentAmount;
-            glimIndividualData.setTransactionAmount(Money.of(currency, installmentAmount).getAmount());
-
         }
 
         return glimData;
+    }
+
+    private void getGlimTransactionAmount(Loan loan, LocalDate transactionDateAsLocalDate,
+            List<LoanRepaymentScheduleInstallment> loanRepaymentScheduleInstallment, MonetaryCurrency currency,
+            GroupLoanIndividualMonitoringData glimIndividualData) {
+        BigDecimal installmentAmount = BigDecimal.ZERO;
+        BigDecimal interestAmount = BigDecimal.ZERO;
+        BigDecimal chargeAmount = BigDecimal.ZERO;
+        BigDecimal waivedChargeAmount = BigDecimal.ZERO;
+        BigDecimal waivedInterestAmount = BigDecimal.ZERO;
+        BigDecimal defaultInstallmentAmount = glimIndividualData.getInstallmentAmount();
+        Boolean isChargeWaived = MathUtility.isGreaterThanZero(glimIndividualData.getWaivedChargeAmount());
+        Boolean isInterestWaived = MathUtility.isGreaterThanZero(glimIndividualData.getWaivedInterestAmount());
+        List<GroupLoanIndividualMonitoringCharge> glimCharges = this.glimChargeRepository.findByGlimId(glimIndividualData.getId());
+
+        for (int i = 0; i < loanRepaymentScheduleInstallment.size(); i++) {
+            LoanRepaymentScheduleInstallment scheduleInstallment = loanRepaymentScheduleInstallment.get(i);
+            LocalDate dueDate = scheduleInstallment.getDueDate();
+            BigDecimal installmentCharge = BigDecimal.ZERO;
+            BigDecimal installmentInterest = BigDecimal.ZERO;
+
+            if (dueDate.isBefore(transactionDateAsLocalDate) || dueDate.isEqual(transactionDateAsLocalDate) || i == 0) {
+                if (scheduleInstallment.getInstallmentNumber() == loanRepaymentScheduleInstallment.size()) {
+                    installmentCharge = glimIndividualData.getChargeAmount().subtract(chargeAmount);
+                    installmentInterest = glimIndividualData.getInterestAmount().subtract(interestAmount);
+                } else {
+                    installmentCharge = getDefaultChargeSharePerInstallment(loan, glimIndividualData.getId(),
+                            scheduleInstallment.getInstallmentNumber());
+
+                    installmentInterest = getDefaultInterestSharePerInstallment(loan, glimIndividualData.getId(),
+                            glimIndividualData.getInterestAmount(), scheduleInstallment.getInterestCharged(currency).getAmount(), loan
+                                    .getSummary().getTotalInterestCharged());
+                }
+                if (loan.getLoanProduct().adjustFirstEMIAmount() && i == 0) {
+                    installmentAmount = MathUtility.subtract(
+                            MathUtility.add(glimIndividualData.getDisbursedAmount(), glimIndividualData.getInterestAmount()),
+                            MathUtility.multiply(defaultInstallmentAmount, loanRepaymentScheduleInstallment.size() - 1));
+                } else {
+                    installmentAmount = installmentAmount.add(defaultInstallmentAmount);
+                }
+
+                for (GroupLoanIndividualMonitoringCharge glimCharge : glimCharges) {
+                    if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()
+                            && scheduleInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
+                        installmentAmount = installmentAmount.add(glimCharge.getFeeAmount());
+                    }
+                }
+
+                chargeAmount = chargeAmount.add(installmentCharge);
+                interestAmount = interestAmount.add(installmentInterest);
+            } else {
+                break;
+            }
+        }
+        installmentAmount = installmentAmount.subtract(MathUtility.zeroIfNull(glimIndividualData.getPaidAmount()));
+        if (isChargeWaived) {
+            waivedChargeAmount = chargeAmount.subtract(MathUtility.zeroIfNull(glimIndividualData.getPaidChargeAmount()));
+            waivedChargeAmount = waivedChargeAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : waivedChargeAmount;
+        }
+        if (isInterestWaived) {
+            waivedInterestAmount = interestAmount.subtract(MathUtility.zeroIfNull(glimIndividualData.getPaidInterestAmount()));
+            waivedInterestAmount = waivedInterestAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : waivedInterestAmount;
+        }
+        installmentAmount = installmentAmount.subtract(waivedChargeAmount).subtract(waivedInterestAmount);
+        installmentAmount = installmentAmount.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : installmentAmount;
+        glimIndividualData.setTransactionAmount(Money.of(currency, installmentAmount).getAmount());
     }
 
     public static BigDecimal getDefaultInterestSharePerInstallment(Loan loan, Long glimId, BigDecimal glimAmount, BigDecimal amount,
