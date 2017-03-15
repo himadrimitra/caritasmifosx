@@ -182,8 +182,10 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         boolean isNewPaymentRequired = loanRepaymentScheduleInstallment.isInterestDue(currency) || totalPrincipal.isGreaterThanZero();
         final List<LoanTransaction> modifiedTransactions = new ArrayList<>();
         List<LoanTransaction> transactions = loan.retreiveListOfTransactionsPostDisbursementExcludeAccruals();
+        final Long originalTransactionId = null;
         for (LoanTransaction loanTransaction : transactions) {
-            modifiedTransactions.add(LoanTransaction.copyTransactionProperties(loanTransaction));
+
+            modifiedTransactions.add(LoanTransaction.copyTransactionProperties(loanTransaction, originalTransactionId));
         }
         if (isNewPaymentRequired) {
             LoanTransaction ondayPaymentTransaction = LoanTransaction.repayment(null, totalAmount, null, today, null);
