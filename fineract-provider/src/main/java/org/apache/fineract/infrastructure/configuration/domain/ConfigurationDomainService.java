@@ -132,4 +132,6 @@ public interface ConfigurationDomainService {
     String getMaskedCharacter();
     
     boolean isMonthlyLoansSyncWithWeeklyMeetings();
+
+    boolean isGlimPaymentAsGroup();
 }

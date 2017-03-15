@@ -71,7 +71,7 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
             final StringBuilder sqlBuilder = new StringBuilder(400);
             this.isShowLoanDetailsInCenterPageEnabled = configurationDomainService.isShowLoanDetailsInCenterPageEnabled();
 
-            sqlBuilder.append("g.id AS groupId, g.account_no AS groupAccountNo, g.display_name AS groupName, g.status_enum AS groupStatusEnum ");
+            sqlBuilder.append("g.id AS groupId, g.account_no AS groupAccountNo, g.display_name AS groupName, g.status_enum AS groupStatusEnum, g.external_id AS groupExternalId ");
             sqlBuilder.append(", c.id AS clientId, c.account_no AS clientAccountNo, c.display_name AS clientFullName, c.status_enum AS clientStatusEnum ");
             if (this.isShowLoanDetailsInCenterPageEnabled) {
                 sqlBuilder.append(", l.id AS loanId, l.account_no AS loanAccountNo, l.loan_status_id AS loanStatusEnum, lp.name AS loanProductName ");
@@ -172,7 +172,8 @@ public class CenterGroupMemberAccountReadPlatformServiceImpl implements CenterGr
             final String groupName = rs.getString("groupName");
             final Integer groupStatus = JdbcSupport.getInteger(rs, "groupStatusEnum");
             final EnumOptionData status = ClientEnumerations.status(groupStatus);
-            return GroupGeneralData.lookup(groupId, groupAccountNo, groupName, status);
+            final String groupExternalId = rs.getString("groupExternalId");
+            return GroupGeneralData.lookup(groupId, groupAccountNo, groupName, status, groupExternalId);
         }
     }
 

@@ -88,7 +88,7 @@ public class LoanApplicationTestBuilder {
 
         final HashMap<String, Object> map = new HashMap<>();
 
-        if (this.loanType == "group") {
+        if (this.loanType.equals("group") || this.loanType.equals("glim")) {
             map.put("groupId", ID);
             if (this.calendarId != null) {
                 map.put("calendarId", this.calendarId);

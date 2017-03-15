@@ -1938,7 +1938,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public Collection<DisbursementData> retrieveLoanDisbursementDetails(final Long loanId) {
         final LoanDisbursementDetailMapper rm = new LoanDisbursementDetailMapper();
-        final String sql = "select " + rm.schema() + " where dd.loan_id=? group by dd.id order by dd.expected_disburse_date";
+        final String sql = "select " + rm.schema() + " where dd.loan_id=? and dd.is_active = 1 group by dd.id order by dd.expected_disburse_date";
         return this.jdbcTemplate.query(sql, rm, new Object[] { loanId });
     }
 
@@ -2606,7 +2606,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sqlBuilder.append(" LEFT JOIN m_loan_transaction tr ON tr.loan_id = l.id AND tr.transaction_type_enum = ? and tr.is_reversed = 0");
             sqlBuilder.append(" join m_currency rc on rc.`code` = l.currency_code ");
             sqlBuilder.append(" JOIN m_loan_repayment_schedule ls ON ls.loan_id = l.id AND ls.completed_derived = 0 ");
-            sqlBuilder.append(" join( ");
+            sqlBuilder.append(" LEFT join( ");
             sqlBuilder.append(" (select min(ls.duedate) datedue,ls.loan_id from m_loan_repayment_schedule ls  ");
             sqlBuilder.append(" where ls.loan_id = ? and  ls.completed_derived = 0)");
             sqlBuilder.append(" )asq on asq.loan_id = ls.loan_id and asq.datedue = ls.duedate");
@@ -2618,7 +2618,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         public LoanTransactionData mapRow(ResultSet rs, int rowNum) throws SQLException {
             final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REPAYMENT);
             final CurrencyData currencyData = this.currencyMapper.mapRow(rs, rowNum);
-            final LocalDate date = JdbcSupport.getLocalDate(rs, "transactionDate");
+            final LocalDate date = (JdbcSupport.getLocalDate(rs, "transactionDate") == null) ? DateUtils.getLocalDateOfTenant() : JdbcSupport.getLocalDate(
+                    rs, "transactionDate");
             final BigDecimal principalPortion = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "principalDue");
             final BigDecimal interestDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "interestDue");
             final BigDecimal feeDue = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "feeDue");

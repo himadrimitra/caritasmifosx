@@ -85,7 +85,7 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
         List<GroupLoanIndividualMonitoringData> groupLoanIndividualMonitoringData = null;
         if (is(commandParam, "repayment")) {
             groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
-                    .retrieveAllActiveGlimByLoanId(loanId);
+                    .retrieveSelectedClientsByLoanId(loanId);
             Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
             loan.updateDefautGlimMembers(this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true));
             groupLoanIndividualMonitoringData = this.glimTransactionAssembler.handleGLIMRepaymentTemplate(

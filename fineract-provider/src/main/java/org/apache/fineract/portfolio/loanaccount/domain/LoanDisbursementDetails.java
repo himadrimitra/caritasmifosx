@@ -55,6 +55,9 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
     @Column(name = "principal_net_disbursed", scale = 6, precision = 19, nullable = true)
     private BigDecimal netPrincipalDisbursed;
 
+	@Column(name = "is_active")
+	private boolean active = true;
+
     protected LoanDisbursementDetails() {
 
     }
@@ -64,10 +67,12 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
         this.actualDisbursementDate = actualDisbursementDate;
         this.principal = principal;
         this.netPrincipalDisbursed = principal;
+        this.active = true;
      }
 
     public void updateLoan(final Loan loan) {
         this.loan = loan;
+        this.active = true;
     }
 
     @Override
@@ -168,5 +173,13 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
     public void resetNetPrincipalDisbursed() {
          this.netPrincipalDisbursed = this.principal;
     }
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
+	public boolean isActive() {
+		return this.active;
+	}
 
 }

@@ -884,7 +884,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
             for (GroupLoanIndividualMonitoring glim : glimList) {
                 final BigDecimal approvedAmount = glim.getApprovedAmount();
-                if (approvedAmount != null) {
+                if (MathUtility.isGreaterThanZero(approvedAmount)) {
                     glimIds.add(glim.getId());
                     approvedGlimMembers.add(glim);
                     glim.setIsClientSelected(true);
@@ -2221,8 +2221,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Long fromLoanOfficerId = command.longValueOfParameterNamed("fromLoanOfficerId");
         final Long toLoanOfficerId = command.longValueOfParameterNamed("toLoanOfficerId");
-        final String[] loanIds = command.arrayValueOfParameterNamed("loans");
-
+        final Set<String> loanIds= new HashSet<String>(Arrays.asList(command.arrayValueOfParameterNamed("loans")));
         final LocalDate dateOfLoanOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
 
         final Staff fromLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(fromLoanOfficerId);
@@ -2935,15 +2934,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final String errorMessage = "For this loan product, disbursement details must be provided";
             throw new MultiDisbursementDataRequiredException(LoanApiConstants.disbursementDataParameterName, errorMessage);
         }
-
-        if (loan.getDisbursementDetails().size() > loan.loanProduct().maxTrancheCount()) {
+        if (loan.getActiveTrancheCount() > loan.loanProduct().maxTrancheCount()) {
             final String errorMessage = "Number of tranche shouldn't be greter than " + loan.loanProduct().maxTrancheCount();
             throw new ExceedingTrancheCountException(LoanApiConstants.disbursementDataParameterName, errorMessage, loan.loanProduct()
-                    .maxTrancheCount(), loan.getDisbursementDetails().size());
+                    .maxTrancheCount(), loan.getActiveTrancheCount());
         }
         LoanDisbursementDetails updateDetails = null;
         return processLoanDisbursementDetail(loan, loanId, command, updateDetails, recalculateFromDate);
-
+        
     }
 
     private CommandProcessingResult processLoanDisbursementDetail(final Loan loan, Long loanId, JsonCommand command,

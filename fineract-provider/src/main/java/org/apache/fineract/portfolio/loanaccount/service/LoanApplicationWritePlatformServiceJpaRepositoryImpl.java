@@ -358,6 +358,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     newLoanApplication.setTopupLoanDetails(topupDetails);
                 }
             }
+            
+            newLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
 
             this.loanRepository.save(newLoanApplication);
 
@@ -1044,27 +1046,27 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
             }    
            
-	        if (changes.containsKey("recalculateLoanSchedule")) {
-	            changes.remove("recalculateLoanSchedule");
-	
-	            final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
-	            final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
-	            final boolean considerAllDisbursmentsInSchedule = true;
-	            LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule);
-	            existingLoanApplication.setBrokenPeriodInterest(terms.getBrokenPeriodInterest().getAmount());
-	            if(existingLoanApplication.getFlatInterestRate() != null){
-                        existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
-                    }
-	            final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false, considerAllDisbursmentsInSchedule);
-	            existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
-	            existingLoanApplication.recalculateAllCharges();
-	            // save GroupLoanIndividualMonitoring clients
-                    
-	            
-	        }
+            if (changes.containsKey("recalculateLoanSchedule")) {
+                changes.remove("recalculateLoanSchedule");
+
+                final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
+                final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
+                final boolean considerAllDisbursmentsInSchedule = true;
+                LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule);
+                existingLoanApplication.setBrokenPeriodInterest(terms.getBrokenPeriodInterest().getAmount());
+                if (existingLoanApplication.getFlatInterestRate() != null) {
+                    existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
+                }
+                final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false,
+                        considerAllDisbursmentsInSchedule);
+                existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
+                existingLoanApplication.recalculateAllCharges();
+                // save GroupLoanIndividualMonitoring clients
+            }
 	        
-	        if(existingLoanApplication.isGLIMLoan()){
-	        	if (glimList.size() > 0) {
+            if (existingLoanApplication.isGLIMLoan()) {
+                // save GroupLoanIndividualMonitoring clients
+                if (glimList.size() > 0) {
                     existingLoanApplication.updateGlim(glimList);
                     existingLoanApplication.updateDefautGlimMembers(glimList);
                     // validate submitted on date with glim client activation
@@ -1073,8 +1075,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                             existingLoanApplication.getSubmittedOnDate(), glimList);
                     this.groupLoanIndividualMonitoringRepository.save(glimList);
                 }
-	        }
-
+            }
+	    existingLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup()); 
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(),
                     existingLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
                     productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
@@ -1513,11 +1515,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             // If loan approved amount is not same as loan amount demanded, then
             // during undo, restore the demand amount to principal amount.
             if(loan.isGLIMLoan()){
-                List<GroupLoanIndividualMonitoring> glimList  = this.groupLoanIndividualMonitoringRepository.findByLoanIdAndIsClientSelected(loanId, true);
+                List<GroupLoanIndividualMonitoring> glimList  = this.groupLoanIndividualMonitoringRepository.findByLoanId(loanId);
                 HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
                 for (GroupLoanIndividualMonitoring glim : glimList) {
                     final BigDecimal proposedAmount = glim.getProposedAmount();
-                    if (proposedAmount != null) {
+                    if (MathUtility.isGreaterThanZero(proposedAmount)) {
                         glim.setIsClientSelected(true);
                         glim.setApprovedAmount(null);
                         this.groupLoanIndividualMonitoringAssembler.recalculateTotalFeeCharges(loan, chargesMap, proposedAmount,
