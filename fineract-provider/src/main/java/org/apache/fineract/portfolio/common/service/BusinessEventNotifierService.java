@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.common.service;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,5 +54,15 @@ public interface BusinessEventNotifierService {
      * Business event
      */
     public void addBusinessEventPostListners(BUSINESS_EVENTS businessEvent, BusinessEventListner businessEventListner);
+
+    /**
+     * Method is to register tenant based event listners
+     */
+    void addBusinessEventTenantBasedPreListners(Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap);
+
+    /**
+     * Method is to register tenant based event listners
+     */
+    void addBusinessEventTenantBasedPostListners(Map<BUSINESS_EVENTS, List<BusinessEventListner>> businessEventListnerMap);
 
 }

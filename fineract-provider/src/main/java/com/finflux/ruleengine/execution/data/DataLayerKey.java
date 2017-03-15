@@ -8,7 +8,8 @@ public enum DataLayerKey {
     CENETR_ID("centerId"), //
     GROUP_ID("groupId"), //
     VILLAGE_ID("villageId"), //
-    LOANAPPLICATION_ID("loanApplicationId");//
+    LOANAPPLICATION_ID("loanApplicationId"),
+    RULE_ID("ruleId");//
 
     private String value;
 

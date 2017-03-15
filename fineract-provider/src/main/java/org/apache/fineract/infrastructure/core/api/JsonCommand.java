@@ -22,6 +22,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -600,6 +601,11 @@ public final class JsonCommand {
     
     public FormDataMultiPart getFormDataMultiPart() {
         return this.formDataMultiPart;
+    }
+    
+    public Map<String, Object> extractObjectMap() {
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        return this.fromApiJsonHelper.extractObjectMap(typeOfMap, this.json());
     }
     
 }
