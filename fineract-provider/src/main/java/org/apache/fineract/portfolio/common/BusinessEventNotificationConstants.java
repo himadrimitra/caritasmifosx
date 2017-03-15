@@ -18,7 +18,8 @@
  */
 package org.apache.fineract.portfolio.common;
 
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class BusinessEventNotificationConstants {
@@ -35,7 +36,7 @@ public class BusinessEventNotificationConstants {
                 "loan_remove_officer"), LOAN_APPLY_OVERDUE_CHARGE("loan_apply_overdue_charge"), LOAN_INTEREST_RECALCULATION(
                 "loan_interest_recalculation"), LOAN_REFUND("loan_refund"), LOAN_ADD_SUBSIDY("loan_add_subsidy_transaction"), LOAN_REVOKE_SUBSIDY(
                 "loan_revoke_subsidy_transaction"),LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_CLOSE("client_close"), 
-                CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client");
+                CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify");
 
         private final String value;
 
@@ -43,15 +44,19 @@ public class BusinessEventNotificationConstants {
             this.value = value;
         }
 
-        private static final Set<String> values = new HashSet<>();
+        private static final Map<String,BUSINESS_EVENTS> valueMapping = new HashMap<>();
         static {
             for (final BUSINESS_EVENTS type : BUSINESS_EVENTS.values()) {
-                values.add(type.value);
+                valueMapping.put(type.value,type);
             }
         }
 
         public static Set<String> getAllValues() {
-            return values;
+            return valueMapping.keySet();
+        }
+        
+        public static BUSINESS_EVENTS from(final String value){
+            return valueMapping.get(value);
         }
 
         public String getValue() {
@@ -62,7 +67,7 @@ public class BusinessEventNotificationConstants {
     public static enum BUSINESS_ENTITY {
         LOAN("loan"), LOAN_TRANSACTION("loan_transaction"), LOAN_CHARGE("loan_charge"), LOAN_ADJUSTED_TRANSACTION(
                 "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"),
-        JSON_COMMAND("json_command");
+        JSON_COMMAND("json_command"), BUSINESS_EVENT("business_event");
 
         private final String value;
 
@@ -70,6 +75,17 @@ public class BusinessEventNotificationConstants {
             this.value = value;
         }
 
+        private static final Map<String,BUSINESS_ENTITY> valueMapping = new HashMap<>();
+        static {
+            for (final BUSINESS_ENTITY type : BUSINESS_ENTITY.values()) {
+                valueMapping.put(type.value,type);
+            }
+        }
+        
+        public static BUSINESS_ENTITY from(final String value){
+            return valueMapping.get(value);
+        }
+        
         public String getValue() {
             return this.value;
         }

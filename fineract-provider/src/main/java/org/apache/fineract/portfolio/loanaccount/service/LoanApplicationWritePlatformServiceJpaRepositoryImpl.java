@@ -456,6 +456,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(newLoanApplication);
             }
             
+            Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
+            eventDetailMap.put(BUSINESS_ENTITY.LOAN, newLoanApplication);
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_CREATE,
+                    eventDetailMap);
+            
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(newLoanApplication.getId()) //
@@ -526,6 +531,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
 
+        Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_CREATE,
+                eventDetailMap);
+        
         final Loan newLoanApplication = this.loanAssembler.assembleFrom(command, currentUser);
 
         this.loanScheduleValidator.validateSubmittedOnDate(newLoanApplication.getSubmittedOnDate(), newLoanApplication.getExpectedFirstRepaymentOnDate(),
@@ -777,6 +786,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             	// validate glim charges
                 validateGlimCharges(command);
             }
+            
+            Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
+            eventDetailMap.put(BUSINESS_ENTITY.LOAN, existingLoanApplication);
+            this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_MODIFY,
+                    eventDetailMap);
 
             final Set<LoanCharge> existingCharges = existingLoanApplication.charges();
             Map<Long, LoanChargeData> chargesMap = new HashMap<>();
@@ -1286,6 +1300,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             	glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(existingLoanApplication);
             }
 
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_MODIFY,
+                    eventDetailMap);
+            
             return new CommandProcessingResultBuilder() //
                     .withEntityId(loanId) //
                     .withOfficeId(existingLoanApplication.getOfficeId()) //
@@ -1376,6 +1393,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.loanApplicationTransitionApiJsonValidator.validateApproval(command.json());
         
         final Loan loan = retrieveLoanBy(loanId);
+        Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.LOAN, loan);
+        eventDetailMap.put(BUSINESS_ENTITY.JSON_COMMAND, command);
+        this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_APPROVED,
+                eventDetailMap);
 
         final JsonArray disbursementDataArray = command.arrayOfParameterNamed(LoanApiConstants.disbursementDataParameterName);
 
@@ -1478,7 +1499,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             }
 
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_APPROVED,
-                    constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+                    eventDetailMap);
             
 
             
