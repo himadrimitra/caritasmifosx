@@ -7,9 +7,9 @@ import com.finflux.infrastructure.gis.district.data.DistrictData;
 
 public interface DistrictReadPlatformService {
 
-    DistrictData retrieveOne(final Long districtId);
+    DistrictData retrieveOne(final Long districtId,final boolean isTemplateRequired);
 
-    Collection<DistrictData> retrieveAllDistrictDataByDistrictIds(final List<Long> districtIds);
+    Collection<DistrictData> retrieveAllDistrictDataByDistrictIds(final List<Long> districtIds,final boolean isTemplateRequired);
     
     Collection<DistrictData> retrieveAllDistrictDataByStateId(final Long stateId);
 

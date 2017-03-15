@@ -154,7 +154,9 @@ public class VillageApiResource {
         Collection<CenterData> hierarchy = null;
 
         Collection<CenterData> centers = null;
-        Collection<AddressData> address  = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(VillageTypeApiConstants.pathParamName,villageId);
+        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        
+        Collection<AddressData> address  = this.addressReadPlatformService.retrieveAddressesByEntityTypeAndEntityId(VillageTypeApiConstants.pathParamName,villageId,settings.isTemplate());
         
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("setOfCenters")) {
@@ -165,8 +167,6 @@ public class VillageApiResource {
                 hierarchy = this.villageReadPlatformService.retrieveHierarchy(villageId);
             }
         }
-        
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         
         village = VillageData.withAssociations(village, centers,address,hierarchy);
        // village.getAssociations(centers);

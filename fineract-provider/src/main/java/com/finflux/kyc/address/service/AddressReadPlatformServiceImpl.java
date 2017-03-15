@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,13 +78,13 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
     }
 
     @Override
-    public AddressData retrieveOne(final String entityType, final Long entityId, final Long addressId) {
+    public AddressData retrieveOne(final String entityType, final Long entityId, final Long addressId,final boolean isTemplateRequired) {
         try {
             final Address address = this.addressRepository.findOneWithNotFoundDetection(addressId);
             final Collection<TalukaData> talukaDatas = getTalukaDatas(address, null);
-            final Collection<DistrictData> districtDatas = getDistrictDatas(address, null);
-            final Collection<StateData> stateDatas = getStateDatas(address, null);
-            final Collection<CountryData> countryDatas = getCountryDatas(address, null);
+            final Collection<DistrictData> districtDatas = getDistrictDatas(address, null,isTemplateRequired);
+            final Collection<StateData> stateDatas = getStateDatas(address, null,isTemplateRequired);
+            final Collection<CountryData> countryDatas = getCountryDatas(address, null,isTemplateRequired);
             final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }
             final Integer entityTypeEnum = addressEntityType.getValue();
@@ -104,7 +105,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
 
     @SuppressWarnings("unused")
     private Collection<CountryData> getCountryDatas(final Address address,
-            final List<Map<String, Object>> listOfMapForCountryStateDistrictIds) {
+            final List<Map<String, Object>> listOfMapForCountryStateDistrictIds,final boolean isTemplateRequired) {
         Collection<CountryData> countryDatas = null;
         if (listOfMapForCountryStateDistrictIds != null && listOfMapForCountryStateDistrictIds.size() > 0) {
             final List<Long> countryIds = new ArrayList<Long>();
@@ -117,11 +118,11 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 }
             }
             if (!countryIds.isEmpty()) {
-                countryDatas = this.countryReadPlatformService.retrieveAllCountryDataByCountryIds(countryIds);
+                countryDatas = this.countryReadPlatformService.retrieveAllCountryDataByCountryIds(countryIds,isTemplateRequired);
             }
         } else if (address != null && address.getCountry() != null) {
             final Long countryId = address.getCountry().getId();
-            final CountryData countryData = this.countryReadPlatformService.retrieveOne(countryId);
+            final CountryData countryData = this.countryReadPlatformService.retrieveOne(countryId,isTemplateRequired);
             if (countryData != null) {
                 countryDatas = new ArrayList<CountryData>();
                 countryDatas.add(countryData);
@@ -131,7 +132,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
     }
 
     @SuppressWarnings("unused")
-    private Collection<StateData> getStateDatas(final Address address, final List<Map<String, Object>> listOfMapForCountryStateDistrictIds) {
+    private Collection<StateData> getStateDatas(final Address address, final List<Map<String, Object>> listOfMapForCountryStateDistrictIds,final boolean isTemplateRequired) {
         Collection<StateData> stateDatas = null;
         if (listOfMapForCountryStateDistrictIds != null && listOfMapForCountryStateDistrictIds.size() > 0) {
             final List<Long> stateIds = new ArrayList<Long>();
@@ -144,11 +145,11 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 }
             }
             if (!stateIds.isEmpty()) {
-                stateDatas = this.stateReadPlatformService.retrieveAllStateDataByStateIds(stateIds);
+                stateDatas = this.stateReadPlatformService.retrieveAllStateDataByStateIds(stateIds,isTemplateRequired);
             }
         } else if (address != null && address.getState() != null) {
             final Long stateId = address.getState().getId();
-            final StateData stateData = this.stateReadPlatformService.retrieveOne(stateId);
+            final StateData stateData = this.stateReadPlatformService.retrieveOne(stateId,isTemplateRequired);
             if (stateData != null) {
                 stateDatas = new ArrayList<StateData>();
                 stateDatas.add(stateData);
@@ -159,7 +160,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
 
     @SuppressWarnings("unused")
     private Collection<DistrictData> getDistrictDatas(final Address address,
-            final List<Map<String, Object>> listOfMapForCountryStateDistrictIds) {
+            final List<Map<String, Object>> listOfMapForCountryStateDistrictIds,final boolean isTemplateRequired) {
         Collection<DistrictData> districtDatas = null;
         if (listOfMapForCountryStateDistrictIds != null && listOfMapForCountryStateDistrictIds.size() > 0) {
             final List<Long> districtIds = new ArrayList<Long>();
@@ -172,11 +173,11 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                 }
             }
             if (!districtIds.isEmpty()) {
-                districtDatas = this.districtReadPlatformService.retrieveAllDistrictDataByDistrictIds(districtIds);
+                districtDatas = this.districtReadPlatformService.retrieveAllDistrictDataByDistrictIds(districtIds,isTemplateRequired);
             }
         } else if (address != null && address.getDistrict() != null) {
             final Long districtId = address.getDistrict().getId();
-            final DistrictData districtData = this.districtReadPlatformService.retrieveOne(districtId);
+            final DistrictData districtData = this.districtReadPlatformService.retrieveOne(districtId,isTemplateRequired);
             if (districtData != null) {
                 districtDatas = new ArrayList<DistrictData>();
                 districtDatas.add(districtData);
@@ -214,7 +215,7 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
 
     @SuppressWarnings({ "unused" })
     @Override
-    public Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId) {
+    public Collection<AddressData> retrieveAddressesByEntityTypeAndEntityId(final String entityType, final Long entityId,final boolean isTemplateRequired) {
         try {
             final AddressEntityTypeEnums addressEntityType = AddressEntityTypeEnums.getEntityType(entityType);
             if (addressEntityType == null) { throw new AddressEntityTypeNotSupportedException(entityType); }
@@ -234,9 +235,9 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
                     final List<Map<String, Object>> listOfMapForCountryStateDistrictIds = this.jdbcTemplate
                             .queryForList(sqlForCountryStateDistrictIds);
                     final Collection<TalukaData> talukaDatas = getTalukaDatas(null, listOfMapForCountryStateDistrictIds);
-                    final Collection<DistrictData> districtDatas = getDistrictDatas(null, listOfMapForCountryStateDistrictIds);
-                    final Collection<StateData> stateDatas = getStateDatas(null, listOfMapForCountryStateDistrictIds);
-                    final Collection<CountryData> countryDatas = getCountryDatas(null, listOfMapForCountryStateDistrictIds);
+                    final Collection<DistrictData> districtDatas = getDistrictDatas(null, listOfMapForCountryStateDistrictIds,isTemplateRequired);
+                    final Collection<StateData> stateDatas = getStateDatas(null, listOfMapForCountryStateDistrictIds,isTemplateRequired);
+                    final Collection<CountryData> countryDatas = getCountryDatas(null, listOfMapForCountryStateDistrictIds,isTemplateRequired);
                     final AddressDataMapper dataMapper = new AddressDataMapper(districtDatas, stateDatas, countryDatas, addressEntityDatas,
                             talukaDatas);
                     final String sql = "SELECT " + dataMapper.schema() + " WHERE a.id IN (" + addressIdsAsString + ") ";
@@ -452,4 +453,5 @@ public class AddressReadPlatformServiceImpl implements AddressReadPlatformServic
             return count;
         }
     }
+
 }

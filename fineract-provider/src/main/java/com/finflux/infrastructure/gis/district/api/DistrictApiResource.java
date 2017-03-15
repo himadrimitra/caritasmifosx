@@ -72,10 +72,10 @@ public class DistrictApiResource {
     public String retrieveOne(@PathParam("districtId") final Long districtId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(DistrictApiConstants.DISTRICT_RESOURCE_NAME);
-
-        final DistrictData districtData = this.districtReadPlatformService.retrieveOne(districtId);
-
+        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+
+        final DistrictData districtData = this.districtReadPlatformService.retrieveOne(districtId, settings.isTemplate());
 
         return this.toApiJsonSerializer.serialize(settings, districtData);
     }

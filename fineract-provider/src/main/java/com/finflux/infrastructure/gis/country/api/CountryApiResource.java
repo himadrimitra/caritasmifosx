@@ -72,10 +72,10 @@ public class CountryApiResource {
     public String retrieveOne(@PathParam("countryId") final Long countryId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(CountryApiConstants.COUNTRY_RESOURCE_NAME);
-
-        final CountryData countryData = this.countryReadPlatformService.retrieveOne(countryId);
-
+        
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        
+        final CountryData countryData = this.countryReadPlatformService.retrieveOne(countryId,settings.isTemplate());
 
         return this.toApiJsonSerializer.serialize(settings, countryData);
     }
