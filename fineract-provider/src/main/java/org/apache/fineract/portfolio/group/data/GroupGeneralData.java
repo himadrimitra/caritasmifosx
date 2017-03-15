@@ -25,6 +25,7 @@ import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
+import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.village.data.VillageData;
@@ -75,6 +76,7 @@ public class GroupGeneralData {
 
     // global configuration
     private final boolean isShowLoanDetailsInCenterPageEnabled;
+    private Collection<LoanAccountSummaryData> loanAccountSummaryDatas;
 
     public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName) {
         final Collection<ClientData> clientMembers = null;
@@ -240,7 +242,7 @@ public class GroupGeneralData {
     }
     
     public String getAccountNo(){
-    	return this.accountNo;
+        return this.accountNo;
     }
 
     public String getName() {
@@ -344,14 +346,21 @@ public class GroupGeneralData {
     }
     
     public void updateClientMembers(Collection<ClientData> clientMembers) {
-    	this.clientMembers = clientMembers;
+        this.clientMembers = clientMembers;
     }
     
     public void addClients(ClientData clientData){
-    	if(this.clientMembers == null){
-    		this.clientMembers = new ArrayList<>();
-    	}
-    	this.clientMembers.add(clientData);
+        if(this.clientMembers == null){
+                this.clientMembers = new ArrayList<>();
+        }
+        this.clientMembers.add(clientData);
+    }
+
+    public void addLoanAccountSummaryData(final LoanAccountSummaryData loanAccountSummaryData) {
+        if (this.loanAccountSummaryDatas == null) {
+            this.loanAccountSummaryDatas = new ArrayList<>();
+        }
+        this.loanAccountSummaryDatas.add(loanAccountSummaryData);
     }
 
 	public static GroupGeneralData withVillageData(final GroupGeneralData group, final VillageData villageData) {
