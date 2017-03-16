@@ -280,7 +280,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     interestCalculationGraceOnRepaymentPeriodFraction);
             
             applyUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods, scheduledDueDate,
-                    currentPeriodParams);
+                    currentPeriodParams, mc);
 
             if (loanApplicationTerms.isMultiDisburseLoan()) {
                 updateBalanceBasedOnDisbursement(mc, loanApplicationTerms, chargesDueAtTimeOfDisbursement, scheduleParams, periods,
@@ -469,35 +469,36 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
     private void applyUpfrontInterestCollection(final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO,
             final MonetaryCurrency currency, LoanScheduleParams scheduleParams, Collection<LoanScheduleModelPeriod> periods,
-            LocalDate scheduledDueDate, ScheduleCurrentPeriodParams currentPeriodParams) {
+            LocalDate scheduledDueDate, ScheduleCurrentPeriodParams currentPeriodParams, MathContext mc) {
         if (loanApplicationTerms.collectInterestUpfront() && scheduleParams.getPeriodNumber() == 1) {
+            Money interest = loanApplicationTerms.calculateInterestWithFlatInterestRate(mc);
             if (!scheduledDueDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())) {
-                addInstallmentForUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods);
+                addInstallmentForUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods,
+                        interest);
             } else {
-                scheduleParams.reduceOutstandingBalance(loanApplicationTerms.getTotalInterestForSchedule());
-                currentPeriodParams.plusPrepaymentAmount(loanApplicationTerms.getTotalInterestForSchedule());
+                scheduleParams.reduceOutstandingBalance(interest);
+                currentPeriodParams.plusPrepaymentAmount(interest);
             }
         }
     }
 
     private void addInstallmentForUpfrontInterestCollection(final LoanApplicationTerms loanApplicationTerms,
             final HolidayDetailDTO holidayDetailDTO, final MonetaryCurrency currency, LoanScheduleParams scheduleParams,
-            Collection<LoanScheduleModelPeriod> periods) {
-        scheduleParams.reduceOutstandingBalance(loanApplicationTerms.getTotalInterestForSchedule());
+            Collection<LoanScheduleModelPeriod> periods, Money interestToBeCollected) {
+        scheduleParams.reduceOutstandingBalance(interestToBeCollected);
         LoanScheduleModelPeriod installment = LoanScheduleModelRepaymentPeriod.repayment(scheduleParams.getInstalmentNumber(),
-                scheduleParams.getPeriodStartDate(), loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms.getTotalInterestForSchedule(),
-                scheduleParams.getOutstandingBalance(), Money.zero(currency),
-                Money.zero(currency), Money.zero(currency),
-                loanApplicationTerms.getTotalInterestForSchedule(), true);
+                scheduleParams.getPeriodStartDate(), loanApplicationTerms.getExpectedDisbursementDate(), interestToBeCollected,
+                scheduleParams.getOutstandingBalance(), Money.zero(currency), Money.zero(currency), Money.zero(currency),
+                interestToBeCollected, true);
         periods.add(installment);
         scheduleParams.incrementInstalmentNumber();
-        scheduleParams.addTotalCumulativePrincipal(loanApplicationTerms.getTotalInterestForSchedule());
-        scheduleParams.addTotalRepaymentExpected(loanApplicationTerms.getTotalInterestForSchedule());
+        scheduleParams.addTotalCumulativePrincipal(interestToBeCollected);
+        scheduleParams.addTotalRepaymentExpected(interestToBeCollected);
         LocalDate amountApplicableDate = installment.periodDueDate();
         if (loanApplicationTerms.isInterestRecalculationEnabled()) {
             amountApplicableDate = getNextRestScheduleDate(installment.periodDueDate().minusDays(1), loanApplicationTerms, holidayDetailDTO);
         }
-        updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), loanApplicationTerms.getTotalInterestForSchedule(), amountApplicableDate);
+        updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), interestToBeCollected, amountApplicableDate);
     }
 
     private Money updateCapitalizedFee(final LoanApplicationTerms loanApplicationTerms, final MonetaryCurrency currency,

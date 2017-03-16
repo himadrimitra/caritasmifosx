@@ -645,7 +645,7 @@ public final class LoanApplicationTerms {
         } else if (allowNegativeBalance && this.totalPrincipalForSchedule != null
                 && (this.totalPrincipalForSchedule.minus(totalCumulativePrincipalToDate).isLessThanZero()
                 || isLastRepaymentPeriod(this.actualNumberOfRepayments, periodNumber))) {
-            adjusted = principalForPeriod.minus(this.totalPrincipalForSchedule.minus(totalCumulativePrincipalToDate).abs());
+            adjusted = principalForPeriod.plus(this.totalPrincipalForSchedule.minus(totalCumulativePrincipalToDate));
         } else if (this.actualFixedEmiAmount != null) {
             final Money difference = this.principal.minus(totalCumulativePrincipalToDate);
             if (this.fixedNumberOfRepayments == null) {
