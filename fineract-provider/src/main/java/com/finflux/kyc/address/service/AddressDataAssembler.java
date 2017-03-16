@@ -245,7 +245,7 @@ public class AddressDataAssembler {
     private Country validateStateWithCountryAndGetCountryObject(final State state, final Long countryId) {
         final Country country = this.countryRepository.findOneWithNotFoundDetection(countryId);
         if (state != null && state.getCountryId() != null
-                && state.getCountryId() != countryId) { throw new GeneralPlatformDomainRuleException(
+                && !state.getCountryId().equals(countryId)) { throw new GeneralPlatformDomainRuleException(
                         "error.msg.address.state.does.not.belongs.to.country",
                         "" + state.getStateName() + " state does not belongs to " + country.getCountryName() + " country",
                         state.getStateName(), country.getCountryName()); }
@@ -255,7 +255,7 @@ public class AddressDataAssembler {
     private State validateDistrictWithStateAndGetStateObject(final District district, final Long stateId) {
         final State state = this.stateRepository.findOneWithNotFoundDetection(stateId);
         if (district != null && district.getStateId() != null
-                && district.getStateId() != stateId) { throw new GeneralPlatformDomainRuleException(
+                && !district.getStateId() .equals(stateId)) { throw new GeneralPlatformDomainRuleException(
                         "error.msg.address.district.does.not.belongs.to.state",
                         "" + district.getDistrictName() + " district does not belongs to " + state.getStateName() + " state",
                         district.getDistrictName(), state.getStateName()); }
@@ -264,7 +264,7 @@ public class AddressDataAssembler {
     private District validateTalukaWithDistrictAndGetDistrictObject(final Taluka taluka, final Long districtId) {
         final District district = this.districtRepository.findOneWithNotFoundDetection(districtId);
         if (taluka != null && taluka.getDistrictId() != null
-                && taluka.getDistrictId() != districtId) { throw new GeneralPlatformDomainRuleException(
+                && !taluka.getDistrictId() .equals(districtId)) { throw new GeneralPlatformDomainRuleException(
                         "error.msg.address.taluka.does.not.belongs.to.district",
                         "" + taluka.getTalukaName() + " taluka does not belongs to " + district.getDistrictName() + " district",
                         taluka.getTalukaName(), district.getDistrictName()); }

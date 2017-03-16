@@ -129,7 +129,7 @@ public class StateReadPlatformServiceImpl implements StateReadPlatformService {
             Collection<DistrictData> districtDatas = new ArrayList<DistrictData>();
             if (this.districtDatas != null && this.districtDatas.size() > 0) {
                 for (final DistrictData districtData : this.districtDatas) {
-                    if (districtData.getStateId() == stateId) {
+                    if (districtData.getStateId() .equals(stateId)) {
                         districtDatas.add(districtData);
                     }
                 }
