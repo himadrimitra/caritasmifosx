@@ -184,11 +184,8 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                      * breakup (principal, interest, fees, penalties) has
                      * changed.<br>
                      **/
-                    final Long originalTransactionId = (loanTransaction.getoriginalTransactionId() == null) ? loanTransaction.getId()
-                            : loanTransaction.getoriginalTransactionId();
-
-                    final LoanTransaction newLoanTransaction = LoanTransaction.copyTransactionProperties(loanTransaction,
-                            originalTransactionId);
+                    
+                    final LoanTransaction newLoanTransaction = LoanTransaction.copyTransactionProperties(loanTransaction);
 
                     // Reset derived component of new loan transaction and
                     // re-process transaction

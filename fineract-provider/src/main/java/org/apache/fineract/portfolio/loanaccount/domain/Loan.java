@@ -6171,9 +6171,8 @@ public class Loan extends AbstractPersistable<Long> {
         final List<LoanTransaction> allNonContraTransactionsPostDisbursement = retreiveListOfTransactionsPostDisbursement();
         final List<LoanTransaction> copyTransactions = new ArrayList<>();
         if (allNonContraTransactionsPostDisbursement.size() > 0) {
-            final Long originalTransactionId = null;
             for (LoanTransaction loanTransaction : allNonContraTransactionsPostDisbursement) {
-                copyTransactions.add(LoanTransaction.copyTransactionProperties(loanTransaction, originalTransactionId));
+                copyTransactions.add(LoanTransaction.copyTransactionProperties(loanTransaction));
             }
             loanRepaymentScheduleTransactionProcessor.handleTransaction(getDisbursementDate(), copyTransactions, getCurrency(),
                     this.repaymentScheduleInstallments, charges());
