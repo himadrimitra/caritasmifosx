@@ -34,7 +34,8 @@ public class EnquiryResponse {
     }
 
     private String replacePasswordInRequest() {
-        if (request != null) { return request.replace(request.substring(request.indexOf("<PWD>") + 5, request.indexOf("</PWD>")), "XXXXX"); }
+        if (request != null && request.indexOf("<PWD>") > 0) { return request.replace(request.substring(request.indexOf("<PWD>") + 5, request.indexOf("</PWD>")), "XXXXX"); }
+        if (request != null && request.indexOf("<Password>") > 0) { return request.replace(request.substring(request.indexOf("<Password>") + 10, request.indexOf("</Password>")), "XXXXX"); }
         return null;
     }
 

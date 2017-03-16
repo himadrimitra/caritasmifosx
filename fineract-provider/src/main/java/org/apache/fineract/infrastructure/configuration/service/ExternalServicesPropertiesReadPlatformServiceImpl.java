@@ -22,6 +22,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
+import org.apache.fineract.infrastructure.configuration.data.EquifaxCredentialsData;
+import org.apache.fineract.infrastructure.configuration.data.EquifaxDocumentTypes;
+import org.apache.fineract.infrastructure.configuration.data.EquifaxRelationTypes;
 import org.apache.fineract.infrastructure.configuration.data.ExternalServicesPropertiesData;
 import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
 import org.apache.fineract.infrastructure.configuration.data.S3CredentialsData;
@@ -441,4 +444,147 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
         return highmarkCredentialsData;
     }
 
+	@Override
+	public EquifaxCredentialsData getEquifaxCredentials() {
+		final ResultSetExtractor<EquifaxCredentialsData> resultSetExtractor = new EquifaxCredentialsDataExtractor();
+		final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
+				+ ExternalServicesConstants.EQUIFAX_SERVICE_NAME + "'";
+		final EquifaxCredentialsData equifaxCredentialsData = this.jdbcTemplate.query(sql, resultSetExtractor,
+				new Object[] {});
+		return equifaxCredentialsData;
+	}
+
+	private final static class EquifaxCredentialsDataExtractor implements ResultSetExtractor<EquifaxCredentialsData> {
+
+		@Override
+		public EquifaxCredentialsData extractData(ResultSet rs) throws SQLException, DataAccessException {
+			Integer customerId = null;
+			String userId = null;
+			String password = null;
+			String memberNumber = null;
+			String securityCode = null;
+			String productCode = null;
+			String productVersion = null;
+			String customerReferenceNo = null;
+			String qName = null;
+			String qNameVersion = null;
+			String equifaxUrl = null;
+			String documentTypePassport = null;
+			String documentTypePan = null;
+			String documentTypeVoterId = null;
+			String documentTypeAadhar = null;
+			String documentTypeRation = null;
+			String documentTypeDrivingLicense = null;
+			String documentTypeOther = null;
+			String relationTypeOther = null;
+			String relationTypeSisterInLaw = null;
+			String relationTypeDaughterInLaw = null;
+			String relationTypeMotherInLaw = null;
+			String relationTypeDaughter = null;
+			String relationTypeSister = null;
+			String relationTypeWife = null;
+			String relationTypeMother = null;
+			String relationTypeBrotherInLaw = null;
+			String relationTypeSonInLaw = null;
+			String relationTypeFatherInLaw = null;
+			String relationTypeBrother = null;
+			String relationTypeSon = null;
+			String relationTypeHusband = null;
+			String relationTypeFather = null;
+			String relationTypeSpouse = null ;
+			String genderTypeFemale = null ;
+			String genderTypeMale = null ;
+			
+			while (rs.next()) {
+				if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.CUSTOMER_ID)) {
+					customerId = rs.getInt("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.USER_ID)) {
+					userId = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.PASSWORD)) {
+					password = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.MEMBER_NUMBER)) {
+					memberNumber = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SECURITY_CODE)) {
+					securityCode = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.PRODUCT_CODE)) {
+					productCode = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.PRODUCT_VERSION)) {
+					productVersion = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.CUSTOMER_REFERENCE_NO)) {
+					customerReferenceNo = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.QNAME)) {
+					qName = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.QNAME_VERSION)) {
+					qNameVersion = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.EQUIFAX_URL)) {
+					equifaxUrl = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_PASSPORT)) {
+					documentTypePassport = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_VOTER_ID)) {
+					documentTypeVoterId = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_UID)) {
+					documentTypeAadhar = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_RATION_CARD)) {
+					documentTypeRation = rs.getString("value");
+				} else if (rs.getString("name")
+						.equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_DRIVING_CARD)) {
+					documentTypeDrivingLicense = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_PAN)) {
+					documentTypePan = rs.getString("value");
+				} else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.DOCUMENT_TYPE_OTHER)) {
+					documentTypeOther = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_FATHER)) {
+					relationTypeFather = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_HUSBAND)) {
+					relationTypeHusband = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_SON)) {
+					relationTypeSon = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_BROTHER)) {
+					relationTypeBrother = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_FATHER_IN_LAW)) {
+					relationTypeFatherInLaw = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_SON_IN_LAW)) {
+					relationTypeSonInLaw = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_BROTHER_IN_LAW)) {
+					relationTypeBrotherInLaw = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_MOTHER)) {
+					relationTypeMother = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_WIFE)) {
+					relationTypeWife = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_SISTER)) {
+					relationTypeSister = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_DAUGHTER)) {
+					relationTypeDaughter = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_MOTHER_IN_LAW)) {
+					relationTypeMotherInLaw = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_DAUGHTER_IN_LAW)) {
+					relationTypeDaughterInLaw = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_SISTER_IN_LAW)) {
+					relationTypeSisterInLaw = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_OTHER)) {
+					relationTypeOther = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.GENDER_TYPE_FEMALE)) {
+					genderTypeFemale = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.GENDER_TYPE_MALE)) {
+					genderTypeMale = rs.getString("value");
+				}else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.RELATIONSHIP_TYPE_SPOUSE)) {
+					relationTypeSpouse = rs.getString("value");
+				}
+				
+			}
+			
+			
+			EquifaxDocumentTypes documentTypes = new EquifaxDocumentTypes(documentTypePassport, documentTypePan,
+					documentTypeAadhar, documentTypeVoterId, documentTypeDrivingLicense, documentTypeRation,
+					documentTypeOther);
+			EquifaxRelationTypes relationTypes = new EquifaxRelationTypes(relationTypeFather, relationTypeHusband,
+					relationTypeBrother, relationTypeSon, relationTypeSonInLaw, relationTypeFatherInLaw,
+					relationTypeBrotherInLaw, relationTypeMother, relationTypeWife, relationTypeSister,
+					relationTypeDaughter, relationTypeDaughterInLaw, relationTypeMotherInLaw, relationTypeSisterInLaw,
+					relationTypeSpouse, relationTypeOther);
+			return new EquifaxCredentialsData(customerId, userId, password, memberNumber, securityCode, productCode,
+					productVersion, customerReferenceNo, equifaxUrl, qName, qNameVersion, documentTypes, relationTypes, genderTypeFemale, genderTypeMale);
+		}
+    	
+    }
 }

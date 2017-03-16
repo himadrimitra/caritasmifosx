@@ -187,6 +187,8 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
                     if (creditBureauExistingLoan.getLoanStatus() != null) {
                         status = creditBureauExistingLoan.getLoanStatus().getValue();
                     }
+                    String receivedLoanStatus = creditBureauExistingLoan.getReceivedLoanStatus();
+                    
                     LocalDate disbursedDate = null;
                     if (creditBureauExistingLoan.getDisbursedDate() != null) {
                         disbursedDate = new LocalDate(creditBureauExistingLoan.getDisbursedDate());
@@ -221,7 +223,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
                     final ExistingLoan existingLoan = ExistingLoan.saveExistingLoan(client, loanApplicationId, loanId, source,
                             creditBureauProduct, loanEnquiryId, lender, lenderName, loanType, amountBorrowed, currentOutstanding,
                             amtOverdue, writtenoffamount, loanTenure, loanTenurePeriodType, repaymentFrequency,
-                            repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, disbursedDate, maturityDate,
+                            repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, receivedLoanStatus, disbursedDate, maturityDate,
                             closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
                     existingLoan.setTrancheDisbursalId(loanCreditBureauEnquiry.getTrancheDisbursalId());
                     newExistingLoans.add(existingLoan);

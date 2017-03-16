@@ -29,6 +29,7 @@ public class CreditBureauExistingLoan {
     private Integer repaymentMultiple;
     private Long externalLoanPurposeId;
     private LoanStatus loanStatus;
+    private String receivedLoanStatus ;
     private Date disbursedDate;
     private Date closedDate;
     private String remark;
@@ -154,6 +155,14 @@ public class CreditBureauExistingLoan {
         this.loanStatus = loanStatus;
     }
 
+    public void setReceivedLoanStatus(final String loanStatusString) {
+    	this.receivedLoanStatus = loanStatusString ;
+    }
+    
+    public String getReceivedLoanStatus() {
+    	return this.receivedLoanStatus ;
+    }
+    
     public Date getDisbursedDate() {
         return disbursedDate;
     }

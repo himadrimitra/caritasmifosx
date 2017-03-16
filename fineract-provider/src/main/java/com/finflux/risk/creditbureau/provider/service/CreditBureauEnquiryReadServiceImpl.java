@@ -63,7 +63,7 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
     public List<EnquiryAddressData> getClientAddressData(final Long clientId) {
         final StringBuilder sb = new StringBuilder(250);
         sb.append("SELECT CONCAT(IFNULL(ad.house_no,''), ' ', IFNULL(ad.street_no,''),  ' ' ");
-        sb.append(",IFNULL(ad.village_town,''),  ' ', IFNULL(taluka.taluka_name,''),  ' ' ");
+        sb.append(",IFNULL(ad.village_town,''),  ' ', IFNULL(ad.address_line_one,''),  ' ' ");
         sb.append(",IFNULL(dist.district_name,'')) AS clientAddress ");
         //sb.append(",IFNULL(ad.village_town,dist.district_name) AS clientCity ");
         sb.append(",dist.district_name AS clientCity ");
@@ -71,7 +71,7 @@ public class CreditBureauEnquiryReadServiceImpl implements CreditBureauEnquiryRe
         sb.append(",state.iso_state_code As stateShortCode,  IFNULL(ad.postal_code,'') AS clientPin,  mc.id AS clientId ");
         sb.append(",addresstypecv.id AS clientAddressTypeId,addresstypecv.code_value AS clientAddressType ");
         sb.append("FROM m_client mc  ");
-        sb.append("LEFT JOIN f_address_entity ea ON ea.entity_id  = mc.id and ea.entity_type_enum = 1 ");
+        sb.append("JOIN f_address_entity ea ON ea.entity_id  = mc.id and ea.entity_type_enum = 1 ");
         sb.append("LEFT JOIN f_address ad ON ad.id = ea.address_id  ");
         sb.append("LEFT JOIN m_code_value addresstypecv ON addresstypecv.id = ea.address_type  ");
         sb.append("LEFT JOIN f_district dist ON dist.id = ad.district_id ");

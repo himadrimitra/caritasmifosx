@@ -138,11 +138,11 @@ public class ExistingLoanAssembler {
 
         final String remark = this.fromApiJsonHelper.extractStringNamed("remark", element);
         final Integer archive = this.fromApiJsonHelper.extractIntegerNamed("archive", element, locale);
-
+        final String receivedLoanStatus = null ;
         return ExistingLoan.saveExistingLoan(client, loanApplicationId, loanId, source, creditBureauProduct, loanCreditBureauEnquiryId,
                 lender, lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure,
                 loanTenurePeriodType, repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, loanStatus,
-                disbursedDate, maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
+                receivedLoanStatus, disbursedDate, maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
     }
 
     public Map<String, Object> assembleForUpdate(final ExistingLoan existingLoan, final JsonCommand command) {
