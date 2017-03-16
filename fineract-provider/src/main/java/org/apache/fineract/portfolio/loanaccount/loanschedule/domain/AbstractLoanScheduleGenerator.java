@@ -1234,6 +1234,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         recalculateAmounts = true;
                     } else {
                         loanApplicationTerms.setFixedEmiAmount(loanTermVariationsData.getDecimalValue());
+                        loanApplicationTerms.setActualFixedEmiAmount(loanTermVariationsData.getDecimalValue());
                     }
                     loanTermVariationsData.setProcessed(true);
                 break;
@@ -1335,6 +1336,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 break;
                 case EMI_AMOUNT:
                     loanApplicationTerms.setFixedEmiAmount(loanTermVariationsData.getDecimalValue());
+                    loanApplicationTerms.setActualFixedEmiAmount(loanTermVariationsData.getDecimalValue());
                     variationsData.add(loanTermVariationsData);
                 break;
                 case PRINCIPAL_AMOUNT:
@@ -1394,6 +1396,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 switch (variation.getTermVariationType()) {
                     case EMI_AMOUNT:
                         loanApplicationTerms.setFixedEmiAmount(variation.getDecimalValue());
+                        loanApplicationTerms.setActualFixedEmiAmount(variation.getDecimalValue());
                     break;
                     case PRINCIPAL_AMOUNT:
                         loanApplicationTerms.setFixedPrincipalAmount(variation.getDecimalValue());
