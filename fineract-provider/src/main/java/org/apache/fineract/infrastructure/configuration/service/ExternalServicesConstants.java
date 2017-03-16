@@ -104,6 +104,59 @@ public class ExternalServicesConstants {
     public static final String RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW = "RELATIONSHIP_TYPE_K13_BROTHER_IN_LAW";
     public static final String RELATIONSHIP_TYPE_K15_OTHER = "RELATIONSHIP_TYPE_K15_OTHER";
 
+    //Equifax related constants 
+    
+    public static final String EQUIFAX_SERVICE_NAME = "EQUIFAX";
+    
+    public final static String CUSTOMER_ID = "CUSTOMER_ID" ;
+    
+    public final static String USER_ID = "USER_ID" ;
+    
+    public final static String PASSWORD = "PASSWORD" ;
+    
+    public final static String MEMBER_NUMBER = "MEMBER_NUMBER" ;
+    
+    public final static String SECURITY_CODE = "SECURITY_CODE" ;
+    
+    public final static String PRODUCT_CODE = "PRODUCT_CODE" ;
+    
+    public final static String PRODUCT_VERSION = "PRODUCT_VERSION" ;
+    
+    public final static String CUSTOMER_REFERENCE_NO = "CUSTOMER_REFERENCE_NO" ;
+    
+    public final static String EQUIFAX_URL = "URL" ;
+    
+    public final static String QNAME = "QNAME" ;
+    
+    public final static String QNAME_VERSION = "QNAME_VERSION" ;
+    
+    public static final String DOCUMENT_TYPE_PASSPORT = "DOCUMENT_TYPE_PASSPORT";
+    public static final String DOCUMENT_TYPE_VOTER_ID = "DOCUMENT_TYPE_VOTER_ID";
+    public static final String DOCUMENT_TYPE_UID = "DOCUMENT_TYPE_UID";
+    public static final String DOCUMENT_TYPE_RATION_CARD = "DOCUMENT_TYPE_RATION_CARD";
+    public static final String DOCUMENT_TYPE_DRIVING_CARD = "DOCUMENT_TYPE_DRIVING_CARD";
+    public static final String DOCUMENT_TYPE_PAN = "DOCUMENT_TYPE_PAN";
+    public static final String DOCUMENT_TYPE_OTHER = "DOCUMENT_TYPE_OTHER";
+    
+    
+    public static final String RELATIONSHIP_TYPE_FATHER = "RELATIONSHIP_TYPE_FATHER";
+    public static final String RELATIONSHIP_TYPE_HUSBAND = "RELATIONSHIP_TYPE_HUSBAND";
+    public static final String RELATIONSHIP_TYPE_SON = "RELATIONSHIP_TYPE_SON";
+    public static final String RELATIONSHIP_TYPE_BROTHER = "RELATIONSHIP_TYPE_BROTHER";
+    public static final String RELATIONSHIP_TYPE_FATHER_IN_LAW = "RELATIONSHIP_TYPE_FATHER_IN_LAW";
+    public static final String RELATIONSHIP_TYPE_SON_IN_LAW = "RELATIONSHIP_TYPE_SON_IN_LAW";
+    public static final String RELATIONSHIP_TYPE_BROTHER_IN_LAW = "RELATIONSHIP_TYPE_BROTHER_IN_LAW";
+    public static final String RELATIONSHIP_TYPE_MOTHER = "RELATIONSHIP_TYPE_MOTHER";
+    public static final String RELATIONSHIP_TYPE_WIFE = "RELATIONSHIP_TYPE_WIFE";
+    public static final String RELATIONSHIP_TYPE_SISTER = "RELATIONSHIP_TYPE_SISTER";
+    public static final String RELATIONSHIP_TYPE_DAUGHTER = "RELATIONSHIP_TYPE_DAUGHTER";
+    public static final String RELATIONSHIP_TYPE_MOTHER_IN_LAW = "RELATIONSHIP_TYPE_MOTHER_IN_LAW";
+    public static final String RELATIONSHIP_TYPE_DAUGHTER_IN_LAW = "RELATIONSHIP_TYPE_DAUGHTER_IN_LAW";
+    public static final String RELATIONSHIP_TYPE_SISTER_IN_LAW = "RELATIONSHIP_TYPE_SISTER_IN_LAW";
+    public static final String RELATIONSHIP_TYPE_OTHER = "RELATIONSHIP_TYPE_OTHER";
+    
+    //End Equifax
+    
     public static enum EXTERNALSERVICEPROPERTIES_JSON_INPUT_PARAMS {
         EXTERNAL_SERVICE_ID("external_service_id"), NAME("name"), VALUE("value");
 

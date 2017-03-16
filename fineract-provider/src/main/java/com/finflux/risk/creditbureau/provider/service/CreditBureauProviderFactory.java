@@ -15,7 +15,7 @@ import java.util.Set;
 @Scope("singleton")
 public class CreditBureauProviderFactory {
 
-    Map<String, CreditBureauProvider> creditBureauProviderMap = new HashMap();
+    Map<String, CreditBureauProvider> creditBureauProviderMap = new HashMap<>();
 
     @Autowired
     public CreditBureauProviderFactory(final Set<CreditBureauProvider> creditBureauProviders) {

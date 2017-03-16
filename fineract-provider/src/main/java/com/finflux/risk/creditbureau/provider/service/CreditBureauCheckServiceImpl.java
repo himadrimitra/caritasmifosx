@@ -127,10 +127,11 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
                     loanApplicationId, loanId, trancheDisbursalId, isCBReportExpired);
             final CreditBureauResponse creditBureauResponseEnquire = creditBureauProvider.enquireCreditBureau(enquiryReferenceData);
             this.creditBureauEnquiryWritePlatformService.saveEnquiryResponseDetails(enquiryReferenceData, creditBureauResponseEnquire);
-
+            
             // fetch report
-            loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(loanApplicationId,
-                    creditBureauProduct.getId(), loanId, trancheDisbursalId);
+           // loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(loanApplicationId,
+            //        creditBureauProduct.getId(), loanId, trancheDisbursalId);
+            loanEnquiryReferenceData = enquiryReferenceData.getLoansReferenceData().get(0) ;
             processCreditBureauReportRespon(creditBureauProvider, loanEnquiryReferenceData, loanId, trancheDisbursalId);
         } else if (loanEnquiryReferenceData.getStatus().isPending()) {
             // fetch report

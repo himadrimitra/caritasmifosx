@@ -7,7 +7,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
  */
 public enum ReportFileType {
 
-    INVALID(0, "report.invalid"), HTML(1, "report.html"), PDF(2, "report.pdf");
+    INVALID(0, "report.invalid"), HTML(1, "report.html"), PDF(2, "report.pdf"),
+    XML(3, "report.pdf");
 
     final private Integer value;
     final private String code;
@@ -35,6 +36,9 @@ public enum ReportFileType {
             case 2:
                 type = ReportFileType.PDF;
             break;
+            case 3:
+            	type = ReportFileType.XML ;
+            	break ;
         }
         return type;
     }
@@ -52,6 +56,11 @@ public enum ReportFileType {
             case PDF:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "PDF");
             break;
+            
+            case XML:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "XML");
+            break;
+            
             default:
             break;
         }

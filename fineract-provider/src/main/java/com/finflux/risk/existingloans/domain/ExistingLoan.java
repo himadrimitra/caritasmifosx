@@ -100,6 +100,9 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
     @Column(name = "loan_status_id", nullable = true)
     private Integer loanStatusId;
 
+    @Column(name = "received_loan_status") 
+    private String receivedLoanStatus ;
+    
     @Temporal(TemporalType.DATE)
     @Column(name = "disbursed_date")
     private Date disbursedDate;
@@ -135,12 +138,12 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             final CodeValue lender, final String lenderName, final CodeValue loanType, final BigDecimal amountBorrowed,
             final BigDecimal currentOutstanding, final BigDecimal amtOverdue, final BigDecimal writtenoffamount, final Integer loanTenure,
             final Integer loanTenurePeriodType, final Integer repaymentFrequency, final Integer repaymentFrequencyMultipleOf,
-            final BigDecimal installmentAmount, final CodeValue externalLoanPurpose, final Integer status, final LocalDate disbursedDate,
+            final BigDecimal installmentAmount, final CodeValue externalLoanPurpose, final Integer status, final String receivedLoanStatus, final LocalDate disbursedDate,
             final LocalDate maturityDate, final LocalDate closedDate, final Integer gt0dpd3mths, final Integer dpd30mths12,
             final Integer dpd30mths24, final Integer dpd60mths24, final String remark, final Integer archive) {
         return new ExistingLoan(client, loanId, loanApplicationId, source, creditBureauProduct, loanCreditBureauEnquiryId, lender,
                 lenderName, loanType, amountBorrowed, currentOutstanding, amtOverdue, writtenoffamount, loanTenure, loanTenurePeriodType,
-                repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, disbursedDate,
+                repaymentFrequency, repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, receivedLoanStatus, disbursedDate,
                 maturityDate, closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
     }
 
@@ -401,7 +404,7 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
             CodeValue loanType, BigDecimal amountBorrowed, BigDecimal currentOutstanding, BigDecimal amtOverdue,
             BigDecimal writtenOffAmount, Integer loanTenure, Integer loanTenurePeriodType, Integer repaymentFrequency,
             Integer repaymentFrequencyMultipleOf, BigDecimal installmentAmount, CodeValue externalLoanPurposeCvId, Integer loanStatusId,
-            LocalDate disbursedDate, LocalDate maturityDate, final LocalDate closedDate, Integer gt0dpd3mths, Integer dpd30mths12,
+            final String receivedLoanStatus, LocalDate disbursedDate, LocalDate maturityDate, final LocalDate closedDate, Integer gt0dpd3mths, Integer dpd30mths12,
             Integer dpd30mths24, Integer dpd60mths24, String remark, Integer archive) {
         this.client = client;
         this.loanId = loanId;
@@ -423,6 +426,7 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
         this.installmentAmount = installmentAmount;
         this.externalLoanPurpose = externalLoanPurposeCvId;
         this.loanStatusId = loanStatusId;
+        this.receivedLoanStatus = receivedLoanStatus ;
         if (disbursedDate != null) {
             this.disbursedDate = disbursedDate.toDate();
         }
