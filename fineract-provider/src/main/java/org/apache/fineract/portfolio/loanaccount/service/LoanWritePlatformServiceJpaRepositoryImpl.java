@@ -19,6 +19,8 @@
 package org.apache.fineract.portfolio.loanaccount.service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,6 +62,7 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
@@ -469,6 +472,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 existingTransactionIds.addAll(loan.findExistingTransactionIds());
                 existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
                 disbursementTransaction.updateLoan(loan);
+                if(!loan.status().isActive() && loan.loanProduct().getPercentageOfDisbursementToBeTransferred() != null){
+                    disbursePartialAmountToSavings(command, loan, existingTransactionIds, existingReversedTransactionIds, paymentDetail,
+                            disbursementTransaction, disburseAmount);
+                }
                 loan.getLoanTransactions().add(disbursementTransaction);
             }
             
@@ -566,6 +573,20 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .withLoanId(loanId) //
                 .with(changes) //
                 .build();
+    }
+
+    private void disbursePartialAmountToSavings(final JsonCommand command, final Loan loan, final List<Long> existingTransactionIds,
+            final List<Long> existingReversedTransactionIds, final PaymentDetail paymentDetail, LoanTransaction disbursementTransaction,
+            Money disburseAmount) {
+        BigDecimal transferPercentage = loan.loanProduct().getPercentageOfDisbursementToBeTransferred();
+        final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+        final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+        final MathContext mc = new MathContext(8, roundingMode);
+        BigDecimal totalAmountForTransfer = disburseAmount.getAmount().multiply(transferPercentage).divide(divisor, mc);
+        disbursementTransaction.setAmount(disburseAmount.minus(totalAmountForTransfer).getAmount());
+        disburseLoanToSavings(loan, command, Money.of(loan.getCurrency(), totalAmountForTransfer), paymentDetail);
+        existingTransactionIds.addAll(loan.findExistingTransactionIds());
+        existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
     }
 
     private LocalDate validateAndFetchNextRepaymentDate(final Loan loan, final LocalDate actualDisbursementDate, LoanProduct loanProduct,
@@ -772,6 +793,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     existingTransactionIds.addAll(loan.findExistingTransactionIds());
                     existingReversedTransactionIds.addAll(loan.findExistingReversedTransactionIds());
                     disbursementTransaction.updateLoan(loan);
+                    if(!loan.status().isActive() && loan.loanProduct().getPercentageOfDisbursementToBeTransferred() != null){
+                        disbursePartialAmountToSavings(command, loan, existingTransactionIds, existingReversedTransactionIds, paymentDetail,
+                                disbursementTransaction, disburseAmount);
+                    }
                     loan.getLoanTransactions().add(disbursementTransaction);
                 }
                 LocalDate recalculateFrom = null;

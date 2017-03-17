@@ -248,7 +248,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, "
                     + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, "
                     + "lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding ,"
-                    + "lp.collect_interest_upfront AS collectInterestUpfront"
+                    + "lp.collect_interest_upfront AS collectInterestUpfront, lp.percentage_of_disbursement_to_be_transferred as percentageOfDisbursementToBeTransferred"
                     + " from m_product_loan lp "
                     + " left join m_fund f on f.id = lp.fund_id "
                     + " left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id "
@@ -505,6 +505,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final boolean isMinDurationApplicableForAllDisbursements = rs.getBoolean("isMinDurationApplicableForAllDisbursements");
             final boolean isFlatInterestRate = rs.getBoolean("isFlatInterestRate");
             final boolean collectInterestUpfront = rs.getBoolean("collectInterestUpfront");
+            final BigDecimal percentageOfDisbursementToBeTransferred = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "percentageOfDisbursementToBeTransferred");
             
             return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                     numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
@@ -524,7 +525,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, 
                     brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule,
-                    collectInterestUpfront);
+                    collectInterestUpfront, percentageOfDisbursementToBeTransferred);
         }
     }
 

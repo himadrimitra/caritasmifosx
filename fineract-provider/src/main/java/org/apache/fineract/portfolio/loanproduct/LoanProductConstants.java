@@ -159,4 +159,6 @@ public interface LoanProductConstants {
     public static final String allowNegativeLoanBalance = "allowNegativeLoanBalance";
     public static final String considerFutureDisbursementsInSchedule = "considerFutureDisbursementsInSchedule";
     public static final String considerAllDisbursementsInSchedule = "considerAllDisbursementsInSchedule";
+    
+    public static final String percentageOfDisbursementToBeTransferred = "percentageOfDisbursementToBeTransferred";
 }

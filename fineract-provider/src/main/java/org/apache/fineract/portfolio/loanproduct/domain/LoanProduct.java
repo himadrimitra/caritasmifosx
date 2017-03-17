@@ -219,6 +219,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @Column(name = "is_flat_interest_rate", nullable = false)
     private boolean isFlatInterestRate;
     
+    @Column(name = "percentage_of_disbursement_to_be_transferred")
+    private BigDecimal percentageOfDisbursementToBeTransferred;
+    
 
     public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
             final List<ProductLoanCharge> productLoanCharges, final JsonCommand command, final AprCalculator aprCalculator, FloatingRate floatingRate) {
@@ -410,6 +413,9 @@ public class LoanProduct extends AbstractPersistable<Long> {
         
         final boolean isFlatInterestRate = command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isFlatInterestRateParamName);
+        
+        final BigDecimal percentageOfDisbursementToBeTransferred = command
+                .bigDecimalValueOfParameterNamed(LoanProductConstants.percentageOfDisbursementToBeTransferred);
 				
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
@@ -428,7 +434,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 closeLoanOnOverpayment, syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm,
                 maxLoanTerm, loanTenureFrequencyType, canUseForTopup, collectInterestUpfront , weeksInYearType, adjustInterestForRounding,
                 isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod,
-                isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule);
+                isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, 
+                percentageOfDisbursementToBeTransferred);
 
     }
 
@@ -666,7 +673,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final boolean canUseForTopup, final boolean collectInterestUpfront,final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
             final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements,
             final Integer brokenPeriodMethod, final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances,
-            final boolean considerFutureDisbursementScheduleInLoans, final boolean considerAllDisbursementsInSchedule) {
+            final boolean considerFutureDisbursementScheduleInLoans, final boolean considerAllDisbursementsInSchedule, 
+            final BigDecimal percentageOfDisbursementToBeTransferred) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -760,6 +768,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.canUseForTopup = canUseForTopup;
         this.collectInterestUpfront = collectInterestUpfront;
         this.isFlatInterestRate = isFlatInterestRate;
+        this.percentageOfDisbursementToBeTransferred = percentageOfDisbursementToBeTransferred;
     }
 
     public MonetaryCurrency getCurrency() {
@@ -1218,6 +1227,13 @@ public class LoanProduct extends AbstractPersistable<Long> {
             this.isFlatInterestRate = newValue;
         }
         
+        if (command.isChangeInBigDecimalParameterNamed(LoanProductConstants.percentageOfDisbursementToBeTransferred,
+                this.percentageOfDisbursementToBeTransferred)) {
+            BigDecimal newValue = command.bigDecimalValueOfParameterNamed(LoanProductConstants.percentageOfDisbursementToBeTransferred);
+            actualChanges.put(LoanProductConstants.percentageOfDisbursementToBeTransferred, newValue);
+            this.percentageOfDisbursementToBeTransferred = newValue;
+        }
+        
         return actualChanges;
     }
 
@@ -1609,6 +1625,11 @@ public class LoanProduct extends AbstractPersistable<Long> {
     
     public boolean collectInterestUpfront(){
         return this.collectInterestUpfront;
+    }
+
+    
+    public BigDecimal getPercentageOfDisbursementToBeTransferred() {
+        return this.percentageOfDisbursementToBeTransferred;
     }
     
 }

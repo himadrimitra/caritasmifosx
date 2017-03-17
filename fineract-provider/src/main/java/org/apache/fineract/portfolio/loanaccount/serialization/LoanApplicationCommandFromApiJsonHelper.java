@@ -389,9 +389,15 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                 .integerGreaterThanZero();
 
         final String linkAccountIdParameterName = "linkAccountId";
+        final boolean linkedAccountRequired = loanProduct.getPercentageOfDisbursementToBeTransferred() != null;
         if (this.fromApiJsonHelper.parameterExists(linkAccountIdParameterName, element)) {
             final Long linkAccountId = this.fromApiJsonHelper.extractLongNamed(linkAccountIdParameterName, element);
             baseDataValidator.reset().parameter(linkAccountIdParameterName).value(linkAccountId).ignoreIfNull().longGreaterThanZero();
+            if(linkedAccountRequired){
+                baseDataValidator.reset().parameter(linkAccountIdParameterName).value(linkAccountId).notBlank();
+            }
+        }else if(linkedAccountRequired){
+            baseDataValidator.reset().parameter(linkAccountIdParameterName).failWithCode("cannot.be.blank");
         }
 
         final String createSiAtDisbursementParameterName = "createStandingInstructionAtDisbursement";
@@ -831,10 +837,14 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         }
 
         final String linkAccountIdParameterName = "linkAccountId";
-        if (this.fromApiJsonHelper.parameterExists(submittedOnNoteParameterName, element)) {
+        if (this.fromApiJsonHelper.parameterExists(linkAccountIdParameterName, element)) {
             atLeastOneParameterPassedForUpdate = true;
             final Long linkAccountId = this.fromApiJsonHelper.extractLongNamed(linkAccountIdParameterName, element);
             baseDataValidator.reset().parameter(linkAccountIdParameterName).value(linkAccountId).ignoreIfNull().longGreaterThanZero();
+            final boolean linkedAccountRequired = loanProduct.getPercentageOfDisbursementToBeTransferred() != null;
+            if(linkedAccountRequired){
+                baseDataValidator.reset().parameter(linkAccountIdParameterName).value(linkAccountId).notBlank();
+            }
         }
 
         // charges
