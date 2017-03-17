@@ -140,6 +140,7 @@ import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
+import org.hibernate.annotations.Where;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
@@ -367,6 +368,7 @@ public class Loan extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "loan", orphanRemoval = true)
     @OrderBy(value = "expectedDisbursementDate, id")
+    @Where(clause = "is_active = '1'")
     private List<LoanDisbursementDetails> disbursementDetails = new ArrayList<>();
 
     @OrderBy(value = "termApplicableFrom, id")
@@ -1439,7 +1441,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    public void updateLoanSummarAndStatus() {
+    public void updateLoanSummaryAndStatus() {
         updateLoanSummaryDerivedFields();
         doPostLoanTransactionChecks(getLastUserTransactionDate(), loanLifecycleStateMachine);
     }
@@ -2435,7 +2437,7 @@ public class Loan extends AbstractPersistable<Long> {
                     final String errorMessage = "For this loan product, disbursement details must be provided";
                     throw new MultiDisbursementDataRequiredException(LoanApiConstants.disbursementDataParameterName, errorMessage);
                 }
-
+               
                 if (this.disbursementDetails.size() > loanProduct.maxTrancheCount()) {
                     final String errorMessage = "Number of tranche shouldn't be greter than " + loanProduct.maxTrancheCount();
                     throw new ExceedingTrancheCountException(LoanApiConstants.disbursementDataParameterName, errorMessage,
@@ -5945,7 +5947,7 @@ public class Loan extends AbstractPersistable<Long> {
          */
         this.loanTransactions.addAll(changedTransactionDetail.getNewTransactionMappings().values());
 
-        updateLoanSummaryDerivedFields();
+        updateLoanSummaryAndStatus();
 
         this.loanTransactions.removeAll(changedTransactionDetail.getNewTransactionMappings().values());
 
