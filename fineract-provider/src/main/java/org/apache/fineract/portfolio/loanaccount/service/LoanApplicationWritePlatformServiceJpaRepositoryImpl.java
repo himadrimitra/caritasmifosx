@@ -360,9 +360,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     newLoanApplication.setTopupLoanDetails(topupDetails);
                 }
             }
-            
-            newLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
-
+            if(newLoanApplication.isGLIMLoan()){
+                newLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
+            }
             this.loanRepository.save(newLoanApplication);
 
             if (loanProduct.isInterestRecalculationEnabled()) {
@@ -1074,7 +1074,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     this.groupLoanIndividualMonitoringRepository.save(glimList);
                 }
 	        }
-	    existingLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup()); 
+	    if(existingLoanApplication.isGLIMLoan()){
+	        existingLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
+	    }	     
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(),
                     existingLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
                     productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
