@@ -184,6 +184,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                      * breakup (principal, interest, fees, penalties) has
                      * changed.<br>
                      **/
+                    
                     final LoanTransaction newLoanTransaction = LoanTransaction.copyTransactionProperties(loanTransaction);
 
                     // Reset derived component of new loan transaction and
@@ -197,12 +198,13 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                      **/
                     if (LoanTransaction.transactionAmountsMatch(currency, loanTransaction, newLoanTransaction)
                             || loanTransaction.getLoan().isGLIMLoan()) {
-                        loanTransaction.updateLoanTransactionToRepaymentScheduleMappings(newLoanTransaction
-                                .getLoanTransactionToRepaymentScheduleMappings());
+                        loanTransaction.updateLoanTransactionToRepaymentScheduleMappings(
+                                newLoanTransaction.getLoanTransactionToRepaymentScheduleMappings());
                     } else {
                         loanTransaction.reverse();
                         loanTransaction.updateExternalId(null);
                         changedTransactionDetail.getNewTransactionMappings().put(loanTransaction.getId(), newLoanTransaction);
+
                     }
                 }
 

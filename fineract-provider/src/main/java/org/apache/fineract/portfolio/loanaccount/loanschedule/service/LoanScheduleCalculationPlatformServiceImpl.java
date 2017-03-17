@@ -183,6 +183,7 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         final List<LoanTransaction> modifiedTransactions = new ArrayList<>();
         List<LoanTransaction> transactions = loan.retreiveListOfTransactionsPostDisbursementExcludeAccruals();
         for (LoanTransaction loanTransaction : transactions) {
+
             modifiedTransactions.add(LoanTransaction.copyTransactionProperties(loanTransaction));
         }
         if (isNewPaymentRequired) {

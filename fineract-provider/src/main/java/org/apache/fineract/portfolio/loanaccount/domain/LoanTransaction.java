@@ -141,6 +141,9 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     @Column(name = "is_reconciled")
     private boolean isReconciled;
     
+    @Column(name = "orig_transaction_id", nullable = true)
+    private Long originalTransactionId;
+    
     @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "loanTransaction", orphanRemoval = true)
     private Set<GroupLoanIndividualMonitoringTransaction> groupLoanIndividualMonitoringTransactions = new HashSet<>();
@@ -305,17 +308,19 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     }
     
     public static LoanTransaction copyTransactionProperties(final LoanTransaction loanTransaction) {
+        final Long originalTransactionId = (loanTransaction.getOriginalTransactionId() == null) ? loanTransaction.getId()
+                : loanTransaction.getOriginalTransactionId();
         return new LoanTransaction(loanTransaction.loan, loanTransaction.officeId, loanTransaction.typeOf, loanTransaction.subTypeOf,
                 loanTransaction.dateOf, loanTransaction.amount, loanTransaction.principalPortion, loanTransaction.interestPortion,
                 loanTransaction.feeChargesPortion, loanTransaction.penaltyChargesPortion, loanTransaction.overPaymentPortion,
                 loanTransaction.reversed, loanTransaction.paymentDetail, loanTransaction.externalId, loanTransaction.getCreatedDate(),
-                loanTransaction.getCreatedBy(), loanTransaction.isReconciled);
+                loanTransaction.getCreatedBy(), loanTransaction.isReconciled, originalTransactionId);
     }
     
     private LoanTransaction(final Loan loan, final Long officeId, final Integer typeOf, final Integer loanTransactionSubType,final Date dateOf, final BigDecimal amount,
             final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
             final BigDecimal penaltyChargesPortion, final BigDecimal overPaymentPortion, final boolean reversed,
-            final PaymentDetail paymentDetail, final String externalId, final DateTime createdDate, final AppUser appUser, boolean isReconciled) {
+            final PaymentDetail paymentDetail, final String externalId, final DateTime createdDate, final AppUser appUser, boolean isReconciled, Long originalTransactionId) {
         this.loan = loan;
         this.typeOf = typeOf;
         this.subTypeOf = loanTransactionSubType;
@@ -334,6 +339,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.updateCreatedDate(createdDate);
         this.setCreatedBy(appUser);
         this.isReconciled = isReconciled;
+        this.originalTransactionId = originalTransactionId;
     }
 
     public static LoanTransaction accrueLoanCharge(final Loan loan, final Office office, final Money amount, final LocalDate applyDate,
@@ -915,6 +921,8 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.isReconciled = isReconciled;
     }
 
+    
+    
     public Integer getSubTypeOf() {
         return this.subTypeOf;
     }
@@ -991,5 +999,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
     }
+    
+    public Long getOriginalTransactionId() {
+        return this.originalTransactionId;
+    }
+    
+    public void setOriginalTransactionId(Long originalTransactionId) {
+        this.originalTransactionId = originalTransactionId;
+    }
+    
     
 }
