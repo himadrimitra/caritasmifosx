@@ -986,5 +986,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public void setOverPaymentPortion(BigDecimal overPaymentPortion) {
         this.overPaymentPortion = overPaymentPortion;
     }
+
+    
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
     
 }

@@ -121,7 +121,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName,
             LoanProductConstants.brokenPeriodMethodTypeParamName,LoanProductConstants.isFlatInterestRateParamName,
             LoanProductConstants.considerFutureDisbursementsInSchedule, LoanProductConstants.considerAllDisbursementsInSchedule,
-            LoanProductConstants.allowNegativeLoanBalance));
+            LoanProductConstants.allowNegativeLoanBalance,LoanProductConstants.percentageOfDisbursementToBeTransferred));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -758,6 +758,11 @@ public final class LoanProductDataValidator {
                 Locale.getDefault());
         baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType).ignoreIfNull()
                 .inMinMaxRange(0, 2);
+        
+        final BigDecimal percentageOfDisbursementToBeTransfered = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                LoanProductConstants.percentageOfDisbursementToBeTransferred, element);
+        baseDataValidator.reset().parameter(LoanProductConstants.percentageOfDisbursementToBeTransferred)
+                .value(percentageOfDisbursementToBeTransfered).ignoreIfNull().positiveAmount().notGreaterThanMax(BigDecimal.valueOf(100));
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
@@ -1765,6 +1770,14 @@ public final class LoanProductDataValidator {
                     LoanProductConstants.brokenPeriodMethodTypeParamName, element, Locale.getDefault());
             baseDataValidator.reset().parameter(LoanProductConstants.brokenPeriodMethodTypeParamName).value(brokenPeriodType)
                     .ignoreIfNull().inMinMaxRange(0, 2);
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.percentageOfDisbursementToBeTransferred, element)) {
+            final BigDecimal percentageOfDisbursementToBeTransfered = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                    LoanProductConstants.percentageOfDisbursementToBeTransferred, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.percentageOfDisbursementToBeTransferred)
+                    .value(percentageOfDisbursementToBeTransfered).ignoreIfNull().positiveAmount()
+                    .notGreaterThanMax(BigDecimal.valueOf(100));
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);

@@ -2787,10 +2787,12 @@ public class Loan extends AbstractPersistable<Long> {
                 BigDecimal setPrincipalAmount = BigDecimal.ZERO;
                 BigDecimal totalAmount = BigDecimal.ZERO;
                 for (LoanDisbursementDetails disbursementDetails : loanDisburseDetails) {
-                    if (disbursementDetails.actualDisbursementDate() != null) {
-                        setPrincipalAmount = setPrincipalAmount.add(disbursementDetails.principal());
+                    if (disbursementDetails.isActive()) {
+                        if (disbursementDetails.actualDisbursementDate() != null) {
+                            setPrincipalAmount = setPrincipalAmount.add(disbursementDetails.principal());
+                        }
+                        totalAmount = totalAmount.add(disbursementDetails.principal());
                     }
-                    totalAmount = totalAmount.add(disbursementDetails.principal());
                 }
                 this.loanRepaymentScheduleDetail.setPrincipal(setPrincipalAmount);
                 if (totalAmount.compareTo(this.approvedPrincipal) == 1) {
@@ -7915,7 +7917,7 @@ public class Loan extends AbstractPersistable<Long> {
         int size = 0;
         for (LoanDisbursementDetails details : getDisbursementDetails()) {
             if (details.isActive()) {
-                size += size;
+                size++;
             }
         }
         return size;
