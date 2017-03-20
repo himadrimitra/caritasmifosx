@@ -287,13 +287,19 @@ public class LoanChargeAssembler {
     
 	private void validateUpfrontChargesAmount(final JsonObject loanChargeElement, final Charge chargeDefinition,
 			final ChargeCalculationType chargeCalculation, final Locale locale) {
-		final JsonArray upfrontChargesAmountArray = loanChargeElement.get("upfrontChargesAmount").getAsJsonArray();
-		for (int j = 0; j < upfrontChargesAmountArray.size(); j++) {
-			final JsonObject upfrontChargesAmountObject = upfrontChargesAmountArray.get(j).getAsJsonObject();
-			BigDecimal transactionAmount = this.fromApiJsonHelper
-					.extractBigDecimalNamed("transactionAmount", upfrontChargesAmountObject, locale);
-			validateLoanAmountFallsInSlab(transactionAmount, chargeDefinition, chargeCalculation);
-		}
+        if (loanChargeElement.has("upfrontChargesAmount")) {
+            final JsonArray upfrontChargesAmountArray = loanChargeElement.get("upfrontChargesAmount").getAsJsonArray();
+            for (int j = 0; j < upfrontChargesAmountArray.size(); j++) {
+                final JsonObject upfrontChargesAmountObject = upfrontChargesAmountArray.get(j).getAsJsonObject();
+                boolean isClientSelected = this.fromApiJsonHelper.extractBooleanNamed("isClientSelected", upfrontChargesAmountObject);
+                if(isClientSelected && upfrontChargesAmountObject.has("transactionAmount")){
+                    BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed("transactionAmount",
+                            upfrontChargesAmountObject, locale);
+                    validateLoanAmountFallsInSlab(transactionAmount, chargeDefinition, chargeCalculation);
+                }                
+            }
+        }
+	    
 	}
 
     private void validateLoanAmountFallsInSlab(final BigDecimal principal, final Charge chargeDefinition,

@@ -62,6 +62,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionRepositor
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.poi.ss.usermodel.Cell;
@@ -683,8 +684,13 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         List<BankStatementDetails> bankStatementDetailsList = (List<BankStatementDetails>) fileContent.get(ReconciliationApiConstants.BANK_STATEMENT_DETAIL_LIST);
         Map<Integer, List<String>> errorRows = (Map<Integer, List<String>>) fileContent.get(ReconciliationApiConstants.ERROR_ROWS);
         if (errorRows.size() == 0) {
-            if(isSimplifiedExcel){
-            	bankStatement.setPaymentType(ExcelUtility.getPaymentType(file));
+            if (isSimplifiedExcel) {
+                String paymentTypeName = ExcelUtility.getPaymentType(file);
+                if (paymentTypeName != null && StringUtils.isNotEmpty(paymentTypeName)) {
+                    bankStatement.setPaymentType(paymentTypeName);
+                    savePaymentType(paymentTypeName);
+                }
+
             }
             this.bankStatementRepository.save(bankStatement);
             for (BankStatementDetails bankStatementDetail : bankStatementDetailsList) {
@@ -696,6 +702,13 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         }
 
         return bankStatement;
+    }
+
+    private void savePaymentType(String paymentTypeName) {
+        PaymentType paymentType = this.paymentTypeRepository.findByPaymentTypeName(paymentTypeName);
+        if (paymentType == null) {
+            this.paymentTypeRepository.save(PaymentType.create(paymentTypeName));
+        }
     }
 
     private Long getUpdatedDocument(FormDataMultiPart formParams, final Long documentId, final String name, final String description,
