@@ -35,6 +35,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.common.security.service.PlatformCryptoService;
+
 /**
  * A JDBC implementation of {@link TenantDetailsService} for loading a tenants
  * details by a <code>tenantIdentifier</code>.
@@ -43,14 +45,17 @@ import org.springframework.stereotype.Service;
 public class JdbcTenantDetailsService implements TenantDetailsService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final PlatformCryptoService platformCryptoService;
 
     @Autowired
-    public JdbcTenantDetailsService(@Qualifier("tenantDataSourceJndi") final DataSource dataSource) {
+    public JdbcTenantDetailsService(@Qualifier("tenantDataSourceJndi") final DataSource dataSource,
+            final PlatformCryptoService platformCryptoService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.platformCryptoService = platformCryptoService;
     }
 
-    private static final class TenantMapper implements RowMapper<FineractPlatformTenant> {
-
+    private final class TenantMapper implements RowMapper<FineractPlatformTenant> {
+        
         private final StringBuilder sqlBuilder = new StringBuilder("t.id, ts.id as connectionId , ")//
                 .append(" t.timezone_id as timezoneId , t.name,t.identifier, ts.schema_name as schemaName, ts.schema_server as schemaServer,")//
                 .append(" ts.schema_server_port as schemaServerPort, ts.auto_update as autoUpdate,")//
@@ -61,7 +66,8 @@ public class JdbcTenantDetailsService implements TenantDetailsService {
                 .append(" ts.pool_suspect_timeout as poolSuspectTimeout, ts.pool_time_between_eviction_runs_millis as poolTimeBetweenEvictionRunsMillis,")//
                 .append(" ts.pool_min_evictable_idle_time_millis as poolMinEvictableIdleTimeMillis,")//
                 .append(" ts.deadlock_max_retries as maxRetriesOnDeadlock,")//
-                .append(" ts.deadlock_max_retry_interval as maxIntervalBetweenRetries ")//
+                .append(" ts.deadlock_max_retry_interval as maxIntervalBetweenRetries, ")//
+                .append(" t.tenant_key as tenantKey")
                 .append(" from tenants t left join tenant_server_connections ts on t.oltp_Id=ts.id ");
 
         public String schema() {
@@ -75,8 +81,10 @@ public class JdbcTenantDetailsService implements TenantDetailsService {
             final String name = rs.getString("name");
             final String timezoneId = rs.getString("timezoneId");
             final FineractPlatformTenantConnection connection = getDBConnection(rs);
+            final String encriptedTenantKey = rs.getString("tenantKey");
+            final String tenantKey = platformCryptoService.decrypt(encriptedTenantKey,name,id,tenantIdentifier);
 
-            return new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection);
+            return new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection, tenantKey);
         }
 
         // gets the DB connection

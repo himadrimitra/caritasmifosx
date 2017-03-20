@@ -112,9 +112,9 @@ public class AuthenticationApiResource {
                     authenticatedUserData = new AuthenticatedUserData(username, principal.getId(), new String(
                             base64EncodedAuthenticationKey));
                 } else {
-
                     authenticatedUserData = new AuthenticatedUserData(username, officeId, officeName, staffId, staffDisplayName,
                             organisationalRole, roles, permissions, principal.getId(), new String(base64EncodedAuthenticationKey));
+                    this.appUserWritePlatformService.updatePasswordWithNewSalt(principal, password);
                 }
 
             }

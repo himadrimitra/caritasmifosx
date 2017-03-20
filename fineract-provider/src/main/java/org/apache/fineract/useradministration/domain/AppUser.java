@@ -44,6 +44,7 @@ import javax.persistence.UniqueConstraint;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.security.domain.PlatformUser;
 import org.apache.fineract.infrastructure.security.exception.NoAuthorizationException;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
@@ -85,6 +86,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
 
     @Column(name = "password", nullable = false)
     private String password;
+    
+    @Column(name = "password_new", nullable = false)
+    private String passwordNew;
 
     @Column(name = "nonexpired", nullable = false)
     private boolean accountNonExpired;
@@ -246,9 +250,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         final String passwordParamName = "password";
         final String passwordEncodedParamName = "passwordEncoded";
         if (command.hasParameter(passwordParamName)) {
-            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getId())) {
+            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getSaltKey())) {
                 final String passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder,
-                        getId());
+                        getSaltKey());
                 actualChanges.put(passwordEncodedParamName, "***");
                 updatePassword(passwordEncodedValue);
             }
@@ -626,9 +630,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         String passwordEncodedValue = null;
 
         if (command.hasParameter(passwordParamName)) {
-            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getId())) {
+            if (command.isChangeInPasswordParameterNamed(passwordParamName, this.password, platformPasswordEncoder, getSaltKey())) {
 
-                passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder, getId());
+                passwordEncodedValue = command.passwordValueOfParameterNamed(passwordParamName, platformPasswordEncoder, getSaltKey());
 
             }
         } else if (command.hasParameter(passwordEncodedParamName)) {
@@ -702,6 +706,25 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     
     public Integer getFailedLoginAttempts() {
         return this.failedLoginAttempt;
+    }
+    
+    public Object getSaltKey() {
+        return getId(); 
+//        return constructSaltKey();
+    }
+
+    public Object constructSaltKey() {
+        return getId() + ThreadLocalContextUtil.getTenant().getTenantKey() + getOffice().getId();
+    }
+    
+    
+    public String getPasswordNew() {
+        return this.passwordNew;
+    }
+
+    
+    public void setPasswordNew(String passwordNew) {
+        this.passwordNew = passwordNew;
     }
 	
 }
