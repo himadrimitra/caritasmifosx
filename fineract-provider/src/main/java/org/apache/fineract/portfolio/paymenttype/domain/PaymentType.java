@@ -69,6 +69,14 @@ public class PaymentType extends AbstractPersistable<Long> {
     public static PaymentType create(String name, String description, Boolean isCashPayment, Long position, Long externalServiceId) {
         return new PaymentType(name, description, isCashPayment, position, externalServiceId);
     }
+    
+    public static PaymentType create(String name) {
+        String description = null;
+        Boolean isCashPayment = false;
+        Long position = 0l;
+        Long externalServiceId = null;
+        return new PaymentType(name, description, isCashPayment, position, externalServiceId);
+    }
 
     public Map<String, Object> update(final JsonCommand command) {
 
