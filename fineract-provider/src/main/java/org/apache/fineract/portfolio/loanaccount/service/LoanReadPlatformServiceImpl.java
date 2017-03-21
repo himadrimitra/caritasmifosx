@@ -491,7 +491,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         this.context.authenticatedUser();
 
         final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
-        loan.setHelpers(null, null, loanRepaymentScheduleTransactionProcessorFactory);
+        loan.setHelpers(LoanAssembler.defaultLoanLifecycleStateMachine(), null, loanRepaymentScheduleTransactionProcessorFactory);
 
         final MonetaryCurrency currency = loan.getCurrency();
         final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);

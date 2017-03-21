@@ -57,12 +57,14 @@ public class HolidayUtil {
     }
     
     public static Holiday getApplicableHoliday(LocalDate repaymentDate, final List<Holiday> holidays) {
+    	Holiday referedHoliday =null;
         for (final Holiday holiday : holidays) {
             if (repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
-                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate()))) {
-                return holiday;
+                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate())
+                    		|| (repaymentDate.isAfter(holiday.getToDateLocalDate()) && holiday.isExtendRepaymentReschedule()))) {
+                referedHoliday = holiday;
             }
         }
-        return null;
+        return referedHoliday;
     }
 }
