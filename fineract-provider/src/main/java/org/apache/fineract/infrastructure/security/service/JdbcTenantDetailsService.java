@@ -80,22 +80,29 @@ public class JdbcTenantDetailsService implements TenantDetailsService {
             final String tenantIdentifier = rs.getString("identifier");
             final String name = rs.getString("name");
             final String timezoneId = rs.getString("timezoneId");
-            final FineractPlatformTenantConnection connection = getDBConnection(rs);
+            FineractPlatformTenantConnection connection = null;
             final String encriptedTenantKey = rs.getString("tenantKey");
             final String tenantKey = platformCryptoService.decrypt(encriptedTenantKey,name,id,tenantIdentifier);
-
+            final FineractPlatformTenant partialTenantInfo = new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection, tenantKey);
+            connection = getDBConnection(rs,partialTenantInfo);
             return new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection, tenantKey);
         }
 
         // gets the DB connection
-        private FineractPlatformTenantConnection getDBConnection(ResultSet rs) throws SQLException {
+        private FineractPlatformTenantConnection getDBConnection(ResultSet rs, final FineractPlatformTenant tenant) throws SQLException {
 
             final Long connectionId = rs.getLong("connectionId");
             final String schemaName = rs.getString("schemaName");
-            final String schemaServer = rs.getString("schemaServer");
+            final String encriptedSchemaServer = rs.getString("schemaServer");
+            final String schemaServer = platformCryptoService.decrypt(encriptedSchemaServer, tenant.getName(), tenant.getId(),
+                    tenant.getTenantKey(), tenant.getTenantIdentifier());
             final String schemaServerPort = rs.getString("schemaServerPort");
-            final String schemaUsername = rs.getString("schemaUsername");
-            final String schemaPassword = rs.getString("schemaPassword");
+            final String encriptedSchemaUsername = rs.getString("schemaUsername");
+            final String schemaUsername = platformCryptoService.decrypt(encriptedSchemaUsername, tenant.getName(), tenant.getId(),
+                    tenant.getTenantKey(), tenant.getTenantIdentifier());
+            final String encriptedSchemaPassword = rs.getString("schemaPassword");
+            final String schemaPassword = platformCryptoService.decrypt(encriptedSchemaPassword, tenant.getName(), tenant.getId(),
+                    tenant.getTenantKey(), tenant.getTenantIdentifier());
             final boolean autoUpdateEnabled = rs.getBoolean("autoUpdate");
             final int initialSize = rs.getInt("initialSize");
             final boolean testOnBorrow = rs.getBoolean("testOnBorrow");

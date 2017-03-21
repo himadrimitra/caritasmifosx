@@ -21,8 +21,9 @@ public class PlatformCryptoServiceImpl implements PlatformCryptoService {
         FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
         Long password1 = tenant.getId();
         String password2 = tenant.getTenantIdentifier();
+        String tenantKey = tenant.getTenantKey();
         String saltText = tenant.getName();
-        return getEncryptor(saltText, password1, password2);
+        return getEncryptor(saltText, password1,tenantKey, password2);
     }
 
     private TextEncryptor getEncryptor(String saltText, Object... passwords) {
