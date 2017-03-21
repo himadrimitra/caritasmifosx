@@ -377,7 +377,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
         /**
          * We will reuse this code in future
          */
-        Map<DataLayerKey, Long> dataLayerKeyLongMap = new HashMap<>();
+        Map<String, Object> dataLayerKeyLongMap = new HashMap<>();
         Map<String,String> configValueMap = null;
 
         if(task.getConfigValues()!=null){
@@ -387,11 +387,11 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
         if(configValueMap!=null){
             if(configValueMap.get(TaskConfigKey.CLIENT_ID.getValue())!=null){
-                dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,
+                dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID.getValue(),
                         Long.valueOf(configValueMap.get(TaskConfigKey.CLIENT_ID.getValue())));
             }
             if(configValueMap.get(TaskConfigKey.LOANAPPLICATION_ID.getValue())!=null){
-                dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,
+                dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID.getValue(),
                         Long.valueOf(configValueMap.get(TaskConfigKey.LOANAPPLICATION_ID.getValue())));
             }
         }

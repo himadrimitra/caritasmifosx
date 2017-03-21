@@ -36,15 +36,21 @@ public class LoanApplicationDataLayer implements DataLayer {
     }
 
     @Override
-    public void build(Map<DataLayerKey, Long> dataLayerEntities) {
+    public void build(Map<String, Object> dataLayerEntities) {
         keyValueMap.clear();
-        if(dataLayerEntities.get(DataLayerKey.CLIENT_ID)!=null){
-            Map clientDataMap = dataLayerReadPlatformService.getAllClientMatrix(dataLayerEntities.get(DataLayerKey.CLIENT_ID));
+        if(dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue())!=null){
+            Map clientDataMap = dataLayerReadPlatformService.getAllClientMatrix(((Long) dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue())).longValue());
             keyValueMap.putAll(clientDataMap);
         }
-        if(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID)!=null){
-            Map loanApplicationDataMap = dataLayerReadPlatformService.getAllLoanApplicationMatrix(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID));
+        if(dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID.getValue())!=null){
+            Map loanApplicationDataMap = dataLayerReadPlatformService.getAllLoanApplicationMatrix(((Long) dataLayerEntities.get(DataLayerKey.LOANAPPLICATION_ID.getValue())).longValue());
             keyValueMap.putAll(loanApplicationDataMap);
         }
+        this.keyValueMap.putAll(dataLayerEntities);
+    }
+
+    @Override
+    public Map<String, Object> getParamsMap() {
+        return keyValueMap;
     }
 }

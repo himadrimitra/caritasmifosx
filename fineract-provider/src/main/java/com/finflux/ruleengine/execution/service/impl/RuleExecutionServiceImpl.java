@@ -23,19 +23,24 @@ public class RuleExecutionServiceImpl implements RuleExecutionService {
 
     private final RuleExecutor ruleExecutor;
     private final RiskConfigReadPlatformService riskConfigReadPlatformService;
+    private final DataFieldReadService dataFieldReadService;
 
     @Autowired
-    public RuleExecutionServiceImpl(final BasicRuleExecutor ruleExecutor,
+    public RuleExecutionServiceImpl(final BasicRuleExecutor ruleExecutor,final DataFieldReadService dataFieldReadService,
                                     final RiskConfigReadPlatformService riskConfigReadPlatformService){
         this.ruleExecutor = ruleExecutor;
         this.riskConfigReadPlatformService = riskConfigReadPlatformService;
+        this.dataFieldReadService=dataFieldReadService;
     }
 
     @Override
     public RuleResult executeARule(Long ruleId, DataLayer dataLayer) {
         Rule rule = riskConfigReadPlatformService.getRuleById(ruleId);
         List<String> requiredKeys = ruleExecutor.getRequiredFields(rule);
-        Map<String, Object> keyValueMap = dataLayer.getValues(requiredKeys);
+        Map<String,Object> fieldParams=dataLayer.getParamsMap();
+        Map<String,Object> keyValueMap=this.dataFieldReadService.getAllFieldValues(requiredKeys, fieldParams);
+        requiredKeys.removeAll(keyValueMap.keySet());
+        keyValueMap.putAll(dataLayer.getValues(requiredKeys));
         return ruleExecutor.executeRule(rule,keyValueMap);
     }
 }

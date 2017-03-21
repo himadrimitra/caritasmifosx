@@ -66,25 +66,6 @@ public class RuleExecutionApiResource {
         this.toApiEligibilityJsonSerializer = toApiEligibilityJsonSerializer;
      }
 
-    @SuppressWarnings("unchecked")
-    @GET
-    @Path("{ruleId}")
-    @Consumes({ MediaType.APPLICATION_JSON })
-    @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveOneRuleFactor(@PathParam("ruleId") final Long ruleId,
-                                         @Context final UriInfo uriInfo) {
-        this.context.authenticatedUser().validateHasReadPermission(RuleExecutionApiConstants.RULE_EXECUTION_RESOURCE_NAME);
-        LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(dataLayerReadPlatformService);
-        Map<DataLayerKey,Long> dataLayerKeyLongMap = new HashMap<>();
-        dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,1L);
-        dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,1L);
-        dataLayer.build(dataLayerKeyLongMap);
-        final RuleResult ruleResult = this.ruleExecutionService.executeARule(ruleId,dataLayer);
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, ruleResult);
-    }
-
-
     @GET
     @Path("loanapplication/{loanApplicationId}")
     @Consumes({ MediaType.APPLICATION_JSON })
