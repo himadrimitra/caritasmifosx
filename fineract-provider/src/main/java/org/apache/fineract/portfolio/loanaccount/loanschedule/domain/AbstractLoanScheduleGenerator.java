@@ -3213,14 +3213,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             final MonetaryCurrency currency = scheduleParams.getCurrency();
             if (scheduleParams.getOutstandingBalance().isZero()) {
                 if (loanApplicationTerms.isAdjustInterestForRounding() && currentPeriodParams.getPrincipalForThisPeriod().isGreaterThanZero()) {
-                    Money amountForAdjust = scheduleParams.getOutstandingBalance().zero();
-                    if (loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() != null
-                            && loanApplicationTerms.getAdjustedInstallmentInMultiplesOf() > 0) {
-                        amountForAdjust = Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount())
-                                .negate());
-                    } else {
-                        amountForAdjust = Money.of(currency, emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount()));
-                    }
+                    Money amountForAdjust = Money.of(currency,
+							emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount()));
                     installment.addInterestAmount(amountForAdjust);
                     if(loanApplicationTerms.getInterestMethod().isFlat()){
                         loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().plus(amountForAdjust));
