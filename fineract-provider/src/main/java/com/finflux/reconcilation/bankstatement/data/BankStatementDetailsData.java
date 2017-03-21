@@ -134,7 +134,7 @@ public class BankStatementDetailsData {
     
     public BankStatementDetailsData(Long id, Long bankStatementId, String transactionId, Date transactionDate,
 			BigDecimal amount, final String branchExternalId,Long branch,String glAccount,
-			String branchName,String accountingType, String glCode, boolean isReconciled) {
+			String branchName,String accountingType, String glCode, boolean isReconciled, boolean isError) {
     	this.id = id;
 		this.bankStatementId = bankStatementId;
 		this.transactionId = transactionId;
@@ -159,7 +159,7 @@ public class BankStatementDetailsData {
 		this.loanTransactionData = null;
 		this.bankStatementDetailType = null;
 		this.receiptNumber = null;
-		this.isError = null;
+		this.isError = isError;
 		this.isManualReconciled = null;
 	}
     
@@ -167,8 +167,9 @@ public class BankStatementDetailsData {
 			BigDecimal amount, final String branchExternalId,Long branch,String glAccount,
 			String branchName,String accountingType, String glCode, boolean isReconciled) {
 
+    	final Boolean isError = null;
         return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate,
-    			amount, branchExternalId, branch,glAccount,branchName,accountingType, glCode, isReconciled);
+    			amount, branchExternalId, branch,glAccount,branchName,accountingType, glCode, isReconciled, isError);
     }
     
     
@@ -308,10 +309,12 @@ public class BankStatementDetailsData {
         this.isManualReconciled = null;
     }
     
-    public static BankStatementDetailsData generatePortfolioTransactions(Long id, Long bankStatementId, final String transactionId, final Date transactionDate, final BigDecimal amount,
-            final String description, final String transactionType, final String loanAccountNumber, final String receiptNumber, final Boolean isError) {
+    public static BankStatementDetailsData generatePortfolioTransactions(Long id, Long bankStatementId, final String transactionId,
+            final Date transactionDate, final BigDecimal amount, final String description, final String transactionType,
+            final String loanAccountNumber, final String receiptNumber, final Boolean isError) {
 
-        return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate, amount, description,transactionType,loanAccountNumber, receiptNumber, isError);
+        return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate, amount, description, transactionType,
+                loanAccountNumber, receiptNumber, isError);
     }
 
     public Long getId() {

@@ -110,6 +110,8 @@ public class ReconciliationApiConstants {
     public static final String miscellaneousUnReconciledInflowAmount = "miscellaneousUnReconciledInflowAmount";
     public static final String miscellaneousReconciledOutflowAmount = "miscellaneousReconciledOutflowAmount";
     public static final String miscellaneousUnReconciledOutflowAmount = "miscellaneousUnReconciledOutflowAmount";
+    
+    public static final String accountingTypeParamName = "accountingType";
 
     public static final List<String> EXCEL_FILE = Arrays.asList(xlsFileExtension, xlsxFileExtension);
 

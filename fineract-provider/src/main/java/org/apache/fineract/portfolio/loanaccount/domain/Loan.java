@@ -7726,13 +7726,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
 	public int getActiveTrancheCount() {
-		int size = 0;
-		for (LoanDisbursementDetails details : getDisbursementDetails()) {
-			if (details.isActive()) {
-				size += size;
-			}
-		}
-		return size;
+		return this.disbursementDetails.size();
 	}
 
     
