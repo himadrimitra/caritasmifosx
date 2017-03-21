@@ -68,9 +68,9 @@ public class LoanProductEligibilityExecutionServiceImpl implements LoanProductEl
             for(LoanProductEligibilityCriteriaData criteria: criterias){
                 if(loanAmount >= criteria.getMinAmount() && loanAmount <=criteria.getMaxAmount()){
                     LoanApplicationDataLayer dataLayer = new LoanApplicationDataLayer(dataLayerReadPlatformService);
-                    Map<DataLayerKey,Long> dataLayerKeyLongMap = new HashMap<>();
-                    dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID,clientId);
-                    dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID,loanApplicationId);
+                    Map<String,Object> dataLayerKeyLongMap = new HashMap<>();
+                    dataLayerKeyLongMap.put(DataLayerKey.CLIENT_ID.getValue(),clientId);
+                    dataLayerKeyLongMap.put(DataLayerKey.LOANAPPLICATION_ID.getValue(),loanApplicationId);
                     dataLayer.build(dataLayerKeyLongMap);
                     RuleResult ruleResult = ruleExecutionService.executeARule(criteria.getRiskCriteriaId(),dataLayer);
                     eligibilityResult.setCriteriaOutput(ruleResult);

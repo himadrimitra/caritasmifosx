@@ -34,12 +34,18 @@ public class ProfileRatingDataLayer implements DataLayer {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public void build(Map<DataLayerKey, Long> dataLayerEntities) {
+    public void build(Map<String, Object> dataLayerEntities) {
         this.keyValueMap.clear();
-        if (dataLayerEntities.get(DataLayerKey.CLIENT_ID) != null) {
-            final Map clientDataMap = this.dataLayerReadPlatformService.getAllClientMatrix(dataLayerEntities.get(DataLayerKey.CLIENT_ID));
+        if (dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue()) != null) {
+            final Map clientDataMap = this.dataLayerReadPlatformService.getAllClientMatrix((Long)dataLayerEntities.get(DataLayerKey.CLIENT_ID.getValue()));
             this.keyValueMap.putAll(clientDataMap);
         }
+        this.keyValueMap.putAll(dataLayerEntities);
+    }
+
+    @Override
+    public Map<String, Object> getParamsMap() {
+        return keyValueMap;
     }
 
 }

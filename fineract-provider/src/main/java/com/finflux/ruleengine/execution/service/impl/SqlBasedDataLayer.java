@@ -40,9 +40,9 @@ public class SqlBasedDataLayer implements DataLayer {
     }
 
     @Override
-    public void build(Map<DataLayerKey, Long> dataLayerEntities) {
+    public void build(Map<String, Object> dataLayerEntities) {
         keyValueMap.clear();
-        long ruleId = dataLayerEntities.get(DataLayerKey.RULE_ID);
+        long ruleId = (long) dataLayerEntities.get(DataLayerKey.RULE_ID.getValue());
         String sql = null;
         try {
             final Map<String, Object> params = new HashMap<>(1);
@@ -53,6 +53,12 @@ public class SqlBasedDataLayer implements DataLayer {
             throw new SqlNotFoundException(ruleId);
         }
         this.keyValueMap.putAll(this.namedJdbcTemplate.queryForMap(sql, this.paramMap));
+        this.keyValueMap.putAll(dataLayerEntities);
+    }
+
+    @Override
+    public Map<String, Object> getParamsMap() {
+        return keyValueMap;
     }
 
 }

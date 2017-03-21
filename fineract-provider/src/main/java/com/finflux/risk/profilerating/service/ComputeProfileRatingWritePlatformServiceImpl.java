@@ -164,7 +164,7 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
             final Integer entityType = profileRatingRun.getEntityType();
             Integer overriddenScore = null;
             TaskConfigKey taskConfigKey = null;
-            DataLayerKey dataLayerKey = null;
+            String dataLayerKey = null;
             if (command.hasParameter(ComputeProfileRatingApiConstants.overriddenScoreParamName)) {
                 overriddenScore = command.integerValueOfParameterNamed(ComputeProfileRatingApiConstants.overriddenScoreParamName);
             }
@@ -173,22 +173,22 @@ public class ComputeProfileRatingWritePlatformServiceImpl implements ComputeProf
                 entityId = command.longValueOfParameterNamed(ComputeProfileRatingApiConstants.entityIdParamName);
             }
             if (profileRatingRun.getScopeEntityType() != null && profileRatingRun.getScopeEntityId() != null) {
-                final Map<DataLayerKey, Long> dataLayerKeyLongMap = new HashMap<>();
+                final Map<String, Object> dataLayerKeyLongMap = new HashMap<>();
                 List<Map<String, Object>> idMapList = new ArrayList<>();
                 if (ProfileRatingType.CLIENT.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
-                    dataLayerKey = DataLayerKey.CLIENT_ID;
+                    dataLayerKey = DataLayerKey.CLIENT_ID.getValue();
                     taskConfigKey = TaskConfigKey.CLIENT_ID;
                     idMapList = getClientIds(profileRatingRun, entityId);
                 } else if (ProfileRatingType.GROUP.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
-                    dataLayerKey = DataLayerKey.GROUP_ID;
+                    dataLayerKey = DataLayerKey.GROUP_ID.getValue();
                     taskConfigKey = TaskConfigKey.GROUP_ID;
                     idMapList = getGroupIds(profileRatingRun, entityId);
                 } else if (ProfileRatingType.CENTER.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
-                    dataLayerKey = DataLayerKey.CENETR_ID;
+                    dataLayerKey = DataLayerKey.CENETR_ID.getValue();
                     taskConfigKey = TaskConfigKey.CENTER_ID;
                     idMapList = getCenterIds(profileRatingRun, entityId);
                 } else if (ProfileRatingType.CENTER.getValue().equals(ProfileRatingType.fromInt(entityType).getValue())) {
-                    dataLayerKey = DataLayerKey.VILLAGE_ID;
+                    dataLayerKey = DataLayerKey.VILLAGE_ID.getValue();
                     taskConfigKey = TaskConfigKey.VILLAGE_ID;
                     idMapList = getVillageIds(profileRatingRun, entityId);
                 }
