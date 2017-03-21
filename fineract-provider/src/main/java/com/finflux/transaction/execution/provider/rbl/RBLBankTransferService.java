@@ -168,7 +168,6 @@ public class RBLBankTransferService implements BankTransferService {
 												 Long checkerUserId, Long approverUserId) {
 
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add("Authorization", "Basic " + authorizationCode);
 		headers.add("Content-Type", "application/json");
 
 		RBLSinglePaymentRequest.Header header = new RBLSinglePaymentRequest.Header(
