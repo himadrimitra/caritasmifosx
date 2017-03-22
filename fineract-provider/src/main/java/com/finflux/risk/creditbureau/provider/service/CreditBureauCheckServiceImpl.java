@@ -13,7 +13,6 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -129,8 +128,8 @@ public class CreditBureauCheckServiceImpl implements CreditBureauCheckService {
             this.creditBureauEnquiryWritePlatformService.saveEnquiryResponseDetails(enquiryReferenceData, creditBureauResponseEnquire);
             
             // fetch report
-           // loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(loanApplicationId,
-            //        creditBureauProduct.getId(), loanId, trancheDisbursalId);
+            /*loanEnquiryReferenceData = this.creditBureauEnquiryReadService.getLatestCreditBureauEnquiryDetails(loanApplicationId,
+                    creditBureauProduct.getId(), loanId, trancheDisbursalId);*/
             loanEnquiryReferenceData = enquiryReferenceData.getLoansReferenceData().get(0) ;
             processCreditBureauReportRespon(creditBureauProvider, loanEnquiryReferenceData, loanId, trancheDisbursalId);
         } else if (loanEnquiryReferenceData.getStatus().isPending()) {

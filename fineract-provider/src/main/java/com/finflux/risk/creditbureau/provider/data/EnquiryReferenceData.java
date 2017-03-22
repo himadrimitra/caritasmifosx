@@ -8,7 +8,7 @@ import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 public class EnquiryReferenceData {
 
     final Long enquiryId;
-    final String acknowledgementNumber;
+    String acknowledgementNumber;
     final CreditBureauEnquiryStatus creditBureauEnquiryStatus;
     final String type;
     List<LoanEnquiryReferenceData> loansReferenceData;
@@ -56,5 +56,9 @@ public class EnquiryReferenceData {
 
     public Long getCreditBureauProductId() {
         return creditBureauProductId;
+    }
+    
+    public void setAcknowledgementNumber(final String acknowledgementNumber) {
+        this.acknowledgementNumber = acknowledgementNumber;
     }
 }
