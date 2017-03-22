@@ -61,21 +61,26 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
 
     @Transactional
     @Override
-    public void saveEnquiryResponseDetails(EnquiryReferenceData enquiryReferenceData, CreditBureauResponse responseData) {
-
-        EnquiryResponse response = responseData.getEnquiryResponse();
-        CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(enquiryReferenceData.getEnquiryId());
+    public void saveEnquiryResponseDetails(final EnquiryReferenceData enquiryReferenceData, final CreditBureauResponse responseData) {
+        final EnquiryResponse response = responseData.getEnquiryResponse();
+        final CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(enquiryReferenceData.getEnquiryId());
         creditBureauEnquiry.setAcknowledgementNumber(response.getAcknowledgementNumber());
+        enquiryReferenceData.setAcknowledgementNumber(response.getAcknowledgementNumber());
         creditBureauEnquiry.setStatus(response.getStatus().getValue());
         creditBureauEnquiry.setRequest(response.getRequest());
         creditBureauEnquiry.setResponse(response.getResponse());
-
-        List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
+        final List<LoanCreditBureauEnquiry> creditBureauLoanEnquiries = creditBureauEnquiry.getLoanCreditBureauEnquiryMapping();
         if (creditBureauLoanEnquiries != null && !creditBureauLoanEnquiries.isEmpty()) {
-            LoanCreditBureauEnquiry loanEnquiry = creditBureauLoanEnquiries.get(0);
+            final LoanCreditBureauEnquiry loanEnquiry = creditBureauLoanEnquiries.get(0);
             loanEnquiry.setStatus(response.getStatus().getValue());
             loanEnquiry.setCbReportId(response.getReportId());
-            // this.loanCreditBureauEnquiryMappingRepository.save(loanEnquiry);
+            if (enquiryReferenceData.getLoansReferenceData() != null && !enquiryReferenceData.getLoansReferenceData().isEmpty()) {
+                for (final LoanEnquiryReferenceData loanEnquiryReferenceData : enquiryReferenceData.getLoansReferenceData()) {
+                    loanEnquiryReferenceData.setAcknowledgementNumber(creditBureauEnquiry.getAcknowledgementNumber());
+                    loanEnquiryReferenceData.setCbReportId(response.getReportId());
+                    loanEnquiryReferenceData.setStatus(response.getStatus());
+                }
+            }
         }
         this.creditBureauEnquiryRepository.save(creditBureauEnquiry);
     }

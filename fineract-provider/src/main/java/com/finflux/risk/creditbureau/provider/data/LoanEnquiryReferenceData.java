@@ -10,17 +10,17 @@ import com.finflux.risk.creditbureau.provider.domain.CreditBureauEnquiryStatus;
 
 public class LoanEnquiryReferenceData {
 
-    final Long loanEnquiryId;
-    final Long enquiryId;
-    final String refNumber;
-    final String cbReportId;
-    final String acknowledgementNumber;
-    final Long clientId;
-    final Long loanId;
-    final Long loanApplicationId;
-    final Long cbProductId;
-    final CreditBureauEnquiryStatus status;
-    final Date requestedDate;
+    Long loanEnquiryId;
+    Long enquiryId;
+    String refNumber;
+    String cbReportId;
+    String acknowledgementNumber;
+    Long clientId;
+    Long loanId;
+    Long loanApplicationId;
+    Long cbProductId;
+    CreditBureauEnquiryStatus status;
+    Date requestedDate;
     LoanEnquiryData enquiryData;
 
     public LoanEnquiryReferenceData(final Long loanEnquiryId, final Long enquiryId, final String refNumber, final Long clientId,
@@ -99,5 +99,49 @@ public class LoanEnquiryReferenceData {
 
     public void setEnquiryData(final LoanEnquiryData enquiryData) {
         this.enquiryData = enquiryData;
+    }
+    
+    public void setAcknowledgementNumber(final String acknowledgementNumber) {
+        this.acknowledgementNumber = acknowledgementNumber;
+    }
+
+    public void setLoanEnquiryId(final Long loanEnquiryId) {
+        this.loanEnquiryId = loanEnquiryId;
+    }
+
+    public void setEnquiryId(final Long enquiryId) {
+        this.enquiryId = enquiryId;
+    }
+
+    public void setRefNumber(final String refNumber) {
+        this.refNumber = refNumber;
+    }
+
+    public void setCbReportId(final String cbReportId) {
+        this.cbReportId = cbReportId;
+    }
+
+    public void setClientId(final Long clientId) {
+        this.clientId = clientId;
+    }
+
+    public void setLoanId(final Long loanId) {
+        this.loanId = loanId;
+    }
+
+    public void setLoanApplicationId(final Long loanApplicationId) {
+        this.loanApplicationId = loanApplicationId;
+    }
+
+    public void setCbProductId(final Long cbProductId) {
+        this.cbProductId = cbProductId;
+    }
+
+    public void setStatus(final CreditBureauEnquiryStatus status) {
+        this.status = status;
+    }
+
+    public void setRequestedDate(final Date requestedDate) {
+        this.requestedDate = requestedDate;
     }
 }

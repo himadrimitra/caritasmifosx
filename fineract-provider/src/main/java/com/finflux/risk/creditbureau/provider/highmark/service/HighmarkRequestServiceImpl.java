@@ -75,7 +75,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
     }
 
     private CreditBureauResponse sendHighmarkAT01Request(Map<String, String> headersMap, REQUESTREQUESTFILE requestFile,
-            EnquiryReferenceData requestData, String requestURL) {
+            final EnquiryReferenceData requestData, String requestURL) {
         String requestString = null;
         String responseString = null;
         try {
@@ -102,7 +102,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
             // REPORTFILE.class);
             // REPORTFILE reportfile = reportfileResponseEntity.getBody();
 
-            return parseAT01Response(reportfile, requestString, responseString);
+            return parseAT01Response(reportfile, requestString, responseString, requestData);
         } catch (Exception e) {
             e.printStackTrace();
             EnquiryResponse enquiryResponse = new EnquiryResponse(null, requestString, responseString, null, null,
@@ -111,7 +111,7 @@ public class HighmarkRequestServiceImpl implements HighmarkRequestService {
         }
     }
 
-    private CreditBureauResponse parseAT01Response(REPORTFILE reportFile, String requestString, String responseString) {
+    private CreditBureauResponse parseAT01Response(REPORTFILE reportFile, String requestString, String responseString, final EnquiryReferenceData enquiryReferenceData) {
         EnquiryResponse enquiryResponse = null;
         if (reportFile != null && reportFile.getINQUIRYSTATUS() != null) {
             REPORTFILE.INQUIRYSTATUS inquiryStatus = reportFile.getINQUIRYSTATUS();

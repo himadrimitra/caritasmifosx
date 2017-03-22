@@ -12,35 +12,35 @@ import com.finflux.risk.creditbureau.provider.service.CreditBureauProvider;
 @Service
 public class EquifaxCreditBureauProviderImpl implements CreditBureauProvider {
 
-	final EquifaxRequestService equifaxRequestService;
-	final EquifaxIssueService equifaxIssueService;
-	final ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService;
+    final EquifaxRequestService equifaxRequestService;
+    final EquifaxIssueService equifaxIssueService;
+    final ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService;
 
-	private static final String KEY = "india.equifax.mcs";
+    private static final String KEY = "india.equifax.mcs";
 
-	@Autowired
-	public EquifaxCreditBureauProviderImpl(final EquifaxRequestService equifaxRequestService,
-			final EquifaxIssueService equifaxIssueService,
-			ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService) {
-		this.equifaxRequestService = equifaxRequestService;
-		this.equifaxIssueService = equifaxIssueService;
-		this.externalServicesPropertiesReadPlatformService = externalServicesPropertiesReadPlatformService;
-	}
+    @Autowired
+    public EquifaxCreditBureauProviderImpl(final EquifaxRequestService equifaxRequestService,
+            final EquifaxIssueService equifaxIssueService,
+            ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService) {
+        this.equifaxRequestService = equifaxRequestService;
+        this.equifaxIssueService = equifaxIssueService;
+        this.externalServicesPropertiesReadPlatformService = externalServicesPropertiesReadPlatformService;
+    }
 
-	@Override
-	public String getKey() {
-		return KEY;
-	}
+    @Override
+    public String getKey() {
+        return KEY;
+    }
 
-	@Override
-	public CreditBureauResponse enquireCreditBureau(final EnquiryReferenceData enquiryReferenceData) {
-		return equifaxRequestService.sendEquifaxEnquiry(enquiryReferenceData,
-				this.externalServicesPropertiesReadPlatformService.getEquifaxCredentials());
-	}
+    @Override
+    public CreditBureauResponse enquireCreditBureau(final EnquiryReferenceData enquiryReferenceData) {
+        return equifaxRequestService.sendEquifaxEnquiry(enquiryReferenceData,
+                this.externalServicesPropertiesReadPlatformService.getEquifaxCredentials());
+    }
 
-	@Override
-	public CreditBureauResponse fetchCreditBureauReport(final LoanEnquiryReferenceData enquiryData) {
-		return equifaxIssueService.sendEquifaxIssue(enquiryData);
-	}
+    @Override
+    public CreditBureauResponse fetchCreditBureauReport(final LoanEnquiryReferenceData enquiryData) {
+        return equifaxIssueService.sendEquifaxIssue(enquiryData);
+    }
 
 }
