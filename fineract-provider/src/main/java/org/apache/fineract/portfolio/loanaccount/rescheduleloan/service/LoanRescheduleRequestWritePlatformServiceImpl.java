@@ -228,12 +228,13 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             // initialize set the value to null
             Date submittedOnDate = null;
 
+            
             // check if the parameter is in the JsonCommand object
             if (jsonCommand.hasParameter(RescheduleLoansApiConstants.submittedOnDateParamName)) {
                 // create a LocalDate object from the "submittedOnDate" Date
                 // string
                 LocalDate localDate = jsonCommand.localDateValueOfParameterNamed(RescheduleLoansApiConstants.submittedOnDateParamName);
-
+                
                 if (localDate != null) {
                     // update the value of the "submittedOnDate" variable
                     submittedOnDate = localDate.toDate();
@@ -248,6 +249,7 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
 
             // initially set the value to null
             Date adjustedDueDate = null;
+            
 
             // check if the parameter is in the JsonCommand object
             if (jsonCommand.hasParameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)) {
@@ -275,7 +277,16 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
                     adjustedDueDate = localDate.toDate();
                 }
             }
+            
+            //initialize specificToInstallment to false
+            boolean isSpecificToInstallment = false;
+            
+            //If isSpecificToInstallement is checked then reschedule only that particular re-payment
 
+            if(jsonCommand.hasParameter(RescheduleLoansApiConstants.isSpecificToInstallment)){
+            	isSpecificToInstallment = jsonCommand.booleanPrimitiveValueOfParameterNamed(RescheduleLoansApiConstants.isSpecificToInstallment);
+            }
+            
             final LoanRescheduleRequest loanRescheduleRequest = LoanRescheduleRequest.instance(loan,
                     LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(), rescheduleFromInstallment, rescheduleFromDate,
                     recalculateInterest, rescheduleReasonCodeValue, rescheduleReasonComment, submittedOnDate,
@@ -284,7 +295,6 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
             // update reschedule request to term variations mapping
             List<LoanRescheduleRequestToTermVariationMapping> loanRescheduleRequestToTermVariationMappings = new ArrayList<>();
             final Boolean isActive = false;
-            final boolean isSpecificToInstallment = false;
             BigDecimal decimalValue = null;
             Date dueDate = null;
             // create term variations for flat and declining balance loans

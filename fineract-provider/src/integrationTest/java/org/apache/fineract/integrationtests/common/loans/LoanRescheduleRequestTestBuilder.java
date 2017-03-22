@@ -34,6 +34,7 @@ public class LoanRescheduleRequestTestBuilder {
     private String rescheduleReasonId = "1";
     private String rescheduleReasonComment = null;
     private String submittedOnDate = "04 September 2014";
+    private boolean specificToInstallment;
 
     public String build(final String loanId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -71,7 +72,9 @@ public class LoanRescheduleRequestTestBuilder {
         if (rescheduleReasonComment != null) {
             map.put("rescheduleReasonComment", rescheduleReasonComment);
         }
-
+        
+        map.put("specificToInstallment", specificToInstallment);
+        
         return new Gson().toJson(map);
     }
 
@@ -137,6 +140,11 @@ public class LoanRescheduleRequestTestBuilder {
         return this;
     }
 
+    public LoanRescheduleRequestTestBuilder updateSpecificToInstallment(final boolean specificToInstallment){
+    	this.specificToInstallment = specificToInstallment;
+    	 
+    	return this;
+    }
     public String getRejectLoanRescheduleRequestJSON() {
         final HashMap<String, String> map = new HashMap<>();
         map.put("locale", "en");

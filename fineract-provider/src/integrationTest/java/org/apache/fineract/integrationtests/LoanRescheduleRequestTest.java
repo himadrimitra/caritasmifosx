@@ -21,7 +21,11 @@ package org.apache.fineract.integrationtests;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.fineract.integrationtests.common.ClientHelper;
 import org.apache.fineract.integrationtests.common.LoanRescheduleRequestHelper;
@@ -213,7 +217,77 @@ public class LoanRescheduleRequestTest {
     	
     	assertEquals("NUMBER OF REPAYMENTS SHOULD BE 16, NOT 12", "12", numberOfRepayments.toString());
     	assertEquals("TOTAL EXPECTED REPAYMENT MUST BE EQUAL TO 118000.0", "118000.0", totalExpectedRepayment.toString());
-    	
+   
     	System.out.println("Successfully approved loan reschedule request (ID: " + this.loanRescheduleRequestId + ")");
+    }
+    
+    
+     /** 
+     * create new loan reschedule request for specific installment. With the previous request one of the re-payment will be on 4th December 2014. When we reschedule this with below request, that particular payment will be made on 5th December 2014
+     **/
+    private void createLoanRescheduleRequestForSpecificInstallment() {
+    	System.out.println("---------------------------------CREATING LOAN RESCHEDULE REQUEST FOR SPECIFIC INSTALLMENT------------------------------------------");
+    	
+    	boolean	specificToInstallment = true;
+        String rescheduleReasonId = "1";
+        String adjustedDueDate = "05 DECEMBER 2014";
+    	final String requestJSON = new LoanRescheduleRequestTestBuilder().updateSpecificToInstallment(specificToInstallment).updateAdjustedDueDate(adjustedDueDate).updateRescheduleReasonComment("TEST").updateRescheduleReasonId(rescheduleReasonId).build(this.loanId.toString());
+    	
+    	this.loanRescheduleRequestId = this.loanRescheduleRequestHelper.createLoanRescheduleRequest(requestJSON);
+    	this.loanRescheduleRequestHelper.verifyCreationOfLoanRescheduleRequest(this.loanRescheduleRequestId);
+    
+    	System.out.println("Successfully created loan reschedule request (ID: " + this.loanRescheduleRequestId + ")");
+    	
+    }
+    
+   
+    
+    @Test
+    public void testRejectLoanRescheduleRequestForSpecificInstallment() {
+    	this.createLoanRescheduleRequestForSpecificInstallment();
+    	
+    	System.out.println("-----------------------------REJECTING LOAN RESCHEDULE REQUEST FOR SPECIFIC INSTALLMENT--------------------------");
+    	
+    	final String requestJSON = new LoanRescheduleRequestTestBuilder().getRejectLoanRescheduleRequestJSON();
+    	this.loanRescheduleRequestHelper.rejectLoanRescheduleRequest(this.loanRescheduleRequestId, requestJSON);
+    	
+    	final HashMap response = (HashMap) this.loanRescheduleRequestHelper.getLoanRescheduleRequest(this.loanRescheduleRequestId, "statusEnum");
+    	assertTrue((Boolean)response.get("rejected"));
+    	
+    	System.out.println("Successfully rejected loan reschedule request (ID: " + this.loanRescheduleRequestId + ") for a specific installment");
+    }
+    
+    @Test
+    public void testApproveLoanRescheduleRequestForSpecificInstallment() {
+        
+    	this.createLoanRescheduleRequestForSpecificInstallment();
+    	
+    	System.out.println("-----------------------------APPROVING LOAN RESCHEDULE REQUEST FOR SPECIFIC INSTALLMENT--------------------------");
+    	
+    	final String requestJSON = new LoanRescheduleRequestTestBuilder().getApproveLoanRescheduleRequestJSON();
+    	this.loanRescheduleRequestHelper.approveLoanRescheduleRequest(this.loanRescheduleRequestId, requestJSON);
+    	
+    	final HashMap response = (HashMap) this.loanRescheduleRequestHelper.getLoanRescheduleRequest(loanRescheduleRequestId, "statusEnum");
+    	assertTrue((Boolean)response.get("approved"));
+    
+    	System.out.println("Successfully approved loan reschedule request (ID: " + this.loanRescheduleRequestId + ") for a specified installment" );
+    	
+		ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(requestSpec, generalResponseSpec, loanId);
+        HashMap firstInstallement  = loanRepaymnetSchedule.get(3);
+       
+        Calendar date = Calendar.getInstance(Utils.getTimeZoneOfTenant());
+        date.set(2014, Calendar.DECEMBER, 05);
+        
+    	assertEquals(getDateAsArray(date, 0), firstInstallement.get("dueDate")); 
+    }
+    
+    private List getDateAsArray(Calendar date, int addPeriod) {
+        return getDateAsArray(date, addPeriod, Calendar.DAY_OF_MONTH);
+    }
+    
+    private List getDateAsArray(Calendar date, int addvalue, int type) {
+    	date.add(type, addvalue);
+        return new ArrayList<>(Arrays.asList(date.get(Calendar.YEAR), date.get(Calendar.MONTH) + 1,
+        		date.get(Calendar.DAY_OF_MONTH)));
     }
 }

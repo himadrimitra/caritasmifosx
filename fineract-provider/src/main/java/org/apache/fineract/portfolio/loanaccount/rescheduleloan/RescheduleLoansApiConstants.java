@@ -48,15 +48,16 @@ public class RescheduleLoansApiConstants {
     public static final String resheduleForMultiDisbursementNotSupportedErrorCode = "loan.reschedule.multidisbursement.error.code";
     public static final String resheduleWithInterestRecalculationNotSupportedErrorCode = "loan.reschedule.interestrecalculation.error.code";
     public static final String newInstallmentAmountParamName = "newInstallmentAmount";
+    public static final String isSpecificToInstallment = "specificToInstallment";
     
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
             newInterestRateParamName, rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
-            loanIdParamName, adjustedDueDateParamName, recalculateInterestParamName, newInstallmentAmountParamName));
+            loanIdParamName, adjustedDueDateParamName, recalculateInterestParamName, newInstallmentAmountParamName, isSpecificToInstallment));
     
     public static final Set<String> GLIM_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             rescheduleFromDateParamName,rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
-            loanIdParamName, adjustedDueDateParamName));
+            loanIdParamName, adjustedDueDateParamName, isSpecificToInstallment));
     
     // reject action request parameters
     public static final String rejectedOnDateParam = "rejectedOnDate";
