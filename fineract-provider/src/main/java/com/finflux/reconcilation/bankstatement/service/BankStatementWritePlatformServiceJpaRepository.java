@@ -48,6 +48,8 @@ import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWri
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentWritePlatformServiceJpaRepositoryImpl;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
+import org.apache.fineract.organisation.office.data.OfficeData;
+import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.service.AccountTransfersWritePlatformService;
 import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
@@ -84,6 +86,7 @@ import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
 import com.finflux.reconcilation.bankstatement.domain.BankStatement;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailType;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetails;
+import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailsRepository;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailsRepositoryWrapper;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementRepositoryWrapper;
 import com.finflux.reconcilation.bankstatement.exception.GLAccountNotFoundException;
@@ -107,7 +110,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final ContentRepositoryFactory contentRepositoryFactory;
     private final BankStatementRepositoryWrapper bankStatementRepository;
     private final BankStatementReadPlatformService bankStatementReadPlatformService;
-    private final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepository;
+    private final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepositoryWrapper;
     private final DocumentWritePlatformService documentWritePlatformService;
     private final LoanTransactionRepositoryWrapper loanTransactionRepository;
     private final BankRepositoryWrapper bankRepository;
@@ -122,13 +125,15 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final AccountTransfersWritePlatformService accountTransfersWritePlatformService;
     private final PaymentTypeRepository paymentTypeRepository;
     private final PaymentDetailRepository  paymentDetailRepository;
+    private final BankStatementDetailsRepository bankStatementDetailsRepository;
+    private final OfficeReadPlatformService readPlatformService;
 
     @Autowired
     public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
             final DocumentRepository documentRepository, final ContentRepositoryFactory contentRepositoryFactory,
             final BankStatementRepositoryWrapper bankStatementRepository,
             final BankStatementReadPlatformService bankStatementReadPlatformService,
-            final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepository,
+            final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepositoryWrapper,
             final DocumentWritePlatformService documentWritePlatformService,
             final LoanTransactionRepositoryWrapper loanTransactionRepository, final BankRepositoryWrapper bankRepository,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
@@ -139,13 +144,15 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final LoanAccountDomainService loanAccountDomainService, final BusinessEventNotifierService businessEventNotifierService,
             final AccountTransfersWritePlatformService accountTransfersWritePlatformService,
             final PaymentTypeRepository paymentTypeRepository,
-            final PaymentDetailRepository  paymentDetailRepository) {
+            final PaymentDetailRepository  paymentDetailRepository,
+            final BankStatementDetailsRepository bankStatementDetailsRepository,
+            final OfficeReadPlatformService readPlatformService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = contentRepositoryFactory;
         this.bankStatementRepository = bankStatementRepository;
         this.bankStatementReadPlatformService = bankStatementReadPlatformService;
-        this.bankStatementDetailsRepository = bankStatementDetailsRepository;
+        this.bankStatementDetailsRepositoryWrapper = bankStatementDetailsRepositoryWrapper;
         this.documentWritePlatformService = documentWritePlatformService;
         this.loanTransactionRepository = loanTransactionRepository;
         this.bankRepository = bankRepository;
@@ -160,6 +167,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.accountTransfersWritePlatformService = accountTransfersWritePlatformService;
         this.paymentTypeRepository = paymentTypeRepository;
         this.paymentDetailRepository = paymentDetailRepository;
+        this.bankStatementDetailsRepository = bankStatementDetailsRepository;
+        this.readPlatformService = readPlatformService;
     }
 
     @Transactional
@@ -660,7 +669,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 for (BankStatementDetails bankStatementDetail : bankStatementDetailsList) {
                     bankStatementDetail.setBankStatement(existingBankStatement);                    
                 }
-                this.bankStatementDetailsRepository.save(bankStatementDetailsList);
+                this.bankStatementDetailsRepositoryWrapper.save(bankStatementDetailsList);
             } else {
                 throw new InvalidCIFRowException(errorRows);
             }
@@ -690,7 +699,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             for (BankStatementDetails bankStatementDetail : bankStatementDetailsList) {
                 bankStatementDetail.setBankStatement(bankStatement);                
             }
-            this.bankStatementDetailsRepository.save(bankStatementDetailsList);
+            this.bankStatementDetailsRepositoryWrapper.save(bankStatementDetailsList);
         } else {
             throw new InvalidCIFRowException(errorRows);
         }
@@ -750,8 +759,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
 
     @Override
     public Long deleteBankStatementDetails(final Long bankStatementDetailsId) {
-        BankStatementDetails bankStatementDetails = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailsId);
-        this.bankStatementDetailsRepository.delete(bankStatementDetails);
+        BankStatementDetails bankStatementDetails = this.bankStatementDetailsRepositoryWrapper.findOneWithNotFoundDetection(bankStatementDetailsId);
+        this.bankStatementDetailsRepositoryWrapper.delete(bankStatementDetails);
         return bankStatementDetailsId;
     }
 
@@ -768,7 +777,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 for (int i = 0; i < transactionDataArray.size(); i++) {
                     final JsonObject jsonObject = transactionDataArray.get(i).getAsJsonObject();
                     final Long bankStatementDetailId = jsonObject.get(ReconciliationApiConstants.bankTransctionIdParamName).getAsLong();
-                    BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailId);
+                    BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepositoryWrapper.findOneWithNotFoundDetection(bankStatementDetailId);
                     bankStatementDetail.setUpdatedDate(new Date());
                     bankStatementDetail.setIsReconciled(true);                    
                     if(isManualReconcile){                         
@@ -803,7 +812,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                         }                                          	
                     }
                 }
-                this.bankStatementDetailsRepository.save(bankDetailsList);
+                this.bankStatementDetailsRepositoryWrapper.save(bankDetailsList);
             }
         }
         return new CommandProcessingResultBuilder() //
@@ -829,6 +838,9 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     
     @Override
     public String createJournalEntries(Long bankStatementId, String apiRequestBodyAsJson) {
+        BankStatement bankStatement = this.bankStatementRepository.findOneWithNotFoundDetection(bankStatementId);
+        List<BankStatementDetails> bankStatementDetails = this.bankStatementDetailsRepository
+                .retrieveBankStatementNonPortfolioDetails(bankStatement, BankStatementDetailType.NONPORTFOLIO.getValue());
         List<BankStatementDetailsData> bankStatementDetailsData = this.bankStatementDetailsReadPlatformService.retrieveBankStatementNonPortfolioData(bankStatementId);
         Long defaultBankGLAccountId = null;
         if (bankStatementDetailsData.size() > 0) {
@@ -849,16 +861,18 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         String dateFormat = requestBodyMap.get("dateFormat");
         String currencyCode = currencyReadPlatformService.getDefaultCurrencyCode();
         List<BankStatementDetails> updatedList = new ArrayList<>();
+        final List<BankStatementDetails> faildeList = new ArrayList<>();
         DateFormat formatFromExcel = new SimpleDateFormat("yyyy-MM-dd", new Locale(locale));;
         DateFormat targetFormat = new SimpleDateFormat(dateFormat);
-        for (BankStatementDetailsData bankStatementDetail : bankStatementDetailsData) {
+        final List<OfficeData> ofiices = this.readPlatformService.retrieveOfficeForJournalEntry();
+        for (BankStatementDetails bankStatementDetail : bankStatementDetails) {
             GLAccountDataForLookup GLAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(bankStatementDetail.getGlCode());
-                if(isValidData(bankStatementDetail) && GLAccount != null){
-        		HashMap<String, Object> responseMap = new HashMap<>();
+              if(isValidData(bankStatementDetail, ofiices) && GLAccount != null && !ofiices.isEmpty()){
+        	HashMap<String, Object> responseMap = new HashMap<>();
                 HashMap<String, Object> requestMap = new HashMap<>();
                 requestMap.put(ReconciliationApiConstants.localeParamName, locale);
                 requestMap.put(ReconciliationApiConstants.dateFormatParamName, dateFormat);
-                requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBranch());
+                requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBrtanchid());
                 requestMap.put(ReconciliationApiConstants.transactionDateParamName, getFormattedDate(bankStatementDetail.getTransactionDate(),formatFromExcel, targetFormat));
                 requestMap.put(ReconciliationApiConstants.currencyCodeParamName, currencyCode);
                 requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId, GLAccount));
@@ -868,29 +882,48 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     CommandProcessingResult result = null;
                     final CommandWrapper commandRequest = new CommandWrapperBuilder().createJournalEntry().withJson(requestBody).build();
                     result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-                    BankStatementDetails toUpdate = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetail.getId());
-                    toUpdate.setTransactionId(result.getTransactionId());
-                    toUpdate.setIsReconciled(true);
-                    updatedList.add(toUpdate);            
+                    bankStatementDetail.setTransactionId(result.getTransactionId());
+                    bankStatementDetail.setIsReconciled(true);
+                    updatedList.add(bankStatementDetail);
                     responseMap.put(ReconciliationApiConstants.BANK_STATEMENT_DETAIL_ID, bankStatementDetail.getId());
                     responseMap.put(ReconciliationApiConstants.JOURNAL_ENTRY_RESPONSE, result);
                     resultList.add(responseMap);         	
                 }
-        	}
+            } else {
+
+                bankStatementDetail.setIsError(true);
+                faildeList.add(bankStatementDetail);
+            }
         }
-        this.bankStatementDetailsRepository.save(updatedList);
+        if (!faildeList.isEmpty()) {
+            this.bankStatementDetailsRepositoryWrapper.save(faildeList);
+        } else {
+            this.bankStatementDetailsRepositoryWrapper.save(updatedList);
+        }
         responseData.put(ReconciliationApiConstants.RESOURCE, resultList);
         return gson.toJson(responseData);
     }
-    
-    private boolean isValidData(BankStatementDetailsData bankStatementDetail){
-        return (!bankStatementDetail.getIsReconciled() && bankStatementDetail.getAmount()!= null && bankStatementDetail.getGlCode() != null && bankStatementDetail.getBranch() != null 
-                && bankStatementDetail.getTransactionDate() != null && bankStatementDetail.getAccountingType() != null && (bankStatementDetail.getAccountingType().equalsIgnoreCase("CREDIT")
-                || bankStatementDetail.getAccountingType().equalsIgnoreCase("DEBIT")));
+   
+    private boolean isValidData(BankStatementDetails bankStatementDetail, List<OfficeData> offices) {
+        return (!bankStatementDetail.isReconciled() && bankStatementDetail.getAmount() != null && bankStatementDetail.getGlCode() != null
+                && bankStatementDetail.getTransactionDate() != null && bankStatementDetail.getAccountingType() != null
+                && (bankStatementDetail.getAccountingType().equalsIgnoreCase("CREDIT")
+                        || bankStatementDetail.getAccountingType().equalsIgnoreCase("DEBIT"))
+                && branchExist(bankStatementDetail, offices));
     }
 
+    private boolean branchExist(BankStatementDetails bankStatementDetail, List<OfficeData> offices) {
+        for (OfficeData office : offices) {
+            if (office.getExternalId().equals(bankStatementDetail.getBranchExternalId())) {
+                bankStatementDetail.setBranchId(office.getId());
+                return true;
+            }
+        }
+        return false;
+    }
+    
 
-    private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetailsData bankStatementDetail, Long defaultBankGLAccountId, GLAccountDataForLookup GLAccount) {
+    private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetails bankStatementDetail, Long defaultBankGLAccountId, GLAccountDataForLookup GLAccount) {
 
         HashMap<String, Object> creaditMap = new HashMap<>();
         HashMap<String, Object> debitMap = new HashMap<>();
@@ -934,7 +967,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 for (int i = 0; i < transactionDataArray.size(); i++) {
                     final JsonObject jsonObject = transactionDataArray.get(i).getAsJsonObject();
                     final Long bankStatementDetailId = jsonObject.get(ReconciliationApiConstants.bankTransctionIdParamName).getAsLong();
-                    BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailId);
+                    BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepositoryWrapper.findOneWithNotFoundDetection(bankStatementDetailId);
                     if(bankStatementDetail.isManualReconciled()){
                     	bankStatementDetail.setTransactionId(null);
                     	bankStatementDetail.setManualReconciled(false);
@@ -947,7 +980,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     
                     bankStatementDetail.setIsReconciled(false);
                 }
-                this.bankStatementDetailsRepository.save(bankDetailsList);
+                this.bankStatementDetailsRepositoryWrapper.save(bankDetailsList);
                 this.loanTransactionRepository.save(loanTransactionList);
             }
 
@@ -966,7 +999,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 .retrieveGeneratePortfolioData(command.entityId(), " and bsd.is_reconciled = 0 ");
         Collection<BankStatementDetails> collection = new ArrayList<>();
         for (BankStatementDetailsData bankStatementDetailsData:bankStatementDetailsDataList) {
-            BankStatementDetails  bankStatementDetail = this.bankStatementDetailsRepository.findOneWithNotFoundDetection(bankStatementDetailsData.getId());
+            BankStatementDetails  bankStatementDetail = this.bankStatementDetailsRepositoryWrapper.findOneWithNotFoundDetection(bankStatementDetailsData.getId());
             final Date transactionDate = bankStatementDetail.getTransactionDate();
             final boolean isSimplified = bankStatementDetail.getBankStatement().getBank().getSupportSimplifiedStatement();
             final BigDecimal transactionAmount = bankStatementDetail.getAmount();
@@ -1005,7 +1038,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             
             
         }
-        this.bankStatementDetailsRepository.save(collection);
+        this.bankStatementDetailsRepositoryWrapper.save(collection);
         
         return new CommandProcessingResultBuilder() //
         .withEntityId(command.entityId()) //

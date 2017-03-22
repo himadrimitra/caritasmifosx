@@ -23,6 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -98,6 +99,23 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
             final String nameDecorated = rs.getString("nameDecorated");
 
             return OfficeData.dropdown(id, name, nameDecorated);
+        }
+    }
+    
+    private static final class OfficeJournalEntryMapper implements RowMapper<OfficeData> {
+
+        public String schema() {
+            return " o.id as id, o.external_id as externalId, o.name as name from m_office o ";
+        }
+
+        @Override
+        public OfficeData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final String name = rs.getString("name");
+            final String externalId = rs.getString("externalId");
+
+            return OfficeData.journalEntry(id, name, externalId);
         }
     }
 
@@ -261,5 +279,15 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
 
     public PlatformSecurityContext getContext() {
         return this.context;
+    }
+    
+    @Override
+    public List<OfficeData> retrieveOfficeForJournalEntry(){
+        final AppUser currentUser = this.context.authenticatedUser();
+        /*String sql = "select office.external_id from m_office office where office.external_id IS NOT NULL";
+        return this.jdbcTemplate.queryForList(sql, String.class);*/
+        final OfficeJournalEntryMapper rm = new OfficeJournalEntryMapper();
+        final String sql = "select "+rm.schema();
+        return this.jdbcTemplate.query(sql, rm, new Object[] { });
     }
 }
