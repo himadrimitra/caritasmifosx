@@ -125,6 +125,8 @@
 	
 			<custom-filter ref="tenantIdentifierProcessingFilter"
 				position="FIRST" />
+			<custom-filter ref="jsonEncodeAuthenticationFilter"
+				before="CHANNEL_FILTER" />
 			<custom-filter ref="clientCredentialsTokenEndpointFilter"
 				before="BASIC_AUTH_FILTER" />
 			<access-denied-handler ref="oauthAccessDeniedHandler" />

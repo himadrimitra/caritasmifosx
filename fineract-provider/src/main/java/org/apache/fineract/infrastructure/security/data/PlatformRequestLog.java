@@ -48,6 +48,11 @@ public class PlatformRequestLog {
 
         final Map<String, String[]> parameters = new HashMap<>(request.getParameterMap());
         parameters.remove("password");
+        parameters.remove("client_id");
+        parameters.remove("grant_type");
+        parameters.remove("client_secret");
+        parameters.remove("_method");
+        parameters.remove("access_token");
         parameters.remove("_");
 
         return new PlatformRequestLog(task.getStartTime(), task.getTime(), request.getMethod(), requestUrl, parameters);
