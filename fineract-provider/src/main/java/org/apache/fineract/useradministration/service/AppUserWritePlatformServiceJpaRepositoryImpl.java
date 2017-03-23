@@ -35,6 +35,8 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.PlatformEmailSendException;
+import org.apache.fineract.infrastructure.security.domain.BasicPasswordEncodablePlatformUser;
+import org.apache.fineract.infrastructure.security.domain.PlatformUser;
 import org.apache.fineract.infrastructure.security.service.PlatformPasswordEncoder;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
@@ -330,6 +332,14 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
                 this.appUserRepository.save(appuser);
             }
         }
+    }
+    
+    @Override
+    public void updatePasswordWithNewSalt(final AppUser appuser, final String password) {
+        final PlatformUser dummyPlatformUser = new BasicPasswordEncodablePlatformUser(appuser.constructSaltKey(), "", password);
+        String encodedPassword = platformPasswordEncoder.encode(dummyPlatformUser);
+        appuser.setPasswordNew(encodedPassword);
+        this.appUserRepository.save(appuser);
     }
     
     @Override

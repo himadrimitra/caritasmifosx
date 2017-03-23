@@ -35,4 +35,6 @@ public interface AppUserWritePlatformService {
     void updateFailedLoginStatus(String username);
 
     void updateSuccessLoginStatus(AppUser appuser);
+
+    void updatePasswordWithNewSalt(AppUser appuser, String password);
 }

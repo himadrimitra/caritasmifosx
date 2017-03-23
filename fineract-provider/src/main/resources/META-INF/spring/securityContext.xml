@@ -65,7 +65,7 @@
 	
 		<beans:bean id="saltSource"
 			class="org.springframework.security.authentication.dao.ReflectionSaltSource">
-			<beans:property name="userPropertyToUse" value="id" />
+			<beans:property name="userPropertyToUse" value="saltKey" />
 		</beans:bean>
 	
 		<beans:bean id="customAuthenticationProvider"
@@ -184,7 +184,7 @@
 	
 		<beans:bean id="saltSource"
 			class="org.springframework.security.authentication.dao.ReflectionSaltSource">
-			<beans:property name="userPropertyToUse" value="id" />
+			<beans:property name="userPropertyToUse" value="saltKey" />
 		</beans:bean>
 	
 		<beans:bean id="customAuthenticationProvider"

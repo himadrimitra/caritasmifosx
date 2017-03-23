@@ -24,18 +24,18 @@ import org.springframework.security.core.GrantedAuthority;
 
 public class BasicPasswordEncodablePlatformUser implements PlatformUser {
 
-    private final Long id;
+    private final Object saltKey;
     private final String username;
     private final String password;
 
-    public BasicPasswordEncodablePlatformUser(final Long id, final String username, final String password) {
-        this.id = id;
+    public BasicPasswordEncodablePlatformUser(final Object saltKey, final String username, final String password) {
+        this.saltKey = saltKey;
         this.username = username;
         this.password = password;
     }
 
-    public Long getId() {
-        return this.id;
+    public Object getId() {
+        return this.saltKey;
     }
 
     @Override
@@ -71,5 +71,10 @@ public class BasicPasswordEncodablePlatformUser implements PlatformUser {
     @Override
     public boolean isEnabled() {
         return false;
+    }
+
+    
+    public Object getSaltKey() {
+        return this.saltKey;
     }
 }
