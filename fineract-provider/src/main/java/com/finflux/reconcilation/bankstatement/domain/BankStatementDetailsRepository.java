@@ -5,15 +5,22 @@
  */
 package com.finflux.reconcilation.bankstatement.domain;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
 
 public interface BankStatementDetailsRepository extends JpaRepository<BankStatementDetails, Long>,
         JpaSpecificationExecutor<BankStatementDetails> {
 	
 	@Query("from BankStatementDetails bankStatementDetail where bankStatementDetail.loanTransaction.id = :loanTransactionId ")
 	BankStatementDetails getBankStatementDetailsByLoanTransction(@Param("loanTransactionId") Long loanTransactionId);
+	
+	@Query("from BankStatementDetails bankStatementDetail where bankStatementDetail.bankStatement = :bankStatementId and bankStatementDetail.bankStatementDetailType = :bankStatementDetailType ")
+	List<BankStatementDetails> retrieveBankStatementNonPortfolioDetails(@Param("bankStatementId") BankStatement bankStatementId, @Param("bankStatementDetailType") Integer bankStatementDetailType);
 
 }

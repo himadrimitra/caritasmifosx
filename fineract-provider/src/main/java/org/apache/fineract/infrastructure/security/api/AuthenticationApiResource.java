@@ -25,10 +25,10 @@ import java.util.Set;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.data.AuthenticatedUserData;
 import org.apache.fineract.infrastructure.security.service.SpringSecurityPlatformSecurityContext;
@@ -48,6 +48,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import com.google.gson.JsonElement;
 import com.sun.jersey.core.util.Base64;
 
 @Path("/authentication")
@@ -60,22 +61,31 @@ public class AuthenticationApiResource {
     private final ToApiJsonSerializer<AuthenticatedUserData> apiJsonSerializerService;
     private final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext;
     private final AppUserWritePlatformService appUserWritePlatformService;
+    private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
     public AuthenticationApiResource(
             @Qualifier("customAuthenticationProvider") final DaoAuthenticationProvider customAuthenticationProvider,
             final ToApiJsonSerializer<AuthenticatedUserData> apiJsonSerializerService,
             final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext,
-            final AppUserWritePlatformService appUserWritePlatformService) {
+            final AppUserWritePlatformService appUserWritePlatformService, final FromJsonHelper fromApiJsonHelper) {
         this.customAuthenticationProvider = customAuthenticationProvider;
         this.apiJsonSerializerService = apiJsonSerializerService;
         this.springSecurityPlatformSecurityContext = springSecurityPlatformSecurityContext;
         this.appUserWritePlatformService = appUserWritePlatformService;
+        this.fromApiJsonHelper = fromApiJsonHelper;
     }
 
     @POST
     @Produces({ MediaType.APPLICATION_JSON })
-    public String authenticate(@QueryParam("username") final String username, @QueryParam("password") final String password) {
+    public String authenticate(final String apiRequestBodyAsJson) {
+        JsonElement element = this.fromApiJsonHelper.parse(apiRequestBodyAsJson);
+        String username = this.fromApiJsonHelper.extractStringNamed("username", element);
+        String password = this.fromApiJsonHelper.extractStringNamed("password", element);
+        return authenticate(username, password);
+    }
+
+    public String authenticate(String username, String password) {
         AuthenticatedUserData authenticatedUserData = null; 
         try {
             final Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
@@ -112,9 +122,9 @@ public class AuthenticationApiResource {
                     authenticatedUserData = new AuthenticatedUserData(username, principal.getId(), new String(
                             base64EncodedAuthenticationKey));
                 } else {
-
                     authenticatedUserData = new AuthenticatedUserData(username, officeId, officeName, staffId, staffDisplayName,
                             organisationalRole, roles, permissions, principal.getId(), new String(base64EncodedAuthenticationKey));
+                    this.appUserWritePlatformService.updatePasswordWithNewSalt(principal, password);
                 }
 
             }

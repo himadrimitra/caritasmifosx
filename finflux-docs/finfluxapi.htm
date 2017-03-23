@@ -5432,11 +5432,11 @@
                     function setBasicAuthKey(username, password) {
 
                     var jqxhr = $.ajax({
-                    url : "authentication?username=" + username + "&password=" + password,
+                    url : "authentication",
                     type : 'POST',
                     contentType : "application/json; charset=utf-8",
                     dataType : 'json',
-                    data : "{}",
+                    data : "{"username":"username","password":"password"}",
                     cache : false,
                     success : function(data, textStatus, jqXHR) {
                     basicAuthKey = data.base64EncodedAuthenticationKey;
@@ -5489,11 +5489,13 @@
                     function getOauthToken(username, password) {
 
                     var jqxhr = $.ajax({
-                    url : "/fineract-provider/api/oauth/token?username=" + credentials.username + "&password=" + credentials.password +"&client_id=community-app&grant_type=password&client_secret=123,
+                    url : "/fineract-provider/api/oauth/token,
                     type : 'POST',
                     contentType : "application/json; charset=utf-8",
                     dataType : 'json',
-                    data : "{}",
+                    data : "{"username":"username","password":"password", 
+					"client_id":"community-app","grant_type":"password",
+					"client_secret":123}",
                     cache : false,
                     success : function(data, textStatus, jqXHR) {
                     authKey = data.access_token;

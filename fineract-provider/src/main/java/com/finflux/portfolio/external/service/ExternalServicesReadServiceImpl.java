@@ -8,9 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.finflux.common.security.service.PlatformCryptoService;
+import com.finflux.common.security.service.SecurityUtils;
 import com.finflux.portfolio.external.ExternalServiceType;
 import com.finflux.portfolio.external.data.ExternalServicePropertyData;
 import com.finflux.portfolio.external.data.ExternalServicesData;
+
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -28,12 +30,14 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
     private final JdbcTemplate jdbcTemplate;
     private final ExternalServicesPropertiesMapper propertiesMapper = new ExternalServicesPropertiesMapper();
     private final PlatformCryptoService platformCryptoService ;
+    private final SecurityUtils securityUtils;
 
     @Autowired
-    public ExternalServicesReadServiceImpl(final RoutingDataSource dataSource,
-                                           final PlatformCryptoService platformCryptoService) {
+    public ExternalServicesReadServiceImpl(final RoutingDataSource dataSource, final PlatformCryptoService platformCryptoService,
+            final SecurityUtils securityUtils) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.platformCryptoService = platformCryptoService;
+        this.securityUtils = securityUtils;
     }
 
     @Override
@@ -87,7 +91,7 @@ public class ExternalServicesReadServiceImpl implements ExternalServicesReadServ
             for(ExternalServicePropertyData propertyData: externalServicePropertyDataList){
                 if(propertyData.getEncrypted()){
                     String decryptedValue = platformCryptoService.decrypt(propertyData.getValue());
-                    String maskedValue = platformCryptoService.mask(decryptedValue);
+                    String maskedValue = securityUtils.mask(decryptedValue);
                     propertyData.setValue(maskedValue);
                 }
             }

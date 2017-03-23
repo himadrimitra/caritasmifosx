@@ -112,6 +112,14 @@ public class CommandWrapperBuilder {
         return this;
     }
     
+    public CommandWrapperBuilder updateBankStatementDetails(final Long bankStatementId, final Long bankStatementDetailId) {
+        this.actionName = ReconciliationApiConstants.UPDATE_ACTION;
+        this.entityName = ReconciliationApiConstants.BANK_STATEMENT_DETAILS_RESOURCE_NAME;
+        this.entityId = bankStatementDetailId;
+        this.href = "/bankstatements/" + bankStatementId + "/details" + "/" + bankStatementDetailId;
+        return this;
+    }
+    
     public CommandWrapperBuilder generatePortfolioTransactions(final Long bankStatementId) {
         this.actionName = ReconciliationApiConstants.CREATE_ACTION;
         this.entityName = ReconciliationApiConstants.PORTFOLIO_TRANSACTIONS;

@@ -21,6 +21,9 @@ package org.apache.fineract.infrastructure.core.boot;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
+import org.apache.fineract.infrastructure.security.filter.JsonToUrlEncodedAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,10 +43,19 @@ import com.sun.jersey.spi.spring.container.servlet.SpringServlet;
 @Profile("oauth")
 public class WebXmlOauthConfiguration {
 
-
+    @Autowired
+    private JsonToUrlEncodedAuthenticationFilter jsonToUrlEncodedAuthenticationFilter;
+    
     @Bean
     public Filter springSecurityFilterChain() {
         return new DelegatingFilterProxy();
+    }
+    
+    @Bean
+    public FilterRegistrationBean jsonToUrlEncodedAuthenticationFilter() {
+        FilterRegistrationBean filter = new FilterRegistrationBean(jsonToUrlEncodedAuthenticationFilter);
+        filter.addUrlPatterns("/api/oauth/token");
+        return filter;
     }
 
     @Bean

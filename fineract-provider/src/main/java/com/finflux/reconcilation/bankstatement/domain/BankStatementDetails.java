@@ -7,6 +7,8 @@ package com.finflux.reconcilation.bankstatement.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -17,7 +19,11 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.portfolio.cgt.api.CgtApiConstants;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
@@ -91,6 +97,11 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     @Column(name = "is_manual_reconciled")
     private Boolean isManualReconciled;
     
+    @Column(name = "office_id")
+    private Long officeId;
+    
+    @Column(name = "gl_account")
+    private String glAccount;
 
     public BankStatementDetails(final BankStatement bankStatement, final String transactionId, final Date transactionDate,
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
@@ -191,6 +202,22 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     public String getTransactionType() {
         return transactionType;
     }
+    
+    public boolean isReconciled(){
+        return this.isReconciled;
+    }
+    
+    public String getGlCode(){
+        return this.glCode;
+    }
+    
+    public String getAccountingType(){
+        return this.accountingType;
+    }
+    
+    public void setGlAccount(String glAccount){
+        this.glAccount = glAccount;
+    }
 
 	public Integer getBankStatementDetailType() {
 		return this.bankStatementDetailType;
@@ -216,8 +243,15 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     public Date getTransactionDate() {
         return this.transactionDate;
     }
-
     
+    public LocalDate getTransactionLocalDate() {
+        LocalDate transactionDate = null;
+        if (this.transactionDate != null) {
+            transactionDate = LocalDate.fromDateFields(this.transactionDate);
+        }
+        return transactionDate;
+    }
+
     public void setTransactionDate(Date transactionDate) {
         this.transactionDate = transactionDate;
     }
@@ -258,6 +292,58 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
 
 	public void setManualReconciled(Boolean isManualReconciled) {
 		this.isManualReconciled = isManualReconciled;
-	}	
+	}
+	
+	public String getBranchExternalId(){
+		return this.branchExternalId;
+	}
+	
+	public void setBranchExternalId(String branchExternalId){
+		this.branchExternalId = branchExternalId;
+	}
+	
+	public void setBranchId(Long branchId){
+		this.officeId = branchId;
+	};
+	
+	public Long getBrtanchid(){
+		return this.officeId;
+	}
+	
+    public Map<String, Object> update(final JsonCommand command) {
+        final Map<String, Object> actualChanges = new LinkedHashMap<>();
+
+        if (command.isChangeInLocalDateParameterNamed(ReconciliationApiConstants.transactionDateParamName, getTransactionLocalDate())) {
+            final Date newValue = command.DateValueOfParameterNamed(ReconciliationApiConstants.transactionDateParamName);
+            actualChanges.put(ReconciliationApiConstants.transactionDateParamName, newValue);
+            this.transactionDate = newValue;
+        }
+
+        if (command.isChangeInBigDecimalParameterNamed(ReconciliationApiConstants.amountParamName, this.amount)) {
+            final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(ReconciliationApiConstants.amountParamName);
+            actualChanges.put(ReconciliationApiConstants.amountParamName, newValue);
+            this.amount = newValue;
+        }
+
+        if (command.isChangeInStringParameterNamed(ReconciliationApiConstants.accountingTypeParamName, this.accountingType)) {
+            final String newValue = command.stringValueOfParameterNamedAllowingNull(ReconciliationApiConstants.accountingTypeParamName);
+            actualChanges.put(ReconciliationApiConstants.accountingTypeParamName, newValue);
+            this.accountingType = newValue;
+        }
+
+        if (command.isChangeInStringParameterNamed(ReconciliationApiConstants.glCodeParamName, this.glCode)) {
+            final String newValue = command.stringValueOfParameterNamedAllowingNull(ReconciliationApiConstants.glCodeParamName);
+            actualChanges.put(ReconciliationApiConstants.glCodeParamName, newValue);
+            this.glCode = newValue;
+        }
+
+        if (command.isChangeInLongParameterNamed(ReconciliationApiConstants.officeIdParamName, this.officeId)) {
+            final Long newValue = command.longValueOfParameterNamed(ReconciliationApiConstants.officeIdParamName);
+            actualChanges.put(ReconciliationApiConstants.officeIdParamName, newValue);
+            this.officeId = newValue;
+        }
+
+        return actualChanges;
+    }
 	
 }

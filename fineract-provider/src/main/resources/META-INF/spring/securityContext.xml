@@ -65,7 +65,7 @@
 	
 		<beans:bean id="saltSource"
 			class="org.springframework.security.authentication.dao.ReflectionSaltSource">
-			<beans:property name="userPropertyToUse" value="id" />
+			<beans:property name="userPropertyToUse" value="saltKey" />
 		</beans:bean>
 	
 		<beans:bean id="customAuthenticationProvider"
@@ -125,6 +125,8 @@
 	
 			<custom-filter ref="tenantIdentifierProcessingFilter"
 				position="FIRST" />
+			<custom-filter ref="jsonEncodeAuthenticationFilter"
+				before="CHANNEL_FILTER" />
 			<custom-filter ref="clientCredentialsTokenEndpointFilter"
 				before="BASIC_AUTH_FILTER" />
 			<access-denied-handler ref="oauthAccessDeniedHandler" />
@@ -184,7 +186,7 @@
 	
 		<beans:bean id="saltSource"
 			class="org.springframework.security.authentication.dao.ReflectionSaltSource">
-			<beans:property name="userPropertyToUse" value="id" />
+			<beans:property name="userPropertyToUse" value="saltKey" />
 		</beans:bean>
 	
 		<beans:bean id="customAuthenticationProvider"

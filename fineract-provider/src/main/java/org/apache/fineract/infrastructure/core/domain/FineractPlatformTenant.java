@@ -25,14 +25,17 @@ public class FineractPlatformTenant {
     private final String name;
     private final String timezoneId;
     private final FineractPlatformTenantConnection connection;
+    private final String tenantKey;
 
     public FineractPlatformTenant(final Long id, final String tenantIdentifier, final String name,
-            final String timezoneId, final FineractPlatformTenantConnection connection) {
+            final String timezoneId, final FineractPlatformTenantConnection connection, 
+            final String tenantKey) {
         this.id = id;
         this.tenantIdentifier = tenantIdentifier;
         this.name = name;
         this.timezoneId = timezoneId;
         this.connection = connection;
+        this.tenantKey = tenantKey;
     }
 
     public Long getId() {
@@ -53,6 +56,11 @@ public class FineractPlatformTenant {
 
     public FineractPlatformTenantConnection getConnection() {
         return connection;
+    }
+
+    
+    public String getTenantKey() {
+        return this.tenantKey;
     }
 
 }

@@ -53,7 +53,7 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             		" bsd.transaction_id as transactionId, bsd.amount as amount, "+
             		" bsd.transaction_date as transactionDate, bsd.accounting_type as accountingType, "+
             		" bsd.gl_code as glCode, bsd.is_reconciled as isReconciled, office.name as branchName, office.id as branch, bsd.branch_external_id as branchExternalId, "+
-            		" gl.name as glAccount "+
+            		" gl.name as glAccount, bsd.is_error as isError "+
             		" from f_bank_statement_details bsd "+
             		" join f_bank_statement bs on (bs.id=bsd.bank_statement_id and bsd.bank_statement_id = ? and bsd.bank_statement_detail_type = "+BankStatementDetailType.NONPORTFOLIO.getValue()+" )"+
             		" left join f_bank b on b.id=bs.bank "+
@@ -76,8 +76,9 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             final String glCode = rs.getString("glCode");
             final String branchExternalId = rs.getString("branchExternalId");
             final boolean isReconciled = rs.getBoolean("isReconciled");
+            final boolean isError = rs.getBoolean("isError");
             return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate,
-        			amount, branchExternalId, branch,glAccount,branchName,accountingType,glCode, isReconciled);
+        			amount, branchExternalId, branch,glAccount,branchName,accountingType,glCode, isReconciled, isError);
 
         }
     }

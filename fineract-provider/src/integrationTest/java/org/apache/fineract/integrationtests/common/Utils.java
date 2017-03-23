@@ -32,13 +32,14 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.TimeZone;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.http.conn.HttpHostConnectException;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 
 import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.path.json.JsonPath;
+import com.jayway.restassured.builder.RequestSpecBuilder;
+import com.jayway.restassured.builder.ResponseSpecBuilder;
+import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
 
@@ -53,7 +54,9 @@ public class Utils {
 
     public static final String TENANT_TIME_ZONE = "Asia/Kolkata";
 
-    private static final String LOGIN_URL = "/fineract-provider/api/v1/authentication?username=conflux&password=password&" + TENANT_IDENTIFIER;
+    private static final String LOGIN_URL = "/fineract-provider/api/v1/authentication?" + TENANT_IDENTIFIER;
+    
+   private static final String LOGIN_JSON = "{'username':'conflux','password':'password'}";
 
     public static void initializeRESTAssured() {
         RestAssured.baseURI = "https://localhost";
@@ -64,9 +67,11 @@ public class Utils {
     public static String loginIntoServerAndGetBase64EncodedAuthenticationKey() {
         try {
             System.out.println("-----------------------------------LOGIN-----------------------------------------");
-            final String json = RestAssured.post(LOGIN_URL).asString();
-            assertThat("Failed to login into fineract platform", StringUtils.isBlank(json), is(false));
-            return JsonPath.with(json).get("base64EncodedAuthenticationKey");
+            RequestSpecification requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
+            ResponseSpecification responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+            String key = performServerPost(requestSpec, responseSpec, LOGIN_URL, LOGIN_JSON, "base64EncodedAuthenticationKey");
+            assertThat("Failed to login into fineract platform", key == null, is(false));
+            return key;
         } catch (final Exception e) {
             if (e instanceof HttpHostConnectException) {
                 final HttpHostConnectException hh = (HttpHostConnectException) e;
@@ -74,8 +79,7 @@ public class Utils {
             }
 
             throw new RuntimeException(e);
-        }
-    }
+        }}
 
     public static <T> T performServerGet(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             final String getURL, final String jsonAttributeToGetBack) {

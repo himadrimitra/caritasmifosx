@@ -569,7 +569,7 @@ public final class JsonCommand {
     }
 
     public boolean isChangeInPasswordParameterNamed(final String parameterName, final String existingValue,
-            final PlatformPasswordEncoder platformPasswordEncoder, final Long saltValue) {
+            final PlatformPasswordEncoder platformPasswordEncoder, final Object saltValue) {
         boolean isChanged = false;
         if (parameterExists(parameterName)) {
             final String workingValue = passwordValueOfParameterNamed(parameterName, platformPasswordEncoder, saltValue);
@@ -579,7 +579,7 @@ public final class JsonCommand {
     }
 
     public String passwordValueOfParameterNamed(final String parameterName, final PlatformPasswordEncoder platformPasswordEncoder,
-            final Long saltValue) {
+            final Object saltValue) {
         final String passwordPlainText = stringValueOfParameterNamed(parameterName);
 
         final PlatformUser dummyPlatformUser = new BasicPasswordEncodablePlatformUser(saltValue, "", passwordPlainText);

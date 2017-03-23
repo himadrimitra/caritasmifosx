@@ -46,6 +46,10 @@ public class OfficeData implements Serializable {
     public static OfficeData dropdown(final Long id, final String name, final String nameDecorated) {
         return new OfficeData(id, name, nameDecorated, null, null, null, null, null, null);
     }
+    
+    public static OfficeData journalEntry(final Long id, final String name, final String externalId) {
+        return new OfficeData(id, name, null, externalId, null, null, null, null, null);
+    }
 
     public static OfficeData template(final List<OfficeData> parentLookups, final LocalDate defaultOpeningDate) {
         return new OfficeData(null, null, null, null, defaultOpeningDate, null, null, null, parentLookups);
@@ -95,5 +99,9 @@ public class OfficeData implements Serializable {
 
     public Long getId() {
         return this.id;
+    }
+    
+    public String getExternalId(){
+        return this.externalId;
     }
 }

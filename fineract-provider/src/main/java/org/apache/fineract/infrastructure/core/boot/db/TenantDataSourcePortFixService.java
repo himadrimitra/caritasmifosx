@@ -55,7 +55,7 @@ public class TenantDataSourcePortFixService {
 	 * different hosts for different tenants.
 	 */
     public final static String ENABLED = "fineract.tenantdb.fixup";
-    @Value("${" + ENABLED + ":true}")
+    @Value("${" + ENABLED + ":false}")
     private boolean enabled;
 
 	// required=false is important here, because in
