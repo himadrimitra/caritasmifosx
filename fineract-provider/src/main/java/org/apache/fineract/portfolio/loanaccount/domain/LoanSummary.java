@@ -349,7 +349,11 @@ public final class LoanSummary {
         return this.totalExpectedRepayment;
     }
 
-    
+	public BigDecimal getUnaccountedPrincipal() {
+		BigDecimal unaccountedPrincipal = getTotalPrincipalDisbursed().subtract(getAccountedPrincipal());
+		return unaccountedPrincipal;
+
+	}
     public void setTotalNetPrincipalDisbursed(BigDecimal totalNetPrincipalDisbursed) {
         this.totalNetPrincipalDisbursed = totalNetPrincipalDisbursed;
     }

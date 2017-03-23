@@ -1342,7 +1342,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }    
         
         checkClientOrGroupActive(loan);
-        if(loan.getSummary().getAccountedPrincipal().compareTo(BigDecimal.ZERO) != 1){
+        if(loan.getSummary().getUnaccountedPrincipal().compareTo(BigDecimal.ZERO) != 1){
             throw new LoanWriteOffException();
         }
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_WRITTEN_OFF,
