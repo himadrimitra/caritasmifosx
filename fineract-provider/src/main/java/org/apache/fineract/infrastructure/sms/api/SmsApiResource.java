@@ -18,7 +18,6 @@
  */
 package org.apache.fineract.infrastructure.sms.api;
 
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,9 +44,11 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.infrastructure.sms.data.SmsConfigurationData;
 import org.apache.fineract.infrastructure.sms.data.SmsData;
+import org.apache.fineract.infrastructure.sms.data.SmsDataValidator;
 import org.apache.fineract.infrastructure.sms.service.SmsConfigurationReadPlatformService;
 import org.apache.fineract.infrastructure.sms.service.SmsReadPlatformService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,74 +70,31 @@ public class SmsApiResource {
     private final ApiRequestParameterHelper apiRequestParameterHelper;
     private final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService;
     private final SmsConfigurationReadPlatformService smsConfigurationReadPlatformService;
+    private final SmsDataValidator smsDataValidator;
 
     @Autowired
     public SmsApiResource(final PlatformSecurityContext context, final SmsReadPlatformService readPlatformService,
             final DefaultToApiJsonSerializer<SmsData> toApiJsonSerializer, final ApiRequestParameterHelper apiRequestParameterHelper,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
-            SmsConfigurationReadPlatformService smsConfigurationReadPlatformService) {
+            SmsConfigurationReadPlatformService smsConfigurationReadPlatformService,
+            final SmsDataValidator smsDataValidator) {
         this.context = context;
         this.readPlatformService = readPlatformService;
         this.toApiJsonSerializer = toApiJsonSerializer;
         this.apiRequestParameterHelper = apiRequestParameterHelper;
         this.commandsSourceWritePlatformService = commandsSourceWritePlatformService;
         this.smsConfigurationReadPlatformService = smsConfigurationReadPlatformService;
+        this.smsDataValidator = smsDataValidator;
     }
 
     @GET
-    public String retrieveAll(@Context final UriInfo uriInfo) {
+	public String retrieveAll(@Context final UriInfo uriInfo,@QueryParam("offset") final Integer offset,
+			 @QueryParam("limit") final Integer limit, @QueryParam("status") final Integer status,
+             @QueryParam("fromDate") final DateParam fromDateParam, @QueryParam("toDate") final DateParam toDateParam,
+             @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<SmsData> smsMessages = this.readPlatformService.retrieveAll();
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, smsMessages);
-    }
-
-    @GET
-    @Path("pendingSms")
-    public String retrievePendingSms(@Context final UriInfo uriInfo,@QueryParam("limit") final Long limit) {
-
-        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<SmsData> smsMessages = this.readPlatformService.retrieveAllPending(limit.intValue());
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, smsMessages);
-    }
-    
-    @GET
-    @Path("sentSms")
-    public String retrieveSentSms(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit) {
-
-        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<SmsData> smsMessages = this.readPlatformService.retrieveAllSent(limit.intValue());
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, smsMessages);
-    }
-    
-    @GET
-    @Path("deliveredSms")
-    public String retrieveDeliveredSms(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit) {
-
-        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<SmsData> smsMessages = this.readPlatformService.retrieveAllDelivered(limit.intValue());
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, smsMessages);
-    }
-
-    @GET
-    @Path("messageByStatus")
-    public String retrieveAllSmsByStatus(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit,@QueryParam("status") final Long status,
-                                         @QueryParam("fromDate") final DateParam fromDateParam, @QueryParam("toDate") final DateParam toDateParam,
-                                         @QueryParam("locale") final String locale, @QueryParam("dateFormat") final String dateFormat) {
-    	
-        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
+		this.smsDataValidator.validateQueryParams(status, fromDateParam, toDateParam, dateFormat);
         Date fromDate = null;
         if (fromDateParam != null) {
             fromDate = fromDateParam.getDate("fromDate", dateFormat, locale);
@@ -145,24 +103,14 @@ public class SmsApiResource {
         if (toDateParam != null) {
             toDate = toDateParam.getDate("toDate", dateFormat, locale);
         }
-
-        final Page<SmsData> smsMessages = this.readPlatformService.retrieveSmsByStatus(limit.intValue(),status.intValue(),fromDate,toDate, dateFormat);
-
-        final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        return this.toApiJsonSerializer.serialize(settings, smsMessages);
-    }
-    
-    @GET
-    @Path("failedSms")
-    public String retrieveFailedSms(@Context final UriInfo uriInfo, @QueryParam("limit") final Long limit) {
-
-        this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
-
-        final Collection<SmsData> smsMessages = this.readPlatformService.retrieveAllFailed(limit.intValue());
+        final SearchParameters searchParameters = SearchParameters.forSearch(null, offset, limit, status, fromDate, toDate);
+        final Page<SmsData> smsMessages = this.readPlatformService.retrieveAll(searchParameters);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, smsMessages);
     }
+
+   
     
     @GET
     @Path("smscredits")

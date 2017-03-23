@@ -32,6 +32,7 @@ import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.sms.data.SmsData;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageEnumerations;
 import org.apache.fineract.infrastructure.sms.domain.SmsMessageStatusType;
@@ -109,11 +110,43 @@ public class SmsReadPlatformServiceImpl implements SmsReadPlatformService {
     }
 
     @Override
-    public Collection<SmsData> retrieveAll() {
+	public Page<SmsData> retrieveAll(final SearchParameters searchParameters) {
+    	
+    	final StringBuilder sqlBuilder = new StringBuilder(200);
 
-        final String sql = "select " + this.smsRowMapper.schema();
-
-        return this.jdbcTemplate.query(sql, this.smsRowMapper, new Object[] {});
+        final String sql = this.smsRowMapper.schema();
+        sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
+        sqlBuilder.append(sql);
+        final Integer status = searchParameters.getStatus();
+        if (status != null){
+        	sqlBuilder.append(" where smo.status_enum = " + status);
+        }
+        
+        final Date dateFrom = searchParameters.getStartDate();
+        final Date dateTo = searchParameters.getEndDate();
+        java.sql.Date fromDate = null;
+        java.sql.Date toDate  = null;
+        if(dateFrom !=null && dateTo !=null){
+            fromDate = new java.sql.Date(dateFrom.getTime());
+            toDate = new java.sql.Date(dateTo.getTime());
+			if (status != null) {
+				sqlBuilder.append(" and smo.submittedon_date >= ? and smo.submittedon_date <= ? ");
+			} else {
+				sqlBuilder.append(" where smo.submittedon_date >= ? and smo.submittedon_date <= ?  ");
+			}
+        }
+        
+        if (searchParameters.isLimited()) {
+        	sqlBuilder.append(" limit ").append(searchParameters.getLimit());
+            if (searchParameters.isOffset()) {
+                sqlBuilder.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+        final String sqlCountRows = " SELECT FOUND_ROWS() ";
+        if(dateFrom !=null && dateTo !=null){
+        	return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),new Object[]{fromDate,toDate},this.smsRowMapper);
+        }
+        return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),null,this.smsRowMapper);
     }
 
     @Override
@@ -137,15 +170,6 @@ public class SmsReadPlatformServiceImpl implements SmsReadPlatformService {
     }
 
 	@Override
-	public Collection<SmsData> retrieveAllSent(final Integer limit) {
-		final String sqlPlusLimit = (limit > 0) ? " limit 0, " + limit : "";
-    	final String sql = "select " + this.smsRowMapper.schema() + " where smo.status_enum = " 
-    			+ SmsMessageStatusType.SENT.getValue() + sqlPlusLimit;
-
-        return this.jdbcTemplate.query(sql, this.smsRowMapper, new Object[] {});
-	}
-
-	@Override
 	public List<Long> retrieveExternalIdsOfAllSent(final Integer limit) {
 		final String sqlPlusLimit = (limit > 0) ? " limit 0, " + limit : "";
 		final String sql = "select external_id from " + this.smsRowMapper.tableName() + " where status_enum = " 
@@ -153,50 +177,4 @@ public class SmsReadPlatformServiceImpl implements SmsReadPlatformService {
 		
 		return this.jdbcTemplate.queryForList(sql, Long.class);
 	}
-
-    @Override
-    public Collection<SmsData> retrieveAllDelivered(final Integer limit) {
-        final String sqlPlusLimit = (limit > 0) ? " limit 0, " + limit : "";
-        final String sql = "select " + this.smsRowMapper.schema() + " where smo.status_enum = "
-                + SmsMessageStatusType.DELIVERED.getValue() + sqlPlusLimit;
-
-        return this.jdbcTemplate.query(sql, this.smsRowMapper, new Object[] {});
-    }
-
-	@Override
-	public Collection<SmsData> retrieveAllFailed(final Integer limit) {
-		final String sqlPlusLimit = (limit > 0) ? " limit 0, " + limit : "";
-        final String sql = "select " + this.smsRowMapper.schema() + " where smo.status_enum = "
-                + SmsMessageStatusType.FAILED.getValue() + sqlPlusLimit;
-
-        return this.jdbcTemplate.query(sql, this.smsRowMapper, new Object[] {});
-	}
-
-    @Override
-    public Page<SmsData> retrieveSmsByStatus(final Integer limit, final Integer status,final Date dateFrom, final Date dateTo, String dateFormat) {
-        final StringBuilder sqlBuilder = new StringBuilder(200);
-        sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
-        sqlBuilder.append(this.smsRowMapper.schema());
-        if(status !=null){
-            sqlBuilder.append(" where smo.status_enum= ? ");
-        }
-        String fromDateString = null;
-        String toDateString = null;
-        if(dateFrom !=null && dateTo !=null){
-            final DateFormat df = new SimpleDateFormat(dateFormat);
-            fromDateString = df.format(dateFrom);
-            toDateString  = df.format(dateTo);
-            sqlBuilder.append(" and smo.submittedon_date >= ? and smo.submittedon_date <= ? ");
-        }
-        final String sqlPlusLimit = (limit > 0) ? " limit 0, " + limit : "";
-        if(!sqlPlusLimit.isEmpty()){
-            sqlBuilder.append(sqlPlusLimit);
-        }
-        final String sqlCountRows = "SELECT FOUND_ROWS()";
-        if(dateFrom !=null && dateTo !=null){
-        	return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),new Object[]{status,fromDateString,toDateString},this.smsRowMapper);
-        }
-        return this.paginationHelper.fetchPage(this.jdbcTemplate,sqlCountRows,sqlBuilder.toString(),new Object[]{status},this.smsRowMapper);
-        
-    }
 }
