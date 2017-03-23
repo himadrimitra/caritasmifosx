@@ -3205,13 +3205,16 @@ public class Loan extends AbstractPersistable<Long> {
         if (!isHolidayValidationDone) {
             holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
         }        
-        if(!(this.isGLIMLoan() && isRecoveryRepayment)){            
-            if(repaymentTransaction.getTypeOf().getValue().equals(LoanTransactionType.REPAYMENT.getValue())){
-                validateAccountStatus(LoanEvent.LOAN_REPAYMENT);
-            }else{
-                validateAccountStatus(LoanEvent.WAIVER);
-            }
-        	
+        if(!(this.isGLIMLoan() && isRecoveryRepayment)){
+			if (isRecoveryRepayment) {
+				validateAccountStatus(event);
+			} else {
+				if (repaymentTransaction.getTypeOf().getValue().equals(LoanTransactionType.REPAYMENT.getValue())) {
+					validateAccountStatus(LoanEvent.LOAN_REPAYMENT);
+				} else {
+					validateAccountStatus(LoanEvent.WAIVER);
+				}
+			}
         }        
         validateActivityNotBeforeClientOrGroupTransferDate(event, repaymentTransaction.getTransactionDate());
         validateActivityNotBeforeLastTransactionDate(event, repaymentTransaction.getTransactionDate());
