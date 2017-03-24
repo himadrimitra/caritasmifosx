@@ -6444,7 +6444,7 @@ public class Loan extends AbstractPersistable<Long> {
             loanApplicationTerms.setTotalPrincipalForSchedule(loanApplicationTerms.getPrincipalToBeScheduled());
             if (loanApplicationTerms.getFixedEmiAmount() == null) {
                 BigDecimal emiAmount = emi.getAmount();
-                if (this.calculatedInstallmentAmount != null) {
+                if (this.calculatedInstallmentAmount != null && this.isOpen()) {
                     emiAmount = this.calculatedInstallmentAmount;
                 }
                 loanApplicationTerms.setFixedEmiAmount(emiAmount);
