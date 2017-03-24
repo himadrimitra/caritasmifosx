@@ -377,7 +377,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                                 break;
                             }
                         }
-                    } while (EpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(dueRepaymentPeriodDate,
+                    } while (EpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(scheduleDate,
                             workingDayExcemption.getExpression()));
                 }
 
