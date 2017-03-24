@@ -23,8 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoan;
+import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoanPaymentDetail;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauReportFile;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauResponse;
+import com.finflux.risk.creditbureau.provider.data.CreditScore;
 import com.finflux.risk.creditbureau.provider.data.EnquiryResponse;
 import com.finflux.risk.creditbureau.provider.data.LoanEnquiryReferenceData;
 import com.finflux.risk.creditbureau.provider.data.ReportFileType;
@@ -142,73 +144,121 @@ public class HighmarkIssueServiceImpl implements HighmarkIssueService {
 
     private CreditBureauResponse parseAT02Response(INDVREPORTFILE reportfile, String requestString, String responseString,
             LoanEnquiryReferenceData loanEnquiryReferenceData) {
-        Long activeLoanCount = 0l;
-        Long closedLoanCount = 0l;
-        Long delinquientLoanCount = 0l;
-        BigDecimal totalOutstanding = BigDecimal.ZERO;
-        BigDecimal totalOverdues = BigDecimal.ZERO;
-        BigDecimal totalInstallments = BigDecimal.ZERO;
-        BigDecimal delenquencyAmount = BigDecimal.ZERO;
-        MathContext mc = new MathContext(6);
-        EnquiryResponse enquiryResponse = null;
         List<CreditBureauExistingLoan> loanList = null;
         CreditBureauReportFile reportFile = null;
-        CreditBureauEnquiryStatus creditBureauEnquiryStatus = CreditBureauEnquiryStatus.INVALID;
-        if (reportfile != null && reportfile.getINDVREPORTS() != null && reportfile.getINDVREPORTS().getINDVREPORT() != null) {
-            INDVRESPONSES individualResponses = reportfile.getINDVREPORTS().getINDVREPORT().getINDVRESPONSES();
-            if (individualResponses.getINDVRESPONSELIST() != null && individualResponses.getINDVRESPONSELIST().getINDVRESPONSE() != null
-                    && !individualResponses.getINDVRESPONSELIST().getINDVRESPONSE().isEmpty()) {
-                loanList = new ArrayList<>();
-                for (INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE loanItem : individualResponses.getINDVRESPONSELIST().getINDVRESPONSE()) {
+        try {
+            Long activeLoanCount = 0l;
+            Long closedLoanCount = 0l;
+            Long delinquientLoanCount = 0l;
+            BigDecimal totalOutstanding = BigDecimal.ZERO;
+            BigDecimal totalOverdues = BigDecimal.ZERO;
+            BigDecimal totalInstallments = BigDecimal.ZERO;
+            BigDecimal delenquencyAmount = BigDecimal.ZERO;
+            MathContext mc = new MathContext(6);
+            EnquiryResponse enquiryResponse = null;
+            CreditBureauEnquiryStatus creditBureauEnquiryStatus = CreditBureauEnquiryStatus.INVALID;
+            if (reportfile != null && reportfile.getINDVREPORTS() != null && reportfile.getINDVREPORTS().getINDVREPORT() != null) {
+                INDVRESPONSES individualResponses = reportfile.getINDVREPORTS().getINDVREPORT().getINDVRESPONSES();
+                if (individualResponses.getINDVRESPONSELIST() != null && individualResponses.getINDVRESPONSELIST().getINDVRESPONSE() != null
+                        && !individualResponses.getINDVRESPONSELIST().getINDVRESPONSE().isEmpty()) {
+                    loanList = new ArrayList<>();
+                    for (INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE loanItem : individualResponses.getINDVRESPONSELIST()
+                            .getINDVRESPONSE()) {
 
-                    if (loanItem.getMATCHEDTYPE() != null && loanItem.getMATCHEDTYPE().equalsIgnoreCase("PR")) {
-                        final CreditBureauExistingLoan existingLoan = new CreditBureauExistingLoan(loanEnquiryReferenceData.getClientId(),
-                                loanEnquiryReferenceData.getLoanApplicationId(), loanEnquiryReferenceData.getLoanId(),
-                                loanEnquiryReferenceData.getCbProductId(), loanEnquiryReferenceData.getLoanEnquiryId());
+                        if (loanItem.getMATCHEDTYPE() != null && loanItem.getMATCHEDTYPE().equalsIgnoreCase("PR")) {
+                            final CreditBureauExistingLoan existingLoan = new CreditBureauExistingLoan(
+                                    loanEnquiryReferenceData.getClientId(), loanEnquiryReferenceData.getLoanApplicationId(),
+                                    loanEnquiryReferenceData.getLoanId(), loanEnquiryReferenceData.getCbProductId(),
+                                    loanEnquiryReferenceData.getLoanEnquiryId());
 
-                        INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE.LOANDETAIL loanDetail = loanItem.getLOANDETAIL();
-                        existingLoan.setLoanType(loanDetail.getACCTTYPE());
-                        existingLoan.setLenderName(loanItem.getMFI());
-                        existingLoan.setAmountDisbursed(parseDouble(loanDetail.getDISBURSEDAMT()));
-                        existingLoan.setCurrentOutstanding(parseDouble(loanDetail.getCURRENTBAL()));
-                        existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
-                        existingLoan.setWrittenOffAmount(parseDouble(loanDetail.getWRITEOFFAMT()));
-                        existingLoan.setInstallmentAmount(parseDouble(loanDetail.getINSTALLMENTAMT()));
-                        try {
-                            if (loanDetail.getDISBURSEDDT() != null) {
-                                existingLoan.setDisbursedDate(ddmmYYYYFormat.parse(loanDetail.getDISBURSEDDT()));
+                            INDVRESPONSES.INDVRESPONSELIST.INDVRESPONSE.LOANDETAIL loanDetail = loanItem.getLOANDETAIL();
+                            existingLoan.setLoanType(loanDetail.getACCTTYPE());
+                            existingLoan.setLenderName(loanItem.getMFI());
+                            existingLoan.setAmountDisbursed(parseDouble(loanDetail.getDISBURSEDAMT()));
+                            existingLoan.setCurrentOutstanding(parseDouble(loanDetail.getCURRENTBAL()));
+                            existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
+                            existingLoan.setWrittenOffAmount(parseDouble(loanDetail.getWRITEOFFAMT()));
+                            existingLoan.setInstallmentAmount(parseDouble(loanDetail.getINSTALLMENTAMT()));
+                            try {
+                                if (loanDetail.getDISBURSEDDT() != null) {
+                                    existingLoan.setDisbursedDate(ddmmYYYYFormat.parse(loanDetail.getDISBURSEDDT()));
+                                }
+                                if (loanDetail.getCLOSEDDT() != null) {
+                                    existingLoan.setClosedDate(ddmmYYYYFormat.parse(loanDetail.getCLOSEDDT()));
+                                }
+                            } catch (ParseException e1) {
+                                e1.printStackTrace();
                             }
-                            if (loanDetail.getCLOSEDDT() != null) {
-                                existingLoan.setClosedDate(ddmmYYYYFormat.parse(loanDetail.getCLOSEDDT()));
+                            existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
+                            existingLoan.setLoanStatus(convertToLoanStatus(loanDetail.getSTATUS()));
+                            if (loanDetail.getFREQ() != null && "BIWEEKLY".equalsIgnoreCase(loanDetail.getFREQ())) {
+                                existingLoan.setRepaymentMultiple((int) 2);
                             }
-                        } catch (ParseException e1) {
-                            e1.printStackTrace();
+                            existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanDetail.getFREQ()));
+                            if (loanDetail.getCOMBINEDPAYMENTHISTORY() != null) {
+                                final String[] paymentsArray = loanDetail.getCOMBINEDPAYMENTHISTORY().split("\\|");
+                                for (final String paymentHistory : paymentsArray) {
+                                    if (paymentHistory != null && paymentHistory.trim().length() > 0) {
+                                        final String monthAndYear = paymentHistory.split(",")[0].trim();
+                                        final String dpdString = paymentHistory.split(",")[1];
+                                        final SimpleDateFormat formatter = new SimpleDateFormat("MMM:yyyy");
+                                        Date date = null;
+                                        date = formatter.parse(monthAndYear);
+                                        Integer dpd = 0;
+                                        dpd = calculateDpdDays(dpdString);
+                                        CreditBureauExistingLoanPaymentDetail creditBureauExistingLoanPaymentDetail = new CreditBureauExistingLoanPaymentDetail(
+                                                date, dpd);
+                                        existingLoan.addCreditBureauExistingLoanPaymentDetail(creditBureauExistingLoanPaymentDetail);
+                                    }
+                                }
+                            }
+                            loanList.add(existingLoan);
                         }
-                        existingLoan.setAmountOverdue(parseDouble(loanDetail.getOVERDUEAMT()));
-                        existingLoan.setLoanStatus(convertToLoanStatus(loanDetail.getSTATUS()));
-                        if(loanDetail.getFREQ() != null && "BIWEEKLY".equalsIgnoreCase(loanDetail.getFREQ())){
-                            existingLoan.setRepaymentMultiple((int) 2);
-                        }
-                        existingLoan.setRepaymentFrequency(convertToLoanTenureType(loanDetail.getFREQ()));
-                        loanList.add(existingLoan);
                     }
                 }
+                if (reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT() != null) {
+                    PRINTABLEREPORT printableReport = reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT();
+                    reportFile = new CreditBureauReportFile(printableReport.getFILENAME(), printableReport.getCONTENT().getBytes(),
+                            ReportFileType.HTML);
+                }
+                creditBureauEnquiryStatus = CreditBureauEnquiryStatus.SUCCESS;
+            } else if (reportfile != null && reportfile.getINQUIRYSTATUS() != null && reportfile.getINQUIRYSTATUS().getINQUIRY() != null) {
+                final com.finflux.risk.creditbureau.provider.highmark.xsd.response.INQUIRY inquiry = reportfile.getINQUIRYSTATUS()
+                        .getINQUIRY();
+                final String inquiryStatus = inquiry.getRESPONSETYPE();
+                creditBureauEnquiryStatus = convertStatus(inquiryStatus);
             }
-            if (reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT() != null) {
-                PRINTABLEREPORT printableReport = reportfile.getINDVREPORTS().getINDVREPORT().getPRINTABLEREPORT();
-                reportFile = new CreditBureauReportFile(printableReport.getFILENAME(), printableReport.getCONTENT().getBytes(),
-                        ReportFileType.HTML);
-            }
-            creditBureauEnquiryStatus = CreditBureauEnquiryStatus.SUCCESS;
-        } else if (reportfile != null && reportfile.getINQUIRYSTATUS() != null && reportfile.getINQUIRYSTATUS().getINQUIRY() != null) {
-            final com.finflux.risk.creditbureau.provider.highmark.xsd.response.INQUIRY inquiry = reportfile.getINQUIRYSTATUS().getINQUIRY();
-            final String inquiryStatus = inquiry.getRESPONSETYPE();
-            creditBureauEnquiryStatus = convertStatus(inquiryStatus);
+            enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
+                    null, creditBureauEnquiryStatus, loanEnquiryReferenceData.getCbReportId());
+            CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, loanList, reportFile);
+            return creditBureauResponse;
+        } catch (Exception e) {
+            e.printStackTrace();
+            
+            String acknowledgementNumber=null;
+            Date reportGeneratedTime=null;
+            String fileName=null;
+            String reportId=null;
+            CreditScore creditScore = null;
+            EnquiryResponse enquiryResponse = new EnquiryResponse(acknowledgementNumber, requestString, responseString, reportGeneratedTime, fileName,
+                    CreditBureauEnquiryStatus.ERROR, reportId);
+            
+            return new CreditBureauResponse(enquiryResponse, creditScore, loanList, reportFile);
         }
-        enquiryResponse = new EnquiryResponse(loanEnquiryReferenceData.getAcknowledgementNumber(), requestString, responseString, null,
-                null, creditBureauEnquiryStatus, loanEnquiryReferenceData.getCbReportId());
-        CreditBureauResponse creditBureauResponse = new CreditBureauResponse(enquiryResponse, null, loanList, reportFile);
-        return creditBureauResponse;
+    }
+
+    private Integer calculateDpdDays(String dpdString) {
+        Integer dpd = 0;
+        switch (dpdString) {
+            case HighmarkConstants.DPD_TYPE_XXX:
+            break;
+            default:
+                if (dpdString.matches("[0-9]*")) {
+                    dpd = Integer.parseInt(dpdString);
+                }
+        }
+        return dpd;
+
     }
 
     private CalendarFrequencyType convertToLoanTenureType(final String freq) {
