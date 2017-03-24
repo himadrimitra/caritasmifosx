@@ -343,7 +343,7 @@ public class LoanAssembler {
         return loanApplication;
     }
 
-    private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
+    public static LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
         final List<LoanStatus> allowedLoanStatuses = Arrays.asList(LoanStatus.values());
         return new DefaultLoanLifecycleStateMachine(allowedLoanStatuses);
     }
