@@ -1,31 +1,27 @@
 package com.conflux.mifosplatform.infrastructure.notifications.service;
 
-import africastalking.sms.AfricasTalkingGateway;
-import org.json.*;
+import org.json.JSONArray;
+
+import africastalking.sms.AfricasTalkingClient;
 
 public class AfricasTalkingSMSSender extends AbstractSMSSender implements
 		SMSSender {
 
+	private final AfricasTalkingClient client ;
+	
 	protected AfricasTalkingSMSSender() {
-
+		String user = getSMSConfig("africastalking.user");				
+		String key =getSMSConfig("africastalking.key");
+		client =  new AfricasTalkingClient(user, key) ;
 	}
 
 	@Override
 	public JSONArray sendmsg(String to, String message) {
-
 		// Uses Africa's talking JAVA classes to send SMS
-
-		String user = getSMSConfig("africastalking.user");				
-		String key =getSMSConfig("africastalking.key");
-				
 		JSONArray response=null; 
 		try {
-			
-			AfricasTalkingGateway gwy = new AfricasTalkingGateway(user,key);
-			response=gwy.sendMessage(to, message);			
-
+			response=client.sendMessage(to, message);			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return response;
