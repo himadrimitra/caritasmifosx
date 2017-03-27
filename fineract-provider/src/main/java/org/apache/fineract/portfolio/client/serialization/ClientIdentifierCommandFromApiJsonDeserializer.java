@@ -47,7 +47,8 @@ public final class ClientIdentifierCommandFromApiJsonDeserializer extends Abstra
     /**
      * The parameters supported for this command.
      */
-    private final Set<String> supportedParameters = new HashSet<>(Arrays.asList("documentTypeId", "documentKey","status", "description", "systemIdentifier"));
+	private final Set<String> supportedParameters = new HashSet<>(
+			Arrays.asList("locale", "documentTypeId", "documentKey", "status", "description", "systemIdentifier"));
 
     private final FromJsonHelper fromApiJsonHelper;
 
