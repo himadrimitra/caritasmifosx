@@ -1074,9 +1074,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     this.groupLoanIndividualMonitoringRepository.save(glimList);
                 }
 	        }
-	    if(existingLoanApplication.isGLIMLoan()){
-	        existingLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
-	    }	     
+	    	     
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(),
                     existingLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
                     productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
