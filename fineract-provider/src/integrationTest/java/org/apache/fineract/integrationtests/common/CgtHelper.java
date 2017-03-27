@@ -80,7 +80,7 @@ public class CgtHelper {
         map.put("location", "Bangalore");
         map.put("clientIds", clientIds);
         map.put("expectedStartDate", "04 March 2016");
-        map.put("expectedEndDate", "04 March 2016");
+        map.put("expectedEndDate", "07 March 2016");
         map.put("note", "test cgt");
         System.out.println("map : " + map);
         return new Gson().toJson(map);
