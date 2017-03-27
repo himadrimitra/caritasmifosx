@@ -235,6 +235,21 @@ public class CodeHelper {
 		return updateCodeValue(requestSpec, responseSpec, codeId, codeValueId,
 				codeValueName, description, position, jsonAttributeToGetback);
 	}
+	
+	public static Object updateCodeValue(
+			final RequestSpecification requestSpec,
+			final ResponseSpecification responseSpec, final Integer codeId,
+			final Integer codeValueId,
+			final HashMap<String, Object> codeValue, final String jsonAttributeToGetback) {
+		String json = new Gson().toJson(codeValue);
+		return Utils.performServerPut(requestSpec, responseSpec,
+				CODE_VALUE_URL.replace("[codeId]", codeId.toString()) + "/"
+						+ codeValueId + "?" + Utils.TENANT_IDENTIFIER,
+				json,
+				jsonAttributeToGetback);
+	}
+	
+	
 
 	public static Object updateCodeValue(
 			final RequestSpecification requestSpec,

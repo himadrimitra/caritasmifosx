@@ -20,6 +20,7 @@ import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
 import org.apache.fineract.integrationtests.common.loans.LoanStatusChecker;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.apache.fineract.integrationtests.common.system.CodeHelper;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,40 +91,12 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		Integer transactionTypeId = 1;
 		BigDecimal amountGreaterThan = new BigDecimal(10000);
 		Long authenticationTypeId = new Long(1);
+		Integer aadhaarCodeValueId = generateIdentificationTypeId();
 		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
 				requestSpec, responseSpec, locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
-				authenticationTypeId, loanProductID);
+				authenticationTypeId, loanProductID,aadhaarCodeValueId);
 		Assert.assertNotNull(transactionAuthenticationId);
-		System.out.println("--------------------------------CREATE CODE VALUE-------------------");
-		String aadhaar = "Aadhaar";
-		HashMap code = CodeHelper.getCodeByName(requestSpec, responseSpec, "Customer Identifier");
-		System.out.println("the code is " + code);
-		Integer codeId = (Integer) code.get("id");
-		HashMap<String, Object> codeValue = CodeHelper.retrieveOrCreateCodeValue(codeId, requestSpec, responseSpec);
-		System.out.println("the code value is " + codeValue);
-		boolean hasAadhaarCodeValue = false;
-		Integer aadhaarCodeValueId = null;
-		for (Map.Entry<String, Object> entry : codeValue.entrySet()) {
-			if (entry.getKey().equals("name")) {
-				if (entry.getValue().equals(aadhaar)) {
-					hasAadhaarCodeValue = true;
-				}
-			}
-		}
-
-		if (!hasAadhaarCodeValue) {
-			aadhaarCodeValueId = (Integer) CodeHelper.createCodeValue(requestSpec, responseSpec, codeId, aadhaar, 0,
-					"subResourceId");
-		} else {
-			List<HashMap<String, Object>> codeValues = CodeHelper.getCodeValuesForCode(this.requestSpec,
-					this.responseSpec, codeId, "");
-			System.out.println("the code values are " + codeValues);
-			for (HashMap<String, Object> value : codeValues) {
-				if (value.get("name").equals(aadhaar)) {
-					aadhaarCodeValueId = (Integer) value.get("id");
-				}
-			}
-		}
+		
 		System.out.println("the client id is" + clientId);
 		String aadhaarNumber = "594671960" + generate(3);
 		Integer resourceId = (Integer) ClientHelper.addClientIdentifier(requestSpec, responseSpec, clientId,
@@ -218,6 +191,51 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 				.withCharges(charges).build(clientID.toString(), loanProductID.toString(), savingsId);
 		return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
 	}
+	private Integer generateIdentificationTypeId(){
+		System.out.println("--------------------------------CREATE CODE VALUE-------------------");
+		String aadhaar = "Aadhaar";
+		HashMap code = CodeHelper.getCodeByName(requestSpec, responseSpec, "Customer Identifier");
+		System.out.println("the code is " + code);
+		Integer codeId = (Integer) code.get("id");
+		HashMap<String, Object> codeValue = CodeHelper.retrieveOrCreateCodeValue(codeId, requestSpec, responseSpec);
+		System.out.println("the code value is " + codeValue);
+		boolean hasAadhaarCodeValue = false;
+		Integer aadhaarCodeValueId = null;
+		for (Map.Entry<String, Object> entry : codeValue.entrySet()) {
+			if (entry.getKey().equals("name")) {
+				if (entry.getValue().equals(aadhaar)) {
+					hasAadhaarCodeValue = true;
+				}
+			}
+		}
+
+		if (!hasAadhaarCodeValue) {
+			aadhaarCodeValueId = (Integer) CodeHelper.createCodeValue(requestSpec, responseSpec, codeId, aadhaar, 0,
+					"subResourceId");
+		} else {
+			List<HashMap<String, Object>> codeValues = CodeHelper.getCodeValuesForCode(this.requestSpec,
+					this.responseSpec, codeId, "");
+			System.out.println("the code values are " + codeValues);
+			for (HashMap<String, Object> value : codeValues) {
+				if (value.get("name").equals(aadhaar)) {
+					aadhaarCodeValueId = (Integer) value.get("id");
+					if(!(Boolean)value.get("isActive")){
+						activateTheCodeValue(codeId, aadhaarCodeValueId, value);
+					}
+				}
+			}
+		}
+		return aadhaarCodeValueId;
+	}
+	
+	private void activateTheCodeValue(final Integer codeId, final Integer aadhaarCodeValueId, 
+			final HashMap<String, Object> codeValue){
+		codeValue.put("isActive", true);
+		codeValue.remove("mandatory");
+		System.out.println("the code value is "+codeValue);
+		Integer resourceId = (Integer) CodeHelper.updateCodeValue(requestSpec, responseSpec, codeId, aadhaarCodeValueId, codeValue, "resourceId");
+		System.out.println("the resource Id is "+resourceId);
+	}
 
 	public void deleteAllExistingTransactionAuthenticationRules(final ArrayList<HashMap> listOfExistingRules) {
 		System.out.println("the transacton ruels are " + listOfExistingRules);
@@ -257,9 +275,10 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		Integer transactionTypeId = 1;
 		BigDecimal amountGreaterThan = new BigDecimal(10000);
 		Long authenticationTypeId = new Long(3);
+		Integer aadhaarCodeValueId = generateIdentificationTypeId();
 		Integer transactionAuthenticationId = TransactionAuthenticationHelper.createTransactionAuthentication(
 				requestSpec, responseSpec, locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan,
-				authenticationTypeId, loanProductID );
+				authenticationTypeId, loanProductID,aadhaarCodeValueId);
 		Assert.assertNotNull(transactionAuthenticationId);
 
 		System.out.println(
@@ -396,6 +415,13 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 				loanSchedule.get(4).get("principalDue"));
 		assertEquals("Checking for Interest Due for 4th Month", new Float("61.79"),
 				loanSchedule.get(4).get("interestOriginalDue"));
+	}
+	
+	@After
+	public void deleteAllTransactionAuthRules(){
+		ArrayList<HashMap> listOfTransactionAuthenticationRules = TransactionAuthenticationHelper
+				.getTransactionAuthenticationRules(requestSpec, responseSpec);
+		deleteAllExistingTransactionAuthenticationRules(listOfTransactionAuthenticationRules);
 	}
 
 }

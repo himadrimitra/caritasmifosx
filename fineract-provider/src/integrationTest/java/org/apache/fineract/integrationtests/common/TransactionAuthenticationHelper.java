@@ -18,11 +18,11 @@ public class TransactionAuthenticationHelper {
 	public static Integer createTransactionAuthentication(final RequestSpecification requestSpec,
 			final ResponseSpecification responseSpec, final String locale, final Integer portfolioTypeId,
 			final Integer transactionTypeId, final Integer paymentTypeId, final BigDecimal amountGreaterThan, final Long authenticationTypeId,
-			final Integer loanProductId) {
+			final Integer loanProductId, Integer aadhaarCodeValueId) {
 		System.out.println(
 				"---------------------------------CREATING A TransactionAuthentication TYPE---------------------------------------------");
 		return Utils.performServerPost(requestSpec, responseSpec, CREATE_TRANSACTION_AUTHENTICATION_URL,
-				getJsonToCreateTransactionAuthentication(locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan, authenticationTypeId, loanProductId), "resourceId");
+				getJsonToCreateTransactionAuthentication(locale, portfolioTypeId, transactionTypeId, paymentTypeId, amountGreaterThan, authenticationTypeId, loanProductId,aadhaarCodeValueId), "resourceId");
 	}
 	
 	public static Object deleteTransactionAuthentication(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final Integer transactionAuthenticationId){
@@ -36,7 +36,7 @@ public class TransactionAuthenticationHelper {
 	
 	public static String getJsonToCreateTransactionAuthentication(final String locale, final Integer productTypeId,
 			final Integer transactionTypeId, final Integer paymentTypeId, final BigDecimal amountGreaterThan, final Long authenticationTypeId,
-			final Integer loanProductId) {
+			final Integer loanProductId, Integer aadhaarCodeValueId) {
 		HashMap hm = new HashMap();
 		hm.put("locale", locale);
 		hm.put("portfolioTypeId", productTypeId);
@@ -45,6 +45,7 @@ public class TransactionAuthenticationHelper {
 		hm.put("amount", amountGreaterThan);
 		hm.put("authenticationTypeId", authenticationTypeId);
 		hm.put("productId", loanProductId);
+		hm.put("identificationTypeId", aadhaarCodeValueId);
 		System.out.println("the json is "+new Gson().toJson(hm));
 		System.out.println("------------------------CREATING Transaction Authentication TYPE-------------------------" + hm);
 		

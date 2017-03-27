@@ -57,7 +57,11 @@ public class LoanDueData {
         this.interestDue = interestDue;
         this.interestPaid = interestPaid;
         this.chargesDue = chargesDue;
-        this.totalDue = this.totalDue.add(principalDue).add(interestDue);
+        if(chargesDue != null){
+        this.totalDue = this.totalDue.add(principalDue).add(interestDue).add(chargesDue);
+        }else{
+        	this.totalDue = this.totalDue.add(principalDue).add(interestDue);
+        }
     }
 
     public Long getLoanId() {
