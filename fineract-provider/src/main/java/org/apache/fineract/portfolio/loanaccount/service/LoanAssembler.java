@@ -197,7 +197,7 @@ public class LoanAssembler {
         if (loanProduct == null) { throw new LoanProductNotFoundException(productId); }
 
         final Fund fund = findFundByIdIfProvided(fundId);
-        final Staff loanOfficer = findLoanOfficerByIdIfProvided(loanOfficerId);
+        Staff loanOfficer = findLoanOfficerByIdIfProvided(loanOfficerId);
         final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy = findStrategyByIdIfProvided(transactionProcessingStrategyId);
         LoanPurpose loanPurpose = null;
         if (loanPurposeId != null) {
@@ -270,12 +270,18 @@ public class LoanAssembler {
         if (clientId != null) {
             client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+                loanOfficer = client.getStaff();
+            }
         }
 
         if (groupId != null) {
             group = this.groupRepository.findOne(groupId);
             if (group == null) { throw new GroupNotFoundException(groupId); }
             if (group.isNotActive()) { throw new GroupNotActiveException(groupId); }
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff().isLoanOfficer()) {
+                loanOfficer = group.getStaff();
+            }
         }
 
         if (client != null && group != null) {

@@ -37,6 +37,7 @@ import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormat;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.AccountNumberFormatRepositoryWrapper;
 import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -60,6 +61,7 @@ import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.CenterNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
+import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -106,6 +108,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
     private final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -120,7 +123,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final AccountNumberFormatRepositoryWrapper accountNumberFormatRepository, final ClientRepository clientrepo,
             final StaffRepository staffRepo,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingAccountAssembler = savingAccountAssembler;
@@ -140,6 +143,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
         this.clientrepo = clientrepo;
         this.staffRepo = staffRepo;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.configurationDomainService = configurationDomainService;
     }
 
     /*
@@ -279,6 +283,8 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
 
                 if (changes.containsKey(SavingsApiConstants.fieldOfficerIdParamName)) {
                     final Long fieldOfficerId = command.longValueOfParameterNamed(SavingsApiConstants.fieldOfficerIdParamName);
+                    if (configurationDomainService
+                            .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(fieldOfficerId); }
                     Staff fieldOfficer = null;
                     if (fieldOfficerId != null) {
                         fieldOfficer = this.staffRepository.findOneWithNotFoundDetection(fieldOfficerId);
@@ -570,7 +576,9 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final Client client = this.clientrepo.findOne(clientId);
             final Group group = null;
             Staff staff = null;
-            if (fieldOfficerId != null) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+                staff = client.getStaff();
+            } else if (fieldOfficerId != null) {
                 staff = this.staffRepo.findOne(fieldOfficerId);
             }
 
