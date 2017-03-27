@@ -1,9 +1,11 @@
 package com.finflux.risk.creditbureau.provider.data;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
-
-import java.util.Date;
 
 /**
  * Created by dhirendra on 17/09/16.
@@ -32,6 +34,7 @@ public class CreditBureauExistingLoan {
     private Date disbursedDate;
     private Date closedDate;
     private String remark;
+    private final List<CreditBureauExistingLoanPaymentDetail> creditBureauExistingLoanPaymentDetails;
 
     public CreditBureauExistingLoan(final Long clientId, final Long loanApplicationId, Long loanId, Long creditBureauProductId,
             Long loanEnquiryId) {
@@ -40,6 +43,7 @@ public class CreditBureauExistingLoan {
         this.loanId = loanId;
         this.creditBureauProductId = creditBureauProductId;
         this.loanEnquiryId = loanEnquiryId;
+        this.creditBureauExistingLoanPaymentDetails = new ArrayList<CreditBureauExistingLoanPaymentDetail>();
     }
 
     public Long getLoanApplicationId() {
@@ -196,5 +200,14 @@ public class CreditBureauExistingLoan {
 
     public void setLoanType(final String loanType) {
         this.loanType = loanType;
+    }
+
+    public void addCreditBureauExistingLoanPaymentDetail(
+            final CreditBureauExistingLoanPaymentDetail creditBureauExistingLoanPaymentDetail) {
+        this.creditBureauExistingLoanPaymentDetails.add(creditBureauExistingLoanPaymentDetail);
+    }
+
+    public List<CreditBureauExistingLoanPaymentDetail> getCreditBureauExistingLoanPaymentDetails() {
+        return this.creditBureauExistingLoanPaymentDetails;
     }
 }
