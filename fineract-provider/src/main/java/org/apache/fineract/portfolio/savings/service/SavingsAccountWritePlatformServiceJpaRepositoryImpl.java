@@ -75,6 +75,7 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
 import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
@@ -1227,6 +1228,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         final SavingsAccount savingsForUpdate = this.savingsRepository.findOneWithNotFoundDetection(savingsAccountId);
         final Long fromSavingsOfficerId = command.longValueOfParameterNamed("fromSavingsOfficerId");
         final Long toSavingsOfficerId = command.longValueOfParameterNamed("toSavingsOfficerId");
+        if (configurationDomainService
+                .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(toSavingsOfficerId); }
         final LocalDate dateOfSavingsOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
 
         if (fromSavingsOfficerId != null) {
@@ -1262,10 +1265,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
 
         final Map<String, Object> actualChanges = new LinkedHashMap<>(5);
         this.fromApiJsonDeserializer.validateForUnAssignSavingsOfficer(command.json());
-
         final SavingsAccount savingsForUpdate = this.savingsRepository.findOneWithNotFoundDetection(savingsAccountId);
         if (savingsForUpdate.getSavingsOfficer() == null) { throw new SavingsOfficerUnassignmentException(savingsAccountId); }
-
+        if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(savingsAccountId); }
         final LocalDate dateOfSavingsOfficerUnassigned = command.localDateValueOfParameterNamed("unassignedDate");
 
         savingsForUpdate.removeSavingsOfficer(dateOfSavingsOfficerUnassigned);

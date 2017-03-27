@@ -88,6 +88,7 @@ import org.apache.fineract.portfolio.fund.domain.Fund;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
@@ -1003,6 +1004,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final String loanOfficerIdParamName = "loanOfficerId";
             if (changes.containsKey(loanOfficerIdParamName)) {
                 final Long loanOfficerId = command.longValueOfParameterNamed(loanOfficerIdParamName);
+                if (configurationDomainService
+                        .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(loanOfficerId); }
                 final Staff newValue = this.loanAssembler.findLoanOfficerByIdIfProvided(loanOfficerId);
                 existingLoanApplication.updateLoanOfficerOnLoanApplication(newValue);
             }

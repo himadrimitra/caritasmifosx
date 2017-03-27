@@ -57,6 +57,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
@@ -109,6 +110,7 @@ public class SavingsAccountAssembler {
     private final SavingsAccountChargeAssembler savingsAccountChargeAssembler;
     private final FromJsonHelper fromApiJsonHelper;
     private final PlatformSecurityContext context;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public SavingsAccountAssembler(final SavingsAccountTransactionSummaryWrapper savingsAccountTransactionSummaryWrapper,
@@ -117,7 +119,7 @@ public class SavingsAccountAssembler {
             final SavingsAccountRepositoryWrapper savingsAccountRepository,
             final SavingsAccountChargeAssembler savingsAccountChargeAssembler, final FromJsonHelper fromApiJsonHelper,
             final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
-            final PlatformSecurityContext context) {
+            final PlatformSecurityContext context, final ConfigurationDomainService configurationDomainService) {
         this.savingsAccountTransactionSummaryWrapper = savingsAccountTransactionSummaryWrapper;
         this.clientRepository = clientRepository;
         this.groupRepository = groupRepository;
@@ -128,6 +130,7 @@ public class SavingsAccountAssembler {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.savingsHelper = new SavingsHelper(accountTransfersReadPlatformService);
         this.context = context;
+        this.configurationDomainService = configurationDomainService;
     }
 
     /**
@@ -155,7 +158,10 @@ public class SavingsAccountAssembler {
             client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
-        }
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+                fieldOfficer = client.getStaff();
+            }
+		}
 
         final Long groupId = this.fromApiJsonHelper.extractLongNamed(groupIdParamName, element);
         if (groupId != null) {
@@ -165,7 +171,10 @@ public class SavingsAccountAssembler {
                 if (group.isCenter()) { throw new CenterNotActiveException(groupId); }
                 throw new GroupNotActiveException(groupId);
             }
-        }
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff().isLoanOfficer()) {
+                fieldOfficer = group.getStaff();
+            }
+		}
 
         if (group != null && client != null) {
             if (!group.hasClientAsMember(client)) { throw new ClientNotInGroupException(clientId, groupId); }
@@ -173,7 +182,7 @@ public class SavingsAccountAssembler {
         }
 
         final Long fieldOfficerId = this.fromApiJsonHelper.extractLongNamed(fieldOfficerIdParamName, element);
-        if (fieldOfficerId != null) {
+		if (fieldOfficer == null && fieldOfficerId != null) {
             fieldOfficer = this.staffRepository.findOneWithNotFoundDetection(fieldOfficerId);
         }
 
@@ -363,13 +372,16 @@ public class SavingsAccountAssembler {
      * request inheriting details where relevant from chosen
      * {@link SavingsProduct}.
      */
-    public SavingsAccount assembleFrom(final Client client, final Group group, final SavingsProduct product, final Staff staff,
+    public SavingsAccount assembleFrom(final Client client, final Group group, final SavingsProduct product, Staff staff,
             final LocalDate appliedonDate, final AppUser appliedBy) {
 
         AccountType accountType = AccountType.INVALID;
         if (client != null) {
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(client.getId()); }
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+                staff = client.getStaff();
+            }
         }
 
         if (group != null) {
@@ -377,6 +389,9 @@ public class SavingsAccountAssembler {
             if (group.isNotActive()) {
                 if (group.isCenter()) { throw new CenterNotActiveException(group.getId()); }
                 throw new GroupNotActiveException(group.getId());
+            }
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff().isLoanOfficer()) {
+                staff = group.getStaff();
             }
         }
 

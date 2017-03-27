@@ -445,6 +445,24 @@ public final class Group extends AbstractPersistable<Long> {
         this.staff = staff;
     }
 
+    public void updateStaffForGroupMembers(final Staff staff) {
+        if (this.isCenter() && this.isActive()) {
+            for (Group group : groupMembers) {
+                group.updateStaff(staff);
+            }
+        }
+        this.staff = staff;
+    }
+
+    public void updateStaffForClientMembers(final Staff staff) {
+        if (this.isChildGroup() && this.isActive()) {
+            for (Client client : clientMembers) {
+                client.updateStaff(staff);
+            }
+        }
+        this.staff = staff;
+    }
+
     public void unassignStaff() {
         if (this.isCenter() && this.isActive()) {
             LocalDate dateOfStaffUnassigned = DateUtils.getLocalDateOfTenant();
@@ -463,6 +481,49 @@ public final class Group extends AbstractPersistable<Long> {
 
     public void setStaff(final Staff staff) {
         this.staff = staff;
+    }
+    
+    public void updateStaffForAllChilds(final Staff staff) {
+        this.staff = staff;
+        if (this.isCenter()) {
+            if (this.groupMembers != null) {
+                for (Group group : this.groupMembers) {
+                    group.updateStaffForAllChilds(staff);
+                }
+            }
+        }
+        if (this.isGroup()) {
+            if (clientMembers != null) {
+                for (Client client : clientMembers) {
+                    client.updateStaff(staff);
+                }
+            }
+        }
+    }
+
+    public List<Long> fetchAllClientMemerIds() {
+        List<Long> ids = new ArrayList<>();
+        if (isCenter()) {
+            for (Group group : this.groupMembers) {
+                ids.addAll(group.fetchAllClientMemerIds());
+            }
+        }
+        if (isGroup()) {
+            for (Client client : clientMembers) {
+                ids.add(client.getId());
+            }
+        }
+        return ids;
+    }
+
+    public List<Long> fetchAllGroupMemerIds() {
+        List<Long> ids = new ArrayList<>();
+        if (isCenter()) {
+            for (Group group : this.groupMembers) {
+                ids.add(group.getId());
+            }
+        }
+        return ids;
     }
 
     public Group getParent() {
