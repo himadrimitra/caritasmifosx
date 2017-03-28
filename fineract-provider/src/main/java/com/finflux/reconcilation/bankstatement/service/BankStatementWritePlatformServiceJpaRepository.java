@@ -914,7 +914,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
 
     private boolean branchExist(BankStatementDetails bankStatementDetail, List<OfficeData> offices) {
         for (OfficeData office : offices) {
-            if (office.getExternalId().equals(bankStatementDetail.getBranchExternalId())) {
+            if (office.getExternalId() != null && office.getExternalId().equals(bankStatementDetail.getBranchExternalId())) {
                 bankStatementDetail.setBranchId(office.getId());
                 return true;
             }
