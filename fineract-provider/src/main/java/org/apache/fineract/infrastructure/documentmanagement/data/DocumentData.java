@@ -81,4 +81,8 @@ public class DocumentData {
         return this.id;
     }
 
+    public String getName(){
+        return this.name;
+    }
+
 }

@@ -52,7 +52,7 @@ public class DocumentReadPlatformServiceImpl implements DocumentReadPlatformServ
     }
 
     @Override
-    public Collection<DocumentData> retrieveAllDocuments(final String entityType, final Long entityId) {
+    public Collection<DocumentData>  retrieveAllDocuments(final String entityType, final Long entityId) {
 
         this.context.authenticatedUser();
 

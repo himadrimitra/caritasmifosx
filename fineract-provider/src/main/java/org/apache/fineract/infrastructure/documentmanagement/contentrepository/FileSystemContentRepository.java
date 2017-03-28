@@ -45,11 +45,18 @@ public class FileSystemContentRepository implements ContentRepository {
 
     @Override
     public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand) {
+        return saveFile(uploadedInputStream, documentCommand, true);
+    }
+
+    @Override
+    public String saveFile(final InputStream uploadedInputStream, final DocumentCommand documentCommand, boolean checkUploadSize) {
         final String fileName = documentCommand.getFileName();
         final String uploadDocumentLocation = generateFileParentDirectory(documentCommand.getParentEntityType(),
                 documentCommand.getParentEntityId());
 
-        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+        if(checkUploadSize){
+            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+        }
         makeDirectories(uploadDocumentLocation);
 
         final String fileLocation = uploadDocumentLocation + File.separator + fileName;

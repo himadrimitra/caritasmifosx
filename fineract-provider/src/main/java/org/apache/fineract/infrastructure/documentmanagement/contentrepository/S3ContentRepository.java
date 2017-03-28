@@ -59,8 +59,16 @@ public class S3ContentRepository implements ContentRepository {
 
     @Override
     public String saveFile(final InputStream toUpload, final DocumentCommand documentCommand) {
+        return saveFile(toUpload, documentCommand, true);
+    }
+
+    @Override
+    public String saveFile(final InputStream toUpload, final DocumentCommand documentCommand, boolean checkUploadSize) {
         final String fileName = documentCommand.getFileName();
-        ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+
+        if(checkUploadSize){
+            ContentRepositoryUtils.validateFileSizeWithinPermissibleRange(documentCommand.getSize(), fileName);
+        }
 
         final String uploadDocFolder = generateFileParentDirectory(documentCommand.getParentEntityType(),
                 documentCommand.getParentEntityId());

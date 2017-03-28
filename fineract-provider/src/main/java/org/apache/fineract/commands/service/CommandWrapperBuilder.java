@@ -3863,6 +3863,76 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder createMandate(final Long loanId) {
+        this.actionName = "CREATE";
+        this.entityName = "MANDATE";
+        this.loanId = loanId;
+        this.href = "/loans/"+loanId+"/mandates?command=CREATE";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateMandate(final Long loanId) {
+        this.actionName = "UPDATE";
+        this.entityName = "MANDATE";
+        this.loanId = loanId;
+        this.href = "/loans/"+loanId+"/mandates?command=UPDATE";
+        return this;
+    }
+
+    public CommandWrapperBuilder cancelMandate(final Long loanId) {
+        this.actionName = "CANCEL";
+        this.entityName = "MANDATE";
+        this.loanId = loanId;
+        this.href = "/loans/"+loanId+"/mandates?command=CANCEL";
+        return this;
+    }
+
+    public CommandWrapperBuilder editMandate(final Long loanId, final Long mandateId) {
+        this.actionName = "EDIT";
+        this.entityName = "MANDATE";
+        this.entityId = mandateId;
+        this.loanId = loanId;
+        this.href = "/loans/"+loanId+"/mandates/"+mandateId;
+        return this;
+    }
+
+    public CommandWrapperBuilder deleteMandate(final Long loanId, final Long mandateId) {
+        this.actionName = "DELETE";
+        this.entityName = "MANDATE";
+        this.entityId = mandateId;
+        this.loanId = loanId;
+        this.href = "/loans/"+loanId+"/mandates/"+mandateId;
+        return this;
+    }
+
+    public CommandWrapperBuilder mandatesDownload() {
+        this.actionName = "MANDATES_DOWNLOAD";
+        this.entityName = "MANDATES";
+        this.href = "/mandates/command=MANDATES_DOWNLOAD";
+        return this;
+    }
+
+    public CommandWrapperBuilder mandatesUpload() {
+        this.actionName = "MANDATES_UPLOAD";
+        this.entityName = "MANDATES";
+        this.href = "/mandates/command=MANDATES_UPLOAD";
+        return this;
+    }
+
+    public CommandWrapperBuilder transactionsDownload() {
+        this.actionName = "TRANSACTIONS_DOWNLOAD";
+        this.entityName = "MANDATES";
+        this.href = "/mandates/command=TRANSACTIONS_DOWNLOAD";
+        return this;
+    }
+
+    public CommandWrapperBuilder transactionsUpload() {
+        this.actionName = "TRANSACTIONS_UPLOAD";
+        this.entityName = "MANDATES";
+        this.href = "/mandates/command=TRANSACTIONS_UPLOAD";
+        return this;
+    }
+
     public CommandWrapperBuilder addCoApplicant(final Long loanApplicationReferenceId, final Long clientId) {
         this.actionName = "CREATE";
         this.entityName = "COAPPLICANTS";
@@ -3886,4 +3956,5 @@ public class CommandWrapperBuilder {
         this.href="/tasktemplate/"+templateId;
         return this;
     }
+
 }

@@ -157,6 +157,13 @@ public class ExternalServicesConstants {
     
     //End Equifax
     
+    public static final String NACH_SERVICE_NAME = "NACH";
+    public static final String PROCESSOR_QUALIFIER = "PROCESSOR_QUALIFIER";
+    public static final String CORPORATE_UTILITY_CODE = "CORPORATE_UTILITY_CODE";
+    public static final String CORPORATE_UTILITY_NAME = "CORPORATE_UTILITY_NAME";
+    public static final String SPONSOR_BANK = "SPONSOR_BANK";
+    public static final String SPONSOR_BANK_CODE = "SPONSOR_BANK_CODE";
+
     public static enum EXTERNALSERVICEPROPERTIES_JSON_INPUT_PARAMS {
         EXTERNAL_SERVICE_ID("external_service_id"), NAME("name"), VALUE("value");
 
@@ -281,4 +288,38 @@ public class ExternalServicesConstants {
         }
     }
 
+    public static enum NACH_JSON_INPUT_PARAMS {
+        PROCESSOR_QUALIFIER("PROCESSOR_QUALIFIER"),
+        CORPORATE_UTILITY_CODE("CORPORATE_UTILITY_CODE"),
+        CORPORATE_UTILITY_NAME("CORPORATE_UTILITY_NAME"),
+        SPONSOR_BANK("SPONSOR_BANK"),
+        SPONSOR_BANK_CODE("SPONSOR_BANK_CODE");
+
+        private final String value;
+
+        private NACH_JSON_INPUT_PARAMS(final String value) {
+            this.value = value;
+        }
+
+        private static final Set<String> values = new HashSet<>();
+
+        static {
+            for (final NACH_JSON_INPUT_PARAMS type : NACH_JSON_INPUT_PARAMS.values()) {
+                values.add(type.value);
+            }
+        }
+
+        public static Set<String> getAllValues() {
+            return values;
+        }
+
+        @Override
+        public String toString() {
+            return name().toString().replaceAll("_", " ");
+        }
+
+        public String getValue() {
+            return this.value;
+        }
+    }
 }

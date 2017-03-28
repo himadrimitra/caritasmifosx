@@ -1477,6 +1477,22 @@
 								<td><a href="#collaterals_delete">Delete a Collateral</a></td>
 							</tr>
 							<tr>
+								<td><a href="#loanmandate">Loan ACH Mandate</a></td>
+								<td>loans/{loanId}/mandates</td>
+								<td><a href="#loanmandate_create">Create/Update/Cancel Mandate</a></td>
+								<td><a href="#loanmandate_list">List Mandates For Loan</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr  class="alt">
+								<td></td>
+								<td>loans/{loanId}/mandates/{mandateId}</td>
+								<td></td>
+								<td><a href="#loanmandate_retrieve">Retrieve a Mandate</a></td>
+								<td><a href="#loanmandate_update">Update a Mandate</a></td>
+								<td><a href="#loanmandate_delete">Delete a Mandate</a></td>
+							</tr>
+							<tr>
 								<td><a href="#loan_rescheduling">Loan Rescheduling</a></td>
 								<td>rescheduleloans</td>
 								<td><a href="#loan_reschedule_request_create">Create new loan reschedule request</a></td>
@@ -2453,6 +2469,46 @@
 								<td></td>
 								<td><a href="#retrieve_floatingrate">Retrieve Floating Rate</a></td>
 								<td><a href="#update_floatingrate">Update Floating Rate</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td><a href="#ach">ACH Mandates</a></td>
+								<td>mandates</td>
+								<td><a href="#create_ach">Request Mandate Processing</a></td>
+								<td><a href="#list_ach">List Mandate Processes</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>mandates/summary/mandates</td>
+								<td></td>
+								<td><a href="#summary_mandates">Summary of Mandate Requests</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>mandates/list/mandates</td>
+								<td></td>
+								<td><a href="#list_mandates">List of Mandate Requests</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>mandates/summary/transactions</td>
+								<td></td>
+								<td><a href="#summary_transactions">Summary of Mandate Transactions</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>mandates/list/transactions</td>
+								<td></td>
+								<td><a href="#list_transactions">List of Mandate Transactions</a></td>
 								<td></td>
 								<td></td>
 							</tr>
@@ -11630,6 +11686,227 @@ No Request Body:
 				</div>
 			</div>
 
+<!-- start of Loan Mandates content -->
+			<a id="loanmandate" name="loanmandate" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h3>Loan ACH Mandate</h3>
+					<p>/loan/{loanId}/mandates end points are used to manage ACH mandates linked to any individual loan. 
+					Scanned document of ACH mandate is expected to be managed thru loan documents apis.
+					</p>
+				</div>
+			</div>
+
+			<a id="loanmandate_create" name="loanmandate_create"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Create/Update/Cancel Mandate</h4>
+					<p>Mandate for a loan can be requested to be Created/Updated/Cancelled based on the command param. 
+					Parameters are same for all the requests except that CREATE request will not accept 'umrn' param.</p>
+					<p>Example Requests:</p>
+					<div class=apiClick>loans/1/mandates?command=CREATE</div>
+					<br>
+					<div class=apiClick>loans/1/mandates?command=UPDATE</div>
+					<br>
+					<div class=apiClick>loans/1/mandates?command=CANCEL</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/loans/{loanId}/mandates?command=CREATE
+					</code>
+                    <code class="method-request">
+POST /loans/1/mandates?command=CREATE
+Content-Type: application/json
+Request Body:
+{
+	"requestDate": "28 March 2017",
+	"periodFromDate": "28 March 2017",
+	"bankAccountHolderName": "Test Name",
+	"bankName": "Test Bank",
+	"branchName": "Test Branch",
+	"bankAccountNumber": "Test123456",
+	"micr": "098765",
+	"ifsc": "Test098765",
+	"accountType": 1,
+	"periodUntilCancelled": true,
+	"debitType": 2,
+	"amount": 10000,
+	"debitFrequency": 5,
+	"scannedDocumentId": 1,
+	"locale": "en",
+	"dateFormat": "dd MMMM yyyy"
+}
+                    </code>					<code class="method-response">
+{
+	"resourceId": 1
+}
+					</code>
+				</div>
+			</div>
+
+			<a id="loanmandate_list" name="loanmandate_list"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List Mandates For Loan</h4>
+					<p>Retrieves all mandates for the given loanId</p>
+					<div class=apiClick>loans/1/mandates</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/loans/{loanId}/mandates
+					</code>
+					<code class="method-response">
+[{
+	"id": 1,
+	"loanId": 1,
+	"loanAccountNo": "000000001",
+	"mandateStatus": {
+		"id": 100,
+		"code": "CREATE_REQUESTED",
+		"value": "CREATE_REQUESTED"
+	},
+	"requestDate": "Mar 28, 2017",
+	"bankAccountHolderName": "Test Name",
+	"bankName": "Test Bank",
+	"branchName": "Test Branch",
+	"bankAccountNumber": "Test123456",
+	"micr": "098765",
+	"ifsc": "Test098765",
+	"accountType": {
+		"id": 1,
+		"code": "SB",
+		"value": "SB"
+	},
+	"periodFromDate": "Mar 28, 2017",
+	"periodUntilCancelled": true,
+	"debitType": {
+		"id": 2,
+		"code": "MAXIMUM AMOUNT",
+		"value": "MAXIMUM AMOUNT"
+	},
+	"amount": 10000.000000,
+	"debitFrequency": {
+		"id": 5,
+		"code": "AS AND WHEN PRESENTED",
+		"value": "AS AND WHEN PRESENTED"
+	},
+	"scannedDocumentId": 1,
+	"scannedDocumentName": "TestMandate"
+}]
+					</code>
+				</div>
+			</div>
+
+			<a id="loanmandate_retrieve" name="loanmandate_retrieve"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Retrieve a Mandate</h4>
+					<p>Example Requests:</p>
+					<div class=apiClick>/loans/1/mandates/1</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/loans/{loanId}/mandates/{mandateId}
+					</code>
+					<code class="method-response">
+{
+	"id": 1,
+	"loanId": 1,
+	"loanAccountNo": "000000001",
+	"mandateStatus": {
+		"id": 100,
+		"code": "CREATE_REQUESTED",
+		"value": "CREATE_REQUESTED"
+	},
+	"requestDate": "Mar 28, 2017",
+	"umrn": "ABCD088676",
+	"bankAccountHolderName": "Test Name",
+	"bankName": "Test Bank",
+	"branchName": "Test Branch",
+	"bankAccountNumber": "Test123456",
+	"micr": "098765",
+	"ifsc": "Test098765",
+	"accountType": {
+		"id": 1,
+		"code": "SB",
+		"value": "SB"
+	},
+	"periodFromDate": "Mar 28, 2017",
+	"periodUntilCancelled": true,
+	"debitType": {
+		"id": 2,
+		"code": "MAXIMUM AMOUNT",
+		"value": "MAXIMUM AMOUNT"
+	},
+	"amount": 10000.000000,
+	"debitFrequency": {
+		"id": 5,
+		"code": "AS AND WHEN PRESENTED",
+		"value": "AS AND WHEN PRESENTED"
+	},
+	"scannedDocumentId": 1,
+	"scannedDocumentName": "TestMandate"
+}				</code>
+				</div>
+			</div>
+
+            <a id="loanmandate_update" name="loanmandate_update"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Update a Mandate</h4>
+					<p>A Mandate request can be edited as long as it is in Requested status</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+PUT https://DomainName/api/v1/loans/{loanId}/mandates/{mandateId}
+					</code>
+					<code class="method-request">
+PUT loans/1/mandates/1
+Content-Type: application/json
+Request Body:
+{
+	"scannedDocumentId": 2
+}
+					</code>
+					<code class="method-response">
+{
+  "loanId": 1,
+  "resourceId": 1,
+  "changes": {
+    "scannedDocumentId": 2
+  }
+}
+					</code>
+				</div>
+			</div>
+
+			<a id="loanmandate_delete" name="loanmandate_delete" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Delete a Mandate</h4>
+					<p>A Mandate request can be deleted as long as it is in Requested status</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+DELETE https://DomainName/api/v1/loans/{loanId}/mandates/{mandateId}
+					</code>
+					<code class="method-request">
+DELETE loans/1/mandates/1
+Content-Type: application/json
+No Request Body:
+					</code>
+					<code class="method-response">
+{
+  "resourceId": 1
+}
+					</code>
+				</div>
+			</div>			
+			
 <!-- start of Loan charges content-->
 			<a id="loans_charges" name="loans_charges" class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
@@ -18658,7 +18935,13 @@ POST scheduler?command=stop
 						<li><b>host</b> - </li>
 						<li><b>port</b> - </li>
 						<li><b>useTLS</b> - </li>
-
+						<br><br>
+						<li><b>NACH:</b></li>
+						<li><b>PROCESSOR_QUALIFIER</b> - </li>
+						<li><b>CORPORATE_UTILITY_CODE</b> - </li>
+						<li><b>CORPORATE_UTILITY_NAME</b> - </li>
+						<li><b>SPONSOR_BANK</b> - </li>
+						<li><b>SPONSOR_BANK_CODE</b> - </li>
 					</ol>
 				</div>
 			</div>
@@ -40766,6 +41049,259 @@ No Request Body:
 				</div>
 			</div>
 			<!-- End of floatingrates -->
+
+<!-- start of ACH Mandates Processing content -->
+			<a id="ach" name="ach" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h3>ACH Mandates</h3>
+					<p>/mandates end points are used to generate/process automated files and view status/summary of individual Mandate/Transaction requests.
+					</p>
+				</div>
+			</div>
+
+			<a id="create_ach" name="create_ach"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Request Mandate Processing</h4>
+					<p>/mandates POST request is used to request a file for Mandate/Transaction download or Uploading Mandate/Transaction response file for processing. 
+					Download requests accepts application/json content and Upload requests accepts multipart/form-data content. This API enqueues requests for async processing. 
+					The status of the processing can be viewed using get mandates API below.</p>
+					<p>Example Requests:</p>
+					<div class=apiClick>/mandates?command=MANDATES_DOWNLOAD</div>
+					<br>
+					<div class=apiClick>/mandates?command=MANDATES_UPLOAD</div>
+					<br>
+					<div class=apiClick>/mandates?command=TRANSACTIONS_DOWNLOAD</div>
+					<br>
+					<div class=apiClick>/mandates?command=TRANSACTIONS_UPLOAD</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/mandates?command=MANDATES_DOWNLOAD
+					</code>
+                    <code class="method-request">
+POST /mandates?command=MANDATES_DOWNLOAD
+Content-Type: application/json
+Request Body:
+{
+	"officeId": 1,
+	"includeChildOffices": true,
+	"includeMandateScans": true,
+	"dateFormat": "dd MMMM yyyy",
+	"locale": "en"
+}
+                    </code>					<code class="method-response">
+{
+	"resourceId": 1
+}
+					</code>
+				</div>
+								<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/mandates?command=MANDATES_UPLOAD
+					</code>
+                    <code class="method-request">
+POST /mandates?command=MANDATES_UPLOAD
+Content-Type: multipart/form-data
+Request Body:
+-----------------------------29304678731295
+Content-Disposition: form-data; name="fileSize"
+
+10218
+-----------------------------29304678731295
+Content-Disposition: form-data; name="file"; filename="MandateUpload.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+PK
+                    </code>					<code class="method-response">
+{
+	"resourceId": 2
+}
+					</code>
+				</div>
+			</div>
+
+			<a id="list_ach" name="list_ach"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List Mandate Processes</h4>
+					<p>List mandates processes based on the input parameters</p>
+					<div class=apiClick>/mandates</div>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/mandates?dateFormat=dd+MMMM+yyyy&officeId=1&requestDate=28+March+2017&type=MANDATES_DOWNLOAD
+					</code>
+					<code class="method-response">
+[{
+	"id": 1,
+	"requestDate": "Mar 28, 2017",
+	"mandateProcessType": "MANDATES_DOWNLOAD",
+	"mandateProcessStatus": "PROCESSED",
+	"officeId": 1,
+	"officeName": "Head Office",
+	"includeChildOffices": true,
+	"includeMandateScans": true,
+	"failureReasonCode": "",
+	"failureReasonDesc": ""
+}]
+					</code>
+				</div>
+			</div>
+
+			<a id="summary_mandates" name="summary_mandates"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Summary of Mandate Requests</h4>
+					<p>Provides Summary of Mandate Requests based on the parameters</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/mandates/summary/mandates?dateFormat=dd+MMMM+yyyy&includeChildOffices=true&limit=25&locale=en&officeId=1&offset=0&requestFromDate=01+March+2017&requestToDate=31+March+2017
+					</code>
+					<code class="method-response">
+[{
+	"status": {
+		"id": 100,
+		"code": "CREATE_REQUESTED",
+		"value": "CREATE_REQUESTED"
+	},
+	"count": 1
+},
+{
+	"status": {
+		"id": 400,
+		"code": "ACTIVE",
+		"value": "ACTIVE"
+	},
+	"count": 10
+}]				</code>
+				</div>
+			</div>
+
+            <a id="list_mandates" name="list_mandates"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List of Mandate Requests</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/mandates/list/mandates?dateFormat=dd+MMMM+yyyy&includeChildOffices=true&limit=25&locale=en&officeId=1&offset=0&requestFromDate=01+March+2017&requestToDate=31+March+2017
+					</code>
+					<code class="method-response">
+{
+	"totalFilteredRecords": 1,
+	"pageItems": [{
+		"id": 1,
+		"loanId": 1,
+		"loanAccountNo": "000000001",
+		"mandateStatus": {
+			"id": 100,
+			"code": "CREATE_REQUESTED",
+			"value": "CREATE_REQUESTED"
+		},
+		"requestDate": "Mar 28, 2017",
+		"umrn": "",
+		"bankAccountHolderName": "Test Name",
+		"bankName": "Test Bank",
+		"branchName": "Test Branch",
+		"bankAccountNumber": "Test123456",
+		"micr": "098765",
+		"ifsc": "Test098765",
+		"accountType": {
+			"id": 1,
+			"code": "SB",
+			"value": "SB"
+		},
+		"periodFromDate": "Mar 28, 2017",
+		"periodUntilCancelled": true,
+		"debitType": {
+			"id": 2,
+			"code": "MAXIMUM AMOUNT",
+			"value": "MAXIMUM AMOUNT"
+		},
+		"amount": 10000.000000,
+		"debitFrequency": {
+			"id": 5,
+			"code": "AS AND WHEN PRESENTED",
+			"value": "AS AND WHEN PRESENTED"
+		},
+		"scannedDocumentId": 1,
+		"scannedDocumentName": "TestMandate"
+	}]
+}
+					</code>
+				</div>
+			</div>
+
+			<a id="summary_transactions" name="summary_transactions"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Summary of Mandate Transactions</h4>
+					<p>Provides Summary of Mandate Transactions Requests based on the parameters</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/mandates/summary/transactions?dateFormat=dd+MMMM+yyyy&includeChildOffices=true&limit=25&locale=en&officeId=1&offset=0&requestFromDate=28+March+2017&requestToDate=28+March+2017
+					</code>
+					<code class="method-response">
+[{
+	"status": {
+		"id": 2,
+		"code": "INPROCESS",
+		"value": "INPROCESS"
+	},
+	"count": 1,
+	"amount": 2100.000000
+}]				</code>
+				</div>
+			</div>
+
+            <a id="list_transactions" name="list_transactions"
+				class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List of Mandate Transactions</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/mandates/list/transactions?dateFormat=dd+MMMM+yyyy&includeChildOffices=true&limit=25&locale=en&officeId=1&offset=0&requestFromDate=28+March+2017&requestToDate=28+March+2017
+					</code>
+					<code class="method-response">
+{
+	"totalFilteredRecords": 1,
+	"pageItems": [{
+		"id": 2,
+		"mandateId": 1,
+		"loanId": 1,
+		"paymentDueAmount": 2100.000000,
+		"paymentDueDate": "Mar 28, 2017",
+		"requestDate": "Mar 28, 2017",
+		"status": "INPROCESS",
+		"umrn": "",
+		"bankAccountHolderName": "Test Name",
+		"bankAccountNumber": "Test123456",
+		"bankName": "Test Bank",
+		"branchName": "Test Branch",
+		"micr": "098765",
+		"ifsc": "Test098765",
+		"accountType": {
+			"id": 1,
+			"code": "SB",
+			"value": "SB"
+		},
+		"loanAccountNo": "000000001"
+	}]
+}
+					</code>
+				</div>
+			</div>
 			
 			<!-- Tax components-->
 			<a id="taxcomponent" name="taxcomponent" class="old-syle-anchor">&nbsp;</a>

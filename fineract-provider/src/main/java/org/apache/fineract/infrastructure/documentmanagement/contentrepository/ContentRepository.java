@@ -39,6 +39,8 @@ public interface ContentRepository {
 
     public abstract String saveFile(InputStream uploadedInputStream, DocumentCommand documentCommand);
 
+    public abstract String saveFile(InputStream uploadedInputStream, DocumentCommand documentCommand, boolean checkUploadSize);
+
     public abstract void deleteFile(String fileName, String documentPath);
 
     public abstract FileData fetchFile(DocumentData documentData);
