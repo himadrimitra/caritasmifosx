@@ -1391,6 +1391,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     public CommandProcessingResult approveApplication(final Long loanId, final JsonCommand command) {
 
         final AppUser currentUser = getAppUserIfPresent();
+        BigDecimal approvedPrincipal = null;
         LocalDate expectedDisbursementDate = null;
         this.loanApplicationTransitionApiJsonValidator.validateApproval(command.json());
         
@@ -1416,7 +1417,13 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command,
                     LoanApiConstants.approvedLoanAmountParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits);
         } else {
-            LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser, command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName),
+        	
+        	approvedPrincipal = loan.getApprovedPrincipal();
+        	if(command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName) != null)
+        	{
+        	 approvedPrincipal = command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName);
+        	}
+            LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser,approvedPrincipal ,
                     loan.getCurrencyCode());
         }
 
