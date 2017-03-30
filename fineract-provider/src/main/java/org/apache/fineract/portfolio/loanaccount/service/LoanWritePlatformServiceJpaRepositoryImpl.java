@@ -121,6 +121,7 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.command.LoanUpdateCommand;
@@ -2208,10 +2209,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     public CommandProcessingResult loanReassignment(final Long loanId, final JsonCommand command) {
 
         this.loanEventApiJsonValidator.validateUpdateOfLoanOfficer(command.json());
-
         final Long fromLoanOfficerId = command.longValueOfParameterNamed("fromLoanOfficerId");
         final Long toLoanOfficerId = command.longValueOfParameterNamed("toLoanOfficerId");
-
+        if (configurationDomainService
+                .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(toLoanOfficerId); }
         final Staff fromLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(fromLoanOfficerId);
         final Staff toLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(toLoanOfficerId);
         final LocalDate dateOfLoanOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
@@ -2280,12 +2281,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final LoanUpdateCommand loanUpdateCommand = this.loanUpdateCommandFromApiJsonDeserializer.commandFromApiJson(command.json());
 
         loanUpdateCommand.validate();
-
+        if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(loanId); }
         final LocalDate dateOfLoanOfficerunAssigned = command.localDateValueOfParameterNamed("unassignedDate");
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         checkClientOrGroupActive(loan);
-
         if (loan.getLoanOfficer() == null) { throw new LoanOfficerUnassignmentException(loanId); }
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_REMOVE_OFFICER,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));

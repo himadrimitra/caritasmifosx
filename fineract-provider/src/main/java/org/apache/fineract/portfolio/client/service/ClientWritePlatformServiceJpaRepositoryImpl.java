@@ -39,6 +39,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
@@ -66,6 +67,7 @@ import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepository;
 import org.apache.fineract.portfolio.group.exception.GroupMemberCountNotInPermissibleRangeException;
 import org.apache.fineract.portfolio.group.exception.GroupNotFoundException;
+import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.note.domain.Note;
@@ -86,6 +88,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -133,6 +136,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final TaskPlatformWriteService taskPlatformWriteService;
     private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public ClientWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -151,7 +155,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final BusinessEventNotifierService businessEventNotifierService,
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
             final TaskPlatformWriteService taskPlatformWriteService,
-            final CreateWorkflowTaskFactory createWorkflowTaskFactory) {
+            final CreateWorkflowTaskFactory createWorkflowTaskFactory,
+            final RoutingDataSource dataSource) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientNonPersonRepository = clientNonPersonRepository;
@@ -177,6 +182,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.taskConfigEntityTypeMappingRepository=taskConfigEntityTypeMappingRepository;
         this.taskPlatformWriteService=taskPlatformWriteService;
         this.createWorkflowTaskFactory=createWorkflowTaskFactory;
+        this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     @Transactional
@@ -252,13 +258,16 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 clientParentGroup = this.groupRepository.findOne(groupId);
                 if (clientParentGroup == null) { throw new GroupNotFoundException(groupId); }
             }
-
+            Boolean inheritStaffFromParent = configurationDomainService.isLoanOfficerToCenterHierarchyEnabled();
             Staff staff = null;
-            final Long staffId = command.longValueOfParameterNamed(ClientApiConstants.staffIdParamName);
-            if (staffId != null) {
-                staff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(staffId, clientOffice.getHierarchy());
+            if (groupId != null && inheritStaffFromParent) {
+                staff = clientParentGroup.getStaff();
+            } else {
+                final Long staffId = command.longValueOfParameterNamed(ClientApiConstants.staffIdParamName);
+                if (staffId != null) {
+                    staff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(staffId, clientOffice.getHierarchy());
+                }
             }
-
             CodeValue gender = null;
             final Long genderId = command.longValueOfParameterNamed(ClientApiConstants.genderIdParamName);
             if (genderId != null) {
@@ -430,14 +439,18 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             this.context.validateAccessRights(clientHierarchy);
 
             final Map<String, Object> changes = clientForUpdate.update(command);
-
+            Staff newStaff = null;
+            final boolean isLoanOfficerToCenterHierarchyEnabled = configurationDomainService.isLoanOfficerToCenterHierarchyEnabled();
             if (changes.containsKey(ClientApiConstants.staffIdParamName)) {
-
                 final Long newValue = command.longValueOfParameterNamed(ClientApiConstants.staffIdParamName);
-                Staff newStaff = null;
+                if (isLoanOfficerToCenterHierarchyEnabled
+                        && !clientForUpdate.getGroups().isEmpty()) { throw new UpdateStaffHierarchyException(newValue); }
                 if (newValue != null) {
-                    newStaff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(newValue, clientForUpdate.getOffice()
-                            .getHierarchy());
+                    newStaff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(newValue,
+                            clientForUpdate.getOffice().getHierarchy());
+                }
+                if (isLoanOfficerToCenterHierarchyEnabled) {
+                    updateStaffForLoanAndSavings(clientId, newStaff);
                 }
                 clientForUpdate.updateStaff(newStaff);
             }
@@ -657,21 +670,24 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     public CommandProcessingResult unassignClientStaff(final Long clientId, final JsonCommand command) {
 
         this.context.authenticatedUser();
-
+        
         final Map<String, Object> actualChanges = new LinkedHashMap<>(5);
 
         this.fromApiJsonDeserializer.validateForUnassignStaff(command.json());
 
         final Client clientForUpdate = this.clientRepository.findOneWithNotFoundDetection(clientId);
-
+        
         final Staff presentStaff = clientForUpdate.getStaff();
         Long presentStaffId = null;
         if (presentStaff == null) { throw new ClientHasNoStaffException(clientId); }
         presentStaffId = presentStaff.getId();
+        if (!clientForUpdate.getGroups().isEmpty() && configurationDomainService
+                .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(presentStaffId); }
         final String staffIdParamName = ClientApiConstants.staffIdParamName;
         if (!command.isChangeInLongParameterNamed(staffIdParamName, presentStaffId)) {
             clientForUpdate.unassignStaff();
         }
+
         this.clientRepository.saveAndFlush(clientForUpdate);
 
         actualChanges.put(staffIdParamName, presentStaffId);
@@ -695,10 +711,12 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.fromApiJsonDeserializer.validateForAssignStaff(command.json());
 
         final Client clientForUpdate = this.clientRepository.findOneWithNotFoundDetection(clientId);
-
         Staff staff = null;
         final Long staffId = command.longValueOfParameterNamed(ClientApiConstants.staffIdParamName);
-        if (staffId != null) {
+        boolean isLoanOfficerToCenterHierarchyEnabled = configurationDomainService.isLoanOfficerToCenterHierarchyEnabled();
+        if (isLoanOfficerToCenterHierarchyEnabled && !clientForUpdate.getGroups().isEmpty()) {
+            throw new UpdateStaffHierarchyException(staffId);
+        } else if (staffId != null) {
             staff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(staffId, clientForUpdate.getOffice().getHierarchy());
             /**
              * TODO Vishwas: We maintain history of chage of loan officer w.r.t
@@ -706,6 +724,9 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
              * Especially useful when the change happens due to a transfer etc
              **/
             clientForUpdate.assignStaff(staff);
+            if (isLoanOfficerToCenterHierarchyEnabled) {
+                updateStaffForLoanAndSavings(clientId, staff);
+            }
         }
 
         this.clientRepository.saveAndFlush(clientForUpdate);
@@ -719,6 +740,15 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 .withClientId(clientId) //
                 .with(actualChanges) //
                 .build();
+    }
+
+    private void updateStaffForLoanAndSavings(final Long clientId, final Staff staff) {
+        final String sql = "update m_loan l  set l.loan_officer_id = ? where l.client_id = ? ";
+        final String sqlForSavings = "update m_savings_account s  set s.field_officer_id = ? where s.client_id = ? ";
+        if (staff.isLoanOfficer()) {
+            this.jdbcTemplate.update(sql, staff.getId(), clientId);
+            this.jdbcTemplate.update(sqlForSavings, staff.getId(), clientId);
+        }
     }
 
     @Transactional

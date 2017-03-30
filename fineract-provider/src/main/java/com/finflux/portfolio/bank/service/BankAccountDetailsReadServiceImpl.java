@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -67,7 +68,8 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             StringBuilder sb = new StringBuilder();
             sb.append(" bad.id as id, bad.name as name, bad.account_number as accountNumber, bad.ifsc_code as ifscCode, ");
             sb.append(" bad.mobile_number as mobileNumber, bad.email as email, bad.status_id as status, ");
-            sb.append(" bad.bank_name as bankName, bad.bank_city as bankCity, bad.account_type_enum as accountType ");
+            sb.append(" bad.bank_name as bankName, bad.bank_city as bankCity, bad.account_type_enum as accountType, ");
+            sb.append(" bad.last_transaction_date as lastTransactionDate ");
             sb.append(" from f_bank_account_details bad ");
             return sb.toString();
         }
@@ -86,8 +88,9 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             final EnumOptionData status = BankAccountDetailStatus.bankAccountDetailStatusEnumDate(type);
             final Integer accountTypeVal  = JdbcSupport.getInteger(rs, "accountType");
             final EnumOptionData accountType = BankAccountType.bankAccountType(accountTypeVal);
+            final Date lastTransactionDate = rs.getDate("lastTransactionDate");
             return new BankAccountDetailData(id, name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity,
-                    status, accountType);
+                    status, accountType, lastTransactionDate);
         }
 
     }

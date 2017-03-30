@@ -353,6 +353,16 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             // applies charges for the period
             applyChargesForCurrentPeriod(loanCharges, currency, scheduleParams, scheduledDueDate, currentPeriodParams, loanApplicationTerms, installmentCapitalizedChargeAmount);
 
+            
+            // adjust last installment interest for glim
+            if (isLastRepaymentPeriod(numberOfRepayments, scheduleParams.getPeriodNumber())) {
+                Money totalInterestForGlim = loanApplicationTerms.getTotalInterestForGlim();
+                Money totalCumulativeInterest = scheduleParams.getTotalCumulativeInterest();
+                if (totalInterestForGlim != null && totalInterestForGlim.isGreaterThanZero()) {
+                    currentPeriodParams.setInterestForThisPeriod(totalInterestForGlim.minus(totalCumulativeInterest));
+                }
+            }
+            
             // sum up real totalInstallmentDue from components
             final Money totalInstallmentDue = currentPeriodParams.fetchTotalAmountForPeriod();
 
@@ -401,20 +411,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             scheduleParams.addTotalCumulativePrincipal(currentPeriodParams.getPrincipalForThisPeriod());
             scheduleParams.addTotalRepaymentExpected(totalInstallmentDue);
-            scheduleParams.addTotalCumulativeInterest(currentPeriodParams.getInterestForThisPeriod());
-            // adjust last installment interest for glim
-            if (isLastRepaymentPeriod(numberOfRepayments, scheduleParams.getPeriodNumber())) {
-                Money totalInterestForGlim = loanApplicationTerms.getTotalInterestForGlim();
-                Money totalCumulativeInterest = scheduleParams.getTotalCumulativeInterest();
-                Money interestForCurrentPeriod = currentPeriodParams.getInterestForThisPeriod();
-                if (totalInterestForGlim != null && totalInterestForGlim.isGreaterThan(Money.zero(currency)) && totalInterestForGlim.compareTo(totalCumulativeInterest) != 0) {
-                    Money adjustTotalCumulativeInterest = totalCumulativeInterest.minus(totalInterestForGlim);
-                    Money adjustedInterestForCurrentPeriod = interestForCurrentPeriod.minus(adjustTotalCumulativeInterest);
-                    currentPeriodParams.setInterestForThisPeriod(adjustedInterestForCurrentPeriod);
-                    installment.adjustInterestForCurrentPeriod(adjustedInterestForCurrentPeriod);
-                    scheduleParams.substractTotalCumulativeInterest(adjustTotalCumulativeInterest);
-                }
-            }
+            scheduleParams.addTotalCumulativeInterest(currentPeriodParams.getInterestForThisPeriod());            
             scheduleParams.setPeriodStartDate(scheduledDueDate);
             //Money installmentCapitalizedChargeAmount= LoanUtilService.getCapitalizedChargeBalance(loanApplicationTerms, capitalizedChargeForPeriods, scheduleParams.getInstalmentNumber());
             processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), installmentCapitalizedChargeAmount, scheduledDueDate);

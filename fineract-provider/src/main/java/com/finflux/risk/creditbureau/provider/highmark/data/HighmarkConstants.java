@@ -9,7 +9,7 @@ public class HighmarkConstants {
     public static final String ReferenceIdToken = "-$$-";
 
     public static final String dateFormat = "dd-MM-yyyy";
-    
+
     public static final String DOCUMENT_TYPE_ID01_PASSPORT = "ID01";
     public static final String DOCUMENT_TYPE_ID02_VOTER_ID = "ID02";
     public static final String DOCUMENT_TYPE_ID03_UID = "ID03";
@@ -17,7 +17,7 @@ public class HighmarkConstants {
     public static final String DOCUMENT_TYPE_ID05_RATION_CARD = "ID05";
     public static final String DOCUMENT_TYPE_ID06_DRIVING_CARD = "ID06";
     public static final String DOCUMENT_TYPE_ID07_PAN = "ID07";
-    
+
     public static final String ADDRESS_TYPE_D01_RESIDENCE = "D01";
     public static final String ADDRESS_TYPE_D02_COMPANY = "D02";
     public static final String ADDRESS_TYPE_D03_RESCUMOFF = "D03";
@@ -26,7 +26,7 @@ public class HighmarkConstants {
     public static final String ADDRESS_TYPE_D06_FOREIGN = "D06";
     public static final String ADDRESS_TYPE_D07_MILITARY = "D07";
     public static final String ADDRESS_TYPE_D08_OTHER = "D08";
-    
+
     public static final String RELATIONSHIP_TYPE_K01_FATHER = "K01";
     public static final String RELATIONSHIP_TYPE_K02_HUSBAND = "K02";
     public static final String RELATIONSHIP_TYPE_K03_MOTHER = "K03";
@@ -49,5 +49,7 @@ public class HighmarkConstants {
     public static final String PHONE_TYPE_P05_FOREIGN = "P05";
     public static final String PHONE_TYPE_P07_OTHER = "P07";
     public static final String PHONE_TYPE_P08_UNTAGGED = "P08";
+
+    public static final String DPD_TYPE_XXX = "XXX";
 
 }

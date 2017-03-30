@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProduct;
 import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProductRepositoryWrapper;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoan;
+import com.finflux.risk.creditbureau.provider.data.CreditBureauExistingLoanPaymentDetail;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauReportFile;
 import com.finflux.risk.creditbureau.provider.data.CreditBureauResponse;
 import com.finflux.risk.creditbureau.provider.data.EnquiryReferenceData;
@@ -31,6 +32,7 @@ import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiry;
 import com.finflux.risk.creditbureau.provider.domain.LoanCreditBureauEnquiryRepository;
 import com.finflux.risk.existingloans.domain.ExistingLoan;
 import com.finflux.risk.existingloans.domain.ExistingLoanRepositoryWrapper;
+import com.finflux.risk.existingloans.domain.CreditBureauPaymentDetails;
 import com.google.gson.Gson;
 
 @Service
@@ -120,8 +122,8 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
             final Long loanId, final Long trancheDisbursalId) {
         try {
             final CreditBureauExistingLoan cbel = creditBureauExistingLoans.get(0);
-            final CreditBureauProduct cbProduct = this.creditBureauProductRepository.findOneWithNotFoundDetection(cbel
-                    .getCreditBureauProductId());
+            final CreditBureauProduct cbProduct = this.creditBureauProductRepository
+                    .findOneWithNotFoundDetection(cbel.getCreditBureauProductId());
             final CodeValue source = this.codeValueRepository.findByCodeNameAndLabel("ExistingLoanSource", "Credit Bureau");
             List<ExistingLoan> existingLoans = null;
             if (loanId != null && trancheDisbursalId != null) {
@@ -231,6 +233,14 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
                             repaymentFrequencyMultipleOf, installmentAmount, externalLoanPurpose, status, receivedLoanStatus, disbursedDate, maturityDate,
                             closedDate, gt0dpd3mths, dpd30mths12, dpd30mths24, dpd60mths24, remark, archive);
                     existingLoan.setTrancheDisbursalId(loanCreditBureauEnquiry.getTrancheDisbursalId());
+                    if (creditBureauExistingLoan.getCreditBureauExistingLoanPaymentDetails() != null) {
+                        for (CreditBureauExistingLoanPaymentDetail paymentDetail : creditBureauExistingLoan
+                                .getCreditBureauExistingLoanPaymentDetails()) {
+                            existingLoan.addPaymentdetail(
+                                    CreditBureauPaymentDetails.create(existingLoan, paymentDetail.getDate(), paymentDetail.getDpd()));
+                        }
+
+                    }
                     newExistingLoans.add(existingLoan);
                 } catch (Exception e) {
                     logger.error(this.gson.toJson(creditBureauExistingLoan));

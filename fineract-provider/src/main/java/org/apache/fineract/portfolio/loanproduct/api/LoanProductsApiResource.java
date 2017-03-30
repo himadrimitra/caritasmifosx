@@ -259,7 +259,7 @@ public class LoanProductsApiResource {
         Map<String, Object> accountingMappings = null;
         Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
         Collection<ChargeToGLAccountMapper> feeToGLAccountMappings = null;
-        Collection<CodeValueToGLAccountMapper> codeValueToGLAccountMappings = null;
+        Collection<CodeValueToGLAccountMapper> writeOffReasonsToExpenseAccountMappings = null;
         Collection<ChargeToGLAccountMapper> penaltyToGLAccountMappings = null;
         if (loanProduct.hasAccountingEnabled()) {
             accountingMappings = this.accountMappingReadPlatformService.fetchAccountMappingDetailsForLoanProduct(productId, loanProduct
@@ -270,9 +270,9 @@ public class LoanProductsApiResource {
                     .fetchFeeToIncomeOrLiabilityAccountMappingsForLoanProduct(productId);            
             penaltyToGLAccountMappings = this.accountMappingReadPlatformService
                     .fetchPenaltyToIncomeAccountMappingsForLoanProduct(productId);
-            codeValueToGLAccountMappings = this.accountMappingReadPlatformService.fetchCodeValueToExpenseAccountMappingsForLoanProduct(productId);
+            writeOffReasonsToExpenseAccountMappings = this.accountMappingReadPlatformService.fetchCodeValueToExpenseAccountMappingsForLoanProduct(productId);
             loanProduct = LoanProductData.withAccountingDetails(loanProduct, accountingMappings, paymentChannelToFundSourceMappings,
-                    feeToGLAccountMappings, penaltyToGLAccountMappings, codeValueToGLAccountMappings);
+                    feeToGLAccountMappings, penaltyToGLAccountMappings, writeOffReasonsToExpenseAccountMappings);
         }
 
         if (settings.isTemplate()) {

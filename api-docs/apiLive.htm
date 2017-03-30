@@ -1501,6 +1501,14 @@
 								<td></td>
 							</tr>
 							<tr>
+							<td><a href="#loan_rescheduling"></a></td>
+								<td>rescheduleloans</td>
+								<td><a href="#loan_reschedule_request_create_specific_installment">Create new loan reschedule request for specific installment</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
 								<td></td>
 								<td>rescheduleloans/{requestId}</td>
 								<td></td>
@@ -12444,6 +12452,12 @@ No Request Body:
 						<tr>
 							<td class=fielddesc>The date on which the loan reschedule request was made.</td>
 						</tr>
+						<tr class=alt>
+							<td>specificToInstallment</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>If specificToInstallment = "true", only that particular installment is rescheduled. If specificToInstallment = "false", repayment schedule for all installment will be reschedled.</td>
+						</tr>
 					</table>
 				</div>
 			</div>
@@ -12524,6 +12538,59 @@ Content-Type: application/json Request Body:
 					</code>
 				</div>
 			</div>
+			
+			<a id="loan_reschedule_request_create_specific_installment" name="loan_reschedule_request_create_specific_installment" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Create a Loan Reschedule Request for Specific Installment</h4>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Mandatory Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>loanId, rescheduleFromDate, rescheduleReasonId, submittedOnDate,<br />
+							adjustedDueDate, specificToInstallment
+							</td>
+						</tr>
+					</table>
+						<br />
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Optional Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>rescheduleReasonComment</td>
+						</tr>
+					</table>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/rescheduleloans
+					</code>
+					<code class="method-request">
+POST rescheduleloans
+Content-Type: application/json Request Body:
+{
+	"loanId": 1,
+	"rescheduleFromDate": "04 February 2015",
+	"adjustedDueDate": "06 February 2015",
+	"dateFormat": "dd MMMM yyyy",
+	"locale": "en",
+	"submittedOnDate": "1 February 2015",
+	"rescheduleReasonComment": "Client has gone AWOL",
+	"rescheduleReasonId": 1,
+	"specificToInstallment": true
+}
+					</code>
+					<code class="method-response">
+{
+    "loanId": 1,
+    "resourceId": 1
+}
+					</code>
+				</div>
+			</div>
+			
 			<a id="loan_reschedule_request_retrieve" name="loan_reschedule_request_retrieve" class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
 				<div class="method-description">
@@ -47148,6 +47215,14 @@ No Request Body:
 					<td><a href="#loan_rescheduling">Loan Rescheduling</a></td>
 					<td>rescheduleloans</td>
 					<td><a href="#loan_reschedule_request_create">Create a Loan Reschedule Request</a></td>
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>
+				<tr>
+					<td><a href="#loan_rescheduling">Loan Rescheduling</a></td>
+					<td>rescheduleloans</td>
+					<td><a href="#loan_reschedule_request_create_specific_installment">Create a Loan Reschedule Request for Specific Installment</a></td>
 					<td></td>
 					<td></td>
 					<td></td>

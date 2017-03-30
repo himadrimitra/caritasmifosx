@@ -143,7 +143,7 @@ public class LoanProductData {
     private Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings;
     private Collection<ChargeToGLAccountMapper> feeToIncomeAccountMappings;
     private Collection<ChargeToGLAccountMapper> penaltyToIncomeAccountMappings;
-    private Collection<CodeValueToGLAccountMapper> codeValueToGLAccountMappings;
+    private Collection<CodeValueToGLAccountMapper> writeOffReasonsToExpenseAccountMappings;
 
     // template related
     private final Collection<FundData> fundOptions;
@@ -582,12 +582,12 @@ public class LoanProductData {
             final Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings,
             final Collection<ChargeToGLAccountMapper> feeToGLAccountMappings,
             final Collection<ChargeToGLAccountMapper> penaltyToGLAccountMappings, 
-            final Collection<CodeValueToGLAccountMapper> codeValueToGLAccountMappings) {
+            final Collection<CodeValueToGLAccountMapper> writeOffReasonsToExpenseAccountMappings) {
         productData.accountingMappings = accountingMappings;
         productData.paymentChannelToFundSourceMappings = paymentChannelToFundSourceMappings;
         productData.feeToIncomeAccountMappings = feeToGLAccountMappings;
         productData.penaltyToIncomeAccountMappings = penaltyToGLAccountMappings;
-        productData.codeValueToGLAccountMappings = codeValueToGLAccountMappings;
+        productData.writeOffReasonsToExpenseAccountMappings = writeOffReasonsToExpenseAccountMappings;
         return productData;
     }
 
@@ -693,7 +693,7 @@ public class LoanProductData {
         this.accountingMappings = null;
         this.paymentChannelToFundSourceMappings = null;
         this.feeToIncomeAccountMappings = null;
-        this.codeValueToGLAccountMappings = null;
+        this.writeOffReasonsToExpenseAccountMappings = null;
         this.penaltyToIncomeAccountMappings = null;
         this.valueConditionTypeOptions = null;
         this.principalVariationsForBorrowerCycle = principalVariations;
@@ -815,7 +815,7 @@ public class LoanProductData {
         this.accountingMappings = productData.accountingMappings;
         this.paymentChannelToFundSourceMappings = productData.paymentChannelToFundSourceMappings;
         this.feeToIncomeAccountMappings = productData.feeToIncomeAccountMappings;
-        this.codeValueToGLAccountMappings = productData.codeValueToGLAccountMappings;
+        this.writeOffReasonsToExpenseAccountMappings = productData.writeOffReasonsToExpenseAccountMappings;
         this.penaltyToIncomeAccountMappings = productData.penaltyToIncomeAccountMappings;
 
         this.chargeOptions = chargeOptions;

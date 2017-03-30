@@ -88,6 +88,7 @@ import org.apache.fineract.portfolio.fund.domain.Fund;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.domain.GroupRepositoryWrapper;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringDataChanges;
@@ -1015,6 +1016,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final String loanOfficerIdParamName = "loanOfficerId";
             if (changes.containsKey(loanOfficerIdParamName)) {
                 final Long loanOfficerId = command.longValueOfParameterNamed(loanOfficerIdParamName);
+                if (configurationDomainService
+                        .isLoanOfficerToCenterHierarchyEnabled()) { throw new UpdateStaffHierarchyException(loanOfficerId); }
                 final Staff newValue = this.loanAssembler.findLoanOfficerByIdIfProvided(loanOfficerId);
                 existingLoanApplication.updateLoanOfficerOnLoanApplication(newValue);
             }
@@ -1078,21 +1081,20 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 // save GroupLoanIndividualMonitoring clients
             }
 	        
-            if (existingLoanApplication.isGLIMLoan()) {
-            	
-                // save GroupLoanIndividualMonitoring clients
-                if (glimList.size() > 0) {
-                    existingLoanApplication.updateGlim(glimList);
-                    existingLoanApplication.updateDefautGlimMembers(glimList);
-                    // validate submitted on date with glim client activation
-                    // date
-                    GroupLoanIndividualMonitoringDataValidator.validateGlimClientActivationDate(
-                            existingLoanApplication.getSubmittedOnDate(), glimList);
-                    this.groupLoanIndividualMonitoringRepository.save(glimList);
-                }
-				existingLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
-            }
-	   
+			if (existingLoanApplication.isGLIMLoan()) {
+
+				// save GroupLoanIndividualMonitoring clients
+				if (glimList.size() > 0) {
+					existingLoanApplication.updateGlim(glimList);
+					existingLoanApplication.updateDefautGlimMembers(glimList);
+					// validate submitted on date with glim client activation
+					// date
+					GroupLoanIndividualMonitoringDataValidator
+							.validateGlimClientActivationDate(existingLoanApplication.getSubmittedOnDate(), glimList);
+					this.groupLoanIndividualMonitoringRepository.save(glimList);
+				}
+			}
+	    	     
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(),
                     existingLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
                     productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),

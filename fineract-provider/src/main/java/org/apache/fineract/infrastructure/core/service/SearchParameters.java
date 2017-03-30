@@ -62,6 +62,7 @@ public final class SearchParameters {
     private Long paymentTypeId;
     
     private Integer transactionsCount;
+    private final Integer status;
 
     public Integer getTransactionsCount() {
 		return this.transactionsCount;
@@ -387,6 +388,7 @@ public final class SearchParameters {
         this.groupId = groupId;
         this.paymentTypeId = paymentTypeId;
         this.clientId = clientId;
+        this.status = null;
     }
 
     private SearchParameters(final Long provisioningEntryId, final Long officeId, final Long productId, final Long categoryId,
@@ -414,7 +416,7 @@ public final class SearchParameters {
         this.isSelfUser = false;
         this.centerId = null;
         this.groupId = null;
-
+        this.status = null;
     }
 
     public SearchParameters(final String sqlSearch, final Long officeId, final String externalId, final String name,
@@ -444,6 +446,7 @@ public final class SearchParameters {
         this.isSelfUser = false;
         this.centerId = null;
         this.groupId = null;
+        this.status = null;
     }
     
     private SearchParameters(final Long userId, final Integer reportId, final Date startDate,
@@ -476,7 +479,7 @@ public final class SearchParameters {
         this.isSelfUser = false;
         this.centerId = null;
         this.groupId = null;
-
+        this.status = null;
     }
 
 
@@ -508,7 +511,39 @@ public final class SearchParameters {
         this.isSelfUser = false;
         this.centerId = null;
         this.groupId = null;
+        this.status = null;
     }
+    
+	public SearchParameters(final String sqlSearch, final Date startDate, final Date endDate, final Integer offset,
+			final Integer limit, final Integer status) {
+		this.sqlSearch = sqlSearch;
+		this.transactionsCount = null;
+		this.endDate = endDate;
+		this.startDate = startDate;
+		this.offset = offset;
+		this.limit = limit;
+		this.status = status;
+		this.orderBy = null;
+		this.sortOrder = null;
+		this.officeId = null;
+		this.externalId = null;
+		this.name = null;
+		this.hierarchy = null;
+		this.firstname = null;
+		this.lastname = null;
+		this.staffId = null;
+		this.accountNo = null;
+		this.loanId = null;
+		this.savingsId = null;
+		this.orphansOnly = null;
+		this.currencyCode = null;
+		this.provisioningEntryId = null;
+		this.productId = null;
+		this.categoryId = null;
+		this.isSelfUser = false;
+		this.centerId = null;
+		this.groupId = null;
+	}
 
 	public boolean isOrderByRequested() {
         return StringUtils.isNotBlank(this.orderBy);
@@ -738,9 +773,20 @@ public final class SearchParameters {
         final Integer maxLimitAllowed = getCheckedLimit(limit);
         return new SearchParameters(userId, reportId, startDate, endDate, offset, maxLimitAllowed, orderBy, sortOrder, sqlSearch);
     }
+
+	public static SearchParameters forSearch(final String sqlSearch,final Integer offset, final Integer limit,
+			final Integer status,final Date startDate,final Date endDate) {
+
+        final Integer maxLimitAllowed = getCheckedLimit(limit);
+        return new SearchParameters(sqlSearch, startDate, endDate, offset, maxLimitAllowed, status);
+    }
     
     public Long getPaymentType() {
         return this.paymentTypeId;
     }
+    
+    public Integer getStatus() {
+		return this.status;
+	}
 
 }

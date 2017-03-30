@@ -1,15 +1,19 @@
 package com.finflux.risk.existingloans.domain;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -21,6 +25,8 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 
 import com.finflux.risk.creditbureau.configuration.domain.CreditBureauProduct;
@@ -132,6 +138,10 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "archive")
     private Integer archive;
+    
+    @LazyCollection(LazyCollectionOption.TRUE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "existingLoan", orphanRemoval = true)
+    private List<CreditBureauPaymentDetails> creditBureauPaymentDetails = new ArrayList<>();
 
     public static ExistingLoan saveExistingLoan(final Client client, final Long loanApplicationId, final Long loanId,
             final CodeValue source, final CreditBureauProduct creditBureauProduct, final Long loanCreditBureauEnquiryId,
@@ -466,5 +476,9 @@ public class ExistingLoan extends AbstractAuditableCustom<AppUser, Long> {
 
     public void setTrancheDisbursalId(Long trancheDisbursalId) {
         this.trancheDisbursalId = trancheDisbursalId;
+    }
+    
+    public void addPaymentdetail(final CreditBureauPaymentDetails paymentdetail){
+        this.creditBureauPaymentDetails.add(paymentdetail);
     }
 }
