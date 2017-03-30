@@ -5498,6 +5498,11 @@ public class Loan extends AbstractPersistable<Long> {
         
     }
     
+    public List<LoanTransaction> getOrderedLoanTransactions() {
+        final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
+        Collections.sort(this.loanTransactions, transactionComparator);
+        return this.loanTransactions;
+    }
 
     public LocalDate getLastUserTransactionDate() {
         Collection<Integer> transactionType = new ArrayList<>();
@@ -5510,8 +5515,9 @@ public class Loan extends AbstractPersistable<Long> {
     private LocalDate getLastTransactioDateOfType(Collection<Integer> transactionType, boolean excludeTypes) {
         int size = this.getLoanTransactions().size();
         LocalDate lastTansactionDate = getDisbursementDate();
+        List<LoanTransaction> transactions = this.getOrderedLoanTransactions();
         for (int i = size - 1; i >= 0; i--) {            
-            LoanTransaction loanTransaction = this.getLoanTransactions().get(i);
+            LoanTransaction loanTransaction = transactions.get(i);
             if (loanTransaction.isNotReversed() && (transactionType.contains(loanTransaction.getTypeOf().getValue()) ^ excludeTypes)) {
                 lastTansactionDate = loanTransaction.getTransactionDate(); 
                 break;
