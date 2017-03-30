@@ -1,11 +1,13 @@
 package com.finflux.portfolio.bank.service;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -73,8 +75,14 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
         final String bankCity = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankCityParameterName, element);
         final Integer accountTypeId = this.fromApiJsonHelper.extractLongNamed(BankAccountDetailConstants.accountTypeIdParamName, element).intValue();
         
+        Date lastTransactionDate = null;
+        if(this.fromApiJsonHelper.extractLocalDateNamed(BankAccountDetailConstants.lastTransactionDate, element) != null){
+        lastTransactionDate = this.fromApiJsonHelper.extractLocalDateNamed(BankAccountDetailConstants.lastTransactionDate, element).toDate();
+        }
+       
+       
         BankAccountDetails accountDetails = BankAccountDetails.create(name, accountNumber, ifscCode, mobileNumber, email,
-                bankName, bankCity, accountTypeId);
+                bankName, bankCity, accountTypeId, lastTransactionDate);
         accountDetails.updateStatus(BankAccountDetailStatus.ACTIVE.getValue());
         return accountDetails;
     }

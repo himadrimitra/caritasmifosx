@@ -1,5 +1,8 @@
 package com.finflux.portfolio.bank.domain;
 
+
+
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -11,6 +14,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.LocalDate;
 
 import com.finflux.portfolio.bank.api.BankAccountDetailConstants;
 
@@ -44,11 +48,15 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
 
     @Column(name = "status_id", nullable = false)
     private Integer status;
-
+    
+    @Column(name = "last_transaction_date")
+    private Date lastTransationDate;
+    
     protected BankAccountDetails() {}
 
     private BankAccountDetails(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
-            final String email, final String bankName, final String bankCity, final Integer accountType) {
+            final String email, final String bankName, final String bankCity, final Integer accountType,
+            final Date lastTransactionDate) {
         this.name = name;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;
@@ -58,17 +66,19 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
         this.bankName = bankName;
         this.bankCity = bankCity;
         this.accountType = accountType;
+        this.lastTransationDate = lastTransactionDate;
     }
 
     
-    public static BankAccountDetails create(final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email, final String bankName, final String bankCity, final Integer accountType) {
-        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity, accountType);
+    public static BankAccountDetails create(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
+            final String email, final String bankName, final String bankCity, final Integer accountType, final Date lastTransactionDate) {
+        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity, accountType, lastTransactionDate);
     }
 
     public static BankAccountDetails copy(BankAccountDetails bankAccountDetails) {
         return new BankAccountDetails(bankAccountDetails.name, bankAccountDetails.accountNumber, bankAccountDetails.ifscCode,
-                bankAccountDetails.mobileNumber, bankAccountDetails.email, bankAccountDetails.bankName, bankAccountDetails.bankCity, bankAccountDetails.accountType);
+                bankAccountDetails.mobileNumber, bankAccountDetails.email, bankAccountDetails.bankName, bankAccountDetails.bankCity, bankAccountDetails.accountType,
+                bankAccountDetails.lastTransationDate);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -121,6 +131,12 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
             this.accountType =BankAccountType.fromInt(newValue).getValue();
         }
         
+        if(command.isChangeInDateParameterNamed(BankAccountDetailConstants.lastTransactionDate, this.lastTransationDate)){
+            final Date newValue = command.DateValueOfParameterNamed(BankAccountDetailConstants.lastTransactionDate);
+            actualChanges.put(BankAccountDetailConstants.lastTransactionDate, newValue);
+            this.lastTransationDate = newValue;
+        }
+        
         return actualChanges;
     }
 
@@ -161,5 +177,12 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
     }
     public Integer getAccountType() {
         return this.accountType;
+    }
+    
+    public LocalDate getLastTransactionLocalDate(){
+        if(this.lastTransationDate != null){
+            return new LocalDate(this.lastTransationDate);
+        }
+        return null;
     }
 }
