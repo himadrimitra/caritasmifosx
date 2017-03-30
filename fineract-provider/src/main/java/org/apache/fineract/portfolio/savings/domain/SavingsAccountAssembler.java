@@ -158,7 +158,7 @@ public class SavingsAccountAssembler {
             client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff() != null && client.getStaff().isLoanOfficer()) {
                 fieldOfficer = client.getStaff();
             }
 		}
@@ -171,7 +171,7 @@ public class SavingsAccountAssembler {
                 if (group.isCenter()) { throw new CenterNotActiveException(groupId); }
                 throw new GroupNotActiveException(groupId);
             }
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff() != null && group.getStaff().isLoanOfficer()) {
                 fieldOfficer = group.getStaff();
             }
 		}
@@ -379,7 +379,7 @@ public class SavingsAccountAssembler {
         if (client != null) {
             accountType = AccountType.INDIVIDUAL;
             if (client.isNotActive()) { throw new ClientNotActiveException(client.getId()); }
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff() != null && client.getStaff().isLoanOfficer()) {
                 staff = client.getStaff();
             }
         }
@@ -390,7 +390,7 @@ public class SavingsAccountAssembler {
                 if (group.isCenter()) { throw new CenterNotActiveException(group.getId()); }
                 throw new GroupNotActiveException(group.getId());
             }
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff() != null && group.getStaff().isLoanOfficer()) {
                 staff = group.getStaff();
             }
         }

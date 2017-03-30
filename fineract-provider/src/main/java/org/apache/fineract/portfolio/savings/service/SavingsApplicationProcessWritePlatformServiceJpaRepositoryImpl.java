@@ -576,7 +576,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
             final Client client = this.clientrepo.findOne(clientId);
             final Group group = null;
             Staff staff = null;
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff() != null && client.getStaff().isLoanOfficer()) {
                 staff = client.getStaff();
             } else if (fieldOfficerId != null) {
                 staff = this.staffRepo.findOne(fieldOfficerId);
