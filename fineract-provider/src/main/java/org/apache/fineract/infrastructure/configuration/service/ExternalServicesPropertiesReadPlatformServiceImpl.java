@@ -22,13 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 
-import org.apache.fineract.infrastructure.configuration.data.EquifaxCredentialsData;
-import org.apache.fineract.infrastructure.configuration.data.EquifaxDocumentTypes;
-import org.apache.fineract.infrastructure.configuration.data.EquifaxRelationTypes;
-import org.apache.fineract.infrastructure.configuration.data.ExternalServicesPropertiesData;
-import org.apache.fineract.infrastructure.configuration.data.HighmarkCredentialsData;
-import org.apache.fineract.infrastructure.configuration.data.S3CredentialsData;
-import org.apache.fineract.infrastructure.configuration.data.SMTPCredentialsData;
+import org.apache.fineract.infrastructure.configuration.data.*;
 import org.apache.fineract.infrastructure.configuration.exception.ExternalServiceConfigurationNotFoundException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -425,6 +419,10 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
                 serviceNameToUse = ExternalServicesConstants.AADHAAR_SERVICE_NAME;
             break;
 
+            case "NACH":
+                serviceNameToUse = ExternalServicesConstants.NACH_SERVICE_NAME;
+            break;
+
             default:
                 throw new ExternalServiceConfigurationNotFoundException(serviceName);
         }
@@ -587,4 +585,41 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
 		}
     	
     }
+    @Override
+    public NACHCredentialsData getNACHCredentials() {
+        final ResultSetExtractor<NACHCredentialsData> resultSetExtractor = new NACHCredentialsDataExtractor();
+        final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
+                + ExternalServicesConstants.NACH_SERVICE_NAME + "'";
+        final NACHCredentialsData nachCredentialsData = this.jdbcTemplate.query(sql, resultSetExtractor, new Object[] {});
+        return nachCredentialsData;
+    }
+
+    private static final class NACHCredentialsDataExtractor implements ResultSetExtractor<NACHCredentialsData> {
+
+        @Override
+        public NACHCredentialsData extractData(final ResultSet rs) throws SQLException, DataAccessException {
+            String PROCESSOR_QUALIFIER = null;
+            String CORPORATE_UTILITY_CODE = null;
+            String CORPORATE_UTILITY_NAME = null;
+            String SPONSOR_BANK = null;
+            String SPONSOR_BANK_CODE = null;
+
+            while (rs.next()) {
+                if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.PROCESSOR_QUALIFIER)) {
+                    PROCESSOR_QUALIFIER = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.CORPORATE_UTILITY_CODE)) {
+                    CORPORATE_UTILITY_CODE = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.CORPORATE_UTILITY_NAME)) {
+                    CORPORATE_UTILITY_NAME = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SPONSOR_BANK)) {
+                    SPONSOR_BANK = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(ExternalServicesConstants.SPONSOR_BANK_CODE)) {
+                    SPONSOR_BANK_CODE = rs.getString("value");
+                }
+            }
+            return new NACHCredentialsData(PROCESSOR_QUALIFIER, CORPORATE_UTILITY_CODE, CORPORATE_UTILITY_NAME,
+                    SPONSOR_BANK, SPONSOR_BANK_CODE);
+        }
+    }
+
 }

@@ -2855,4 +2855,10 @@ public class LoanAccountData {
                 brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule);
     }
 
+    public BigDecimal getPrincipal(){
+        BigDecimal ret = principal;
+        ret = (ret == null)? approvedPrincipal:ret;
+        ret = (ret == null)? proposedPrincipal:ret;
+        return ret;
+    }
 }
