@@ -99,7 +99,8 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" benbad.mobile_number as benMobile, benbad.email as benEmail, benbad.status_id as benStatus, ");
 			sb.append(" benbad.bank_name as benBankName, benbad.bank_city as benBankCity, ");
 			sb.append(" benbad.account_type_enum as benAccountType, ");
-			sb.append(" bat.reference_number as referenceNumber ");
+			sb.append(" bat.reference_number as referenceNumber, ");
+			sb.append(" benbad.last_transaction_date as lastTransactionDate ");
 			sb.append(" from f_bank_account_transaction bat ");
 			sb.append(" left join f_bank_account_details debbad on bat.debit_account = debbad.id ");
 			sb.append(" left join f_bank_account_details benbad on bat.beneficiary_account = benbad.id ");
@@ -135,12 +136,12 @@ public class BankTransactionReadPlatformServiceImpl
 			final String debBankCity = rs.getString("debBankCity");
 			final String debBankName = rs.getString("debBankName");
 		        final Integer debAccountType = JdbcSupport.getInteger(rs, "debAccountType");
+		        final Date lastTransactionDate = rs.getDate("lastTransactionDate");
 
-			final BankAccountDetailData debitAccount = new BankAccountDetailData(
-					debitAccountid, debitAccountName, debitAccountNumber,
-					debitIfscCode, debitMobile, debitEmail,debBankName, debBankCity,
-					BankAccountDetailStatus
-							.bankAccountDetailStatusEnumDate(debitStatus), BankAccountType.bankAccountType(debAccountType));
+            final BankAccountDetailData debitAccount = new BankAccountDetailData(debitAccountid, debitAccountName, debitAccountNumber,
+                    debitIfscCode, debitMobile, debitEmail, debBankName, debBankCity,
+                    BankAccountDetailStatus.bankAccountDetailStatusEnumDate(debitStatus), BankAccountType.bankAccountType(debAccountType),
+                    lastTransactionDate);
 
 			final Long benAccountid = rs.getLong("benAccountid");
 			final String benAccountName = rs.getString("benAccountName");
@@ -153,11 +154,10 @@ public class BankTransactionReadPlatformServiceImpl
 			final String benBankName = rs.getString("benBankName");
 			final Integer benAccountType = JdbcSupport.getInteger(rs, "benAccountType");
 
-			final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(
-					benAccountid, benAccountName, benAccountNumber,
-					benIfscCode, benMobile, benEmail,benBankName, benBankCity,
-					BankAccountDetailStatus
-							.bankAccountDetailStatusEnumDate(benStatus), BankAccountType.bankAccountType(benAccountType));
+            final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(benAccountid, benAccountName, benAccountNumber,
+                    benIfscCode, benMobile, benEmail, benBankName, benBankCity,
+                    BankAccountDetailStatus.bankAccountDetailStatusEnumDate(benStatus), BankAccountType.bankAccountType(benAccountType),
+                    lastTransactionDate);
 
 			BankTransactionDetail accountTransactionDetail = new BankTransactionDetail(
 					transactionId, debitAccount, beneficiaryAccount,

@@ -12,6 +12,9 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -63,7 +66,13 @@ public class BankAccountDetailDataValidator {
         final String email = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.emailParameterName, element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.emailParameterName).value(email).ignoreIfNull()
                 .notExceedingLengthOf(50);
-
+        
+        if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.lastTransactionDate, element)) {
+            final LocalDate lastTransactionDate = this.fromApiJsonHelper.extractLocalDateNamed(ClientApiConstants.dateOfBirthParamName, element);
+            baseDataValidator.reset().parameter(BankAccountDetailConstants.lastTransactionDate).value(lastTransactionDate).notNull()
+                    .validateDateBefore(DateUtils.getLocalDateOfTenant());
+        }
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 

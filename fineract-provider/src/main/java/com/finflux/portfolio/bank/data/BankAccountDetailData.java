@@ -1,6 +1,7 @@
 package com.finflux.portfolio.bank.data;
 
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
@@ -27,6 +28,8 @@ public class BankAccountDetailData {
     private final EnumOptionData status;
     private  Collection<EnumOptionData> bankAccountTypeOptions;
     
+    private final Date lastTransactionDate;
+    
     
     public BankAccountDetailData(Collection<EnumOptionData> bankAccountTypeOptions){
         this.id = null;
@@ -40,11 +43,13 @@ public class BankAccountDetailData {
         this.status = null;
         this.accountType = null;
         this.bankAccountTypeOptions = bankAccountTypeOptions;
+        this.lastTransactionDate = null;
         
     }
 
     public BankAccountDetailData(final Long id, final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email,final String bankName, final String bankCity, final EnumOptionData status, final EnumOptionData accountType) {
+            final String mobileNumber, final String email,final String bankName, final String bankCity, final EnumOptionData status, final EnumOptionData accountType,
+            final Date lastTransactionDate) {
         this.id = id;
         this.name = name;
         this.accountNumber = accountNumber;
@@ -56,6 +61,7 @@ public class BankAccountDetailData {
         this.status = status;
         this.accountType = accountType;
         this.bankAccountTypeOptions = null;
+        this.lastTransactionDate = lastTransactionDate;
     }
 
     public Collection<EnumOptionData> getBankAccountTypeOptions() {
