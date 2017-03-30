@@ -270,7 +270,7 @@ public class LoanAssembler {
         if (clientId != null) {
             client = this.clientRepository.findOneWithNotFoundDetection(clientId);
             if (client.isNotActive()) { throw new ClientNotActiveException(clientId); }
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && client.getStaff() != null && client.getStaff().isLoanOfficer()) {
                 loanOfficer = client.getStaff();
             }
         }
@@ -279,7 +279,7 @@ public class LoanAssembler {
             group = this.groupRepository.findOne(groupId);
             if (group == null) { throw new GroupNotFoundException(groupId); }
             if (group.isNotActive()) { throw new GroupNotActiveException(groupId); }
-            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff().isLoanOfficer()) {
+            if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() && group.getStaff() != null && group.getStaff().isLoanOfficer()) {
                 loanOfficer = group.getStaff();
             }
         }
