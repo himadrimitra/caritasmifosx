@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -92,7 +93,7 @@ public class LoanChargeData {
     
     private TaxGroupData taxGroupData;
     
-    private Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas;
+    private Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas = new ArrayList<>(1);
 
     public static LoanChargeData template(final Collection<ChargeData> chargeOptions) {
         final boolean isCapitalized = false;
