@@ -42,4 +42,6 @@ public interface OfficeReadPlatformService {
     OfficeTransactionData retrieveNewOfficeTransactionDetails();
     
     List<OfficeData> retrieveOfficeForJournalEntry();
+    
+    List<Long> retrieveAllChildOfficesForDropdown(List<Long> ids);
 }

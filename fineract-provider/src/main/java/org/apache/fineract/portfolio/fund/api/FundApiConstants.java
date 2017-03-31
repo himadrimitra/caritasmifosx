@@ -51,6 +51,7 @@ public class FundApiConstants {
     public static final String activeParamName = "active";
     public static final String activateOrDeactivateParamName = "activateOrDeactivate";
     public static final String externalIdParamName = "externalId";
+    public static final String fundsParamName = "funds";
 
     // code values name
 
@@ -193,7 +194,7 @@ public class FundApiConstants {
 
         {
             put("client", " LEFT JOIN m_client c on c.id = l.client_id  ");
-            put("offices", " LEFT JOIN m_office office on c.office_id = office.id ");
+            put("offices", " LEFT JOIN m_office office on c.office_id = office.id  ");
             put("loanProducts", " LEFT JOIN m_product_loan product on product.id = l.product_id ");
             put("genders", " LEFT JOIN m_code_value gender on gender.id = c.gender_cv_id ");
             put("clientTypes", " LEFT JOIN m_code_value clientType on clientType.id = c.client_type_cv_id ");
@@ -204,7 +205,7 @@ public class FundApiConstants {
                     " LEFT JOIN f_address_entity addentity on (addentity.entity_id = c.id and addentity.entity_type_enum = 1 and addentity.is_active = 1) LEFT JOIN f_address address on address.id = addentity.address_id ");
             put("states", " LEFT JOIN f_state state on state.id = address.state_id ");
             put("districts", " LEFT JOIN f_district district on district.id = address.district_id ");
-            put("funds", " LEFT JOIN m_fund fund on fund.id = l.fund_id ");
+            put("funds", " LEFT JOIN m_fund fund on fund.id = l.fund_id left join m_code_value cv on cv.id = fund.facility_type ");
             put("overDueFromDays", " left join m_loan_arrears_aging ageing on ageing.loan_id = l.id ");
 
         }
@@ -231,4 +232,5 @@ public class FundApiConstants {
             selectedCriteriaListParamName, "offices", "genders", "clientTypes", "clientClassifications", "states", "districts",
             "loanProducts", "loanPurposeCategories", "loanPurposes", "approvedDate", "disbursementDate", "pendingRepayment",
             "paidRepayment", "principalOutstanding", "overDueFromDays", "funds", "trancheDisburse", "dateFormat", "locale"));
+    
 }

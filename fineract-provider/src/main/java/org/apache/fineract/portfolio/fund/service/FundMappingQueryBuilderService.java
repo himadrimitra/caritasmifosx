@@ -20,6 +20,7 @@ import java.util.TreeSet;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundDataValidator;
@@ -40,13 +41,15 @@ public class FundMappingQueryBuilderService {
     private FromJsonHelper fromApiJsonHelper;
     private final JdbcTemplate jdbcTemplate;
     private final FundDataValidator fundDataValidator;
+    private final OfficeReadPlatformService officeReadPlatformService;
 
     @Autowired
     public FundMappingQueryBuilderService(FromJsonHelper fromApiJsonHelper, final RoutingDataSource dataSource,
-            final FundDataValidator fundDataValidator) {
+            final FundDataValidator fundDataValidator, final OfficeReadPlatformService officeReadPlatformService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.fundDataValidator = fundDataValidator;
+        this.officeReadPlatformService = officeReadPlatformService;
     }
 
     @SuppressWarnings("null")
@@ -65,9 +68,14 @@ public class FundMappingQueryBuilderService {
         selectSql = selectSql.append(FundApiConstants.summarySelectQuery);
         StringBuilder whereSql = new StringBuilder(" where l.loan_status_id in (" + LoanStatus.ACTIVE.getValue()
                 + ") and l.loan_type_enum in (" + AccountType.INDIVIDUAL.getValue() + " ," + AccountType.JLG.getValue() + ") ");
+        boolean isFundsNotSelected = !selectedCriteriaList.contains(FundApiConstants.fundsParamName);
+        if(isFundsNotSelected){
+            whereSql.append(" and (cv.code_value not in ('Buyout', 'Securitization') or fund.id is null) ");
+        }
         StringBuilder groupBySql = new StringBuilder(" group by ");
         StringBuilder joinSql = new StringBuilder();
         int groupCount = 0;
+        joinSql.append(FundApiConstants.joinClauseMap.get(FundApiConstants.fundsParamName));
         joinSql.append(FundApiConstants.joinClauseMap.get(FundApiConstants.client));
         boolean isAddressJoinColumns = !Collections.disjoint(selectedCriteriaList, FundApiConstants.addressJoinColumns);
         if (isAddressJoinColumns) {
@@ -94,8 +102,16 @@ public class FundMappingQueryBuilderService {
                 String idsAsString = ids.toString().replace('[', '(').replace(']', ')');
                 groupBySql.append((groupCount == 1) ? FundApiConstants.groupByClauseMap.get(param) : " , "
                         + FundApiConstants.groupByClauseMap.get(param));
-                whereSql.append(" and " + FundApiConstants.whereClauseMap.get(param) + idsAsString);
-                joinSql.append(FundApiConstants.joinClauseMap.get(param));
+                if(param.equalsIgnoreCase("offices")){
+                    List<Long> allOffices = this.officeReadPlatformService.retrieveAllChildOfficesForDropdown(getIdAsLong(ids));
+                    whereSql.append(" and " + FundApiConstants.whereClauseMap.get(param) + allOffices.toString().replace('[', '(').replace(']', ')'));
+                }else{
+                    whereSql.append(" and " + FundApiConstants.whereClauseMap.get(param) + idsAsString);
+                }
+                
+                if(isFundsNotSelected){
+                    joinSql.append(FundApiConstants.joinClauseMap.get(param));
+                }                
 
             } else if (isOperatorBasedColumns) {
                 JsonObject object = element.getAsJsonObject().get(param).getAsJsonObject();
@@ -112,6 +128,14 @@ public class FundMappingQueryBuilderService {
         boolean isSummary = true;
         StringBuilder sql = new StringBuilder("").append(selectSql).append(fromQuery).append(joinSql).append(whereSql).append(groupBySql);
         return FundSearchQueryBuilder.getQueryBuilder(sql, selectedCriteriaList, groupBySql, joinSql, whereSql, selectSql, isSummary);
+    }
+    
+    private List<Long> getIdAsLong(List<String> idList){
+        List<Long> ids = new ArrayList<>();
+        for (String id : idList) {
+            ids.add(Long.parseLong(id));
+        }
+        return ids;
     }
 
     public StringBuilder constructWhereClauseForOperatorBasedCriteria(String operator, JsonObject object, String param, String dateFormat,
@@ -131,7 +155,7 @@ public class FundMappingQueryBuilderService {
             return "'" + this.fromApiJsonHelper.extractLocalDateNamed(type, element, dateFormat, locale) + "'";
         } else if (FundApiConstants.repaymentColumns.contains(param)) { return this.fromApiJsonHelper.extractIntegerSansLocaleNamed(type,
                 element).toString(); }
-        return this.fromApiJsonHelper.extractBigDecimalNamed(type, element, Locale.ENGLISH).toString();
+        return this.fromApiJsonHelper.extractBigDecimalNamed(type, element, locale).toString();
     }
 
     public static final class SearchDataMapper implements RowMapper<FundMappingSearchData> {

@@ -139,6 +139,9 @@ public class Fund extends AbstractAuditableCustom<AppUser, Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "fund", orphanRemoval = true)
     private List<FundLoanPurpose> fundLoanPurpose = new ArrayList<>();
+    
+    @Column(name = "is_manual_status_update", nullable = false)
+    private boolean isManualStatusUpdate;
 
     public Fund(final CodeValue fundSource, final CodeValue fundCategory, final CodeValue facilityType, final String name,
             final Date assignmentStartDate, final Date assignmentEndDate, final Date sanctionedDate, final BigDecimal sanctionedAmount,
@@ -219,8 +222,9 @@ public class Fund extends AbstractAuditableCustom<AppUser, Long> {
                 personalGurantee, isActive, isLoanAssigned, externalId, fundLoanPurpose);
     }
 
-    public Fund(final String name, final CodeValue facilityType, final boolean isActive, boolean isLoanAssigned) {
+    public Fund(final String name, final String externalId, final CodeValue facilityType, final boolean isActive, boolean isLoanAssigned) {
         this.name = name;
+        this.externalId = externalId;
         this.isActive = isActive;
         this.isLoanAssigned = isLoanAssigned;
         this.facilityType = facilityType;
@@ -243,12 +247,11 @@ public class Fund extends AbstractAuditableCustom<AppUser, Long> {
         this.bookDebtHypothecation = null;
         this.cashCollateral = null;
         this.personalGurantee = null;
-        this.externalId = null;
     }
 
-    public static Fund instance(final String name, final CodeValue facilityType, final boolean isActive, boolean isLoanAssigned) {
+    public static Fund instance(final String name, final String externalId, final CodeValue facilityType, final boolean isActive, boolean isLoanAssigned) {
 
-        return new Fund(name, facilityType, isActive, isLoanAssigned);
+        return new Fund(name, externalId, facilityType, isActive, isLoanAssigned);
     }
 
     public CodeValue getFundSource() {
@@ -486,6 +489,22 @@ public class Fund extends AbstractAuditableCustom<AppUser, Long> {
         }
         this.fundLoanPurpose.clear();
         this.fundLoanPurpose.addAll(updateFundToFundLoanPurpose(fundLoanPurpose));
+    }
+
+    public boolean isManualStatusUpdate() {
+        return this.isManualStatusUpdate;
+    }
+
+    public void setManualStatusUpdate(boolean isManualStatusUpdate) {
+        this.isManualStatusUpdate = isManualStatusUpdate;
+    }
+
+    public String getExternalId() {
+        return this.externalId;
+    }
+
+    public void setExternalId(String externalId) {
+        this.externalId = externalId;
     }
 
 }

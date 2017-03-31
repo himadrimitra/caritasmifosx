@@ -18,14 +18,17 @@
  */
 package org.apache.fineract.integrationtests;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 
-import com.google.gson.Gson;
+import java.util.HashMap;
+import java.util.List;
 
 import org.apache.fineract.integrationtests.common.Utils;
 import org.apache.fineract.integrationtests.common.funds.FundsHelper;
 import org.apache.fineract.integrationtests.common.funds.FundsResourceHandler;
+import org.apache.fineract.integrationtests.common.system.CodeHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +39,6 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
 
-import java.util.*;
-
 /**
  * Funds Integration Test for checking Funds Application.
  */
@@ -45,6 +46,8 @@ public class FundsIntegrationTest {
 
     private ResponseSpecification statusOkResponseSpec;
     private RequestSpecification requestSpec;
+    private  String facilityType;
+    private ResponseSpecification responseSpec;
 
     @Before
     public void setup() {
@@ -52,6 +55,8 @@ public class FundsIntegrationTest {
         this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
         this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
         this.statusOkResponseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+        this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
+        this.facilityType = this.getCodeValueId("FacilityType", "Own").toString();
     }
 
     @Test
@@ -59,6 +64,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -71,6 +77,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(null)
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -84,6 +91,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(null)
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -96,6 +104,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -105,6 +114,7 @@ public class FundsIntegrationTest {
         FundsHelper fh2 = FundsHelper
                          .create(fh.getName())
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         jsonData = fh2.toJSON();
 
@@ -118,6 +128,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -127,6 +138,7 @@ public class FundsIntegrationTest {
         FundsHelper fh2 = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(fh.getExternalId())
+                         .facilityType(facilityType)
                          .build();
         jsonData = fh2.toJSON();
 
@@ -140,6 +152,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 120))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -153,9 +166,10 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 120))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
-
+        
         ResponseSpecification responseSpec = new ResponseSpecBuilder().expectStatusCode(400).build();
         final Long fundID = createFund(jsonData, this.requestSpec, responseSpec);
         Assert.assertNull(fundID);
@@ -166,14 +180,15 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
         final Long fundID = createFund(jsonData, this.requestSpec, this.statusOkResponseSpec);
         Assert.assertNotNull(fundID);
 
-        jsonData = FundsResourceHandler.retrieveFund(fundID, this.requestSpec, this.statusOkResponseSpec);
-        FundsHelper fh2 = FundsHelper.fromJSON(jsonData);
+        HashMap<String, Object> fundsData = FundsResourceHandler.retrieveFund(fundID, this.requestSpec, this.statusOkResponseSpec);
+        FundsHelper fh2 = FundsHelper.fromJSON(fundsData);
 
         assertEquals(fh.getName(), fh2.getName());
     }
@@ -183,6 +198,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -199,9 +215,8 @@ public class FundsIntegrationTest {
     @Test
     public void testRetrieveUnknownFund() {
         ResponseSpecification responseSpec = new ResponseSpecBuilder().expectStatusCode(404).build();
-        String jsonData = FundsResourceHandler.retrieveFund(Long.MAX_VALUE, this.requestSpec, responseSpec);
-        HashMap<String, String> map = new Gson().fromJson(jsonData, HashMap.class);
-        assertEquals(map.get("userMessageGlobalisationCode"), "error.msg.resource.not.found");
+        HashMap<String, Object> jsonData = FundsResourceHandler.retrieveFund(Long.MAX_VALUE, this.requestSpec, responseSpec);
+        assertEquals(jsonData.get("userMessageGlobalisationCode"), "error.msg.resource.not.found");
     }
 
     @Test
@@ -209,6 +224,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -238,6 +254,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                         .create(Utils.randomNameGenerator("", 10))
                         .externalId(Utils.randomNameGenerator("fund-", 5))
+                        .facilityType(facilityType)
                         .build();
         String jsonData = fh.toJSON();
 
@@ -258,6 +275,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                          .create(Utils.randomNameGenerator("", 10))
                          .externalId(Utils.randomNameGenerator("fund-", 5))
+                         .facilityType(facilityType)
                          .build();
         String jsonData = fh.toJSON();
 
@@ -275,6 +293,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                 .create(Utils.randomNameGenerator("", 10))
                 .externalId(Utils.randomNameGenerator("fund-", 5))
+                .facilityType(facilityType)
                 .build();
         String jsonData = fh.toJSON();
 
@@ -295,6 +314,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                 .create(Utils.randomNameGenerator("", 10))
                 .externalId(Utils.randomNameGenerator("fund-", 5))
+                .facilityType(facilityType)
                 .build();
         String jsonData = fh.toJSON();
 
@@ -312,6 +332,7 @@ public class FundsIntegrationTest {
         FundsHelper fh = FundsHelper
                 .create(Utils.randomNameGenerator("", 10))
                 .externalId(Utils.randomNameGenerator("fund-", 5))
+                .facilityType(facilityType)
                 .build();
         String jsonData = fh.toJSON();
 
@@ -325,8 +346,8 @@ public class FundsIntegrationTest {
 
         // assert that there was no change in
         // the name and external ID of the fund
-        jsonData = FundsResourceHandler.retrieveFund(fundID, this.requestSpec, this.statusOkResponseSpec);
-        FundsHelper fh3 = new Gson().fromJson(jsonData, FundsHelper.class);
+        HashMap<String, Object> fundsData = FundsResourceHandler.retrieveFund(fundID, this.requestSpec, this.statusOkResponseSpec);
+        FundsHelper fh3 = FundsHelper.fromJSON(fundsData);
 
         Assert.assertEquals(fh.getName(), fh3.getName());
         Assert.assertEquals(fh.getExternalId(), fh3.getExternalId());
@@ -342,6 +363,21 @@ public class FundsIntegrationTest {
         }
 
         return new Long(fundId);
+    }
+    
+    public Integer getCodeValueId(String codeName, String codeValueName) {
+        HashMap code = CodeHelper.getCodeByName(requestSpec, responseSpec, codeName);
+        System.out.println("the code is " + code);
+        Integer codeId = (Integer) code.get("id");
+        HashMap<String, Object> codeValue = CodeHelper.retrieveOrCreateCodeValue(codeId, requestSpec, responseSpec);
+        System.out.println("the code value is " + codeValue);
+        List<HashMap<String, Object>> codeValues = CodeHelper.getCodeValuesForCode(this.requestSpec, this.responseSpec, codeId, "");
+        System.out.println("the code values are " + codeValues);
+        for (HashMap<String, Object> value : codeValues) {
+            if (value.get("name").equals(codeValueName)) 
+            { return (Integer) value.get("id"); }
+        }
+        return null;
     }
 
 }

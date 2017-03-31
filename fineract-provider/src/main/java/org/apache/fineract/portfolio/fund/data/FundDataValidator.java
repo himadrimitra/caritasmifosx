@@ -52,7 +52,7 @@ public class FundDataValidator {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         Set<String> requestDataParameter = FundApiConstants.FUND_CREATE_REQUEST_DATA_PARAMETERS;
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, requestDataParameter);
-
+        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(command.parsedJson().getAsJsonObject()); 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
@@ -62,7 +62,7 @@ public class FundDataValidator {
         boolean isOwn = false;
 
         final String name = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.nameParamName, element);
-        baseDataValidator.reset().parameter(FundApiConstants.nameParamName).value(name).notNull().notBlank().notExceedingLengthOf(100);
+        baseDataValidator.reset().parameter(FundApiConstants.nameParamName).value(name).notBlank().notExceedingLengthOf(100);
 
         final Integer facilityType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(FundApiConstants.facilityTypeParamName, element);
         baseDataValidator.reset().parameter(FundApiConstants.facilityTypeParamName).value(facilityType).notNull().integerGreaterThanZero();
@@ -76,7 +76,7 @@ public class FundDataValidator {
 
         if (this.fromApiJsonHelper.parameterExists(FundApiConstants.externalIdParamName, element)) {
             final String externalId = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.externalIdParamName, element);
-            baseDataValidator.reset().parameter(FundApiConstants.externalIdParamName).value(externalId).notNull().notBlank()
+            baseDataValidator.reset().parameter(FundApiConstants.externalIdParamName).value(externalId).notBlank()
                     .notExceedingLengthOf(100);
         }
         if (!isOwn) {
@@ -103,11 +103,13 @@ public class FundDataValidator {
 
             JsonElement fundLoanPurpose = element.getAsJsonObject().get(FundApiConstants.fundLoanPurposeParamName);
             baseDataValidator.reset().parameter(FundApiConstants.fundLoanPurposeParamName).value(fundLoanPurpose).notNull();
-            for (JsonElement fundloanPurposeData : fundLoanPurpose.getAsJsonArray()) {
-                Integer loanPurposeId = this.fromApiJsonHelper.extractIntegerNamed("loanPurposeId", fundloanPurposeData, Locale.ENGLISH);
-                baseDataValidator.reset().parameter("loanPurposeId").value(loanPurposeId).notNull().integerGreaterThanZero();
-                BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed("loanPurposeAmount", fundloanPurposeData, Locale.ENGLISH);
-                baseDataValidator.reset().parameter("loanPurposeAmount").value(amount).notNull().integerGreaterThanZero();
+            if(fundLoanPurpose != null){
+                for (JsonElement fundloanPurposeData : fundLoanPurpose.getAsJsonArray()) {
+                    Integer loanPurposeId = this.fromApiJsonHelper.extractIntegerNamed("loanPurposeId", fundloanPurposeData, locale);
+                    baseDataValidator.reset().parameter("loanPurposeId").value(loanPurposeId).notNull().integerGreaterThanZero();
+                    BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalNamed("loanPurposeAmount", fundloanPurposeData, locale);
+                    baseDataValidator.reset().parameter("loanPurposeAmount").value(amount).notNull().integerGreaterThanZero();
+                }
             }
 
             final LocalDate sanctionedDate = this.fromApiJsonHelper
@@ -205,12 +207,12 @@ public class FundDataValidator {
         boolean isChangedFromOwn = false;
         if (this.fromApiJsonHelper.parameterExists(FundApiConstants.nameParamName, element)) {
             final String name = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.nameParamName, element);
-            baseDataValidator.reset().parameter(FundApiConstants.nameParamName).value(name).notNull().notBlank().notExceedingLengthOf(100);
+            baseDataValidator.reset().parameter(FundApiConstants.nameParamName).value(name).notBlank().notExceedingLengthOf(100);
         }
 
         if (this.fromApiJsonHelper.parameterExists(FundApiConstants.externalIdParamName, element)) {
             final String externalId = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.externalIdParamName, element);
-            baseDataValidator.reset().parameter(FundApiConstants.externalIdParamName).value(externalId).notNull().notBlank()
+            baseDataValidator.reset().parameter(FundApiConstants.externalIdParamName).value(externalId).notBlank()
                     .notExceedingLengthOf(100);
         }
 
@@ -362,7 +364,6 @@ public class FundDataValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    @SuppressWarnings("null")
     public void validateSearchData(final JsonCommand command) {
         final String json = command.json();
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
@@ -378,62 +379,61 @@ public class FundDataValidator {
 
         String[] criteriaList = this.fromApiJsonHelper.extractArrayNamed(FundApiConstants.selectedCriteriaListParamName, element);
         baseDataValidator.reset().parameter(FundApiConstants.selectedCriteriaListParamName).value(criteriaList).arrayNotEmpty();
-        Set<String> selectedCriteriaList = null;
         if (criteriaList != null && criteriaList.length > 0) {
-            selectedCriteriaList = new TreeSet<>(Arrays.asList(criteriaList));
-        }
+        Set<String> selectedCriteriaList = new TreeSet<>(Arrays.asList(criteriaList));
         String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(element.getAsJsonObject());
-        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
-        for (String param : selectedCriteriaList) {
-            if (FundApiConstants.groupByColumns.contains(param)) {
-                final String[] paramValues = this.fromApiJsonHelper.extractArrayNamed(param, element);
-                baseDataValidator.reset().parameter(param).value(paramValues).arrayNotEmpty();
-            } else if (FundApiConstants.datesColumns.contains(param)) {
-                final JsonElement dateElement = element.getAsJsonObject().get(param);
-                baseDataValidator.reset().parameter(param).value(dateElement).notNull();
-                if (dateElement != null) {
-                    final LocalDate minDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.minParamName, dateElement,
-                            dateFormat, locale);
-                    baseDataValidator.reset().parameter(param + "." + FundApiConstants.minParamName).value(minDate).notNull();
-                    final String operator = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.operatorParamName, dateElement);
-                    baseDataValidator.reset().parameter(param + "." + FundApiConstants.operatorParamName).value(operator).notNull()
-                            .notBlank();
-                    if (operator.equalsIgnoreCase(FundApiConstants.betweenParamName)) {
-                        final LocalDate maxDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.maxParamName, dateElement,
+        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());        
+            for (String param : selectedCriteriaList) {
+                if (FundApiConstants.groupByColumns.contains(param)) {
+                    final String[] paramValues = this.fromApiJsonHelper.extractArrayNamed(param, element);
+                    baseDataValidator.reset().parameter(param).value(paramValues).arrayNotEmpty();
+                } else if (FundApiConstants.datesColumns.contains(param)) {
+                    final JsonElement dateElement = element.getAsJsonObject().get(param);
+                    baseDataValidator.reset().parameter(param).value(dateElement).notNull();
+                    if (dateElement != null) {
+                        final LocalDate minDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.minParamName, dateElement,
                                 dateFormat, locale);
-                        baseDataValidator.reset().parameter(param + "." + FundApiConstants.maxParamName).value(maxDate).notNull();
-                    }
-                }
-
-            } else if (FundApiConstants.operatorBasedColumns.contains(param)) {
-                final JsonElement values = element.getAsJsonObject().get(param);
-                baseDataValidator.reset().parameter(param).value(values).notNull();
-                if (values != null) {
-                    final String operator = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.operatorParamName, values);
-                    baseDataValidator.reset().parameter(param + "." + FundApiConstants.operatorParamName).value(operator).notNull()
-                            .notBlank();
-                    if (param.equalsIgnoreCase("principalOutstanding")) {
-                        BigDecimal min = this.fromApiJsonHelper.extractBigDecimalNamed(FundApiConstants.minParamName, values, locale);
-                        baseDataValidator.reset().parameter(param + "." + FundApiConstants.minParamName).value(min).notNull();
+                        baseDataValidator.reset().parameter(param + "." + FundApiConstants.minParamName).value(minDate).notNull();
+                        final String operator = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.operatorParamName, dateElement);
+                        baseDataValidator.reset().parameter(param + "." + FundApiConstants.operatorParamName).value(operator).notBlank();
                         if (operator.equalsIgnoreCase(FundApiConstants.betweenParamName)) {
-                            BigDecimal max = this.fromApiJsonHelper.extractBigDecimalNamed(FundApiConstants.maxParamName, values, locale);
-                            baseDataValidator.reset().parameter(param + "." + FundApiConstants.maxParamName).value(max).notNull();
-                        }
-                    } else {
-                        Integer min = this.fromApiJsonHelper.extractIntegerNamed(FundApiConstants.minParamName, values, locale);
-                        baseDataValidator.reset().parameter(param + "." + FundApiConstants.minParamName).value(min).notNull();
-                        if (operator.equalsIgnoreCase(FundApiConstants.betweenParamName)) {
-                            Integer max = this.fromApiJsonHelper.extractIntegerNamed(FundApiConstants.maxParamName, values, locale);
-                            baseDataValidator.reset().parameter(param + "." + FundApiConstants.maxParamName).value(max).notNull();
+                            final LocalDate maxDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.maxParamName,
+                                    dateElement, dateFormat, locale);
+                            baseDataValidator.reset().parameter(param + "." + FundApiConstants.maxParamName).value(maxDate).notNull();
                         }
                     }
 
-                }
+                } else if (FundApiConstants.operatorBasedColumns.contains(param)) {
+                    final JsonElement values = element.getAsJsonObject().get(param);
+                    baseDataValidator.reset().parameter(param).value(values).notNull();
+                    if (values != null) {
+                        final String operator = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.operatorParamName, values);
+                        baseDataValidator.reset().parameter(param + "." + FundApiConstants.operatorParamName).value(operator).notNull()
+                                .notBlank();
+                        if (param.equalsIgnoreCase("principalOutstanding")) {
+                            BigDecimal min = this.fromApiJsonHelper.extractBigDecimalNamed(FundApiConstants.minParamName, values, locale);
+                            baseDataValidator.reset().parameter(param + "." + FundApiConstants.minParamName).value(min).notNull();
+                            if (operator.equalsIgnoreCase(FundApiConstants.betweenParamName)) {
+                                BigDecimal max = this.fromApiJsonHelper.extractBigDecimalNamed(FundApiConstants.maxParamName, values,
+                                        locale);
+                                baseDataValidator.reset().parameter(param + "." + FundApiConstants.maxParamName).value(max).notNull();
+                            }
+                        } else {
+                            Integer min = this.fromApiJsonHelper.extractIntegerNamed(FundApiConstants.minParamName, values, locale);
+                            baseDataValidator.reset().parameter(param + "." + FundApiConstants.minParamName).value(min).notNull();
+                            if (operator.equalsIgnoreCase(FundApiConstants.betweenParamName)) {
+                                Integer max = this.fromApiJsonHelper.extractIntegerNamed(FundApiConstants.maxParamName, values, locale);
+                                baseDataValidator.reset().parameter(param + "." + FundApiConstants.maxParamName).value(max).notNull();
+                            }
+                        }
 
-            } else if (param.equalsIgnoreCase(FundApiConstants.trancheDisburseParam)) {
-                Boolean isTranche = this.fromApiJsonHelper.extractBooleanNamed(FundApiConstants.trancheDisburseParam, element);
-                baseDataValidator.reset().parameter(FundApiConstants.trancheDisburseParam).value(isTranche).notNull()
-                        .trueOrFalseRequired(true);
+                    }
+
+                } else if (param.equalsIgnoreCase(FundApiConstants.trancheDisburseParam)) {
+                    Boolean isTranche = this.fromApiJsonHelper.extractBooleanNamed(FundApiConstants.trancheDisburseParam, element);
+                    baseDataValidator.reset().parameter(FundApiConstants.trancheDisburseParam).value(isTranche).notNull()
+                            .trueOrFalseRequired(true);
+                }
             }
         }
 
