@@ -362,8 +362,7 @@ public class GroupLoanIndividualMonitoringReadPlatformServiceImpl implements Gro
 
         GroupLoanIndividualMonitoringMapper rm = new GroupLoanIndividualMonitoringMapper();
 
-        String sql = "select " + rm.schema() + " where glim.loan_id = ? " + " AND glim.is_active = 0 AND glim.is_client_selected = 1 "
-                + " and  (glim.principal_writtenoff_amount > 0) ";
+        String sql = "select " + rm.schema() + " where glim.loan_id = ? " + " AND glim.is_active = 0 AND glim.is_client_selected = 1 ";
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { loanId });
     }

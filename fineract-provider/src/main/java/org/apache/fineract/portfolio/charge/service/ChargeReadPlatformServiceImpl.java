@@ -56,6 +56,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import edu.emory.mathcs.backport.java.util.Arrays;
+
 /**
  * @author vishwas
  * 
@@ -111,21 +113,19 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
             List<ChargeData> chargeDataList = new ArrayList<>();
             ChargeData chargeData = null;
             Long chargeDataId = null;
-            int cId = 0;// Charge Id index
-            int csId = 0;// Charge Slab id index
+            int rowNum = 0;//index
             while (rs.next()) {
                 final Long tempcId = rs.getLong("id");
                 if (chargeData == null || (chargeDataId != null && !chargeDataId.equals(tempcId))) {
                     chargeDataId = tempcId;
-                    chargeData = this.pm.mapRow(rs, cId++);
+                    chargeData = this.pm.mapRow(rs, rowNum);
                     chargeDataList.add(chargeData);
+                }               
+                final ChargeSlabData chargeSlabData = this.cm.mapRow(rs,rowNum);
+                if (chargeSlabData != null) {
+                    chargeData.addChargeSlabData(chargeSlabData);
                 }
-                if(rs.getLong("csid") > 0){
-                    final ChargeSlabData chargeSlabData = this.cm.mapRow(rs, csId++);
-                    if (chargeSlabData != null) {
-                        chargeData.addChargeSlabData(chargeSlabData);
-                    }
-                }
+                
             }
             return chargeDataList;
         }
@@ -185,6 +185,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
         final Collection<TaxGroupData> taxGroupOptions = this.taxReadPlatformService.retrieveTaxGroupsForLookUp();
         final List<EnumOptionData> glimChargeCalculationTypeOptions = this.chargeDropdownReadPlatformService
                 .retrieveGlimChargeCalculationTypes();
+        
         return ChargeData.template(currencyOptions, allowedChargeCalculationTypeOptions, allowedChargeAppliesToOptions,
                 allowedChargeTimeOptions, chargePaymentOptions, loansChargeCalculationTypeOptions, loansChargeTimeTypeOptions,
                 savingsChargeCalculationTypeOptions, savingsChargeTimeTypeOptions, clientChargeCalculationTypeOptions,
@@ -430,7 +431,7 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
         public String chargeSlabSchema() {
             return "cs.id as csid, cs.from_loan_amount as fromLoanAmount, cs.to_loan_amount as toLoanAmount, cs.amount as chargeAmount, "
-                    + "c.is_capitalize as isCapitalized from f_charge_slab cs " + " LEFT JOIN m_charge c on cs.charge_id = c.id ";
+                    + "c.is_capitalized as isCapitalized from f_charge_slab cs " + " LEFT JOIN m_charge c on cs.charge_id = c.id ";
         }
 
         @Override
