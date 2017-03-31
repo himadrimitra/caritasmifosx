@@ -1147,7 +1147,7 @@ public class RecurringDepositAccount extends SavingsAccount {
         } else {
             installmentDate = depositStartDate();
         }
-
+        LocalDate startingInstallmentDate = depositStartDate();
         int installmentNumber = depositScheduleInstallments.size()+1;
         final LocalDate maturityDate = calcualteScheduleTillDate(frequency, recurringEvery);
         final BigDecimal depositAmount = this.recurringDetail.mandatoryRecommendedDepositAmount();
@@ -1157,12 +1157,13 @@ public class RecurringDepositAccount extends SavingsAccount {
                     installmentNumber, installmentDate.toDate(), actualInstallmentDate.toDate(), depositAmount);
             depositScheduleInstallments.add(installment);
             actualInstallmentDate = DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery);
+            actualInstallmentDate = CalendarUtils.adjustDate(actualInstallmentDate, startingInstallmentDate, frequency);
 			AdjustedDateDetailsDTO adjustedDateDetailsDTO = adjustinstallmentDateBasedOnHolidayDetails(actualInstallmentDate, holidayDetails,
 					DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery));
 			actualInstallmentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
 			installmentDate = adjustedDateDetailsDTO.getChangedScheduleDate();
 			Holiday applicableHolidayForInstallmentDate = HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(), holidayDetails.getHolidays());
-			if (applicableHolidayForInstallmentDate != null
+		if (applicableHolidayForInstallmentDate != null
 					&& applicableHolidayForInstallmentDate.getReScheduleType().isResheduleToNextRepaymentDate()) {
 	        	LocalDate newAdjustedDate = adjustedDateDetailsDTO.getChangedScheduleDate();
 	        	Holiday applicableHolidayForNewAdjustedDate = null;
