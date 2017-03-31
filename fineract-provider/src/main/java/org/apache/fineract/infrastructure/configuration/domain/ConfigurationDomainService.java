@@ -134,4 +134,7 @@ public interface ConfigurationDomainService {
     boolean isMonthlyLoansSyncWithWeeklyMeetings();
 
     boolean isGlimPaymentAsGroup();
+
+    boolean isOfficeSpecificProductsEnabled();
+
 }

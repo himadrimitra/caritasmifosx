@@ -442,4 +442,10 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return property.isEnabled();
     }
+
+    @Override
+    public boolean isOfficeSpecificProductsEnabled() {
+        return getGlobalConfigurationPropertyData("office-specific-products-enabled").isEnabled();
+    }
+
 }

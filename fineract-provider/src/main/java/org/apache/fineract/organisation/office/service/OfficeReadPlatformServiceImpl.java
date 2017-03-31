@@ -289,4 +289,15 @@ public class OfficeReadPlatformServiceImpl implements OfficeReadPlatformService 
         final String sql = "select "+rm.schema();
         return this.jdbcTemplate.query(sql, rm, new Object[] { });
     }
+    
+    @Override
+    public List<Long> retrieveAllChildOfficesForDropdown(List<Long> ids) {
+        final AppUser currentUser = this.context.authenticatedUser();
+        final String currentUserHierarchy = currentUser.getOffice().getHierarchy();
+        final String currentUserHierarchySearchString = currentUserHierarchy + "%";
+        String idsAsString = ids.toString().replace('[', '(').replace(']', ')');
+        String sql = "SELECT o2.id from m_office o2 WHERE o2.hierarchy REGEXP (select GROUP_CONCAT((concat('^',o.hierarchy)) SEPARATOR '|')"
+                + " FROM m_office o where o.id in " + idsAsString + " and o.hierarchy like ? )";
+        return this.jdbcTemplate.queryForList(sql, new Object[] { currentUserHierarchySearchString }, Long.class);
+    }
 }

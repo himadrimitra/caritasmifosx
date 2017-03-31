@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.integrationtests.common.funds;
 
+import java.util.HashMap;
+
 import com.google.gson.Gson;
 
 public class FundsHelper {
@@ -26,6 +28,7 @@ public class FundsHelper {
 
         private String name;
         private String externalId;
+        private String facilityType;
 
         private Builder(final String name) {
             this.name = name;
@@ -35,9 +38,14 @@ public class FundsHelper {
             this.externalId = externalId;
             return this;
         }
+        
+        public Builder facilityType(final String facilityType) {
+            this.facilityType = facilityType;
+            return this;
+        }
 
         public FundsHelper build() {
-            return new FundsHelper(this.name, this.externalId);
+            return new FundsHelper(this.name, this.externalId, this.facilityType);
         }
 
     }
@@ -45,16 +53,18 @@ public class FundsHelper {
     private String name;
     private String externalId;
     private Long resourceId;
-
+    private String facilityType;
+    
     FundsHelper() {
         super();
     }
 
     private FundsHelper(final String name,
-                        final String externalId) {
+                        final String externalId, final String facilityType) {
         super();
         this.name = name;
         this.externalId = externalId;
+        this.facilityType = facilityType;
     }
 
     public String getName() {
@@ -73,8 +83,14 @@ public class FundsHelper {
         return new Gson().toJson(this);
     }
 
-    public static FundsHelper fromJSON(final String jsonData) {
-        return new Gson().fromJson(jsonData, FundsHelper.class);
+    public static FundsHelper fromJSON(final HashMap<String, Object> fundsData) {
+        String name = (String)fundsData.get("name");
+        String externalId = null;
+        if(fundsData.get("externalId") != null){
+            externalId = (String)fundsData.get("externalId");
+        }        
+        String facilityType = null;        
+        return new FundsHelper(name, externalId, facilityType);
     }
 
     public static Builder create(final String name) {

@@ -43,6 +43,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
+import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessReadService;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.domain.Staff;
@@ -201,6 +202,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
     private final PaymentTypeRepositoryWrapper paymentTypeRepository;
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final LoanScheduleValidator loanScheduleValidator;
+    private final FineractEntityAccessReadService fineractEntityAccessReadService;
 
     @Autowired
     public LoanApplicationWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context, final FromJsonHelper fromJsonHelper,
@@ -230,7 +232,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final GroupLoanIndividualMonitoringChargeRepository groupLoanIndividualMonitoringChargeRepository,
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl, final PaymentTypeRepositoryWrapper paymentTypeRepository,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
-            final LoanScheduleValidator loanScheduleValidator) {
+            final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessReadService fineractEntityAccessReadService) {
         this.context = context;
         this.fromJsonHelper = fromJsonHelper;
         this.loanApplicationTransitionApiJsonValidator = loanApplicationTransitionApiJsonValidator;
@@ -275,6 +277,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         this.paymentTypeRepository = paymentTypeRepository;
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.loanScheduleValidator = loanScheduleValidator;
+        this.fineractEntityAccessReadService = fineractEntityAccessReadService;        
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -289,22 +292,25 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final Long productId = this.fromJsonHelper.extractLongNamed("productId", command.parsedJson());
             final LoanProduct loanProduct = this.loanProductRepository.findOne(productId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(productId); }
-
+            
             final Boolean isPenalty = false;
             final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(productId,
                     isPenalty);
             this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
             final Loan newLoanApplication = validateAndAssembleSubmitLoanApplication(loanProduct, command);
-
+            Long officeId = null;
             final Long clientId = this.fromJsonHelper.extractLongNamed("clientId", command.parsedJson());
             if (clientId != null) {
                 Client client = this.clientRepository.findOneWithNotFoundDetection(clientId);
+                officeId = client.officeId();
             }
             final Long groupId = this.fromJsonHelper.extractLongNamed("groupId", command.parsedJson());
             if (groupId != null) {
                 Group group = this.groupRepository.findOneWithNotFoundDetection(groupId);
+                officeId = group.officeId();
             }
             
+            validateOfficetoProductAcess(productId, officeId);
             if (!command.parameterExists("isonlyloanappcreate")) {
                 this.loanRepository.save(newLoanApplication);
             }
@@ -757,6 +763,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             LoanProduct newLoanProduct = null;
             if (command.isChangeInLongParameterNamed(productIdParamName, existingLoanApplication.loanProduct().getId())) {
                 final Long productId = command.longValueOfParameterNamed(productIdParamName);
+                Long officeId = existingLoanApplication.getOfficeId();
+                validateOfficetoProductAcess(productId, officeId);
                 newLoanProduct = this.loanProductRepository.findOne(productId);
                 if (newLoanProduct == null) { throw new LoanProductNotFoundException(productId); }
             }
@@ -1318,6 +1326,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             handleDataIntegrityIssues(command, dve);
             return CommandProcessingResult.empty();
         }
+    }
+
+    private void validateOfficetoProductAcess(final Long productId, Long officeId) {
+        Boolean isOfficeProductMapped = fineractEntityAccessReadService.hasAcsessToLoanProduct(officeId, productId);
+        if (!isOfficeProductMapped) { throw new LoanApplicationCannotbeSubmittedException(productId); }
     }
 
     /*

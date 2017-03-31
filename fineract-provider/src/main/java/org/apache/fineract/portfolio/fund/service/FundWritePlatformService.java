@@ -20,6 +20,7 @@ package org.apache.fineract.portfolio.fund.service;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 
 import com.sun.jersey.multipart.FormDataMultiPart;
 
@@ -36,4 +37,6 @@ public interface FundWritePlatformService {
     CommandProcessingResult activateFund(Long fundId);
     
     CommandProcessingResult deactivateFund(Long fundId);
+    
+    void fundStatusUpdate() throws JobExecutionException;
 }

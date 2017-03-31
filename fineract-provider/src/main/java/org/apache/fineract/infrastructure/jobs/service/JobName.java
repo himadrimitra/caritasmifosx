@@ -50,7 +50,8 @@ public enum JobName {
     INITIATE_BANK_TRANSACTION("Initiate Bank Transactions"),
     UPDATE_BANK_TRANSACTION_STATUS("Update Bank Transaction Status"),
     HIGHMARK_ENQUIRY("Highmark Enquiry"),
-    REDUCE_DP_LIMIT_FOR_SAVINGS("Reduce Dp Limit For Savings");
+    REDUCE_DP_LIMIT_FOR_SAVINGS("Reduce Dp Limit For Savings"),
+    FUND_STATUS_UPDATE("Fund Status update");
 
     private final String name;
 

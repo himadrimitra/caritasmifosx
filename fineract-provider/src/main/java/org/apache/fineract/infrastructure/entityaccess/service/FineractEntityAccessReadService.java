@@ -44,4 +44,6 @@ public interface FineractEntityAccessReadService {
 
     Collection<FineractEntityToEntityMappingData> retrieveEntityToEntityMappings(Long mapId, Long fromoId, Long toId);
 
+    boolean hasAcsessToLoanProduct(Long officeId, Long productId);
+
 }

@@ -266,7 +266,7 @@ public class FundReadPlatformServiceImpl implements FundReadPlatformService {
         
         public String schema() {
             return " flp.id as id ,flp.loan_purpose_amount loanPurposeAmount, f.id as fundId, lp.id as loanPurposeId, "+
-                    "lp.code_value as loanPurposeCodeValue"+
+                    "lp.code_value as loanPurposeCodeValue, f.sanctioned_amount as sanctionedAmount "+
                     " from f_fund_loan_purpose flp "+
                     "left join m_fund f on f.id = flp.fund_id "+
                     "left join m_code_value lp on lp.id = flp.loan_purpose_id ";
@@ -281,7 +281,10 @@ public class FundReadPlatformServiceImpl implements FundReadPlatformService {
             final String loanPurposeCodeValue = rs.getString("loanPurposeCodeValue");
             CodeValueData loanPurpose = CodeValueData.instance(loanPurposeId, loanPurposeCodeValue);
             final BigDecimal loanPurposeAmount = rs.getBigDecimal("loanPurposeAmount");
-            return FundLoanPurposeData.instance(id, fundId, loanPurpose, loanPurposeAmount);
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            final BigDecimal sanctionedAmount = rs.getBigDecimal("sanctionedAmount");
+            totalAmount = BigDecimal.valueOf((sanctionedAmount.doubleValue()/100)*(loanPurposeAmount.doubleValue()));
+            return FundLoanPurposeData.instance(id, fundId, loanPurpose, loanPurposeAmount, totalAmount);
         }
     }
 

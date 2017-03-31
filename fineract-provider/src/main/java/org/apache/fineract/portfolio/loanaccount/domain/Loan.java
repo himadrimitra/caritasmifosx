@@ -5407,11 +5407,6 @@ public class Loan extends AbstractPersistable<Long> {
         return this.loanTransactions;
     }
     
-    public List<LoanTransaction> getOrderedLoanTransactions() {
-        final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
-        Collections.sort(this.loanTransactions, transactionComparator);
-        return this.loanTransactions;
-    }
     
     public void addLoanTransaction(final LoanTransaction loanTransaction) {
         this.loanTransactions.add(loanTransaction) ;
@@ -5581,6 +5576,11 @@ public class Loan extends AbstractPersistable<Long> {
         
     }
     
+    public List<LoanTransaction> getOrderedLoanTransactions() {
+        final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
+        Collections.sort(this.loanTransactions, transactionComparator);
+        return this.loanTransactions;
+    }
 
     public LocalDate getLastUserTransactionDate() {
         Collection<Integer> transactionType = new ArrayList<>();
