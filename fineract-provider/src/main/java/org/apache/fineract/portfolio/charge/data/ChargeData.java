@@ -399,7 +399,10 @@ public class ChargeData implements Comparable<ChargeData>, Serializable {
         if(chargeSlabs == null) {
             this.slabs = new ArrayList<>();
         }
-        this.slabs.addAll(chargeSlabs);
+        if(this.slabs != null){
+            this.slabs.addAll(chargeSlabs);
+        }
+        
     }
 
     public void addChargeSlabData(final ChargeSlabData chargeSlabData) {

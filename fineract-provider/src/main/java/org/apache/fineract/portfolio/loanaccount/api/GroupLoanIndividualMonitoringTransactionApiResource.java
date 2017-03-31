@@ -82,11 +82,11 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
             @QueryParam("transactionDate") final Date transactionDate, @Context final UriInfo uriInfo) {
         this.context.authenticatedUser().validateHasReadPermission("loan");
         BigDecimal transactionAmount = BigDecimal.ZERO;
+        Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
         List<GroupLoanIndividualMonitoringData> groupLoanIndividualMonitoringData = null;
         if (is(commandParam, "repayment")) {
             groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
-                    .retrieveSelectedClientsByLoanId(loanId);
-            Loan loan = this.loanRepositoryWrapper.findOneWithNotFoundDetection(loanId);
+                    .retrieveSelectedClientsByLoanId(loanId);            
             loan.updateDefautGlimMembers(this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true));
             groupLoanIndividualMonitoringData = this.glimTransactionAssembler.handleGLIMRepaymentTemplate(
                     groupLoanIndividualMonitoringData, loan, transactionDate);
@@ -100,35 +100,20 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
         } else if (is(commandParam, "waivecharge")) {
             groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
                     .retrieveWaiveChargeDetails(loanId);
-            for (GroupLoanIndividualMonitoringData glimDetail : groupLoanIndividualMonitoringData) {
-                BigDecimal chargeAmount = MathUtility.subtract(glimDetail.getChargeAmount(), glimDetail.getPaidChargeAmount());
-                glimDetail.setRemainingTransactionAmount(chargeAmount);
-                glimDetail.setTransactionAmount(chargeAmount);
-                transactionAmount = MathUtility.add(transactionAmount, chargeAmount);
-                glimDetail.setIsClientSelected(true);
-            }
+            transactionAmount = getWaiveChargeTransactionTemplate(transactionAmount, groupLoanIndividualMonitoringData);
         } else if (is(commandParam, "writeoff") || is(commandParam, "prepay")) {
-            groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
-                    .retrieveAllActiveGlimByLoanId(loanId);
-            for (GroupLoanIndividualMonitoringData glimDetail : groupLoanIndividualMonitoringData) {
-                BigDecimal glimTransactionAmount = MathUtility.subtract(
-                        glimDetail.getTotalPaybleAmount(),
-                        MathUtility.add(glimDetail.getPaidAmount(), glimDetail.getWaivedChargeAmount(),
-                                glimDetail.getWaivedInterestAmount()));
-                glimDetail.setRemainingTransactionAmount(glimTransactionAmount);
-                glimDetail.setTransactionAmount(glimTransactionAmount);
-                transactionAmount = transactionAmount.add(glimTransactionAmount);
+            if(loan.isGlimPaymentAsGroup()){
+                transactionAmount = loan.getSummary().getTotalOutstanding();
+            }else{
+                groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
+                        .retrieveAllActiveGlimByLoanId(loanId);
+                transactionAmount = getWriteOfAndPrepayGlimTransactionTemplate(transactionAmount, groupLoanIndividualMonitoringData);
             }
+            
         } else if (is(commandParam, "recoverypayment")) {
             groupLoanIndividualMonitoringData = (List<GroupLoanIndividualMonitoringData>) this.glimReadPlatformService
                     .retrieveRecoveryGlimByLoanId(loanId);
-            for (GroupLoanIndividualMonitoringData glimDetail : groupLoanIndividualMonitoringData) {
-                BigDecimal glimTransactionAmount = MathUtility.add(glimDetail.getPrincipalWrittenOffAmount(),
-                        glimDetail.getChargeWrittenOffAmount(), glimDetail.getInterestWrittenOffAmount());
-                glimDetail.setRemainingTransactionAmount(glimTransactionAmount);
-                glimDetail.setTransactionAmount(glimTransactionAmount);
-                transactionAmount = transactionAmount.add(glimTransactionAmount);
-            }
+            transactionAmount = getGlimRecoveryTransactionTemplate(transactionAmount, groupLoanIndividualMonitoringData);
         } else {
             throw new UnrecognizedQueryParamException("command", commandParam);
         }
@@ -138,6 +123,42 @@ public class GroupLoanIndividualMonitoringTransactionApiResource {
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
         return this.toApiJsonSerializer.serialize(settings, groupLoanIndividualMonitoringTransactionData);
+    }
+
+    private BigDecimal getWaiveChargeTransactionTemplate(BigDecimal transactionAmount,
+            List<GroupLoanIndividualMonitoringData> groupLoanIndividualMonitoringData) {
+        for (GroupLoanIndividualMonitoringData glimDetail : groupLoanIndividualMonitoringData) {
+            BigDecimal chargeAmount = MathUtility.subtract(glimDetail.getChargeAmount(), glimDetail.getPaidChargeAmount());
+            glimDetail.setRemainingTransactionAmount(chargeAmount);
+            glimDetail.setTransactionAmount(chargeAmount);
+            transactionAmount = MathUtility.add(transactionAmount, chargeAmount);
+            glimDetail.setIsClientSelected(true);
+        }
+        return transactionAmount;
+    }
+
+    private BigDecimal getGlimRecoveryTransactionTemplate(BigDecimal transactionAmount,
+            List<GroupLoanIndividualMonitoringData> groupLoanIndividualMonitoringData) {
+        for (GroupLoanIndividualMonitoringData glimDetail : groupLoanIndividualMonitoringData) {
+            BigDecimal glimTransactionAmount = MathUtility.add(glimDetail.getPrincipalWrittenOffAmount(),
+                    glimDetail.getChargeWrittenOffAmount(), glimDetail.getInterestWrittenOffAmount());
+            glimDetail.setRemainingTransactionAmount(glimTransactionAmount);
+            glimDetail.setTransactionAmount(glimTransactionAmount);
+            transactionAmount = transactionAmount.add(glimTransactionAmount);
+        }
+        return transactionAmount;
+    }
+
+    private BigDecimal getWriteOfAndPrepayGlimTransactionTemplate(BigDecimal transactionAmount,
+            List<GroupLoanIndividualMonitoringData> groupLoanIndividualMonitoringData) {
+        for (GroupLoanIndividualMonitoringData glimDetail : groupLoanIndividualMonitoringData) {
+            BigDecimal glimTransactionAmount = MathUtility.subtract(glimDetail.getTotalPaybleAmount(),
+                    MathUtility.add(glimDetail.getPaidAmount(), glimDetail.getWaivedChargeAmount(), glimDetail.getWaivedInterestAmount()));
+            glimDetail.setRemainingTransactionAmount(glimTransactionAmount);
+            glimDetail.setTransactionAmount(glimTransactionAmount);
+            transactionAmount = transactionAmount.add(glimTransactionAmount);
+        }
+        return transactionAmount;
     }
 
     @POST
