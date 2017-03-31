@@ -132,4 +132,7 @@ public interface ConfigurationDomainService {
     String getMaskedCharacter();
     
     boolean isGlimPaymentAsGroup();
+
+    boolean isOfficeSpecificProductsEnabled();
+
 }

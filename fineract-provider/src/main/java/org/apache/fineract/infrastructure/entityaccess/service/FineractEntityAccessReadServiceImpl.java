@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Date;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.dataqueries.service.GenericDataServiceImpl;
 import org.apache.fineract.infrastructure.entityaccess.FineractEntityAccessConstants;
@@ -52,13 +53,16 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
     private final JdbcTemplate jdbcTemplate;
     private final static Logger logger = LoggerFactory.getLogger(GenericDataServiceImpl.class);
     private final FineractEntityRelationRepositoryWrapper fineractEntityRelationRepository;
+    private final ConfigurationDomainService configurationDomainService;
+
 
     @Autowired
     public FineractEntityAccessReadServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-    		final FineractEntityRelationRepositoryWrapper fineractEntityRelationRepository) {
+    		final FineractEntityRelationRepositoryWrapper fineractEntityRelationRepository, final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.fineractEntityRelationRepository = fineractEntityRelationRepository;
+        this.configurationDomainService = configurationDomainService;
     }
 
     /*
@@ -375,6 +379,21 @@ public class FineractEntityAccessReadServiceImpl implements FineractEntityAccess
             return FineractEntityToEntityMappingData.getRelatedEntities(mapId, relId, fromId, toId, startDate, endDate,
                     fromEntity, toEntity, isAllowedForChildOffices);
         }
+    }
+
+    @Override
+    public boolean hasAcsessToLoanProduct(final Long officeId, final Long productId) {
+        if (configurationDomainService.isOfficeSpecificProductsEnabled()) { return hasAccessToEntity(officeId, productId,
+                FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS); }
+        return true;
+
+    }
+
+    private boolean hasAccessToEntity(final Long fromID, final Long toId, FineractEntityAccessType type) {
+        final String sql = "SELECT  count(eem.id) FROM m_entity_to_entity_mapping eem LEFT JOIN m_office off ON eem.from_id = off.id "
+                + "left join m_entity_relation er on er.id = eem.rel_id WHERE eem.from_id =? AND eem.to_id=? and er.code_name=? ";
+        Integer count = this.jdbcTemplate.queryForObject(sql, Integer.class, fromID, toId, type.toStr());
+        return count > 0;
     }
 
 }
