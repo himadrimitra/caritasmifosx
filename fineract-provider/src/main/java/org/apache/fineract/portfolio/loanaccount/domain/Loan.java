@@ -6428,7 +6428,6 @@ public class Loan extends AbstractPersistable<Long> {
 
             Money interest = null;
             if (this.isOpen()) {
-                loanApplicationTerms.setAdjustInterestForRounding(false);
                 interest = Money.of(getCurrency(), this.summary.getTotalInterestCharged());
             } else if (loanApplicationTerms.isAdjustInterestForRounding()) {
                 Money totalPayment = emi.multipliedBy(loanApplicationTerms.getNumberOfRepayments());
