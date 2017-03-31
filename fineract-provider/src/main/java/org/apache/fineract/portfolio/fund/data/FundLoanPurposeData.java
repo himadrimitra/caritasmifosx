@@ -19,16 +19,19 @@ public class FundLoanPurposeData {
     private final CodeValueData loanPurpose;
     @SuppressWarnings("unused")
     private BigDecimal loanPurposeAmount;
+    private BigDecimal totalAmount;
 
-    public FundLoanPurposeData(Long id, Long fundId, CodeValueData loanPurpose, BigDecimal loanPurposeAmount) {
+    public FundLoanPurposeData(Long id, Long fundId, CodeValueData loanPurpose, BigDecimal loanPurposeAmount,
+            BigDecimal totalAmount) {
         this.id = id;
         this.fundId = fundId;
         this.loanPurpose = loanPurpose;
         this.loanPurposeAmount = loanPurposeAmount;
+        this.totalAmount = totalAmount;
     }
 
-    public static FundLoanPurposeData instance(Long id, Long fundId, CodeValueData loanPurpose, BigDecimal loanPurposeAmount) {
-        return new FundLoanPurposeData(id, fundId, loanPurpose, loanPurposeAmount);
+    public static FundLoanPurposeData instance(Long id, Long fundId, CodeValueData loanPurpose, BigDecimal loanPurposeAmount, BigDecimal totalAmount) {
+        return new FundLoanPurposeData(id, fundId, loanPurpose, loanPurposeAmount, totalAmount);
     }
 
 }

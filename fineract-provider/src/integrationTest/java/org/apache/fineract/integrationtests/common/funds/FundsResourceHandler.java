@@ -18,15 +18,15 @@
  */
 package org.apache.fineract.integrationtests.common.funds;
 
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-import com.jayway.restassured.specification.RequestSpecification;
-import com.jayway.restassured.specification.ResponseSpecification;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import org.apache.fineract.integrationtests.common.Utils;
 
-import java.util.HashMap;
-import java.util.List;
+import com.google.gson.Gson;
+import com.jayway.restassured.specification.RequestSpecification;
+import com.jayway.restassured.specification.ResponseSpecification;
 
 public class FundsResourceHandler {
 
@@ -43,16 +43,19 @@ public class FundsResourceHandler {
                                                                  final ResponseSpecification responseSpec) {
         final String URL = FUNDS_URL + "?" + Utils.TENANT_IDENTIFIER;
         List<HashMap<String, Object>> list = Utils.performServerGet(requestSpec, responseSpec, URL, "");
-        final String jsonData = new Gson().toJson(list);
-        return new Gson().fromJson(jsonData, new TypeToken<List<FundsHelper>>(){}.getType());
+        List<FundsHelper> fundsHelper = new ArrayList<>();
+        for(HashMap<String, Object> fundsData:list){
+            fundsHelper.add(FundsHelper.fromJSON(fundsData));
+        }
+        return fundsHelper;
     }
 
-    public static String retrieveFund(final Long fundID,
+    public static HashMap<String, Object> retrieveFund(final Long fundID,
                                       final RequestSpecification requestSpec,
                                       final ResponseSpecification responseSpec) {
         final String URL = FUNDS_URL + "/" + fundID + "?" + Utils.TENANT_IDENTIFIER;
-        final HashMap response = Utils.performServerGet(requestSpec, responseSpec, URL, "");
-        return new Gson().toJson(response);
+        final HashMap<String, Object> response = Utils.performServerGet(requestSpec, responseSpec, URL, "");
+        return response;
     }
 
     public static FundsHelper updateFund(final Long fundID,

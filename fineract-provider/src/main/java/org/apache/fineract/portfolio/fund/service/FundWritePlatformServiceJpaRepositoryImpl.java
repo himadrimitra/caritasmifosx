@@ -47,6 +47,9 @@ import org.apache.fineract.infrastructure.documentmanagement.contentrepository.C
 import org.apache.fineract.infrastructure.documentmanagement.domain.Document;
 import org.apache.fineract.infrastructure.documentmanagement.domain.DocumentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.exception.ContentManagementException;
+import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
+import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
+import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundDataValidator;
@@ -94,6 +97,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final FundMappingQueryBuilderService fundMappingQueryBuilderService;
     private final FundMappingHistoryRepository fundMappingHistoryRepository;
+    
 
     @Autowired
     public FundWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -121,7 +125,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     @Override
     @CacheEvict(value = "funds", key = "T(org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil).getTenant().getTenantIdentifier().concat('fn')")
     public CommandProcessingResult createFund(final JsonCommand command) {
-
+        try {
         this.fundDataValidator.validate(command);
 
         CodeValue fundSource = null;
@@ -135,7 +139,10 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         boolean isLoanAssigned = false;
         Fund fund = null;
         final String name = command.stringValueOfParameterNamed(FundApiConstants.nameParamName);
-
+        String externalId = null;
+        if (command.parameterExists(FundApiConstants.externalIdParamName)) {
+            externalId = command.stringValueOfParameterNamed(FundApiConstants.externalIdParamName);
+        }
         CodeValue facilityType = null;
         final Long facilityTypeId = command.longValueOfParameterNamed(FundApiConstants.facilityTypeParamName);
         if (facilityTypeId != null) {
@@ -152,11 +159,6 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
             if (fundCategoryId != null) {
                 fundCategory = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(
                         FundApiConstants.CATEGORY_CODE_VALUE, fundCategoryId);
-            }
-
-            String externalId = null;
-            if (command.parameterExists(FundApiConstants.externalIdParamName)) {
-                externalId = command.stringValueOfParameterNamed(FundApiConstants.externalIdParamName);
             }
 
             final LocalDate assignmentStartDate = command.localDateValueOfParameterNamed(FundApiConstants.assignmentStartDateParamName);
@@ -215,7 +217,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                     interestRate, fundRepaymentFrequency, tenure, tenureFrequency, morotorium, morotoriumFrequency, loanPortfolioFee,
                     bookDebtHypothecation, cashCollateral, personalGurantee, isActive, isLoanAssigned, externalId, fundLoanPurpose);
         } else {
-            fund = Fund.instance(name, facilityType, isActive, isLoanAssigned);
+            fund = Fund.instance(name, externalId, facilityType, isActive, isLoanAssigned);
 
         }
         this.fundRepositoryWrapper.save(fund);
@@ -224,18 +226,23 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 .withCommandId(command.commandId()) //
                 .withEntityId(fund.getId()) //
                 .build();
+        } catch (final DataIntegrityViolationException dve) {
+            handleFundDataIntegrityIssues(command, dve);
+            return CommandProcessingResult.empty();
+        }
 
     }
 
     public List<FundLoanPurpose> fromJson(final JsonCommand command) {
         List<FundLoanPurpose> fundLoanPurposeList = new ArrayList<>();
+        Locale locale = this.fromApiJsonHelper.extractLocaleParameter(command.parsedJson().getAsJsonObject());
         JsonElement fundLoanPurpose = command.parsedJson().getAsJsonObject().get(FundApiConstants.fundLoanPurposeParamName);
         for (JsonElement fundloanPurposeData : fundLoanPurpose.getAsJsonArray()) {
-            Integer loanPurposeId = this.fromApiJsonHelper.extractIntegerNamed("loanPurposeId", fundloanPurposeData, Locale.ENGLISH);
+            Integer loanPurposeId = this.fromApiJsonHelper.extractIntegerNamed("loanPurposeId", fundloanPurposeData, locale);
             CodeValue loanPurpose = this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(
                     FundApiConstants.LOAN_PURPOSE_CODE_VALUE, loanPurposeId.longValue());
             BigDecimal loanPurposeAmount = this.fromApiJsonHelper.extractBigDecimalNamed("loanPurposeAmount", fundloanPurposeData,
-                    Locale.ENGLISH);
+                    locale);
             fundLoanPurposeList.add(FundLoanPurpose.instanceWithoutFund(loanPurpose, loanPurposeAmount));
         }
         return fundLoanPurposeList;
@@ -250,11 +257,14 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
             this.context.authenticatedUser();
             Fund fund = this.fundRepositoryWrapper.findOneWithNotFoundDetection(fundId);
             this.fundDataValidator.validateForUpdate(command, fund);
-            fund = update(fund, command);
-            this.fundRepositoryWrapper.saveAndFlush(fund);
+            final Map<String, Object> changes = update(fund, command);
+            if (!changes.isEmpty()) {
+                this.fundRepositoryWrapper.save(fund);
+            }  
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(fund.getId()) //
+                    .with(changes)
                     .build();
         } catch (final DataIntegrityViolationException dve) {
             handleFundDataIntegrityIssues(command, dve);
@@ -262,19 +272,27 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
         }
     }
 
-    public Fund update(Fund fund, JsonCommand command) {
+    public Map<String, Object> update(Fund fund, JsonCommand command) {
         boolean isOwn = false;
         boolean isChangedFromOwn = false;
         final JsonElement element = command.parsedJson();
-
+        final Map<String, Object> actualChanges = new HashMap<>();
         if (command.isChangeInStringParameterNamed(FundApiConstants.nameParamName, fund.getName())) {
             final String name = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.nameParamName, element);
             fund.setName(name);
+            actualChanges.put(FundApiConstants.nameParamName, name);
+        }
+        final String externalIdParamName = "externalId";
+        if (command.isChangeInStringParameterNamed(externalIdParamName, fund.getExternalId())) {
+            final String externalId = command.stringValueOfParameterNamed(externalIdParamName);
+            fund.setExternalId(externalId);
+            actualChanges.put(externalIdParamName, externalId);
         }
 
         if (command.isChangeInBooleanParameterNamed(FundApiConstants.isActiveParamName, fund.isActive())) {
             final boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(FundApiConstants.isActiveParamName, element);
             fund.setActive(isActive);
+            actualChanges.put(FundApiConstants.isActiveParamName, isActive);
         }
 
         if (command.isChangeInLongParameterNamed(FundApiConstants.facilityTypeParamName, fund.getFacilityType().getId())) {
@@ -289,6 +307,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 }
             }
             fund.setFacilityType(facilityType);
+            actualChanges.put(FundApiConstants.facilityTypeParamName, facilityTypeId);
         } else {
             if (fund.getFacilityType().label().equalsIgnoreCase("Own")) {
                 isOwn = true;
@@ -302,6 +321,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final Long fundSourceId = this.fromApiJsonHelper.extractLongNamed(FundApiConstants.fundSourceParamName, element);
                 fund.setFundSource(this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(
                         FundApiConstants.FUND_SOURCE_CODE_VALUE, fundSourceId));
+                actualChanges.put(FundApiConstants.fundSourceParamName, fundSourceId);
             }
 
             if (fund.getFundCategory() == null
@@ -310,6 +330,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final Long fundCategoryId = this.fromApiJsonHelper.extractLongNamed(FundApiConstants.fundCategoryParamName, element);
                 fund.setFundCategory(this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(
                         FundApiConstants.CATEGORY_CODE_VALUE, fundCategoryId));
+                actualChanges.put(FundApiConstants.fundCategoryParamName, fundCategoryId);
             }
 
             if (fund.getFundRepaymentFrequency() == null
@@ -319,6 +340,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                         FundApiConstants.fundRepaymentFrequencyParamName, element);
                 fund.setFundRepaymentFrequency(this.codeValueRepositoryWrapper.findOneByCodeNameAndIdWithNotFoundDetection(
                         FundApiConstants.FUND_REPAYMENT_FREQUENCY_CODE_VALUE, fundRepaymentFrequencyId));
+                actualChanges.put(FundApiConstants.fundRepaymentFrequencyParamName, fundRepaymentFrequencyId);
             }
 
             if (command.isChangeInDateParameterNamed(FundApiConstants.assignmentStartDateParamName, fund.getAssignmentStartDate())
@@ -326,6 +348,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final LocalDate assignmentStartDate = this.fromApiJsonHelper.extractLocalDateNamed(
                         FundApiConstants.assignmentStartDateParamName, element);
                 fund.setAssignmentStartDate(assignmentStartDate.toDate());
+                actualChanges.put(FundApiConstants.assignmentStartDateParamName, assignmentStartDate);
             }
 
             if (command.isChangeInDateParameterNamed(FundApiConstants.assignmentEndDateParamName, fund.getAssignmentEndDate())
@@ -333,6 +356,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final LocalDate assignmentEndDate = this.fromApiJsonHelper.extractLocalDateNamed(
                         FundApiConstants.assignmentEndDateParamName, element);
                 fund.setAssignmentEndDate(assignmentEndDate.toDate());
+                actualChanges.put(FundApiConstants.assignmentEndDateParamName, assignmentEndDate);
             }
 
             if (command.isChangeInDateParameterNamed(FundApiConstants.sanctionedDateParamName, fund.getSanctionedDate())
@@ -340,18 +364,21 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final LocalDate sanctionedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.sanctionedDateParamName,
                         element);
                 fund.setSanctionedDate(sanctionedDate.toDate());
+                actualChanges.put(FundApiConstants.sanctionedDateParamName, sanctionedDate);
             }
 
             if (command.isChangeInDateParameterNamed(FundApiConstants.disbursedDateParamName, fund.getDisbursedDate()) || isChangedFromOwn) {
                 final LocalDate disbursedDate = this.fromApiJsonHelper.extractLocalDateNamed(FundApiConstants.disbursedDateParamName,
                         element);
                 fund.setDisbursedDate(disbursedDate.toDate());
+                actualChanges.put(FundApiConstants.disbursedDateParamName, disbursedDate);
             }
 
             if (command.isChangeInDateParameterNamed(FundApiConstants.maturityDateParamName, fund.getMaturityDate()) || isChangedFromOwn) {
                 final LocalDate maturityDate = this.fromApiJsonHelper
                         .extractLocalDateNamed(FundApiConstants.maturityDateParamName, element);
                 fund.setMaturityDate(maturityDate.toDate());
+                actualChanges.put(FundApiConstants.maturityDateParamName, maturityDate);
             }
 
             if (command.isChangeInBigDecimalParameterNamed(FundApiConstants.sanctionedAmountParamName, fund.getSanctionedAmount())
@@ -359,6 +386,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final BigDecimal sanctionedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.sanctionedAmountParamName, element);
                 fund.setSanctionedAmount(sanctionedAmount);
+                actualChanges.put(FundApiConstants.sanctionedAmountParamName, sanctionedAmount);
             }
 
             if (command.isChangeInBigDecimalParameterNamed(FundApiConstants.disbursedAmountParamName, fund.getDisbursedAmount())
@@ -366,6 +394,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final BigDecimal disbursedAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.disbursedAmountParamName, element);
                 fund.setDisbursedAmount(disbursedAmount);
+                actualChanges.put(FundApiConstants.disbursedAmountParamName, disbursedAmount);
             }
 
             if (command.isChangeInBigDecimalParameterNamed(FundApiConstants.interestRateParamName, fund.getInterestRate())
@@ -373,24 +402,27 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final BigDecimal interestRate = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.interestRateParamName, element);
                 fund.setInterestRate(interestRate);
-                ;
+                actualChanges.put(FundApiConstants.interestRateParamName, interestRate);
             }
 
             if (command.isChangeInIntegerParameterNamed(FundApiConstants.tenureParamName, fund.getTenure()) || isChangedFromOwn) {
                 final Integer tenure = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(FundApiConstants.tenureParamName, element);
                 fund.setTenure(tenure);
+                actualChanges.put(FundApiConstants.tenureParamName, tenure);
             }
             if (command.isChangeInIntegerParameterNamed(FundApiConstants.tenureFrequencyParamName, fund.getTenureFrequency())
                     || isChangedFromOwn) {
                 final Integer tenureFrequency = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
                         FundApiConstants.tenureFrequencyParamName, element);
                 fund.setTenureFrequency(tenureFrequency);
+                actualChanges.put(FundApiConstants.tenureFrequencyParamName, tenureFrequency);
             }
 
             if (command.isChangeInBigDecimalParameterNamed(FundApiConstants.loanPortfolioFeeParamName, fund.getLoanPortfolioFee())) {
                 final BigDecimal loanPortfolioFee = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.loanPortfolioFeeParamName, element);
                 fund.setLoanPortfolioFee(loanPortfolioFee);
+                actualChanges.put(FundApiConstants.loanPortfolioFeeParamName, loanPortfolioFee);
             }
 
             if (command
@@ -398,17 +430,20 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                 final BigDecimal bookDebtHypothecation = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.bookDebtHypothecationParamName, element);
                 fund.setBookDebtHypothecation(bookDebtHypothecation);
+                actualChanges.put(FundApiConstants.bookDebtHypothecationParamName, bookDebtHypothecation);
             }
 
             if (command.isChangeInBigDecimalParameterNamed(FundApiConstants.cashCollateralParamName, fund.getCashCollateral())) {
                 final BigDecimal cashCollateral = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                         FundApiConstants.cashCollateralParamName, element);
                 fund.setCashCollateral(cashCollateral);
+                actualChanges.put(FundApiConstants.cashCollateralParamName, cashCollateral);
             }
             if (command.isChangeInStringParameterNamed(FundApiConstants.personalGuranteeParamName, fund.getPersonalGurantee())) {
                 final String personalGurantee = this.fromApiJsonHelper.extractStringNamed(FundApiConstants.personalGuranteeParamName,
                         element);
                 fund.setPersonalGurantee(personalGurantee);
+                actualChanges.put(FundApiConstants.personalGuranteeParamName, personalGurantee);
             }
 
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.morotoriumFrequencyParamName, element)) {
@@ -416,6 +451,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                     final Integer morotoriumFrequency = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
                             FundApiConstants.morotoriumFrequencyParamName, element);
                     fund.setMorotoriumFrequency(morotoriumFrequency);
+                    actualChanges.put(FundApiConstants.morotoriumFrequencyParamName, morotoriumFrequency);
                 }
             }
             if (this.fromApiJsonHelper.parameterExists(FundApiConstants.morotoriumParamName, element)) {
@@ -423,14 +459,20 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
                     final Integer morotorium = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(FundApiConstants.morotoriumParamName,
                             element);
                     fund.setMorotorium(morotorium);
+                    actualChanges.put(FundApiConstants.morotoriumParamName, morotorium);
                 }
             }
-            List<FundLoanPurpose> fundLoanPurpose = fromJson(command);
-            fund.setFundLoanPurpose(fundLoanPurpose);
+            if (this.fromApiJsonHelper.parameterExists(FundApiConstants.fundLoanPurposeParamName, element)) {
+                List<FundLoanPurpose> fundLoanPurpose = fromJson(command);
+                fund.setFundLoanPurpose(fundLoanPurpose);
+                actualChanges.put(FundApiConstants.fundLoanPurposeParamName,
+                        command.jsonFragment(FundApiConstants.fundLoanPurposeParamName));
+            }
+            
         } else {
             Fund.updateFromOwn(fund);
-        }
-        return fund;
+        }    
+        return actualChanges;
     }
 
     /*
@@ -577,6 +619,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     public CommandProcessingResult activateFund(Long fundId) {
         Fund fund = this.fundRepositoryWrapper.findOneWithNotFoundDetection(fundId);
         fund.setActive(true);
+        fund.setManualStatusUpdate(true);
         this.fundRepositoryWrapper.save(fund);
         return new CommandProcessingResultBuilder() //
                 .withEntityId(fundId) //
@@ -587,10 +630,18 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     public CommandProcessingResult deactivateFund(Long fundId) {
         Fund fund = this.fundRepositoryWrapper.findOneWithNotFoundDetection(fundId);
         fund.setActive(false);
+        fund.setManualStatusUpdate(true);
         this.fundRepositoryWrapper.save(fund);
         return new CommandProcessingResultBuilder() //
                 .withEntityId(fundId) //
                 .build();
+    }
+
+    @Override
+    @CronTarget(jobName = JobName.FUND_STATUS_UPDATE)
+    public void fundStatusUpdate() throws JobExecutionException {
+        final String query = "update m_fund f set f.is_active = (f.assignment_end_date < now()) where (f.assignment_end_date IS NOT NULL and f.is_manual_status_update = 0)";
+        this.jdbcTemplate.update(query);
     }
 
 }
