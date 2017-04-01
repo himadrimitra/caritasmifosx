@@ -47,12 +47,16 @@ public class FineractPlatformTenantConnection {
     private final int maxRetriesOnDeadlock;
     private final int maxIntervalBetweenRetries;
     private final boolean testOnBorrow;
+    private final String serverConnectionDetails;
     
-    public FineractPlatformTenantConnection(final Long connectionId,final String schemaName, String schemaServer,final String schemaServerPort,final String schemaUsername,final String schemaPassword,
-            final boolean autoUpdateEnabled,final int initialSize,final long validationInterval,final boolean removeAbandoned,final int removeAbandonedTimeout,
-            final boolean logAbandoned,final int abandonWhenPercentageFull,final int maxActive,final int minIdle,final int maxIdle,final int suspectTimeout,
-            final int timeBetweenEvictionRunsMillis,final int minEvictableIdleTimeMillis,final int maxRetriesOnDeadlock,final int maxIntervalBetweenRetries,final boolean tesOnBorrow) {
-       
+    public FineractPlatformTenantConnection(final Long connectionId, final String schemaName, String schemaServer,
+            final String schemaServerPort, final String schemaUsername, final String schemaPassword, final boolean autoUpdateEnabled,
+            final int initialSize, final long validationInterval, final boolean removeAbandoned, final int removeAbandonedTimeout,
+            final boolean logAbandoned, final int abandonWhenPercentageFull, final int maxActive, final int minIdle, final int maxIdle,
+            final int suspectTimeout, final int timeBetweenEvictionRunsMillis, final int minEvictableIdleTimeMillis,
+            final int maxRetriesOnDeadlock, final int maxIntervalBetweenRetries, final boolean tesOnBorrow,
+            final String serverConnectionDetails) {
+
         this.connectionId = connectionId;
         this.schemaName =schemaName;
         this.schemaServer = schemaServer;
@@ -75,6 +79,7 @@ public class FineractPlatformTenantConnection {
         this.maxRetriesOnDeadlock = maxRetriesOnDeadlock;
         this.maxIntervalBetweenRetries = maxIntervalBetweenRetries;
         this.testOnBorrow=tesOnBorrow;
+        this.serverConnectionDetails = serverConnectionDetails;
     }
 
     //The Connection Protocol should be built based on jdbc.properties. We can't hard code this here and also, constructing protocol is not this class
@@ -250,5 +255,9 @@ public class FineractPlatformTenantConnection {
     @Override
     public String toString() {
         return this.schemaName+":"+this.schemaServer+":"+this.schemaServerPort;
+    }
+
+    public String getServerConnectionDetails() {
+        return this.serverConnectionDetails;
     }
 }
