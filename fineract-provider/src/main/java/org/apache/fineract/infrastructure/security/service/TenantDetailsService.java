@@ -27,4 +27,6 @@ public interface TenantDetailsService {
     FineractPlatformTenant loadTenantById(String tenantId);
 
     List<FineractPlatformTenant> findAllTenants();
+
+    void encrypteAllTenantsServerCredentials();
 }
