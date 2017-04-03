@@ -494,13 +494,15 @@ public class Charge extends AbstractPersistable<Long> {
                 actualChanges.put(ChargesApiConstants.isGlimChargeParamName, newValue);
                 this.isGlimCharge = newValue;
                 if (this.isGlimCharge) {
-                    if (!this.chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE)) {
-                        baseDataValidator.reset().parameter("ChargeTimeType").value(this.chargeTimeType)
-                                .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue());
-                    }
-                    if (!this.chargeCalculation.equals(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT)) {
+                    if (this.chargeTimeType.equals(ChargeTimeType.INSTALMENT_FEE.getValue())) {
                         baseDataValidator.reset().parameter("chargeCalculationType").value(this.chargeCalculation)
-                                .isOneOfTheseValues(ChargeCalculationType.validValuesForGlimLoan());
+                                .isOneOfTheseValues(ChargeCalculationType.PERCENT_OF_DISBURSEMENT_AMOUNT.getValue());
+                    } else if (this.chargeTimeType.equals(ChargeTimeType.UPFRONT_FEE.getValue())) {
+                        baseDataValidator.reset().parameter("chargeCalculationType").value(this.chargeCalculation)
+                                .isOneOfTheseValues(ChargeCalculationType.FLAT.getValue(),ChargeCalculationType.SLAB_BASED.getValue());
+                    } else {
+                        baseDataValidator.reset().parameter("ChargeTimeType").value(this.chargeTimeType)
+                                .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue(), ChargeTimeType.UPFRONT_FEE.getValue());
                     }
                 }
             }
