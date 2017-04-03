@@ -19,11 +19,14 @@
 package org.apache.fineract.portfolio.loanaccount.data;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.domain.ChargePaymentMode;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.joda.time.LocalDate;
@@ -84,6 +87,7 @@ public class LoanChargeData {
     
     private boolean isGlimCharge;
     
+    private  List<ChargeSlabData> slabs;
 
     public static LoanChargeData template(final Collection<ChargeData> chargeOptions) {
         return new LoanChargeData(null, null, null, null, null, null, null, null, chargeOptions, false, null, false, false, null, null,
@@ -413,4 +417,16 @@ public class LoanChargeData {
     public BigDecimal getAmountUnrecognized() {
         return this.amountUnrecognized;
     }
+    
+    public List<ChargeSlabData> getSlabs() {
+        return this.slabs;
+    }
+
+    public void addChargeSlabData(final ChargeSlabData chargeSlabData) {
+        if(slabs == null) {
+            this.slabs = new ArrayList<>();
+        }
+        this.slabs.add(chargeSlabData);       
+    }
+    
 }

@@ -34,6 +34,7 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
+import org.apache.fineract.portfolio.charge.data.ChargeSlabData;
 import org.apache.fineract.portfolio.charge.service.ChargeDropdownReadPlatformService;
 import org.apache.fineract.portfolio.charge.service.ChargeEnumerations;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
@@ -44,7 +45,9 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionType;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
@@ -83,6 +86,31 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
                     + "oc.internationalized_name_code as currencyNameCode from m_charge c "
                     + "join m_organisation_currency oc on c.currency_code = oc.code " + "join m_loan_charge lc on lc.charge_id = c.id "
                     + "left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ";
+        }
+        
+        public String loanChargeWithSlabsSchema() {
+            final StringBuilder sb = new StringBuilder(500);
+            sb.append("lc.id as id, c.id as chargeId, c.name as name, ");
+            sb.append("lc.amount as amountDue, lc.amount_paid_derived as amountPaid, lc.amount_waived_derived as amountWaived, ");
+            sb.append("lc.amount_writtenoff_derived as amountWrittenOff, lc.amount_outstanding_derived as amountOutstanding, ");
+            sb.append("lc.calculation_percentage as percentageOf, lc.calculation_on_amount as amountPercentageAppliedTo, ");
+            sb.append("lc.charge_time_enum as chargeTime, lc.is_penalty as penalty, ");
+            sb.append("lc.due_for_collection_as_of_date as dueAsOfDate, lc.charge_calculation_enum as chargeCalculation, ");
+            sb.append("lc.charge_payment_mode_enum as chargePaymentMode, lc.is_paid_derived as paid, lc.waived as waied, ");
+            sb.append("lc.min_cap as minCap, lc.max_cap as maxCap, ");
+            sb.append("cs.id as csid, cs.from_loan_amount as fromLoanAmount, cs.to_loan_amount as toLoanAmount, cs.amount as chargeAmount, ");
+            sb.append("lc.charge_amount_or_percentage as amountOrPercentage, c.is_glim_charge isGlimCharge, ");
+            sb.append("c.currency_code as currencyCode, oc.name as currencyName, ");
+            sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
+            sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
+            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId ");
+            sb.append("from m_charge c ");
+            sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
+            sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
+            sb.append(" LEFT JOIN f_charge_slab cs on cs.charge_id = lc.charge_id ");
+            sb.append("left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ");
+            
+            return sb.toString();
         }
 
         @Override
@@ -138,6 +166,49 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
                     waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge);
         }
     }
+    
+    private static final class LoanChargeMapperDataExtractor implements ResultSetExtractor<Collection<LoanChargeData>> {
+
+        final LoanChargeMapper loanChargeMapper = new LoanChargeMapper();
+        final ChargeSlabMapper chargeSlabMapper = new ChargeSlabMapper();
+        public String schema() {
+            return this.loanChargeMapper.loanChargeWithSlabsSchema();
+        }
+
+        @Override
+        public Collection<LoanChargeData> extractData(ResultSet rs) throws SQLException, DataAccessException {
+            List<LoanChargeData> loanChargeDataList = new ArrayList<>();
+            LoanChargeData loanChargeData = null;
+            Long loanChargeDataId = null;
+            int rowNum = 0;//index
+            while (rs.next()) {
+                final Long tempcId = rs.getLong("id");
+                if (loanChargeData == null || (loanChargeDataId != null && !loanChargeDataId.equals(tempcId))) {
+                    loanChargeDataId = tempcId;
+                    loanChargeData = this.loanChargeMapper.mapRow(rs, rowNum);
+                    loanChargeDataList.add(loanChargeData);
+                }               
+                final ChargeSlabData chargeSlabData = this.chargeSlabMapper.mapRow(rs,rowNum);
+                if (chargeSlabData != null) {
+                    loanChargeData.addChargeSlabData(chargeSlabData);
+                }
+                
+            }
+            return loanChargeDataList;
+        }
+    }
+    
+    private static final class ChargeSlabMapper implements RowMapper<ChargeSlabData> {
+
+        @Override
+        public ChargeSlabData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Long id = rs.getLong("csid");
+            final BigDecimal fromLoanAmount = rs.getBigDecimal("fromLoanAmount");
+            final BigDecimal toLoanAmount = rs.getBigDecimal("toLoanAmount");
+            final BigDecimal amount = rs.getBigDecimal("chargeAmount");
+            return ChargeSlabData.createChargeSlabData(id, fromLoanAmount, toLoanAmount, amount);
+        }
+    }
 
     @Override
     public ChargeData retrieveLoanChargeTemplate() {
@@ -184,10 +255,10 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
     public Collection<LoanChargeData> retrieveLoanCharges(final Long loanId) {
         this.context.authenticatedUser();
 
-        final LoanChargeMapper rm = new LoanChargeMapper();
+        final LoanChargeMapperDataExtractor rm = new LoanChargeMapperDataExtractor();
 
         final String sql = "select " + rm.schema() + " where lc.loan_id=? AND lc.is_active = 1"
-                + " order by ifnull(lc.due_for_collection_as_of_date,date(ifnull(dd.disbursedon_date,dd.expected_disburse_date))),lc.charge_time_enum ASC, lc.due_for_collection_as_of_date ASC, lc.is_penalty ASC";
+                + " order by ifnull(lc.due_for_collection_as_of_date,date(ifnull(dd.disbursedon_date,dd.expected_disburse_date))),lc.charge_time_enum ASC, lc.due_for_collection_as_of_date ASC, lc.is_penalty ASC,lc.id ASC ";
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { loanId });
     }
