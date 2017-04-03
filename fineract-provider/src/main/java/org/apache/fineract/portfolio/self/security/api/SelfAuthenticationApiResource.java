@@ -36,19 +36,16 @@ import org.springframework.stereotype.Component;
 @Scope("singleton")
 public class SelfAuthenticationApiResource {
 
-	private final AuthenticationApiResource authenticationApiResource;
+    private final AuthenticationApiResource authenticationApiResource;
 
-	@Autowired
-	public SelfAuthenticationApiResource(
-			final AuthenticationApiResource authenticationApiResource) {
-		this.authenticationApiResource = authenticationApiResource;
-	}
+    @Autowired
+    public SelfAuthenticationApiResource(final AuthenticationApiResource authenticationApiResource) {
+        this.authenticationApiResource = authenticationApiResource;
+    }
 
-	@POST
-	@Produces({ MediaType.APPLICATION_JSON })
-	public String authenticate(@QueryParam("username") final String username,
-			@QueryParam("password") final String password) {
-		return this.authenticationApiResource.authenticate(username, password);
-	}
-
+    @POST
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String authenticate(@QueryParam("username") final String username, @QueryParam("password") final String password) {
+        return this.authenticationApiResource.authenticate(username, password);
+    }
 }

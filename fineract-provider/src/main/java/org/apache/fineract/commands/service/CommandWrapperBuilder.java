@@ -3949,6 +3949,7 @@ public class CommandWrapperBuilder {
         this.href = "/loanapplicationreferences/"+loanApplicationReferenceId+"/coapplicants/"+coapplicantId;
 		return this;
     }
+    
     public CommandWrapperBuilder updateTaskConfigTemplate(Long templateId) {
         this.actionName="UPDATE";
         this.entityName="TASKCONFIGTEMPLATE";
@@ -3956,5 +3957,4 @@ public class CommandWrapperBuilder {
         this.href="/tasktemplate/"+templateId;
         return this;
     }
-
 }

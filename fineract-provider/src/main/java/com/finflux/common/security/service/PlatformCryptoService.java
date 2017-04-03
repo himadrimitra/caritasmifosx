@@ -5,11 +5,11 @@ package com.finflux.common.security.service;
  */
 public interface PlatformCryptoService {
 
-    String encrypt(String value);
+    String encrypt(final String value);
 
-    String decrypt(String value);
+    String decrypt(final String value);
 
-    String decrypt(String value, String salt, Object... passwords);
+    String decrypt(final String value, final String salt, final Object... passwords);
 
-    String encrypt(String value, String salt, Object... passwords);
+    String encrypt(final String value, final String salt, final Object... passwords);
 }
