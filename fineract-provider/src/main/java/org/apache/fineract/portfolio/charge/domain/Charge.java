@@ -802,4 +802,8 @@ public class Charge extends AbstractPersistable<Long> {
         return this.isCapitalized;
     }
 
+    public boolean isTrancheDisbursement() {
+        return ChargeTimeType.fromInt(this.chargeTimeType).equals(ChargeTimeType.TRANCHE_DISBURSEMENT);
+    }
+    
 }

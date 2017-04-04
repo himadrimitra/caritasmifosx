@@ -1447,11 +1447,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 if (this.disbursement.isDisbursed()) {
                     incluedeAllDisbursements = considerAllDisbursementsInSchedule;
                 }
-                for(DisbursementData data : disbursementData){
-                    if(data.getChargeAmount() != null){
-                    	if(incluedeAllDisbursements || data.isDisbursed()){
-                        disbursementChargeAmount = disbursementChargeAmount.subtract(data.getChargeAmount());
-                    	}
+                for (DisbursementData data : disbursementData) {
+                    if (data.getChargeAmount() != null) {
+                        if (!this.disbursement.isDisbursed() || data.isDisbursed()) {
+                            disbursementChargeAmount = disbursementChargeAmount.subtract(data.getChargeAmount());
+                        }
                     }
                 }
                 this.outstandingLoanPrincipalBalance = BigDecimal.ZERO;
