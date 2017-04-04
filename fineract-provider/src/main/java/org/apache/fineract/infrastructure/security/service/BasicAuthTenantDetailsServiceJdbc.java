@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.infrastructure.security.service;
 
+import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -35,6 +36,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
 import com.finflux.common.security.service.PlatformCryptoService;
+import com.finflux.infrastructure.cryptography.api.CryptographyApiConstants;
 
 /**
  * A JDBC implementation of {@link BasicAuthTenantDetailsService} for loading a
@@ -57,9 +59,9 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
 
         private final boolean isReport;
         private final StringBuilder sqlBuilder = new StringBuilder(" t.id, ts.id as connectionId , ")//
-                .append(" t.timezone_id as timezoneId , t.name,t.identifier, ts.schema_name as schemaName, ts.schema_server as schemaServer,")//
+                .append(" t.timezone_id as timezoneId , t.name,t.identifier, ts.schema_name as schemaName, AES_DECRYPT(ts.schema_server,'" + CryptographyApiConstants.dBConnectionEncDecKey + "') as schemaServer,")//
                 .append(" ts.schema_server_port as schemaServerPort, ts.auto_update as autoUpdate,")//
-                .append(" ts.schema_username as schemaUsername, ts.schema_password as schemaPassword , ts.pool_initial_size as initialSize,")//
+                .append(" AES_DECRYPT(ts.schema_username,'" + CryptographyApiConstants.dBConnectionEncDecKey + "') as schemaUsername, AES_DECRYPT(ts.schema_password,'" + CryptographyApiConstants.dBConnectionEncDecKey + "') as schemaPassword , ts.pool_initial_size as initialSize,")//
                 .append(" ts.pool_validation_interval as validationInterval, ts.pool_remove_abandoned as removeAbandoned, ts.pool_remove_abandoned_timeout as removeAbandonedTimeout,")//
                 .append(" ts.pool_log_abandoned as logAbandoned, ts.pool_abandon_when_percentage_full as abandonedWhenPercentageFull, ts.pool_test_on_borrow as testOnBorrow,")//
                 .append(" ts.pool_max_active as poolMaxActive, ts.pool_min_idle as poolMinIdle, ts.pool_max_idle as poolMaxIdle,")//
@@ -67,7 +69,8 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
                 .append(" ts.pool_min_evictable_idle_time_millis as poolMinEvictableIdleTimeMillis,")//
                 .append(" ts.deadlock_max_retries as maxRetriesOnDeadlock,")//
                 .append(" ts.deadlock_max_retry_interval as maxIntervalBetweenRetries, ")//
-                .append(" t.tenant_key as tenantKey ")
+                .append(" AES_DECRYPT(t.tenant_key,'" + CryptographyApiConstants.dBConnectionEncDecKey + "') as tenantKey,")
+                .append(" ts.server_connection_details_for_encryption as serverConnectionDetails ")
                 .append(" from tenants t left join tenant_server_connections ts ");
 
         public TenantMapper(boolean isReport) {
@@ -89,8 +92,7 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
             final String tenantIdentifier = rs.getString("identifier");
             final String name = rs.getString("name");
             final String timezoneId = rs.getString("timezoneId");
-           
-            final String encriptedTenantKey = rs.getString("tenantKey");
+            final String encriptedTenantKey = convertBlobToString(rs.getBlob("tenantKey"));
             final String tenantKey = platformCryptoService.decrypt(encriptedTenantKey,name,id,tenantIdentifier);
             FineractPlatformTenantConnection connection =  null;
             final FineractPlatformTenant partialTenantInfo = new FineractPlatformTenant(id, tenantIdentifier, name, timezoneId, connection, tenantKey);
@@ -103,14 +105,14 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
 
             final Long connectionId = rs.getLong("connectionId");
             final String schemaName = rs.getString("schemaName");
-            final String encriptedSchemaServer = rs.getString("schemaServer");
+            final String encriptedSchemaServer = convertBlobToString(rs.getBlob("schemaServer"));
             final String schemaServer = platformCryptoService.decrypt(encriptedSchemaServer, tenant.getName(), tenant.getId(),
                     tenant.getTenantKey(), tenant.getTenantIdentifier());
             final String schemaServerPort = rs.getString("schemaServerPort");
-            final String encriptedSchemaUsername = rs.getString("schemaUsername");
+            final String encriptedSchemaUsername = convertBlobToString(rs.getBlob("schemaUsername"));
             final String schemaUsername = platformCryptoService.decrypt(encriptedSchemaUsername, tenant.getName(), tenant.getId(),
                     tenant.getTenantKey(), tenant.getTenantIdentifier());
-            final String encriptedSchemaPassword = rs.getString("schemaPassword");
+            final String encriptedSchemaPassword = convertBlobToString(rs.getBlob("schemaPassword"));
             final String schemaPassword = platformCryptoService.decrypt(encriptedSchemaPassword, tenant.getName(), tenant.getId(),
                     tenant.getTenantKey(), tenant.getTenantIdentifier());
             final boolean autoUpdateEnabled = rs.getBoolean("autoUpdate");
@@ -129,16 +131,27 @@ public class BasicAuthTenantDetailsServiceJdbc implements BasicAuthTenantDetails
             final int minEvictableIdleTimeMillis = rs.getInt("poolMinEvictableIdleTimeMillis");
             int maxRetriesOnDeadlock = rs.getInt("maxRetriesOnDeadlock");
             int maxIntervalBetweenRetries = rs.getInt("maxIntervalBetweenRetries");
-
+            final String serverConnectionDetails = rs.getString("serverConnectionDetails");
             maxRetriesOnDeadlock = bindValueInMinMaxRange(maxRetriesOnDeadlock, 0, 15);
             maxIntervalBetweenRetries = bindValueInMinMaxRange(maxIntervalBetweenRetries, 1, 15);
 
             return new FineractPlatformTenantConnection(connectionId, schemaName, schemaServer, schemaServerPort, schemaUsername,
                     schemaPassword, autoUpdateEnabled, initialSize, validationInterval, removeAbandoned, removeAbandonedTimeout,
                     logAbandoned, abandonWhenPercentageFull, maxActive, minIdle, maxIdle, suspectTimeout, timeBetweenEvictionRunsMillis,
-                    minEvictableIdleTimeMillis, maxRetriesOnDeadlock, maxIntervalBetweenRetries, testOnBorrow);
+                    minEvictableIdleTimeMillis, maxRetriesOnDeadlock, maxIntervalBetweenRetries, testOnBorrow, serverConnectionDetails);
         }
 
+        private String convertBlobToString(final Blob blob) {
+            try {
+                final byte[] bdata = blob.getBytes(1, (int) blob.length());
+                return new String(bdata);
+                // return Base64.encodeBase64String(blob.getBytes(1, (int)
+                // blob.length()));
+            } catch (SQLException | NullPointerException e) {
+                return null;
+            }
+        }
+        
         private int bindValueInMinMaxRange(final int value, int min, int max) {
             if (value < min) {
                 return min;

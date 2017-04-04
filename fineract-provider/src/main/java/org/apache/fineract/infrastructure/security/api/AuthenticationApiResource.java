@@ -22,12 +22,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
 import org.apache.fineract.infrastructure.security.data.AuthenticatedUserData;
@@ -48,6 +51,10 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import com.finflux.infrastructure.cryptography.api.CryptographyApiConstants;
+import com.finflux.infrastructure.cryptography.data.CryptographyData;
+import com.finflux.infrastructure.cryptography.service.CryptographyReadPlatformService;
+import com.finflux.infrastructure.cryptography.service.CryptographyWritePlatformService;
 import com.google.gson.JsonElement;
 import com.sun.jersey.core.util.Base64;
 
@@ -62,30 +69,52 @@ public class AuthenticationApiResource {
     private final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext;
     private final AppUserWritePlatformService appUserWritePlatformService;
     private final FromJsonHelper fromApiJsonHelper;
+    private final DefaultToApiJsonSerializer<CryptographyData> toApiJsonSerializer;
+    private final CryptographyReadPlatformService cryptographyReadPlatformService;
+    private final CryptographyWritePlatformService cryptographyWritePlatformService;
 
     @Autowired
     public AuthenticationApiResource(
             @Qualifier("customAuthenticationProvider") final DaoAuthenticationProvider customAuthenticationProvider,
             final ToApiJsonSerializer<AuthenticatedUserData> apiJsonSerializerService,
             final SpringSecurityPlatformSecurityContext springSecurityPlatformSecurityContext,
-            final AppUserWritePlatformService appUserWritePlatformService, final FromJsonHelper fromApiJsonHelper) {
+            final AppUserWritePlatformService appUserWritePlatformService, final FromJsonHelper fromApiJsonHelper,
+            final DefaultToApiJsonSerializer<CryptographyData> toApiJsonSerializer,
+            final CryptographyReadPlatformService cryptographyReadPlatformService,
+            final CryptographyWritePlatformService cryptographyWritePlatformService) {
         this.customAuthenticationProvider = customAuthenticationProvider;
         this.apiJsonSerializerService = apiJsonSerializerService;
         this.springSecurityPlatformSecurityContext = springSecurityPlatformSecurityContext;
         this.appUserWritePlatformService = appUserWritePlatformService;
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.toApiJsonSerializer = toApiJsonSerializer;
+        this.cryptographyReadPlatformService = cryptographyReadPlatformService;
+        this.cryptographyWritePlatformService = cryptographyWritePlatformService;
     }
 
     @POST
     @Produces({ MediaType.APPLICATION_JSON })
-    public String authenticate(final String apiRequestBodyAsJson) {
-        JsonElement element = this.fromApiJsonHelper.parse(apiRequestBodyAsJson);
-        String username = this.fromApiJsonHelper.extractStringNamed("username", element);
-        String password = this.fromApiJsonHelper.extractStringNamed("password", element);
+    public String authenticate(String apiRequestBodyAsJson,
+            @DefaultValue("false") @QueryParam("isPasswordEncrypted") final boolean isPasswordEncrypted) {
+        if (isPasswordEncrypted && (apiRequestBodyAsJson == null || apiRequestBodyAsJson.equalsIgnoreCase("{}"))) {
+            this.cryptographyWritePlatformService.generateKeyPairAndStoreIntoDataBase(CryptographyApiConstants.keyTypeLogin);
+            final CryptographyData publicKeyData = this.cryptographyReadPlatformService.getPublicKey(CryptographyApiConstants.keyTypeLogin);
+            return this.toApiJsonSerializer.serialize(publicKeyData);
+        }
+        final JsonElement element = this.fromApiJsonHelper.parse(apiRequestBodyAsJson);
+        final String username = this.fromApiJsonHelper.extractStringNamed("username", element);
+        final String password;
+        if (isPasswordEncrypted) {
+            final boolean isBase64Encoded = true;
+            password = this.cryptographyWritePlatformService.decryptEncryptedTextUsingRSAPrivateKey(
+                    this.fromApiJsonHelper.extractStringNamed("password", element), CryptographyApiConstants.keyTypeLogin, isBase64Encoded);
+        } else {
+            password = this.fromApiJsonHelper.extractStringNamed("password", element);
+        }
         return authenticate(username, password);
     }
-
-    public String authenticate(String username, String password) {
+    
+    public String authenticate(final String username, final String password) {
         AuthenticatedUserData authenticatedUserData = null; 
         try {
             final Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
@@ -134,7 +163,6 @@ public class AuthenticationApiResource {
             }
             throw e;
         }
-
         return this.apiJsonSerializerService.serialize(authenticatedUserData);
     }
 }
