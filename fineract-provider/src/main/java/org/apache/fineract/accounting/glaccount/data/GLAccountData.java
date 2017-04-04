@@ -187,6 +187,21 @@ public class GLAccountData {
         this.glClassificationTypeOptions = null;
         this.glClassificationType = null;
     }
+    
+    public static GLAccountData createFrom(final Long id, final String name, final String glCode, final EnumOptionData type) {
+        final Long parentId = null;
+        final boolean disabled = false;
+        final boolean manualEntriesAllowed = true;
+        final EnumOptionData usage = null;
+        final String description = null;
+        final String nameDecorated = null;
+        final CodeValueData tagId = null;
+        final Long organizationRunningBalance = null;
+        final EnumOptionData glClassificationType = null;
+
+        return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, type, usage, description, nameDecorated,
+                tagId, organizationRunningBalance, glClassificationType);
+    }
 
     public Long getId() {
         return this.id;

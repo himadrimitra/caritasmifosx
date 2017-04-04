@@ -71,22 +71,22 @@ public class DataTableHelper {
 
     public Object createDataTableEntry(final String loanProductJSON, final String dataTableName, final String transactionId) {
         return Utils.performServerPost(this.requestSpec, this.responseSpec, BASE_DATA_TABLE_ENTRY_URL + dataTableName + "/" + transactionId
-                + "?" + Utils.TENANT_IDENTIFIER + "&command=acc_gl_journal_entry&genericResultSet=true", loanProductJSON, "");
+                + "?" + Utils.TENANT_IDENTIFIER + "&command=f_journal_entry&genericResultSet=true", loanProductJSON, "");
     }
 
     public Object updateDataTableEntry(final String loanProductJSON, final String dataTableName, final String transactionId) {
         return Utils.performServerPut(this.requestSpec, this.responseSpec, BASE_DATA_TABLE_ENTRY_URL + dataTableName + "/" + transactionId
-                + "?" + Utils.TENANT_IDENTIFIER + "&command=acc_gl_journal_entry&genericResultSet=true", loanProductJSON, "");
+                + "?" + Utils.TENANT_IDENTIFIER + "&command=f_journal_entry&genericResultSet=true", loanProductJSON, "");
     }
 
     public Object deleteDataTableEntry(final String dataTableName, final String transactionId) {
         return Utils.performServerDelete(this.requestSpec, this.responseSpec, BASE_DATA_TABLE_ENTRY_URL + dataTableName + "/"
-                + transactionId + "?" + Utils.TENANT_IDENTIFIER + "&command=acc_gl_journal_entry&genericResultSet=true", "");
+                + transactionId + "?" + Utils.TENANT_IDENTIFIER + "&command=f_journal_entry&genericResultSet=true", "");
     }
 
     public Object readDataTableEntry(final String dataTableName, final String transactionId) {
         return Utils.performServerGet(this.requestSpec, this.responseSpec, BASE_DATA_TABLE_ENTRY_URL + dataTableName + "/" + transactionId
-                + "?" + Utils.TENANT_IDENTIFIER + "&command=acc_gl_journal_entry&genericResultSet=true", "");
+                + "?" + Utils.TENANT_IDENTIFIER + "&command=f_journal_entry&genericResultSet=true", "");
     }
 
     public String getCreateGlAccountJson() {

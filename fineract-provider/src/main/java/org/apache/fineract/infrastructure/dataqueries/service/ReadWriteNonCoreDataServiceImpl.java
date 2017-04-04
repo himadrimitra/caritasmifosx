@@ -603,7 +603,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final boolean isConstraintApproach = this.configurationDomainService.isConstraintApproachEnabledForDatatables();
             String fkColumnName = null;
             Boolean isJournalEntryDataTable = false;
-            if(apptableName.equals("acc_gl_journal_entry")){
+            if(apptableName.equals(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)){
                 isJournalEntryDataTable = true;
             }
             fkColumnName = apptableName.substring(apptableName.indexOf( '_' )+1) + "_id";
@@ -1484,7 +1484,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         final Long entityId = getLongSqlRowSet(rs, "entityId");
         final String transactionId = rs.getString("transactionId");
 
-        if (rs.next() && !appTable.equalsIgnoreCase("acc_gl_journal_entry")) { throw new DatatableSystemErrorException("System Error: More than one row returned from data scoping query"); }
+        if (rs.next() && !appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { throw new DatatableSystemErrorException("System Error: More than one row returned from data scoping query"); }
 
         return new CommandProcessingResultBuilder() //
                 .withOfficeId(officeId) //
@@ -1538,7 +1538,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         if (appTable.equalsIgnoreCase("m_office")) { return; }
         if (appTable.equalsIgnoreCase("m_product_loan")) { return; }
         if (appTable.equalsIgnoreCase("m_savings_product")) { return; }
-        if (appTable.equalsIgnoreCase("acc_gl_journal_entry")) { return; }
+        if (appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) { return; }
 
         throw new PlatformDataIntegrityException("error.msg.invalid.application.table", "Invalid Application Table: " + appTable, "name",
                 appTable);
@@ -1593,7 +1593,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     }
     
     private String getApptableIdentifier(final String appTable, String apptableIdentifier) {
-        if (appTable.equalsIgnoreCase("acc_gl_journal_entry")) {
+        if (appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             apptableIdentifier = "'" + apptableIdentifier + "'";
         }
         return apptableIdentifier;
@@ -1633,7 +1633,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             }
         }
         String id = "id";
-        if (appTable.equals("acc_gl_journal_entry")) {
+        if (appTable.equals(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             id = fkName;
         }
         addSql = "insert into `" + datatable + "` (`" + fkName + "` " + insertColumns + ")" + " select "
@@ -2034,7 +2034,7 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
     
     private String getAppTableIdenfier(final String appTable, final JsonCommand command) {
         String appTableIdenfier = "";
-        if(appTable.equalsIgnoreCase("acc_gl_journal_entry")){
+        if(appTable.equalsIgnoreCase(DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)){
             appTableIdenfier = command.getTransactionId();
         }else{
             appTableIdenfier = command.entityId().toString();

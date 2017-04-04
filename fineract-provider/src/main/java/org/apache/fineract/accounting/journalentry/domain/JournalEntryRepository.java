@@ -18,7 +18,6 @@
  */
 package org.apache.fineract.accounting.journalentry.domain;
 
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,27 +25,15 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long>, JpaSpecificationExecutor<JournalEntry>,
-        JournalEntryRepositoryCustom {
+public interface JournalEntryRepository extends JpaRepository<JournalEntry, Long>, JpaSpecificationExecutor<JournalEntry> {
 
-    @Query("from JournalEntry journalEntry where journalEntry.transactionId= :transactionId and journalEntry.reversed is false and journalEntry.manualEntry is true")
-    List<JournalEntry> findUnReversedManualJournalEntriesByTransactionId(@Param("transactionId") String transactionId);
-
-    @Query("select DISTINCT j.transactionId from JournalEntry j where j.reversed = false and j.office.id = :officeId and j.transactionId not in (select DISTINCT je.transactionId from JournalEntry je where je.glAccount.id = :contraId and je.office.id = :officeId and je.reversed is false)")
-    List<String> findNonContraTansactionIds(@Param("contraId") Long contraId, @Param("officeId") Long officeId);
-
-    @Query("select DISTINCT j.transactionId from JournalEntry j where j.office.id = :officeId and j.glAccount.id = :contraId and j.reversed is false and j.transactionId not in (select DISTINCT je.reversalJournalEntry.transactionId from JournalEntry je where je.reversed is true)")
-    List<String> findNonReversedContraTansactionIds(@Param("contraId") Long contraId, @Param("officeId") Long officeId);
+    @Query("from JournalEntry journalEntry where journalEntry.transactionIdentifier= :transactionIdentifier and journalEntry.reversed is false and journalEntry.manualEntry is true")
+    List<JournalEntry> findUnReversedManualJournalEntriesByTransactionId(@Param("transactionIdentifier") String transactionIdentifier);
     
     @Query("from JournalEntry journalEntry where journalEntry.entityId= :entityId and journalEntry.entityType = :entityType")    
     List<JournalEntry> findProvisioningJournalEntriesByEntityId(@Param("entityId") Long entityId, @Param("entityType") Integer entityType) ;
 
-    @Query("from JournalEntry journalEntry where journalEntry.transactionId= :transactionId and journalEntry.reversed is false and journalEntry.entityType = :entityType")
-    List<JournalEntry> findJournalEntries(@Param("transactionId") String transactionId, @Param("entityType") Integer entityType);
-
-    @Query("from JournalEntry journalEntry where glAccount.id= :accountId and transactionId= :transactionId and transactionDate= :transactionDate"
-            + " and type= :journalEntryType and entityType=1 and entityId= :loanId and loanTransactionId= :loanTransactionId")
-    JournalEntry findLOANJournalEntryWith(@Param("accountId") Long accountId, @Param("transactionId") String transactionId,
-            @Param("transactionDate") Date transactionDate, @Param("journalEntryType") Integer journalEntryType,
-            @Param("loanId") Long loanId, @Param("loanTransactionId") Long loanTransactionId);
+    @Query("from JournalEntry journalEntry where journalEntry.transactionIdentifier= :transactionId and journalEntry.reversed is false and journalEntry.entityType = :entityType")
+    JournalEntry findJournalEntries(@Param("transactionId") String transactionId, @Param("entityType") Integer entityType);
+    
 }

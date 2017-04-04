@@ -19,6 +19,7 @@
 package org.apache.fineract.accounting.journalentry.service;
 
 import java.util.Date;
+import java.util.List;
 
 import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationParametersData;
 import org.apache.fineract.accounting.journalentry.data.JournalEntryData;
@@ -36,4 +37,10 @@ public interface JournalEntryReadPlatformService {
     OfficeOpeningBalancesData retrieveOfficeOpeningBalances(Long officeId, String currencyCode);
 
     Page<JournalEntryData> retrieveJournalEntriesByEntityId(String transactionId, Long entityId, Integer entityType) ;
+
+    List<String> findNonReversedContraTansactionIds(Long contraId, Long officeId);
+
+    List<String> findNonContraTansactionIds(Long contraId, Long officeId);
+
+    boolean hasJournalEntryForAccount(long glAccountId);
 }

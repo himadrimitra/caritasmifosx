@@ -1,5 +1,6 @@
 package org.apache.fineract.infrastructure.dataqueries.service;
 
+import org.apache.fineract.infrastructure.dataqueries.api.DataTableApiConstant;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,7 +34,7 @@ public class DataScopedSqlServiceFactory {
             case "m_savings_product":
                 scopedSqlService = new MSavingsProductDataScopedSqlServiceImpl();
             break;
-            case "acc_gl_journal_entry":
+            case DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME:
                 scopedSqlService = new AccGlJournalEntryDataScopedSqlServiceImpl();
             break;
         }

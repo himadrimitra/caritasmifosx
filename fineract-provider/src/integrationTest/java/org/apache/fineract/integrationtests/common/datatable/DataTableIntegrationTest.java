@@ -20,7 +20,7 @@ import com.jayway.restassured.specification.ResponseSpecification;
 
 public class DataTableIntegrationTest {
 
-    private static final String ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME = "acc_gl_journal_entry";
+    private static final String ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME = "f_journal_entry";
     private static final String STRING_TYPE_COLUMN = "String";
     private static final String DATATIME_TYPE_COLUMN = "DateTime";
     private static final String DATE_TYPE_COLUMN = "Date";
@@ -65,7 +65,7 @@ public class DataTableIntegrationTest {
         String applicationTableName = this.fromApiJsonHelper.extractStringNamed("applicationTableName", parsedCommand);
         JsonArray columnHeaderArray = this.fromApiJsonHelper.extractJsonArrayNamed("columnHeaderData", parsedCommand);
         dataTableJsonValidator.validateCretedDataTableJson(columnHeaderArray);
-        assertEquals("acc_gl_journal_entry", applicationTableName);
+        assertEquals(ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME, applicationTableName);
     }
 
     @Test
@@ -83,7 +83,7 @@ public class DataTableIntegrationTest {
         String applicationTableName = this.fromApiJsonHelper.extractStringNamed("applicationTableName", parsedCommand);
         JsonArray columnHeaderArray = this.fromApiJsonHelper.extractJsonArrayNamed("columnHeaderData", parsedCommand);
         dataTableJsonValidator.validateCretedDataTableMultiRowJson(columnHeaderArray);
-        assertEquals("acc_gl_journal_entry", applicationTableName);
+        assertEquals(ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME, applicationTableName);
     }
 
     @Test
@@ -111,7 +111,7 @@ public class DataTableIntegrationTest {
         String applicationTableName = this.fromApiJsonHelper.extractStringNamed("applicationTableName", parsedCommand);
         JsonArray columnHeaderArray = this.fromApiJsonHelper.extractJsonArrayNamed("columnHeaderData", parsedCommand);
         dataTableJsonValidator.validateUpdateDataTableJson(columnHeaderArray);
-        assertEquals("acc_gl_journal_entry", applicationTableName);
+        assertEquals(ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME, applicationTableName);
     }
 
     @Test
