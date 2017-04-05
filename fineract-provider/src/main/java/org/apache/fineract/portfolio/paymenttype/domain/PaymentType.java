@@ -25,6 +25,7 @@ import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -37,10 +38,10 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 @Entity
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = "PaymentType")
-@Table(name = "m_payment_type")
+@Table(name = "m_payment_type" ,uniqueConstraints = { @UniqueConstraint(columnNames = { "value" }, name = "payment_name_unique")})
 public class PaymentType extends AbstractPersistable<Long> {
 
-    @Column(name = "value")
+    @Column(name = "value", unique = true)
     private String name;
 
     @Column(name = "description")

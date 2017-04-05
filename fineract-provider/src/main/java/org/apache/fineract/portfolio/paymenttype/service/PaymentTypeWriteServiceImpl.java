@@ -59,6 +59,7 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
 
     @Override
     public CommandProcessingResult createPaymentType(JsonCommand command) {
+    	try{
         this.fromApiJsonDeserializer.validateForCreate(command.json());
         String name = command.stringValueOfParameterNamed(PaymentTypeApiResourceConstants.NAME);
         String description = command.stringValueOfParameterNamed(PaymentTypeApiResourceConstants.DESCRIPTION);
@@ -80,6 +81,10 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
         }
 
         return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withEntityId(newPaymentType.getId()).build();
+    }catch (final DataIntegrityViolationException dve) {
+    	handleDataIntegrityIssues(command, dve);
+    	return CommandProcessingResult.empty();
+	}
     }
 
     @Override
@@ -126,12 +131,12 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
             this.repository.delete(paymentType);
             this.repository.flush();
         } catch (final DataIntegrityViolationException e) {
-            handleDataIntegrityIssues(e);
+            handleDataIntegrityIssues(null, e);
         }
         return new CommandProcessingResultBuilder().withEntityId(paymentType.getId()).build();
     }
 
-    private void handleDataIntegrityIssues(final DataIntegrityViolationException dve) {
+    private void handleDataIntegrityIssues(final JsonCommand command,final DataIntegrityViolationException dve) {
 
         final Throwable realCause = dve.getMostSpecificCause();
         if (realCause.getMessage().contains("acc_product_mapping")) {
@@ -139,8 +144,13 @@ public class PaymentTypeWriteServiceImpl implements PaymentTypeWriteService {
                     "cannot.delete.payment.type.with.association");
         } else if (realCause.getMessage().contains("payment_type_id")) { throw new PlatformDataIntegrityException(
                 "error.msg.payment.type.association.exist", "cannot.delete.payment.type.with.association"); }
-
+        else if (realCause.getMessage().contains("payment_name_unique")) {
+            final String paymentTypeName = command.stringValueOfParameterNamed("name");
+            throw new PlatformDataIntegrityException("error.msg.paymenttype.duplicate.paymentTypeName", "PaymentType with paymentTypeName `" + paymentTypeName
+                    + "` already exists", "paymentTypeName", paymentTypeName);
+        }
         throw new PlatformDataIntegrityException("error.msg.paymenttypes.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource.");
     }
+    
 }

@@ -60,10 +60,9 @@ public class PaymentTypeDataValidator {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(PaymentTypeApiResourceConstants.resourceNameForPermissions);
 
-        if (this.fromApiJsonHelper.parameterExists(PaymentTypeApiResourceConstants.NAME, element)) {
             final String name = this.fromApiJsonHelper.extractStringNamed(PaymentTypeApiResourceConstants.NAME, element);
             baseDataValidator.reset().parameter(PaymentTypeApiResourceConstants.NAME).value(name).notBlank();
-        }
+       
 
         if (this.fromApiJsonHelper.parameterExists(PaymentTypeApiResourceConstants.DESCRIPTION, element)) {
             final String description = this.fromApiJsonHelper.extractStringNamed(PaymentTypeApiResourceConstants.DESCRIPTION, element);
