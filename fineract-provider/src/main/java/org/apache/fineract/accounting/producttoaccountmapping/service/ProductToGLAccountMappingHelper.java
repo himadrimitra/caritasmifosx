@@ -439,6 +439,9 @@ public class ProductToGLAccountMappingHelper {
                     saveCodeValueToExpenseMapping(productId, newCodeValueType, newGLAccountId, portfolioProductType);
                 }
             }
+        }//if codeValueMappingArray is empty
+        else{
+        	this.accountMappingRepository.delete(existingCodeValueToExpenseMappings);
         }
     }
 
