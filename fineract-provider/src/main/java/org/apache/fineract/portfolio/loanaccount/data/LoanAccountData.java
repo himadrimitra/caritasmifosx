@@ -1976,7 +1976,8 @@ public class LoanAccountData {
             this.canDisburse = true;
         } else {
             boolean canDisburse = false;
-            if (this.multiDisburseLoan != null && this.multiDisburseLoan && this.disbursementDetails != null) {
+            if (this.status != null && !LoanStatus.fromInt(this.status.id().intValue()).isSubmittedAndPendingApproval()
+                    && this.multiDisburseLoan != null && this.multiDisburseLoan && this.disbursementDetails != null) {
                 for (final DisbursementData disbursementData : this.disbursementDetails) {
                     if (!disbursementData.isDisbursed()) {
                         canDisburse = true;
