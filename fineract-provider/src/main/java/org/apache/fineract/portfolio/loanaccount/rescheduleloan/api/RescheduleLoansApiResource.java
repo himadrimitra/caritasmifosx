@@ -122,10 +122,14 @@ public class RescheduleLoansApiResource {
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String createLoanRescheduleRequest(final String apiRequestBodyAsJson) {
-        final CommandWrapper commandWrapper = new CommandWrapperBuilder()
-                .createLoanRescheduleRequest(RescheduleLoansApiConstants.ENTITY_NAME).withJson(apiRequestBodyAsJson).build();
-
+    public String createLoanRescheduleRequest(final String apiRequestBodyAsJson, @QueryParam("command") final String command) {
+        CommandWrapper commandWrapper = null;
+        if (command != null && compareIgnoreCase(command, "bulkcreateandapprove")) {
+            commandWrapper = new CommandWrapperBuilder().createAndApproveLoanRescheduleRequest().withJson(apiRequestBodyAsJson).build();
+        } else {
+            commandWrapper = new CommandWrapperBuilder().createLoanRescheduleRequest(RescheduleLoansApiConstants.ENTITY_NAME)
+                    .withJson(apiRequestBodyAsJson).build();
+        }
         final CommandProcessingResult commandProcessingResult = this.commandsSourceWritePlatformService.logCommandSource(commandWrapper);
 
         return this.loanRescheduleRequestToApiJsonSerializer.serialize(commandProcessingResult);

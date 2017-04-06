@@ -49,6 +49,7 @@ public class RescheduleLoansApiConstants {
     public static final String resheduleWithInterestRecalculationNotSupportedErrorCode = "loan.reschedule.interestrecalculation.error.code";
     public static final String newInstallmentAmountParamName = "newInstallmentAmount";
     public static final String isSpecificToInstallment = "specificToInstallment";
+    public static final String loansParamName = "loans";
     
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
@@ -70,4 +71,10 @@ public class RescheduleLoansApiConstants {
 
     public static final Set<String> APPROVE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             approvedOnDateParam));
+    
+    public static final Set<String> CREATE_AND_APPROVE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
+            graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
+            newInterestRateParamName, rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
+            loansParamName, adjustedDueDateParamName, recalculateInterestParamName, newInstallmentAmountParamName, isSpecificToInstallment));
+    
 }
