@@ -1578,7 +1578,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         LocalDate recalculateFrom = loan.fetchInterestRecalculateFromDate();
         Collection<LoanCharge> createdCharges = new ArrayList<>();
         Collection<LoanTransaction> chargeTransactions = new ArrayList<>();
-        if (chargeDefinition.isPercentageOfDisbursementAmount()) {
+        if (chargeDefinition.isTrancheDisbursement()) {
             LoanTrancheDisbursementCharge loanTrancheDisbursementCharge = null;
             final BigDecimal amount = command.bigDecimalValueOfParameterNamed("amount");
             for (LoanDisbursementDetails disbursementDetail : loanDisburseDetails) {
