@@ -2992,6 +2992,14 @@
                             <td></td>
                             <td></td>
                         </tr>
+						<tr>
+                            <td></td>
+                            <td>rescheduleloans?command=bulkcreateandapprove</td>
+                            <td><a href="#bulk_create_and_approve_loan_reschedule_requests">Create and Approve Bulk Loans Reschedule Request</a></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
                         <tr>
                             <td><a href="#loan_term_variations">Loan Term Variations</a></td>
                             <td>/loans/{loanId}/schedule?command=calculateLoanSchedule</td>
@@ -14003,6 +14011,55 @@
                     "approvedByUserId": 1
                     }
                     }
+                </code>
+            </div>
+        </div>
+		<a id="bulk_create_and_approve_loan_reschedule_requests" name="bulk_create_and_approve_loan_reschedule_requests" class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Bulk Create and Approve a Loan Reschedule Requests</h4>
+                <p>Rescheduling of bulk loans happens. It creates and approve the bulk requests.</p>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">POST https://DomainName/api/v1/rescheduleloans/?command=bulkcreateandapprove</code>
+                <code class="method-request">POST rescheduleloans/1?command=approve
+                    Content-Type: application/json
+                    Request Body:                    
+						{
+						"adjustedDueDate":"23 May 2017",
+						"dateFormat":"dd MMMM yyyy",
+						"loans":[57,58],
+						"locale":"en",
+						"rescheduleFromDate":"22 May 2017",
+						"rescheduleReasonId":48,
+						"specificToInstallment":true,
+						"submittedOnDate":"06 April 2017"
+						}
+                </code>
+                <code class="method-response">                    
+
+						{
+							"changes":
+							{
+								"locale": "en",
+								"dateFormat": "dd MMMM yyyy",
+								"approvedOnDate": "06 April 2017",
+								"approvedByUserId": 1,
+								"rescheduleRequestChanges":
+								[
+									{
+										"rescheduleRequestId": 150,
+										"loanId": 57
+									},
+									{
+										"rescheduleRequestId": 151,
+										"loanId": 58
+									}
+								]
+							}
+						}
+
+
                 </code>
             </div>
         </div>

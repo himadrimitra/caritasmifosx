@@ -3823,4 +3823,12 @@ public class CommandWrapperBuilder {
         this.formDataMultiPart = formDataMultiPart;
         return this;
     }
+
+    public CommandWrapperBuilder createAndApproveLoanRescheduleRequest() {
+        this.actionName = "BULKCREATEANDAPPROVE";
+        this.entityName = "RESCHEDULELOAN";
+        this.entityId = null;
+        this.href = "/rescheduleloans";
+        return this;
+    }
 }
