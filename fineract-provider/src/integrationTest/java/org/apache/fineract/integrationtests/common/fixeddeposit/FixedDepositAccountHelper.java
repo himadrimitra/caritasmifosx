@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.integrationtests.common.fixeddeposit;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -178,32 +179,30 @@ public class FixedDepositAccountHelper {
 
     public static Float getPrincipalAfterCompoundingInterest(Calendar currentDate, Float principal, Integer depositPeriod,
             double interestPerDay, Integer compoundingInterval, Integer postingInterval) {
-
-        Float totalInterest = 0.0f;
-        Float interestEarned = 0.0f;
-
+        BigDecimal totalInterest = BigDecimal.ZERO;
+        BigDecimal interestEarned = BigDecimal.ZERO;
+        BigDecimal principalAmount = new BigDecimal(principal);
         for (int i = 1; i <= depositPeriod; i++) {
             Integer daysInMonth = currentDate.getActualMaximum(Calendar.DATE);
             for (int j = 0; j < daysInMonth; j++) {
-
-                interestEarned = (float) (principal * interestPerDay);
-                totalInterest += interestEarned;
+                interestEarned = principalAmount.multiply(new BigDecimal(interestPerDay));
+                totalInterest = totalInterest.add(interestEarned);
                 if (compoundingInterval == 0) {
-                    principal += interestEarned;
+                    principalAmount = principalAmount.add(interestEarned);
                 }
             }
             if ((i % postingInterval) == 0 || i == depositPeriod) {
                 if (compoundingInterval != 0) {
-                    principal += totalInterest;
+                    principalAmount = principalAmount.add(totalInterest);
                 }
-                totalInterest = 0.0f;
-                System.out.println(principal);
+                totalInterest = BigDecimal.ZERO;
+                System.out.println(principalAmount);
 
             }
             currentDate.add(Calendar.MONTH, 1);
-            interestEarned = 0.0f;
+            interestEarned = BigDecimal.ZERO;
         }
-        return principal;
+        return principalAmount.floatValue();
     }
 
     public HashMap updateFixedDepositAccount(final String clientID, final String productID, final String accountID, final String validFrom,

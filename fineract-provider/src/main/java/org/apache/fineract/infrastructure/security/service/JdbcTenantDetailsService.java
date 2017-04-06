@@ -255,9 +255,11 @@ public class JdbcTenantDetailsService implements TenantDetailsService {
             sqlBuilder.append(" ts.pool_min_evictable_idle_time_millis as poolMinEvictableIdleTimeMillis,");
             sqlBuilder.append(" ts.deadlock_max_retries as maxRetriesOnDeadlock,");
             sqlBuilder.append(" ts.deadlock_max_retry_interval as maxIntervalBetweenRetries, ");
-            sqlBuilder.append(" t.tenant_key as tenantKey,");
+            sqlBuilder.append(" AES_DECRYPT(t.tenant_key,'" + CryptographyApiConstants.dBConnectionEncDecKey + "') as tenantKey,");
             sqlBuilder.append(" ts.server_connection_details_for_encryption as serverConnectionDetails ");
-            sqlBuilder.append(" from tenants t join tenant_server_connections ts on t.oltp_Id=ts.id and ts.is_server_connection_details_encrypted = 0 ");
+            sqlBuilder.append(" from tenants t ");
+            sqlBuilder.append(" join tenant_server_connections ts on ts.is_server_connection_details_encrypted = 0 ");
+            sqlBuilder.append(" and (t.oltp_Id=ts.id or t.report_id=ts.id) ");
 
             schema = sqlBuilder.toString();
         }

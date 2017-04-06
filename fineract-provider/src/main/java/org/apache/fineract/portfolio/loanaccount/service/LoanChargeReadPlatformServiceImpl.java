@@ -123,7 +123,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             
             return sb.toString();
         }
-
+        
         @Override
         public LoanChargeData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
 
@@ -221,7 +221,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             return ChargeSlabData.createChargeSlabData(id, fromLoanAmount, toLoanAmount, amount);
         }
     }
-
+    
     @Override
     public ChargeData retrieveLoanChargeTemplate() {
         this.context.authenticatedUser();
