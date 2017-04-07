@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.dataqueries.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import javax.sql.DataSource;
@@ -280,7 +281,6 @@ public class GenericDataServiceImpl implements GenericDataService {
             } else {
                 tempColumnName = columnName;
             }
-
             while (rsValues.next()) {
                 metaDataColumnName = rsValues.getString("columnName");
                 if (tempColumnName != null && tempColumnName.equalsIgnoreCase(metaDataColumnName)) {
@@ -288,6 +288,9 @@ public class GenericDataServiceImpl implements GenericDataService {
                     dependsOn = rsValues.getInt("dependsOn");
                     dependsOnColumnName = retreiveDependsOnColumnName(dependsOn);
                     orderPosition = rsValues.getLong("orderPosition");
+                    if(orderPosition == 0){
+                    	orderPosition = columnDefinitions.getLong("ORDINAL_POSITION");
+                    }
                     visible = rsValues.getBoolean("visible");
                     watchColumn = rsValues.getInt("watchColumn");
                     codeValueId = rsValues.getInt("codeValueId");
@@ -301,19 +304,20 @@ public class GenericDataServiceImpl implements GenericDataService {
                         columnNullable = false;
                     }
                 }
-
             }
             /**TODO : Dirty Quick fix for chaitanya**/
             if(columnName.matches("Village Name")){	
             	columnValues = retreiveAllVillages();
             }
-
+            
             final ResultsetColumnHeaderData rsch = ResultsetColumnHeaderData.detailed(columnName, columnType, columnLength, columnNullable,
                     columnIsPrimaryKey, columnValues, codeName, displayName, dependsOnColumnName, orderPosition, visible, mandatoryIfVisible, visibilityCriteria);
 
             columnHeaders.add(rsch);
         }
-
+        
+        
+        Collections.sort(columnHeaders);
         return columnHeaders;
     }
 
