@@ -1148,8 +1148,8 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                 final Map<String, Long> codeMappings = new HashMap<>();
                 final List<String> removeMappings = new ArrayList<>();
                 DatatableData datatableData = retrieveDatatable(datatableName);
-            	Integer xRegisterTableId = datatableData.getId();
-            	updateScopeCriteriaEnum(scopingCriteriaEnum, xRegisterTableId);
+                Integer xRegisterTableId = datatableData.getId();
+                updateScopeCriteriaEnum(scopingCriteriaEnum, xRegisterTableId);
                 for (final JsonElement column : changeColumns) {
                     // remove NULL values from column where mandatory is true
                     removeNullValuesFromStringColumn(datatableName, column.getAsJsonObject(), mapColumnNameDefinition);
@@ -1157,15 +1157,39 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
                     parseDatatableColumnForUpdate(column.getAsJsonObject(), mapColumnNameDefinition, sqlBuilder, datatableName,
                             constrainBuilder, codeMappings, removeMappings, isConstraintApproach);
                     String name = (column.getAsJsonObject().has("name")) ? column.getAsJsonObject().get("name").getAsString() : null;
-                    String newName = (column.getAsJsonObject().has("newName")) ? column.getAsJsonObject().get("newName").getAsString() : name;
-                    String displayName = (column.getAsJsonObject().has("displayName")) ? column.getAsJsonObject().get("displayName").getAsString() : null;
-                    StringBuilder updateSqlBuilder = new StringBuilder("UPDATE `x_registered_table_metadata` SET column_name = '"+newName+"' ");
-                    if(displayName != null){
-                    	updateSqlBuilder.append(", display_name = '"+displayName+"' ");
+                    String newName = (column.getAsJsonObject().has("newName")) ? column.getAsJsonObject().get("newName").getAsString()
+                            : name;
+
+                    String displayName = (column.getAsJsonObject().has("displayName"))
+                            ? column.getAsJsonObject().get("displayName").getAsString() : null;
+                    StringBuilder updateSqlBuilder = new StringBuilder(
+                            "UPDATE `x_registered_table_metadata` SET column_name = '" + newName + "' ");
+                    if (displayName != null) {
+                        updateSqlBuilder.append(", display_name = '" + displayName + "' ");
                     }
-                    updateSqlBuilder.append("WHERE column_name = '"+name+"' AND registered_table_id = "+xRegisterTableId);
+                    Integer displayPosition = (column.getAsJsonObject().has("displayPosition"))
+                            ? column.getAsJsonObject().get("displayPosition").getAsInt() : null;
+
+                    if (displayName != null) {
+                        updateSqlBuilder.append(", order_position = '" + displayPosition + "' ");
+                    }
+                    Boolean visible = (column.getAsJsonObject().has("visible")) ? column.getAsJsonObject().get("visible").getAsBoolean()
+                            : null;
+
+                    if (visible != null) {
+
+                        updateSqlBuilder.append(", visible = '" + visible.compareTo(Boolean.FALSE) + "' ");
+                    }
+                    Boolean mandatoryIfVisible = (column.getAsJsonObject().has("mandatoryIfVisible"))
+                            ? column.getAsJsonObject().get("mandatoryIfVisible").getAsBoolean() : null;
+
+                    if (mandatoryIfVisible != null) {
+                        updateSqlBuilder.append(", mandatory_if_visible = '" + mandatoryIfVisible.compareTo(Boolean.FALSE) + "' ");
+                    }
+                    updateSqlBuilder.append("WHERE column_name = '" + name + "' AND registered_table_id = " + xRegisterTableId);
+
                     this.jdbcTemplate.execute(updateSqlBuilder.toString());
-                 
+
                 }
                 updateXRegisteredDisplayRules(datatableName, changeColumns, false);
                 // Remove the first comma, right after ALTER TABLE `datatable`

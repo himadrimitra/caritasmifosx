@@ -26,7 +26,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 /**
  * Immutable data object representing a resultset column.
  */
-public final class ResultsetColumnHeaderData {
+public final class ResultsetColumnHeaderData implements Comparable<ResultsetColumnHeaderData> {
 
     private final String columnName;
     private String columnType;
@@ -331,5 +331,8 @@ public final class ResultsetColumnHeaderData {
 
     public String getColumnCode() {
         return this.columnCode;
+    }
+    public int compareTo(ResultsetColumnHeaderData rh){
+    	return (this.orderPosition.intValue() - rh.orderPosition.intValue());
     }
 }
