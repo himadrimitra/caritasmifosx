@@ -164,7 +164,6 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
           paymentdetail.append("left outer join m_payment_detail mpd on mpd.id=mlt.payment_detail_id ");
           paymentdetail.append(" where mc.id=? ");
           paymentdetail.append("and mlt.is_reversed=0 ");
-          paymentdetail.append(" and l.loan_status_id=300 ");
           paymentdetail.append("and mlt.transaction_type_enum in (2) ");
           paymentdetail.append("group by mpd.receipt_number,mlt.transaction_type_enum,mlt.transaction_date,mlt.loan_id ");
           paymentdetail.append("union ");
@@ -180,7 +179,6 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
           paymentdetail.append("and mst.transaction_type_enum in(1,2) ");
           paymentdetail.append("and mst.savings_account_id in (select  default_savings_account from m_client where mc.id=?) ");
           paymentdetail.append("and mst.is_reversed=0 ");
-          paymentdetail.append("and s.status_enum=300 ");
           paymentdetail.append(" group by mpd.receipt_number,mst.transaction_type_enum,mst.transaction_date,mst.savings_account_id ");
           paymentdetail.append(" )c group by c.transaction_date,c.receipt_number ");
           paymentdetail.append("  order by c.transaction_date desc "); 
