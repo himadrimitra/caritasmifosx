@@ -33,7 +33,7 @@ public class ScheduleGeneratorDTO {
 
     final LoanScheduleGeneratorFactory loanScheduleFactory;
     final ApplicationCurrency applicationCurrency;
-    final LocalDate calculatedRepaymentsStartingFromDate;
+    LocalDate calculatedRepaymentsStartingFromDate;
     final HolidayDetailDTO holidayDetailDTO;
     final CalendarInstance calendarInstanceForInterestRecalculation;
     final CalendarInstance compoundingCalendarInstance;
@@ -180,6 +180,11 @@ public class ScheduleGeneratorDTO {
     
     public void setBusinessEvent(BUSINESS_EVENTS businessEvent) {
         this.businessEvent = businessEvent;
+    }
+
+    
+    public void setCalculatedRepaymentsStartingFromDate(LocalDate calculatedRepaymentsStartingFromDate) {
+        this.calculatedRepaymentsStartingFromDate = calculatedRepaymentsStartingFromDate;
     }
 
 }

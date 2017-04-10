@@ -901,6 +901,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final boolean considerAllDisbursmentsInSchedule =true;
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+        LocalDate startDate = this.loanUtilService.calculateRepaymentStartingFromDate(loan.getExpectedDisbursedOnLocalDate(), loan, scheduleGeneratorDTO.getCalendar(), scheduleGeneratorDTO.getCalendarHistoryDataWrapper());
+        scheduleGeneratorDTO.setCalculatedRepaymentsStartingFromDate(startDate);
         if (loan.isGLIMLoan()) {
             List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
             loan.updateDefautGlimMembers(defaultGlimMembers);

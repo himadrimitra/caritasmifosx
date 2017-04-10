@@ -348,7 +348,7 @@ public class LoanUtilService {
         return calculatedRepaymentsStartingFromDate;
     }
 
-    private LocalDate calculateRepaymentStartingFromDate(final LocalDate actualDisbursementDate, final Loan loan, final Calendar calendar,
+    public LocalDate calculateRepaymentStartingFromDate(final LocalDate actualDisbursementDate, final Loan loan, final Calendar calendar,
             final CalendarHistoryDataWrapper calendarHistoryDataWrapper) {
         LocalDate calculatedRepaymentsStartingFromDate = loan.getExpectedFirstRepaymentOnDate();
         final LoanProductRelatedDetail repaymentScheduleDetails = loan.repaymentScheduleDetail();
