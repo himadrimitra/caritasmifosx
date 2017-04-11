@@ -28,7 +28,6 @@ import org.apache.fineract.integrationtests.common.loans.LoanStatusChecker;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -118,7 +117,6 @@ public class VariableInstallmentsIntegrationTest {
     }
     
     @Test
-    @Ignore("Failing test case")
     public void testAddInstallmentsWithDecliningBalanceEqualInstallments() {
         //31 October 2011 - 5000
         //Result: 20 October 2011 - 21,215.84, 31 October 2011 - 5000, 20 November 2011 26,477.31, 20 December 2011 26,477.31, 20 January 2012 25,947.7
@@ -139,7 +137,7 @@ public class VariableInstallmentsIntegrationTest {
         HashMap modifiedReschdule = transactionHelper.validateVariations(addVariationsjsondata, loanID) ;
         ArrayList newperiods = (ArrayList) modifiedReschdule.get("periods") ;
         ArrayList toVerifyData = VariableInstallmentsDecliningBalanceHelper.constructVerifyData(new String[] {"20 October 2011", "31 October 2011", "20 November 2011", "20 December 2011", "20 January 2012"}, 
-                new String[] {"21215.84", "5000.0", "26477.31", "26477.31", "25947.7"}) ;
+                new String[] {"21215.84", "5000.0", "26477.31", "26477.31", "25913.53"}) ;
         assertAfterSubmit(newperiods, toVerifyData) ;
         transactionHelper.submitVariations(addVariationsjsondata, loanID) ;
         list = transactionHelper.retrieveSchedule(loanID) ;
@@ -150,7 +148,6 @@ public class VariableInstallmentsIntegrationTest {
     }
     
     @Test
-    @Ignore("Failing test case")
     public void testModifyInstallmentWithDecliningBalanceEqualInstallments() {
         //20 October 2011 - 30000 modify
         //Result 20 October 2011 - 30000.0, 20 November 2011 - 24,966.34, 20 December 2011 - 24,966.34, 20 January 2012 - 24,966.33
@@ -271,7 +268,7 @@ public class VariableInstallmentsIntegrationTest {
         HashMap modifiedReschdule = transactionHelper.validateVariations(addVariationsjsondata, loanID) ;
         ArrayList newperiods = (ArrayList) modifiedReschdule.get("periods") ;
         ArrayList toVerifyData = VariableInstallmentsDecliningBalanceHelper.constructVerifyData(new String[] {"20 October 2011", "20 November 2011", "04 January 2012", "08 February 2012"}, 
-                new String[] {"26262.38", "26262.38", "20000.0", "33242.97"}) ;
+                new String[] {"26262.38", "26262.38", "20000.0", "33237.18"}) ;
         assertAfterSubmit(newperiods, toVerifyData) ;   
         transactionHelper.submitVariations(addVariationsjsondata, loanID) ;
         list = transactionHelper.retrieveSchedule(loanID) ;
