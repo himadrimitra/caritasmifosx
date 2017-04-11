@@ -1158,36 +1158,62 @@ public class RecurringDepositAccount extends SavingsAccount {
             depositScheduleInstallments.add(installment);
             actualInstallmentDate = DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery);
             actualInstallmentDate = CalendarUtils.adjustDate(actualInstallmentDate, startingInstallmentDate, frequency);
-			AdjustedDateDetailsDTO adjustedDateDetailsDTO = adjustinstallmentDateBasedOnHolidayDetails(actualInstallmentDate, holidayDetails,
-					DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery));
-			actualInstallmentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
-			installmentDate = adjustedDateDetailsDTO.getChangedScheduleDate();
-			Holiday applicableHolidayForInstallmentDate = HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(), holidayDetails.getHolidays());
-		if (applicableHolidayForInstallmentDate != null
-					&& applicableHolidayForInstallmentDate.getReScheduleType().isResheduleToNextRepaymentDate()) {
-	        	LocalDate newAdjustedDate = adjustedDateDetailsDTO.getChangedScheduleDate();
-	        	Holiday applicableHolidayForNewAdjustedDate = null;
-	            do{
-	            newAdjustedDate = DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery);
-					applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(newAdjustedDate,
-							holidayDetails.getHolidays());
-	            }while(applicableHolidayForNewAdjustedDate != null);
-	            	installmentDate = newAdjustedDate;
-	        } 
-			if(applicableHolidayForInstallmentDate != null && applicableHolidayForInstallmentDate.isExtendRepaymentReschedule()){
-				actualInstallmentDate = installmentDate;
-			}
+            final AdjustedDateDetailsDTO adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(actualInstallmentDate, actualInstallmentDate,
+                    DepositAccountUtils.calculateNextDepositDate(actualInstallmentDate, frequency, recurringEvery));
+            adjustinstallmentDateBasedOnHolidayDetails(adjustedDateDetailsDTO, holidayDetails,frequency,recurringEvery);
+            actualInstallmentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+            installmentDate = adjustedDateDetailsDTO.getChangedScheduleDate();
             installmentNumber += 1;
         }
         updateDepositAmount();
     }
     
-    private AdjustedDateDetailsDTO adjustinstallmentDateBasedOnHolidayDetails(LocalDate installmentDate, final HolidayDetailDTO holidayDetails, final LocalDate nextMeetingDate){
-    	AdjustedDateDetailsDTO adjustedDateDetailsDTO = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(installmentDate, holidayDetails.getHolidays());
-    	LocalDate actualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
-    	installmentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(adjustedDateDetailsDTO.getChangedScheduleDate(), nextMeetingDate, holidayDetails.getWorkingDays());
-    	adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(installmentDate, actualRepaymentDate);
-		return adjustedDateDetailsDTO;
+    private void adjustinstallmentDateBasedOnHolidayDetails(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final PeriodFrequencyType frequency, final Integer recurringEvery) {
+        checkAndUpdateWorkingDayIfRepaymentDateIsNonWorkingDay(adjustedDateDetailsDTO, holidayDetailDTO, frequency,
+                recurringEvery);
+        checkAndUpdateWorkingDayIfRepaymentDateIsHolidayDay(adjustedDateDetailsDTO, holidayDetailDTO, frequency, recurringEvery);
+    }
+    
+    private void checkAndUpdateWorkingDayIfRepaymentDateIsNonWorkingDay(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final PeriodFrequencyType frequency, final Integer recurringEvery) {
+        while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(), adjustedDateDetailsDTO.getChangedScheduleDate())) {
+            if (holidayDetailDTO.getWorkingDays().getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+                while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(),
+                        adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate())
+                        || adjustedDateDetailsDTO.getChangedScheduleDate().isAfter(adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate())) {
+                    final LocalDate nextRepaymentPeriodDueDate = DepositAccountUtils.calculateNextDepositDate(
+                            adjustedDateDetailsDTO.getChangedActualRepaymentDate(), frequency, recurringEvery);
+                    adjustedDateDetailsDTO.setNextRepaymentPeriodDueDate(nextRepaymentPeriodDueDate);
+                }
+            }
+            WorkingDaysUtil.updateWorkingDayIfRepaymentDateIsNonWorkingDay(adjustedDateDetailsDTO, holidayDetailDTO.getWorkingDays());
+        }
+    }
+
+    private void checkAndUpdateWorkingDayIfRepaymentDateIsHolidayDay(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final PeriodFrequencyType frequency, final Integer recurringEvery) {
+        if (holidayDetailDTO.isHolidayEnabled()) {
+            Holiday applicableHolidayForNewAdjustedDate = null;
+            while ((applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(),
+                    holidayDetailDTO.getHolidays())) != null) {
+                if (applicableHolidayForNewAdjustedDate.getReScheduleType().isResheduleToNextRepaymentDate()) {
+                    LocalDate nextRepaymentPeriodDueDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+                    while (!nextRepaymentPeriodDueDate.isAfter(adjustedDateDetailsDTO.getChangedScheduleDate())) {
+                        nextRepaymentPeriodDueDate = DepositAccountUtils.calculateNextDepositDate(
+                                adjustedDateDetailsDTO.getChangedActualRepaymentDate(), frequency, recurringEvery);
+                    }
+                    adjustedDateDetailsDTO.setChangedScheduleDate(nextRepaymentPeriodDueDate);
+                    adjustedDateDetailsDTO.setNextRepaymentPeriodDueDate(nextRepaymentPeriodDueDate);
+                    if (applicableHolidayForNewAdjustedDate.isExtendRepaymentReschedule()) {
+                        adjustedDateDetailsDTO.setChangedActualRepaymentDate(adjustedDateDetailsDTO.getChangedScheduleDate());
+                    }
+                } else {
+                    HolidayUtil.updateRepaymentRescheduleDateToWorkingDayIfItIsHoliday(adjustedDateDetailsDTO,
+                            applicableHolidayForNewAdjustedDate);
+                }
+            }
+        }
     }
 
     private LocalDate calcualteScheduleTillDate(final PeriodFrequencyType frequency, final Integer recurringEvery) {

@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.organisation.workingdays.service;
 
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
@@ -28,7 +29,7 @@ public class WorkingDaysUtil {
     public static LocalDate getOffSetDateIfNonWorkingDay(final LocalDate date, final LocalDate nextMeetingDate,
             final WorkingDays workingDays) {
 
-        // If date is not a non working day then return date.
+        // If date is a working day then return date.
         if (isWorkingDay(workingDays, date)) { return date; }
 
         final RepaymentRescheduleType rescheduleType = RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType());
@@ -40,7 +41,7 @@ public class WorkingDaysUtil {
                 return date;
             case MOVE_TO_NEXT_WORKING_DAY:
                 return getOffSetDateIfNonWorkingDay(date.plusDays(1), nextMeetingDate, workingDays);
-            case MOVE_TO_NEXT_REPAYMENT_MEETING_DAY:
+            case MOVE_TO_NEXT_REPAYMENT_DAY:
                 return nextMeetingDate;
             case MOVE_TO_PREVIOUS_WORKING_DAY:
                 return getOffSetDateIfNonWorkingDay(date.minusDays(1), nextMeetingDate, workingDays);
@@ -55,5 +56,11 @@ public class WorkingDaysUtil {
     
     public static boolean isNonWorkingDay(final WorkingDays workingDays, final LocalDate date) {
         return !isWorkingDay(workingDays, date);
+    }
+
+    public static void updateWorkingDayIfRepaymentDateIsNonWorkingDay(final AdjustedDateDetailsDTO adjustedDateDetailsDTO, final WorkingDays workingDays) {
+        final LocalDate changedScheduleDate = getOffSetDateIfNonWorkingDay(adjustedDateDetailsDTO.getChangedScheduleDate(),
+                adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate(), workingDays);
+        adjustedDateDetailsDTO.setChangedScheduleDate(changedScheduleDate);
     }
 }

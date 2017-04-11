@@ -91,7 +91,7 @@ public class WorkingDaysReadPlatformServiceImpl implements WorkingDaysReadPlatfo
         Collection<EnumOptionData> repaymentRescheduleOptions = Arrays.asList(
                 WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.SAME_DAY),
                 WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_WORKING_DAY),
-                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_REPAYMENT_MEETING_DAY),
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_REPAYMENT_DAY),
                 WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_PREVIOUS_WORKING_DAY));
         return new WorkingDaysData(null, null, null, repaymentRescheduleOptions, null);
     }

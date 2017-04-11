@@ -5,45 +5,79 @@
  */
 package org.apache.fineract.organisation.workingdays.data;
 
+import org.apache.fineract.infrastructure.accountnumberformat.domain.EntityAccountType;
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+import org.apache.fineract.organisation.workingdays.domain.ApplicableProperty;
+import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
+import org.apache.fineract.organisation.workingdays.domain.RepaymentScheduleUpdationType;
+
 public class WorkingDayExemptionsData {
 
-	private int protfolio_type;
+    // EntityAccountType.java
+    private EnumOptionData protfolioType;
 
-	private int applicableProperty;
+    // ApplicableProperty.java
+    private EnumOptionData applicableProperty;
 
-	private String expression;
+    private String expression;
 
-	private int actionToBePerformed;
-	
-	private int updateType;
+    // RepaymentRescheduleType.java
+    private EnumOptionData repaymentRescheduleType;
 
-	public WorkingDayExemptionsData(int protfolio_type, int applicableProperty, String expression,
-			int actionToBePerformed, int updateType) {
-		this.protfolio_type = protfolio_type;
-		this.applicableProperty = applicableProperty;
-		this.expression = expression;
-		this.actionToBePerformed = actionToBePerformed;
-		this.updateType = updateType;
-	}
+    // RepaymentScheduleUpdationType.java
+    private EnumOptionData repaymentScheduleUpdationType;
 
-	public int getProtfolio_type() {
-		return this.protfolio_type;
-	}
+    public WorkingDayExemptionsData(final EnumOptionData protfolioType, final EnumOptionData applicableProperty, final String expression,
+            final EnumOptionData repaymentRescheduleType, final EnumOptionData repaymentScheduleUpdationType) {
+        this.protfolioType = protfolioType;
+        this.applicableProperty = applicableProperty;
+        this.expression = expression;
+        this.repaymentRescheduleType = repaymentRescheduleType;
+        this.repaymentScheduleUpdationType = repaymentScheduleUpdationType;
+    }
 
-	public int getApplicableProperty() {
-		return this.applicableProperty;
-	}
+    public EntityAccountType getProtfolioType() {
+        if (this.protfolioType != null) { return EntityAccountType.fromInt(this.protfolioType.getId().intValue()); }
+        return null;
+    }
 
-	public String getExpression() {
-		return this.expression;
-	}
+    public void setProtfolioType(final EnumOptionData protfolioType) {
+        this.protfolioType = protfolioType;
+    }
 
-	public int getActionToBePerformed() {
-		return this.actionToBePerformed;
-	}
+    public ApplicableProperty getApplicableProperty() {
+        if (this.applicableProperty != null) { return ApplicableProperty.fromInt(this.applicableProperty.getId().intValue()); }
+        return null;
+    }
 
-	public int getupdateType() {
-		return this.updateType;
-	}
-	
+    public void setApplicableProperty(final EnumOptionData applicableProperty) {
+        this.applicableProperty = applicableProperty;
+    }
+
+    public String getExpression() {
+        return this.expression;
+    }
+
+    public void setExpression(final String expression) {
+        this.expression = expression;
+    }
+
+    public RepaymentRescheduleType getRepaymentRescheduleType() {
+        if (this.repaymentRescheduleType != null) { return RepaymentRescheduleType.fromInt(this.repaymentRescheduleType.getId().intValue()); }
+        return null;
+    }
+
+    public void setRepaymentRescheduleType(final EnumOptionData repaymentRescheduleType) {
+        this.repaymentRescheduleType = repaymentRescheduleType;
+    }
+
+    public RepaymentScheduleUpdationType getRepaymentScheduleUpdationType() {
+        if (this.repaymentScheduleUpdationType != null) { return RepaymentScheduleUpdationType.fromInt(this.repaymentScheduleUpdationType
+                .getId().intValue()); }
+        return null;
+    }
+
+    public void setRepaymentScheduleUpdationType(final EnumOptionData repaymentScheduleUpdationType) {
+        this.repaymentScheduleUpdationType = repaymentScheduleUpdationType;
+    }
 }
