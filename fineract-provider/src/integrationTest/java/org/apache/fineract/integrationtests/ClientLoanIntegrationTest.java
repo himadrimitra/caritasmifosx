@@ -5861,7 +5861,7 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("892.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("992.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
@@ -5923,7 +5923,7 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("1098.23", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("1392.00", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
@@ -5982,7 +5982,7 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("892.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("900.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     

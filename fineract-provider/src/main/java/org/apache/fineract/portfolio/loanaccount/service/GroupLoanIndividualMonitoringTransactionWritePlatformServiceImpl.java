@@ -145,7 +145,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
         loan.updateDefautGlimMembers(defaultGlimMembers);
-        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryRepayment, false, null);
+        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryRepayment);
         loan.updateGlim(glimMembers);
         final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
         final Boolean isHolidayValidationDone = false;
@@ -157,13 +157,11 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         LoanTransaction loanTransaction = this.loanAccountDomainService.makeRepayment(loan, commandProcessingResultBuilder,
                 transactionDate, transactionAmount, paymentDetail, noteText, txnExternalId, isRecoveryRepayment, isAccountTransfer,
                 holidayDetailDto, isHolidayValidationDone);
-        // FinanceLib.pmt(r, n, p, f, t);
-        Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.assembleGLIMTransactions(
-                command, loanTransaction, clientMembers);
-        changes.put("clientMembers", clientMembers);
-        this.glimAssembler.updateGLIMAfterRepayment(glimTransactions, isRecoveryRepayment);
-        this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
-        this.glimTransactionAssembler.updateLoanStatusForGLIM(loan);
+        
+        if (loan.isGLIMLoan()) {
+            this.glimTransactionAssembler.updateGlimTransactionsData(command, loan, changes, clientMembers, isRecoveryRepayment,
+                    loanTransaction);
+        }   
         
         return commandProcessingResultBuilder.withCommandId(command.commandId()) //
                 .withTransactionId(loanTransaction.getId().toString()) //
@@ -171,7 +169,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 .with(changes) //
                 .build();
     }
-
+    
     private void validateGlimTransaction(LocalDate transactionDate, Loan loan) {
         LocalDate lastUserTransactionDate = loan.getLastUserTransactionDate();
         if (transactionDate.isBefore(lastUserTransactionDate)) {
@@ -199,7 +197,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
         loan.updateDefautGlimMembers(defaultGlimMembers);
         boolean isRecoveryPayment = false;
-        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment, false, null);
+        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment);
         loan.updateGlim(glimMembers);
         final JsonArray glimList = command.arrayOfParameterNamed("clientMembers");
         BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
@@ -218,6 +216,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                 installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
                 installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
+                installmentPaidMap.put("unprocessedOverPaidAmount", BigDecimal.ZERO);
                 clientMembers.add(GroupLoanIndividualMonitoringDataChanges.createNew(glim.getId(),
                         transactionAmountPerClient.getAmount()));
 
@@ -256,6 +255,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                                         installmentPaidMap.get("unpaidInterest").add(interestPortionForCurrentInstallment.getAmount()));
                                 installmentPaidMap.put("unpaidPrincipal",
                                         installmentPaidMap.get("unpaidPrincipal").add(principalPortionForCurrentInstallment.getAmount()));
+                                installmentPaidMap.put("unprocessedOverPaidAmount",BigDecimal.ZERO);
                                 installmentPaidMap.put(
                                         "installmentTransactionAmount",
                                         installmentPaidMap.get("installmentTransactionAmount").add(
@@ -264,7 +264,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
                                 feeChargesWaiveOffPerInstallments = loan.waiveLoanChargeForGlim(currentInstallment,
                                         feePortionForCurrentInstallment.getAmount(), glim, feeChargesWaiveOffPerInstallments,
                                         existingTransactionIds, existingReversedTransactionIds, accruedCharge, currentUser,
-                                        scheduleGeneratorDTO, changes);
+                                        scheduleGeneratorDTO);
 
                             }
                         }
@@ -395,7 +395,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
         loan.updateDefautGlimMembers(defaultGlimMembers);
         boolean isRecoveryPayment = false;
-        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment, false, null);
+        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment);
         loan.updateGlim(glimMembers);
         final String noteText = command.stringValueOfParameterNamed("note");
         final CommandProcessingResultBuilder builderResult = new CommandProcessingResultBuilder();
@@ -440,7 +440,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
         loan.updateDefautGlimMembers(defaultGlimMembers);
         boolean isRecoveryPayment = false;
-        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment, false, null);
+        List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment);
         loan.updateGlim(glimMembers);
         LoanTransaction loanTransaction = this.loanAccountDomainService.writeOffForGlimLoan(command, loan, builderResult, noteText,
                 changes, existingTransactionIds, existingReversedTransactionIds);

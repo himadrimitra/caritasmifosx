@@ -169,4 +169,18 @@ public class Utils {
         return TimeZone.getTimeZone(TENANT_TIME_ZONE);
     }
 
+    public static String randomStringGenerator(final int len, final String sourceSetString) {
+        final int lengthOfSource = sourceSetString.length();
+        final Random rnd = new Random();
+        final StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append((sourceSetString).charAt(rnd.nextInt(lengthOfSource)));
+        }
+        return (sb.toString());
+    }
+
+    public static String randomStringGenerator(int len) {
+        return randomStringGenerator(len, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    }
+
 }

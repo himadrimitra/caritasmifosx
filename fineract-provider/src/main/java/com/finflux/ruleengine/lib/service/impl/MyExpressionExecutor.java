@@ -88,7 +88,7 @@ public class MyExpressionExecutor implements ExpressionExecutor {
 
             String expressionStr = ruleUtils.buildExpression(expressionNode);
             org.springframework.expression.Expression exp = parser.parseExpression(expressionStr);
-            return exp.getValue(context, Boolean.class);
+            return (boolean) exp.getValue(context, Boolean.class);
         }catch(Exception e){
             throw new InvalidExpressionException("Error occurred while evaluating:["
                     +ruleUtils.buildExpression(expressionNode)+"]",e);

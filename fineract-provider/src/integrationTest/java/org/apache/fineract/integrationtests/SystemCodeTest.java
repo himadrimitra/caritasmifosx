@@ -30,7 +30,6 @@ import org.apache.fineract.integrationtests.common.Utils;
 import org.apache.fineract.integrationtests.common.system.CodeHelper;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -61,7 +60,6 @@ public class SystemCodeTest {
 
     }
 
-    // @Ignore()
     @Test
     // scenario 57, 58, 59, 60
     public void testCreateCode() {
@@ -102,7 +100,6 @@ public class SystemCodeTest {
         assertNull("Verify system defined is false", deletedCodeValues.get(CodeHelper.CODE_SYSTEM_DEFINED_ATTRIBUTE_NAME));
     }
 
-    // @Ignore()
     @Test
     // scenario 57, 60
     public void testPreventCreateDuplicateCode() {
@@ -145,7 +142,6 @@ public class SystemCodeTest {
 
     }
 
-    // @Ignore
     @Test
     public void testUpdateDeleteSystemDefinedCode() {
 
@@ -169,7 +165,6 @@ public class SystemCodeTest {
 
     }
 
-    // @Ignore
     @Test
     public void testCodeValuesNotAssignedToTable() {
 
@@ -271,12 +266,6 @@ public class SystemCodeTest {
                 createCodeResponseId, "");
 
         assertEquals("Number of code values is 0", 0, deletedCodeValuesList1.size());
-
-    }
-
-    @Ignore
-    @Test
-    public void testCodeValuesAssignedToTable() {
 
     }
 

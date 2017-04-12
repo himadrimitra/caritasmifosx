@@ -5,7 +5,9 @@ import java.math.BigDecimal;
 
 public class GroupLoanIndividualMonitoringDataChanges {
     
+    @SuppressWarnings("unused")
     private final Long glimId;
+    @SuppressWarnings("unused")
     private final BigDecimal transactionAmount;
     
     public GroupLoanIndividualMonitoringDataChanges(Long glimId, BigDecimal transactionAmount) {

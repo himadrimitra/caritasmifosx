@@ -23,6 +23,7 @@ import org.apache.fineract.integrationtests.common.system.CodeHelper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -125,10 +126,12 @@ public class BorrowerAuthenticationDuringDisbursementTest {
 		this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
 
 		System.out.println("----------------CREATE PAYMENT TYPE-----------------");
-		Integer paymentTypeId2 = PaymentTypeHelper.createPaymentType(requestSpec, responseSpec, name, description,
+                String name2 = PaymentTypeHelper.randomNameGenerator(8);
+                String description2 = PaymentTypeHelper.randomNameGenerator(16);
+		Integer paymentTypeId2 = PaymentTypeHelper.createPaymentType(requestSpec, responseSpec, name2, description2,
 				isCashPayment, position);
-		Assert.assertNotNull(paymentTypeId);
-		PaymentTypeHelper.verifyPaymentTypeCreatedOnServer(requestSpec, responseSpec, paymentTypeId);
+		Assert.assertNotNull(paymentTypeId2);
+		PaymentTypeHelper.verifyPaymentTypeCreatedOnServer(requestSpec, responseSpec, paymentTypeId2);
 
 		System.out
 				.println("-----------------------------------APPLY FOR LOAN-----------------------------------------");

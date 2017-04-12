@@ -64,7 +64,7 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
                 new GLIMValidatationEventListner());
     }
 
-    @SuppressWarnings("unused")
+    
     @Override
     public void generateGlimLoanRepaymentSchedule(final Loan loan) {
         if (loan.isGLIMLoan()) {
@@ -73,10 +73,11 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
             final List<LoanGlimRepaymentScheduleInstallment> loanGlimRepaymentScheduleInstallments = new LinkedList<>();
             for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
                 BigDecimal transactionAmount = glimMember.getTotalPaybleAmount();
-                Map<String, BigDecimal> installmentPaidMap = new HashMap<String, BigDecimal>();
+                Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
                 installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
+                installmentPaidMap.put("unprocessedOverPaidAmount", BigDecimal.ZERO);
                 installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
                 for (final LoanRepaymentScheduleInstallment currentInstallment : installments) {
                     if (transactionAmount.compareTo(BigDecimal.ZERO) == 1) {
@@ -99,6 +100,7 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
                         installmentPaidMap.put("unpaidCharge", installmentPaidMap.get("unpaidCharge").add(feeChargesCharged));
                         installmentPaidMap.put("unpaidInterest", installmentPaidMap.get("unpaidInterest").add(interestCharged));
                         installmentPaidMap.put("unpaidPrincipal", installmentPaidMap.get("unpaidPrincipal").add(principal));
+                        installmentPaidMap.put("unprocessedOverPaidAmount",BigDecimal.ZERO);
                         installmentPaidMap.put("installmentTransactionAmount",
                                 installmentPaidMap.get("installmentTransactionAmount").add(totalAmountForCurrentInstallment));
 
@@ -171,10 +173,12 @@ public class GlimLoanWriteServiceImpl implements GlimLoanWriteService, BusinessE
                 String action = ClientApiConstants.clientClose;
                 validateClientHasActiveGlimLoan(client, action);
             } else if(clientDisassociateEntity != null) {
+                @SuppressWarnings("unchecked")
                 Set<Client> clientMembers = (Set<Client>) clientDisassociateEntity;
                 String action = ClientApiConstants.clientDisassociate;
                 validateClientMembers(clientMembers, action);
             } else if(transferClientsEntity != null) {
+                @SuppressWarnings("unchecked")
                 List<Client> clientMembers = (List<Client>) transferClientsEntity;
                 String action = ClientApiConstants.clientTransfer;
                 validateClientMembers(clientMembers, action);

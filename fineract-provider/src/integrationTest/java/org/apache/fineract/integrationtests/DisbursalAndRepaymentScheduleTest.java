@@ -25,13 +25,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
-
 import org.apache.fineract.integrationtests.common.*;
 import org.apache.fineract.integrationtests.common.loans.*;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -45,7 +42,7 @@ import com.jayway.restassured.specification.ResponseSpecification;
  * rescheduling
  **/
 @SuppressWarnings({ "rawtypes" })
-@Ignore
+
 public class DisbursalAndRepaymentScheduleTest {
 
     private ResponseSpecification responseSpec;
@@ -74,7 +71,6 @@ public class DisbursalAndRepaymentScheduleTest {
     @Test
     public void testRescheduleJLGLoanSynk() {
         System.out.println("---------------------------------STARTING RESCHEDULE JLG LOAN TEST ------------------------------------------");
-
         Calendar meetingCalendar = Calendar.getInstance();
         meetingCalendar.setFirstDayOfWeek(Calendar.MONDAY);
         meetingCalendar.setTime(new java.util.Date());
@@ -151,15 +147,14 @@ public class DisbursalAndRepaymentScheduleTest {
         this.loanTransactionHelper.disburseLoan(disbursalDate, this.loanId);
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, this.loanId);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
-
         System.out.println("---------------------------------CHANGING GROUP MEETING DATE ------------------------------------------");
-        CalendarHelper.updateMeetingCalendarForGroup(this.requestSpec, this.responseSpec, this.groupId, this.groupCalendarId.toString(),
-                groupMeetingNewStartDate, "2", "2", "2"); // New meeting dates
+        CalendarHelper.updateMeetingCalendarForGroupWithFutureMeetingChange(requestSpec, generalResponseSpec, groupId,
+                groupCalendarId.toString(), groupMeetingDate, groupMeetingNewStartDate);
+                                                           // New meeting dates
                                                           // will be the tuesday
                                                           // after the
         // coming
         // monday
-
         ArrayList loanRepaymnetSchedule = this.loanTransactionHelper
                 .getLoanRepaymentSchedule(requestSpec, generalResponseSpec, this.loanId);
 
@@ -286,10 +281,10 @@ public class DisbursalAndRepaymentScheduleTest {
         this.loanTransactionHelper.disburseLoan(disbursalDate, this.loanId);
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, this.loanId);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
-
         System.out.println("---------------------------------CHANGING GROUP MEETING DATE ------------------------------------------");
-        CalendarHelper.updateMeetingCalendarForGroup(this.requestSpec, this.responseSpec, this.groupId, this.groupCalendarId.toString(),
-                groupMeetingNewStartDate, "2", "2", "2"); // New meeting dates
+        CalendarHelper.updateMeetingCalendarForGroupWithFutureMeetingChange(requestSpec, generalResponseSpec, groupId,
+                groupCalendarId.toString(), groupMeetingDate, groupMeetingNewStartDate);
+        // New meeting dates
                                                           // will be the tuesday
                                                           // after the
                                                           // coming
@@ -308,7 +303,6 @@ public class DisbursalAndRepaymentScheduleTest {
 
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpecForStatusCode403);
     }
-
     /**
      * entities for jlg loan
      **/
@@ -365,4 +359,5 @@ public class DisbursalAndRepaymentScheduleTest {
     public void setGroupCalendarId(Integer groupCalendarId) {
         this.groupCalendarId = groupCalendarId;
     }
+
 }

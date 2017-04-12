@@ -137,7 +137,7 @@ public class VariableInstallmentsIntegrationTest {
         HashMap modifiedReschdule = transactionHelper.validateVariations(addVariationsjsondata, loanID) ;
         ArrayList newperiods = (ArrayList) modifiedReschdule.get("periods") ;
         ArrayList toVerifyData = VariableInstallmentsDecliningBalanceHelper.constructVerifyData(new String[] {"20 October 2011", "31 October 2011", "20 November 2011", "20 December 2011", "20 January 2012"}, 
-                new String[] {"21215.84", "5000.0", "26477.31", "26477.31", "25947.7"}) ;
+                new String[] {"21215.84", "5000.0", "26477.31", "26477.31", "25913.53"}) ;
         assertAfterSubmit(newperiods, toVerifyData) ;
         transactionHelper.submitVariations(addVariationsjsondata, loanID) ;
         list = transactionHelper.retrieveSchedule(loanID) ;
@@ -268,7 +268,7 @@ public class VariableInstallmentsIntegrationTest {
         HashMap modifiedReschdule = transactionHelper.validateVariations(addVariationsjsondata, loanID) ;
         ArrayList newperiods = (ArrayList) modifiedReschdule.get("periods") ;
         ArrayList toVerifyData = VariableInstallmentsDecliningBalanceHelper.constructVerifyData(new String[] {"20 October 2011", "20 November 2011", "04 January 2012", "08 February 2012"}, 
-                new String[] {"26262.38", "26262.38", "20000.0", "33242.97"}) ;
+                new String[] {"26262.38", "26262.38", "20000.0", "33237.18"}) ;
         assertAfterSubmit(newperiods, toVerifyData) ;   
         transactionHelper.submitVariations(addVariationsjsondata, loanID) ;
         list = transactionHelper.retrieveSchedule(loanID) ;

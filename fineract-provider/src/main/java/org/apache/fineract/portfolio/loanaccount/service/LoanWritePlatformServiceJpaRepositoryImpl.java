@@ -138,8 +138,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail
 import org.apache.fineract.portfolio.loanaccount.domain.DefaultLoanLifecycleStateMachine;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoring;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepository;
-import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
-import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransactionRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
@@ -268,7 +266,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository;
     private final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl;
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
-    private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper;
     private final LoanScheduleValidator loanScheduleValidator;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
 
@@ -289,7 +286,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
             final AccountAssociationsReadPlatformService accountAssociationsReadPlatformService,
             final LoanChargeReadPlatformService loanChargeReadPlatformService, final LoanReadPlatformService loanReadPlatformService,
-            final FromJsonHelper fromApiJsonHelper, 
+            final FromJsonHelper fromApiJsonHelper,
             final CalendarRepository calendarRepository,
             final LoanRepaymentScheduleInstallmentRepository repaymentScheduleInstallmentRepository,
             final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService,
@@ -306,8 +303,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final GroupLoanIndividualMonitoringAssembler glimAssembler,
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
-            final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,
-            final GroupLoanIndividualMonitoringTransactionRepositoryWrapper groupLoanIndividualMonitoringTransactionRepositoryWrapper,
+            final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,            
             final LoanScheduleValidator loanScheduleValidator,
             final FineractEntityAccessUtil fineractEntityAccessUtil) {
 
@@ -355,7 +351,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanGlimRepaymentScheduleInstallmentRepository = loanGlimRepaymentScheduleInstallmentRepository;
         this.glimLoanWriteServiceImpl = glimLoanWriteServiceImpl;
         this.glimTransactionAssembler = glimTransactionAssembler;
-        this.groupLoanIndividualMonitoringTransactionRepositoryWrapper = groupLoanIndividualMonitoringTransactionRepositoryWrapper;
         this.loanScheduleValidator = loanScheduleValidator;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
     }
@@ -902,32 +897,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
         if (loan.isGLIMLoan()) {
-            List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
-            loan.updateDefautGlimMembers(defaultGlimMembers);
-            List<GroupLoanIndividualMonitoring> glimList = this.glimRepository.findByLoanId(loanId);
-            List<Long> glimIds = new ArrayList<>();
-            List<GroupLoanIndividualMonitoring> approvedGlimMembers = new ArrayList<>();
-            HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
-            for (GroupLoanIndividualMonitoring glim : glimList) {
-                final BigDecimal approvedAmount = glim.getApprovedAmount();
-                if (MathUtility.isGreaterThanZero(approvedAmount)) {
-                    glimIds.add(glim.getId());
-                    approvedGlimMembers.add(glim);
-                    glim.setIsClientSelected(true);
-                    glim.undoGlimTransaction();
-                    glim.resetDerievedComponents();
-                    this.glimAssembler.recalculateTotalFeeCharges(loan, chargesMap, approvedAmount,
-                            glim.getGroupLoanIndividualMonitoringCharges());
-                }
-            }
-            
-            List<LoanGlimRepaymentScheduleInstallment> loanGlimRepaymentScheduleInstallments = this.loanGlimRepaymentScheduleInstallmentRepository
-                    .getLoanGlimRepaymentScheduleInstallmentByGlimIds(glimIds);
-            this.loanGlimRepaymentScheduleInstallmentRepository.deleteInBatch(loanGlimRepaymentScheduleInstallments);
-            this.glimAssembler.updateLoanChargesForGlim(loan, chargesMap);
-            loan.updateGlim(approvedGlimMembers);
-            this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(), loan.fetchNumberOfInstallmensAfterExceptions(),
-                    approvedGlimMembers);
+            updateGlimMemberOnUndoLoanDisbursal(loan);
 
         }       
         final Map<String, Object> changes = loan.undoDisbursal(scheduleGeneratorDTO, existingTransactionIds,
@@ -968,6 +938,40 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .withLoanId(loanId) //
                 .with(changes) //
                 .build();
+    }
+    /**
+     * update glim member, charges and  reayment schedules for glim
+     */
+    private void updateGlimMemberOnUndoLoanDisbursal(final Loan loan) {
+        List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loan.getId(), true);
+        loan.updateDefautGlimMembers(defaultGlimMembers);
+        List<GroupLoanIndividualMonitoring> glimList = this.glimRepository.findByLoanId(loan.getId());
+        List<Long> glimIds = new ArrayList<>();
+        List<GroupLoanIndividualMonitoring> approvedGlimMembers = new ArrayList<>();
+        HashMap<Long, BigDecimal> chargesMap = new HashMap<>();
+        //reset glim property for undo loan disbursal
+        for (GroupLoanIndividualMonitoring glim : glimList) {
+            final BigDecimal approvedAmount = glim.getApprovedAmount();
+            if (MathUtility.isGreaterThanZero(approvedAmount)) {
+                glimIds.add(glim.getId());
+                approvedGlimMembers.add(glim);
+                glim.setIsClientSelected(true);
+                glim.undoGlimTransaction();
+                glim.resetDerievedComponents();
+                this.glimAssembler.recalculateTotalFeeCharges(loan, chargesMap, approvedAmount,
+                        glim.getGroupLoanIndividualMonitoringCharges());
+            }
+        }
+        //get glim repayment schedules
+        List<LoanGlimRepaymentScheduleInstallment> loanGlimRepaymentScheduleInstallments = this.loanGlimRepaymentScheduleInstallmentRepository
+                .getLoanGlimRepaymentScheduleInstallmentByGlimIds(glimIds);
+        //delete existing glim repayment schedule
+        this.loanGlimRepaymentScheduleInstallmentRepository.deleteInBatch(loanGlimRepaymentScheduleInstallments);
+        //update the loan charges
+        this.glimAssembler.updateLoanChargesForGlim(loan, chargesMap);
+        loan.updateGlim(approvedGlimMembers);
+        this.glimAssembler.adjustRoundOffValuesToApplicableCharges(loan.charges(), loan.fetchNumberOfInstallmensAfterExceptions(),
+                approvedGlimMembers);
     }
 
     @Transactional
@@ -1224,8 +1228,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
             loan.updateDefautGlimMembers(defaultGlimMembers);
             boolean isRecoveryPayment = false;
-            final boolean isFromAdjustRepayment = true;
-            List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment, isFromAdjustRepayment, transactionId);
+            List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment);
             loan.updateGlim(glimMembers);
         }
         final String noteText = command.stringValueOfParameterNamed("note");
@@ -1259,13 +1262,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         }
         LoanTransaction newLoanTransaction = changedLoanTransactionDetails.getNewTransactionDetail();
         if (loan.isGLIMLoan() && MathUtility.isGreaterThanZero(newLoanTransaction.getAmount(loan.getCurrency()))) {
-            Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.assembleGLIMTransactions(
-                    command, newLoanTransaction, clientMembers);
-            this.glimAssembler.updateGLIMAfterRepayment(glimTransactions, isRecoveryRepayment);
-            this.groupLoanIndividualMonitoringTransactionRepositoryWrapper.saveAsList(glimTransactions);
-            changes.put("clientMember", clientMembers);
-        }
-        
+            this.glimTransactionAssembler.updateGlimTransactionsData(command, loan, changes, clientMembers, isRecoveryRepayment,
+                    newLoanTransaction);
+        }     
         
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_ADJUST_TRANSACTION,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_ADJUSTED_TRANSACTION, changedLoanTransactionDetails.getTransactionToAdjust()));
@@ -1726,7 +1725,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private boolean addCharge(final Loan loan, final Charge chargeDefinition, final LoanCharge loanCharge,
             final Collection<LoanCharge> createdCharges, final Collection<LoanTransaction> chargeTransactions) {
 
-        AppUser currentUser = getAppUserIfPresent();
+        
         if (!loan.hasCurrencyCodeOf(chargeDefinition.getCurrencyCode())) {
             final String errorMessage = "Charge and Loan must have the same currency.";
             throw new InvalidCurrencyException("loanCharge", "attach.to.loan", errorMessage);
@@ -1744,17 +1743,14 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         loan.addLoanCharge(loanCharge);
         createdCharges.add(loanCharge);
 
-//        this.loanChargeRepository.save(loanCharge);
-
         /**
          * we want to apply charge transactions only for those loans charges
          * that are applied when a loan is active and the loan product uses
          * Upfront Accruals
          **/
         if (loan.status().isActive() && loan.isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()) {
-            final LoanTransaction applyLoanChargeTransaction = loan.handleChargeAppliedTransaction(loanCharge, null, currentUser);
+            final LoanTransaction applyLoanChargeTransaction = loan.handleChargeAppliedTransaction(loanCharge, null);
             chargeTransactions.add(applyLoanChargeTransaction);
-//            this.loanTransactionRepository.save(applyLoanChargeTransaction);
         }
         boolean isAppliedOnBackDate = false;
         if (loanCharge.getDueLocalDate() == null || DateUtils.getLocalDateOfTenant().isAfter(loanCharge.getDueLocalDate())) {
@@ -2247,7 +2243,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Long fromLoanOfficerId = command.longValueOfParameterNamed("fromLoanOfficerId");
         final Long toLoanOfficerId = command.longValueOfParameterNamed("toLoanOfficerId");
-        final Set<String> loanIds= new HashSet<String>(Arrays.asList(command.arrayValueOfParameterNamed("loans")));
+        final Set<String> loanIds= new HashSet<>(Arrays.asList(command.arrayValueOfParameterNamed("loans")));
         final LocalDate dateOfLoanOfficerAssignment = command.localDateValueOfParameterNamed("assignmentDate");
 
         final Staff fromLoanOfficer = this.loanAssembler.findLoanOfficerByIdIfProvided(fromLoanOfficerId);
@@ -2389,9 +2385,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     } 
                     createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
                 } else if (reschedulebasedOnMeetingDates) {
-                    loan.updateLoanRepaymentScheduleDates(calendar.getStartDateLocalDate(), calendar.getRecurrence(), isHolidayEnabled,
-                    		scheduleGeneratorDTO, workingDays, reschedulebasedOnMeetingDates, presentMeetingDate, newMeetingDate,
-                            isSkipRepaymentOnFirstMonth, numberOfDays);
+                    loan.updateLoanRepaymentScheduleDates(calendar.getRecurrence(), isHolidayEnabled, scheduleGeneratorDTO,
+                    		workingDays, presentMeetingDate, newMeetingDate, isSkipRepaymentOnFirstMonth, numberOfDays);
                 } else {
                     loan.updateLoanRepaymentScheduleDates(calendar.getStartDateLocalDate(), calendar.getRecurrence(), scheduleGeneratorDTO,
                     		isHolidayEnabled, workingDays, isSkipRepaymentOnFirstMonth, numberOfDays);

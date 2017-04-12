@@ -61,7 +61,7 @@ public class HolidayUtil {
         for (final Holiday holiday : holidays) {
             if (repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
                     || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate())
-                    		|| (repaymentDate.isAfter(holiday.getToDateLocalDate()) && holiday.isExtendRepaymentReschedule()))) {
+                    		)) {
                 referedHoliday = holiday;
             }
         }

@@ -3957,4 +3957,12 @@ public class CommandWrapperBuilder {
         this.href="/tasktemplate/"+templateId;
         return this;
     }
+    
+    public CommandWrapperBuilder createAndApproveLoanRescheduleRequest() {
+        this.actionName = "BULKCREATEANDAPPROVE";
+        this.entityName = "RESCHEDULELOAN";
+        this.entityId = null;
+        this.href = "/rescheduleloans";
+        return this;
+    }
 }

@@ -38,7 +38,7 @@ public class SpringExpressionExecutor implements ExpressionExecutor {
         ExpressionParser parser = new SpelExpressionParser();
         try {
             Expression exp = parser.parseExpression(ruleUtils.buildExpression(expressionNode));
-            return exp.getValue(context, Boolean.class);
+            return (boolean) exp.getValue(context, Boolean.class);
         }catch (Exception e){
             e.printStackTrace();
             return false;
