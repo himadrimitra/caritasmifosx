@@ -45,7 +45,6 @@ import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 import org.apache.fineract.integrationtests.common.organisation.StaffHelper;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.Gson;

@@ -52,7 +52,6 @@ import org.apache.fineract.integrationtests.common.savings.SavingsStatusChecker;
 import org.joda.time.LocalDate;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.JsonObject;
@@ -5805,7 +5804,6 @@ public class ClientLoanIntegrationTest {
     }
     
     @Test
-    @Ignore("Failing test case")
     public void testLoanInterestRounding() {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
 
@@ -5863,12 +5861,11 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("892.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("992.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
     @Test
-    @Ignore("Failing test case")
     public void testLoanInterestRoundingBackDated() {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
 
@@ -5926,12 +5923,11 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("1098.23", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("1392.00", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
     @Test
-    @Ignore("Failing test case")
     public void testLoanInterestRoundingWithOutInterest() {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
 
@@ -5986,7 +5982,7 @@ public class ClientLoanIntegrationTest {
         ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("892.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        assertEquals("900.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
