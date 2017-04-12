@@ -55,7 +55,6 @@ import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.jayway.restassured.builder.RequestSpecBuilder;
@@ -254,7 +253,6 @@ public class SchedulerJobsTestResults {
     }
     
     @Test
-    @Ignore("Failing test case")
     public void testApplyHolidays() throws InterruptedException {
     	
     	this.globalConfigurationHelper = new GlobalConfigurationHelper(requestSpec, responseSpec);
@@ -323,7 +321,7 @@ public class SchedulerJobsTestResults {
         ArrayList<Integer> rescheduleDueDate10 = (ArrayList<Integer>) repaymentScheduleData.get(10).get("dueDate");
         Integer rescheduleDaysInPeriod10 = (Integer) repaymentScheduleData.get(10).get("daysInPeriod");
         ArrayList<Integer> rescheduleDueDat10 = new ArrayList<Integer>();
-        rescheduleDueDat10.add(21);
+        rescheduleDueDat10.add(31);
         rescheduleDueDat10.add(12);
         rescheduleDueDat10.add(2013);
         rescheduleDueDate10.removeAll(rescheduleDueDat10);
@@ -332,7 +330,7 @@ public class SchedulerJobsTestResults {
         ArrayList<Integer> rescheduleDueDate11 = (ArrayList<Integer>) repaymentScheduleData.get(11).get("dueDate");
         Integer rescheduleDaysInPeriod11 = (Integer) repaymentScheduleData.get(11).get("daysInPeriod");
         ArrayList<Integer> rescheduleDueDat11 = new ArrayList<Integer>();
-        rescheduleDueDat11.add(28);
+        rescheduleDueDat11.add(31);
         rescheduleDueDat11.add(12);
         rescheduleDueDat11.add(2013);
         rescheduleDueDate11.removeAll(rescheduleDueDat11);
@@ -601,7 +599,6 @@ public class SchedulerJobsTestResults {
 
     // Invalid test case as it won't affect summary (Loan summary is properly
     // updated before running this job)
-    @Ignore
     @Test
     public void testUpdateLoanSummaryJobOutcome() throws InterruptedException {
         this.schedulerJobHelper = new SchedulerJobHelper(this.requestSpec, this.responseSpec);

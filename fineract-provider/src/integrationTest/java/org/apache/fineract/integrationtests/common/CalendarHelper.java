@@ -34,6 +34,7 @@ public class CalendarHelper {
     private static final String PARENT_ENTITY_NAME_CENTER = "centers/";
     private static final String ENITY_NAME = "/calendars";
     private static final String Center_Entity = "centers/";
+    private static final String Group_Entity = "groups/";
     private static final String Edit_Calendar = "editcalendarbasedonmeetingdates/";
 
     public static Integer createMeetingCalendarForGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
@@ -65,7 +66,6 @@ public class CalendarHelper {
     public static Integer updateMeetingCalendarForGroup(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,
             final Integer groupId, String calendarID, final String startDate, final String frequency, final String interval,
             final String repeatsOnDay) {
-
         System.out.println("---------------------------------UPDATING A MEETING CALENDAR FOR THE GROUP------------------------------");
 
         final String CALENDAR_RESOURCE_URL = BASE_URL + PARENT_ENTITY_NAME + groupId + ENITY_NAME + "/" + calendarID;
@@ -131,6 +131,21 @@ public class CalendarHelper {
 
     }
 
+    public static Integer updateMeetingCalendarForGroupWithFutureMeetingChange(final RequestSpecification requestSpec,
+            final ResponseSpecification responseSpec, Integer groupId, String calendarID, String oldDate, String startDate) {
+
+        System.out.println("---------------------------------UPADATING A MEETING CALENDAR FOR THE Group------------------------------");
+
+        final String CALENDAR_RESOURCE_URL = BASE_URL + Group_Entity + groupId + ENITY_NAME + "/" + calendarID + "?"
+                + Utils.TENANT_IDENTIFIER;
+
+        System.out.println(CALENDAR_RESOURCE_URL);
+
+        return Utils.performServerPut(requestSpec, responseSpec, CALENDAR_RESOURCE_URL, getTestCalendarMeetingAsJSON(oldDate, startDate),
+                "resourceId");
+
+    }
+    
     private static String getTestCalendarMeetingAsJSON(String oldDate, String startDate) {
         final HashMap<String, String> map = new HashMap<>();
         map.put("dateFormat", "dd MMMM yyyy");
