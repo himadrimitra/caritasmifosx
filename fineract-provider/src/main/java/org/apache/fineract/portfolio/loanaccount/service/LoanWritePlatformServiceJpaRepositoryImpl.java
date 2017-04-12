@@ -391,9 +391,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         
         // validate for glim application
         if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+            List<GroupLoanIndividualMonitoring> glimList = this.glimRepository.findByLoanId(loanId);
             boolean validateForApprovalLimits = false;
             GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command,
-                    LoanApiConstants.principalDisbursedParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits);
+                    LoanApiConstants.principalDisbursedParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits,
+                    glimList);
         }
         
         LocalDate recalculateFrom = null;

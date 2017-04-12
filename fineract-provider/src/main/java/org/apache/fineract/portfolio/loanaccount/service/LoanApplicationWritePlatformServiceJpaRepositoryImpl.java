@@ -1427,12 +1427,15 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
         }
         
         // validate for GLIM application along with role based approval limits
-        if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+        if (loan.isGLIMLoan()) {
+            List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringRepository.findByLoanId(loanId);
             boolean validateForApprovalLimits = true;
             GroupLoanIndividualMonitoringDataValidator.validateForGroupLoanIndividualMonitoringTransaction(command,
-                    LoanApiConstants.approvedLoanAmountParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits);
+                    LoanApiConstants.approvedLoanAmountParameterName, currentUser, loan.getCurrencyCode(), validateForApprovalLimits,
+                    glimList);
+
         } else {
-        	
+
         	approvedPrincipal = loan.getApprovedPrincipal();
         	if(command.bigDecimalValueOfParameterNamed(LoanApiConstants.approvedLoanAmountParameterName) != null)
         	{
