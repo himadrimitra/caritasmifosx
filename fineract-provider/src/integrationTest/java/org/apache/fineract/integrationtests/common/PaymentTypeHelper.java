@@ -89,4 +89,8 @@ public class PaymentTypeHelper {
         return Utils.randomStringGenerator(prefix, lenOfRandomSuffix);
     }
 
+    public static String randomNameGenerator(final int lenOfRandomPaymentType) {
+        return Utils.randomStringGenerator(lenOfRandomPaymentType);
+    }
+
 }
