@@ -20,11 +20,11 @@ package org.apache.fineract.integrationtests;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.fineract.integrationtests.common.Utils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -52,17 +52,22 @@ public class TemplateIntegrationTest {
         this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
     }
 
-    @Ignore
     @Test
     public void test() {
 
         final HashMap<String, String> metadata = new HashMap<>();
-        metadata.put("user", "resource_url");
+        metadata.put("mappersorder", "0");
+        metadata.put("mapperskey", "user");
+        metadata.put("mappersvalue", "resource_url");
+        List<HashMap>mappers =new ArrayList<>();
+        mappers.add(metadata);
         final HashMap<String, Object> map = new HashMap<>();
         map.put("name", "foo");
         map.put("text", "Hello {{template}}");
-        map.put("mappers", metadata);
-
+        map.put("type","2");
+        map.put("entity", "0");
+        map.put("mappers", mappers);
+       
         ArrayList<?> get = Utils.performServerGet(this.requestSpec, this.responseSpec, this.GET_TEMPLATES_URL, "");
         final int entriesBeforeTest = get.size();
 
@@ -81,4 +86,5 @@ public class TemplateIntegrationTest {
 
         Assert.assertEquals(entriesBeforeTest, entriesAfterTest);
     }
+
 }
