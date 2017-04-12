@@ -134,7 +134,7 @@ public class GroupLoanIndividualMonitoring extends AbstractPersistable<Long> {
 
     public GroupLoanIndividualMonitoring(final Loan loan, final Client client, final BigDecimal proposedAmount,
             final BigDecimal approvedAmount, final BigDecimal disbursedAmount, final CodeValue loanPurpose, final Boolean isClientSelected,
-            final Set<GroupLoanIndividualMonitoringCharge> groupLoanIndividualMonitoringCharge, final BigDecimal percentage,
+            final Set<GroupLoanIndividualMonitoringCharge> groupLoanIndividualMonitoringCharge,
             BigDecimal installmentAmount) {
         this.loan = loan;
         this.client = client;
@@ -169,9 +169,9 @@ public class GroupLoanIndividualMonitoring extends AbstractPersistable<Long> {
     public static GroupLoanIndividualMonitoring createInstance(final Loan loan, final Client client, final BigDecimal proposedAmount,
             final BigDecimal approvedAmount, final BigDecimal disbursedAmount, final CodeValue loanPurpose, final Boolean isClientSelected,
             Set<GroupLoanIndividualMonitoringCharge> clientCharges, BigDecimal installmentAmount) {
-        BigDecimal percentage = null;
+        
         return new GroupLoanIndividualMonitoring(loan, client, proposedAmount, approvedAmount, disbursedAmount, loanPurpose,
-                isClientSelected, clientCharges, percentage, installmentAmount);
+                isClientSelected, clientCharges, installmentAmount);
     }
 
     public static GroupLoanIndividualMonitoring createInstance(final Loan loan, final Client client, final BigDecimal proposedAmount,

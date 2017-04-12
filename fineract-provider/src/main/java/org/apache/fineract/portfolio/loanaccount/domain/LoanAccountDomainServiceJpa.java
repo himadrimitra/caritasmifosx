@@ -68,6 +68,7 @@ import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
@@ -1044,9 +1045,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
         checkClientOrGroupActive(loan);
 
-        LocalDate recalculateFrom = null;
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
-
         final LocalDate writtenOffOnLocalDate = command.localDateValueOfParameterNamed("transactionDate");
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
         final BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
@@ -1054,16 +1052,14 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         LoanTransaction writeoffTransaction = LoanTransaction.writeOffForGlimLoan(loan, loan.getOffice(), writtenOffOnLocalDate,
                 txnExternalId,LoanTransactionSubType.PARTIAL_WRITEOFF.getValue());
         
-        if (transactionAmount.compareTo(BigDecimal.ZERO) == 0) {
+        if (MathUtility.isZero(transactionAmount)) {
             final String errorMessage = "The transaction amount must be greater then zero";
-            throw new InvalidLoanStateTransitionException("writeoff", "transaction.amount.must.be.greater.than.zero", errorMessage, writtenOffOnLocalDate);
+            throw new InvalidLoanStateTransitionException("writeoff", "transaction.amount.must.be.greater.than.zero", errorMessage,
+                    writtenOffOnLocalDate);
         }
 
         final ChangedTransactionDetail changedTransactionDetail = loan.GlimLoanCloseAsWrittenOff(command, writtenOffOnLocalDate,
-                writeoffTransaction, defaultLoanLifecycleStateMachine(), changes, existingTransactionIds, existingReversedTransactionIds,
-                currentUser, scheduleGeneratorDTO);
-        
-        
+                writeoffTransaction, changes, existingTransactionIds, existingReversedTransactionIds, currentUser);
 
         saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
         if (changedTransactionDetail != null) {
