@@ -100,7 +100,7 @@ public class SmsCampaignReadPlatformServiceImpl implements SmsCampaignReadPlatfo
         }
 
         @Override
-        public SmsCampaignData mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public SmsCampaignData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long id = JdbcSupport.getLong(rs, "id");
             final String campaignName = rs.getString("campaignName");
             final Integer campaignType = JdbcSupport.getInteger(rs, "campaignType");
@@ -163,11 +163,11 @@ public class SmsCampaignReadPlatformServiceImpl implements SmsCampaignReadPlatfo
 
         @Override
         public List<SmsBusinessRulesData> extractData(ResultSet rs) throws SQLException, DataAccessException {
-            List<SmsBusinessRulesData> smsBusinessRulesDataList = new ArrayList<SmsBusinessRulesData>();
+            List<SmsBusinessRulesData> smsBusinessRulesDataList = new ArrayList<>();
 
             SmsBusinessRulesData smsBusinessRulesData = null;
 
-            Map<Long,SmsBusinessRulesData> mapOfSameObjects = new HashMap<Long, SmsBusinessRulesData>();
+            Map<Long,SmsBusinessRulesData> mapOfSameObjects = new HashMap<>();
 
             while(rs.next()){
                 final Long id = rs.getLong("id");
@@ -179,7 +179,7 @@ public class SmsCampaignReadPlatformServiceImpl implements SmsCampaignReadPlatfo
                     final String paramLabel = rs.getString("paramLabel");
                     final String description = rs.getString("description");
 
-                    Map<String,Object> hashMap = new HashMap<String, Object>();
+                    Map<String,Object> hashMap = new HashMap<>();
                     hashMap.put(paramLabel,paramName);
                     smsBusinessRulesData = SmsBusinessRulesData.instance(id,reportName,reportType,hashMap,description);
                     mapOfSameObjects.put(id,smsBusinessRulesData);
@@ -187,13 +187,16 @@ public class SmsCampaignReadPlatformServiceImpl implements SmsCampaignReadPlatfo
                     smsBusinessRulesDataList.add(smsBusinessRulesData);
                 }
                 //add new paramType to the existing object
-                Map<String,Object> hashMap = new HashMap<String, Object>();
+                Map<String,Object> hashMap = new HashMap<>();
                 final String paramName  = rs.getString("paramName");
                 final String paramLabel = rs.getString("paramLabel");
                 hashMap.put(paramLabel,paramName);
 
                 //get existing map and add new items to it
-                smsBusinessRulesData.getReportParamName().putAll(hashMap);
+                if(smsBusinessRulesData != null){
+                    smsBusinessRulesData.getReportParamName().putAll(hashMap);
+                }
+                
             }
 
             return smsBusinessRulesDataList;
