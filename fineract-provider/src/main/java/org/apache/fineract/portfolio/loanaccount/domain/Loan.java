@@ -143,7 +143,6 @@ import org.hibernate.annotations.LazyCollectionOption;
 import org.hibernate.annotations.Where;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -724,8 +723,7 @@ public class Loan extends AbstractPersistable<Long> {
      * @param suppliedTransactionDate
      * @return
      */
-    public LoanTransaction handleChargeAppliedTransaction(final LoanCharge loanCharge, final LocalDate suppliedTransactionDate,
-            final AppUser currentUser) {
+    public LoanTransaction handleChargeAppliedTransaction(final LoanCharge loanCharge, final LocalDate suppliedTransactionDate) {
         final Money chargeAmount = loanCharge.getAmount(getCurrency());
         Money feeCharges = chargeAmount;
         Money penaltyCharges = Money.zero(loanCurrency());
@@ -1120,14 +1118,16 @@ public class Loan extends AbstractPersistable<Long> {
         return waiveLoanChargeTransaction;
     }
     
-    
-    public LoanTransaction waiveGlimLoanCharge(final LoanCharge loanCharge, final LoanLifecycleStateMachine loanLifecycleStateMachine,
-            final Map<String, Object> changes, final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds,
-            final Integer loanInstallmentNumber, final ScheduleGeneratorDTO scheduleGeneratorDTO, final Money accruedCharge,
-            final AppUser currentUser, Money clientcharge) {
+    /**
+     * its create transaction for waive of glim charges
+     * 
+     */
+    public LoanTransaction waiveGlimLoanCharge(final LoanCharge loanCharge, final List<Long> existingTransactionIds,
+            final List<Long> existingReversedTransactionIds, final Integer loanInstallmentNumber,
+            final ScheduleGeneratorDTO scheduleGeneratorDTO, final Money accruedCharge, final AppUser currentUser, Money clientcharge) {
 
         validateLoanIsNotClosed(loanCharge);
-        
+
         Money amountWaived = loanCharge.waiveForGlim(loanCurrency(), clientcharge, loanInstallmentNumber);
 
         Money unrecognizedIncome = amountWaived.zero();
@@ -1353,7 +1353,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
             applyPeriodicAccruals(accruals);
         } else if (isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()) {
-            updateAccrualsForNonPeriodicAccruals(accruals, currentUser);
+            updateAccrualsForNonPeriodicAccruals(accruals);
         }
     }
 
@@ -1390,7 +1390,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    private void updateAccrualsForNonPeriodicAccruals(final Collection<LoanTransaction> accruals, final AppUser currentUser) {
+    private void updateAccrualsForNonPeriodicAccruals(final Collection<LoanTransaction> accruals) {
 
         final Money interestApplied = Money.of(getCurrency(), this.summary.getTotalInterestCharged());
         for (LoanTransaction loanTransaction : accruals) {
@@ -1408,7 +1408,7 @@ public class Loan extends AbstractPersistable<Long> {
                     Money chargeAmount = loanCharge.getAmount(getCurrency());
                     if (chargeAmount.isNotEqualTo(loanTransaction.getAmount(getCurrency()))) {
                         loanTransaction.reverse();
-                        handleChargeAppliedTransaction(loanCharge, loanTransaction.getTransactionDate(), currentUser);
+                        handleChargeAppliedTransaction(loanCharge, loanTransaction.getTransactionDate());
                     }
 
                 }
@@ -2549,7 +2549,6 @@ public class Loan extends AbstractPersistable<Long> {
                 LoanStatus.fromInt(this.loanStatus));
 
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
-        boolean isInApprovedState = isApproved();
         
         this.loanStatus = statusEnum.getValue();
         actualChanges.put("status", LoanEnumerations.status(this.loanStatus));
@@ -2567,15 +2566,9 @@ public class Loan extends AbstractPersistable<Long> {
         validateDisbursementDateIsOnNonWorkingDay(holidayDetailDTO.getWorkingDays(), holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
         validateDisbursementDateIsOnHoliday(holidayDetailDTO.isAllowTransactionsOnHoliday(), holidayDetailDTO.getHolidays());
 
-       /* if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()
-                && (fetchRepaymentScheduleInstallment(1).getDueDate().isBefore(DateUtils.getLocalDateOfTenant()) || isDisbursementMissed())) {
-            regenerateRepaymentScheduleWithInterestRecalculation(scheduleGeneratorDTO, currentUser);
-        }*/
-
         updateSummaryWithTotalFeeChargesDueAtDisbursement(deriveSumTotalOfChargesDueAtDisbursement());
         updateLoanRepaymentPeriodsDerivedFields(actualDisbursementDate);
-        LocalDateTime createdDate = DateUtils.getLocalDateTimeOfTenant();
-        handleDisbursementTransaction(actualDisbursementDate, createdDate, currentUser, paymentDetail);
+        handleDisbursementTransaction(actualDisbursementDate, paymentDetail);
         updateLoanSummaryDerivedFields();
         final Money interestApplied = Money.of(getCurrency(), this.summary.getTotalInterestCharged());
 
@@ -2961,8 +2954,7 @@ public class Loan extends AbstractPersistable<Long> {
         return interestRate;
     }
 
-    private void handleDisbursementTransaction(final LocalDate disbursedOn, final LocalDateTime createdDate, final AppUser currentUser,
-            final PaymentDetail paymentDetail) {
+    private void handleDisbursementTransaction(final LocalDate disbursedOn, final PaymentDetail paymentDetail) {
 
         // add repayment transaction to track incoming money from client to mfi
         // for (charges due at time of disbursement)
@@ -3009,7 +3001,7 @@ public class Loan extends AbstractPersistable<Long> {
                  * or Cash based accounting is enabled
                  **/
                 if (isNoneOrCashOrUpfrontAccrualAccountingEnabledOnLoanProduct()) {
-                    handleChargeAppliedTransaction(charge, disbursedOn, currentUser);
+                    handleChargeAppliedTransaction(charge, disbursedOn);
                 }
             }
         }
@@ -3414,188 +3406,7 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         if (this.isGLIMLoan() && adjustedTransaction != null) {
-            List<LoanRepaymentScheduleInstallment> updatePartlyPaidOrPaidInstallments = new ArrayList<>();
-            Set<GroupLoanIndividualMonitoringTransaction> removeGlimTransactions = new HashSet<>();
-            Set<GroupLoanIndividualMonitoringTransaction> glimTransactions = adjustedTransaction.getGlimTransaction();
-            for (LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
-                if (installment.isPartlyPaid() || installment.isObligationsMet()) {
-                    updatePartlyPaidOrPaidInstallments.add(installment);
-                }
-            }
-            Map<Long, BigDecimal> chargeAmountMap = new HashMap<>();
-            for (LoanCharge loanCharge : charges()) {
-                chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
-            }
-            for (GroupLoanIndividualMonitoringTransaction glimTransaction : glimTransactions) {
-                
-                if (MathUtility.isGreaterThanZero(glimTransaction.getTotalAmount())) {
-                    GroupLoanIndividualMonitoring glimMember = glimTransaction.getGroupLoanIndividualMonitoring();                  
-                    BigDecimal feeAmount = glimTransaction.getFeePortion();
-                    BigDecimal interestAmount = glimTransaction.getInterestPortion();
-                    BigDecimal principalAmount = glimTransaction.getPrincipalPortion();
-                    BigDecimal totalPaidAmount = MathUtility.add(glimMember.getPaidPrincipalAmount(), glimMember.getPaidInterestAmount(),
-                            glimMember.getPaidChargeAmount());
-                    BigDecimal totalWaivedAmount = MathUtility
-                            .add(glimMember.getWaivedInterestAmount(), glimMember.getWaivedChargeAmount());
-                    BigDecimal totalWrittenOffAmount = MathUtility.add(glimMember.getPrincipalWrittenOffAmount(),
-                            glimMember.getInterestWrittenOffAmount(), glimMember.getChargeWrittenOffAmount());
-                    BigDecimal totalAmount = MathUtility.add(totalPaidAmount, totalWaivedAmount, totalWrittenOffAmount);
-                    BigDecimal totalDueAmountPerClient = MathUtility.add(glimMember.getDisbursedAmount(), glimMember.getInterestAmount(),
-                            glimMember.getChargeAmount());
-                    Money transactionAmountPerClient = Money.of(getCurrency(), glimTransaction.getTotalAmount());
-                    Map<String, BigDecimal> processedTransactionMap = new HashMap<>();
-                    processedTransactionMap.put("processedCharge", BigDecimal.ZERO);
-                    processedTransactionMap.put("processedInterest", BigDecimal.ZERO);
-                    processedTransactionMap.put("processedPrincipal", BigDecimal.ZERO);
-                    processedTransactionMap.put("processedinstallmentTransactionAmount", BigDecimal.ZERO);
-
-                    Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
-                    installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
-                    installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
-                    installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
-                    installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
-                    Map<Long, BigDecimal> glimChargeAmountMap = new HashMap<>();
-                    for (GroupLoanIndividualMonitoringCharge glimloanCharge : glimMember.getGroupLoanIndividualMonitoringCharges()) {
-                        glimChargeAmountMap.put(glimloanCharge.getCharge().getId(), BigDecimal.ZERO);
-                    }
-
-                    for (LoanRepaymentScheduleInstallment updatePartlyPaidOrPaidInstallment : updatePartlyPaidOrPaidInstallments) {
-
-                        if (transactionAmountPerClient.isGreaterThanZero()) {
-
-                        Map<String, BigDecimal> paidInstallmentMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
-                                transactionAmountPerClient.getAmount(), this, updatePartlyPaidOrPaidInstallment.getInstallmentNumber(),
-                                installmentPaidMap, adjustedTransaction, glimTransaction);
-
-                            if (!(MathUtility.isZero(paidInstallmentMap.get("installmentTransactionAmount")))) {
-                                Map<String, BigDecimal> splitMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
-                                        transactionAmountPerClient.getAmount(), this,
-                                        updatePartlyPaidOrPaidInstallment.getInstallmentNumber(), installmentPaidMap, adjustedTransaction,
-                                        glimTransaction);
-                                Money feePortion = Money.of(getCurrency(), splitMap.get("unpaidCharge"));
-                                Money interestPortion = Money.of(getCurrency(), splitMap.get("unpaidInterest"));
-                                Money principalPortion = Money.of(getCurrency(), splitMap.get("unpaidPrincipal"));
-                                Money totalAmountForCurrentInstallment = Money.of(getCurrency(),
-                                        splitMap.get("installmentTransactionAmount"));
-
-                                processedTransactionMap.put("processedCharge",
-                                        processedTransactionMap.get("processedCharge").add(feePortion.getAmount()));
-                                processedTransactionMap.put("processedInterest",
-                                        processedTransactionMap.get("processedInterest").add(interestPortion.getAmount()));
-                                processedTransactionMap.put("processedPrincipal",
-                                        processedTransactionMap.get("processedPrincipal").add(principalPortion.getAmount()));
-                                processedTransactionMap.put(
-                                        "processedinstallmentTransactionAmount",
-                                        processedTransactionMap.get("processedinstallmentTransactionAmount").add(
-                                                totalAmountForCurrentInstallment.getAmount()));
-
-                                transactionAmountPerClient = transactionAmountPerClient.minus(totalAmountForCurrentInstallment);
-
-                                installmentPaidMap.put("unpaidCharge", processedTransactionMap.get("processedCharge"));
-                                installmentPaidMap.put("unpaidInterest", processedTransactionMap.get("processedInterest"));
-                                installmentPaidMap.put("unpaidPrincipal", processedTransactionMap.get("processedPrincipal"));
-                                installmentPaidMap.put("installmentTransactionAmount",
-                                        processedTransactionMap.get("processedinstallmentTransactionAmount"));
-
-                                updatePartlyPaidOrPaidInstallment.updateFeeChargesPaid(feePortion.getAmount());
-                                updatePartlyPaidOrPaidInstallment.updateInterestPaid(interestPortion.getAmount());
-                                updatePartlyPaidOrPaidInstallment.updatePrincipalCompleted(principalPortion.getAmount());
-                                updatePartlyPaidOrPaidInstallment.markAsIncomplete();
-                                updatePartlyPaidOrPaidInstallment.resetTotalPaidAmount();
-
-                                if (glimMember.getWaivedChargeAmount().compareTo(BigDecimal.ZERO) == 0
-                                        || glimMember.getWaivedChargeAmount() == null) {
-                                    for (LoanCharge loanCharge : charges()) {
-                                        for (GroupLoanIndividualMonitoringCharge glimCharge : glimMember
-                                                .getGroupLoanIndividualMonitoringCharges()) {
-                                            if (loanCharge.getCharge().getId() == glimCharge.getCharge().getId()) {
-                                                int currentInstallmentNumber = updatePartlyPaidOrPaidInstallment.getInstallmentNumber();
-                                                BigDecimal amount = glimCharge.getCharge().isEmiRoundingGoalSeek() ? glimCharge
-                                                        .getRevisedFeeAmount() : glimCharge.getFeeAmount();
-                                                BigDecimal installmentAmount = MathUtility.getInstallmentAmount(amount,
-                                                        this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(),
-                                                        currentInstallmentNumber);
-                                                BigDecimal amountToBePaidInCurrentInstallment = BigDecimal.ZERO;
-                                                if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue())
-                                                        .isUpfrontFee()
-                                                        && currentInstallmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
-                                                    amountToBePaidInCurrentInstallment = amount;
-                                                } else {
-                                                    if (currentInstallmentNumber != this.fetchNumberOfInstallmensAfterExceptions()) {
-                                                        amountToBePaidInCurrentInstallment = installmentAmount;
-                                                    } else {
-                                                        BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
-                                                                this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(), 1);
-                                                        amountToBePaidInCurrentInstallment = MathUtility.subtract(amount, MathUtility
-                                                                .multiply(defaultInstallmentAmount, currentInstallmentNumber - 1));
-
-                                                    }
-                                                }
-
-                                                if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
-                                                    if (MathUtility.isEqualOrGreater(feePortion.getAmount(), amountToBePaidInCurrentInstallment)) {
-                                                        glimCharge.setPaidCharge(glimCharge.getPaidCharge().subtract(
-                                                                amountToBePaidInCurrentInstallment));
-                                                        glimChargeAmountMap.put(glimCharge.getCharge().getId(), MathUtility
-                                                                .add(glimChargeAmountMap.get(glimCharge.getCharge().getId()).add(
-                                                                        amountToBePaidInCurrentInstallment)));
-                                                        feePortion = Money.of(getCurrency(),
-                                                                feePortion.getAmount().subtract(amountToBePaidInCurrentInstallment));
-                                                    } else {
-                                                        glimCharge.setPaidCharge(glimCharge.getPaidCharge()
-                                                                .subtract(feePortion.getAmount()));
-                                                        glimChargeAmountMap.put(glimCharge.getCharge().getId(), MathUtility
-                                                                .add(glimChargeAmountMap.get(glimCharge.getCharge().getId()).add(
-                                                                        feePortion.getAmount())));
-                                                        feePortion = Money.of(getCurrency(),
-                                                                feePortion.getAmount().subtract(feePortion.getAmount()));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                if (transactionAmountPerClient.getAmount().compareTo(BigDecimal.ZERO) == 0) {
-                                    break;
-                                }
-                            }
-
-                        }
-
-                    }
-                    for (Long chargeId : glimChargeAmountMap.keySet()) {
-                        for (GroupLoanIndividualMonitoringCharge glimloanCharge : glimMember.getGroupLoanIndividualMonitoringCharges()) {
-                            if (chargeId == glimloanCharge.getCharge().getId()) {
-                                BigDecimal amount = MathUtility.subtract(
-                                        MathUtility.add(chargeAmountMap.get(chargeId), glimChargeAmountMap.get(chargeId)));
-                                chargeAmountMap.put(chargeId, amount);
-                            }
-                        }
-                    }
-                    // undo prepayment and mark glim member as active
-                    if (totalDueAmountPerClient.compareTo(totalAmount) == 0) {
-                        glimMember.setIsActive(true);
-                    }
-
-                    glimMember.setPaidChargeAmount(glimMember.getPaidChargeAmount().subtract(feeAmount));
-                    glimMember.setPaidInterestAmount(glimMember.getPaidInterestAmount().subtract(interestAmount));
-                    glimMember.setPaidPrincipalAmount(glimMember.getPaidPrincipalAmount().subtract(principalAmount));
-                    glimMember.setPaidAmount(glimMember.getTotalPaidAmount().subtract(glimTransaction.getTotalAmount()));
-                    glimMember.setOverpaidAmount(glimMember.getOverpaidAmount());
-                    removeGlimTransactions.add(glimTransaction);
-            	}
-            }
-            
-            undoGlimLoanChargesPaid(chargeAmountMap, charges(), null);
-
-            if (!removeGlimTransactions.isEmpty()) {
-                glimTransactions.removeAll(removeGlimTransactions);
-            }
-            if (MathUtility.isZero(loanTransaction.getAmount(getCurrency()).getAmount())) {
-                reprocess = false;
-            } else {
-                reprocess = true;
-            }
+            reprocess = adjustGlimTransactions(loanTransaction, adjustedTransaction);
         } 
         
         if (reprocess) {
@@ -3654,6 +3465,230 @@ public class Loan extends AbstractPersistable<Long> {
             this.loanTransactions.removeAll(changedTransactionDetail.getNewTransactionMappings().values());
         }
         return changedTransactionDetail;
+    }
+/*
+ * 
+ * adjust glim transactions
+ */
+    private boolean adjustGlimTransactions(final LoanTransaction loanTransaction, final LoanTransaction adjustedTransaction) {
+        boolean reprocess;
+        List<LoanRepaymentScheduleInstallment> updatePartlyPaidOrPaidInstallments = new ArrayList<>();
+        Set<GroupLoanIndividualMonitoringTransaction> removeGlimTransactions = new HashSet<>();
+        Set<GroupLoanIndividualMonitoringTransaction> glimTransactions = adjustedTransaction.getGlimTransaction();
+        for (LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
+            if (installment.isPartlyPaid() || installment.isObligationsMet()) {
+                updatePartlyPaidOrPaidInstallments.add(installment);
+            }
+        }
+        Map<Long, BigDecimal> chargeAmountMap = new HashMap<>();
+        for (LoanCharge loanCharge : charges()) {
+            chargeAmountMap.put(loanCharge.getCharge().getId(), BigDecimal.ZERO);
+        }
+        //each glim  transaction have one glim member's transaction details
+        for (GroupLoanIndividualMonitoringTransaction glimTransaction : glimTransactions) {
+            
+            if (MathUtility.isGreaterThanZero(glimTransaction.getTotalAmount())) {
+                GroupLoanIndividualMonitoring glimMember = glimTransaction.getGroupLoanIndividualMonitoring();                  
+                BigDecimal feeAmount = glimTransaction.getFeePortion();
+                BigDecimal interestAmount = glimTransaction.getInterestPortion();
+                BigDecimal principalAmount = glimTransaction.getPrincipalPortion();
+                BigDecimal overPaidAmount = glimTransaction.getOverpaidAmount();
+                BigDecimal totalPaidAmount = MathUtility.add(glimMember.getPaidPrincipalAmount(), glimMember.getPaidInterestAmount(),
+                        glimMember.getPaidChargeAmount(),glimMember.getOverpaidAmount());
+                BigDecimal totalWaivedAmount = MathUtility
+                        .add(glimMember.getWaivedInterestAmount(), glimMember.getWaivedChargeAmount());
+                BigDecimal totalWrittenOffAmount = MathUtility.add(glimMember.getPrincipalWrittenOffAmount(),
+                        glimMember.getInterestWrittenOffAmount(), glimMember.getChargeWrittenOffAmount());
+                BigDecimal totalAmount = MathUtility.add(totalPaidAmount, totalWaivedAmount, totalWrittenOffAmount);
+                BigDecimal totalDueAmountPerClient = MathUtility.add(glimMember.getDisbursedAmount(), glimMember.getInterestAmount(),
+                        glimMember.getChargeAmount());
+                Money transactionAmountPerClient = Money.of(getCurrency(), glimTransaction.getTotalAmount());
+                Map<String, BigDecimal> processedTransactionMap = new HashMap<>();
+                processedTransactionMap.put("processedCharge", BigDecimal.ZERO);
+                processedTransactionMap.put("processedInterest", BigDecimal.ZERO);
+                processedTransactionMap.put("processedPrincipal", BigDecimal.ZERO);
+                processedTransactionMap.put("processedOverPaidAmount", BigDecimal.ZERO);
+                processedTransactionMap.put("processedinstallmentTransactionAmount", BigDecimal.ZERO);
+
+                Map<String, BigDecimal> installmentPaidMap = new HashMap<>();
+                installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
+                installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
+                installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
+                installmentPaidMap.put("unprocessedOverPaidAmount", BigDecimal.ZERO);
+                installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
+                Map<Long, BigDecimal> glimChargeAmountMap = new HashMap<>();
+                for (GroupLoanIndividualMonitoringCharge glimloanCharge : glimMember.getGroupLoanIndividualMonitoringCharges()) {
+                    glimChargeAmountMap.put(glimloanCharge.getCharge().getId(), BigDecimal.ZERO);
+                }
+                //update adjusted repayment schedule
+                for (LoanRepaymentScheduleInstallment updatePartlyPaidOrPaidInstallment : updatePartlyPaidOrPaidInstallments) {
+
+                    if (transactionAmountPerClient.isGreaterThanZero()) {
+
+                    Map<String, BigDecimal> paidInstallmentMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
+                            transactionAmountPerClient.getAmount(), this, updatePartlyPaidOrPaidInstallment.getInstallmentNumber(),
+                            installmentPaidMap, adjustedTransaction, glimTransaction);
+
+                        if (!(MathUtility.isZero(paidInstallmentMap.get("installmentTransactionAmount")))) {
+                            Map<String, BigDecimal> splitMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
+                                    transactionAmountPerClient.getAmount(), this,
+                                    updatePartlyPaidOrPaidInstallment.getInstallmentNumber(), installmentPaidMap, adjustedTransaction,
+                                    glimTransaction);
+                            Money feePortion = Money.of(getCurrency(), splitMap.get("unpaidCharge"));
+                            Money interestPortion = Money.of(getCurrency(), splitMap.get("unpaidInterest"));
+                            Money principalPortion = Money.of(getCurrency(), splitMap.get("unpaidPrincipal"));
+                            Money overPaidPortion = Money.of(getCurrency(), splitMap.get("unprocessedOverPaidAmount"));
+                            Money totalAmountForCurrentInstallment = Money.of(getCurrency(),
+                                    splitMap.get("installmentTransactionAmount"));
+
+                            processedTransactionMap.put("processedCharge",
+                                    processedTransactionMap.get("processedCharge").add(feePortion.getAmount()));
+                            processedTransactionMap.put("processedInterest",
+                                    processedTransactionMap.get("processedInterest").add(interestPortion.getAmount()));
+                            processedTransactionMap.put("processedPrincipal",
+                                    processedTransactionMap.get("processedPrincipal").add(principalPortion.getAmount()));
+                            processedTransactionMap.put("processedOverPaidAmount",
+                                    processedTransactionMap.get("processedOverPaidAmount").add(overPaidPortion.getAmount()));
+                            processedTransactionMap.put(
+                                    "processedinstallmentTransactionAmount",
+                                    processedTransactionMap.get("processedinstallmentTransactionAmount").add(
+                                            totalAmountForCurrentInstallment.getAmount()));
+
+                            transactionAmountPerClient = transactionAmountPerClient.minus(totalAmountForCurrentInstallment);
+
+                            installmentPaidMap.put("unpaidCharge", processedTransactionMap.get("processedCharge"));
+                            installmentPaidMap.put("unpaidInterest", processedTransactionMap.get("processedInterest"));
+                            installmentPaidMap.put("unpaidPrincipal", processedTransactionMap.get("processedPrincipal"));
+                            installmentPaidMap.put("unprocessedOverPaidAmount", processedTransactionMap.get("processedOverPaidAmount"));
+                            installmentPaidMap.put("installmentTransactionAmount",
+                                    processedTransactionMap.get("processedinstallmentTransactionAmount"));
+
+                            updatePartlyPaidOrPaidInstallment.updateFeeChargesPaid(feePortion.getAmount());
+                            updatePartlyPaidOrPaidInstallment.updateInterestPaid(interestPortion.getAmount());
+                            updatePartlyPaidOrPaidInstallment.updatePrincipalCompleted(principalPortion.getAmount());
+                            updatePartlyPaidOrPaidInstallment.markAsIncomplete();
+                            updatePartlyPaidOrPaidInstallment.resetTotalPaidAmount();
+                            //update charge for per installment
+                            if (MathUtility.isNullOrZero(glimMember.getWaivedChargeAmount())) {
+                                updateGlimInstallmentCharge(glimMember, glimChargeAmountMap, updatePartlyPaidOrPaidInstallment, feePortion);
+                            }
+                            if (transactionAmountPerClient.getAmount().compareTo(BigDecimal.ZERO) == 0) {
+                                break;
+                            }
+                        }
+
+                    }
+
+                }
+                // calculate total glim charges
+                for (Long chargeId : glimChargeAmountMap.keySet()) {
+                    for (GroupLoanIndividualMonitoringCharge glimloanCharge : glimMember.getGroupLoanIndividualMonitoringCharges()) {
+                        if (chargeId == glimloanCharge.getCharge().getId()) {
+                            BigDecimal amount = MathUtility.subtract(
+                                    MathUtility.add(chargeAmountMap.get(chargeId), glimChargeAmountMap.get(chargeId)));
+                            chargeAmountMap.put(chargeId, amount);
+                        }
+                    }
+                }
+                // undo prepayment and mark glim member as active
+                if (totalDueAmountPerClient.compareTo(totalAmount) == 0) {
+                    glimMember.setIsActive(true);
+                }
+                //update glim member adjusted amounts
+                updateAdjustedGlimMember(glimTransaction, glimMember, feeAmount, interestAmount, principalAmount, overPaidAmount);
+
+                removeGlimTransactions.add(glimTransaction);
+        	}
+        }
+        
+        undoGlimLoanChargesPaid(chargeAmountMap, charges(), null);
+
+        if (!removeGlimTransactions.isEmpty()) {
+            glimTransactions.removeAll(removeGlimTransactions);
+        }
+        if (MathUtility.isZero(loanTransaction.getAmount(getCurrency()).getAmount())) {
+            reprocess = false;
+        } else {
+            reprocess = true;
+        }
+        return reprocess;
+    }
+
+    private void updateAdjustedGlimMember(GroupLoanIndividualMonitoringTransaction glimTransaction,
+            GroupLoanIndividualMonitoring glimMember, BigDecimal feeAmount, BigDecimal interestAmount, BigDecimal principalAmount, BigDecimal overPaidAmount) {
+        glimMember.setPaidChargeAmount(MathUtility.subtract(glimMember.getPaidChargeAmount(),feeAmount));
+        glimMember.setPaidInterestAmount(MathUtility.subtract(glimMember.getPaidInterestAmount(),interestAmount));
+        glimMember.setPaidPrincipalAmount(MathUtility.subtract(glimMember.getPaidPrincipalAmount(),principalAmount));
+        glimMember.setPaidAmount(MathUtility.subtract(glimMember.getTotalPaidAmount(),glimTransaction.getTotalAmount()));
+        glimMember.setOverpaidAmount(MathUtility.subtract(glimMember.getOverpaidAmount(), overPaidAmount));
+    }
+    
+    public BigDecimal getEarlierOverPaidAmount(Long glimId){
+        for (GroupLoanIndividualMonitoring glim : this.defaultGlimMembers) {
+            if (glimId.equals(glim.getId())) {
+                return MathUtility.zeroIfNull(glim.getOverpaidAmount());
+            }
+        }
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * update glim installment charge
+     * @param glimMember
+     * @param glimChargeAmountMap
+     * @param updatePartlyPaidOrPaidInstallment
+     * @param feePortion
+     */
+    private void updateGlimInstallmentCharge(GroupLoanIndividualMonitoring glimMember, Map<Long, BigDecimal> glimChargeAmountMap,
+            LoanRepaymentScheduleInstallment updatePartlyPaidOrPaidInstallment, Money feePortion) {
+        for (LoanCharge loanCharge : charges()) {
+            for (GroupLoanIndividualMonitoringCharge glimCharge : glimMember
+                    .getGroupLoanIndividualMonitoringCharges()) {
+                if (loanCharge.getCharge().getId() == glimCharge.getCharge().getId()) {
+                    int currentInstallmentNumber = updatePartlyPaidOrPaidInstallment.getInstallmentNumber();
+                    BigDecimal amount = glimCharge.getCharge().isEmiRoundingGoalSeek() ? glimCharge
+                            .getRevisedFeeAmount() : glimCharge.getFeeAmount();
+                    BigDecimal installmentAmount = MathUtility.getInstallmentAmount(amount,
+                            this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(),
+                            currentInstallmentNumber);
+                    BigDecimal amountToBePaidInCurrentInstallment = BigDecimal.ZERO;
+                    if (ChargeTimeType.fromInt(glimCharge.getCharge().getChargeTimeType().intValue())
+                            .isUpfrontFee()
+                            && currentInstallmentNumber == ChargesApiConstants.applyUpfrontFeeOnFirstInstallment) {
+                        amountToBePaidInCurrentInstallment = amount;
+                    } else {
+                        if (currentInstallmentNumber != this.fetchNumberOfInstallmensAfterExceptions()) {
+                            amountToBePaidInCurrentInstallment = installmentAmount;
+                        } else {
+                            BigDecimal defaultInstallmentAmount = MathUtility.getInstallmentAmount(amount,
+                                    this.fetchNumberOfInstallmensAfterExceptions(), getCurrency(), 1);
+                            amountToBePaidInCurrentInstallment = MathUtility.subtract(amount, MathUtility
+                                    .multiply(defaultInstallmentAmount, currentInstallmentNumber - 1));
+
+                        }
+                    }
+
+                    if (MathUtility.isGreaterThanZero(amountToBePaidInCurrentInstallment)) {
+                        if (MathUtility.isEqualOrGreater(feePortion.getAmount(), amountToBePaidInCurrentInstallment)) {
+                            glimCharge.setPaidCharge(MathUtility.subtract(glimCharge.getPaidCharge(), amountToBePaidInCurrentInstallment));
+                            glimChargeAmountMap.put(glimCharge.getCharge().getId(), MathUtility
+                                    .add(glimChargeAmountMap.get(glimCharge.getCharge().getId()).add(
+                                            amountToBePaidInCurrentInstallment)));
+                            feePortion = Money.of(getCurrency(),
+                                    feePortion.getAmount().subtract(amountToBePaidInCurrentInstallment));
+                        } else {
+                            glimCharge.setPaidCharge(MathUtility.subtract(glimCharge.getPaidCharge()
+                                    ,feePortion.getAmount()));
+                            glimChargeAmountMap.put(glimCharge.getCharge().getId(), MathUtility
+                                    .add(glimChargeAmountMap.get(glimCharge.getCharge().getId()).add(
+                                            feePortion.getAmount())));
+                            feePortion = Money.of(getCurrency(),
+                                    MathUtility.subtract(feePortion.getAmount(),feePortion.getAmount()));
+                        }
+                    }
+                }
+            }
+        }
     }
     
     private boolean isFullProcessingRequired(final LoanTransaction loanTransaction){
@@ -4033,30 +4068,6 @@ public class Loan extends AbstractPersistable<Long> {
         return loanRepaymentScheduleInstallment;
     }
 
-    public LoanTransaction deriveDefaultInterestWaiverTransaction(final LocalDateTime createdDate, final AppUser currentUser) {
-
-        final Money totalInterestOutstanding = getTotalInterestOutstandingOnLoan();
-        Money possibleInterestToWaive = totalInterestOutstanding.copy();
-        LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
-
-        if (totalInterestOutstanding.isGreaterThanZero() && !this.isGLIMLoan()) {
-            // find earliest known instance of overdue interest and default to
-            // that
-            for (final LoanRepaymentScheduleInstallment scheduledRepayment : this.repaymentScheduleInstallments) {
-
-                final Money outstandingForPeriod = scheduledRepayment.getInterestOutstanding(loanCurrency());
-                if (scheduledRepayment.isOverdueOn(DateUtils.getLocalDateOfTenant()) && scheduledRepayment.isNotFullyPaidOff()
-                        && outstandingForPeriod.isGreaterThanZero()) {
-                    transactionDate = scheduledRepayment.getDueDate();
-                    possibleInterestToWaive = outstandingForPeriod;
-                    break;
-                }
-            }
-        }
-        return LoanTransaction.waiver(getOffice(), this, possibleInterestToWaive, transactionDate, possibleInterestToWaive,
-                possibleInterestToWaive.zero());
-    }
-
     public ChangedTransactionDetail adjustExistingTransaction(final LoanTransaction newTransactionDetail,
             final LoanLifecycleStateMachine loanLifecycleStateMachine, final LoanTransaction transactionForAdjustment,
             final List<Long> existingTransactionIds, final List<Long> existingReversedTransactionIds,
@@ -4271,7 +4282,7 @@ public class Loan extends AbstractPersistable<Long> {
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
         ChangedTransactionDetail changedTransactionDetail = closeDisbursements(scheduleGeneratorDTO,
-                loanRepaymentScheduleTransactionProcessor, currentUser);
+                currentUser);
 
         validateAccountStatus(LoanEvent.WRITE_OFF_OUTSTANDING);
 
@@ -4330,7 +4341,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     private ChangedTransactionDetail closeDisbursements(final ScheduleGeneratorDTO scheduleGeneratorDTO,
-            final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor, final AppUser currentUser) {
+            final AppUser currentUser) {
         ChangedTransactionDetail changedTransactionDetail = null;
         if (isDisbursementAllowed() && atleastOnceDisbursed()) {
             this.loanRepaymentScheduleDetail.setPrincipal(getDisbursedAmount());
@@ -4383,7 +4394,7 @@ public class Loan extends AbstractPersistable<Long> {
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
         ChangedTransactionDetail changedTransactionDetail = closeDisbursements(scheduleGeneratorDTO,
-                loanRepaymentScheduleTransactionProcessor, currentUser);
+                currentUser);
 
         LoanTransaction loanTransaction = null;
         if (isOpen()) {
@@ -5047,10 +5058,9 @@ public class Loan extends AbstractPersistable<Long> {
         return this.closedOnDate;
     }
 
-    public void updateLoanRepaymentScheduleDates(final LocalDate meetingStartDate, final String recuringRule,
-            final boolean isHolidayEnabled, final ScheduleGeneratorDTO scheduleGeneratorDTO, final WorkingDays workingDays,
-            final Boolean reschedulebasedOnMeetingDates, final LocalDate presentMeetingDate, final LocalDate newMeetingDate,
-            final boolean isSkipRepaymentonfirstdayofmonth, final Integer numberofDays) {
+    public void updateLoanRepaymentScheduleDates(final String recuringRule, final boolean isHolidayEnabled,
+            final ScheduleGeneratorDTO scheduleGeneratorDTO, final WorkingDays workingDays, final LocalDate presentMeetingDate,
+            final LocalDate newMeetingDate, final boolean isSkipRepaymentonfirstdayofmonth, final Integer numberofDays) {
 
         // first repayment's from date is same as disbursement date.
         /*
@@ -6028,8 +6038,7 @@ public class Loan extends AbstractPersistable<Long> {
                 }
                 LoanTransaction incomeTransaction = getTransactionForDate(incomeTransactions, compoundingDetail.getEffectiveDate());
                 LoanTransaction accrualTransaction = getTransactionForDate(accrualTransactions, compoundingDetail.getEffectiveDate());
-                addUpdateIncomeAndAccrualTransaction(compoundingDetail, lastCompoundingDate, currentUser, incomeTransaction,
-                        accrualTransaction);
+                addUpdateIncomeAndAccrualTransaction(compoundingDetail, lastCompoundingDate, incomeTransaction, accrualTransaction);
                 lastCompoundingDate = compoundingDetail.getEffectiveDate();
             }
             LoanRepaymentScheduleInstallment lastInstallment = this.repaymentScheduleInstallments.get(this.repaymentScheduleInstallments
@@ -6050,8 +6059,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     private void addUpdateIncomeAndAccrualTransaction(LoanInterestRecalcualtionAdditionalDetails compoundingDetail,
-            LocalDate lastCompoundingDate, AppUser currentUser, LoanTransaction existingIncomeTransaction,
-            LoanTransaction existingAccrualTransaction) {
+            LocalDate lastCompoundingDate, LoanTransaction existingIncomeTransaction, LoanTransaction existingAccrualTransaction) {
         BigDecimal interest = BigDecimal.ZERO;
         BigDecimal fee = BigDecimal.ZERO;
         BigDecimal penalties = BigDecimal.ZERO;
@@ -7413,16 +7421,27 @@ public class Loan extends AbstractPersistable<Long> {
     public Staff loanOfficer(){
         return this.loanOfficer;
     }
+    
+    /**
+     * this method gives write off amount portions for glim 
+     * @param command
+     * @param writtenOffOnLocalDate
+     * @param loanTransaction
+     * @param changes
+     * @param existingTransactionIds
+     * @param existingReversedTransactionIds
+     * @param currentUser
+     * @return
+     */
     public ChangedTransactionDetail GlimLoanCloseAsWrittenOff(JsonCommand command, LocalDate writtenOffOnLocalDate,
-            LoanTransaction loanTransaction, LoanLifecycleStateMachine defaultLoanLifecycleStateMachine, Map<String, Object> changes,
-            List<Long> existingTransactionIds, List<Long> existingReversedTransactionIds, AppUser currentUser,
-            ScheduleGeneratorDTO scheduleGeneratorDTO) {
+            LoanTransaction loanTransaction, Map<String, Object> changes, List<Long> existingTransactionIds,
+            List<Long> existingReversedTransactionIds, AppUser currentUser) {
 
         validateAccountStatus(LoanEvent.WRITE_OFF_OUTSTANDING);
 
         ChangedTransactionDetail changedTransactionDetail = new ChangedTransactionDetail();
 
-        Map<Integer, Map<String, BigDecimal>> installmentWriteOffMap = new HashMap<Integer, Map<String, BigDecimal>>();
+        Map<Integer, Map<String, BigDecimal>> installmentWriteOffMap = new HashMap<>();
         BigDecimal totalPrincipalToBeWriteOff = BigDecimal.ZERO;
         BigDecimal totalInterestToBeWriteOff = BigDecimal.ZERO;
         BigDecimal totalChargeToBeWriteOff = BigDecimal.ZERO;
@@ -7441,27 +7460,7 @@ public class Loan extends AbstractPersistable<Long> {
                 changes.put("closedOnDate", command.stringValueOfParameterNamed("transactionDate"));
                 changes.put("writtenOffOnDate", command.stringValueOfParameterNamed("transactionDate"));
 
-                if (writtenOffOnLocalDate.isBefore(getDisbursementDate())) {
-                    final String errorMessage = "The date on which a loan is written off cannot be before the loan disbursement date: "
-                            + getDisbursementDate().toString();
-                    throw new InvalidLoanStateTransitionException("writeoff", "cannot.be.before.submittal.date", errorMessage,
-                            writtenOffOnLocalDate, getDisbursementDate());
-                }
-
-                validateActivityNotBeforeClientOrGroupTransferDate(LoanEvent.WRITE_OFF_OUTSTANDING, writtenOffOnLocalDate);
-
-                if (writtenOffOnLocalDate.isAfter(DateUtils.getLocalDateOfTenant())) {
-                    final String errorMessage = "The date on which a loan is written off cannot be in the future.";
-                    throw new InvalidLoanStateTransitionException("writeoff", "cannot.be.a.future.date", errorMessage,
-                            writtenOffOnLocalDate);
-                }
-
-                LocalDate lastTransactionDate = getLastUserTransactionDate();
-                if (lastTransactionDate.isAfter(writtenOffOnLocalDate)) {
-                    final String errorMessage = "The date of the writeoff transaction must occur on or before previous transactions.";
-                    throw new InvalidLoanStateTransitionException("writeoff", "must.occur.on.or.after.other.transaction.dates",
-                            errorMessage, writtenOffOnLocalDate);
-                }
+                validateGlimWriteOff(writtenOffOnLocalDate);
 
                 Money transactionAmountPerClient = Money.of(getCurrency(), glimMember.getTransactionAmount());
                 Loan loan = loanTransaction.getLoan();
@@ -7470,8 +7469,9 @@ public class Loan extends AbstractPersistable<Long> {
                 installmentPaidMap.put("unpaidCharge", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidInterest", BigDecimal.ZERO);
                 installmentPaidMap.put("unpaidPrincipal", BigDecimal.ZERO);
+                installmentPaidMap.put("unprocessedOverPaidAmount", BigDecimal.ZERO);
                 installmentPaidMap.put("installmentTransactionAmount", BigDecimal.ZERO);
-                
+
                 Map<Long, BigDecimal> feeChargesWriteOffPerInstallments = new HashMap<>();
 
                 // determine how much is written off in total and breakdown for
@@ -7482,14 +7482,14 @@ public class Loan extends AbstractPersistable<Long> {
                                 transactionAmountPerClient.getAmount(), loan, currentInstallment.getInstallmentNumber(),
                                 installmentPaidMap, loanTransaction, null);
 
-                        if (!( MathUtility.isZero(paidInstallmentMap.get("installmentTransactionAmount")) && MathUtility.isGreaterThanZero(glimMember
-                                .getTotalPaidAmount()))) {
+                        if (!(MathUtility.isZero(paidInstallmentMap.get("installmentTransactionAmount")) && MathUtility
+                                .isGreaterThanZero(glimMember.getTotalPaidAmount()))) {
                             if (currentInstallment.isNotFullyPaidOff()) {
 
                                 Map<String, BigDecimal> splitMap = GroupLoanIndividualMonitoringTransactionAssembler.getSplit(glimMember,
                                         transactionAmountPerClient.getAmount(), loan, currentInstallment.getInstallmentNumber(),
                                         installmentPaidMap, loanTransaction, null);
-                                
+
                                 Money feePortionForCurrentInstallment = Money.of(getCurrency(), splitMap.get("unpaidCharge"));
                                 Money interestPortionForCurrentInstallment = Money.of(getCurrency(), splitMap.get("unpaidInterest"));
                                 Money principalPortionForCurrentInstallment = Money.of(getCurrency(), splitMap.get("unpaidPrincipal"));
@@ -7523,27 +7523,47 @@ public class Loan extends AbstractPersistable<Long> {
                                         installmentPaidMap.get("unpaidInterest").add(interestPortionForCurrentInstallment.getAmount()));
                                 installmentPaidMap.put("unpaidPrincipal",
                                         installmentPaidMap.get("unpaidPrincipal").add(principalPortionForCurrentInstallment.getAmount()));
+                                installmentPaidMap.put("unprocessedOverPaidAmount",BigDecimal.ZERO);
                                 installmentPaidMap.put(
                                         "installmentTransactionAmount",
                                         installmentPaidMap.get("installmentTransactionAmount").add(
                                                 totalAmountForCurrentInstallment.getAmount()));
                                 transactionAmountPerClient = transactionAmountPerClient.minus(totalAmountForCurrentInstallment);
-                                
-                                feeChargesWriteOffPerInstallments = writeOffLoanChargeForGlim(currentInstallment, feePortionForCurrentInstallment.getAmount(), glimMember, feeChargesWriteOffPerInstallments);
+
+                                feeChargesWriteOffPerInstallments = writeOffLoanChargeForGlim(currentInstallment,
+                                        feePortionForCurrentInstallment.getAmount(), glimMember, feeChargesWriteOffPerInstallments);
 
                             }
                         }
                     }
                 }
 
-                BigDecimal writeOfAmount =  MathUtility.add(glimMember.getPrincipalWrittenOffAmount(),glimMember.getInterestWrittenOffAmount(),
-                		glimMember.getChargeWrittenOffAmount());
-                if (MathUtility.isGreaterThanZero(writeOfAmount) && MathUtility.isGreaterThanZero(glimMember.getTransactionAmount()) && 
-                		!loanTransaction.getTypeOf().isRecoveryRepayment()) { throw new ClientAlreadyWriteOffException(); }
+                BigDecimal writeOfAmount = MathUtility.add(glimMember.getPrincipalWrittenOffAmount(),
+                        glimMember.getInterestWrittenOffAmount(), glimMember.getChargeWrittenOffAmount());
+                if (MathUtility.isGreaterThanZero(writeOfAmount) && MathUtility.isGreaterThanZero(glimMember.getTransactionAmount())
+                        && !loanTransaction.getTypeOf().isRecoveryRepayment()) { throw new ClientAlreadyWriteOffException(); }
 
             }
         }
+        /**
+         * for each installment update the write off portions
+         */
         final LocalDate transactionDate = loanTransaction.getTransactionDate();
+        updateWriteOffAmountForEachInstallment(installmentWriteOffMap, transactionDate);
+        loanTransaction.updateComponentsAndTotal(Money.of(getCurrency(), totalPrincipalToBeWriteOff),
+                Money.of(getCurrency(), totalInterestToBeWriteOff), Money.of(getCurrency(), totalChargeToBeWriteOff),
+                Money.zero(getCurrency()));
+
+        updateLoanSummaryDerivedFields();
+        BigDecimal loanPrincipalOutstandingBalance = this.getLoanSummary().getTotalPrincipalOutstanding();
+        loanTransaction.updateOutstandingLoanBalance(loanPrincipalOutstandingBalance);
+        changedTransactionDetail.getNewTransactionMappings().put(loanTransaction.getId(), loanTransaction);
+
+        return changedTransactionDetail;
+    }
+
+    private void updateWriteOffAmountForEachInstallment(Map<Integer, Map<String, BigDecimal>> installmentWriteOffMap,
+            final LocalDate transactionDate) {
         for (final LoanRepaymentScheduleInstallment currentInstallment : this.repaymentScheduleInstallments) {
             Map<String, BigDecimal> installmentBreakUpMap = installmentWriteOffMap.get(currentInstallment.getInstallmentNumber());
             if (installmentBreakUpMap != null) {
@@ -7556,18 +7576,40 @@ public class Loan extends AbstractPersistable<Long> {
             }
 
         }
-        loanTransaction.updateComponentsAndTotal(Money.of(getCurrency(), totalPrincipalToBeWriteOff),
-                Money.of(getCurrency(), totalInterestToBeWriteOff), Money.of(getCurrency(), totalChargeToBeWriteOff),
-                Money.zero(getCurrency()));
-
-        updateLoanSummaryDerivedFields();
-        BigDecimal loanPrincipalOutstandingBalance = this.getLoanSummary().getTotalPrincipalOutstanding();
-        loanTransaction.updateOutstandingLoanBalance(loanPrincipalOutstandingBalance);
-        changedTransactionDetail.getNewTransactionMappings().put(loanTransaction.getId(), loanTransaction);
-
-        return changedTransactionDetail;
     }
-    
+
+    private void validateGlimWriteOff(LocalDate writtenOffOnLocalDate) {
+        if (writtenOffOnLocalDate.isBefore(getDisbursementDate())) {
+            final String errorMessage = "The date on which a loan is written off cannot be before the loan disbursement date: "
+                    + getDisbursementDate().toString();
+            throw new InvalidLoanStateTransitionException("writeoff", "cannot.be.before.submittal.date", errorMessage,
+                    writtenOffOnLocalDate, getDisbursementDate());
+        }
+
+        validateActivityNotBeforeClientOrGroupTransferDate(LoanEvent.WRITE_OFF_OUTSTANDING, writtenOffOnLocalDate);
+
+        if (writtenOffOnLocalDate.isAfter(DateUtils.getLocalDateOfTenant())) {
+            final String errorMessage = "The date on which a loan is written off cannot be in the future.";
+            throw new InvalidLoanStateTransitionException("writeoff", "cannot.be.a.future.date", errorMessage, writtenOffOnLocalDate);
+        }
+
+        LocalDate lastTransactionDate = getLastUserTransactionDate();
+        if (lastTransactionDate.isAfter(writtenOffOnLocalDate)) {
+            final String errorMessage = "The date of the writeoff transaction must occur on or before previous transactions.";
+            throw new InvalidLoanStateTransitionException("writeoff", "must.occur.on.or.after.other.transaction.dates", errorMessage,
+                    writtenOffOnLocalDate);
+        }
+    }
+
+    /**
+     * write off loan charge amount for each installment
+     * 
+     * @param currentInstallment
+     * @param amount
+     * @param glimMember
+     * @param feeChargesWriteOffPerInstallments
+     * @return
+     */
     private Map<Long, BigDecimal> writeOffLoanChargeForGlim(LoanRepaymentScheduleInstallment currentInstallment, BigDecimal amount,
             GroupLoanIndividualMonitoring glimMember, Map<Long, BigDecimal> feeChargesWriteOffPerInstallments) {
 
@@ -7598,11 +7640,24 @@ public class Loan extends AbstractPersistable<Long> {
 
         return feeChargesWriteOffPerInstallments;
     }
-    
+    /**
+     * waive loan charges glim charges
+     * @param currentInstallment
+     * @param amount
+     * @param glimMember
+     * @param feeChargesWriteOffPerInstallments
+     * @param existingTransactionIds
+     * @param existingReversedTransactionIds
+     * @param accruedCharge
+     * @param currentUser
+     * @param scheduleGeneratorDTO
+     * @param changes
+     * @return
+     */
     public Map<Long, BigDecimal> waiveLoanChargeForGlim(LoanRepaymentScheduleInstallment currentInstallment, BigDecimal amount,
             GroupLoanIndividualMonitoring glimMember, Map<Long, BigDecimal> feeChargesWriteOffPerInstallments,
             List<Long> existingTransactionIds, List<Long> existingReversedTransactionIds, Money accruedCharge, AppUser currentUser,
-            ScheduleGeneratorDTO scheduleGeneratorDTO, Map<String, Object> changes) {
+            ScheduleGeneratorDTO scheduleGeneratorDTO) {
 
         if (MathUtility.isGreaterThanZero(amount)) {
             Set<GroupLoanIndividualMonitoringCharge> glimCharges = glimMember.getGroupLoanIndividualMonitoringCharges();
@@ -7612,7 +7667,7 @@ public class Loan extends AbstractPersistable<Long> {
                     BigDecimal chargeAmount = MathUtility.isNull(glimCharge.getRevisedFeeAmount()) ? glimCharge.getFeeAmount() : glimCharge
                             .getRevisedFeeAmount();
                     if (loanCharge.getCharge().getId().equals(chargeId)) {
-                        
+
                         BigDecimal chargeAmountToBeWaived = BigDecimal.ZERO;
                         if (ChargeTimeType.fromInt(loanCharge.getCharge().getChargeTimeType().intValue()).isUpfrontFee()) {
                             if (currentInstallment.getInstallmentNumber().equals(ChargesApiConstants.applyUpfrontFeeOnFirstInstallment)) {
@@ -7624,9 +7679,7 @@ public class Loan extends AbstractPersistable<Long> {
                                     currentInstallment.getInstallmentNumber());
                         }
 
-                         
-
-                        waiveGlimLoanCharge(loanCharge, null, changes, existingTransactionIds, existingReversedTransactionIds,
+                        waiveGlimLoanCharge(loanCharge, existingTransactionIds, existingReversedTransactionIds,
                                 currentInstallment.getInstallmentNumber(), scheduleGeneratorDTO, accruedCharge, currentUser,
                                 Money.of(getCurrency(), chargeAmountToBeWaived));
 
@@ -7645,6 +7698,7 @@ public class Loan extends AbstractPersistable<Long> {
 
         return feeChargesWriteOffPerInstallments;
     }
+
     public void updateDefautGlimMembers(List<GroupLoanIndividualMonitoring> defaultGlimMembers) {
         this.defaultGlimMembers.addAll(defaultGlimMembers);
     }

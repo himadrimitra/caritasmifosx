@@ -33,6 +33,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonit
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
+import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransactionRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleTransactionProcessorFactory;
@@ -63,13 +64,15 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
     private final GroupLoanIndividualMonitoringAssembler glimAssembler;
     private final LoanRepository loanRepository;
     private final GroupLoanIndividualMonitoringChargeRepository glimChargeRepository;
+    private final GroupLoanIndividualMonitoringTransactionRepositoryWrapper glimTransactionRepositoryWrapper;
 
     @Autowired
     public GroupLoanIndividualMonitoringTransactionAssembler(final FromJsonHelper fromApiJsonHelper,
             final GroupLoanIndividualMonitoringRepositoryWrapper groupLoanIndividualMonitoringRepositoryWrapper,
             final LoanRepaymentScheduleTransactionProcessorFactory transactionProcessorFactory,
             final GroupLoanIndividualMonitoringRepository glimRepository, final GroupLoanIndividualMonitoringAssembler glimAssembler,
-            final LoanRepository loanRepository, final GroupLoanIndividualMonitoringChargeRepository glimChargeRepository) {
+            final LoanRepository loanRepository, final GroupLoanIndividualMonitoringChargeRepository glimChargeRepository,
+            final GroupLoanIndividualMonitoringTransactionRepositoryWrapper glimTransactionRepositoryWrapper) {
         this.fromApiJsonHelper = fromApiJsonHelper;
         this.groupLoanIndividualMonitoringRepositoryWrapper = groupLoanIndividualMonitoringRepositoryWrapper;
         this.transactionProcessorFactory = transactionProcessorFactory;
@@ -77,6 +80,7 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         this.glimAssembler = glimAssembler;
         this.loanRepository = loanRepository;
         this.glimChargeRepository = glimChargeRepository;
+        this.glimTransactionRepositoryWrapper = glimTransactionRepositoryWrapper;
     }
 
     public Collection<GroupLoanIndividualMonitoringTransaction> assembleGLIMTransactions(final JsonCommand command,
@@ -99,19 +103,25 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                     
                     loanRepaymentScheduleTransactionProcessor.handleGLIMRepayment(glimTransaction,
                             individualTransactionAmount);
-                    for(GroupLoanIndividualMonitoring glim: loanTransaction.getLoan().getGroupLoanIndividualMonitoringList()){
-                        if(glim.getId().intValue()==glimId.intValue()){
-                            glimTransaction.setOverpaidAmount(glim.getOverpaidAmount());
-                            glimTransaction.setTotalAmount(individualTransactionAmount);
-                        }
-                    }
+                    glimTransaction.setOverpaidAmount(groupLoanIndividualMonitoring.getProcessedTransactionMap().get("processedOverPaidAmount"));
+                    glimTransaction.setTotalAmount(groupLoanIndividualMonitoring.getTransactionAmount());                    
                     glimTransactions.add(glimTransaction);
                     clientMembersJson.add(GroupLoanIndividualMonitoringDataChanges.createNew(glimId, individualTransactionAmount));
                 }
-
             }
         }
         return glimTransactions;
+    }
+    
+    public void updateGlimTransactionsData(final JsonCommand command, Loan loan, Map<String, Object> changes,
+            Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers, boolean isRecoveryRepayment,
+            LoanTransaction newLoanTransaction) {
+        Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.assembleGLIMTransactions(command, newLoanTransaction,
+                clientMembers);
+        this.glimAssembler.updateGLIMAfterRepayment(glimTransactions, isRecoveryRepayment);
+        this.glimTransactionRepositoryWrapper.saveAsList(glimTransactions);
+        this.updateLoanStatusForGLIM(loan);
+        changes.put("clientMember", clientMembers);
     }
 
     public void validateGlimTransactionAmount(JsonCommand command, boolean isRecoveryRepayment) {
@@ -299,18 +309,29 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         return installmentChargePerClient;
 
     }
-
+    /**
+     * it process total amount(already processed amount and current transaction amount)
+     *  and recreate installment portions for given installment number
+     * @param glim
+     * @param transactionAmount
+     * @param loan
+     * @param installmentNumber
+     * @param installmentPaidMap
+     * @param loanTransaction
+     * @param glimTransaction
+     * @return
+     */
     public static Map<String, BigDecimal> getSplit(GroupLoanIndividualMonitoring glim, BigDecimal transactionAmount, Loan loan,
             Integer installmentNumber, Map<String, BigDecimal> installmentPaidMap, LoanTransaction loanTransaction,
             GroupLoanIndividualMonitoringTransaction glimTransaction) {
 
-        BigDecimal totalPaidAmount = MathUtility.add(transactionAmount, installmentPaidMap.get("installmentTransactionAmount"));
+        BigDecimal unprocessedAmount = MathUtility.add(transactionAmount, installmentPaidMap.get("installmentTransactionAmount"));
         if (loanTransaction != null && loanTransaction.isInterestWaiver()) {
-            totalPaidAmount = MathUtility.add(totalPaidAmount, glim.getPaidInterestAmount());
+            unprocessedAmount = MathUtility.add(unprocessedAmount, glim.getPaidInterestAmount());
         } else if (loanTransaction != null && loanTransaction.isChargesWaiver()) {
-            totalPaidAmount = MathUtility.add(totalPaidAmount, glim.getPaidChargeAmount());
+            unprocessedAmount = MathUtility.add(unprocessedAmount, glim.getPaidChargeAmount());
         } else {
-            totalPaidAmount = MathUtility.add(totalPaidAmount, glim.getTotalPaidAmount());
+            unprocessedAmount = MathUtility.add(unprocessedAmount, glim.getTotalPaidAmount());
         }
 
         MonetaryCurrency currency = loan.getCurrency();
@@ -320,12 +341,14 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         BigDecimal paidCharge = BigDecimal.ZERO;
         BigDecimal paidInterest = BigDecimal.ZERO;
         BigDecimal paidPrincipal = BigDecimal.ZERO;
+        BigDecimal overPaidAmount = BigDecimal.ZERO;
 
         BigDecimal glimPaidCharge = MathUtility.zeroIfNull(glim.getPaidChargeAmount()).add(installmentPaidMap.get("unpaidCharge"));
         BigDecimal glimPaidInterest = MathUtility.zeroIfNull(glim.getPaidInterestAmount()).add(installmentPaidMap.get("unpaidInterest"));
         BigDecimal glimPaidPrincipal = MathUtility.zeroIfNull(glim.getPaidPrincipalAmount()).add(installmentPaidMap.get("unpaidPrincipal"));
+        BigDecimal glimOverPaidAmount = MathUtility.zeroIfNull(glim.getOverpaidAmount()).add(installmentPaidMap.get("unprocessedOverPaidAmount"));
         if (glimTransaction != null) {
-            totalPaidAmount = MathUtility.subtract(totalPaidAmount, glimTransaction.getTotalAmount());
+            unprocessedAmount = MathUtility.subtract(unprocessedAmount, glimTransaction.getTotalAmount());
             glimPaidCharge = MathUtility.subtract(glimPaidCharge, glimTransaction.getFeePortion());
             glimPaidInterest = MathUtility.subtract(glimPaidInterest, glimTransaction.getInterestPortion());
             glimPaidPrincipal = MathUtility.subtract(glimPaidPrincipal, glimTransaction.getPrincipalPortion());
@@ -375,116 +398,119 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
                 installmentPrincipal = BigDecimal.ZERO;
             }
 
-            if (loanTransaction == null || (MathUtility.isGreaterThanZero(totalPaidAmount) && !loanTransaction.isInterestWaiver())) {
-                if (MathUtility.isEqualOrGreater(totalPaidAmount, installmentCharge)) {
+            if (loanTransaction == null || (MathUtility.isGreaterThanZero(unprocessedAmount) && !loanTransaction.isInterestWaiver())) {
+                if (MathUtility.isEqualOrGreater(unprocessedAmount, installmentCharge)) {
                     if (MathUtility.isGreaterThanZero(glimPaidCharge)) {
                         if (MathUtility.isEqualOrGreater(glimPaidCharge, installmentCharge)) {
                             glimPaidCharge = glimPaidCharge.subtract(installmentCharge);
-                            totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentCharge);
+                            unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentCharge);
                         } else {
                             if (!isChargeWaived) {
                                 paidCharge = MathUtility.add(paidCharge, MathUtility.subtract(installmentCharge, glimPaidCharge));
-                                totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentCharge);
+                                unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentCharge);
                             } else {
-                                totalPaidAmount = MathUtility.subtract(totalPaidAmount, glimPaidCharge);
+                                unprocessedAmount = MathUtility.subtract(unprocessedAmount, glimPaidCharge);
                             }
-                            glimPaidCharge = MathUtility.subtract(glimPaidCharge, glimPaidCharge);
+                            glimPaidCharge = BigDecimal.ZERO;
                         }
                     } else {
                         if (!isChargeWaived) {
                             paidCharge = MathUtility.add(paidCharge, installmentCharge);
-                            totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentCharge);
+                            unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentCharge);
                         }
                     }
 
                 } else {
                     if (!isChargeWaived) {
-                        paidCharge = MathUtility.add(paidCharge, MathUtility.subtract(totalPaidAmount, glimPaidCharge));
-                        totalPaidAmount = MathUtility.subtract(totalPaidAmount, totalPaidAmount);
+                        paidCharge = MathUtility.add(paidCharge, MathUtility.subtract(unprocessedAmount, glimPaidCharge));
+                        unprocessedAmount = BigDecimal.ZERO;;
                     } else {
-                        totalPaidAmount = MathUtility.subtract(totalPaidAmount, glimPaidCharge);
+                        unprocessedAmount = MathUtility.subtract(unprocessedAmount, glimPaidCharge);
                     }
-                    glimPaidCharge = MathUtility.subtract(glimPaidCharge, glimPaidCharge);
+                    glimPaidCharge = BigDecimal.ZERO;
                 }
             }
 
-            if (MathUtility.isZero(totalPaidAmount)) {
+            if (MathUtility.isZero(unprocessedAmount)) {
                 break;
             }
 
-            if (loanTransaction == null || (MathUtility.isGreaterThanZero(totalPaidAmount) && !loanTransaction.isChargesWaiver())) {
-                if (MathUtility.isEqualOrGreater(totalPaidAmount, installmentInterest)) {
+            if (loanTransaction == null || (MathUtility.isGreaterThanZero(unprocessedAmount) && !loanTransaction.isChargesWaiver())) {
+                if (MathUtility.isEqualOrGreater(unprocessedAmount, installmentInterest)) {
                     if (MathUtility.isGreaterThanZero(glimPaidInterest)) {
                         if (MathUtility.isEqualOrGreater(glimPaidInterest, installmentInterest)) {
                             glimPaidInterest = MathUtility.subtract(glimPaidInterest, installmentInterest);
-                            totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentInterest);
+                            unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentInterest);
                         } else {
                             if (!isInterestWaived) {
                                 paidInterest = MathUtility.add(paidInterest, MathUtility.subtract(installmentInterest, glimPaidInterest));
-                                totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentInterest);
+                                unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentInterest);
                             } else {
-                                totalPaidAmount = MathUtility.subtract(totalPaidAmount, glimPaidInterest);
+                                unprocessedAmount = MathUtility.subtract(unprocessedAmount, glimPaidInterest);
                             }
-                            glimPaidInterest = MathUtility.subtract(glimPaidInterest, glimPaidInterest);
+                            glimPaidInterest = BigDecimal.ZERO;
                         }
                     } else {
                         if (!isInterestWaived) {
                             paidInterest = MathUtility.add(paidInterest, installmentInterest);
-                            totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentInterest);
+                            unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentInterest);
                         }
                     }
 
                 } else {
                     if (!isInterestWaived) {
-                        paidInterest = MathUtility.add(paidInterest, MathUtility.subtract(totalPaidAmount, glimPaidInterest));
-                        totalPaidAmount = MathUtility.subtract(totalPaidAmount, totalPaidAmount);
+                        paidInterest = MathUtility.add(paidInterest, MathUtility.subtract(unprocessedAmount, glimPaidInterest));
+                        unprocessedAmount = BigDecimal.ZERO;
                     } else {
-                        totalPaidAmount = MathUtility.subtract(totalPaidAmount, glimPaidInterest);
+                        unprocessedAmount = MathUtility.subtract(unprocessedAmount, glimPaidInterest);
                     }
-                    glimPaidInterest = MathUtility.subtract(glimPaidInterest, glimPaidInterest);
+                    glimPaidInterest = BigDecimal.ZERO;
                 }
             }
 
-            if (MathUtility.isZero(totalPaidAmount)) {
+            if (MathUtility.isZero(unprocessedAmount)) {
                 break;
             }
 
             if (loanTransaction == null
-                    || (MathUtility.isGreaterThanZero(totalPaidAmount) && (loanTransaction.isRepayment() || loanTransaction.isWriteOff()
+                    || (MathUtility.isGreaterThanZero(unprocessedAmount) && (loanTransaction.isRepayment() || loanTransaction.isWriteOff()
                             || loanTransaction.isRecoveryRepayment() || loanTransaction.isReversed()))) {
-                if (MathUtility.isEqualOrGreater(totalPaidAmount, installmentPrincipal)) {
+                if (MathUtility.isEqualOrGreater(unprocessedAmount, installmentPrincipal)) {
                     if (MathUtility.isGreaterThanZero(glimPaidPrincipal)) {
                         if (MathUtility.isEqualOrGreater(glimPaidPrincipal, installmentPrincipal)) {
                             glimPaidPrincipal = MathUtility.subtract(glimPaidPrincipal, installmentPrincipal);
                         } else {
                             paidPrincipal = MathUtility.add(paidPrincipal, MathUtility.subtract(installmentPrincipal, glimPaidPrincipal));
 
-                            glimPaidPrincipal = MathUtility.subtract(glimPaidPrincipal, glimPaidPrincipal);
+                            glimPaidPrincipal = BigDecimal.ZERO;
                         }
                     } else {
                         paidPrincipal = MathUtility.add(paidPrincipal, installmentPrincipal);
                     }
-                    totalPaidAmount = MathUtility.subtract(totalPaidAmount, installmentPrincipal);
+                    unprocessedAmount = MathUtility.subtract(unprocessedAmount, installmentPrincipal);
 
                 } else {
-                    paidPrincipal = MathUtility.add(paidPrincipal, MathUtility.subtract(totalPaidAmount, glimPaidPrincipal));
-                    glimPaidPrincipal = MathUtility.subtract(glimPaidPrincipal, glimPaidPrincipal);
-                    totalPaidAmount = MathUtility.subtract(totalPaidAmount, totalPaidAmount);
+                    paidPrincipal = MathUtility.add(paidPrincipal, MathUtility.subtract(unprocessedAmount, glimPaidPrincipal));
+                    glimPaidPrincipal = BigDecimal.ZERO;
+                    unprocessedAmount = BigDecimal.ZERO;
                 }
             }
 
-            if (MathUtility.isZero(totalPaidAmount) || i + 1 == installmentNumber) {
-
+            if (MathUtility.isZero(unprocessedAmount) || i + 1 == installmentNumber){
                 break;
             }
 
+        }
+        if(numberOfInstallments.equals(installmentNumber)){
+            overPaidAmount = MathUtility.subtract(unprocessedAmount, glimOverPaidAmount) ;
         }
 
         Map<String, BigDecimal> splitMap = new HashMap<>();
         splitMap.put("unpaidCharge", paidCharge);
         splitMap.put("unpaidInterest", paidInterest);
         splitMap.put("unpaidPrincipal", paidPrincipal);
-        splitMap.put("installmentTransactionAmount", MathUtility.add(paidCharge, paidInterest, paidPrincipal));
+        splitMap.put("unprocessedOverPaidAmount", overPaidAmount);
+        splitMap.put("installmentTransactionAmount", MathUtility.add(paidCharge, paidInterest, paidPrincipal, overPaidAmount));
         return splitMap;
     }
 
@@ -492,14 +518,8 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
         List<GroupLoanIndividualMonitoring> glimMembersForStatusUpdate = this.glimRepository.findByLoanIdAndIsClientSelected(loan.getId(),
                 true);
         for (GroupLoanIndividualMonitoring glim : glimMembersForStatusUpdate) {
-            if (glim.getIsActive() && glim.isClientSelected()) {
-                BigDecimal totalAmountWrittenOff = MathUtility.add(glim.getPrincipalWrittenOffAmount(), glim.getInterestWrittenOffAmount(),
-                        glim.getChargeWrittenOffAmount());
-                BigDecimal outStandingAmount = MathUtility.subtract(glim.getTotalPaybleAmount(), MathUtility.add(glim.getTotalPaidAmount(),
-                        glim.getWaivedChargeAmount(), glim.getWaivedInterestAmount(), totalAmountWrittenOff));
-                if (MathUtility.isZero(outStandingAmount) || MathUtility.isNegative(outStandingAmount)) {
-                    glim.setIsActive(false);
-                }
+            if (glim.isClientSelected()) {                
+                glim.setIsActive(this.glimAssembler.isActive(glim));
             }
         }
         this.glimRepository.save(glimMembersForStatusUpdate);

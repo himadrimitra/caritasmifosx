@@ -53,7 +53,7 @@ public class FineractStyleLoanRepaymentScheduleTransactionProcessor extends Abst
 
     @Override
     protected boolean isTransactionInAdvanceOfInstallment(final int currentInstallmentIndex,
-            final List<LoanRepaymentScheduleInstallment> installments, final LocalDate transactionDate, final Money transactionAmount) {
+            final List<LoanRepaymentScheduleInstallment> installments, final LocalDate transactionDate) {
 
         final LoanRepaymentScheduleInstallment currentInstallment = installments.get(currentInstallmentIndex);
 
