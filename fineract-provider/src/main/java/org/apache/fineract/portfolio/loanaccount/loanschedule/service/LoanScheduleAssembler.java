@@ -314,7 +314,8 @@ public class LoanScheduleAssembler {
 
         // disbursement details
         final BigDecimal principal = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("principal", element);
-        final Money principalMoney = Money.of(currency, principal);
+        final BigDecimal discountOnDisburseAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(LoanApiConstants.discountOnDisbursalAmountParameterName, element);
+        final Money principalMoney = Money.of(currency, principal).minus(discountOnDisburseAmount);
 
         final LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed("expectedDisbursementDate", element);
         final LocalDate repaymentsStartingFromDate = this.fromApiJsonHelper.extractLocalDateNamed("repaymentsStartingFromDate", element);
@@ -412,7 +413,7 @@ public class LoanScheduleAssembler {
         final BigDecimal maxOutstandingBalance = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                 LoanApiConstants.maxOutstandingBalanceParameterName, element);
 
-        final List<DisbursementData> disbursementDatas = fetchDisbursementData(element.getAsJsonObject());
+        final List<DisbursementData> disbursementDatas = fetchDisbursementData(element.getAsJsonObject(), discountOnDisburseAmount);
 
         /**
          * Interest recalculation settings copy from product definition
@@ -541,8 +542,15 @@ public class LoanScheduleAssembler {
         final List<WorkingDayExemptionsData> workingDayExemptions = this.workingDayExcumptionsReadPlatformService.getWorkingDayExemptionsForEntityType(EntityAccountType.LOAN.getValue());
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
-        final BigDecimal discountOnDisburseAmount = null;
         final boolean considerFutureDisbursmentsInSchedule = loanProduct.considerFutureDisbursementsInSchedule();
+        Boolean collectInterestUpfront = null;
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.collectInterestUpfront, element)) {
+            collectInterestUpfront = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.collectInterestUpfront, element);
+        }
+        if (collectInterestUpfront == null) {
+            collectInterestUpfront = loanProduct.collectInterestUpfront();
+        }
+        
         LoanApplicationTerms loanApplicationTerms = LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
                 interestRatePerPeriod, interestRatePeriodFrequencyType, annualNominalInterestRate, interestCalculationPeriodMethod,
@@ -558,7 +566,7 @@ public class LoanScheduleAssembler {
                 firstEmiAmount, loanProduct.getAdjustedInstallmentInMultiplesOf(), 
                 loanProduct.adjustFirstEMIAmount(),considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(),
                 loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, 
-                loanProduct.allowNegativeLoanBalances(), loanProduct.collectInterestUpfront(), discountOnDisburseAmount);
+                loanProduct.allowNegativeLoanBalances(), collectInterestUpfront, discountOnDisburseAmount);
         LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, null);
         return  loanApplicationTerms;
     }
@@ -615,7 +623,7 @@ public class LoanScheduleAssembler {
         return calendar;
     }
 
-    private List<DisbursementData> fetchDisbursementData(final JsonObject command) {
+    private List<DisbursementData> fetchDisbursementData(final JsonObject command, final BigDecimal discountOnDisburseAmount) {
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(command);
         final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(command);
         List<DisbursementData> disbursementDatas = new ArrayList<>();
@@ -636,6 +644,9 @@ public class LoanScheduleAssembler {
                             && jsonObject.get(LoanApiConstants.disbursementPrincipalParameterName).isJsonPrimitive()
                             && StringUtils.isNotBlank((jsonObject.get(LoanApiConstants.disbursementPrincipalParameterName).getAsString()))) {
                         principal = jsonObject.getAsJsonPrimitive(LoanApiConstants.disbursementPrincipalParameterName).getAsBigDecimal();
+                    }
+                    if(i==0 && discountOnDisburseAmount != null && principal != null){
+                        principal = principal.subtract(discountOnDisburseAmount);
                     }
                     disbursementDatas.add(new DisbursementData(null, expectedDisbursementDate, null, principal, null, null));
                     i++;

@@ -470,6 +470,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             LocalDate scheduledDueDate, ScheduleCurrentPeriodParams currentPeriodParams, MathContext mc) {
         if (loanApplicationTerms.collectInterestUpfront() && scheduleParams.getPeriodNumber() == 1) {
             Money interest = loanApplicationTerms.calculateInterestWithFlatInterestRate(mc);
+            interest = interest.minus(loanApplicationTerms.getDiscountOnDisbursalAmount());
             if (!scheduledDueDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())) {
                 addInstallmentForUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods,
                         interest);

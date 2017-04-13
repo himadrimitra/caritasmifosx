@@ -37,11 +37,12 @@ public class RepaymentScheduleRelatedLoanData {
     private final BigDecimal interestPostedAmount;
     private final boolean considerFutureDisbursmentsInSchedule;
     private final boolean considerAllDisbursementsInSchedule;
+    private final BigDecimal discountedFromPrincipal;
 
     public RepaymentScheduleRelatedLoanData(final LocalDate expectedDisbursementDate, final LocalDate actualDisbursementDate,
             final CurrencyData currency, final BigDecimal principal,
             final BigDecimal inArrearsTolerance, final BigDecimal totalFeeChargesAtDisbursement, final BigDecimal interestPostedAmount, 
-            final boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursementsInSchedule) {
+            final boolean considerFutureDisbursmentsInSchedule, boolean considerAllDisbursementsInSchedule, final BigDecimal discountedFromPrincipal) {
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.actualDisbursementDate = actualDisbursementDate;
         this.currency = currency;
@@ -51,6 +52,7 @@ public class RepaymentScheduleRelatedLoanData {
         this.interestPostedAmount = interestPostedAmount;
         this.considerFutureDisbursmentsInSchedule = considerFutureDisbursmentsInSchedule;
         this.considerAllDisbursementsInSchedule = considerAllDisbursementsInSchedule;
+        this.discountedFromPrincipal = discountedFromPrincipal;
     }
 
     public LocalDate disbursementDate() {
@@ -98,5 +100,10 @@ public class RepaymentScheduleRelatedLoanData {
     
     public boolean isConsiderAllDisbursementsInSchedule() {
         return this.considerAllDisbursementsInSchedule;
+    }
+
+    
+    public BigDecimal getDiscountedFromPrincipal() {
+        return this.discountedFromPrincipal;
     }
 }

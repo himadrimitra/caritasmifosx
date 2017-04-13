@@ -89,6 +89,7 @@ import org.apache.fineract.portfolio.charge.exception.LoanChargeCannotBeAddedExc
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.domain.LoanCollateral;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
@@ -1756,6 +1757,13 @@ public class Loan extends AbstractPersistable<Long> {
             actualChanges.put(LoanApiConstants.expectedRepaymentPaymentTypeParamName,
                     command.integerValueOfParameterNamed(LoanApiConstants.expectedRepaymentPaymentTypeParamName));
         }
+        
+        if (command.isChangeInBigDecimalParameterNamed(LoanApiConstants.discountOnDisbursalAmountParameterName, this.discountOnDisbursalAmount)) {
+            final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(LoanApiConstants.discountOnDisbursalAmountParameterName);
+            this.discountOnDisbursalAmount = newValue;
+            actualChanges.put(LoanApiConstants.discountOnDisbursalAmountParameterName, newValue);
+        }
+        
         return actualChanges;
     }
 
@@ -3213,7 +3221,6 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void updateLoanToPreDisbursalState() {
         this.actualDisbursementDate = null;
-        this.discountOnDisbursalAmount = null;
         this.accruedTill = null;
         reverseExistingTransactions();
 
@@ -6353,11 +6360,19 @@ public class Loan extends AbstractPersistable<Long> {
         final PeriodFrequencyType loanTermPeriodFrequencyType = PeriodFrequencyType.fromInt(this.termPeriodFrequencyType);
         NthDayType nthDayType = null;
         DayOfWeekType dayOfWeekType = null;
+        boolean reduceDiscountFromPricipal = this.discountOnDisbursalAmount != null
+                && !(this.isOpen() || (scheduleGeneratorDTO.getBusinessEvent() != null && scheduleGeneratorDTO.getBusinessEvent().equals(
+                        BUSINESS_EVENTS.LOAN_DISBURSAL)));
         final List<DisbursementData> disbursementData = new ArrayList<>();
         for (LoanDisbursementDetails disbursementDetails : this.disbursementDetails) {
-        	if(disbursementDetails.isActive()){
-            disbursementData.add(disbursementDetails.toData());
-        	}
+            if (disbursementDetails.isActive()) {
+                DisbursementData data = disbursementDetails.toData();
+                if (reduceDiscountFromPricipal
+                        && disbursementDetails.getDisbursementDateAsLocalDate().isEqual(getDisbursementDate())) {
+                    data.reducePrincipal(this.discountOnDisbursalAmount);
+                }
+                disbursementData.add(data);
+            }
         }
 
         Calendar calendar = scheduleGeneratorDTO.getCalendar();
@@ -6408,10 +6423,10 @@ public class Loan extends AbstractPersistable<Long> {
                 rescheduleStrategyMethod, calendar, getApprovedPrincipal(), annualNominalInterestRate, loanTermVariations,
                 calendarHistoryDataWrapper, scheduleGeneratorDTO.getNumberOfdays(),
                 scheduleGeneratorDTO.isSkipRepaymentOnFirstDayofMonth(), holidayDetailDTO, allowCompoundingOnEod, isSubsidyApplicable,
-                firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(), 
+                firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(),
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
-                this.loanProduct.isAdjustInterestForRounding(), this.loanProduct.allowNegativeLoanBalances(), this.loanProduct.collectInterestUpfront(), 
-                this.discountOnDisbursalAmount);
+                this.loanProduct.isAdjustInterestForRounding(), this.loanProduct.allowNegativeLoanBalances(),
+                this.loanRepaymentScheduleDetail.collectInterestUpfront(), this.discountOnDisbursalAmount, reduceDiscountFromPricipal);
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
         updateInterestRate(loanApplicationTerms,scheduleGeneratorDTO);
         if (this.isSubmittedAndPendingApproval()
@@ -7969,7 +7984,13 @@ public class Loan extends AbstractPersistable<Long> {
                 unsupportedParameters.add(LoanApiConstants.discountOnDisbursalAmountParameterName);
                 throw new UnsupportedParameterException(unsupportedParameters);
             }
+        } else {
+            this.discountOnDisbursalAmount = null;
         }
+    }
+    
+    public void setDiscountOnDisbursalAmount(final BigDecimal discountOnDisbursalAmount) {
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
     }
 
     public int getActiveTrancheCount() {

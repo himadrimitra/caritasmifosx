@@ -106,5 +106,9 @@ public class DisbursementData implements Comparable<DisbursementData> {
     public void addBrokenPeriodInterest(BigDecimal interest) {
         this.principal = this.principal.add(interest);
     }
+    
+    public void reducePrincipal(BigDecimal amount) {
+        this.principal = this.principal.subtract(amount);
+    }
 
 }

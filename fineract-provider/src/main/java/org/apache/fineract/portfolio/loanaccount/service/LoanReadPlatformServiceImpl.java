@@ -611,18 +611,34 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             if (paymentDetailsRequired) {
                 paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
             }
+            Integer status = (Integer) data.get("status");
+            LoanStatus loanStatus = LoanStatus.fromInt(status);
             LocalDate expectedDisbursementDate = new LocalDate(data.get("expectedDisbursementDate"));
             LocalDate nextDueDate = new LocalDate(data.get("nextDueDate"));
             BigDecimal principal = (BigDecimal) data.get("principal");
+            BigDecimal discountOnDisbursalAmount = null;
+            if (!loanStatus.isActive() && data.get("discountOnDisbursalAmount") != null) {
+                discountOnDisbursalAmount = (BigDecimal) data.get("discountOnDisbursalAmount");
+                principal = principal.subtract(discountOnDisbursalAmount);
+            }
             BigDecimal fixedEmiAmount = null;
             if (data.get("fixedEmiAmount") != null) {
                 fixedEmiAmount = (BigDecimal) data.get("fixedEmiAmount");
             }
             BigDecimal netDisburseAmount = principal;
+           
             BigDecimal totalNetDisbursal = (BigDecimal) data.get("netDisbursalDerived");
             BigDecimal trancheNetDisburseAmount = (BigDecimal) data.get("trancheNetDisburseAmount");
-            Integer status = (Integer) data.get("status");
-            LoanStatus loanStatus = LoanStatus.fromInt(status);
+            if (discountOnDisbursalAmount != null) {
+                if (totalNetDisbursal != null) {
+                    totalNetDisbursal = totalNetDisbursal.subtract(discountOnDisbursalAmount);
+                }
+                if (trancheNetDisburseAmount != null) {
+                    trancheNetDisburseAmount = trancheNetDisburseAmount.subtract(discountOnDisbursalAmount);
+                }
+            }
+            
+           
             if (loanStatus.isActive()) {
                 netDisburseAmount = trancheNetDisburseAmount;
             } else if ((trancheNetDisburseAmount != null && trancheNetDisburseAmount.compareTo(principal) != 0) || principal.compareTo(totalNetDisbursal) == -1) {
@@ -636,6 +652,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             } else {
                 netDisburseAmount = totalNetDisbursal;
             }
+            
+            
             
             Collection<FingerPrintData> fingerPrintData = null;
             Long clientId = (Long) data.get("clientId");
@@ -661,6 +679,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             LoanTransactionData disburseTemplate = LoanTransactionData.LoanTransactionDataForDisbursalTemplate(transactionType, expectedDisbursementDate, principal,
                     paymentOptions, fixedEmiAmount, nextDueDate, transactionAuthenticationOptions,fingerPrintData);
             disburseTemplate.setNetDisbursalAmount(netDisburseAmount);
+            disburseTemplate.setDiscountOnDisbursalAmount(discountOnDisbursalAmount);
+            if(!loanStatus.isActive() && data.get("expectedFirstRepaymentOnDate") != null){
+                disburseTemplate.setExpectedFirstRepaymentOnDate(new LocalDate(data.get("expectedFirstRepaymentOnDate")));
+            }
              return disburseTemplate;
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanNotFoundException(loanId);
@@ -670,8 +692,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public Map<String, Object> retrieveDisbursalDataMap(final Long loanId) {
         final StringBuilder sql = new StringBuilder(200);
         sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
-        sql.append(" , l.product_id as productId, l.client_id as clientId, ");
-        sql.append(" l.principal_net_disbursed_derived as netDisbursalDerived , dd.principal_net_disbursed as trancheNetDisburseAmount,l.loan_status_id as status ");
+        sql.append(" , l.product_id as productId, l.client_id as clientId, l.expected_firstrepaymenton_date as expectedFirstRepaymentOnDate,");
+        sql.append(" l.principal_net_disbursed_derived as netDisbursalDerived , dd.principal_net_disbursed as trancheNetDisburseAmount,l.loan_status_id as status, l.discount_on_disbursal_amount as discountOnDisbursalAmount ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -772,6 +794,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.total_writtenoff_derived as totalWrittenOff,");
             sb.append(" l.writeoff_reason_cv_id as writeoffReasonId,");
             sb.append(" l.flat_interest_rate as flatInterestRate,");
+            sb.append(" l.discount_on_disbursal_amount as discountOnDisbursalAmount, l.collect_interest_upfront as collectInterestUpfront,");
             sb.append(" codev.code_value as writeoffReason,");
             sb.append(" l.total_outstanding_derived as totalOutstanding,");
             sb.append(" l.total_overpaid_derived as totalOverpaid,");
@@ -1160,6 +1183,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             	expectedRepaymentPaymentType = PaymentTypeData.instance(expectedRepaymentPaymentTypeId.longValue(), repaymenPaymentTypeName);            	
             } 
             final BigDecimal flatInterestRate = rs.getBigDecimal("flatInterestRate");
+            final BigDecimal discountOnDisbursalAmount = rs.getBigDecimal("discountOnDisbursalAmount");
+            final Boolean collectInterestUpfront = rs.getBoolean("collectInterestUpfront");
             
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
@@ -1176,7 +1201,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
                     minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
                     topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate, 
-                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule);
+                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, collectInterestUpfront);
         }
     }
     
@@ -1400,6 +1425,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         private final BigDecimal interestPosted;
         private final boolean considerFutureDisbursmentsInSchedule;
         private final boolean considerAllDisbursementsInSchedule;
+        private final BigDecimal discountOnDisbursalAmount;
 
         public LoanScheduleResultSetExtractor(final RepaymentScheduleRelatedLoanData repaymentScheduleRelatedLoanData,
                 Collection<DisbursementData> disbursementData, BigDecimal totalPaidFeeCharges) {
@@ -1407,12 +1433,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             this.disbursement = repaymentScheduleRelatedLoanData.disbursementData();
             this.totalFeeChargesDueAtDisbursement = repaymentScheduleRelatedLoanData.getTotalFeeChargesAtDisbursement();
             this.lastDueDate = this.disbursement.disbursementDate();
-            this.outstandingLoanPrincipalBalance = this.disbursement.amount();
+            this.outstandingLoanPrincipalBalance = this.disbursement.amount().subtract(repaymentScheduleRelatedLoanData.getDiscountedFromPrincipal());
             this.disbursementData = disbursementData;
             this.totalPaidFeeCharges = totalPaidFeeCharges;
             this.interestPosted = repaymentScheduleRelatedLoanData.getInterestPostedAmount();
             this.considerFutureDisbursmentsInSchedule = repaymentScheduleRelatedLoanData.isConsiderFutureDisbursmentsInSchedule();
             this.considerAllDisbursementsInSchedule = repaymentScheduleRelatedLoanData.isConsiderAllDisbursementsInSchedule();
+            this.discountOnDisbursalAmount = repaymentScheduleRelatedLoanData.getDiscountedFromPrincipal();
         }
 
         public String schema() {
@@ -1430,7 +1457,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         public LoanScheduleData extractData(final ResultSet rs) throws SQLException, DataAccessException {
 
             final LoanSchedulePeriodData disbursementPeriod = LoanSchedulePeriodData.disbursementOnlyPeriod(
-                    this.disbursement.disbursementDate(), this.disbursement.amount(), this.totalFeeChargesDueAtDisbursement,
+                    this.disbursement.disbursementDate(), this.disbursement.amount().subtract(discountOnDisbursalAmount), this.totalFeeChargesDueAtDisbursement,
                     this.disbursement.isDisbursed());
 
             boolean incluedeAllDisbursements = true;
@@ -1442,7 +1469,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             BigDecimal disbursementChargeAmount = this.totalFeeChargesDueAtDisbursement;
             if (disbursementData == null || disbursementData.isEmpty()) {
                 periods.add(disbursementPeriod);
-                totalPrincipalDisbursed = Money.of(monCurrency, this.disbursement.amount()).getAmount();
+                totalPrincipalDisbursed = Money.of(monCurrency, this.disbursement.amount()).minus(discountOnDisbursalAmount).getAmount();
             } else {
                 if (this.disbursement.isDisbursed()) {
                     incluedeAllDisbursements = considerAllDisbursementsInSchedule;
@@ -1491,7 +1518,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     for (DisbursementData data : disbursementData) {
                         if (fromDate.equals(this.disbursement.disbursementDate()) && data.disbursementDate().equals(fromDate)) {
                             if (periods.size() == 0) {
-                                principal = principal.add(data.amount()).add(interestPosted);
+                                principal = principal.add(data.amount()).add(interestPosted).subtract(discountOnDisbursalAmount);
                                 if (data.getChargeAmount() == null) {
                                     final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
                                             data.disbursementDate(), principal, disbursementChargeAmount, data.isDisbursed());
@@ -2816,6 +2843,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.broken_period_method_enum as brokenPeriodMethodType,");
             sb.append(" l.flat_interest_rate as flatInterestRate,");
             sb.append(" l.broken_period_interest as brokenPeriodInterest,");
+            sb.append(" l.discount_on_disbursal_amount as discountOnDisbursalAmount, l.collect_interest_upfront as collectInterestUpfront,");
             sb.append(" l.is_topup as isTopup ");
             sb.append(" from m_loan l");
             this.loanSql = sb.toString();
@@ -3031,6 +3059,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             }
             final BigDecimal flatInterestRate = rs.getBigDecimal("flatInterestRate");
             final BigDecimal brokenPeriodInterest = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "brokenPeriodInterest");
+            final BigDecimal discountOnDisbursalAmount = rs.getBigDecimal("discountOnDisbursalAmount");
+            final Boolean collectInterestUpfront = rs.getBoolean("collectInterestUpfront");
             
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, groupData, loanType, loanProductId,
                     fundId, loanPurposeId, loanOfficerId, currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid,
@@ -3043,7 +3073,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     loanProductCounter, fixedEmiAmount, outstandingLoanBalance, inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType,
                     daysInYearType, isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement,
                     loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, 
-                    flatInterestRate, brokenPeriodInterest);
+                    flatInterestRate, brokenPeriodInterest, discountOnDisbursalAmount, collectInterestUpfront);
         }
     }
 

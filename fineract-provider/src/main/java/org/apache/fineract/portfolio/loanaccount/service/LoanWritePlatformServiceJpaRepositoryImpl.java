@@ -370,6 +370,11 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final Loan loan = this.loanAssembler.assembleFromWithInitializeLazy(loanId);
         final LocalDate actualDisbursementDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
+        
+        final LocalDate repaymentsStartingFromDate = command.localDateValueOfParameterNamed(LoanApiConstants.repaymentsStartingFromDateParameterName);
+        if(repaymentsStartingFromDate != null){
+            loan.setExpectedFirstRepaymentOnDate(repaymentsStartingFromDate.toDate());
+        }
         // validate ActualDisbursement Date Against Expected Disbursement Date
         LoanProduct loanProduct = loan.loanProduct();
         if(loanProduct.isSyncExpectedWithDisbursementDate()){
@@ -425,6 +430,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             Money disburseAmount = loan.adjustDisburseAmount(command, actualDisbursementDate);
             ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                     considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+            scheduleGeneratorDTO.setBusinessEvent(BUSINESS_EVENTS.LOAN_DISBURSAL);
             Money amountToDisburse = disburseAmount.copy();
             LocalDate nextPossibleRepaymentDate = validateAndFetchNextRepaymentDate(loan, actualDisbursementDate, loanProduct,
                     isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, rescheduledRepaymentDate, scheduleGeneratorDTO);
@@ -801,6 +807,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
                 final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                         considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
+                scheduleGeneratorDTO.setBusinessEvent(BUSINESS_EVENTS.LOAN_DISBURSAL);
                 final LocalDate nextPossibleRepaymentDate = validateAndFetchNextRepaymentDate(loan, actualDisbursementDate, loanProduct,
                         isChangeEmiIfRepaymentDateSameAsDisbursementDateEnabled, rescheduledRepaymentDate, scheduleGeneratorDTO);
                 regenerateScheduleOnDisbursement(command, loan, recalculateSchedule, scheduleGeneratorDTO, nextPossibleRepaymentDate,

@@ -73,7 +73,8 @@ public final class CalculateLoanScheduleQueryFromApiJsonHelper {
             LoanProductConstants.isSubsidyApplicableParamName, "fixedEmiAmount", 
             LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName, LoanApiConstants.expectedDisbursalPaymentTypeParamName,
             LoanApiConstants.expectedRepaymentPaymentTypeParamName, LoanApiConstants.syncRepaymentsWithMeeting, 
-            CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue(), LoanProductConstants.brokenPeriodMethodTypeParamName));
+            CALENDAR_SUPPORTED_PARAMETERS.REPEATS_ON_DAY_OF_MONTH.getValue(), LoanProductConstants.brokenPeriodMethodTypeParamName,
+            LoanProductConstants.collectInterestUpfront,LoanApiConstants.discountOnDisbursalAmountParameterName));
 
     private final FromJsonHelper fromApiJsonHelper;
 

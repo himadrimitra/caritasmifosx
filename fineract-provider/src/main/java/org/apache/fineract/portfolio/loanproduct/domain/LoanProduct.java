@@ -213,9 +213,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @Column(name = "can_use_for_topup", nullable = false)
     private boolean canUseForTopup = false;
     
-    @Column(name = "collect_interest_upfront", nullable = false)
-    private boolean collectInterestUpfront = false;
-    
     @Column(name = "is_flat_interest_rate", nullable = false)
     private boolean isFlatInterestRate;
     
@@ -399,9 +396,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
         final boolean canUseForTopup = command.parameterExists(LoanProductConstants.canUseForTopup) ? command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.canUseForTopup) : false;
                 
-        final boolean collectInterestUpfront = command.parameterExists(LoanProductConstants.collectInterestUpfront) ? command
-                .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.collectInterestUpfront) : false;
-
         final boolean isEmiBasedOnDisbursements = command.parameterExists(LoanProductConstants.isEmiBasedOnDisbursements) ? command
                 .booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isEmiBasedOnDisbursements) : false;
 
@@ -416,6 +410,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
         
         final BigDecimal percentageOfDisbursementToBeTransferred = command
                 .bigDecimalValueOfParameterNamed(LoanProductConstants.percentageOfDisbursementToBeTransferred);
+        
+        final boolean collectInterestUpfront = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.collectInterestUpfront);
 				
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
@@ -432,10 +428,10 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 defaultDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed,
                 minimumGapBetweenInstallments, maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount,
                 closeLoanOnOverpayment, syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm,
-                maxLoanTerm, loanTenureFrequencyType, canUseForTopup, collectInterestUpfront , weeksInYearType, adjustInterestForRounding,
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod,
-                isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, 
-                percentageOfDisbursementToBeTransferred);
+                maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType , adjustInterestForRounding, isEmiBasedOnDisbursements,
+                pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod, isFlatInterestRate,
+                allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, percentageOfDisbursementToBeTransferred, 
+                collectInterestUpfront);
 
     }
 
@@ -670,11 +666,10 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment,
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment,
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
-            final boolean canUseForTopup, final boolean collectInterestUpfront,final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
-            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements,
-            final Integer brokenPeriodMethod, final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances,
-            final boolean considerFutureDisbursementScheduleInLoans, final boolean considerAllDisbursementsInSchedule, 
-            final BigDecimal percentageOfDisbursementToBeTransferred) {
+            final boolean canUseForTopup, final WeeksInYearType weeksInYearType,boolean adjustInterestForRounding, final boolean isEmiBasedOnDisbursements,
+            Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements, final Integer brokenPeriodMethod,
+            final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances, final boolean considerFutureDisbursementScheduleInLoans,
+            final boolean considerAllDisbursementsInSchedule, final BigDecimal percentageOfDisbursementToBeTransferred, boolean collectInterestUpfront) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -708,7 +703,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, amortizationMethod,
                 inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType.getValue(), daysInYearType.getValue(),
                 isInterestRecalculationEnabled, weeksInYearType.getValue(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod,
-                brokenPeriodMethod);
+                brokenPeriodMethod, collectInterestUpfront);
 
         this.loanProductRelatedDetail.validateRepaymentPeriodWithGraceSettings();
 
@@ -766,7 +761,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
             this.loanTenureFrequencyType = loanTenureFrequencyType;
         }
         this.canUseForTopup = canUseForTopup;
-        this.collectInterestUpfront = collectInterestUpfront;
         this.isFlatInterestRate = isFlatInterestRate;
         this.percentageOfDisbursementToBeTransferred = percentageOfDisbursementToBeTransferred;
     }
@@ -1215,12 +1209,6 @@ public class LoanProduct extends AbstractPersistable<Long> {
             this.canUseForTopup = newValue;
         }
         
-        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.collectInterestUpfront, this.collectInterestUpfront)) {
-            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.collectInterestUpfront);
-            actualChanges.put(LoanProductConstants.collectInterestUpfront, newValue);
-            this.collectInterestUpfront = newValue;
-        }
-        
         if (command.isChangeInBooleanParameterNamed(LoanProductConstants.isFlatInterestRateParamName, this.isFlatInterestRate)) {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isFlatInterestRateParamName);
             actualChanges.put(LoanProductConstants.isFlatInterestRateParamName, newValue);
@@ -1624,7 +1612,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
     }
     
     public boolean collectInterestUpfront(){
-        return this.collectInterestUpfront;
+        return this.loanProductRelatedDetail.collectInterestUpfront();
     }
 
     

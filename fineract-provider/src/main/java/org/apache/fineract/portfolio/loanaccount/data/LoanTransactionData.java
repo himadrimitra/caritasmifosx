@@ -71,13 +71,21 @@ public class LoanTransactionData {
     private final LocalDate possibleNextRepaymentDate;
     @SuppressWarnings("unused")
     private BigDecimal netDisbursalAmount;
+    @SuppressWarnings("unused")
+    private BigDecimal discountOnDisbursalAmount;
+    @SuppressWarnings("unused")
+    private LocalDate expectedFirstRepaymentOnDate;
 
     // templates
     final Collection<PaymentTypeData> paymentTypeOptions;
+    @SuppressWarnings("unused")
     private String groupExternalId = null;
+    @SuppressWarnings("unused")
     private String loanAccountNumber = null;
+    @SuppressWarnings("unused")
     private  Collection<CodeValueData> writeOffReasonOptions = null;
     private final Collection<TransactionAuthenticationData> transactionAuthenticationOptions;
+    @SuppressWarnings("unused")
     private final LoanAccountData loanAccountData;
     private final Collection<FingerPrintData> fingerPrintData;
     private List<GroupLoanIndividualMonitoringTransactionData> glimTransactions;
@@ -490,6 +498,16 @@ public class LoanTransactionData {
     
     public void setNetDisbursalAmount(BigDecimal netDisbursalAmount) {
         this.netDisbursalAmount = netDisbursalAmount;
+    }
+
+    
+    public void setDiscountOnDisbursalAmount(BigDecimal discountOnDisbursalAmount) {
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
+    }
+
+    
+    public void setExpectedFirstRepaymentOnDate(LocalDate expectedFirstRepaymentOnDate) {
+        this.expectedFirstRepaymentOnDate = expectedFirstRepaymentOnDate;
     }
 	
 }
