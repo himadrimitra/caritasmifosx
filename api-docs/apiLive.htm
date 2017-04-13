@@ -1480,6 +1480,14 @@
 								<td></td>
 							</tr>
 							<tr>
+								<td></td>
+								<td>/loans/bulkLoanReschedule?loanOfficerId={LoanOfficerID}&officeId={OfficeId}&rescheduleFromDate={dd-Month-yyyy}</td>
+								<td></td>
+								<td><a href="#loan_data_for_reschedule">List Loan Accounts mapped to a Loan Officer for Rescheduling</a></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
 								<td><a href="#loan_term_variations">Loan Term Variations</a></td>
 								<td>/loans/{loanId}/schedule?command=calculateLoanSchedule</td>
 								<td><a href="#loans_calculate_with_exceptions">Calculate Schedule with Loan Term Variations</a></td>
@@ -12518,6 +12526,122 @@ Request Body:
 			</div>
 
 
+<!-- start fetching loan details mapped to a loan officer for a specific schedule date -->
+		<a id="loan_data_for_reschedule" name="loan_data_for_reschedule" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List loan accounts mapped to a Loan officer for Rescheduling</h4>
+					<p>Loan data provides, list of loan accounts which can be rescheduled to a later date</p>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Field Descriptions</div></td>
+						</tr>
+						<tr class=alt>
+							<td>OfficeId</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Office Id of Loan Officer</td>
+						</tr>
+						<tr class=alt>
+							<td>Officer Id</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Loan Officer Id </td>
+						</tr>
+						<tr class=alt>
+							<td>rescheduleFromDate</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Payment schedule which needs to be rescheduled</td>
+						</tr>
+					</table>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">GET https://DomainName/api/v1/loans/bulkLoanReschedule/template?loanOfficerId={LoanOfficerID}&officeId={OfficeId}&rescheduleFromDate={rescheduleFromDate}</code>
+					<code class="method-request">GET /loans/bulkLoanRepaymentReschedule/template?loanOfficerId=2&officeId=1&rescheduleFromDate=13 May 2017</code>
+					<code class="method-response">
+  {  
+   "officeId":1,
+   "loanOfficerId":2,
+   "rescheduleFromDate":[  
+      2017,
+      5,
+      13
+   ],
+   "accountSummaryCollection":{  
+      "clients":[  
+         {  
+            "id":8,
+            "displayName":"Peter Holms",
+            "loanAccountSummaryDatas":[  
+               {  
+                  "id":28,
+                  "accountNo":"000000028",
+                  "productName":"VehicleLoan"
+               }
+            ]
+         }
+      ],
+      "centerDataList":[  
+         {  
+            "id":2,
+            "name":"Center1",
+            "active":false,
+            "groupMembers":[  
+               {  
+                  "id":3,
+                  "name":"Group1",
+                  "clientMembers":[  
+                     {  
+                        "id":5,
+                        "displayName":"Girish K",
+                        "loanAccountSummaryDatas":[  
+                           {  
+                              "id":7,
+                              "accountNo":"000000007",
+                              "productName":"VehicleLoan"
+                           }
+                        ]
+                     }
+                  ],
+                  "isShowLoanDetailsInCenterPageEnabled":false
+               }
+            ]
+         },
+         {  
+            "id":4,
+            "name":"Center2",
+            "active":false,
+            "groupMembers":[  
+               {  
+                  "id":6,
+                  "name":"Group2",
+                  "clientMembers":[  
+                     {  
+                        "id":6,
+                        "displayName":"Krishna K",
+                        "loanAccountSummaryDatas":[  
+                           {  
+                              "id":9,
+                              "accountNo":"000000009",
+                              "productName":"VehicleLoan"
+                           }
+                        ]
+                     }
+                  ],
+                  "isShowLoanDetailsInCenterPageEnabled":false
+               }
+            ]
+         }
+      ],
+      "groups":[  
+
+      ]
+   }
+}
+					</code>
+				</div>
+			</div>					
 <!-- start Loan term variations -->
 <a id="loan_term_variations" name="loan_term_variations" class="old-syle-anchor">&nbsp;</a>
 <div class="method-section">
@@ -46476,6 +46600,14 @@ No Request Body:
 					<td></td>
 					<td>rescheduleloans/{requestId}?command=approve</td>
 					<td><a href="#loan_reschedule_request_approve">Approve Loan Reschedule Request</a></td>
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td>/loans/bulkLoanReschedule</td>
+					<td><a href="#loan_reschedule_request_approve">List Loans under Loan Officer</a></td>
 					<td></td>
 					<td></td>
 					<td></td>
