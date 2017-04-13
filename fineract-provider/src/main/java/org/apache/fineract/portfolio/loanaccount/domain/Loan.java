@@ -2457,7 +2457,7 @@ public class Loan extends AbstractPersistable<Long> {
                     throw new MultiDisbursementDataRequiredException(LoanApiConstants.disbursementDataParameterName, errorMessage);
                 }
                
-                if (this.disbursementDetails.size() > loanProduct.maxTrancheCount()) {
+                if (getActiveTrancheCount()  > loanProduct.maxTrancheCount()) {
                     final String errorMessage = "Number of tranche shouldn't be greter than " + loanProduct.maxTrancheCount();
                     throw new ExceedingTrancheCountException(LoanApiConstants.disbursementDataParameterName, errorMessage,
                             loanProduct.maxTrancheCount(), disbursementDetails.size());
