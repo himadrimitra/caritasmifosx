@@ -119,7 +119,7 @@ public class SmsApiResource {
     	
     	SmsConfigurationData smsConfigurationData = this.smsConfigurationReadPlatformService.retrieveOne("SMS_CREDITS");
     	
-    	Map<String, String> smsCreditsMap = new HashMap<String, String>();
+    	Map<String, String> smsCreditsMap = new HashMap<>();
     	smsCreditsMap.put("smsCredits", smsConfigurationData.getValue());
     	
     	return this.toApiJsonSerializer.serialize(smsCreditsMap);

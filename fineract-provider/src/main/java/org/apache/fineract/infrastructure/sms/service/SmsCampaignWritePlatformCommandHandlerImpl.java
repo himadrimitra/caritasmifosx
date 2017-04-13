@@ -18,17 +18,16 @@
  */
 package org.apache.fineract.infrastructure.sms.service;
 
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -47,7 +46,6 @@ import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingServi
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
-import org.apache.fineract.infrastructure.jobs.service.SchedularWritePlatformService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.infrastructure.sms.SmsApiConstants;
 import org.apache.fineract.infrastructure.sms.data.PreviewCampaignMessage;
@@ -63,9 +61,14 @@ import org.apache.fineract.infrastructure.sms.exception.SmsCampaignNotFound;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepository;
-import org.apache.fineract.template.domain.TemplateRepository;
-import org.apache.fineract.template.service.TemplateMergeService;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,15 +76,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 
 @Service
 public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWritePlatformService {
@@ -95,11 +92,8 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     private final SmsCampaignValidator smsCampaignValidator;
     private final SmsCampaignReadPlatformService smsCampaignReadPlatformService;
     private final ReportRepository reportRepository;
-    private final TemplateRepository templateRepository;
-    private final TemplateMergeService templateMergeService;
     private final SmsMessageRepository smsMessageRepository;
     private final ClientRepository clientRepository;
-    private final SchedularWritePlatformService schedularWritePlatformService;
     private final ReadReportingService readReportingService;
     private final GenericDataService genericDataService;
     private final FromJsonHelper fromJsonHelper;
@@ -107,21 +101,19 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
 
 
     @Autowired
-    public SmsCampaignWritePlatformCommandHandlerImpl(final PlatformSecurityContext context, final SmsCampaignRepository smsCampaignRepository,
-        final SmsCampaignValidator smsCampaignValidator,final SmsCampaignReadPlatformService smsCampaignReadPlatformService,
-        final ReportRepository reportRepository,final TemplateRepository templateRepository, final TemplateMergeService templateMergeService,
-        final SmsMessageRepository smsMessageRepository,final ClientRepository clientRepository,final SchedularWritePlatformService schedularWritePlatformService,
-        final ReadReportingService readReportingService, final GenericDataService genericDataService,final FromJsonHelper fromJsonHelper) {
+    public SmsCampaignWritePlatformCommandHandlerImpl(final PlatformSecurityContext context,
+            final SmsCampaignRepository smsCampaignRepository, final SmsCampaignValidator smsCampaignValidator,
+            final SmsCampaignReadPlatformService smsCampaignReadPlatformService, final ReportRepository reportRepository,
+            final SmsMessageRepository smsMessageRepository, final ClientRepository clientRepository,
+            final ReadReportingService readReportingService, final GenericDataService genericDataService,
+            final FromJsonHelper fromJsonHelper) {
         this.context = context;
         this.smsCampaignRepository = smsCampaignRepository;
         this.smsCampaignValidator = smsCampaignValidator;
         this.smsCampaignReadPlatformService = smsCampaignReadPlatformService;
         this.reportRepository = reportRepository;
-        this.templateRepository = templateRepository;
-        this.templateMergeService = templateMergeService;
         this.smsMessageRepository = smsMessageRepository;
         this.clientRepository = clientRepository;
-        this.schedularWritePlatformService = schedularWritePlatformService;
         this.readReportingService = readReportingService;
         this.genericDataService = genericDataService;
         this.fromJsonHelper = fromJsonHelper;
@@ -155,7 +147,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     @Override
     public CommandProcessingResult update(final Long resourceId, final JsonCommand command) {
         try{
-            final AppUser currentUser = this.context.authenticatedUser();
+            this.context.authenticatedUser();
 
             this.smsCampaignValidator.validateForUpdate(command.json());
             final SmsCampaign smsCampaign = this.smsCampaignRepository.findOne(resourceId);
@@ -188,7 +180,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     @Transactional
     @Override
     public CommandProcessingResult delete(final Long resourceId) {
-        final AppUser currentUser = this.context.authenticatedUser();
+        this.context.authenticatedUser();
 
         final SmsCampaign smsCampaign = this.smsCampaignRepository.findOne(resourceId);
 
@@ -399,11 +391,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
             throw new SmsCampaignNotFound(campaignId);
         }
 
-        final Locale locale = command.extractLocale();
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
         final LocalDate closureDate = command.localDateValueOfParameterNamed("closureDate");
 
-        smsCampaign.close(currentUser,fmt,closureDate);
+        smsCampaign.close(currentUser,closureDate);
 
         this.smsCampaignRepository.saveAndFlush(smsCampaign);
 
@@ -423,10 +413,11 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         return stringWriter.toString();
     }
 
+    @SuppressWarnings("rawtypes")
     private List<HashMap<String,Object>> getRunReportByServiceImpl(final String reportName,final Map<String, String> queryParams) throws IOException {
         final String reportType ="report";
 
-        List<HashMap<String, Object>> resultList = new ArrayList<HashMap<String, Object>>();
+        List<HashMap<String, Object>> resultList = new ArrayList<>();
         final GenericResultsetData results = this.readReportingService.retrieveGenericResultSetForSmsCampaign(reportName,
                 reportType, queryParams);
         final String response = this.genericDataService.generateJsonFromGenericResultsetData(results);
@@ -448,7 +439,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     @Override
     public PreviewCampaignMessage previewMessage(final JsonQuery query) {
     	PreviewCampaignMessage campaignMessage = null;
-        final AppUser currentUser = this.context.authenticatedUser();
+        this.context.authenticatedUser();
         this.smsCampaignValidator.validatePreviewMessage(query.json());
         final String smsParams = this.fromJsonHelper.extractStringNamed("paramValue", query.parsedJson()) ;
         final String textMessageTemplate = this.fromJsonHelper.extractStringNamed("message", query.parsedJson());
@@ -489,10 +480,8 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
 
         if(smsCampaign == null){ throw new SmsCampaignNotFound(campaignId);}
 
-        final Locale locale = command.extractLocale();
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
         final LocalDate reactivationDate = command.localDateValueOfParameterNamed("activationDate");
-        smsCampaign.reactivate(currentUser,fmt,reactivationDate);
+        smsCampaign.reactivate(currentUser,reactivationDate);
         if (smsCampaign.isSchedule()) {
 
             /**
@@ -612,7 +601,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     }
     
     public Map<String,Object> createRecurringRuleMap(String ruleList){
-    	Map<String,Object> recurringRuleMap = new HashMap<String, Object>();
+    	Map<String,Object> recurringRuleMap = new HashMap<>();
     	String[] rules = ruleList.split(";");
     	for (int i = 0; i < rules.length; i++) {
     		String[] rule = rules[i].split("=");

@@ -226,7 +226,7 @@ public class SmsCampaign extends AbstractPersistable<Long> {
             final ApiParameterError error = ApiParameterError.parameterError("error.msg.campaign.already.active", defaultUserMessage,
                     SmsCampaignValidator.activationDateParamName, activationLocalDate.toString(formatter));
 
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             dataValidationErrors.add(error);
 
             throw new PlatformApiDataValidationException(dataValidationErrors);
@@ -238,14 +238,14 @@ public class SmsCampaign extends AbstractPersistable<Long> {
        validate();
     }
 
-    public void close(final AppUser currentUser,final DateTimeFormatter dateTimeFormatter, final LocalDate closureLocalDate){
+    public void close(final AppUser currentUser,final LocalDate closureLocalDate){
         if(isClosed()){
             //handle errors if already activated
             final String defaultUserMessage = "Cannot close campaign. Campaign already in closed state.";
             final ApiParameterError error = ApiParameterError.parameterError("error.msg.campaign.already.closed", defaultUserMessage,
                     SmsCampaignValidator.statusParamName, SmsCampaignStatus.fromInt(this.status).getCode());
 
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             dataValidationErrors.add(error);
 
             throw new PlatformApiDataValidationException(dataValidationErrors);
@@ -260,7 +260,7 @@ public class SmsCampaign extends AbstractPersistable<Long> {
         validateClosureDate();
     }
 
-    public void reactivate(final AppUser currentUser, final DateTimeFormatter dateTimeFormat,final LocalDate reactivateLocalDate){
+    public void reactivate(final AppUser currentUser, final LocalDate reactivateLocalDate){
 
         if(!isClosed()){
             //handle errors if already activated
@@ -268,7 +268,7 @@ public class SmsCampaign extends AbstractPersistable<Long> {
             final ApiParameterError error = ApiParameterError.parameterError("error.msg.campaign.must.be.closed", defaultUserMessage,
                     SmsCampaignValidator.statusParamName, SmsCampaignStatus.fromInt(this.status).getCode());
 
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             dataValidationErrors.add(error);
 
             throw new PlatformApiDataValidationException(dataValidationErrors);
@@ -291,7 +291,7 @@ public class SmsCampaign extends AbstractPersistable<Long> {
             final ApiParameterError error = ApiParameterError.parameterError("error.msg.campaign.must.be.closed", defaultUserMessage,
                     SmsCampaignValidator.statusParamName, SmsCampaignStatus.fromInt(this.status).getCode());
 
-            final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             dataValidationErrors.add(error);
 
             throw new PlatformApiDataValidationException(dataValidationErrors);
@@ -323,19 +323,19 @@ public class SmsCampaign extends AbstractPersistable<Long> {
     }
 
     private void validate() {
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         validateActivationDate(dataValidationErrors);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
     private void validateReactivate(){
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         validateReactivationDate(dataValidationErrors);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
     private void validateClosureDate(){
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         validateClosureDate(dataValidationErrors);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
