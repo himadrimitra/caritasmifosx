@@ -55,22 +55,35 @@ public class GroupLoanIndividualMonitoringDataValidator {
     }
     
     public static void validateForGroupLoanIndividualMonitoringTransaction(final JsonCommand command, String totalAmountType,
-            AppUser currentUser, String currencyCode, boolean validateApprovalLimits) {
-        JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (JsonElement clientMember : clientMembers) {
-            JsonObject member = clientMember.getAsJsonObject();
-            if (member.has(LoanApiConstants.transactionAmountParamName)) {
-                BigDecimal memberDisbursalAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
-                if (validateApprovalLimits) {
-                    LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser, memberDisbursalAmount, currencyCode);
+            AppUser currentUser, String currencyCode, boolean validateApprovalLimits, final List<GroupLoanIndividualMonitoring> glimList) {
+        if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+            JsonArray clientMembers = command.arrayOfParameterNamed(LoanApiConstants.clientMembersParamName);
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            for (JsonElement clientMember : clientMembers) {
+                JsonObject member = clientMember.getAsJsonObject();
+                if (member.has(LoanApiConstants.transactionAmountParamName)) {
+                    BigDecimal memberDisbursalAmount = member.get(LoanApiConstants.transactionAmountParamName).getAsBigDecimal();
+                    if (validateApprovalLimits) {
+                        LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser, memberDisbursalAmount,
+                                currencyCode);
+                    }
+                    totalAmount = totalAmount.add(memberDisbursalAmount);
                 }
-                totalAmount = totalAmount.add(memberDisbursalAmount);
             }
-        }
-        if (command.bigDecimalValueOfParameterNamed(totalAmountType).doubleValue() != totalAmount.doubleValue()) { throw new ClientSharesNotEqualToPrincipalAmountException(); }
-    }
+            if (command.bigDecimalValueOfParameterNamed(totalAmountType).doubleValue() != totalAmount
+                    .doubleValue()) { throw new ClientSharesNotEqualToPrincipalAmountException(); }
+        } else {
+            // for bulk approval of glim loans
+            for (GroupLoanIndividualMonitoring glim : glimList) {
+                if (glim.isClientSelected()) {
+                    LoanApplicationTransitionApiJsonValidator.validateRoleBasedApprovalLimit(currentUser, glim.getProposedAmount(),
+                            currencyCode);
+                    glim.setApprovedAmount(glim.getProposedAmount());
+                }
+            }
 
+        }
+    }
     public static boolean isClientsAmountValid(JsonArray clientMembers) {
         boolean isValidAmount = true;
         for (JsonElement clientMember : clientMembers) {
