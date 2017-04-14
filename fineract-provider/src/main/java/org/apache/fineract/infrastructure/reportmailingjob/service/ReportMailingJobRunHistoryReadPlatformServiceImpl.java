@@ -90,7 +90,7 @@ public class ReportMailingJobRunHistoryReadPlatformServiceImpl implements Report
         }
         
         @Override
-        public ReportMailingJobRunHistoryData mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public ReportMailingJobRunHistoryData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long id = JdbcSupport.getLong(rs, "id");
             final Long reportMailingJobId = JdbcSupport.getLong(rs, "reportMailingJobId");
             final DateTime startDateTime = JdbcSupport.getDateTime(rs, "startDateTime");

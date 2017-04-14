@@ -47,7 +47,6 @@ import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.infrastructure.sms.SmsApiConstants;
 import org.apache.fineract.infrastructure.sms.data.PreviewCampaignMessage;
 import org.apache.fineract.infrastructure.sms.data.SmsCampaignData;
 import org.apache.fineract.infrastructure.sms.data.SmsCampaignValidator;
@@ -58,7 +57,6 @@ import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.exception.SmsCampaignMustBeClosedToBeDeletedException;
 import org.apache.fineract.infrastructure.sms.exception.SmsCampaignMustBeClosedToEditException;
 import org.apache.fineract.infrastructure.sms.exception.SmsCampaignNotFound;
-import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepository;
 import org.apache.fineract.useradministration.domain.AppUser;
@@ -97,6 +95,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     private final ReadReportingService readReportingService;
     private final GenericDataService genericDataService;
     private final FromJsonHelper fromJsonHelper;
+    private final RecurrenceService recurrenceService;
 
 
 
@@ -106,7 +105,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
             final SmsCampaignReadPlatformService smsCampaignReadPlatformService, final ReportRepository reportRepository,
             final SmsMessageRepository smsMessageRepository, final ClientRepository clientRepository,
             final ReadReportingService readReportingService, final GenericDataService genericDataService,
-            final FromJsonHelper fromJsonHelper) {
+            final FromJsonHelper fromJsonHelper, final RecurrenceService recurrenceService) {
         this.context = context;
         this.smsCampaignRepository = smsCampaignRepository;
         this.smsCampaignValidator = smsCampaignValidator;
@@ -117,6 +116,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         this.readReportingService = readReportingService;
         this.genericDataService = genericDataService;
         this.fromJsonHelper = fromJsonHelper;
+        this.recurrenceService = recurrenceService;
     }
 
     @Transactional
@@ -259,45 +259,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         /**
          * next run time has to be in the future if not calculate a new future date
          */
-        Map<String,Object> recurringRuleMap = createRecurringRuleMap(smsCampaign.getRecurrence());
-    	String frequency = (String) recurringRuleMap.get("FREQ");
-    	if(frequency.equalsIgnoreCase(SmsApiConstants.minutely) || frequency.equalsIgnoreCase(SmsApiConstants.secondly) || frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-    		String recurrence = smsCampaign.getRecurrence();
-            LocalDateTime nextTriggerDateTime = getNextTriggerDate(createRecurringRuleMap(recurrence), smsCampaign.getNextTriggerDate());
-            if(nextTriggerDateTime.isBefore(new LocalDateTime())){ 
-            	nextTriggerDateTime = getNextTriggerDate(createRecurringRuleMap(recurrence), new LocalDateTime());
-            }
-            final String dateString = nextTriggerDateTime.toLocalDate().toString() + " " + nextTriggerDateTime.getHourOfDay()+":"+nextTriggerDateTime.getMinuteOfHour()+":"+nextTriggerDateTime.getSecondOfMinute();
-            final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-            final LocalDateTime newTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-            smsCampaign.setNextTriggerDate(newTriggerDateWithTime.toDate());
-            this.smsCampaignRepository.saveAndFlush(smsCampaign);
-    	}else{
-    		LocalDate nextRuntime = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getNextTriggerDate().toLocalDate(),nextTriggerDate.toLocalDate()) ;
-	        if(nextRuntime.isBefore(DateUtils.getLocalDateOfTenant())){ // means next run time is in the past calculate a new future date
-	            nextRuntime = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getNextTriggerDate().toLocalDate(),DateUtils.getLocalDateOfTenant()) ;
-	        }
-	        LocalDateTime adjustTime = smsCampaign.getRecurrenceStartDateTime();
-	        if(recurringRuleMap.get("BYHOUR") != null){
-	        	int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-	        	adjustTime = adjustTime.withHourOfDay(hour);
-	        }
-	        if(recurringRuleMap.get("BYMINUTE") != null){
-	        	int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-	        	adjustTime = adjustTime.withMinuteOfHour(minute);
-	        }
-	        if(recurringRuleMap.get("BYSECOND") != null){
-	        	int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-	        	adjustTime = adjustTime.withSecondOfMinute(second);
-	        }	        
-	        final String dateString = nextRuntime.toString() + " " + adjustTime.getHourOfDay()+":"+adjustTime.getMinuteOfHour()+":"+adjustTime.getSecondOfMinute();
-	        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-	        final LocalDateTime newTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-	
-	
-	        smsCampaign.setNextTriggerDate(newTriggerDateWithTime.toDate());
-	        this.smsCampaignRepository.saveAndFlush(smsCampaign);
-    	}
+        LocalDateTime newTriggerDateWithTime = this.recurrenceService.getNextRecurringDateAndTime(smsCampaign.getRecurrence(), smsCampaign.getNextTriggerDate(), smsCampaign.getRecurrenceStartDateTime());
+        smsCampaign.setNextTriggerDate(newTriggerDateWithTime.toDate());
+        this.smsCampaignRepository.saveAndFlush(smsCampaign);
     }
 
     @Transactional
@@ -312,8 +276,6 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         if(smsCampaign == null){
             throw new SmsCampaignNotFound(campaignId);
         }
-
-
 
         final Locale locale = command.extractLocale();
         final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
@@ -333,39 +295,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
                  * next trigger date if not use recurrence start date us next trigger
                  * date when activating
                  */
-            	Map<String,Object> recurringRuleMap = createRecurringRuleMap(smsCampaign.getRecurrence());
-            	String frequency = (String) recurringRuleMap.get("FREQ");
-            	if(frequency.equalsIgnoreCase(SmsApiConstants.minutely) || frequency.equalsIgnoreCase(SmsApiConstants.secondly) || frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-            		final LocalDateTime nextTriggerDateWithTime = getNextParsedLocalDateTime(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
-                    smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-                    this.smsCampaignRepository.saveAndFlush(smsCampaign);
-            	}else{
-            		LocalDate nextTriggerDate = null;
-	                if(smsCampaign.getRecurrenceStartDateTime().isBefore(tenantDateTime())){
-	                    nextTriggerDate = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), DateUtils.getLocalDateOfTenant());
-	                }else{
-	                    nextTriggerDate = smsCampaign.getRecurrenceStartDate();
-	                }
-	    	        LocalDateTime adjustTime = smsCampaign.getRecurrenceStartDateTime();
-	    	        if(recurringRuleMap.get("BYHOUR") != null){
-	    	        	int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-	    	        	adjustTime = adjustTime.withHourOfDay(hour);
-	    	        }
-	    	        if(recurringRuleMap.get("BYMINUTE") != null){
-	    	        	int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-	    	        	adjustTime = adjustTime.withMinuteOfHour(minute);
-	    	        }
-	    	        if(recurringRuleMap.get("BYSECOND") != null){
-	    	        	int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-	    	        	adjustTime = adjustTime.withSecondOfMinute(second);
-	    	        }	        
-	    	        final String dateString = nextTriggerDate.toString() + " " + adjustTime.getHourOfDay()+":"+adjustTime.getMinuteOfHour()+":"+adjustTime.getSecondOfMinute();
-	    	        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-	                final LocalDateTime nextTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-	
-	                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-	                this.smsCampaignRepository.saveAndFlush(smsCampaign);
-            	}
+                final LocalDateTime nextTriggerDateWithTime = this.recurrenceService.getNextRecurringDateAndTimeWhenStartDateInFuture(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
+                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
+                this.smsCampaignRepository.saveAndFlush(smsCampaign);
             }
         }
 
@@ -489,43 +421,11 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
              * next trigger date if not use recurrence start date us next trigger
              * date when activating
              */
-        	Map<String,Object> recurringRuleMap = createRecurringRuleMap(smsCampaign.getRecurrence());
-        	String frequency = (String) recurringRuleMap.get("FREQ");
-        	if(frequency.equalsIgnoreCase(SmsApiConstants.minutely) || frequency.equalsIgnoreCase(SmsApiConstants.secondly) || frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-        		final LocalDateTime nextTriggerDateWithTime = getNextParsedLocalDateTime(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
-                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-                this.smsCampaignRepository.saveAndFlush(smsCampaign);
-        	}else{
-        		LocalDate nextTriggerDate = null;
-                if(smsCampaign.getRecurrenceStartDateTime().isBefore(tenantDateTime())){
-                    nextTriggerDate = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), DateUtils.getLocalDateOfTenant());
-                }else{
-                    nextTriggerDate = smsCampaign.getRecurrenceStartDate();
-                }
-    	        LocalDateTime adjustTime = smsCampaign.getRecurrenceStartDateTime();
-    	        if(recurringRuleMap.get("BYHOUR") != null){
-    	        	int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-    	        	adjustTime = adjustTime.withHourOfDay(hour);
-    	        }
-    	        if(recurringRuleMap.get("BYMINUTE") != null){
-    	        	int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-    	        	adjustTime = adjustTime.withMinuteOfHour(minute);
-    	        }
-    	        if(recurringRuleMap.get("BYSECOND") != null){
-    	        	int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-    	        	adjustTime = adjustTime.withSecondOfMinute(second);
-    	        }	        
-    	        final String dateString = nextTriggerDate.toString() + " " + adjustTime.getHourOfDay()+":"+adjustTime.getMinuteOfHour()+":"+adjustTime.getSecondOfMinute();
-    	        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-                final LocalDateTime nextTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-
-                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-                this.smsCampaignRepository.saveAndFlush(smsCampaign);
-        	}
+            final LocalDateTime nextTriggerDateWithTime = this.recurrenceService.getNextRecurringDateAndTimeWhenStartDateInFuture(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
+            smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
+            this.smsCampaignRepository.saveAndFlush(smsCampaign);
             
         }
-
-
 
         return new CommandProcessingResultBuilder() //
                 .withEntityId(smsCampaign.getId()) //
@@ -553,60 +453,4 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         return  today;
     }
     
-    public LocalDateTime getNextParsedLocalDateTime(String recurrence, LocalDateTime startDateTime, LocalDateTime tenantDateTime){
-    	LocalDateTime nextTriggerDate = null;
-        if(startDateTime.isBefore(tenantDateTime)){
-            nextTriggerDate = getNextTriggerDate(createRecurringRuleMap(recurrence), tenantDateTime);        	
-        }else{
-            nextTriggerDate = startDateTime;
-        }
-        final String dateString = nextTriggerDate.toLocalDate().toString() + " " + nextTriggerDate.getHourOfDay()+":"+nextTriggerDate.getMinuteOfHour()+":"+nextTriggerDate.getSecondOfMinute();
-        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        return LocalDateTime.parse(dateString,simpleDateFormat);
-    }
-    
-    public LocalDateTime getNextTriggerDate(Map<String,Object> recurringRuleMap, LocalDateTime previousDateTime){
-    	int interval = 1;
-    	LocalDateTime nextRecurrenceDateTime = previousDateTime;
-    	
-    	String intervalAsString = (String) recurringRuleMap.get("INTERVAL");
-    	if(intervalAsString!=null){
-    		interval =  Integer.parseInt(intervalAsString);
-    	}
-    	String frequency = (String) recurringRuleMap.get("FREQ");
-    	if(frequency.equalsIgnoreCase(SmsApiConstants.secondly)){
-    		nextRecurrenceDateTime = previousDateTime.plusSeconds(interval);
-    	}else if(frequency.equalsIgnoreCase(SmsApiConstants.minutely)){
-    		nextRecurrenceDateTime = previousDateTime.plusMinutes(interval);
-    	}else if(frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-    		nextRecurrenceDateTime = previousDateTime.plusHours(interval);
-    	}
-    	
-    	if(recurringRuleMap.get("BYHOUR") != null){
-    		int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-    		nextRecurrenceDateTime = nextRecurrenceDateTime.withHourOfDay(hour);
-    	}    	
-
-    	if(recurringRuleMap.get("BYMINUTE") != null){
-    		int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-    		nextRecurrenceDateTime = nextRecurrenceDateTime.withMinuteOfHour(minute);
-    	}
-    	
-    	if(recurringRuleMap.get("BYSECOND") != null){
-    		int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-    		nextRecurrenceDateTime = nextRecurrenceDateTime.withSecondOfMinute(second);
-    	}
-    	    	
-    	return nextRecurrenceDateTime;
-    }
-    
-    public Map<String,Object> createRecurringRuleMap(String ruleList){
-    	Map<String,Object> recurringRuleMap = new HashMap<>();
-    	String[] rules = ruleList.split(";");
-    	for (int i = 0; i < rules.length; i++) {
-    		String[] rule = rules[i].split("=");
-    		recurringRuleMap.put(rule[0], rule[1]);
-		}
-    	return recurringRuleMap;
-    }
 }

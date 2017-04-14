@@ -39,7 +39,6 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.dataqueries.domain.Report;
 import org.apache.fineract.infrastructure.dataqueries.domain.ReportRepositoryWrapper;
 import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingService;
-import org.apache.fineract.infrastructure.documentmanagement.contentrepository.FileSystemContentRepository;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
@@ -58,12 +57,10 @@ import org.apache.fineract.infrastructure.reportmailingjob.domain.ReportMailingJ
 import org.apache.fineract.infrastructure.reportmailingjob.util.ReportMailingJobDateUtil;
 import org.apache.fineract.infrastructure.reportmailingjob.validation.ReportMailingJobValidator;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.infrastructure.sms.service.RecurrenceService;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +74,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJobWritePlatformService {
     
     private final static Logger logger = LoggerFactory.getLogger(ReportMailingJobWritePlatformServiceImpl.class);
+    public static final String MIFOS_BASE_DIR = System.getProperty("user.home") + File.separator + ".mifosx";
     private final ReportRepositoryWrapper reportRepositoryWrapper;
     private final ReportMailingJobValidator reportMailingJobValidator;
     private final ReportMailingJobRepositoryWrapper reportMailingJobRepositoryWrapper;
@@ -86,18 +84,18 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
     private final ReadReportingService readReportingService;
     private final ReportingProcessServiceProvider reportingProcessServiceProvider;
     private final ReportMailingJobRunHistoryRepository reportMailingJobRunHistoryRepository;
-    private final static String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    private final RecurrenceService recurrenceService;
     
     @Autowired
     public ReportMailingJobWritePlatformServiceImpl(final ReportRepositoryWrapper reportRepositoryWrapper, 
             final ReportMailingJobValidator reportMailingJobValidator, 
-            final ReportMailingJobRepositoryWrapper reportMailingJobRepositoryWrapper, 
-            final ReportMailingJobRepository reportMailingJobRepository, 
+            final ReportMailingJobRepositoryWrapper reportMailingJobRepositoryWrapper,
             final PlatformSecurityContext platformSecurityContext, 
             final ReportMailingJobEmailService reportMailingJobEmailService,  
             final ReadReportingService readReportingService, 
             final ReportMailingJobRunHistoryRepository reportMailingJobRunHistoryRepository, 
-            final ReportingProcessServiceProvider reportingProcessServiceProvider) {
+            final ReportingProcessServiceProvider reportingProcessServiceProvider,
+            final RecurrenceService recurrenceService) {
         this.reportRepositoryWrapper = reportRepositoryWrapper;
         this.reportMailingJobValidator = reportMailingJobValidator;
         this.reportMailingJobRepositoryWrapper = reportMailingJobRepositoryWrapper;
@@ -107,6 +105,7 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
         this.readReportingService = readReportingService;
         this.reportMailingJobRunHistoryRepository = reportMailingJobRunHistoryRepository;
         this.reportingProcessServiceProvider = reportingProcessServiceProvider;
+        this.recurrenceService = recurrenceService;
     }
 
     @Override
@@ -169,22 +168,13 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
                 
                 // go ahead if the recurrence is not null
                 if (StringUtils.isNotBlank(recurrence)) {
-                    // set the start DateTime to the current tenant date time
-                    DateTime startDateTime = DateUtils.getLocalDateTimeOfTenant().toDateTime();
-                    
-                    // check if the start DateTime was updated
-                    if (changes.containsKey(ReportMailingJobConstants.START_DATE_TIME_PARAM_NAME)) {
-                        // get the updated start DateTime
-                        startDateTime = reportMailingJob.getStartDateTime();
-                    }
-                    
-                    startDateTime = reportMailingJob.getStartDateTime();
                     
                     // get the next recurring DateTime
-                    final DateTime nextRecurringDateTime = this.createNextRecurringDateTime(recurrence, startDateTime);
                     
+                    LocalDateTime localdateDtime = this.recurrenceService.getNextRecurringDateAndTime(recurrence,
+                            reportMailingJob.getNextRunDateTime().toLocalDateTime(), reportMailingJob.getStartDateTime().toLocalDateTime());
                     // update the next run time property
-                    reportMailingJob.updateNextRunDateTime(nextRecurringDateTime);
+                    reportMailingJob.updateNextRunDateTime(localdateDtime.toDateTime());
                     
                  // check if the next run DateTime is not empty and the recurrence is empty
                 } else if (StringUtils.isBlank(recurrence) && (nextRunDateTime != null)) {
@@ -201,8 +191,10 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
                 
                 // ensure that the recurrence pattern string is not empty
                 if (StringUtils.isNotBlank(recurrence)) {
-                    // get the next recurring DateTime
-                    nextRecurringDateTime = this.createNextRecurringDateTime(recurrence, startDateTime);
+                    // get the next recurring DateTime                    
+                    nextRecurringDateTime = this.recurrenceService.getNextRecurringDateAndTime(recurrence,
+                            reportMailingJob.getNextRunDateTime().toLocalDateTime(), reportMailingJob.getStartDateTime().toLocalDateTime())
+                            .toDateTime();
                 }
                 
                 // update the next run time property
@@ -328,8 +320,9 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
             // job will only run once, no next run time
             reportMailingJob.updateNextRunDateTime(null);
         } else if (nextRunDateTime != null) {
-            final DateTime nextRecurringDateTime = this.createNextRecurringDateTime(recurrence, nextRunDateTime);
-            
+            final DateTime nextRecurringDateTime = (this.recurrenceService.getNextRecurringDateAndTime(recurrence, reportMailingJob
+                    .getNextRunDateTime().toLocalDateTime(), reportMailingJob.getStartDateTime().toLocalDateTime())).toDateTime();
+
             // finally update the next run date time property
             reportMailingJob.updateNextRunDateTime(nextRecurringDateTime);
         }
@@ -341,32 +334,7 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
         this.createReportMailingJobRunHistroryAfterJobExecution(reportMailingJob, errorLog, jobStartDateTime, 
                 reportMailingJobPreviousRunStatus.getValue());
     }
-    
-    /**
-     * create the next recurring DateTime from recurrence pattern, start DateTime and current DateTime
-     * 
-     * @param recurrencePattern
-     * @param startDateTime
-     * @return DateTime object
-     */
-    private DateTime createNextRecurringDateTime(final String recurrencePattern, final DateTime startDateTime) {
-        DateTime nextRecurringDateTime = null;
         
-        // the recurrence pattern/rule cannot be empty
-        if (StringUtils.isNotBlank(recurrencePattern) && startDateTime != null) {
-            final LocalDate nextDayLocalDate = startDateTime.plus(1).toLocalDate();
-            final LocalDate nextRecurringLocalDate = CalendarUtils.getNextRecurringDate(recurrencePattern, startDateTime.toLocalDate(), 
-                    nextDayLocalDate);
-            final String nextDateTimeString = nextRecurringLocalDate + " " + startDateTime.getHourOfDay() + ":" + startDateTime.getMinuteOfHour() 
-                    + ":" + startDateTime.getSecondOfMinute();
-            final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern(DATETIME_FORMAT);
-            
-            nextRecurringDateTime = DateTime.parse(nextDateTimeString, dateTimeFormatter);
-        }
-        
-        return nextRecurringDateTime;
-    }
-    
     /** 
      * create a new report mailing job run history entity after job execution
      * 
@@ -429,24 +397,26 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
                 final Response processReport = reportingProcessService.processRequest(reportName, reportParams);
                 final Object reponseObject = (processReport != null) ? processReport.getEntity() : null;
                 
-                if (reponseObject != null && reponseObject.getClass().equals(ByteArrayOutputStream.class)) {
-                    final ByteArrayOutputStream byteArrayOutputStream = ByteArrayOutputStream.class.cast(reponseObject);
-                    final String fileLocation = FileSystemContentRepository.FINERACT_BASE_DIR + File.separator + "";
-                    final String fileNameWithoutExtension = fileLocation + File.separator + reportName;
+                if (reponseObject != null) {
+                    final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                    byteArrayOutputStream.write((byte[])reponseObject);
+                    
+                    final String fileLocation = MIFOS_BASE_DIR + File.separator + "";
+                    final String fileNameWithoutExtension = fileLocation + reportName.replace(" ", "");
                     
                     // check if file directory exists, if not create directory
                     if (!new File(fileLocation).isDirectory()) {
                         new File(fileLocation).mkdirs();
                     }
                     
-                    if ((byteArrayOutputStream == null) || byteArrayOutputStream.size() == 0) {
+                   if (byteArrayOutputStream.size() == 0) {
                         errorLog.append("Report processing failed, empty output stream created");
                     } else if ((errorLog != null && errorLog.length() == 0) && (byteArrayOutputStream.size() > 0)) {
                         final String fileName = fileNameWithoutExtension + "." + emailAttachmentFileFormat.getValue();
-                        
                         // send the file to email recipients
                         this.sendReportFileToEmailRecipients(reportMailingJob, fileName, byteArrayOutputStream, errorLog);
                     }
+                    
                 } else {
                     errorLog.append("Response object entity is not equal to ByteArrayOutputStream ---------- ");
                 }
@@ -454,8 +424,11 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
                 errorLog.append("ReportingProcessService object is null ---------- ");
             }
         } catch (Exception e) {
-            errorLog.append("The ReportMailingJobWritePlatformServiceImpl.generateReportOutputStream method threw an Exception: "
-                    + e + " ---------- ");
+            if(errorLog != null){
+                errorLog.append("The ReportMailingJobWritePlatformServiceImpl.generateReportOutputStream method threw an Exception: "
+                        + e + " ---------- ");
+            }
+            
         }
         
         return errorLog;
@@ -474,10 +447,11 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
         final Set<String> emailRecipients = this.reportMailingJobValidator.validateEmailRecipients(reportMailingJob.getEmailRecipients());
         
         try {
+            System.out.println(byteArrayOutputStream.size()+" :size");
             final File file = new File(fileName);
             final FileOutputStream outputStream = new FileOutputStream(file);
             byteArrayOutputStream.writeTo(outputStream);
-            
+            outputStream.close();
             for (String emailRecipient : emailRecipients) {
                 final ReportMailingJobEmailData reportMailingJobEmailData = new ReportMailingJobEmailData(emailRecipient, 
                         reportMailingJob.getEmailMessage(), reportMailingJob.getEmailSubject(), file);
@@ -485,7 +459,7 @@ public class ReportMailingJobWritePlatformServiceImpl implements ReportMailingJo
                 this.reportMailingJobEmailService.sendEmailWithAttachment(reportMailingJobEmailData);
             }
             
-            outputStream.close();
+            
             
         } catch (IOException e) {
             errorLog.append("The ReportMailingJobWritePlatformServiceImpl.sendReportFileToEmailRecipients method threw an IOException "
