@@ -9,32 +9,54 @@ import org.joda.time.LocalDate;
 
 public class AdjustedDateDetailsDTO {
 
+    /**
+     * Variable tracks the current schedule date that has been changed
+     */
     LocalDate changedScheduleDate;
+    /**
+     * Variable tracks If the meeting has been changed , i.e future schedule
+     * also changes along with the current repayments date.
+     */
     LocalDate changedActualRepaymentDate;
-    Boolean changeactualMeetingday;
 
-    public AdjustedDateDetailsDTO(LocalDate changedScheduleDate, LocalDate changedActualRepaymentDate, Boolean changeactualMeetingday) {
+    /**
+     * Variable tracks the next repayment period due date
+     */
+    LocalDate nextRepaymentPeriodDueDate;
+
+    public AdjustedDateDetailsDTO(final LocalDate changedScheduleDate, final LocalDate changedActualRepaymentDate) {
         this.changedScheduleDate = changedScheduleDate;
         this.changedActualRepaymentDate = changedActualRepaymentDate;
-        this.changeactualMeetingday = changeactualMeetingday;
     }
 
-    public AdjustedDateDetailsDTO(LocalDate changedScheduleDate, LocalDate changedActualRepaymentDate) {
+    public AdjustedDateDetailsDTO(final LocalDate changedScheduleDate, final LocalDate changedActualRepaymentDate,
+            final LocalDate nextRepaymentPeriodDueDate) {
         this.changedScheduleDate = changedScheduleDate;
         this.changedActualRepaymentDate = changedActualRepaymentDate;
-        this.changeactualMeetingday = false;
+        this.nextRepaymentPeriodDueDate = nextRepaymentPeriodDueDate;
     }
 
     public LocalDate getChangedScheduleDate() {
         return this.changedScheduleDate;
     }
 
-    public Boolean getChangeactualMeetingday() {
-        return this.changeactualMeetingday;
-    }
-
     public LocalDate getChangedActualRepaymentDate() {
         return this.changedActualRepaymentDate;
     }
 
+    public void setChangedScheduleDate(final LocalDate changedScheduleDate) {
+        this.changedScheduleDate = changedScheduleDate;
+    }
+
+    public void setChangedActualRepaymentDate(final LocalDate changedActualRepaymentDate) {
+        this.changedActualRepaymentDate = changedActualRepaymentDate;
+    }
+
+    public LocalDate getNextRepaymentPeriodDueDate() {
+        return this.nextRepaymentPeriodDueDate;
+    }
+
+    public void setNextRepaymentPeriodDueDate(final LocalDate nextRepaymentPeriodDueDate) {
+        this.nextRepaymentPeriodDueDate = nextRepaymentPeriodDueDate;
+    }
 }

@@ -21,9 +21,14 @@ package org.apache.fineract.accounting.producttoaccountmapping.domain;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 public enum PortfolioProductType {
-    LOAN(1, "productType.loan"), SAVING(2, "productType.saving"), CLIENT(5, "productType.client"), PROVISIONING(3,
-            "productType.provisioning"), SHARES(4, "productType.shares");
+    LOAN(1, "productType.loan"), //
+    SAVING(2, "productType.saving"), //
+    CLIENT(5, "productType.client"), //
+    PROVISIONING(3, "productType.provisioning"), //
+    SHARES(4, "productType.shares");
 
     private final Integer value;
     private final String code;
@@ -75,4 +80,32 @@ public enum PortfolioProductType {
         return this.value.equals(PortfolioProductType.SHARES.getValue());
     }
 
+    public static EnumOptionData portfolioProductType(final PortfolioProductType type) {
+        EnumOptionData optionData = null;
+        switch (type) {
+            case LOAN:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Loan");
+            break;
+            case SAVING:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Saving");
+            break;
+            case CLIENT:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Client");
+            break;
+            case PROVISIONING:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Provisioning");
+            break;
+            case SHARES:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Shares");
+            break;
+            default:
+            break;
+
+        }
+        return optionData;
+    }
+
+    public static EnumOptionData portfolioProductTypeOptionData(final int id) {
+        return portfolioProductType(PortfolioProductType.fromInt(id));
+    }
 }

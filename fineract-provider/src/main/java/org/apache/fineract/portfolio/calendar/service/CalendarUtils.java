@@ -66,9 +66,8 @@ public class CalendarUtils {
     public static LocalDate getNextRecurringDate(final String recurringRule, final LocalDate seedDate, final LocalDate startDate) {
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
         if (recur == null) { return null; }
-        LocalDate nextDate = getNextRecurringDate(recur, seedDate, startDate);
-        nextDate = adjustDate(nextDate, seedDate, getMeetingPeriodFrequencyType(recurringRule));
-        return nextDate;
+        final LocalDate nextDate = getNextRecurringDate(recur, seedDate, startDate);
+        return adjustDate(nextDate, seedDate, getMeetingPeriodFrequencyType(recurringRule));
     }
 
     public static LocalDate adjustDate(final LocalDate date, final LocalDate seedDate, final PeriodFrequencyType frequencyType) {
@@ -603,31 +602,41 @@ public class CalendarUtils {
         if (recur.getFrequency().equals(Recur.DAILY)) {
             recur.setFrequency(frequency);
         }
-
-        if (recur.getFrequency().equals(Recur.DAILY)) {
-            recur.setFrequency(frequency);
-        }
         
+        /**
+         * Below code modified as discussed with Pramod N 
+         */
         LocalDate newRepaymentDate = tmpDate;
-                LocalDate nextRepaymentDate = tmpDate;
-                while (rep > 0) {
-                        newRepaymentDate = getNextRecurringDate(recur, seedDate, newRepaymentDate);
-                        nextRepaymentDate = getNextRecurringDate(recur, seedDate, newRepaymentDate);
-                        rep--;
-                }
-        
-        newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDate, nextRepaymentDate, workingDays);
+        int newRepayment = rep;
+        while (newRepayment > 0) {
+            newRepaymentDate = getNextRecurringDate(recur, seedDate, newRepaymentDate);
+            newRepayment--;
+        }
+
+        LocalDate nextRepaymentDate = null;
+        if (WorkingDaysUtil.isNonWorkingDay(workingDays, newRepaymentDate)
+                && workingDays.getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+            newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, newRepaymentDate.plusDays(1), loanRepaymentInterval,
+                    frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
+        } else {
+            newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDate, nextRepaymentDate, workingDays);
+        }
         
         if(isCalledFirstTime && newRepaymentDate.equals(repaymentDate)){
             isCalledFirstTime = false;
             newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate.plusDays(1), loanRepaymentInterval,
                     frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
         }
+        
         if (isSkipRepaymentOnFirstDayOfMonth) {
-            LocalDate newRepaymentDateTemp = adjustRecurringDate(newRepaymentDate, numberOfDays);
-            return WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDateTemp, nextRepaymentDate, workingDays);
+            final LocalDate newRepaymentDateTemp = adjustRecurringDate(newRepaymentDate, numberOfDays);
+            if (WorkingDaysUtil.isNonWorkingDay(workingDays, newRepaymentDateTemp) && workingDays.getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+                newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, newRepaymentDate.plusDays(1),
+                        loanRepaymentInterval, frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
+            } else {
+                newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDateTemp, nextRepaymentDate, workingDays);
+            }
         }
-
         return newRepaymentDate;
     }
 
@@ -770,6 +779,8 @@ public class CalendarUtils {
             }
         }
     }
+    
+    @SuppressWarnings("unchecked")
     public static Collection<Integer> getMonthOnDay(String recurringRule) {
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
         NumberList monthDayList = null;

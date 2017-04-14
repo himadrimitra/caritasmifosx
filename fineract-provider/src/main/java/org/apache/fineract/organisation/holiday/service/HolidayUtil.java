@@ -26,42 +26,37 @@ import org.joda.time.LocalDate;
 
 public class HolidayUtil {
 
-    public static AdjustedDateDetailsDTO getRepaymentRescheduleDateToIfHoliday(LocalDate repaymentDate, final List<Holiday> holidays) {
-
-    	AdjustedDateDetailsDTO adjustedDate = new AdjustedDateDetailsDTO(repaymentDate, repaymentDate);
+    public static void updateRepaymentRescheduleDateToWorkingDayIfItIsHoliday(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final List<Holiday> holidays) {
         for (final Holiday holiday : holidays) {
-            if (repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
-                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate()))
-                    ) {
-                if(holiday.getReScheduleType().isRescheduleToSpecificDate()){
-                repaymentDate = holiday.getRepaymentsRescheduledToLocalDate();
-                }
-                if(holiday.isExtendRepaymentReschedule()){
-                	adjustedDate = new AdjustedDateDetailsDTO(repaymentDate, repaymentDate);
-                }else{
-                	adjustedDate = new AdjustedDateDetailsDTO(repaymentDate, adjustedDate.getChangedActualRepaymentDate());
-                }
+            if (!adjustedDateDetailsDTO.getChangedScheduleDate().isBefore(holiday.getFromDateLocalDate())
+                    && !adjustedDateDetailsDTO.getChangedScheduleDate().isAfter(holiday.getToDateLocalDate())) {
+                updateRepaymentRescheduleDateToWorkingDayIfItIsHoliday(adjustedDateDetailsDTO, holiday);
             }
         }
-        return adjustedDate;
     }
-
+    
+    public static void updateRepaymentRescheduleDateToWorkingDayIfItIsHoliday(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final Holiday holiday) {
+        if (holiday.getReScheduleType().isRescheduleToSpecificDate()) {
+            adjustedDateDetailsDTO.setChangedScheduleDate(holiday.getRepaymentsRescheduledToLocalDate());
+            if (holiday.isExtendRepaymentReschedule()) {
+                adjustedDateDetailsDTO.setChangedActualRepaymentDate(adjustedDateDetailsDTO.getChangedScheduleDate());
+            }
+        }
+    }
 
     public static boolean isHoliday(final LocalDate date, final List<Holiday> holidays) {
         for (final Holiday holiday : holidays) {
-            if (date.isEqual(holiday.getFromDateLocalDate()) || date.isEqual(holiday.getToDateLocalDate())
-                    || (date.isAfter(holiday.getFromDateLocalDate()) && date.isBefore(holiday.getToDateLocalDate()))) { return true; }
+            if (!date.isBefore(holiday.getFromDateLocalDate()) && !date.isAfter(holiday.getToDateLocalDate())) { return true; }
         }
-
         return false;
     }
-    
-    public static Holiday getApplicableHoliday(LocalDate repaymentDate, final List<Holiday> holidays) {
-    	Holiday referedHoliday =null;
+
+    public static Holiday getApplicableHoliday(final LocalDate repaymentDate, final List<Holiday> holidays) {
+        Holiday referedHoliday = null;
         for (final Holiday holiday : holidays) {
-            if (repaymentDate.equals(holiday.getFromDateLocalDate()) || repaymentDate.equals(holiday.getToDateLocalDate())
-                    || (repaymentDate.isAfter(holiday.getFromDateLocalDate()) && repaymentDate.isBefore(holiday.getToDateLocalDate())
-                    		)) {
+            if (!repaymentDate.isBefore(holiday.getFromDateLocalDate()) && !repaymentDate.isAfter(holiday.getToDateLocalDate())) {
                 referedHoliday = holiday;
             }
         }
