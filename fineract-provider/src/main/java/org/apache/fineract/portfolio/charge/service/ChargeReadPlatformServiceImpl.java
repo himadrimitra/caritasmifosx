@@ -43,6 +43,7 @@ import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.charge.exception.ChargeNotFoundException;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.apache.fineract.portfolio.tax.service.TaxReadPlatformService;
 import org.joda.time.MonthDay;
@@ -230,14 +231,21 @@ public class ChargeReadPlatformServiceImpl implements ChargeReadPlatformService 
 
     @Override
     public Collection<ChargeData> retrieveLoanAccountApplicableCharges(final Long loanId, ChargeTimeType[] excludeChargeTimes) {
+    	
         final ChargeMapper rm = new ChargeMapper();
         StringBuilder excludeClause = new StringBuilder("");
+        final Collection<Integer> chargeType = new ArrayList<>();
+        chargeType.add(ChargeTimeType.DISBURSEMENT.getValue());
+        chargeType.add(ChargeTimeType.TRANCHE_DISBURSEMENT.getValue());
         Map<String, Object> paramMap = new HashMap<>();
         paramMap.put("loanId", loanId);
         paramMap.put("chargeAppliesTo", ChargeAppliesTo.LOAN.getValue());
+        paramMap.put("status", LoanStatus.ACTIVE.getValue());
+        paramMap.put("chargeType", chargeType);
         processChargeExclusionsForLoans(excludeChargeTimes, excludeClause);
         String sql = "select " + rm.chargeSchema() + " join m_loan la on la.currency_code = c.currency_code" + " where la.id=:loanId"
-                + " and c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=:chargeAppliesTo" + excludeClause + " ";
+                + " and c.is_deleted=0 and c.is_active=1 and c.charge_applies_to_enum=:chargeAppliesTo" + excludeClause + " "
+                + " and (la.loan_status_id != :status or c.charge_time_enum NOT In(:chargeType))";
         sql += addInClauseToSQL_toLimitChargesMappedToOffice_ifOfficeSpecificProductsEnabled();
         sql += " order by c.name ";
         return this.namedParameterJdbcTemplate.query(sql, paramMap, rm);

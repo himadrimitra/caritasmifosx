@@ -1532,17 +1532,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .build();
     }
 
-    private void validateAddingNewChargeAllowed(List<LoanDisbursementDetails> loanDisburseDetails) {
-        boolean pendingDisbursementAvailable = false;
-        for (LoanDisbursementDetails disbursementDetail : loanDisburseDetails) {
-            if (disbursementDetail.actualDisbursementDate() == null) {
-                pendingDisbursementAvailable = true;
-                break;
-            }
-        }
-        if (!pendingDisbursementAvailable) { throw new ChargeCannotBeUpdatedException(
-                "error.msg.charge.cannot.be.updated.no.pending.disbursements.in.loan",
-                "This charge cannot be added, No disbursement is pending"); }
+    private void validateAddingNewChargeAllowed(List<LoanDisbursementDetails> loanDisburseDetails, final Loan loan,
+            final Charge chargeDefinition) {
+        if (loan.status().isActive() && chargeDefinition.isDisbursementCharge()) { throw new ChargeCannotBeUpdatedException(
+                "error.msg.charge.cannot.be.applied.to.active.loan", "This charge cannot be applied to active loan"); }
     }
 
     @Transactional
@@ -1562,7 +1555,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Charge chargeDefinition = this.chargeRepository.findOneWithNotFoundDetection(chargeDefinitionId);
 
         if (loan.isDisbursed() && chargeDefinition.isDisbursementCharge()) {
-            validateAddingNewChargeAllowed(loanDisburseDetails); // validates
+            validateAddingNewChargeAllowed(loanDisburseDetails,loan,chargeDefinition); // validates
                                                                  // whether any
                                                                  // pending
                                                                  // disbursements
