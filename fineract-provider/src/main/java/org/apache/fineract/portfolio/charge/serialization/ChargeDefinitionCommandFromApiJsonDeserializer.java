@@ -146,27 +146,16 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                         .isOneOfTheseValues(ChargeCalculationType.validValuesForLoan());
             }
             
+            final boolean isCapitalized = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isCapitalizedParamName, element);
+            if (isCapitalized) {
+                baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType)
+                        .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue());
+                baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+                        .isOneOfTheseValues(ChargeCalculationType.SLAB_BASED.getValue());
+            }
+            
             if (ChargeCalculationType.fromInt(chargeCalculationType).isSlabBased()) {
-                JsonArray chargeSlabArray = this.fromApiJsonHelper.extractJsonArrayNamed(ChargesApiConstants.slabsParamName, element);
-                if (chargeSlabArray == null) { throw new ChargeSlabNotFoundException(); }
-                Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
-                for (int i = 0; i < chargeSlabArray.size(); i++) {
-                    final JsonElement jsonElement = chargeSlabArray.get(i);
-                    BigDecimal fromAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.fromLoanAmountParamName, jsonElement, locale);
-                    baseDataValidator.reset().parameter("fromLoanAmount").value(fromAmount).notNull().positiveAmount();
-
-                    BigDecimal toAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.toLoanAmountParamName, jsonElement, locale);
-                    baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
-
-                    BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.amountParamName, jsonElement, locale);
-                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
-                    
-                    if (fromAmount.compareTo(toAmount) == 1) {
-                        baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
-                    } else if (fromAmount.compareTo(toAmount) == 0) {
-                        baseDataValidator.reset().parameter("toAmount").value(toAmount).notSameAsParameter("fromAmount", fromAmount);
-                    }
-                }
+                validateForChargeSlabBasedData(baseDataValidator, element);
             }
 
             if (chargeTimeType != null && chargeCalculationType != null) {
@@ -299,6 +288,32 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
+    private void validateForChargeSlabBasedData(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        final JsonArray chargeSlabArray = this.fromApiJsonHelper.extractJsonArrayNamed(ChargesApiConstants.slabsParamName, element);
+        if (chargeSlabArray == null) { throw new ChargeSlabNotFoundException(); }
+        final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
+        for (int i = 0; i < chargeSlabArray.size(); i++) {
+            final JsonElement jsonElement = chargeSlabArray.get(i);
+            BigDecimal fromAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.fromLoanAmountParamName, jsonElement,
+                    locale);
+            baseDataValidator.reset().parameter("fromLoanAmount").value(fromAmount).notNull().positiveAmount();
+
+            BigDecimal toAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.toLoanAmountParamName, jsonElement,
+                    locale);
+            baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
+
+            BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed(ChargesApiConstants.amountParamName, jsonElement,
+                    locale);
+            baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
+
+            if (fromAmount.compareTo(toAmount) == 1) {
+                baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
+            } else if (fromAmount.compareTo(toAmount) == 0) {
+                baseDataValidator.reset().parameter("toAmount").value(toAmount).notSameAsParameter("fromAmount", fromAmount);
+            }
+        }
+    }
+
     public void validateForUpdate(final String json) {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
@@ -341,7 +356,7 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             baseDataValidator.reset().parameter("chargeAppliesTo").value(chargeAppliesTo).notNull()
                     .isOneOfTheseValues(ChargeAppliesTo.validValues());
         }
-
+        final boolean isCapitalized = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isCapitalizedParamName, element);
         if (this.fromApiJsonHelper.parameterExists("chargeTimeType", element)) {
 
             final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
@@ -356,6 +371,11 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             allValidValues.addAll(validShareValues);
             baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType).notNull()
                     .isOneOfTheseValues(allValidValues.toArray(new Object[allValidValues.size()]));
+            
+            if (isCapitalized) {
+                baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType)
+                        .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue());
+            }
         }
 
         if (this.fromApiJsonHelper.parameterExists("feeOnMonthDay", element)) {
@@ -372,28 +392,12 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             final Integer chargeCalculationType = this.fromApiJsonHelper.extractIntegerNamed("chargeCalculationType", element,
                     Locale.getDefault());
             baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType).notNull().inMinMaxRange(1, 7);
-            
+            if (isCapitalized) {
+                baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
+                        .isOneOfTheseValues(ChargeCalculationType.SLAB_BASED.getValue());
+            }
             if (ChargeCalculationType.fromInt(chargeCalculationType).isSlabBased()) {
-                JsonArray chargeSlabArray = this.fromApiJsonHelper.extractJsonArrayNamed("slabs", element);
-                if (chargeSlabArray == null) { throw new ChargeSlabNotFoundException(); }
-                Locale locale = this.fromApiJsonHelper.extractLocaleParameter(element.getAsJsonObject());
-                for (int i = 0; i < chargeSlabArray.size(); i++) {
-                    final JsonElement jsonElement = chargeSlabArray.get(i);
-                    BigDecimal fromAmount = this.fromApiJsonHelper.extractBigDecimalNamed("fromLoanAmount", jsonElement, locale);
-                    baseDataValidator.reset().parameter("fromLoanAmount").value(fromAmount).notNull().positiveAmount();
-
-                    BigDecimal toAmount = this.fromApiJsonHelper.extractBigDecimalNamed("toLoanAmount", jsonElement, locale);
-                    baseDataValidator.reset().parameter("toLoanAmount").value(toAmount).notNull().positiveAmount();
-
-                    BigDecimal chargeAmount = this.fromApiJsonHelper.extractBigDecimalNamed("amount", jsonElement, locale);
-                    baseDataValidator.reset().parameter("chargeAmount").value(chargeAmount).notNull().zeroOrPositiveAmount();
-                    
-                    if (fromAmount.compareTo(toAmount) == 1) {
-                        baseDataValidator.reset().parameter("fromAmount").value(fromAmount).notGreaterThanMax(toAmount);
-                    } else if (fromAmount.compareTo(toAmount) == 0) {
-                        baseDataValidator.reset().parameter("toAmount").value(toAmount).notSameAsParameter("fromAmount", fromAmount);
-                    }                        
-                }
+                validateForChargeSlabBasedData(baseDataValidator, element);
             } else {
                 if (this.fromApiJsonHelper.parameterExists("amount", element)) {
                     final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("amount", element.getAsJsonObject());

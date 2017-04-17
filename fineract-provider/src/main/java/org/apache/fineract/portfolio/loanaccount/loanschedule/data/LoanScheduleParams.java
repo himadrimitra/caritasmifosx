@@ -101,6 +101,16 @@ public class LoanScheduleParams {
     private final MonetaryCurrency currency;
     private final boolean applyInterestRecalculation;
     private boolean resetEMI;
+    
+    /**
+     * To track total capitalized charge amount
+     */
+    private Money totalCapitalizedChargeAmount;
+    /**
+     * To track form all previous to current installment total capitalized charge
+     * amount
+     */
+    private Money totalAccountedCapitalizedCharge;
 
     private LoanScheduleParams(final int periodNumber, final int instalmentNumber, int loanTermInDays, LocalDate periodStartDate,
             final LocalDate actualRepaymentDate, final Money totalCumulativePrincipal, final Money totalCumulativeInterest,
@@ -141,6 +151,8 @@ public class LoanScheduleParams {
         this.applyInterestRecalculation = applyInterestRecalculation;
         if (this.currency != null) {
             this.compoundedInLastInstallment = Money.zero(this.currency);
+            this.totalCapitalizedChargeAmount = Money.zero(this.currency);
+            this.totalAccountedCapitalizedCharge = Money.zero(this.currency);
         }
         this.resetEMI = false;
     }
@@ -493,5 +505,26 @@ public class LoanScheduleParams {
     
     public void setResetEMI(boolean resetEMI) {
         this.resetEMI = resetEMI;
+    }
+
+    
+    public Money getTotalCapitalizedChargeAmount() {
+        return this.totalCapitalizedChargeAmount;
+    }
+
+    public void setTotalCapitalizedChargeAmount(final Money totalCapitalizedChargeAmount) {
+        this.totalCapitalizedChargeAmount = totalCapitalizedChargeAmount;
+    }
+
+    public Money getTotalAccountedCapitalizedCharge() {
+        return this.totalAccountedCapitalizedCharge;
+    }
+
+    public void setTotalAccountedCapitalizedCharge(final Money totalAccountedCapitalizedCharge) {
+        this.totalAccountedCapitalizedCharge = totalAccountedCapitalizedCharge;
+    }
+
+    public void addTotalAccountedCapitalizedCharge(final Money amount) {
+        this.totalAccountedCapitalizedCharge = this.totalAccountedCapitalizedCharge.plus(amount);
     }
 }
