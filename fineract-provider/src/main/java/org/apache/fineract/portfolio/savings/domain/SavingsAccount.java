@@ -475,11 +475,10 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
     public void postInterest(final MathContext mc, final LocalDate interestPostingUpToDate, final boolean isInterestTransfer,
             final boolean isSavingsInterestPostingAtCurrentPeriodEnd, final Integer financialYearBeginningMonth,final LocalDate postInterestOnDate) {
-        final List<PostingPeriod> postingPeriods = calculateInterestUsing(mc, interestPostingUpToDate, isInterestTransfer,
+        final List<PostingPeriod> postingPeriods = calculateInterestUsingWithoutIncomePostingTransactions(mc, interestPostingUpToDate, isInterestTransfer,
                 isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth, postInterestOnDate);
         Money interestPostedToDate = Money.zero(this.currency);
 
-        boolean recalucateDailyBalanceDetails = false;
         boolean applyWithHoldTax = isWithHoldTaxApplicableForInterestPosting();
         final List<SavingsAccountTransaction> withholdTransactions = new ArrayList<>();
         withholdTransactions.addAll(findWithHoldTransactions());
@@ -507,7 +506,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                     if (applyWithHoldTax) {
                         createWithHoldTransaction(interestEarnedToBePostedForPeriod.getAmount(), interestPostingTransactionDate);
                     }
-                    recalucateDailyBalanceDetails = true;
                 } else {
                     boolean correctionRequired = false;
                     if (postingTransaction.isInterestPostingAndNotReversed()) {
@@ -538,13 +536,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                         if (applyWithHoldTaxForOldTransaction) {
                             createWithHoldTransaction(interestEarnedToBePostedForPeriod.getAmount(), interestPostingTransactionDate);
                         }
-                        recalucateDailyBalanceDetails = true;
                     }
                 }
             }
         }
 
-        if (recalucateDailyBalanceDetails) {
             // no openingBalance concept supported yet but probably will to
             // allow
             // for migrations.
@@ -552,9 +548,10 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
             // update existing transactions so derived balance fields are
             // correct.
-            recalculateDailyBalances(openingAccountBalance, interestPostingUpToDate);
-        }
-
+            if(this.isActive()) {
+                List<SavingsAccountTransaction> transactions = retreiveListOfTransactions() ;
+                recalculateDailyBalances(openingAccountBalance, interestPostingUpToDate, transactions);    
+            }
         this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
     }
 
@@ -667,6 +664,29 @@ public class SavingsAccount extends AbstractPersistable<Long> {
      * 
      * 
      * 1. Calculate Interest From Beginning Of Account 1a. determine the
+     * 'crediting' periods that exist for this savings account 1b. determine
+     * the 'compounding' periods that exist within each 'crediting' period
+     * calculate the amount of interest due at the end of each 'crediting'
+     * period check if an existing 'interest posting' transaction exists for
+     * date and matches the amount posted
+     * 
+     * @param isInterestTransfer
+     *            TODO
+     */  
+    public List<PostingPeriod> calculateInterestUsingWithoutIncomePostingTransactions(final MathContext mc, final LocalDate upToInterestCalculationDate,
+            boolean isInterestTransfer, final boolean isSavingsInterestPostingAtCurrentPeriodEnd, final Integer financialYearBeginningMonth,final LocalDate postInterestOnDate) {
+        //When posting the interest we need to take only non interest posting transactions
+        List<SavingsAccountTransaction> nonInterestPostingTransactions = retreiveOrderedNonInterestPostingTransactions(); 
+        return calculateInterest(mc, upToInterestCalculationDate, isInterestTransfer, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth, postInterestOnDate, nonInterestPostingTransactions) ;
+    }
+    /**
+     * All interest calculation based on END-OF-DAY-BALANCE.
+     * 
+     * Interest calculation is performed on-the-fly over all account
+     * transactions.
+     * 
+     * 
+     * 1. Calculate Interest From Beginning Of Account 1a. determine the
      * 'crediting' periods that exist for this savings acccount 1b. determine
      * the 'compounding' periods that exist within each 'crediting' period
      * calculate the amount of interest due at the end of each 'crediting'
@@ -679,6 +699,13 @@ public class SavingsAccount extends AbstractPersistable<Long> {
        
     public List<PostingPeriod> calculateInterestUsing(final MathContext mc, final LocalDate upToInterestCalculationDate,
             boolean isInterestTransfer, final boolean isSavingsInterestPostingAtCurrentPeriodEnd, final Integer financialYearBeginningMonth,final LocalDate postInterestOnDate) {
+        List<SavingsAccountTransaction> transactions = retreiveListOfTransactions() ; //Need to take all transactions
+        return calculateInterest(mc, upToInterestCalculationDate, isInterestTransfer, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth, postInterestOnDate, transactions) ;
+    }
+
+    private List<PostingPeriod> calculateInterest(final MathContext mc, final LocalDate upToInterestCalculationDate,
+            boolean isInterestTransfer, final boolean isSavingsInterestPostingAtCurrentPeriodEnd, final Integer financialYearBeginningMonth,final LocalDate postInterestOnDate,
+            List<SavingsAccountTransaction> transactions) {
 
         // no openingBalance concept supported yet but probably will to allow
         // for migrations.
@@ -686,7 +713,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         // update existing transactions so derived balance fields are
         // correct.
-        recalculateDailyBalances(openingAccountBalance, upToInterestCalculationDate);
+        recalculateDailyBalances(openingAccountBalance, upToInterestCalculationDate, transactions);
 
         // 1. default to calculate interest based on entire history OR
         // 2. determine latest 'posting period' and find interest credited to
@@ -767,7 +794,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         return allPostingPeriods;
     }
-
+    
     private BigDecimal getEffectiveOverdraftInterestRateAsFraction(MathContext mc) {
         return this.nominalAnnualInterestRateOverdraft.divide(BigDecimal.valueOf(100l), mc);
     }
@@ -801,11 +828,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         return listOfTransactionsSorted;
     }
 
-    protected void recalculateDailyBalances(final Money openingAccountBalance, final LocalDate interestPostingUpToDate) {
+    protected void recalculateDailyBalances(final Money openingAccountBalance, final LocalDate interestPostingUpToDate, List<SavingsAccountTransaction> transactions) {
 
         Money runningBalance = openingAccountBalance.copy();
-
-        List<SavingsAccountTransaction> accountTransactionsSorted = retreiveListOfTransactions();
+        List<SavingsAccountTransaction> accountTransactionsSorted = transactions ;
+        
         boolean isTransactionsModified = false;
         for (final SavingsAccountTransaction transaction : accountTransactionsSorted) {
             if (transaction.isReversed()) {
@@ -2876,7 +2903,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                 this.payCharge(charge, charge.getAmountOutstanding(this.getCurrency()), transactionDate, appUser);
             }
         }
-        recalculateDailyBalances(Money.zero(this.currency), transactionDate);
+        List<SavingsAccountTransaction> transactions = retreiveListOfTransactions() ;
+        recalculateDailyBalances(Money.zero(this.currency), transactionDate, transactions);
         this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
 	}
 	
@@ -2896,7 +2924,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             SavingsAccountTransaction transaction = SavingsAccountTransaction.escheat(this, transactionDate, appUser, postInterestAsOnDate);
 			this.transactions.add(transaction);
 		}
-        recalculateDailyBalances(Money.zero(this.currency), transactionDate);
+		List<SavingsAccountTransaction> transactions = retreiveListOfTransactions() ;
+        recalculateDailyBalances(Money.zero(this.currency), transactionDate, transactions);
 		this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
 	}
 	
