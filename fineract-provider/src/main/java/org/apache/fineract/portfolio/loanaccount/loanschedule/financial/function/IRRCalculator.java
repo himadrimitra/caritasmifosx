@@ -43,6 +43,7 @@ public class IRRCalculator {
         Money emi = terms.calculateEmiWithFlatInterestRate(mc);
         if(terms.collectInterestUpfront()){
             Money totalInterest = terms.calculateInterestWithFlatInterestRate(mc);
+            totalInterest = totalInterest.minus(terms.getDiscountOnDisbursalAmount());
             addToMap(disbursements, terms.getExpectedDisbursementDate(), totalInterest.negated());
         }
         return calculateIrr(numberOfRepayments, disbursements, calendarStartDate, recurrence, firstRepaymentDate, emi);

@@ -10098,6 +10098,20 @@
                         <td class=fielddesc>Specifies compounding frequency start date for interest recalculation. This date must be equal to disbursement date
                         </td>
                     </tr>
+					<tr class=alt>
+                        <td>collectInterestUpfront</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Works with calculate IRR from flat - If selected as true, Interest will be collected at the time of disbursement.<br>
+                    </tr>
+					<tr class=alt>
+                        <td>discountOnDisbursalAmount</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Works with calculate IRR from flat - if amount provided for this field then interest will increase by the amount specified and Principal will be reduced by the same amount .<br>
+                    </tr>
+					
+					
                 </table>
             </div>
         </div>
@@ -11252,7 +11266,7 @@
                     </tr>
                     <tr class=alt>
                         <td>graceOnPrincipalPayment, graceOnInterestPayment, graceOnInterestCharged, linkAccountId, allowPartialPeriodInterestCalcualtion,
-                            fixedEmiAmount, maxOutstandingLoanBalance, disbursementData, graceOnArrearsAgeing, createStandingInstructionAtDisbursement (requires linkedAccountId if set to true)
+                            fixedEmiAmount, maxOutstandingLoanBalance, disbursementData, graceOnArrearsAgeing, createStandingInstructionAtDisbursement (requires linkedAccountId if set to true), discountOnDisbursalAmount, collectInterestUpfront
                         </td>
                     </tr>
                 </table>
@@ -11635,7 +11649,7 @@
                         <td><div class="fineractHeading2">Optional Fields</div></td>
                     </tr>
                     <tr class=alt>
-                        <td>transactionAmount,fixedEmiAmount,discountOnDisbursalAmount</td>
+                        <td>transactionAmount, fixedEmiAmount, discountOnDisbursalAmount, repaymentsStartingFromDate</td>
                     </tr>
                 </table>
             </div>
