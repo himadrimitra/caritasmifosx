@@ -33,6 +33,7 @@ import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarType;
 import org.apache.fineract.portfolio.calendar.exception.CalendarNotFoundException;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.meeting.data.MeetingData;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
@@ -89,7 +90,11 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
             final EnumOptionData frequency = CalendarEnumerations.calendarFrequencyType(CalendarUtils.getFrequency(recurrence));
             final Integer interval = new Integer(CalendarUtils.getInterval(recurrence));
             final EnumOptionData repeatsOnDay = CalendarEnumerations.calendarWeekDaysType(CalendarUtils.getRepeatsOnDay(recurrence));
-            final EnumOptionData repeatsOnNthDayOfMonth = CalendarEnumerations.calendarFrequencyNthDayType(CalendarUtils.getRepeatsOnNthDayOfMonth(recurrence));
+            NthDayType nthDayType =CalendarUtils.getRepeatsOnNthDayOfMonth(recurrence);
+            EnumOptionData repeatsOnNthDayOfMonth = null;
+            if(!nthDayType.isInvalid()){
+                repeatsOnNthDayOfMonth = CalendarEnumerations.calendarFrequencyNthDayType(nthDayType);
+            }
             final Integer remindById = rs.getInt("remindById");
             EnumOptionData remindBy = null;
             if (remindById != null && remindById != 0) {
