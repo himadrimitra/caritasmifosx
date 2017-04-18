@@ -313,16 +313,14 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
             if (!reschedulebasedOnMeetingDates) {
                 newMeetingDate = command.localDateValueOfParameterNamed(CALENDAR_SUPPORTED_PARAMETERS.START_DATE.getValue());
                 presentMeetingDate = new LocalDate(oldStartDate);
+                endDate = newMeetingDate.minusDays(1);
+                calendarHistory.updateEndDate(endDate.toDate());
                 if (newMeetingDate.isBefore(new LocalDate(oldStartDate)) || newMeetingDate.equals(new LocalDate(oldStartDate))) {
-                    endDate = newMeetingDate.minusDays(1);
                     updateCalendarHistory(calendarHistory, calendarHistoryDataWrapper, endDate);
                     if(calendarHistoryDataWrapper.getCalendarHistoryList().isEmpty()){
                         calendarHistory.updateEndDate(null);
                         calendarHistory.updateIsActive(false);
                     }
-                } else {
-                    endDate = newMeetingDate.minusDays(1);
-                    calendarHistory.updateEndDate(endDate.toDate());
                 }
             } else {
                 if (newMeetingDate != null && (newMeetingDate.isBefore(presentMeetingDate) || newMeetingDate.equals(new LocalDate(presentMeetingDate)))) {
@@ -331,12 +329,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                     updateCalendarHistory(calendarHistory, calendarHistoryDataWrapper, endDate);
                 } else {
                     endDate = presentMeetingDate.minusDays(1);
-                    if(calendarHistory.getStartDateLocalDate().isAfter(endDate)){
-                        calendarHistory.updateIsActive(false);
-                        calendarHistory.updateEndDate(null);
-                    } else {
-                        calendarHistory.updateEndDate(endDate.toDate());
-                    }
+                    calendarHistory.updateEndDate(endDate.toDate());
                 }
             }
             calendarHistory.updateStatusBasedOnDates();
