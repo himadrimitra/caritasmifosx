@@ -73,9 +73,11 @@ public class ClientIncomeExpenseWritePlatformServiceImpl implements ClientIncome
         try {
             this.context.authenticatedUser();
 
+            this.validator.validateForUpdate(command.json());
+            
             final ClientIncomeExpense clientIncomeExpense = this.repository.findOneWithNotFoundDetection(clientIncomeExpenseId);
 
-            this.validator.validateForUpdate(command.json());
+            
 
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(clientIncomeExpense, command);
 

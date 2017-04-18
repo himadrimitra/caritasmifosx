@@ -64,12 +64,14 @@ public class ClientIncomeExpenseDataAssembler {
                 ClientIncomeExpenseApiConstants.isMonthWiseIncomeParamName, element);
         final Boolean isPrimaryIncome = this.fromApiJsonHelper.extractBooleanNamed(
                 ClientIncomeExpenseApiConstants.isPrimaryIncomeParamName, element);
+        final Boolean isRemmitanceIncome = this.fromApiJsonHelper.extractBooleanNamed(
+                ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName, element);
         Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(ClientIncomeExpenseApiConstants.isActiveParamName, element);
         if (isActive == null) {
             isActive = true;
         }
         final ClientIncomeExpense clientIncomeExpense = ClientIncomeExpense.create(client, familyDetail, incomeExpense, quintity,
-                totalIncome, totalExpense, isMonthWiseIncome, isPrimaryIncome, isActive);
+                totalIncome, totalExpense, isMonthWiseIncome, isPrimaryIncome, isActive,isRemmitanceIncome);
         final List<ClientMonthWiseIncomeExpense> clientMonthWiseIncomeExpense = assembleClientMonthWiseIncomeExpense(clientIncomeExpense,
                 element);
         if (clientIncomeExpense != null && clientMonthWiseIncomeExpense != null && clientMonthWiseIncomeExpense.size() > 0) {
