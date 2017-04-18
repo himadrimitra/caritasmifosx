@@ -66,7 +66,7 @@ public class LoanEMIPacksReadPlatformServiceImpl implements LoanEMIPacksReadPlat
                 String inClause = this.fineractEntityAccessUtil
                         .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.LOAN_PRODUCT);
                 if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
-                        sql += " and id in ( " + inClause + " )";
+                        sql += " and lp.id in ( " + inClause + " )";
                 }
 
                 return this.jdbcTemplate.query(sql, mapper);
