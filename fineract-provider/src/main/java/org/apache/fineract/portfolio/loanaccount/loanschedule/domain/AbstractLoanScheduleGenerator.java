@@ -63,6 +63,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.exception.Schedule
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.springframework.util.CollectionUtils;
 
 public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGenerator {
 
@@ -155,11 +156,12 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     this.paymentPeriodsInOneYearCalculator, mc);
             loanApplicationTerms.updateTotalInterestDue(totalInterestChargedForFullLoanTerm);
         }
-        Money totalAccountedCapitalizedCharge = Money.zero(currency);
-        Money totalCapitalizedChargeAmount = LoanUtilService.getTotalCapitalizedCharge(loanApplicationTerms);
 
+        setCapitalizedChargesDetailesToLoanScheduleParams(scheduleParams, loanApplicationTerms);
+        
         if (!scheduleParams.isPartialUpdate()) {
-            updateAmortization(mc, loanApplicationTerms, scheduleParams.getPeriodNumber(), scheduleParams.getOutstandingBalance().plus(totalCapitalizedChargeAmount));
+            updateAmortization(mc, loanApplicationTerms, scheduleParams.getPeriodNumber(),
+                    scheduleParams.getOutstandingBalance().plus(scheduleParams.getTotalCapitalizedChargeAmount()));
             
             if (loanApplicationTerms.isMultiDisburseLoan()) {
                 // fetches the first tranche amount and also updates other
@@ -225,9 +227,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             LocalDate periodStartDateApplicableForInterest = this.scheduledDateGenerator.calculateInterestStartDateForPeriod(loanApplicationTerms,
                     scheduleParams.getPeriodStartDate(), idealDisbursementDate, firstRepaymentdate);
             if (isFirstRepayment) {
-                processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), totalCapitalizedChargeAmount.negated(),
-                        periodStartDateApplicableForInterest);
-                
+                processCapitalizedTransactions(scheduleParams.getPrincipalPortionMap(), scheduleParams.getTotalCapitalizedChargeAmount()
+                        .negated(), periodStartDateApplicableForInterest);
             }
             isFirstRepayment = false;
             // Loan Schedule Exceptions that need to be applied for Loan Account
@@ -331,9 +332,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             currentPeriodParams.setPrincipalForThisPeriod(principalInterestForThisPeriod.principal());
             Money actualPrincipal =principalInterestForThisPeriod.principal();
 
-            installmentCapitalizedChargeAmount = updateCapitalizedFee(loanApplicationTerms, currency, totalAccountedCapitalizedCharge,
-                    totalCapitalizedChargeAmount, installmentCapitalizedChargeAmount, currentPeriodParams, principalInterestForThisPeriod, scheduleParams.getInstalmentNumber());
-            totalAccountedCapitalizedCharge = totalAccountedCapitalizedCharge.plus(installmentCapitalizedChargeAmount);
+            installmentCapitalizedChargeAmount = updateCapitalizedFee(scheduleParams, loanApplicationTerms, currency,
+                    installmentCapitalizedChargeAmount, currentPeriodParams, principalInterestForThisPeriod);
+            
             // applies early payments on principal portion
             updatePrincipalPortionBasedOnPreviousEarlyPayments(currency, scheduleParams, currentPeriodParams);
             
@@ -500,25 +501,26 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         updateMapWithAmount(scheduleParams.getPrincipalPortionMap(), interestToBeCollected, amountApplicableDate);
     }
 
-    private Money updateCapitalizedFee(final LoanApplicationTerms loanApplicationTerms, final MonetaryCurrency currency,
-            Money totalAccountedCapitalizedCharge,Money totalCapitalizedChargeAmount, Money installmentCapitalizedChargeAmount,
-            ScheduleCurrentPeriodParams currentPeriodParams, PrincipalInterest principalInterestForThisPeriod, Integer installmentNumber) {
-        if (totalCapitalizedChargeAmount.isGreaterThanZero()) {
+    private Money updateCapitalizedFee(final LoanScheduleParams scheduleParams, final LoanApplicationTerms loanApplicationTerms,
+            final MonetaryCurrency currency, Money installmentCapitalizedChargeAmount,
+            final ScheduleCurrentPeriodParams currentPeriodParams, final PrincipalInterest principalInterestForThisPeriod) {
+        if (scheduleParams.getTotalCapitalizedChargeAmount().isGreaterThanZero()) {
             BigDecimal principalPlusCapitalizedFee = loanApplicationTerms.getFixedEmiAmount().subtract(
                     principalInterestForThisPeriod.interest().getAmount());
-            BigDecimal totalAmount = loanApplicationTerms.getPrincipal().getAmount().add(totalCapitalizedChargeAmount.getAmount());
+            BigDecimal totalAmount = loanApplicationTerms.getPrincipal().getAmount()
+                    .add(scheduleParams.getTotalCapitalizedChargeAmount().getAmount());
             BigDecimal adjustedPrincipal = BigDecimal
                     .valueOf(((loanApplicationTerms.getPrincipal().getAmount().doubleValue() * principalPlusCapitalizedFee.doubleValue()) / totalAmount
                             .doubleValue()));
-            if(loanApplicationTerms.getActualNoOfRepaymnets()== installmentNumber){
-                installmentCapitalizedChargeAmount = totalCapitalizedChargeAmount.minus(totalAccountedCapitalizedCharge); 
-            }else{
-            	currentPeriodParams.setPrincipalForThisPeriod(Money.of(currency, adjustedPrincipal));
+            if (loanApplicationTerms.getActualNoOfRepaymnets() == scheduleParams.getInstalmentNumber()) {
+                installmentCapitalizedChargeAmount = scheduleParams.getTotalCapitalizedChargeAmount().minus(
+                        scheduleParams.getTotalAccountedCapitalizedCharge());
+            } else {
+                currentPeriodParams.setPrincipalForThisPeriod(Money.of(currency, adjustedPrincipal));
                 installmentCapitalizedChargeAmount = Money.of(currency, principalPlusCapitalizedFee.subtract(adjustedPrincipal));
             }
-            
-            
         }
+        scheduleParams.addTotalAccountedCapitalizedCharge(installmentCapitalizedChargeAmount);
         return installmentCapitalizedChargeAmount;
     }
 
@@ -2400,7 +2402,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             LocalDate lastInstallmentDate = actualRepaymentDate;
             LocalDate periodStartDate = loanApplicationTerms.getExpectedDisbursementDate();
             // Set fixed Amortization Amounts(either EMI or Principal )
-            updateAmortization(mc, loanApplicationTerms, periodNumber, outstandingBalance);
+            Money totalCapitalizedChargeAmount = LoanUtilService.getTotalCapitalizedCharge(loanApplicationTerms);
+            updateAmortization(mc, loanApplicationTerms, periodNumber, outstandingBalance.plus(totalCapitalizedChargeAmount));
 
             final Map<LocalDate, Money> disburseDetailMap = new HashMap<>();
             boolean resetEMI = false;
@@ -2670,6 +2673,43 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         return LoanScheduleDTO.from(retainedInstallments, loanScheduleModelwithPeriodChanges);
     }
     
+    /**
+     * set capitalized charges detailes to loan schedule params
+     * 
+     * @param loanScheduleParams
+     * @param loanApplicationTerms
+     */
+    private void setCapitalizedChargesDetailesToLoanScheduleParams(final LoanScheduleParams loanScheduleParams,
+            final LoanApplicationTerms loanApplicationTerms) {
+        /**
+         * Set the total capitalized charge amount.
+         */
+        loanScheduleParams.setTotalCapitalizedChargeAmount(LoanUtilService.getTotalCapitalizedCharge(loanApplicationTerms));
+        /**
+         * Set the total accounted capitalized charge amount from the retained
+         * installments
+         */
+        if (!CollectionUtils.isEmpty(loanScheduleParams.getInstallments())) {
+            Money totalAccountedCapitalizedCharge = Money.zero(loanApplicationTerms.getCurrency());
+            if (!CollectionUtils.isEmpty(loanApplicationTerms.getCapitalizedCharges())) {
+                for (final LoanRepaymentScheduleInstallment installment : loanScheduleParams.getInstallments()) {
+                    if (!CollectionUtils.isEmpty(installment.getLoan().getLoanCharges())) {
+                        for (final LoanCharge loanCharge : installment.getLoan().getLoanCharges()) {
+                            if (loanCharge.isCapitalized()) {
+                                if (loanCharge.getInstallmentLoanCharge(installment.getInstallmentNumber()) != null) {
+                                    totalAccountedCapitalizedCharge = totalAccountedCapitalizedCharge.plus(loanCharge
+                                            .getInstallmentLoanCharge(installment.getInstallmentNumber()).getAmount(
+                                                    loanApplicationTerms.getCurrency()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            loanScheduleParams.setTotalAccountedCapitalizedCharge(totalAccountedCapitalizedCharge);
+        }
+    }
+
     public List<LoanRepaymentScheduleInstallment> fetchRetainedInstallments(
             final List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, final LocalDate rescheduleFrom,
             MonetaryCurrency currency) {
