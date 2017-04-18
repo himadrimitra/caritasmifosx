@@ -325,7 +325,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                     calendarHistory.updateEndDate(endDate.toDate());
                 }
             } else {
-                if (newMeetingDate != null && newMeetingDate.isBefore(presentMeetingDate) || newMeetingDate.equals(new LocalDate(presentMeetingDate))) {
+                if (newMeetingDate != null && (newMeetingDate.isBefore(presentMeetingDate) || newMeetingDate.equals(new LocalDate(presentMeetingDate)))) {
                     endDate = newMeetingDate.minusDays(1);
                     calendarHistory.updateEndDate(endDate.toDate());
                     updateCalendarHistory(calendarHistory, calendarHistoryDataWrapper, endDate);
@@ -339,7 +339,7 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
                     }
                 }
             }
-
+            calendarHistory.updateStatusBasedOnDates();
             this.calendarHistoryRepository.save(calendarHistory);
             historys.add(calendarHistory);
             calendarForUpdate.updateCalendarHistory(historys);
@@ -379,36 +379,24 @@ public class CalendarWritePlatformServiceJpaRepositoryImpl implements CalendarWr
 
     private void updateCalendarHistory(final CalendarHistory calendarHistory, CalendarHistoryDataWrapper calendarHistoryDataWrapper,
             LocalDate endDate) {
-        CalendarHistory calendarHistoryData = getCalendarHistoryByEndDate(calendarHistoryDataWrapper.getCalendarHistoryList(), endDate);
         for (CalendarHistory history : calendarHistoryDataWrapper.getCalendarHistoryList()) {
-            LocalDate calendarHistoryEndDate = history.getEndDateLocalDate();
-            if (history.isActive() && endDate.isBefore(calendarHistoryEndDate) || endDate.equals(calendarHistoryEndDate)) {
-                if (calendarHistoryData != null && history.getStartDateLocalDate().equals(calendarHistoryData.getStartDateLocalDate())) {
+            if (history.isActive()) {
+                LocalDate calendarHistoryEndDate = history.getEndDateLocalDate();
+                LocalDate calendarHistoryStartDateDate = history.getStartDateLocalDate();
+                if (!endDate.isBefore(calendarHistoryStartDateDate) && !endDate.isAfter(calendarHistoryEndDate)) {
                     history.updateEndDate(endDate.toDate());
                     calendarHistory.updateEndDate(null);
                     calendarHistory.updateIsActive(false);
-                } else {
+                } else if (endDate.isBefore(calendarHistoryStartDateDate)) {
                     history.updateEndDate(null);
                     history.updateIsActive(false);
                 }
-            } else if (history.isActive() && calendarHistoryEndDate == null) {
-                calendarHistory.updateEndDate(null);
-                calendarHistory.updateIsActive(false);
+
             }
         }
+
     }
     
-    public CalendarHistory getCalendarHistoryByEndDate(List<CalendarHistory> calendarHistory, final LocalDate endDate) {
-        CalendarHistory calendarHistoryData = null;
-        for (CalendarHistory history : calendarHistory) {
-            if (history.isActive() && history.getStartDateLocalDate().isBefore(endDate)) {
-                calendarHistoryData = history;
-            }
-        }
-        return calendarHistoryData;
-    }
-
-
     @Override
     public CommandProcessingResult deleteCalendar(final Long calendarId) {
         final Calendar calendarForDelete = this.calendarRepository.findOne(calendarId);

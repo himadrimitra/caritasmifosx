@@ -158,5 +158,12 @@ public class CalendarHistory extends AbstractPersistable<Long> {
     public boolean isActive() {
         return this.isActive;
     }	
+    
+    public void updateStatusBasedOnDates(){
+        if(this.startDate != null && this.endDate != null && (this.startDate.after(this.endDate))){
+            this.isActive = false;
+            this.endDate = null;
+        }
+    }
         
 }
