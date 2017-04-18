@@ -34,20 +34,20 @@ public class OfficeOpeningBalancesData {
     @SuppressWarnings("unused")
     private final GLAccountData contraAccount;
     @SuppressWarnings("unused")
-    private final List<JournalEntryData> assetAccountOpeningBalances;
+    private final List<JournalEntryDetailData> assetAccountOpeningBalances;
     @SuppressWarnings("unused")
-    private final List<JournalEntryData> liabityAccountOpeningBalances;
+    private final List<JournalEntryDetailData> liabityAccountOpeningBalances;
     @SuppressWarnings("unused")
-    private final List<JournalEntryData> incomeAccountOpeningBalances;
+    private final List<JournalEntryDetailData> incomeAccountOpeningBalances;
     @SuppressWarnings("unused")
-    private final List<JournalEntryData> equityAccountOpeningBalances;
+    private final List<JournalEntryDetailData> equityAccountOpeningBalances;
     @SuppressWarnings("unused")
-    private final List<JournalEntryData> expenseAccountOpeningBalances;
+    private final List<JournalEntryDetailData> expenseAccountOpeningBalances;
 
     private OfficeOpeningBalancesData(final Long officeId, final String officeName, final LocalDate transactionDate,
-            final GLAccountData contraAccount, final List<JournalEntryData> assetAccountOpeningBalances,
-            final List<JournalEntryData> liabityAccountOpeningBalances, final List<JournalEntryData> incomeAccountOpeningBalances,
-            final List<JournalEntryData> equityAccountOpeningBalances, final List<JournalEntryData> expenseAccountOpeningBalances) {
+            final GLAccountData contraAccount, final List<JournalEntryDetailData> assetAccountOpeningBalances,
+            final List<JournalEntryDetailData> liabityAccountOpeningBalances, final List<JournalEntryDetailData> incomeAccountOpeningBalances,
+            final List<JournalEntryDetailData> equityAccountOpeningBalances, final List<JournalEntryDetailData> expenseAccountOpeningBalances) {
         this.officeId = officeId;
         this.officeName = officeName;
         this.transactionDate = transactionDate;
@@ -60,9 +60,9 @@ public class OfficeOpeningBalancesData {
     }
 
     public static OfficeOpeningBalancesData createNew(final Long officeId, final String officeName, final LocalDate transactionDate,
-            final GLAccountData contraAccount, final List<JournalEntryData> assetAccountOpeningBalances,
-            final List<JournalEntryData> liabityAccountOpeningBalances, final List<JournalEntryData> incomeAccountOpeningBalances,
-            final List<JournalEntryData> equityAccountOpeningBalances, final List<JournalEntryData> expenseAccountOpeningBalances) {
+            final GLAccountData contraAccount, final List<JournalEntryDetailData> assetAccountOpeningBalances,
+            final List<JournalEntryDetailData> liabityAccountOpeningBalances, final List<JournalEntryDetailData> incomeAccountOpeningBalances,
+            final List<JournalEntryDetailData> equityAccountOpeningBalances, final List<JournalEntryDetailData> expenseAccountOpeningBalances) {
         return new OfficeOpeningBalancesData(officeId, officeName, transactionDate, contraAccount, assetAccountOpeningBalances,
                 liabityAccountOpeningBalances, incomeAccountOpeningBalances, equityAccountOpeningBalances, expenseAccountOpeningBalances);
     }

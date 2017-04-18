@@ -40,7 +40,7 @@ public class DataTableJsonValidator {
         columnLenthInfo.add(65535);
         columnLenthInfo.add(0);
         List<Object> columncolumnNameInfo = new ArrayList();
-        columncolumnNameInfo.add("gl_journal_entry_id");
+        columncolumnNameInfo.add("journal_entry_id");
         columncolumnNameInfo.add("name");
         columncolumnNameInfo.add("time required");
         columncolumnNameInfo.add("started on");
@@ -92,7 +92,7 @@ public class DataTableJsonValidator {
         columnLenthInfo.add(0);
         List<Object> columncolumnNameInfo = new ArrayList();
         columncolumnNameInfo.add("id");
-        columncolumnNameInfo.add("gl_journal_entry_id");
+        columncolumnNameInfo.add("journal_entry_id");
         columncolumnNameInfo.add("name");
         columncolumnNameInfo.add("time required");
         columncolumnNameInfo.add("started on");
@@ -142,7 +142,7 @@ public class DataTableJsonValidator {
         columnLenthInfo.add(0);
         columnLenthInfo.add(50);
         List<Object> columncolumnNameInfo = new ArrayList();
-        columncolumnNameInfo.add("gl_journal_entry_id");
+        columncolumnNameInfo.add("journal_entry_id");
         columncolumnNameInfo.add("name");
         columncolumnNameInfo.add("time required");
         columncolumnNameInfo.add("started on");

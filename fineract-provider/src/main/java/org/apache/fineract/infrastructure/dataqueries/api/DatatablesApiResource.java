@@ -230,7 +230,7 @@ public class DatatablesApiResource {
             final String apiRequestBodyAsJson, @QueryParam("command") final String commandParam) {
 
         CommandWrapper commandRequest = null;
-        if (is(commandParam, "acc_gl_journal_entry")) {
+        if (is(commandParam, DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             commandRequest = new CommandWrapperBuilder() //
             .createDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, null) //
             .withJson(apiRequestBodyAsJson) //
@@ -255,7 +255,7 @@ public class DatatablesApiResource {
             @PathParam("apptableIdentifier") final String apptableIdentifier, final String apiRequestBodyAsJson, @QueryParam("command") final String commandParam) {
 
         CommandWrapper commandRequest = null;
-        if (is(commandParam, "acc_gl_journal_entry")) {
+        if (is(commandParam, DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             commandRequest = new CommandWrapperBuilder() //
             .updateDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, null) //
             .withJson(apiRequestBodyAsJson) //
@@ -280,7 +280,7 @@ public class DatatablesApiResource {
             final String apiRequestBodyAsJson, @QueryParam("command") final String commandParam) {
 
         CommandWrapper commandRequest = null;
-        if (is(commandParam, "acc_gl_journal_entry")) {
+        if (is(commandParam, DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             commandRequest = new CommandWrapperBuilder() //
             .updateDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, datatableId) //
             .withJson(apiRequestBodyAsJson) //
@@ -304,7 +304,7 @@ public class DatatablesApiResource {
             @QueryParam("command") final String commandParam) {
         
         CommandWrapper commandRequest = null;
-        if (is(commandParam, "acc_gl_journal_entry")) {
+        if (is(commandParam, DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             commandRequest = new CommandWrapperBuilder() //
             .deleteDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, null) //
             .build();
@@ -326,7 +326,7 @@ public class DatatablesApiResource {
             @PathParam("datatableId") final Long datatableId, @QueryParam("command") final String commandParam) {
 
         CommandWrapper commandRequest = null;
-        if (is(commandParam, "acc_gl_journal_entry")) {
+        if (is(commandParam, DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME)) {
             commandRequest = new CommandWrapperBuilder() //
             .deleteDataTableForNonPrimaryIdentifier(datatable, apptableIdentifier, datatableId) //
             .build();

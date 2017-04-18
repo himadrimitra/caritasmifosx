@@ -86,9 +86,16 @@ public class JournalEntryHelper {
         for (JournalEntry entry : accountEntries) {
             boolean matchFound = false;
             for (HashMap map : response) {
-                final HashMap entryType = (HashMap) map.get("entryType");
-                if (entry.getTransactionType().equals(entryType.get("value")) && entry.getTransactionAmount().equals(map.get("amount"))) {
-                    matchFound = true;
+                ArrayList<HashMap> detail = (ArrayList<HashMap>) map.get("journalEntryDetails");
+                for (HashMap detailMap : detail) {
+                    final HashMap entryType = (HashMap) detailMap.get("entryType");
+
+                    if (entry.getTransactionType().equals(entryType.get("value")) && entry.getTransactionAmount().equals(detailMap.get("amount"))) {
+                        matchFound = true;
+                        break;
+                    }
+                }
+                if(matchFound){
                     break;
                 }
             }

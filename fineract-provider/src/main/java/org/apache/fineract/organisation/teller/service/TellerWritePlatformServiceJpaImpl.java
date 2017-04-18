@@ -26,7 +26,8 @@ import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialA
 import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccountRepositoryWrapper;
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntry;
-import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepository;
+import org.apache.fineract.accounting.journalentry.domain.JournalEntryDetail;
+import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepositoryWrapper;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryType;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -73,7 +74,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
     private final StaffRepository staffRepository;
     private final CashierRepository cashierRepository;
     private final CashierTransactionRepository cashierTxnRepository;
-    private final JournalEntryRepository glJournalEntryRepository;
+    private final JournalEntryRepositoryWrapper journalEntryRepository;
     private final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper;
 
     @Autowired
@@ -81,7 +82,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final TellerCommandFromApiJsonDeserializer fromApiJsonDeserializer, final TellerRepository tellerRepository,
             final TellerRepositoryWrapper tellerRepositoryWrapper, final OfficeRepositoryWrapper officeRepository,
             final StaffRepository staffRepository, CashierRepository cashierRepository, CashierTransactionRepository cashierTxnRepository,
-            JournalEntryRepository glJournalEntryRepository,
+            JournalEntryRepositoryWrapper journalEntryRepository,
             FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
@@ -91,7 +92,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
         this.staffRepository = staffRepository;
         this.cashierRepository = cashierRepository;
         this.cashierTxnRepository = cashierTxnRepository;
-        this.glJournalEntryRepository = glJournalEntryRepository;
+        this.journalEntryRepository = journalEntryRepository;
         this.financialActivityAccountRepositoryWrapper = financialActivityAccountRepositoryWrapper;
     }
 
@@ -370,6 +371,7 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             this.fromApiJsonDeserializer.validateForCashTxnForCashier(command.json());
 
             final String entityType = command.stringValueOfParameterNamed("entityType");
+            Integer entityTypeId = null;
             final Long entityId = command.longValueOfParameterNamed("entityId");
             if (entityType != null) {
                 if (entityType.equals("loan account")) {
@@ -419,29 +421,22 @@ public class TellerWritePlatformServiceJpaImpl implements TellerWritePlatformSer
             final Long time = System.currentTimeMillis();
             final String uniqueVal = String.valueOf(time) + currentUser.getId() + cashierOffice.getId();
             final String transactionId = Long.toHexString(Long.parseLong(uniqueVal));
-            Long clientTransactionId = null;
-            final Long shareTransactionId = null;
+            boolean manualEntry = false;
+            Long entityTransactionId = null;
+            Long paymentDetailId = null;
+            String referenceNumber =null;
+            // FIXME: Take currency code from the transaction
+            String currencyCode = "USD";
+            /** Validate current code is appropriate **/
+            JournalEntry journalEntry = JournalEntry.createNew(cashierOffice.getId(), paymentDetailId, currencyCode,
+                    transactionId, manualEntry, cashierTxn.getTxnDate(), cashierTxn.getTxnDate(), cashierTxn.getTxnDate(), cashierTxn.getTxnNote(), entityTypeId, entityId,
+                    referenceNumber, entityTransactionId);
 
-            final JournalEntry debitJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment
-                                                                                               // detail
-                    debitAccount, "USD", // FIXME: Take currency code from the
-                                         // transaction
-                    transactionId, false, // manual entry
-                    cashierTxn.getTxnDate(), JournalEntryType.DEBIT, cashierTxn.getTxnAmount(), cashierTxn.getTxnNote(), // Description
-                    null, null, null, // entity Type, entityId, reference number
-                    null, null, clientTransactionId, shareTransactionId); // Loan and Savings Txn
-
-            final JournalEntry creditJournalEntry = JournalEntry.createNew(cashierOffice, null, // payment
-                                                                                                // detail
-                    creditAccount, "USD", // FIXME: Take currency code from the
-                                          // transaction
-                    transactionId, false, // manual entry
-                    cashierTxn.getTxnDate(), JournalEntryType.CREDIT, cashierTxn.getTxnAmount(), cashierTxn.getTxnNote(), // Description
-                    null, null, null, // entity Type, entityId, reference number
-                    null, null, clientTransactionId, shareTransactionId); // Loan and Savings Txn
-
-            this.glJournalEntryRepository.saveAndFlush(debitJournalEntry);
-            this.glJournalEntryRepository.saveAndFlush(creditJournalEntry);
+            final JournalEntryDetail debitJournalEntry = JournalEntryDetail.createNew(debitAccount, JournalEntryType.DEBIT, cashierTxn.getTxnAmount()); 
+            journalEntry.addJournalEntryDetail(debitJournalEntry);
+            final JournalEntryDetail creditJournalEntry = JournalEntryDetail.createNew(creditAccount, JournalEntryType.CREDIT, cashierTxn.getTxnAmount());
+            journalEntry.addJournalEntryDetail(creditJournalEntry);
+            this.journalEntryRepository.save(journalEntry);
 
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //

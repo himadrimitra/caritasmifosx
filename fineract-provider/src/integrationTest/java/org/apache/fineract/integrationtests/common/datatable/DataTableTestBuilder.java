@@ -10,7 +10,7 @@ import com.google.gson.Gson;
 
 public class DataTableTestBuilder {
 
-    private static final String ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME = "acc_gl_journal_entry";
+    private static final String ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME = "f_journal_entry";
 
     private String datatableName = Utils.randomNameGenerator("DATA_TABLE_", 6);
     private String apptableName = ACC_GL_JOURNAL_ENTRY_APPTABLE_NAME;

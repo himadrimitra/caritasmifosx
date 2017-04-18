@@ -28,8 +28,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.glaccount.data.GLAccountDataForLookup;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntry;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepository;
-import org.apache.fineract.accounting.journalentry.domain.JournalEntryType;
 import org.apache.fineract.accounting.journalentry.exception.JournalEntriesNotFoundException;
+import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlatformService;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
@@ -66,7 +66,6 @@ import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.joda.time.LocalDate;
@@ -128,6 +127,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final PaymentDetailRepository  paymentDetailRepository;
     private final BankStatementDetailsRepository bankStatementDetailsRepository;
     private final OfficeReadPlatformService readPlatformService;
+    private final JournalEntryWritePlatformService journalEntryWritePlatformService;
 
     @Autowired
     public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
@@ -147,7 +147,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final PaymentTypeRepository paymentTypeRepository,
             final PaymentDetailRepository  paymentDetailRepository,
             final BankStatementDetailsRepository bankStatementDetailsRepository,
-            final OfficeReadPlatformService readPlatformService) {
+            final OfficeReadPlatformService readPlatformService,
+            final JournalEntryWritePlatformService journalEntryWritePlatformService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = contentRepositoryFactory;
@@ -170,6 +171,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.paymentDetailRepository = paymentDetailRepository;
         this.bankStatementDetailsRepository = bankStatementDetailsRepository;
         this.readPlatformService = readPlatformService;
+        this.journalEntryWritePlatformService = journalEntryWritePlatformService;
     }
 
     @Transactional
@@ -541,51 +543,13 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
 
     private void revertJournalEntries(List<String> journalEntryList) {
         for (String transactionId : journalEntryList) {
-            final List<JournalEntry> journalEntries = this.journalEntryRepository
+            final List<JournalEntry> JournalEntryDetails = this.journalEntryRepository
                     .findUnReversedManualJournalEntriesByTransactionId(transactionId);
             String reversalComment = "";
-            if (journalEntries.size() <= 1) { throw new JournalEntriesNotFoundException(transactionId); }
-            revertJournalEntry(journalEntries, reversalComment);
+            if (JournalEntryDetails.isEmpty()) { throw new JournalEntriesNotFoundException(transactionId); }
+            this.journalEntryWritePlatformService.revertJournalEntry(JournalEntryDetails, reversalComment);
         }
 
-    }
-
-    public String revertJournalEntry(final List<JournalEntry> journalEntries, String reversalComment) {
-        final Long officeId = journalEntries.get(0).getOffice().getId();
-        final String reversalTransactionId = generateTransactionId(officeId);
-        final boolean manualEntry = true;
-
-        final boolean useDefaultComment = StringUtils.isBlank(reversalComment);
-        List<JournalEntry> toUpdateJournalEntries = new ArrayList<>();
-        for (final JournalEntry journalEntry : journalEntries) {
-            JournalEntry reversalJournalEntry;
-            if (useDefaultComment) {
-                reversalComment = "Reversal entry for Journal Entry with Entry Id  :" + journalEntry.getId() + " and transaction Id "
-                        + journalEntry.getTransactionId();
-            }
-            Long shareTransactionId = null;
-            if (journalEntry.isDebitEntry()) {
-                reversalJournalEntry = JournalEntry.createNew(journalEntry.getOffice(), journalEntry.getPaymentDetails(),
-                        journalEntry.getGlAccount(), journalEntry.getCurrencyCode(), reversalTransactionId, manualEntry,
-                        journalEntry.getTransactionDate(), JournalEntryType.CREDIT, journalEntry.getAmount(), reversalComment, null, null,
-                        journalEntry.getReferenceNumber(), journalEntry.getLoanTransactionId(), journalEntry.getSavingsTransactionId(),
-                        journalEntry.getClientTransactionId(), shareTransactionId);
-            } else {
-                reversalJournalEntry = JournalEntry.createNew(journalEntry.getOffice(), journalEntry.getPaymentDetails(),
-                        journalEntry.getGlAccount(), journalEntry.getCurrencyCode(), reversalTransactionId, manualEntry,
-                        journalEntry.getTransactionDate(), JournalEntryType.DEBIT, journalEntry.getAmount(), reversalComment, null, null,
-                        journalEntry.getReferenceNumber(), journalEntry.getLoanTransactionId(), journalEntry.getSavingsTransactionId(),
-                        journalEntry.getClientTransactionId(), shareTransactionId);
-            }
-            // save the reversal entry
-            toUpdateJournalEntries.add(reversalJournalEntry);
-            journalEntry.setReversed(true);
-            journalEntry.setReversalJournalEntry(reversalJournalEntry);
-            toUpdateJournalEntries.add(journalEntry);
-            
-        }
-        this.journalEntryRepository.save(toUpdateJournalEntries);
-        return reversalTransactionId;
     }
 
     private Document getDocument(String key, FormDataMultiPart formParams) {
@@ -959,14 +923,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         creditAndDebitMap.put(ReconciliationApiConstants.CREDIT_ACCOUNT, creditList);
         creditAndDebitMap.put(ReconciliationApiConstants.DEBIT_ACCOUNT, debitList);
         return creditAndDebitMap;
-    }
-
-    private String generateTransactionId(final Long officeId) {
-        final AppUser user = this.context.authenticatedUser();
-        final Long time = System.currentTimeMillis();
-        final String uniqueVal = String.valueOf(time) + user.getId() + officeId;
-        final String transactionId = Long.toHexString(Long.parseLong(uniqueVal));
-        return transactionId;
     }
 
 	@Override

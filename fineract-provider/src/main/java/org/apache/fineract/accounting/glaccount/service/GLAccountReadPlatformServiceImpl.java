@@ -80,11 +80,12 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
                     .append(nameDecoratedBaseOnHierarchy).append(" as nameDecorated, ")
                     .append("cv.id as codeId, cv.code_value as codeValue ");
             if (this.associationParametersData.isRunningBalanceRequired()) {
-                sb.append(",gl_j.organization_running_balance as organizationRunningBalance ");
+                sb.append(",gl_j.closing_balance as organizationRunningBalance ");
             }
             sb.append("from acc_gl_account gl left join m_code_value cv on tag_id=cv.id ");
             if (this.associationParametersData.isRunningBalanceRequired()) {
-                sb.append("left outer Join acc_gl_journal_entry gl_j on gl_j.account_id = gl.id");
+                sb.append(" LEFT OUTER JOIN (select min(rc.computed_till_date) as minDate, rc.account_id as accountId from f_running_balance_computation_detail rc  group by rc.account_id) as rbd on  rbd.accountId = gl.id");
+                sb.append(" LEFT OUTER JOIN f_org_running_balance gl_j ON gl_j.account_id = gl.id and gl_j.date = rbd.minDate ");
             }
             return sb.toString();
         }
@@ -134,13 +135,6 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
 
         final GLAccountMapper rm = new GLAccountMapper(associationParametersData);
         String sql = "select " + rm.schema();
-        // append SQL statement for fetching account totals
-        if (associationParametersData.isRunningBalanceRequired()) {
-            sql = sql + " and gl_j.id in (select t1.id from (select t2.account_id, max(t2.id) as id from "
-                    + "(select id, max(entry_date) as entry_date, account_id from acc_gl_journal_entry where is_running_balance_calculated = 1 "
-                    + "group by account_id desc) t3 inner join acc_gl_journal_entry t2 on t2.account_id = t3.account_id and t2.entry_date = t3.entry_date "
-                    + "group by t2.account_id desc) t1)";
-        }
         final Object[] paramaterArray = new Object[3];
         int arrayPos = 0;
         boolean filtersPresent = false;
@@ -217,12 +211,9 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
             final GLAccountMapper rm = new GLAccountMapper(associationParametersData);
             final StringBuilder sql = new StringBuilder();
             sql.append("select ").append(rm.schema());
+            sql.append(" where gl.id = ?");
             if (associationParametersData.isRunningBalanceRequired()) {
-                sql.append(" and gl_j.is_running_balance_calculated = 1 ");
-            }
-            sql.append("where gl.id = ?");
-            if (associationParametersData.isRunningBalanceRequired()) {
-                sql.append("  ORDER BY gl_j.entry_date DESC,gl_j.id DESC LIMIT 1");
+                sql.append("  ORDER BY gl_j.date LIMIT 1");
             }
             final GLAccountData glAccountData = this.jdbcTemplate.queryForObject(sql.toString(), rm, new Object[] { glAccountId });
 
