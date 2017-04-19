@@ -21,11 +21,12 @@ public class ClientIncomeExpenseData {
     private final Boolean isPrimaryIncome;
     private final Boolean isActive;
     private List<ClientMonthWiseIncomeExpenseData> clientMonthWiseIncomeExpenseDatas;
+    private final Boolean isRemmitanceIncome;
 
     private ClientIncomeExpenseData(final Long id, final Long clientId, final Long familyDetailId,
             final IncomeExpenseData incomeExpenseData, final BigDecimal quintity, final BigDecimal defaultIncome,
             final BigDecimal defaultExpense, final BigDecimal totalIncome, final BigDecimal totalExpense, final Boolean isMonthWiseIncome,
-            final Boolean isPrimaryIncome, final Boolean isActive) {
+            final Boolean isPrimaryIncome, final Boolean isActive,final Boolean isRemmitanceIncome) {
         this.id = id;
         this.clientId = clientId;
         this.familyDetailId = familyDetailId;
@@ -38,14 +39,15 @@ public class ClientIncomeExpenseData {
         this.isMonthWiseIncome = isMonthWiseIncome;
         this.isPrimaryIncome = isPrimaryIncome;
         this.isActive = isActive;
+        this.isRemmitanceIncome=isRemmitanceIncome;
     }
 
     public static ClientIncomeExpenseData instance(final Long id, final Long clientId, final Long familyDetailId,
             final IncomeExpenseData incomeExpenseData, final BigDecimal quintity, final BigDecimal defaultIncome,
             final BigDecimal defaultExpense, final BigDecimal totalIncome, final BigDecimal totalExpense, final Boolean isMonthWiseIncome,
-            final Boolean isPrimaryIncome, final Boolean isActive) {
+            final Boolean isPrimaryIncome, final Boolean isActive,final Boolean isRemmitanceIncome) {
         return new ClientIncomeExpenseData(id, clientId, familyDetailId, incomeExpenseData, quintity, defaultIncome, defaultExpense,
-                totalIncome, totalExpense, isMonthWiseIncome, isPrimaryIncome, isActive);
+                totalIncome, totalExpense, isMonthWiseIncome, isPrimaryIncome, isActive,isRemmitanceIncome);
     }
 
     public void addClientMonthWiseIncomeExpenseData(final ClientMonthWiseIncomeExpenseData clientMonthWiseIncomeExpenseData) {

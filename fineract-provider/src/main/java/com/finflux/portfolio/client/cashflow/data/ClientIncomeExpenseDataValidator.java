@@ -83,6 +83,10 @@ public class ClientIncomeExpenseDataValidator {
                 ClientIncomeExpenseApiConstants.isPrimaryIncomeParamName, element);
         baseDataValidator.reset().parameter(ClientIncomeExpenseApiConstants.isPrimaryIncomeParamName).value(isPrimaryIncome).ignoreIfNull();
 
+        final Boolean isRemmitanceIncome = this.fromApiJsonHelper.extractBooleanNamed(
+                ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName, element);
+        baseDataValidator.reset().parameter(ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName).value(isRemmitanceIncome).ignoreIfNull();
+        
         final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(ClientIncomeExpenseApiConstants.isActiveParamName, element);
         baseDataValidator.reset().parameter(ClientIncomeExpenseApiConstants.isActiveParamName).value(isActive).ignoreIfNull();
 
@@ -170,6 +174,10 @@ public class ClientIncomeExpenseDataValidator {
         final Boolean isPrimaryIncome = this.fromApiJsonHelper.extractBooleanNamed(
                 ClientIncomeExpenseApiConstants.isPrimaryIncomeParamName, element);
         baseDataValidator.reset().parameter(ClientIncomeExpenseApiConstants.isPrimaryIncomeParamName).value(isPrimaryIncome).ignoreIfNull();
+        
+        final Boolean isRemmitanceIncome = this.fromApiJsonHelper.extractBooleanNamed(
+                ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName, element);
+        baseDataValidator.reset().parameter(ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName).value(isRemmitanceIncome).ignoreIfNull();
 
         final Boolean isActive = this.fromApiJsonHelper.extractBooleanNamed(ClientIncomeExpenseApiConstants.isActiveParamName, element);
         baseDataValidator.reset().parameter(ClientIncomeExpenseApiConstants.isActiveParamName).value(isActive).ignoreIfNull();
