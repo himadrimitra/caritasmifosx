@@ -755,8 +755,18 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
     @Override
     public Map<String, Object> foreCloseLoan(final Loan loan, final LocalDate foreClosureDate, final String noteText) {
+        final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(loan);
+        String errorMessage = "Foreclosure date should not be a holiday.";
+        String errorCode = "foreclosure.date.on.holiday";
+        loan.validateDateIsOnHoliday(foreClosureDate, holidayDetailDTO.isAllowTransactionsOnHoliday(), holidayDetailDTO.getHolidays(),
+                errorMessage, errorCode);
+        errorMessage = "Foreclosure date should not be a non working day.";
+        errorCode = "foreclosure.date.on.non.working.day";
+        loan.validateDateIsOnNonWorkingDay(foreClosureDate, holidayDetailDTO.getWorkingDays(),
+                holidayDetailDTO.isAllowTransactionsOnNonWorkingDay(), errorMessage, errorCode);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_FORECLOSURE,
                 constructEntityMap(BUSINESS_ENTITY.LOAN, loan));
+        
         MonetaryCurrency currency = loan.getCurrency();
         LocalDateTime createdDate = DateUtils.getLocalDateTimeOfTenant();
         final Map<String, Object> changes = new LinkedHashMap<>();
@@ -833,7 +843,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         return changes;
 
     }
-
+    
     private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
         Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
         map.put(entityEvent, entity);
