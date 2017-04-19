@@ -140,4 +140,8 @@ public enum RepaymentRescheduleType {
         }
         return optionData;
     }
+
+    public boolean isSameDay() {
+        return this.value.equals(RepaymentRescheduleType.SAME_DAY.getValue());
+    }
 }
