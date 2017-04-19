@@ -51,7 +51,11 @@ public class WorkingDaysUtil {
     }
 
     public static boolean isWorkingDay(final WorkingDays workingDays, final LocalDate date) {
-        return CalendarUtils.isValidRedurringDate(workingDays.getRecurrence(), date, date);
+        return CalendarUtils.isValidRedurringDate(workingDays.getRecurrence(), date, date) || isRepaymentRescheduleTypeIsSameDay(workingDays);
+    }
+
+    public static boolean isRepaymentRescheduleTypeIsSameDay(final WorkingDays workingDays) {
+        return RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType()).isSameDay();
     }
     
     public static boolean isNonWorkingDay(final WorkingDays workingDays, final LocalDate date) {
