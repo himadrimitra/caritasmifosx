@@ -12,7 +12,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum TaskActionType {
 
-    ACTIVITYCOMPLETE(1, "taskActionType.taskcomplete", 3, true, true,true), //
+    ACTIVITYCOMPLETE(1, "taskActionType.taskcomplete", 3, true, true,false), //
     CRITERIACHECK(2, "taskActionType.criteriacheck", 4, true, true, false), //
     REVIEW(3, "taskActionType.review", 5, true, true, false), //
     APPROVE(4, "taskActionType.approve", 7, true, true, false), //

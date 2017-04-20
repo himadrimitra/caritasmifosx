@@ -57,6 +57,9 @@ public class TaskConfig extends AbstractPersistable<Long> {
 
     @Column(name = "task_type")
     private Integer taskType;
+    
+    @Column(name = "complete_on_action")
+    private Integer completeOnAction;
 
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "taskConfig", orphanRemoval = true)
@@ -68,12 +71,13 @@ public class TaskConfig extends AbstractPersistable<Long> {
 
     public TaskConfig() {};
     
-    public TaskConfig(TaskActivity taskactivity,String taskName, String shortName, Integer taskType)
+    public TaskConfig(TaskActivity taskactivity,String taskName, String shortName, Integer taskType,Integer completeOnAction)
     {
         this.taskActivity=taskactivity;
         this.name=taskName;
         this.shortName=shortName;
         this.taskType=taskType;
+        this.completeOnAction=completeOnAction;
     }
 
     public String getName() {
@@ -179,4 +183,15 @@ public class TaskConfig extends AbstractPersistable<Long> {
     public void setTaskType(Integer taskType) {
         this.taskType = taskType;
     }
+
+    
+    public Integer getCompleteOnAction() {
+        return this.completeOnAction;
+    }
+
+    
+    public void setCompleteOnAction(Integer completeOnAction) {
+        this.completeOnAction = completeOnAction;
+    }
+    
 }

@@ -13,7 +13,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum TaskStatusType {
     INACTIVE(1, null, "taskStatus.inactive"), //
-    INITIATED(2, TaskActionType.ACTIVITYCOMPLETE, "taskStatus.initiated", TaskActionType.SKIP, TaskActionType.ACTIVITYCOMPLETE), //
+    INITIATED(2, null, "taskStatus.initiated", TaskActionType.SKIP, TaskActionType.ACTIVITYCOMPLETE,TaskActionType.CRITERIACHECK), //
     UNDERCRITERIACHECK(3, TaskActionType.CRITERIACHECK, "taskStatus.undercriteriacheck", TaskActionType.CRITERIACHECK), //
     UNDERREVIEW(4, TaskActionType.REVIEW, "taskStatus.underreview", TaskActionType.REVIEW, TaskActionType.REJECT, TaskActionType.APPROVE,TaskActionType.TASKEDIT), //
     UNDERAPPROVAL(5, TaskActionType.APPROVE, "taskStatus.underapproval", TaskActionType.APPROVE, TaskActionType.REJECT), //

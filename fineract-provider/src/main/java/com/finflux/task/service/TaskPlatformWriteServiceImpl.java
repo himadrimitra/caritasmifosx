@@ -135,7 +135,7 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 taskConfig.getTaskType(), taskConfig, status.getValue(), TaskPriority.MEDIUM.getValue(), dueDate, currentAction,
                 user, taskConfig.getTaskConfigOrder(), taskConfig.getCriteria(), taskConfig.getApprovalLogic(),
                 taskConfig.getRejectionLogic(), configValueStr, client, office, taskConfig.getActionGroupId(), criteriaResult,
-                criteriaAction, taskConfig.getTaskActivity(), description);
+                criteriaAction, taskConfig.getTaskActivity(), description,taskConfig.getCompleteOnAction());
     }
 
     /*
@@ -152,11 +152,11 @@ public class TaskPlatformWriteServiceImpl implements TaskPlatformWriteService {
                 customConfigMap.put(config.getKey().getValue(), config.getValue());
             }
         }
-
+        final Integer completeOnAction=null;
         final String configValueStr = new Gson().toJson(map);
         Task task = Task.create(null, title, taskActivity.getIdentifier().substring(0, 3), null, null, TaskType.SINGLE.getValue(), null,
                 null, TaskPriority.MEDIUM.getValue(), null, null, null, null, null, null, null, configValueStr, null, office,
-                actionGroupId, null, null, taskActivity, null);
+                actionGroupId, null, null, taskActivity, null,completeOnAction);
         TaskStatusType status = TaskStatusType.INITIATED;
         task.setStatus(status.getValue());
         taskExecutionService.updateActionAndAssignedTo(context.authenticatedUser(),task, status);
