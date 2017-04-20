@@ -1770,7 +1770,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .retrieveCodeValuesByCode("LoanCollateral");
         Long loanOfficerId = null;
         if(clientId!= null){
-        loanOfficerId = this.clientReadPlatformService.retrieveDefaultStaffIdFromGroup(clientId);
+        loanOfficerId = this.clientReadPlatformService.fetchDefaultLoanOfficerFromGroup(clientId);
         }
         final Collection<PledgeData> loanProductCollateralPledgesOptions = this.pledgeReadPlatformService.retrievePledgesByClientIdAndProductId(clientId, productId, null);
         Collection<ChargeData> chargeOptions = null;
