@@ -45,10 +45,6 @@ public interface ScheduledDateGenerator {
     LocalDate generateNextScheduleDateStartingFromDisburseDate(LocalDate lastRepaymentDate, LoanApplicationTerms loanApplicationTerms,
             final HolidayDetailDTO holidayDetailDTO);
 
-    AdjustedDateDetailsDTO adjustNextRepaymentDateBasedOnWorkingDaysExemption(LocalDate dueRepaymentPeriodDate,
-			HolidayDetailDTO holidayDetailDTO, String reccuringString, LocalDate seedDate,
-			LoanApplicationTerms loanApplicationTerms);
-
     LocalDate calculateInterestStartDateForPeriod(LoanApplicationTerms loanApplicationTerms, LocalDate periodStartDate,
             LocalDate idealDisbursementDate, LocalDate firstRepaymentdate);
 }

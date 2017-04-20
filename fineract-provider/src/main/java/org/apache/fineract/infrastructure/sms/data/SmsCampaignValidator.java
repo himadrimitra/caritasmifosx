@@ -18,19 +18,6 @@
  */
 package org.apache.fineract.infrastructure.sms.data;
 
-import com.google.gson.JsonElement;
-import com.google.gson.reflect.TypeToken;
-import org.apache.commons.lang.StringUtils;
-import org.joda.time.LocalDate;
-import org.apache.fineract.infrastructure.core.data.ApiParameterError;
-import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
-import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
-import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
-import org.apache.fineract.infrastructure.sms.domain.SmsCampaignType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +25,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import net.fortuna.ical4j.model.property.RRule;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
+import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
+import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.sms.domain.SmsCampaignType;
+import org.joda.time.LocalDate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.google.gson.JsonElement;
+import com.google.gson.reflect.TypeToken;
 
 @Component
 public class SmsCampaignValidator {
@@ -64,19 +67,19 @@ public class SmsCampaignValidator {
     private final FromJsonHelper fromApiJsonHelper;
 
 
-    public static final Set<String> supportedParams = new HashSet<String>(Arrays.asList(campaignName, campaignType,localeParamName,dateFormatParamName,
+    public static final Set<String> supportedParams = new HashSet<>(Arrays.asList(campaignName, campaignType,localeParamName,dateFormatParamName,
             runReportId,paramValue,message,recurrenceStartDate,activationDateParamName,submittedOnDateParamName,closureDateParamName,recurrenceParamName));
 
     public static final Set<String> supportedParamsForUpdate = new HashSet<>(Arrays.asList(campaignName, campaignType,localeParamName,dateFormatParamName,
             runReportId,paramValue,message,recurrenceStartDate,activationDateParamName,recurrenceParamName));
 
-    public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<String>(Arrays.asList(localeParamName,
+    public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, activationDateParamName));
 
-    public static final Set<String> CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<String>(Arrays.asList(localeParamName,
+    public static final Set<String> CLOSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, closureDateParamName));
 
-    public static final Set<String> PREVIEW_REQUEST_DATA_PARAMETERS= new HashSet<String>(Arrays.asList(paramValue,message));
+    public static final Set<String> PREVIEW_REQUEST_DATA_PARAMETERS= new HashSet<>(Arrays.asList(paramValue,message));
 
     @Autowired
     public SmsCampaignValidator(FromJsonHelper fromApiJsonHelper) {
@@ -92,7 +95,7 @@ public class SmsCampaignValidator {
         
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SmsCampaignValidator.RESOURCE_NAME);
@@ -106,8 +109,8 @@ public class SmsCampaignValidator {
 
         if(campaignType.intValue() == SmsCampaignType.SCHEDULE.getValue()){
             final String recurrenceParamName =  this.fromApiJsonHelper.extractStringNamed(SmsCampaignValidator.recurrenceParamName, element);
-            baseDataValidator.reset().parameter(SmsCampaignValidator.recurrenceParamName).value(recurrenceParamName).notBlank();
-
+            baseDataValidator.reset().parameter(SmsCampaignValidator.recurrenceParamName).value(recurrenceParamName).notBlank();            
+            validateRecurrenceRule(recurrenceParamName, SmsCampaignValidator.recurrenceParamName, baseDataValidator);
             final String recurrenceStartDate =  this.fromApiJsonHelper.extractStringNamed(SmsCampaignValidator.recurrenceStartDate, element);
             baseDataValidator.reset().parameter(SmsCampaignValidator.recurrenceStartDate).value(recurrenceStartDate).notBlank();
         }
@@ -141,7 +144,7 @@ public class SmsCampaignValidator {
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsCampaignValidator.supportedParamsForUpdate);
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SmsCampaignValidator.RESOURCE_NAME);
@@ -156,7 +159,7 @@ public class SmsCampaignValidator {
         if(campaignType.intValue() == SmsCampaignType.SCHEDULE.getValue()){
             final String recurrenceParamName =  this.fromApiJsonHelper.extractStringNamed(SmsCampaignValidator.recurrenceParamName, element);
             baseDataValidator.reset().parameter(SmsCampaignValidator.recurrenceParamName).value(recurrenceParamName).notBlank();
-
+            validateRecurrenceRule(recurrenceParamName, SmsCampaignValidator.recurrenceParamName, baseDataValidator);
             final String recurrenceStartDate =  this.fromApiJsonHelper.extractStringNamed(SmsCampaignValidator.recurrenceStartDate, element);
             baseDataValidator.reset().parameter(SmsCampaignValidator.recurrenceStartDate).value(recurrenceStartDate).notBlank();
         }
@@ -182,7 +185,7 @@ public class SmsCampaignValidator {
 
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SmsCampaignValidator.RESOURCE_NAME);
 
@@ -203,7 +206,7 @@ public class SmsCampaignValidator {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsCampaignValidator.CLOSE_REQUEST_DATA_PARAMETERS);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SmsCampaignValidator.RESOURCE_NAME);
 
@@ -220,7 +223,7 @@ public class SmsCampaignValidator {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsCampaignValidator.ACTIVATION_REQUEST_DATA_PARAMETERS);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SmsCampaignValidator.RESOURCE_NAME);
 
@@ -231,6 +234,16 @@ public class SmsCampaignValidator {
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
+    
+    public void validateRecurrenceRule(String recurrence, String param, DataValidatorBuilder baseDataValidator){
+        try {
+            RRule rule = new RRule(recurrence);
+            rule.validate();
+        } catch (Exception e) {
+            baseDataValidator.reset().parameter(param).failWithCode("invalid.recurrence.rule.exception");
+        }
+        
+    }
 
     public void ValidateClosure(String json){
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
@@ -238,7 +251,7 @@ public class SmsCampaignValidator {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SmsCampaignValidator.CLOSE_REQUEST_DATA_PARAMETERS);
 
-        final List<ApiParameterError> dataValidationErrors = new ArrayList<ApiParameterError>();
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SmsCampaignValidator.RESOURCE_NAME);
 

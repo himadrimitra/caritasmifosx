@@ -121,7 +121,7 @@ public class SmsCampaignApiResource {
     @POST
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String createCampaign(final String apiRequestBodyAsJson,@Context final UriInfo uriInfo){
+    public String createCampaign(final String apiRequestBodyAsJson){
 
         final CommandWrapper commandRequest = new CommandWrapperBuilder().createSmsCampaign().withJson(apiRequestBodyAsJson).build();
 
@@ -134,7 +134,7 @@ public class SmsCampaignApiResource {
     @Path("{resourceId}")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String updateCampaign(@PathParam("resourceId") final Long campaignId,final String apiRequestBodyAsJson,@Context final UriInfo uriInfo){
+    public String updateCampaign(@PathParam("resourceId") final Long campaignId,final String apiRequestBodyAsJson){
 
         final CommandWrapper commandRequest = new CommandWrapperBuilder().updateSmsCampaign(campaignId).withJson(apiRequestBodyAsJson).build();
 

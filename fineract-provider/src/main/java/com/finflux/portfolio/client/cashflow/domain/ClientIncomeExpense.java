@@ -60,6 +60,9 @@ public class ClientIncomeExpense extends AbstractPersistable<Long> {
 
     @Column(name = "is_primary_income", length = 1, nullable = true)
     private Boolean isPrimaryIncome;
+    
+    @Column(name = "is_remmitance_income", length = 1, nullable = true)
+    private Boolean isRemmitanceIncome;
 
     @Column(name = "is_active", length = 1, nullable = false)
     private Boolean isActive;
@@ -73,7 +76,7 @@ public class ClientIncomeExpense extends AbstractPersistable<Long> {
 
     private ClientIncomeExpense(final Client client, final FamilyDetail familyDetail, final IncomeExpense incomeExpense,
             final BigDecimal quintity, final BigDecimal totalIncome, final BigDecimal totalExpense, final Boolean isMonthWiseIncome,
-            final Boolean isPrimaryIncome, final Boolean isActive) {
+            final Boolean isPrimaryIncome, final Boolean isActive,final Boolean isRemmitanceIncome) {
         this.client = client;
         this.familyDetail = familyDetail;
         this.incomeExpense = incomeExpense;
@@ -85,13 +88,14 @@ public class ClientIncomeExpense extends AbstractPersistable<Long> {
         this.isMonthWiseIncome = isMonthWiseIncome;
         this.isPrimaryIncome = isPrimaryIncome;
         this.isActive = isActive;
+        this.isRemmitanceIncome=isRemmitanceIncome;
     }
 
     public static ClientIncomeExpense create(final Client client, final FamilyDetail familyDetail, final IncomeExpense incomeExpense,
             final BigDecimal quintity, final BigDecimal totalIncome, final BigDecimal totalExpense, final Boolean isMonthWiseIncome,
-            final Boolean isPrimaryIncome, final Boolean isActive) {
+            final Boolean isPrimaryIncome, final Boolean isActive,final Boolean isRemmitanceIncome) {
         return new ClientIncomeExpense(client, familyDetail, incomeExpense, quintity, totalIncome, totalExpense, isMonthWiseIncome,
-                isPrimaryIncome, isActive);
+                isPrimaryIncome, isActive,isRemmitanceIncome);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -135,6 +139,11 @@ public class ClientIncomeExpense extends AbstractPersistable<Long> {
             final Boolean newValue = command.booleanObjectValueOfParameterNamed(ClientIncomeExpenseApiConstants.isActiveParamName);
             actualChanges.put(ClientIncomeExpenseApiConstants.isActiveParamName, newValue);
             this.isActive = newValue;
+        }
+        if (command.isChangeInBooleanParameterNamed(ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName, this.isRemmitanceIncome)) {
+            final Boolean newValue = command.booleanObjectValueOfParameterNamed(ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName);
+            actualChanges.put(ClientIncomeExpenseApiConstants.isRemmitanceIncomeParamName, newValue);
+            this.isRemmitanceIncome = newValue;
         }
         return actualChanges;
     }

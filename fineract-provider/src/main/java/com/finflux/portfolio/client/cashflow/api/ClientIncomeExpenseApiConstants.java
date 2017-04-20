@@ -15,6 +15,7 @@ public class ClientIncomeExpenseApiConstants {
     public static final String totalExpenseParamName = "totalExpense";
     public static final String isMonthWiseIncomeParamName = "isMonthWiseIncome";
     public static final String isPrimaryIncomeParamName = "isPrimaryIncome";
+    public static final String isRemmitanceIncomeParamName = "isRemmitanceIncome";
     public static final String isActiveParamName = "isActive";
 
     public static final String clientMonthWiseIncomeExpenseParamName = "clientMonthWiseIncomeExpense";
@@ -35,11 +36,11 @@ public class ClientIncomeExpenseApiConstants {
     public static final Set<String> CREATE_CLIENT_INCOME_EXPENSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(
             familyDetailsIdParamName, incomeExpenseIdParamName, quintityParamName, totalIncomeParamName, totalExpenseParamName,
             isMonthWiseIncomeParamName, isPrimaryIncomeParamName, isActiveParamName, clientMonthWiseIncomeExpenseParamName,
-            localeParamName, dateFormatParamName));
+            localeParamName, dateFormatParamName,isRemmitanceIncomeParamName));
 
     public static final Set<String> UPDATE_CLIENT_INCOME_EXPENSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(
             familyDetailsIdParamName, incomeExpenseIdParamName, quintityParamName, totalIncomeParamName, totalExpenseParamName,
             isMonthWiseIncomeParamName, isPrimaryIncomeParamName, isActiveParamName, clientMonthWiseIncomeExpenseParamName,
-            localeParamName, dateFormatParamName));
+            localeParamName, dateFormatParamName,isRemmitanceIncomeParamName));
 
 }

@@ -26,10 +26,7 @@ import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.service.HolidayUtil;
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
-import org.apache.fineract.organisation.workingdays.domain.ApplicableProperty;
-import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
-import org.apache.fineract.organisation.workingdays.domain.RepaymentScheduleUpdationType;
-import org.apache.fineract.organisation.workingdays.service.EpressionUtilsServiceImpl;
+import org.apache.fineract.organisation.workingdays.service.ExpressionUtilsServiceImpl;
 import org.apache.fineract.organisation.workingdays.service.WorkingDaysUtil;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
@@ -56,8 +53,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
             lastRepaymentDate = generateNextRepaymentDate(lastRepaymentDate, loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
             isFirstRepayment = false;
         }
-        lastRepaymentDate = adjustRepaymentDate(lastRepaymentDate, loanApplicationTerms, holidayDetailDTO).getChangedScheduleDate();
-        return lastRepaymentDate;
+        return adjustRepaymentDate(lastRepaymentDate, loanApplicationTerms, holidayDetailDTO).getChangedScheduleDate();
     }
 
     @Override
@@ -121,119 +117,121 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     }
 
     @Override
-    public AdjustedDateDetailsDTO adjustRepaymentDate(final LocalDate dueRepaymentPeriodDate, final LoanApplicationTerms loanApplicationTerms,
-            final HolidayDetailDTO holidayDetailDTO) {
-    	
-    	AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = null;
-    	AdjustedDateDetailsDTO adjustedDateDetailsDTO = null;
-    	LocalDate nextRepaymentDateAsPerSchedule = null;
-        LocalDate adjustedDate = dueRepaymentPeriodDate;
-        adjustedDateDetailsDTO = getadjustedDate(dueRepaymentPeriodDate, loanApplicationTerms, holidayDetailDTO, adjustedDate);
-        LocalDate originalAdjustDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
-
-        if (loanApplicationTerms.getLoanCalendar() != null) {
-            do {
-                LocalDate seedDate = null;
-                String reccuringString = null;
-                CalendarHistory calendarHistory = null;
-
-                Calendar currentCalendar = loanApplicationTerms.getLoanCalendar();
-
-                CalendarHistoryDataWrapper calendarHistoryDataWrapper = loanApplicationTerms.getCalendarHistoryDataWrapper();
-                if (calendarHistoryDataWrapper != null) {
-                    calendarHistory = loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistory(dueRepaymentPeriodDate);
-                }
-
-                // get the start date from the calendar history
-                if (calendarHistory == null) {
-                    seedDate = currentCalendar.getStartDateLocalDate();
-                    reccuringString = currentCalendar.getRecurrence();
-                } else {
-                    seedDate = calendarHistory.getStartDateLocalDate();
-                    reccuringString = calendarHistory.getRecurrence();
-                }
-
-                adjustedDateDetailsDTO = adjustNextRepaymentDateBasedOnWorkingDaysExemption(
-                        adjustedDateDetailsDTO.getChangedScheduleDate(), holidayDetailDTO, reccuringString, seedDate, loanApplicationTerms);
-                adjustedDate = adjustedDateDetailsDTO.getChangedScheduleDate();
-                newAdjustedDateDetailsDTO = adjustedDateDetailsDTO;
-                adjustedDateDetailsDTO = getadjustedDate(dueRepaymentPeriodDate, loanApplicationTerms, holidayDetailDTO, adjustedDate);
-            } while (!adjustedDate.isEqual(adjustedDateDetailsDTO.getChangedScheduleDate()));
-
-            if (newAdjustedDateDetailsDTO.getChangeactualMeetingday()) {
-                newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, adjustedDate);
-            } else {
-                boolean isNextRepaymentDateLessThanAdjuestedDate = false;
-                do {
-                    isNextRepaymentDateLessThanAdjuestedDate = false;
-                    nextRepaymentDateAsPerSchedule = generateNextRepaymentDate(originalAdjustDate, loanApplicationTerms, false, holidayDetailDTO);
-                    if (nextRepaymentDateAsPerSchedule.isBefore(adjustedDate)) {
-                        originalAdjustDate = nextRepaymentDateAsPerSchedule;
-                        isNextRepaymentDateLessThanAdjuestedDate = true;
-                    }
-                } while (isNextRepaymentDateLessThanAdjuestedDate);
-                newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, originalAdjustDate);
-            }
-        } else {
-            newAdjustedDateDetailsDTO = adjustedDateDetailsDTO;
-        }
-        return newAdjustedDateDetailsDTO;
+    public AdjustedDateDetailsDTO adjustRepaymentDate(final LocalDate dueRepaymentPeriodDate,
+            final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO) {
+        final LocalDate adjustedDate = dueRepaymentPeriodDate;
+        return getAdjustedDateDetailsDTO(dueRepaymentPeriodDate, loanApplicationTerms, holidayDetailDTO, adjustedDate);
     }
 
-    private AdjustedDateDetailsDTO getadjustedDate(final LocalDate dueRepaymentPeriodDate, final LoanApplicationTerms loanApplicationTerms,
-			final HolidayDetailDTO holidayDetailDTO, LocalDate adjustedDate) {
-	LocalDate nextDueRepaymentPeriodDate = generateNextRepaymentDate(adjustedDate, loanApplicationTerms, false, holidayDetailDTO);
+    private AdjustedDateDetailsDTO getAdjustedDateDetailsDTO(final LocalDate dueRepaymentPeriodDate,
+            final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO, final LocalDate adjustedDate) {
+        final boolean isFirstRepayment = false;
+        final LocalDate nextRepaymentPeriodDueDate = generateNextRepaymentDate(adjustedDate, loanApplicationTerms, isFirstRepayment,
+                holidayDetailDTO);
+        final AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, dueRepaymentPeriodDate,
+                nextRepaymentPeriodDueDate);
+        return recursivelyCheckNonWorkingDaysAndHolidaysAndWorkingDaysExemptionToGenerateNextRepaymentPeriodDate(newAdjustedDateDetailsDTO,
+                loanApplicationTerms, holidayDetailDTO, isFirstRepayment);
+    }
 
-        final RepaymentRescheduleType rescheduleType = RepaymentRescheduleType.fromInt(holidayDetailDTO.getWorkingDays()
-                .getRepaymentReschedulingType());
+    /**
+     * Recursively checking non working days and holidays and working days
+     * exemption to generate next repayment period date Base on the
+     * configuration
+     * 
+     * @param adjustedDateDetailsDTO
+     * @param loanApplicationTerms
+     * @param holidayDetailDTO
+     * @param nextRepaymentPeriodDueDate
+     * @param rescheduleType
+     * @param isFirstRepayment
+     * @return
+     */
+    private AdjustedDateDetailsDTO recursivelyCheckNonWorkingDaysAndHolidaysAndWorkingDaysExemptionToGenerateNextRepaymentPeriodDate(
+            final AdjustedDateDetailsDTO adjustedDateDetailsDTO, final LoanApplicationTerms loanApplicationTerms,
+            final HolidayDetailDTO holidayDetailDTO, final boolean isFirstRepayment) {
+        
+        checkAndUpdateWorkingDayIfRepaymentDateIsNonWorkingDay(adjustedDateDetailsDTO, holidayDetailDTO, loanApplicationTerms,
+                isFirstRepayment);
+        
+        checkAndUpdateWorkingDayIfRepaymentDateIsHolidayDay(adjustedDateDetailsDTO, holidayDetailDTO, loanApplicationTerms,
+                isFirstRepayment);
+                
+        if (loanApplicationTerms.getLoanCalendar() != null) {
+            adjustNextRepaymentDateBasedOnWorkingDaysExemption(adjustedDateDetailsDTO, holidayDetailDTO, loanApplicationTerms);
+        }
 
         /**
-         * Fix for https://mifosforge.jira.com/browse/MIFOSX-1357
+         * Check Changed Schedule Date is holiday or is not a working day Then
+         * re-call this method to get the non holiday and working day
          */
-        // recursively check for the next working meeting day.
-        while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(), nextDueRepaymentPeriodDate)
-                && rescheduleType == RepaymentRescheduleType.MOVE_TO_NEXT_REPAYMENT_MEETING_DAY) {
-            nextDueRepaymentPeriodDate = generateNextRepaymentDate(nextDueRepaymentPeriodDate, loanApplicationTerms, false, holidayDetailDTO);
+        if (HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(), holidayDetailDTO.getHolidays()) != null
+                || WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(), adjustedDateDetailsDTO.getChangedScheduleDate())) {
+            recursivelyCheckNonWorkingDaysAndHolidaysAndWorkingDaysExemptionToGenerateNextRepaymentPeriodDate(adjustedDateDetailsDTO,
+                    loanApplicationTerms, holidayDetailDTO, isFirstRepayment);
         }
-        adjustedDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(adjustedDate, nextDueRepaymentPeriodDate,
-                holidayDetailDTO.getWorkingDays());
-        AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = null;
-        if (holidayDetailDTO.isHolidayEnabled()) {
-        	newAdjustedDateDetailsDTO = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(adjustedDate, holidayDetailDTO.getHolidays());
-        	
-        }
-        
-        Holiday applicableHolidayForAjustedDate = HolidayUtil.getApplicableHoliday(adjustedDate, holidayDetailDTO.getHolidays());
-		if (applicableHolidayForAjustedDate != null
-				&& applicableHolidayForAjustedDate.getReScheduleType().isResheduleToNextRepaymentDate()) {
-        	LocalDate newAdjustedDate = dueRepaymentPeriodDate;
-        	Holiday applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(newAdjustedDate, holidayDetailDTO.getHolidays());
-            do{
-            	
-				if (applicableHolidayForNewAdjustedDate != null
-						&& applicableHolidayForNewAdjustedDate.isExtendRepaymentReschedule()) {
-					newAdjustedDateDetailsDTO = HolidayUtil.getRepaymentRescheduleDateToIfHoliday(newAdjustedDate, holidayDetailDTO.getHolidays());
-            	}
-            	newAdjustedDate = generateNextRepaymentDate(newAdjustedDate, loanApplicationTerms, false, holidayDetailDTO);
-            	applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(newAdjustedDate, holidayDetailDTO.getHolidays());
-            }while(applicableHolidayForNewAdjustedDate != null);
+        return adjustedDateDetailsDTO;
+    }
 
-            if(newAdjustedDateDetailsDTO == null){
-            	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDate, newAdjustedDate);
+    /**
+     * This method to check and update the working day if repayment date is
+     * holiday
+     * 
+     * @param adjustedDateDetailsDTO
+     * @param holidayDetailDTO
+     * @param loanApplicationTerms
+     * @param isFirstRepayment
+     */
+    private void checkAndUpdateWorkingDayIfRepaymentDateIsHolidayDay(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final LoanApplicationTerms loanApplicationTerms, final boolean isFirstRepayment) {
+        if (holidayDetailDTO.isHolidayEnabled()) {
+            Holiday applicableHolidayForNewAdjustedDate = null;
+            while ((applicableHolidayForNewAdjustedDate = HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(),
+                    holidayDetailDTO.getHolidays())) != null) {
+                if (applicableHolidayForNewAdjustedDate.getReScheduleType().isResheduleToNextRepaymentDate()) {
+                    LocalDate nextRepaymentPeriodDueDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+                    while (!nextRepaymentPeriodDueDate.isAfter(adjustedDateDetailsDTO.getChangedScheduleDate())) {
+                        nextRepaymentPeriodDueDate = generateNextRepaymentDate(nextRepaymentPeriodDueDate, loanApplicationTerms,
+                                isFirstRepayment, holidayDetailDTO);
+                    }
+                    adjustedDateDetailsDTO.setChangedScheduleDate(nextRepaymentPeriodDueDate);
+                    adjustedDateDetailsDTO.setNextRepaymentPeriodDueDate(nextRepaymentPeriodDueDate);
+                    if (applicableHolidayForNewAdjustedDate.isExtendRepaymentReschedule()) {
+                        adjustedDateDetailsDTO.setChangedActualRepaymentDate(adjustedDateDetailsDTO.getChangedScheduleDate());
+                    }
+                } else {
+                    HolidayUtil.updateRepaymentRescheduleDateToWorkingDayIfItIsHoliday(adjustedDateDetailsDTO,
+                            applicableHolidayForNewAdjustedDate);
+                }
             }
-            	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDate, dueRepaymentPeriodDate);
-        } else {
-        	if (holidayDetailDTO.isHolidayEnabled()) {
-        		newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDateDetailsDTO.getChangedScheduleDate(), dueRepaymentPeriodDate);
-        	}else {
-        		newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, dueRepaymentPeriodDate);
-        	}
         }
-		if (applicableHolidayForAjustedDate != null && applicableHolidayForAjustedDate.isExtendRepaymentReschedule()) {
-        	newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(newAdjustedDateDetailsDTO.getChangedScheduleDate(), newAdjustedDateDetailsDTO.getChangedScheduleDate());
+    }
+
+    /**
+     * This method to check and update the working day if repayment date is non
+     * working day
+     * 
+     * @param adjustedDateDetailsDTO
+     * @param holidayDetailDTO
+     * @param isFirstRepayment 
+     * @param loanApplicationTerms 
+     */
+    private void checkAndUpdateWorkingDayIfRepaymentDateIsNonWorkingDay(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final LoanApplicationTerms loanApplicationTerms, final boolean isFirstRepayment) {
+        while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(), adjustedDateDetailsDTO.getChangedScheduleDate())) {
+            if (holidayDetailDTO.getWorkingDays().getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+                while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(),
+                        adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate())
+                        || adjustedDateDetailsDTO.getChangedScheduleDate().isAfter(adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate())) {
+                    final LocalDate nextRepaymentPeriodDueDate = generateNextRepaymentDate(
+                            adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate(), loanApplicationTerms, isFirstRepayment,
+                            holidayDetailDTO);
+                    adjustedDateDetailsDTO.setNextRepaymentPeriodDueDate(nextRepaymentPeriodDueDate);
+                }
+            }
+            WorkingDaysUtil.updateWorkingDayIfRepaymentDateIsNonWorkingDay(adjustedDateDetailsDTO, holidayDetailDTO.getWorkingDays());
         }
-        return newAdjustedDateDetailsDTO;
-	}
+    }
 
     @Override
     public LocalDate getRepaymentPeriodDate(final PeriodFrequencyType frequency, final int repaidEvery, final LocalDate startDate) {
@@ -342,62 +340,79 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     }
 
     @Override
-    public LocalDate generateNextScheduleDateStartingFromDisburseDate(LocalDate lastRepaymentDate,
-            LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO) {
-
+    public LocalDate generateNextScheduleDateStartingFromDisburseDate(final LocalDate lastRepaymentDate,
+            final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO) {
         LocalDate generatedDate = loanApplicationTerms.getExpectedDisbursementDate();
         boolean isFirstRepayment = true;
         while (!generatedDate.isAfter(lastRepaymentDate)) {
             generatedDate = generateNextRepaymentDate(generatedDate, loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
             isFirstRepayment = false;
         }
-        generatedDate = adjustRepaymentDate(generatedDate, loanApplicationTerms, holidayDetailDTO).getChangedScheduleDate();
-        return generatedDate;
+        return adjustRepaymentDate(generatedDate, loanApplicationTerms, holidayDetailDTO).getChangedScheduleDate();
     }
     
-    @Override
-    public AdjustedDateDetailsDTO adjustNextRepaymentDateBasedOnWorkingDaysExemption(final LocalDate dueRepaymentPeriodDate,
-            final HolidayDetailDTO holidayDetailDTO, final String reccuringString, final LocalDate seedDate,
-            final LoanApplicationTerms loanApplicationTerms) {
-        boolean isRepaymentSheduleExtended = false;
-        LocalDate scheduleDate = dueRepaymentPeriodDate;
-        LocalDate actualDate = dueRepaymentPeriodDate;
+    /**
+     * It will validate working days exemption and generate the repayment date based on the config
+     * @param adjustedDateDetailsDTO
+     * @param holidayDetailDTO
+     * @param loanApplicationTerms
+     * @param dueRepaymentPeriodDate
+     */
+    private void adjustNextRepaymentDateBasedOnWorkingDaysExemption(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
+            final HolidayDetailDTO holidayDetailDTO, final LoanApplicationTerms loanApplicationTerms) {
+        final LocalDate originalAdjustDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+        LocalDate seedDate = null;
+        String reccuringString = null;
+        CalendarHistory calendarHistory = null;
+        final Calendar currentCalendar = loanApplicationTerms.getLoanCalendar();
+        final CalendarHistoryDataWrapper calendarHistoryDataWrapper = loanApplicationTerms.getCalendarHistoryDataWrapper();
+        if (calendarHistoryDataWrapper != null) {
+            calendarHistory = loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistory(originalAdjustDate);
+        }
+        // get the start date from the calendar history
+        if (calendarHistory == null) {
+            seedDate = currentCalendar.getStartDateLocalDate();
+            reccuringString = currentCalendar.getRecurrence();
+        } else {
+            seedDate = calendarHistory.getStartDateLocalDate();
+            reccuringString = calendarHistory.getRecurrence();
+        }
+        LocalDate scheduleDate = adjustedDateDetailsDTO.getChangedScheduleDate();
         if (seedDate != null) {
             final ArrayList<WorkingDayExemptionsData> workingDayExemptions = (ArrayList<WorkingDayExemptionsData>) holidayDetailDTO
                     .getWorkingDayExemptions();
-            for (WorkingDayExemptionsData workingDayExcemption : workingDayExemptions) {
-                if (EpressionUtilsServiceImpl
-                        .isGivenDateisWorkingDayExemption(dueRepaymentPeriodDate, workingDayExcemption.getExpression())) {
+            for (final WorkingDayExemptionsData workingDayExcemption : workingDayExemptions) {
+                if (ExpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(adjustedDateDetailsDTO.getChangedScheduleDate(),
+                        workingDayExcemption.getExpression())) {
                     do {
-                        if (ApplicableProperty.INSTALLMENTDATE.getValue().equals(workingDayExcemption.getApplicableProperty())) {
-
-                            switch (workingDayExcemption.getActionToBePerformed()) {
-                                case 3:
-                                    scheduleDate = CalendarUtils.getNextRecurringDate(reccuringString, seedDate, dueRepaymentPeriodDate);
+                        if (workingDayExcemption.getApplicableProperty().isInstallmentDate()) {
+                            switch (workingDayExcemption.getRepaymentRescheduleType()) {
+                                case MOVE_TO_NEXT_REPAYMENT_DAY:
+                                    scheduleDate = generateNextRepaymentDate(scheduleDate, loanApplicationTerms, false, holidayDetailDTO);
                                 break;
-                                case 5:
-                                    scheduleDate = generateNextRepaymentDate(dueRepaymentPeriodDate, loanApplicationTerms, false, holidayDetailDTO);
+                                case MOVE_TO_NEXT_MEETING_DAY:
+                                    scheduleDate = CalendarUtils.getNextRecurringDate(reccuringString, seedDate, scheduleDate);
                                 break;
                                 default:
                                 break;
                             }
                         }
-                    } while (EpressionUtilsServiceImpl.isGivenDateisWorkingDayExemption(scheduleDate,
-                            workingDayExcemption.getExpression()));
+                    } while (ExpressionUtilsServiceImpl
+                            .isGivenDateisWorkingDayExemption(scheduleDate, workingDayExcemption.getExpression()));
+                    if (workingDayExcemption.getRepaymentScheduleUpdationType().isExtendRepaymentSchedule()) {
+                        adjustedDateDetailsDTO.setChangedScheduleDate(scheduleDate);
+                        /**
+                         * Due to Extend Repayment Schedule setting we are changing
+                         * the Actual Repayment Date to generate next repayments
+                         * date should extend accordingly
+                         */
+                        adjustedDateDetailsDTO.setChangedActualRepaymentDate(scheduleDate);
+                    } else {
+                        adjustedDateDetailsDTO.setChangedScheduleDate(scheduleDate);
+                    }
                 }
-
-                if (workingDayExcemption.getupdateType() == RepaymentScheduleUpdationType.EXTENDREPAYMENTSCHEDULE.getValue()) {
-                    isRepaymentSheduleExtended = true;
-                    actualDate = scheduleDate;
-                } else {
-                    isRepaymentSheduleExtended = false;
-                    actualDate = scheduleDate;
-                }
-
             }
-            return new AdjustedDateDetailsDTO(scheduleDate, actualDate, isRepaymentSheduleExtended);
         }
-        return new AdjustedDateDetailsDTO(scheduleDate, actualDate, isRepaymentSheduleExtended);
     }
     
     /**

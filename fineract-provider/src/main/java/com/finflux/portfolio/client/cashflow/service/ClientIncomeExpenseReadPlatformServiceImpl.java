@@ -87,7 +87,7 @@ public class ClientIncomeExpenseReadPlatformServiceImpl implements ClientIncomeE
             sqlBuilder.append(",cie.default_income AS defaultIncome,cie.default_expense AS defaultExpense ");
             sqlBuilder.append(",cie.total_income AS totalIncome,cie.total_expense AS totalExpense ");
             sqlBuilder
-                    .append(",cie.is_month_wise_income AS isMonthWiseIncome,cie.is_primary_income AS isPrimaryIncome,cie.is_active AS cieIsActive ");
+                    .append(",cie.is_month_wise_income AS isMonthWiseIncome,cie.is_primary_income AS isPrimaryIncome,cie.is_active AS cieIsActive,cie.is_remmitance_income AS isRemmitanceIncome ");
             sqlBuilder.append(",cmie.id AS cmieId,cmie.month AS month,cmie.year AS year ");
             sqlBuilder.append(",cmie.income_amount AS incomeAmount, cmie.expense_amount AS expenseAmount, cmie.is_active AS cmieIsActive ");
             sqlBuilder.append("FROM f_client_income_expense cie ");
@@ -114,8 +114,9 @@ public class ClientIncomeExpenseReadPlatformServiceImpl implements ClientIncomeE
             final Boolean isMonthWiseIncome = rs.getBoolean("isMonthWiseIncome");
             final Boolean isPrimaryIncome = rs.getBoolean("isPrimaryIncome");
             final Boolean isActive = rs.getBoolean("cieIsActive");
+            final Boolean isRemmitanceIncome=rs.getBoolean("isRemmitanceIncome");
             return ClientIncomeExpenseData.instance(id, clientId, familyDetailId, incomeExpenseData, quintity, defaultIncome,
-                    defaultExpense, totalIncome, totalExpense, isMonthWiseIncome, isPrimaryIncome, isActive);
+                    defaultExpense, totalIncome, totalExpense, isMonthWiseIncome, isPrimaryIncome, isActive,isRemmitanceIncome);
         }
     }
 

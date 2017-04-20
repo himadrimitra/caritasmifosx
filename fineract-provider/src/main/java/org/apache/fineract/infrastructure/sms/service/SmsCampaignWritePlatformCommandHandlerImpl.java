@@ -18,17 +18,16 @@
  */
 package org.apache.fineract.infrastructure.sms.service;
 
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.Mustache;
-import com.github.mustachejava.MustacheFactory;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.api.JsonQuery;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -47,9 +46,7 @@ import org.apache.fineract.infrastructure.dataqueries.service.ReadReportingServi
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
-import org.apache.fineract.infrastructure.jobs.service.SchedularWritePlatformService;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.infrastructure.sms.SmsApiConstants;
 import org.apache.fineract.infrastructure.sms.data.PreviewCampaignMessage;
 import org.apache.fineract.infrastructure.sms.data.SmsCampaignData;
 import org.apache.fineract.infrastructure.sms.data.SmsCampaignValidator;
@@ -60,12 +57,16 @@ import org.apache.fineract.infrastructure.sms.domain.SmsMessageRepository;
 import org.apache.fineract.infrastructure.sms.exception.SmsCampaignMustBeClosedToBeDeletedException;
 import org.apache.fineract.infrastructure.sms.exception.SmsCampaignMustBeClosedToEditException;
 import org.apache.fineract.infrastructure.sms.exception.SmsCampaignNotFound;
-import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepository;
-import org.apache.fineract.template.domain.TemplateRepository;
-import org.apache.fineract.template.service.TemplateMergeService;
 import org.apache.fineract.useradministration.domain.AppUser;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,15 +74,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.github.mustachejava.Mustache;
+import com.github.mustachejava.MustacheFactory;
 
 @Service
 public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWritePlatformService {
@@ -95,36 +90,33 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     private final SmsCampaignValidator smsCampaignValidator;
     private final SmsCampaignReadPlatformService smsCampaignReadPlatformService;
     private final ReportRepository reportRepository;
-    private final TemplateRepository templateRepository;
-    private final TemplateMergeService templateMergeService;
     private final SmsMessageRepository smsMessageRepository;
     private final ClientRepository clientRepository;
-    private final SchedularWritePlatformService schedularWritePlatformService;
     private final ReadReportingService readReportingService;
     private final GenericDataService genericDataService;
     private final FromJsonHelper fromJsonHelper;
+    private final RecurrenceService recurrenceService;
 
 
 
     @Autowired
-    public SmsCampaignWritePlatformCommandHandlerImpl(final PlatformSecurityContext context, final SmsCampaignRepository smsCampaignRepository,
-        final SmsCampaignValidator smsCampaignValidator,final SmsCampaignReadPlatformService smsCampaignReadPlatformService,
-        final ReportRepository reportRepository,final TemplateRepository templateRepository, final TemplateMergeService templateMergeService,
-        final SmsMessageRepository smsMessageRepository,final ClientRepository clientRepository,final SchedularWritePlatformService schedularWritePlatformService,
-        final ReadReportingService readReportingService, final GenericDataService genericDataService,final FromJsonHelper fromJsonHelper) {
+    public SmsCampaignWritePlatformCommandHandlerImpl(final PlatformSecurityContext context,
+            final SmsCampaignRepository smsCampaignRepository, final SmsCampaignValidator smsCampaignValidator,
+            final SmsCampaignReadPlatformService smsCampaignReadPlatformService, final ReportRepository reportRepository,
+            final SmsMessageRepository smsMessageRepository, final ClientRepository clientRepository,
+            final ReadReportingService readReportingService, final GenericDataService genericDataService,
+            final FromJsonHelper fromJsonHelper, final RecurrenceService recurrenceService) {
         this.context = context;
         this.smsCampaignRepository = smsCampaignRepository;
         this.smsCampaignValidator = smsCampaignValidator;
         this.smsCampaignReadPlatformService = smsCampaignReadPlatformService;
         this.reportRepository = reportRepository;
-        this.templateRepository = templateRepository;
-        this.templateMergeService = templateMergeService;
         this.smsMessageRepository = smsMessageRepository;
         this.clientRepository = clientRepository;
-        this.schedularWritePlatformService = schedularWritePlatformService;
         this.readReportingService = readReportingService;
         this.genericDataService = genericDataService;
         this.fromJsonHelper = fromJsonHelper;
+        this.recurrenceService = recurrenceService;
     }
 
     @Transactional
@@ -155,7 +147,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     @Override
     public CommandProcessingResult update(final Long resourceId, final JsonCommand command) {
         try{
-            final AppUser currentUser = this.context.authenticatedUser();
+            this.context.authenticatedUser();
 
             this.smsCampaignValidator.validateForUpdate(command.json());
             final SmsCampaign smsCampaign = this.smsCampaignRepository.findOne(resourceId);
@@ -188,7 +180,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     @Transactional
     @Override
     public CommandProcessingResult delete(final Long resourceId) {
-        final AppUser currentUser = this.context.authenticatedUser();
+        this.context.authenticatedUser();
 
         final SmsCampaign smsCampaign = this.smsCampaignRepository.findOne(resourceId);
 
@@ -267,45 +259,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         /**
          * next run time has to be in the future if not calculate a new future date
          */
-        Map<String,Object> recurringRuleMap = createRecurringRuleMap(smsCampaign.getRecurrence());
-    	String frequency = (String) recurringRuleMap.get("FREQ");
-    	if(frequency.equalsIgnoreCase(SmsApiConstants.minutely) || frequency.equalsIgnoreCase(SmsApiConstants.secondly) || frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-    		String recurrence = smsCampaign.getRecurrence();
-            LocalDateTime nextTriggerDateTime = getNextTriggerDate(createRecurringRuleMap(recurrence), smsCampaign.getNextTriggerDate());
-            if(nextTriggerDateTime.isBefore(new LocalDateTime())){ 
-            	nextTriggerDateTime = getNextTriggerDate(createRecurringRuleMap(recurrence), new LocalDateTime());
-            }
-            final String dateString = nextTriggerDateTime.toLocalDate().toString() + " " + nextTriggerDateTime.getHourOfDay()+":"+nextTriggerDateTime.getMinuteOfHour()+":"+nextTriggerDateTime.getSecondOfMinute();
-            final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-            final LocalDateTime newTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-            smsCampaign.setNextTriggerDate(newTriggerDateWithTime.toDate());
-            this.smsCampaignRepository.saveAndFlush(smsCampaign);
-    	}else{
-    		LocalDate nextRuntime = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getNextTriggerDate().toLocalDate(),nextTriggerDate.toLocalDate()) ;
-	        if(nextRuntime.isBefore(DateUtils.getLocalDateOfTenant())){ // means next run time is in the past calculate a new future date
-	            nextRuntime = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getNextTriggerDate().toLocalDate(),DateUtils.getLocalDateOfTenant()) ;
-	        }
-	        LocalDateTime adjustTime = smsCampaign.getRecurrenceStartDateTime();
-	        if(recurringRuleMap.get("BYHOUR") != null){
-	        	int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-	        	adjustTime = adjustTime.withHourOfDay(hour);
-	        }
-	        if(recurringRuleMap.get("BYMINUTE") != null){
-	        	int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-	        	adjustTime = adjustTime.withMinuteOfHour(minute);
-	        }
-	        if(recurringRuleMap.get("BYSECOND") != null){
-	        	int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-	        	adjustTime = adjustTime.withSecondOfMinute(second);
-	        }	        
-	        final String dateString = nextRuntime.toString() + " " + adjustTime.getHourOfDay()+":"+adjustTime.getMinuteOfHour()+":"+adjustTime.getSecondOfMinute();
-	        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-	        final LocalDateTime newTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-	
-	
-	        smsCampaign.setNextTriggerDate(newTriggerDateWithTime.toDate());
-	        this.smsCampaignRepository.saveAndFlush(smsCampaign);
-    	}
+        LocalDateTime newTriggerDateWithTime = this.recurrenceService.getNextRecurringDateAndTime(smsCampaign.getRecurrence(), smsCampaign.getNextTriggerDate(), smsCampaign.getRecurrenceStartDateTime());
+        smsCampaign.setNextTriggerDate(newTriggerDateWithTime.toDate());
+        this.smsCampaignRepository.saveAndFlush(smsCampaign);
     }
 
     @Transactional
@@ -320,8 +276,6 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         if(smsCampaign == null){
             throw new SmsCampaignNotFound(campaignId);
         }
-
-
 
         final Locale locale = command.extractLocale();
         final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
@@ -341,39 +295,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
                  * next trigger date if not use recurrence start date us next trigger
                  * date when activating
                  */
-            	Map<String,Object> recurringRuleMap = createRecurringRuleMap(smsCampaign.getRecurrence());
-            	String frequency = (String) recurringRuleMap.get("FREQ");
-            	if(frequency.equalsIgnoreCase(SmsApiConstants.minutely) || frequency.equalsIgnoreCase(SmsApiConstants.secondly) || frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-            		final LocalDateTime nextTriggerDateWithTime = getNextParsedLocalDateTime(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
-                    smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-                    this.smsCampaignRepository.saveAndFlush(smsCampaign);
-            	}else{
-            		LocalDate nextTriggerDate = null;
-	                if(smsCampaign.getRecurrenceStartDateTime().isBefore(tenantDateTime())){
-	                    nextTriggerDate = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), DateUtils.getLocalDateOfTenant());
-	                }else{
-	                    nextTriggerDate = smsCampaign.getRecurrenceStartDate();
-	                }
-	    	        LocalDateTime adjustTime = smsCampaign.getRecurrenceStartDateTime();
-	    	        if(recurringRuleMap.get("BYHOUR") != null){
-	    	        	int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-	    	        	adjustTime = adjustTime.withHourOfDay(hour);
-	    	        }
-	    	        if(recurringRuleMap.get("BYMINUTE") != null){
-	    	        	int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-	    	        	adjustTime = adjustTime.withMinuteOfHour(minute);
-	    	        }
-	    	        if(recurringRuleMap.get("BYSECOND") != null){
-	    	        	int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-	    	        	adjustTime = adjustTime.withSecondOfMinute(second);
-	    	        }	        
-	    	        final String dateString = nextTriggerDate.toString() + " " + adjustTime.getHourOfDay()+":"+adjustTime.getMinuteOfHour()+":"+adjustTime.getSecondOfMinute();
-	    	        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-	                final LocalDateTime nextTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-	
-	                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-	                this.smsCampaignRepository.saveAndFlush(smsCampaign);
-            	}
+                final LocalDateTime nextTriggerDateWithTime = this.recurrenceService.getNextRecurringDateAndTimeWhenStartDateInFuture(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
+                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
+                this.smsCampaignRepository.saveAndFlush(smsCampaign);
             }
         }
 
@@ -399,11 +323,9 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
             throw new SmsCampaignNotFound(campaignId);
         }
 
-        final Locale locale = command.extractLocale();
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
         final LocalDate closureDate = command.localDateValueOfParameterNamed("closureDate");
 
-        smsCampaign.close(currentUser,fmt,closureDate);
+        smsCampaign.close(currentUser,closureDate);
 
         this.smsCampaignRepository.saveAndFlush(smsCampaign);
 
@@ -423,10 +345,11 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         return stringWriter.toString();
     }
 
+    @SuppressWarnings("rawtypes")
     private List<HashMap<String,Object>> getRunReportByServiceImpl(final String reportName,final Map<String, String> queryParams) throws IOException {
         final String reportType ="report";
 
-        List<HashMap<String, Object>> resultList = new ArrayList<HashMap<String, Object>>();
+        List<HashMap<String, Object>> resultList = new ArrayList<>();
         final GenericResultsetData results = this.readReportingService.retrieveGenericResultSetForSmsCampaign(reportName,
                 reportType, queryParams);
         final String response = this.genericDataService.generateJsonFromGenericResultsetData(results);
@@ -448,7 +371,7 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
     @Override
     public PreviewCampaignMessage previewMessage(final JsonQuery query) {
     	PreviewCampaignMessage campaignMessage = null;
-        final AppUser currentUser = this.context.authenticatedUser();
+        this.context.authenticatedUser();
         this.smsCampaignValidator.validatePreviewMessage(query.json());
         final String smsParams = this.fromJsonHelper.extractStringNamed("paramValue", query.parsedJson()) ;
         final String textMessageTemplate = this.fromJsonHelper.extractStringNamed("message", query.parsedJson());
@@ -489,10 +412,8 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
 
         if(smsCampaign == null){ throw new SmsCampaignNotFound(campaignId);}
 
-        final Locale locale = command.extractLocale();
-        final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
         final LocalDate reactivationDate = command.localDateValueOfParameterNamed("activationDate");
-        smsCampaign.reactivate(currentUser,fmt,reactivationDate);
+        smsCampaign.reactivate(currentUser,reactivationDate);
         if (smsCampaign.isSchedule()) {
 
             /**
@@ -500,43 +421,11 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
              * next trigger date if not use recurrence start date us next trigger
              * date when activating
              */
-        	Map<String,Object> recurringRuleMap = createRecurringRuleMap(smsCampaign.getRecurrence());
-        	String frequency = (String) recurringRuleMap.get("FREQ");
-        	if(frequency.equalsIgnoreCase(SmsApiConstants.minutely) || frequency.equalsIgnoreCase(SmsApiConstants.secondly) || frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-        		final LocalDateTime nextTriggerDateWithTime = getNextParsedLocalDateTime(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
-                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-                this.smsCampaignRepository.saveAndFlush(smsCampaign);
-        	}else{
-        		LocalDate nextTriggerDate = null;
-                if(smsCampaign.getRecurrenceStartDateTime().isBefore(tenantDateTime())){
-                    nextTriggerDate = CalendarUtils.getNextRecurringDate(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), DateUtils.getLocalDateOfTenant());
-                }else{
-                    nextTriggerDate = smsCampaign.getRecurrenceStartDate();
-                }
-    	        LocalDateTime adjustTime = smsCampaign.getRecurrenceStartDateTime();
-    	        if(recurringRuleMap.get("BYHOUR") != null){
-    	        	int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-    	        	adjustTime = adjustTime.withHourOfDay(hour);
-    	        }
-    	        if(recurringRuleMap.get("BYMINUTE") != null){
-    	        	int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-    	        	adjustTime = adjustTime.withMinuteOfHour(minute);
-    	        }
-    	        if(recurringRuleMap.get("BYSECOND") != null){
-    	        	int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-    	        	adjustTime = adjustTime.withSecondOfMinute(second);
-    	        }	        
-    	        final String dateString = nextTriggerDate.toString() + " " + adjustTime.getHourOfDay()+":"+adjustTime.getMinuteOfHour()+":"+adjustTime.getSecondOfMinute();
-    	        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-                final LocalDateTime nextTriggerDateWithTime = LocalDateTime.parse(dateString,simpleDateFormat);
-
-                smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
-                this.smsCampaignRepository.saveAndFlush(smsCampaign);
-        	}
+            final LocalDateTime nextTriggerDateWithTime = this.recurrenceService.getNextRecurringDateAndTimeWhenStartDateInFuture(smsCampaign.getRecurrence(), smsCampaign.getRecurrenceStartDate(), smsCampaign.getRecurrenceStartDateTime(), DateUtils.getLocalDateTimeOfTenant());
+            smsCampaign.setNextTriggerDate(nextTriggerDateWithTime.toDate());
+            this.smsCampaignRepository.saveAndFlush(smsCampaign);
             
         }
-
-
 
         return new CommandProcessingResultBuilder() //
                 .withEntityId(smsCampaign.getId()) //
@@ -564,60 +453,4 @@ public class SmsCampaignWritePlatformCommandHandlerImpl implements SmsCampaignWr
         return  today;
     }
     
-    public LocalDateTime getNextParsedLocalDateTime(String recurrence, LocalDateTime startDateTime, LocalDateTime tenantDateTime){
-    	LocalDateTime nextTriggerDate = null;
-        if(startDateTime.isBefore(tenantDateTime)){
-            nextTriggerDate = getNextTriggerDate(createRecurringRuleMap(recurrence), tenantDateTime);        	
-        }else{
-            nextTriggerDate = startDateTime;
-        }
-        final String dateString = nextTriggerDate.toLocalDate().toString() + " " + nextTriggerDate.getHourOfDay()+":"+nextTriggerDate.getMinuteOfHour()+":"+nextTriggerDate.getSecondOfMinute();
-        final DateTimeFormatter simpleDateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        return LocalDateTime.parse(dateString,simpleDateFormat);
-    }
-    
-    public LocalDateTime getNextTriggerDate(Map<String,Object> recurringRuleMap, LocalDateTime previousDateTime){
-    	int interval = 1;
-    	LocalDateTime nextRecurrenceDateTime = previousDateTime;
-    	
-    	String intervalAsString = (String) recurringRuleMap.get("INTERVAL");
-    	if(intervalAsString!=null){
-    		interval =  Integer.parseInt(intervalAsString);
-    	}
-    	String frequency = (String) recurringRuleMap.get("FREQ");
-    	if(frequency.equalsIgnoreCase(SmsApiConstants.secondly)){
-    		nextRecurrenceDateTime = previousDateTime.plusSeconds(interval);
-    	}else if(frequency.equalsIgnoreCase(SmsApiConstants.minutely)){
-    		nextRecurrenceDateTime = previousDateTime.plusMinutes(interval);
-    	}else if(frequency.equalsIgnoreCase(SmsApiConstants.hourly)){
-    		nextRecurrenceDateTime = previousDateTime.plusHours(interval);
-    	}
-    	
-    	if(recurringRuleMap.get("BYHOUR") != null){
-    		int hour = Integer.parseInt((String)recurringRuleMap.get("BYHOUR"));
-    		nextRecurrenceDateTime = nextRecurrenceDateTime.withHourOfDay(hour);
-    	}    	
-
-    	if(recurringRuleMap.get("BYMINUTE") != null){
-    		int minute = Integer.parseInt((String)recurringRuleMap.get("BYMINUTE"));
-    		nextRecurrenceDateTime = nextRecurrenceDateTime.withMinuteOfHour(minute);
-    	}
-    	
-    	if(recurringRuleMap.get("BYSECOND") != null){
-    		int second = Integer.parseInt((String)recurringRuleMap.get("BYSECOND"));
-    		nextRecurrenceDateTime = nextRecurrenceDateTime.withSecondOfMinute(second);
-    	}
-    	    	
-    	return nextRecurrenceDateTime;
-    }
-    
-    public Map<String,Object> createRecurringRuleMap(String ruleList){
-    	Map<String,Object> recurringRuleMap = new HashMap<String, Object>();
-    	String[] rules = ruleList.split(";");
-    	for (int i = 0; i < rules.length; i++) {
-    		String[] rule = rules[i].split("=");
-    		recurringRuleMap.put(rule[0], rule[1]);
-		}
-    	return recurringRuleMap;
-    }
 }

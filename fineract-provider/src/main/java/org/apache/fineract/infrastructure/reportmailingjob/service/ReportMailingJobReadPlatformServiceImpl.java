@@ -143,7 +143,7 @@ public class ReportMailingJobReadPlatformServiceImpl implements ReportMailingJob
         }
 
         @Override
-        public ReportMailingJobData mapRow(ResultSet rs, int rowNum) throws SQLException {
+        public ReportMailingJobData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
             final Long id = rs.getLong("id");
             final String name = rs.getString("name");
             final String description = rs.getString("description");

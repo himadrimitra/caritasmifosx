@@ -535,7 +535,8 @@ public class FixedDepositAccount extends SavingsAccount {
         if (recalucateDailyBalanceDetails) {
             // update existing transactions so derived balance fields are
             // correct.
-            recalculateDailyBalances(Money.zero(this.currency), interestPostingUpToDate);
+            List<SavingsAccountTransaction> transactions = retreiveListOfTransactions() ;
+            recalculateDailyBalances(Money.zero(this.currency), interestPostingUpToDate, transactions);
         }
 
         this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
@@ -567,7 +568,8 @@ public class FixedDepositAccount extends SavingsAccount {
         if (recalucateDailyBalance) {
             // update existing transactions so derived balance fields are
             // correct.
-            recalculateDailyBalances(Money.zero(this.currency), accountCloseDate);
+            List<SavingsAccountTransaction> transactions = retreiveListOfTransactions() ;
+            recalculateDailyBalances(Money.zero(this.currency), accountCloseDate, transactions);
         }
         this.summary.updateSummary(this.currency, this.savingsAccountTransactionSummaryWrapper, this.transactions);
         this.accountTermAndPreClosure.updateMaturityDetails(this.getAccountBalance(), accountCloseDate);

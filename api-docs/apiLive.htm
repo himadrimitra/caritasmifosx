@@ -500,6 +500,7 @@
 								<td></td>
 								<td></td>
 							</tr>
+<<<<<<< HEAD
                             <tr>
 								<td><a href="#family_details">Family Details</a></td>
 								<td>clients/3/familydetails</td>
@@ -543,6 +544,22 @@
 								<td><a href="#family_detail_get">GET Family Detail</a></td>
 								<td></td>
 								<td></td>
+=======
+							<tr>
+								<td><a href="#client_income">Client Income And Expense</td>
+								<td>/clients/{clientId}/incomesandexpenses</td>
+								<td><a href="#Save_ClientIncomeExpense">Save Client's Income and Expenses</td>
+								<td><a href="#List_ClientIncomeExpense">List Client's Income and Expense Details</td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>/clients/{clientId}/incomesandexpenses/{incomeandexpenseId}</td>
+								<td></td>
+								<td><a href="#Get_ClientIncomeExpense">Get Client's Income and Expense Details</td>
+								<td><a href="#Put_ClientIncomeExpense">Update Client's Income and Expense Details</td>
+>>>>>>> v17.01.1_RC
 								<td></td>
 							</tr>
 						</table>
@@ -1537,6 +1554,14 @@
 								<td>rescheduleloans/{requestId}?command=approve</td>
 								<td><a href="#loan_reschedule_request_approve">Approve Loan Reschedule Request</a></td>
 								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>/loans/bulkLoanReschedule?loanOfficerId={LoanOfficerID}&officeId={OfficeId}&rescheduleFromDate={dd-Month-yyyy}</td>
+								<td></td>
+								<td><a href="#loan_data_for_reschedule">List Loan Accounts mapped to a Loan Officer for Rescheduling</a></td>
 								<td></td>
 								<td></td>
 							</tr>
@@ -3853,7 +3878,107 @@
 				</div>
 
 			</div>
+			
+			<a id="Put_ClientIncomeExpense" name="Put_ClientIncomeExpense" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Update the income and expense details of a client for a particular source</h4>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Mandatory Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>incomeExpenseId,locale
+							</td>
+						</tr>
+					</table>
+						<br />
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Optional Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>familyDetailsId,quintity,totalIncome,totalExpense,isPrimaryIncome,
+							isRemmitanceIncome,isActive</td>
+						</tr>
+					</table>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+PUT https://DomainName/api/v1/clients/{clientId}/incomesandexpenses/{incomeandexpenseid}
+					</code>
+					<code class="method-request">
+Content-Type: application/json Request Body:
+{  
+   "isMonthWiseIncome":false,
+   "incomeExpenseId":1,
+   "totalIncome":9000,
+   "isPrimaryIncome":false,
+   "isRemmitanceIncome":false,
+   "locale":"en"
+}
+					</code>
+					<code class="method-response">
+{  
+   "resourceId":1,
+   "changes":{  
 
+   }
+}
+					</code>
+				</div>
+			</div>
+			
+			
+
+			<a id="Save_ClientIncomeExpense" name="Save_ClientIncomeExpense" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Save the income and expense details of a client</h4>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Mandatory Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>incomeExpenseId,locale
+							</td>
+						</tr>
+					</table>
+						<br />
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Optional Fields</div></td>
+						</tr>
+						<tr class=alt>
+							<td>familyDetailsId,quintity,totalIncome,totalExpense,isPrimaryIncome,
+							isRemmitanceIncome,isActive</td>
+						</tr>
+					</table>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/clients/{clientId}/incomesandexpenses
+					</code>
+					<code class="method-request">
+Content-Type: application/json Request Body:
+{
+	"clientMonthWiseIncomeExpense":[],
+	"incomeExpenseId":"1",
+	"isMonthWiseIncome":"false",
+	"locale":"en",
+	"isPrimaryIncome":"false",
+	"isRemmitanceIncome":"false",
+	"isActive":"true"
+}
+					</code>
+					<code class="method-response">
+{
+    "resourceId":"9"
+}
+					</code>
+				</div>
+			</div>
+			
 			<a id="creates_and_updates" name="creates_and_updates"
 				class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
@@ -4295,6 +4420,61 @@ Content-Type: application/json Request Body:
 
 			</div>
 
+			<a id="Get_ClientIncomeExpense" name="Get_ClientIncomeExpense" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Get the client's income and expense details for a particular source</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/clients/{clientId}/incomesandexpenses/{incomeandexpenseid}
+					</code>
+					<code class="method-response">
+{  
+   "id":1,
+   "clientId":1,
+   "incomeExpenseData":{  
+      "id":1,
+      "cashflowCategoryId":1,
+      "name":"Farming",
+      "isQuantifierNeeded":false,
+      "isCaptureMonthWiseIncome":true,
+      "stabilityEnum":{  
+         "id":2,
+         "code":"stabilityType.medium",
+         "value":"Medium"
+      },
+      "defaultIncome":1.000000,
+      "isActive":true,
+      "cashFlowCategoryData":{  
+         "id":1,
+         "name":"Agricultural",
+         "shortName":"Agri",
+         "categoryEnum":{  
+            "id":1,
+            "code":"cashFlowCategoryType.occupation",
+            "value":"Occupation"
+         },
+         "typeEnum":{  
+            "id":1,
+            "code":"cashFlowType.income",
+            "value":"Income"
+         },
+         "isActive":true
+      }
+   },
+   "defaultIncome":1.000000,
+   "totalIncome":9000.000000,
+   "isMonthWiseIncome":false,
+   "isPrimaryIncome":false,
+   "isActive":true,
+   "isRemmitanceIncome":false
+}		
+</code>
+				</div>
+			</div>
+			
+			
 			<a class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
 				<div class="method-description">
@@ -5092,6 +5272,371 @@ Request Body:
 	    </div>
 	</div>
 
+	<a id="List_ClientIncomeExpense" name="List_ClientIncomeExpense" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List the client's income and expense details</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+GET https://DomainName/api/v1/clients/{clientId}/incomesandexpenses
+					</code>
+					<code class="method-response">
+[  
+   {  
+      "id":1,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":9000.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":false
+   },
+   {  
+      "id":2,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":8000.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":false
+   },
+   {  
+      "id":3,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":6000.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":true
+   },
+   {  
+      "id":4,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":7000.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":false
+   },
+   {  
+      "id":5,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":5000.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":true
+   },
+   {  
+      "id":6,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":2,
+         "cashflowCategoryId":2,
+         "name":"Commercial Rent",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":false,
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":2,
+            "name":"Property",
+            "shortName":"PRP",
+            "categoryEnum":{  
+               "id":2,
+               "code":"cashFlowCategoryType.asset",
+               "value":"Asset"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":1000.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":true
+   },
+   {  
+      "id":7,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "totalIncome":1900.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":true
+   },
+   {  
+      "id":8,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":2,
+         "cashflowCategoryId":2,
+         "name":"Commercial Rent",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":false,
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":2,
+            "name":"Property",
+            "shortName":"PRP",
+            "categoryEnum":{  
+               "id":2,
+               "code":"cashFlowCategoryType.asset",
+               "value":"Asset"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":false
+   },
+   {  
+      "id":9,
+      "clientId":1,
+      "incomeExpenseData":{  
+         "id":1,
+         "cashflowCategoryId":1,
+         "name":"Farming",
+         "isQuantifierNeeded":false,
+         "isCaptureMonthWiseIncome":true,
+         "stabilityEnum":{  
+            "id":2,
+            "code":"stabilityType.medium",
+            "value":"Medium"
+         },
+         "defaultIncome":1.000000,
+         "isActive":true,
+         "cashFlowCategoryData":{  
+            "id":1,
+            "name":"Agricultural",
+            "shortName":"Agri",
+            "categoryEnum":{  
+               "id":1,
+               "code":"cashFlowCategoryType.occupation",
+               "value":"Occupation"
+            },
+            "typeEnum":{  
+               "id":1,
+               "code":"cashFlowType.income",
+               "value":"Income"
+            },
+            "isActive":true
+         }
+      },
+      "defaultIncome":1.000000,
+      "isMonthWiseIncome":false,
+      "isPrimaryIncome":false,
+      "isActive":true,
+      "isRemmitanceIncome":false
+   }
+]		
+</code>
+				</div>
+			</div>
+	
+	
 	<a id="clients_propose_transfer" name="clients_propose_transfer" class="old-syle-anchor">&nbsp;</a>
 	<div class="method-section">
 	    <div class="method-description">
@@ -12840,6 +13385,122 @@ Request Body:
 			</div>
 
 
+<!-- start fetching loan details mapped to a loan officer for a specific schedule date -->
+		<a id="loan_data_for_reschedule" name="loan_data_for_reschedule" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>List loan accounts mapped to a Loan officer for Rescheduling</h4>
+					<p>Loan data provides, list of loan accounts which can be rescheduled to a later date</p>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Field Descriptions</div></td>
+						</tr>
+						<tr class=alt>
+							<td>OfficeId</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Office Id of Loan Officer</td>
+						</tr>
+						<tr class=alt>
+							<td>Officer Id</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Loan Officer Id </td>
+						</tr>
+						<tr class=alt>
+							<td>rescheduleFromDate</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Payment schedule which needs to be rescheduled</td>
+						</tr>
+					</table>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">GET https://DomainName/api/v1/loans/bulkLoanReschedule/template?loanOfficerId={LoanOfficerID}&officeId={OfficeId}&rescheduleFromDate={rescheduleFromDate}</code>
+					<code class="method-request">GET /loans/bulkLoanRepaymentReschedule/template?loanOfficerId=2&officeId=1&rescheduleFromDate=13 May 2017</code>
+					<code class="method-response">
+  {  
+   "officeId":1,
+   "loanOfficerId":2,
+   "rescheduleFromDate":[  
+      2017,
+      5,
+      13
+   ],
+   "accountSummaryCollection":{  
+      "clients":[  
+         {  
+            "id":8,
+            "displayName":"Peter Holms",
+            "loanAccountSummaryDatas":[  
+               {  
+                  "id":28,
+                  "accountNo":"000000028",
+                  "productName":"VehicleLoan"
+               }
+            ]
+         }
+      ],
+      "centerDataList":[  
+         {  
+            "id":2,
+            "name":"Center1",
+            "active":false,
+            "groupMembers":[  
+               {  
+                  "id":3,
+                  "name":"Group1",
+                  "clientMembers":[  
+                     {  
+                        "id":5,
+                        "displayName":"Girish K",
+                        "loanAccountSummaryDatas":[  
+                           {  
+                              "id":7,
+                              "accountNo":"000000007",
+                              "productName":"VehicleLoan"
+                           }
+                        ]
+                     }
+                  ],
+                  "isShowLoanDetailsInCenterPageEnabled":false
+               }
+            ]
+         },
+         {  
+            "id":4,
+            "name":"Center2",
+            "active":false,
+            "groupMembers":[  
+               {  
+                  "id":6,
+                  "name":"Group2",
+                  "clientMembers":[  
+                     {  
+                        "id":6,
+                        "displayName":"Krishna K",
+                        "loanAccountSummaryDatas":[  
+                           {  
+                              "id":9,
+                              "accountNo":"000000009",
+                              "productName":"VehicleLoan"
+                           }
+                        ]
+                     }
+                  ],
+                  "isShowLoanDetailsInCenterPageEnabled":false
+               }
+            ]
+         }
+      ],
+      "groups":[  
+
+      ]
+   }
+}
+					</code>
+				</div>
+			</div>					
 <!-- start Loan term variations -->
 <a id="loan_term_variations" name="loan_term_variations" class="old-syle-anchor">&nbsp;</a>
 <div class="method-section">
@@ -47255,6 +47916,14 @@ No Request Body:
 					<td></td>
 					<td>rescheduleloans/{requestId}?command=approve</td>
 					<td><a href="#loan_reschedule_request_approve">Approve Loan Reschedule Request</a></td>
+					<td></td>
+					<td></td>
+					<td></td>
+				</tr>
+				<tr>
+					<td></td>
+					<td>/loans/bulkLoanReschedule</td>
+					<td><a href="#loan_reschedule_request_approve">List Loans under Loan Officer</a></td>
 					<td></td>
 					<td></td>
 					<td></td>
