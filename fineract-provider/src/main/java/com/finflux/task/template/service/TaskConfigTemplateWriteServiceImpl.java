@@ -52,7 +52,8 @@ public class TaskConfigTemplateWriteServiceImpl implements TaskConfigTemplateWri
         this.taskConfigTemplateDataValidator.validateForCreateTaskTemplate(command.json());
         TaskConfigTemplateForm form=fromApiJsonHelper.fromJson(command.json(), TaskConfigTemplateForm.class);
         TaskActivity taskActivity=this.taskActivityRepository.findOne(form.getActivity_id());
-        TaskConfig taskConfig=new TaskConfig(taskActivity,form.getTaskName(),form.getShortName(),TaskType.SINGLE.getValue());
+        Integer completeOnAction=null;
+        TaskConfig taskConfig=new TaskConfig(taskActivity,form.getTaskName(),form.getShortName(),TaskType.SINGLE.getValue(),completeOnAction);
         final Map<TaskConfigKey, String> map = new HashMap<>();
         map.put(TaskConfigKey.TASKTEMPLATEENTITY_TYPE, form.getEntity_id().toString());
         String configValueMapStr = fromApiJsonHelper.toJson(map);
@@ -73,7 +74,8 @@ public class TaskConfigTemplateWriteServiceImpl implements TaskConfigTemplateWri
 //        this.taskConfigTemplateDataValidator.validateForUpdateTaskTemplate(command.json());
         TaskConfigTemplateForm form=fromApiJsonHelper.fromJson(command.json(), TaskConfigTemplateForm.class);
         TaskActivity taskActivity=this.taskActivityRepository.findOne(form.getActivity_id());
-        TaskConfig taskConfig=new TaskConfig(taskActivity,form.getTaskName(),form.getShortName(),1);
+        Integer completeOnAction=null;
+        TaskConfig taskConfig=new TaskConfig(taskActivity,form.getTaskName(),form.getShortName(),1,completeOnAction);
         this.taskConfigRepository.save(taskConfig);
         taskConfigTemplate.setName(form.getTaskName());
         taskConfigTemplate.setShortName(form.getShortName());
