@@ -2579,12 +2579,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 }
                 dueDate = variation.getDateValue();
             }
-            if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
+            if (installment.getDueDate().isBefore(currentDate)) {
+                lastScheduledDate = dueDate;
+            } else {
                 installment.updateFromDate(lastScheduledDate);
                 lastScheduledDate = dueDate;
-                installment.updateDueDate(lastScheduledDate);                                              
-            } else {
-            	lastScheduledDate = dueDate;
+                installment.updateDueDate(lastScheduledDate);
             }
         }
     }
