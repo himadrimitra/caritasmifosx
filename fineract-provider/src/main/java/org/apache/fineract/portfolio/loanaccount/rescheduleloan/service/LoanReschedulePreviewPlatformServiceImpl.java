@@ -29,6 +29,7 @@ import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
@@ -83,9 +84,9 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
 
         if (loanRescheduleRequest == null) { throw new LoanRescheduleRequestNotFoundException(requestId); }
 
-        Loan loan = loanRescheduleRequest.getLoan();
+        final Loan loan = loanRescheduleRequest.getLoan();
 
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan,
+        final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan,
                 loanRescheduleRequest.getRescheduleFromDate());
         LocalDate rescheduleFromDate = null;
         List<LoanTermVariationsData> removeLoanTermVariationsData = new ArrayList<>();
@@ -130,6 +131,17 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
                 }
                 loanTermVariationsData.add(loanRescheduleRequestToTermVariationMapping.getLoanTermVariations().toData());
             }
+        }
+        
+        /**
+         * Validate adjusted applicable date is not a holiday or non working day
+         */
+        if (adjustedApplicableDate != null) {
+            final HolidayDetailDTO holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
+            loan.validateRepaymentDateIsOnHoliday(adjustedApplicableDate, holidayDetailDTO.isAllowTransactionsOnHoliday(),
+                    holidayDetailDTO.getHolidays());
+            loan.validateRepaymentDateIsOnNonWorkingDay(adjustedApplicableDate, holidayDetailDTO.getWorkingDays(),
+                    holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
         }
         
         for (LoanTermVariationsData loanTermVariation : loanApplicationTerms.getLoanTermVariations().getDueDateVariation()) {
