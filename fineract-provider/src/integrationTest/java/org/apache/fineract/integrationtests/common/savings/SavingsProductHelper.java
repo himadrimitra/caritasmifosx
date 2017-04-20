@@ -92,7 +92,11 @@ public class SavingsProductHelper {
     private String daysToInactive = null;
     private String daysToDormancy = null;
     private String daysToEscheat = null;
-
+    
+    //Overdraft parameters
+    private String nominalAnnualInterestRateOverdraft = null ;
+    
+    private String digitsAfterDecimal = DIGITS_AFTER_DECIMAL ;
     public String build() {
         final HashMap<String, String> map = new HashMap<>();
 
@@ -102,7 +106,7 @@ public class SavingsProductHelper {
         map.put("currencyCode", this.currencyCode);
         map.put("interestCalculationDaysInYearType", this.interestCalculationDaysInYearType);
         map.put("locale", LOCALE);
-        map.put("digitsAfterDecimal", DIGITS_AFTER_DECIMAL);
+        map.put("digitsAfterDecimal", digitsAfterDecimal);
         map.put("inMultiplesOf", IN_MULTIPLES_OF);
         map.put("interestCalculationType", this.interestCalculationType);
         map.put("nominalAnnualInterestRate", this.nominalAnnualInterestRate);
@@ -141,6 +145,10 @@ public class SavingsProductHelper {
         	map.put("daysToEscheat", this.daysToEscheat);
 
         }
+        if(allowOverdraft != null &&  this.allowOverdraft.equals("true") && nominalAnnualInterestRateOverdraft != null) {
+            map.put("nominalAnnualInterestRateOverdraft", nominalAnnualInterestRateOverdraft) ;
+        }
+        
         String savingsProductCreateJson = new Gson().toJson(map);
         System.out.println(savingsProductCreateJson);
         return savingsProductCreateJson;
@@ -231,6 +239,20 @@ public class SavingsProductHelper {
         return this;
     }
 
+    public SavingsProductHelper withNominalInterest(String nominalAnnualInterestRate) {
+        this.nominalAnnualInterestRate = nominalAnnualInterestRate ;
+        return this ;
+    }
+    
+    public SavingsProductHelper withnominalAnnualInterestRateOverdraft(String nominalAnnualInterestRateOverdraft) {
+        this.nominalAnnualInterestRateOverdraft = nominalAnnualInterestRateOverdraft ;
+        return this ;
+    }
+    
+    public SavingsProductHelper withDigitsAfterDecimal(final String digitsAfterDecimal) {
+        this.digitsAfterDecimal = digitsAfterDecimal ;
+        return this ;
+    }
     private Map<String, String> getAccountMappingForCashBased() {
         final Map<String, String> map = new HashMap<>();
         if (accountList != null) {

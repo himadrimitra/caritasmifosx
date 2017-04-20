@@ -149,9 +149,16 @@ public class SavingsAccountHelper {
 
     public HashMap activateSavings(final Integer savingsID) {
         System.out.println("---------------------------------- ACTIVATING SAVINGS APPLICATION ----------------------------------");
-        return performSavingApplicationActions(createSavingsOperationURL(ACTIVATE_SAVINGS_COMMAND, savingsID), getActivatedSavingsAsJSON());
+        return performSavingApplicationActions(createSavingsOperationURL(ACTIVATE_SAVINGS_COMMAND, savingsID), getActivatedSavingsAsJSON(TRANSACTION_DATE));
     }
     
+    public HashMap activateSavingsOnDate(final Integer savingsID, String activationDate) {
+        System.out.println("---------------------------------- ACTIVATING SAVINGS APPLICATION ----------------------------------");
+        if(activationDate == null || activationDate.equals("")) {            
+            return performSavingApplicationActions(createSavingsOperationURL(ACTIVATE_SAVINGS_COMMAND, savingsID), getActivatedSavingsAsJSON(TRANSACTION_DATE));
+        }
+        return performSavingApplicationActions(createSavingsOperationURL(ACTIVATE_SAVINGS_COMMAND, savingsID), getActivatedSavingsAsJSON(activationDate));
+    }
     public HashMap closeSavingsAccount(final Integer savingsID, String withdrawBalance) {
         System.out.println("---------------------------------- CLOSE SAVINGS APPLICATION ----------------------------------");
         return performSavingApplicationActions(createSavingsOperationURL(CLOSE_SAVINGS_COMMAND, savingsID),
@@ -212,6 +219,7 @@ public class SavingsAccountHelper {
         performSavingActions(createSavingsCalculateInterestURL(POST_INTEREST_SAVINGS_COMMAND, savingsId),
                 getCalculatedInterestForSavingsApplicationAsJSON(), "");
     }
+    
     
     public void postInterestAsOnSavings(final Integer savingsId, final String today) {
         System.out.println("--------------------------------- POST INTEREST AS ON FOR SAVINGS --------------------------------");
@@ -282,11 +290,11 @@ public class SavingsAccountHelper {
         return savingsAccountJson;
     }
 
-    private String getActivatedSavingsAsJSON() {
+    private String getActivatedSavingsAsJSON(String date) {
         final HashMap<String, String> map = new HashMap<>();
         map.put("locale", CommonConstants.locale);
         map.put("dateFormat", CommonConstants.dateFormat);
-        map.put("activatedOnDate", TRANSACTION_DATE);
+        map.put("activatedOnDate", date);
         String savingsAccountActivateJson = new Gson().toJson(map);
         System.out.println(savingsAccountActivateJson);
         return savingsAccountActivateJson;
@@ -315,7 +323,7 @@ public class SavingsAccountHelper {
         map.put("locale", CommonConstants.locale);
         map.put("dateFormat", CommonConstants.dateFormat);
         map.put("transactionDate", today);
-        map.put("postInterestManualOrAutomatic", "true");
+        map.put("isPostInterestAsOn", "true");
         String savingsAccountCalculatedInterestJson = new Gson().toJson(map);
         return savingsAccountCalculatedInterestJson;
     }
