@@ -84,7 +84,9 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
             }
             sb.append("from acc_gl_account gl left join m_code_value cv on tag_id=cv.id ");
             if (this.associationParametersData.isRunningBalanceRequired()) {
-                sb.append(" LEFT OUTER JOIN (select min(rc.computed_till_date) as minDate, rc.account_id as accountId from f_running_balance_computation_detail rc  group by rc.account_id) as rbd on  rbd.accountId = gl.id");
+                sb.append(" LEFT OUTER JOIN (SELECT date(ifnull(rcc.computed_till_date,MAX(rc.date))) AS minDate, rc.account_id AS accountId ");
+                sb.append(" FROM f_org_running_balance rc left join f_running_balance_computation_detail rcc on rc.account_id=rcc.account_id ");
+                sb.append(" GROUP BY rc.account_id) as rbd on  rbd.accountId = gl.id");
                 sb.append(" LEFT OUTER JOIN f_org_running_balance gl_j ON gl_j.account_id = gl.id and gl_j.date = rbd.minDate ");
             }
             return sb.toString();
