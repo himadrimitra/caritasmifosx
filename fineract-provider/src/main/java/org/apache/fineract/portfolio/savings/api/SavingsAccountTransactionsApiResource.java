@@ -161,7 +161,7 @@ public class SavingsAccountTransactionsApiResource {
                 final CommandWrapper commandRequest = builder.savingsAccountWithdrawal(savingsId).build();
                 result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
             } else if (is(commandParam, "postInterestAsOn")) {
-                final CommandWrapper commandRequest = builder.savingsAccountInterestPosting(savingsId).build();
+                final CommandWrapper commandRequest = builder.savingsAccountInterestPostingAsOnDate(savingsId).build();
                 result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
             }
 

@@ -569,15 +569,25 @@ public class CalendarUtils {
     public static LocalDate getNextRepaymentMeetingDate(final String recurringRule, final LocalDate seedDate,
             final LocalDate repaymentDate, final Integer loanRepaymentInterval, final String frequency, final WorkingDays workingDays,
             boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays) {
-        
+        boolean applyWorkingDays = true;
         boolean isCalledFirstTime = true;
         return getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate, loanRepaymentInterval, frequency,
-                workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
+                workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime, applyWorkingDays);
+    }
+    
+    public static LocalDate getNextRepaymentMeetingDate(final String recurringRule, final LocalDate seedDate,
+            final LocalDate repaymentDate, final Integer loanRepaymentInterval, final String frequency, 
+            boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays) {
+        boolean isCalledFirstTime = true;
+        final WorkingDays workingDays = null;
+        boolean applyWorkingDays = false;
+        return getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate, loanRepaymentInterval, frequency,
+                workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime, applyWorkingDays);
     }
     
     public static LocalDate getNextRepaymentMeetingDate(final String recurringRule, final LocalDate seedDate,
             final LocalDate repaymentDate, final Integer loanRepaymentInterval, final String frequency, final WorkingDays workingDays,
-            boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays, boolean isCalledFirstTime) {
+            boolean isSkipRepaymentOnFirstDayOfMonth, final Integer numberOfDays, boolean isCalledFirstTime, boolean applyWorkingDays) {
 
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
         if (recur == null) { return null; }
@@ -618,27 +628,34 @@ public class CalendarUtils {
         }
 
         LocalDate nextRepaymentDate = null;
-        if (WorkingDaysUtil.isNonWorkingDay(workingDays, newRepaymentDate)
-                && workingDays.getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
-            newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, newRepaymentDate.plusDays(1), loanRepaymentInterval,
-                    frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
-        } else {
-            newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDate, nextRepaymentDate, workingDays);
+        if (applyWorkingDays) {
+            if (WorkingDaysUtil.isNonWorkingDay(workingDays, newRepaymentDate)
+                    && workingDays.getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+                newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, newRepaymentDate.plusDays(1),
+                        loanRepaymentInterval, frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime,
+                        applyWorkingDays);
+            } else {
+                newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDate, nextRepaymentDate, workingDays);
+            }
         }
         
         if(isCalledFirstTime && newRepaymentDate.equals(repaymentDate)){
             isCalledFirstTime = false;
             newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, repaymentDate.plusDays(1), loanRepaymentInterval,
-                    frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
+                    frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime, applyWorkingDays);
         }
         
         if (isSkipRepaymentOnFirstDayOfMonth) {
             final LocalDate newRepaymentDateTemp = adjustRecurringDate(newRepaymentDate, numberOfDays);
-            if (WorkingDaysUtil.isNonWorkingDay(workingDays, newRepaymentDateTemp) && workingDays.getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
-                newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, newRepaymentDate.plusDays(1),
-                        loanRepaymentInterval, frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays, isCalledFirstTime);
-            } else {
-                newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDateTemp, nextRepaymentDate, workingDays);
+            if (applyWorkingDays) {
+                if (WorkingDaysUtil.isNonWorkingDay(workingDays, newRepaymentDateTemp)
+                        && workingDays.getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+                    newRepaymentDate = getNextRepaymentMeetingDate(recurringRule, seedDate, newRepaymentDate.plusDays(1),
+                            loanRepaymentInterval, frequency, workingDays, isSkipRepaymentOnFirstDayOfMonth, numberOfDays,
+                            isCalledFirstTime, applyWorkingDays);
+                } else {
+                    newRepaymentDate = WorkingDaysUtil.getOffSetDateIfNonWorkingDay(newRepaymentDateTemp, nextRepaymentDate, workingDays);
+                }
             }
         }
         return newRepaymentDate;

@@ -881,13 +881,14 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     }
 
     @Override
-    public Long retrieveDefaultStaffIdFromGroup(final Long clientId) {
+    public Long fetchDefaultLoanOfficerFromGroup(final Long clientId) {
         final StringBuilder builder = new StringBuilder(400);
-
-    	builder.append("SELECT IFNULL(pg.staff_id,g.staff_id) ");
+    	builder.append("SELECT IFNULL(pgs.id,gs.id) ");
     	builder.append("FROM m_group_client gc "); 
     	builder.append("LEFT JOIN m_group g ON g.id=gc.group_id ");
     	builder.append("LEFT JOIN m_group pg ON pg.id = g.parent_id ");
+    	builder.append("LEFT JOIN m_staff gs ON (g.staff_id = gs.id and gs.is_loan_officer = 1) ");
+    	builder.append("LEFT JOIN m_staff pgs ON (pg.staff_id = pgs.id and pgs.is_loan_officer = 1) ");
     	builder.append("where gc.client_id=? ");
     	builder.append("group by gc.client_id ");
     	try{

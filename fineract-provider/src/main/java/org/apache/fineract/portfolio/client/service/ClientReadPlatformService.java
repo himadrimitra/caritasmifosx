@@ -50,7 +50,7 @@ public interface ClientReadPlatformService {
     
     Collection<ClientData> retrieveAllForTaskLookupBySearchParameters(SearchParameters searchParameters);
 
-	Long retrieveDefaultStaffIdFromGroup(Long clientId);
+	Long fetchDefaultLoanOfficerFromGroup(Long clientId);
 
 	Long retrieveSavingsAccountIdByMobileNo(String mobileno);
 

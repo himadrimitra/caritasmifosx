@@ -4160,11 +4160,18 @@ public class Loan extends AbstractPersistable<Long> {
 
         HolidayDetailDTO holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
         validateActivityNotBeforeLastTransactionDate(LoanEvent.LOAN_REPAYMENT_OR_WAIVER, transactionForAdjustment.getTransactionDate());
-        validateRepaymentDateIsOnHoliday(newTransactionDetail.getTransactionDate(), holidayDetailDTO.isAllowTransactionsOnHoliday(),
-                holidayDetailDTO.getHolidays());
-        validateRepaymentDateIsOnNonWorkingDay(newTransactionDetail.getTransactionDate(), holidayDetailDTO.getWorkingDays(),
-                holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
+        
+        /**
+         * RM-4327 : While undo transaction we should not validate holiday and non working day functionalities.
+         */
+        if (newTransactionDetail != null && newTransactionDetail.getAmount() != null
+                && newTransactionDetail.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            validateRepaymentDateIsOnHoliday(newTransactionDetail.getTransactionDate(), holidayDetailDTO.isAllowTransactionsOnHoliday(),
+                    holidayDetailDTO.getHolidays());
 
+            validateRepaymentDateIsOnNonWorkingDay(newTransactionDetail.getTransactionDate(), holidayDetailDTO.getWorkingDays(),
+                    holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
+        }
         ChangedTransactionDetail changedTransactionDetail = null;
 
         existingTransactionIds.addAll(findExistingTransactionIds());
@@ -4383,6 +4390,17 @@ public class Loan extends AbstractPersistable<Long> {
             existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
             final LocalDate writtenOffOnLocalDate = command.localDateValueOfParameterNamed("transactionDate");
+            
+            final HolidayDetailDTO holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
+            String errorMessage = "Written off date should not be a holiday.";
+            String errorCode = "writtenoff.date.on.holiday";
+            validateDateIsOnHoliday(writtenOffOnLocalDate, holidayDetailDTO.isAllowTransactionsOnHoliday(), holidayDetailDTO.getHolidays(),
+                    errorMessage, errorCode);
+            errorMessage = "Written off date should not be a non working day.";
+            errorCode = "writtenoff.date.on.non.working.day";
+            validateDateIsOnNonWorkingDay(writtenOffOnLocalDate, holidayDetailDTO.getWorkingDays(),
+                    holidayDetailDTO.isAllowTransactionsOnNonWorkingDay(), errorMessage, errorCode);
+            
             final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
 
             this.closedOnDate = writtenOffOnLocalDate.toDate();
@@ -4392,7 +4410,7 @@ public class Loan extends AbstractPersistable<Long> {
             changes.put("writtenOffOnDate", command.stringValueOfParameterNamed("transactionDate"));
 
             if (writtenOffOnLocalDate.isBefore(getDisbursementDate())) {
-                final String errorMessage = "The date on which a loan is written off cannot be before the loan disbursement date: "
+                errorMessage = "The date on which a loan is written off cannot be before the loan disbursement date: "
                         + getDisbursementDate().toString();
                 throw new InvalidLoanStateTransitionException("writeoff", "cannot.be.before.submittal.date", errorMessage,
                         writtenOffOnLocalDate, getDisbursementDate());
@@ -4401,13 +4419,13 @@ public class Loan extends AbstractPersistable<Long> {
             validateActivityNotBeforeClientOrGroupTransferDate(LoanEvent.WRITE_OFF_OUTSTANDING, writtenOffOnLocalDate);
 
             if (writtenOffOnLocalDate.isAfter(DateUtils.getLocalDateOfTenant())) {
-                final String errorMessage = "The date on which a loan is written off cannot be in the future.";
+                errorMessage = "The date on which a loan is written off cannot be in the future.";
                 throw new InvalidLoanStateTransitionException("writeoff", "cannot.be.a.future.date", errorMessage, writtenOffOnLocalDate);
             }
             loanTransaction = LoanTransaction.writeoff(this, getOffice(), writtenOffOnLocalDate, txnExternalId);
             LocalDate lastTransactionDate = getLastUserTransactionDate();
             if (lastTransactionDate.isAfter(writtenOffOnLocalDate)) {
-                final String errorMessage = "The date of the writeoff transaction must occur on or before previous transactions.";
+                errorMessage = "The date of the writeoff transaction must occur on or before previous transactions.";
                 throw new InvalidLoanStateTransitionException("writeoff", "must.occur.on.or.after.other.transaction.dates", errorMessage,
                         writtenOffOnLocalDate);
             }
@@ -5352,22 +5370,16 @@ public class Loan extends AbstractPersistable<Long> {
 
     public void validateRepaymentDateIsOnNonWorkingDay(final LocalDate repaymentDate, final WorkingDays workingDays,
             final boolean allowTransactionsOnNonWorkingDay) {
-        if (!allowTransactionsOnNonWorkingDay) {
-            if (!WorkingDaysUtil.isWorkingDay(workingDays, repaymentDate)) {
-                final String errorMessage = "Repayment date cannot be on a non working day";
-                throw new LoanApplicationDateException("repayment.date.on.non.working.day", errorMessage, repaymentDate);
-            }
-        }
+        final String errorMessage = "Repayment date cannot be on a non working day";
+        final String errorCode = "repayment.date.on.non.working.day";
+        validateDateIsOnNonWorkingDay(repaymentDate, workingDays, allowTransactionsOnNonWorkingDay, errorMessage, errorCode);
     }
 
     public void validateRepaymentDateIsOnHoliday(final LocalDate repaymentDate, final boolean allowTransactionsOnHoliday,
             final List<Holiday> holidays) {
-        if (!allowTransactionsOnHoliday) {
-            if (HolidayUtil.isHoliday(repaymentDate, holidays)) {
-                final String errorMessage = "Repayment date cannot be on a holiday";
-                throw new LoanApplicationDateException("repayment.date.on.holiday", errorMessage, repaymentDate);
-            }
-        }
+        final String errorMessage = "Repayment date cannot be on a holiday";
+        final String errorCode = "repayment.date.on.holiday";
+        validateDateIsOnHoliday(repaymentDate, allowTransactionsOnHoliday, holidays, errorMessage, errorCode);
     }
 
     public Group group() {
@@ -8011,5 +8023,20 @@ public class Loan extends AbstractPersistable<Long> {
     public void setGlimPaymentAsGroup(boolean isGlimPaymentAsGroup) {
         this.isGlimPaymentAsGroup = isGlimPaymentAsGroup;
     }
-    	
+    
+    public void validateDateIsOnNonWorkingDay(final LocalDate repaymentDate, final WorkingDays workingDays,
+            final boolean allowTransactionsOnNonWorkingDay, final String errorMessage, final String errorCode) {
+        if (!allowTransactionsOnNonWorkingDay) {
+            if (!WorkingDaysUtil.isWorkingDay(workingDays, repaymentDate)) { throw new LoanApplicationDateException(errorCode,
+                    errorMessage, repaymentDate); }
+        }
+    }
+
+    public void validateDateIsOnHoliday(final LocalDate repaymentDate, final boolean allowTransactionsOnHoliday,
+            final List<Holiday> holidays, final String errorMessage, final String errorCode) {
+        if (!allowTransactionsOnHoliday) {
+            if (HolidayUtil.isHoliday(repaymentDate, holidays)) { throw new LoanApplicationDateException(errorCode, errorMessage,
+                    repaymentDate); }
+        }
+    }
 }

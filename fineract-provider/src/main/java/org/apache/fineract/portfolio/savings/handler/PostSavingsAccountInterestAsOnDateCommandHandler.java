@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@CommandType(entity = "SAVINGSACCOUNT", action = "POSTINTERESTASONDATE")
+@CommandType(entity = "SAVINGSACCOUNT", action = "POSTINTERESTASON")
 public class PostSavingsAccountInterestAsOnDateCommandHandler implements NewCommandSourceHandler {
     
     private final SavingsAccountWritePlatformService writePlatformService;

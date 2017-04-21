@@ -2561,11 +2561,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final List<Long> existingTransactionIds = new ArrayList<>();
         final List<Long> existingReversedTransactionIds = new ArrayList<>();
         final AppUser currentUser = getAppUserIfPresent();
+        Boolean runJournalEntries = false;
         if (loan.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             loan.setHelpers(null, this.loanSummaryWrapper, this.transactionProcessingStrategy);
             ChangedTransactionDetail changedTransactionDetail = loan.recalculateScheduleFromLastTransaction(scheduleGeneratorDTO,
                     existingTransactionIds, existingReversedTransactionIds, currentUser);
             if (changedTransactionDetail != null) {
+                runJournalEntries = true;
                 for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings()
                         .entrySet()) {
                     this.loanTransactionRepository.save(mapEntry.getValue());
@@ -2580,7 +2582,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             updateScheduleDates(loan, scheduleGeneratorDTO);
         }
         saveLoanWithDataIntegrityViolationChecks(loan);
-        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+        if (runJournalEntries) {
+            postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+        }
     }
 
     private void updateScheduleDates(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO) {
@@ -2616,12 +2620,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 }
                 dueDate = variation.getDateValue();
             }
-            if (installment.getDueDate().isAfter(currentDate) || installment.getDueDate().isEqual(currentDate)) {
+            if (installment.getDueDate().isBefore(currentDate)) {
+                lastScheduledDate = dueDate;
+            } else {
                 installment.updateFromDate(lastScheduledDate);
                 lastScheduledDate = dueDate;
-                installment.updateDueDate(lastScheduledDate);                                              
-            } else {
-            	lastScheduledDate = dueDate;
+                installment.updateDueDate(lastScheduledDate);
             }
         }
     }

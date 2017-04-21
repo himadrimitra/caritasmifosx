@@ -51,6 +51,7 @@ import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarHistoryRepository;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.ChangedTransactionDetail;
@@ -274,6 +275,14 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
                 LocalDate localDate = jsonCommand.localDateValueOfParameterNamed(RescheduleLoansApiConstants.adjustedDueDateParamName);
 
                 if (localDate != null) {
+                    /**
+                     * validate Holiday and Non working day.
+                     */
+                    final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(loan);
+                    loan.validateRepaymentDateIsOnHoliday(localDate, holidayDetailDTO.isAllowTransactionsOnHoliday(),
+                            holidayDetailDTO.getHolidays());
+                    loan.validateRepaymentDateIsOnNonWorkingDay(localDate, holidayDetailDTO.getWorkingDays(),
+                            holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
                     // update the value of the "adjustedDueDate"variable
                     adjustedDueDate = localDate.toDate();
                 }
