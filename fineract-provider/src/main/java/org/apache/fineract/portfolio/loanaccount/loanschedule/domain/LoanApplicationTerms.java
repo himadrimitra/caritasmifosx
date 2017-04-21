@@ -1025,10 +1025,17 @@ public final class LoanApplicationTerms {
 
                 while (expectedStartDate.isBefore(expectedEndDate)) {
                     numberOfMonths = numberOfMonths + getRepaymentEvery();
+                    LocalDate expectedStartDateTemp = expectedStartDate;
                     expectedStartDate = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate, expectedStartDate,
                             getRepaymentEvery(),
                             CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
                             this.holidayDetailDTO.getWorkingDays(), isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
+                    if (expectedStartDateTemp.isEqual(expectedStartDate)) {
+                        expectedStartDate = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate, expectedStartDate,
+                                getRepaymentEvery(),
+                                CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
+                                isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
+                    }
                 }
                 numberOfPeriods = numberOfPeriods.add(BigDecimal.valueOf(numberOfMonths));
 
@@ -1057,6 +1064,12 @@ public final class LoanApplicationTerms {
                     previousMeetingDateTemp, getRepaymentEvery(),
                     CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
                     this.holidayDetailDTO.getWorkingDays(), isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
+            if(previousMeetingDate.isEqual(previousMeetingDateTemp)){
+                previousMeetingDateTemp = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate,
+                        previousMeetingDateTemp, getRepaymentEvery(),
+                        CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
+                        isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
+            }
         }
         int monthsBetween = Months.monthsBetween(previousMeetingDate, startDate).getMonths();
         previousMeetingDate = previousMeetingDate.plusMonths(monthsBetween);
