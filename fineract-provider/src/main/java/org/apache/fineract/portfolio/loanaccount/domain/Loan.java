@@ -4075,11 +4075,18 @@ public class Loan extends AbstractPersistable<Long> {
 
         HolidayDetailDTO holidayDetailDTO = scheduleGeneratorDTO.getHolidayDetailDTO();
         validateActivityNotBeforeLastTransactionDate(LoanEvent.LOAN_REPAYMENT_OR_WAIVER, transactionForAdjustment.getTransactionDate());
-        validateRepaymentDateIsOnHoliday(newTransactionDetail.getTransactionDate(), holidayDetailDTO.isAllowTransactionsOnHoliday(),
-                holidayDetailDTO.getHolidays());
-        validateRepaymentDateIsOnNonWorkingDay(newTransactionDetail.getTransactionDate(), holidayDetailDTO.getWorkingDays(),
-                holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
+        
+        /**
+         * RM-4327 : While undo transaction we should not validate holiday and non working day functionalities.
+         */
+        if (newTransactionDetail != null && newTransactionDetail.getAmount() != null
+                && newTransactionDetail.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            validateRepaymentDateIsOnHoliday(newTransactionDetail.getTransactionDate(), holidayDetailDTO.isAllowTransactionsOnHoliday(),
+                    holidayDetailDTO.getHolidays());
 
+            validateRepaymentDateIsOnNonWorkingDay(newTransactionDetail.getTransactionDate(), holidayDetailDTO.getWorkingDays(),
+                    holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
+        }
         ChangedTransactionDetail changedTransactionDetail = null;
 
         existingTransactionIds.addAll(findExistingTransactionIds());
