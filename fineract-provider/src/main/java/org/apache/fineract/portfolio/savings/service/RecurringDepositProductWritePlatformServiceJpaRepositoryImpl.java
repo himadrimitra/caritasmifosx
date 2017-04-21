@@ -19,7 +19,6 @@
 package org.apache.fineract.portfolio.savings.service;
 
 import static org.apache.fineract.portfolio.savings.DepositsApiConstants.RECURRING_DEPOSIT_PRODUCT_RESOURCE_NAME;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_PRODUCT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountingRuleParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;

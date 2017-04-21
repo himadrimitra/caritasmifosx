@@ -20,7 +20,9 @@ package org.apache.fineract.portfolio.common.domain;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
@@ -134,5 +136,17 @@ public enum PeriodFrequencyType {
             break;
         }
         return optionData;
+    }
+    
+    private static final Map<String, PeriodFrequencyType> periodFrequencyTypes = new HashMap<>();
+
+    static {
+        for (final PeriodFrequencyType periodFrequencyType : PeriodFrequencyType.values()) {
+            periodFrequencyTypes.put(periodFrequencyType.name().toLowerCase(), periodFrequencyType);
+        }
+    }
+
+    public static PeriodFrequencyType getPeriodFrequencyType(final String periodFrequencyType) {
+        return periodFrequencyTypes.get(periodFrequencyType.toLowerCase());
     }
 }

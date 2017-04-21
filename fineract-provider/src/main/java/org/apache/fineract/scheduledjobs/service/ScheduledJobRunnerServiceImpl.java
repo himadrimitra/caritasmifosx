@@ -19,11 +19,16 @@
 package org.apache.fineract.scheduledjobs.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -32,19 +37,28 @@ import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
+import org.apache.fineract.organisation.office.domain.Office;
+import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.service.ClientRecurringChargeReadPlatformService;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.service.LoanSchedularService;
+import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.DepositAccountUtils;
 import org.apache.fineract.portfolio.savings.data.DepositAccountData;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountAnnualFeeData;
 import org.apache.fineract.portfolio.savings.service.DepositAccountReadPlatformService;
 import org.apache.fineract.portfolio.savings.service.DepositAccountWritePlatformService;
+import org.apache.fineract.portfolio.savings.service.RecurringDepositSchedularService;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountChargeReadPlatformService;
 import org.apache.fineract.portfolio.savings.service.SavingsAccountWritePlatformService;
 import org.apache.fineract.portfolio.shareaccounts.service.ShareAccountDividendReadPlatformService;
@@ -72,67 +86,66 @@ import com.finflux.transaction.execution.data.TransferType;
 import com.finflux.transaction.execution.domain.BankAccountTransaction;
 import com.finflux.transaction.execution.domain.BankAccountTransactionRepository;
 import com.finflux.transaction.execution.provider.BankTransferService;
-import com.finflux.transaction.execution.service.BankTransactionReadPlatformService;
 import com.finflux.transaction.execution.service.BankTransactionService;
 
 @Service(value = "scheduledJobRunnerService")
 public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService {
 
-	private final static Logger logger = LoggerFactory
-			.getLogger(ScheduledJobRunnerServiceImpl.class);
-	private final DateTimeFormatter formatter = DateTimeFormat
-			.forPattern("yyyy-MM-dd");
-	private final DateTimeFormatter formatterWithTime = DateTimeFormat
-			.forPattern("yyyy-MM-dd HH:mm:ss");
-	private final DateTimeFormatter formatterWithDate = DateTimeFormat
-			.forPattern("yyyy-MM-dd");
+    private final static Logger logger = LoggerFactory.getLogger(ScheduledJobRunnerServiceImpl.class);
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatterWithTime = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private final DateTimeFormatter formatterWithDate = DateTimeFormat.forPattern("yyyy-MM-dd");
 
-	private final RoutingDataSourceServiceFactory dataSourceServiceFactory;
-	private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
-	private final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService;
-	private final DepositAccountReadPlatformService depositAccountReadPlatformService;
-	private final DepositAccountWritePlatformService depositAccountWritePlatformService;
-	private final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService;
-	private final ShareAccountSchedularService shareAccountSchedularService;
-	private final ClientRecurringChargeReadPlatformService clientRecurringChargeReadPlatformService;
-	private final CalendarReadPlatformService calanderReadPlatformService;
-	private final BankTransactionService bankTransactionService;
-	private final BankTransactionReadPlatformService accountTransferReadPlatformService;
-	private final BankAccountTransactionRepository bankAccountTransactionRepository;
-	private final TaskPlatformReadService taskPlatformReadService;
-	private final LoanSchedularService loanSchedularService;
+    private final RoutingDataSourceServiceFactory dataSourceServiceFactory;
+    private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
+    private final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService;
+    private final DepositAccountReadPlatformService depositAccountReadPlatformService;
+    private final DepositAccountWritePlatformService depositAccountWritePlatformService;
+    private final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService;
+    private final ShareAccountSchedularService shareAccountSchedularService;
+    private final ClientRecurringChargeReadPlatformService clientRecurringChargeReadPlatformService;
+    private final CalendarReadPlatformService calanderReadPlatformService;
+    private final BankTransactionService bankTransactionService;
+    private final BankAccountTransactionRepository bankAccountTransactionRepository;
+    private final TaskPlatformReadService taskPlatformReadService;
+    private final ConfigurationDomainService configurationDomainService;
+    private final HolidayRepositoryWrapper holidayRepository;
+    private final LoanSchedularService loanSchedularService;
+    private final LoanUtilService loanUtilService;
+    private final RecurringDepositSchedularService recurringDepositSchedularService;
 
-	@Autowired
-	public ScheduledJobRunnerServiceImpl(
-			final RoutingDataSourceServiceFactory dataSourceServiceFactory,
-			final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
-			final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService,
-			final DepositAccountReadPlatformService depositAccountReadPlatformService,
-			final DepositAccountWritePlatformService depositAccountWritePlatformService,
-			final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService,
-			final ShareAccountSchedularService shareAccountSchedularService,
-			final ClientRecurringChargeReadPlatformService clientRecurringChargeReadPlatformService,
-			final CalendarReadPlatformService calanderReadPlatformService,
-			final BankTransactionService bankTransactionService,
-			final BankTransactionReadPlatformService accountTransferReadPlatformService,
-			final BankAccountTransactionRepository bankAccountTransactionRepository,
-			final TaskPlatformReadService taskPlatformReadService,
-			final LoanSchedularService loanSchedularService) {
-		this.dataSourceServiceFactory = dataSourceServiceFactory;
-		this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
-		this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
-		this.depositAccountReadPlatformService = depositAccountReadPlatformService;
-		this.depositAccountWritePlatformService = depositAccountWritePlatformService;
-		this.shareAccountDividendReadPlatformService = shareAccountDividendReadPlatformService;
-		this.shareAccountSchedularService = shareAccountSchedularService;
-		this.clientRecurringChargeReadPlatformService = clientRecurringChargeReadPlatformService;
-		this.calanderReadPlatformService = calanderReadPlatformService;
-		this.bankTransactionService = bankTransactionService;
-		this.accountTransferReadPlatformService = accountTransferReadPlatformService;
-		this.bankAccountTransactionRepository = bankAccountTransactionRepository;
-		this.taskPlatformReadService = taskPlatformReadService;
-		this.loanSchedularService = loanSchedularService;
-	}
+    @Autowired
+    public ScheduledJobRunnerServiceImpl(final RoutingDataSourceServiceFactory dataSourceServiceFactory,
+            final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
+            final SavingsAccountChargeReadPlatformService savingsAccountChargeReadPlatformService,
+            final DepositAccountReadPlatformService depositAccountReadPlatformService,
+            final DepositAccountWritePlatformService depositAccountWritePlatformService,
+            final ShareAccountDividendReadPlatformService shareAccountDividendReadPlatformService,
+            final ShareAccountSchedularService shareAccountSchedularService,
+            final ClientRecurringChargeReadPlatformService clientRecurringChargeReadPlatformService,
+            final CalendarReadPlatformService calanderReadPlatformService, final BankTransactionService bankTransactionService,
+            final BankAccountTransactionRepository bankAccountTransactionRepository, final TaskPlatformReadService taskPlatformReadService,
+            final ConfigurationDomainService configurationDomainService, final HolidayRepositoryWrapper holidayRepository,
+            final LoanSchedularService loanSchedularService, final LoanUtilService loanUtilService,
+            final RecurringDepositSchedularService recurringDepositSchedularService) {
+        this.dataSourceServiceFactory = dataSourceServiceFactory;
+        this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
+        this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
+        this.depositAccountReadPlatformService = depositAccountReadPlatformService;
+        this.depositAccountWritePlatformService = depositAccountWritePlatformService;
+        this.shareAccountDividendReadPlatformService = shareAccountDividendReadPlatformService;
+        this.shareAccountSchedularService = shareAccountSchedularService;
+        this.clientRecurringChargeReadPlatformService = clientRecurringChargeReadPlatformService;
+        this.calanderReadPlatformService = calanderReadPlatformService;
+        this.bankTransactionService = bankTransactionService;
+        this.bankAccountTransactionRepository = bankAccountTransactionRepository;
+        this.taskPlatformReadService = taskPlatformReadService;
+        this.configurationDomainService = configurationDomainService;
+        this.holidayRepository = holidayRepository;
+        this.loanSchedularService = loanSchedularService;
+        this.loanUtilService = loanUtilService;
+        this.recurringDepositSchedularService = recurringDepositSchedularService;
+    }
 
 	@Transactional
 	@Override
@@ -401,66 +414,74 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 				+ depositAccounts.size());
 	}
 
-	@Override
-	@CronTarget(jobName = JobName.GENERATE_RD_SCEHDULE)
-	public void generateRDSchedule() {
-		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
-				this.dataSourceServiceFactory.determineDataSourceService()
-						.retrieveDataSource());
-		final Collection<Map<String, Object>> scheduleDetails = this.depositAccountReadPlatformService
-				.retriveDataForRDScheduleCreation();
-		String insertSql = "INSERT INTO `m_mandatory_savings_schedule` (`savings_account_id`, `duedate`, `installment`, `deposit_amount`, `completed_derived`, `created_date`, `lastmodified_date`) VALUES ";
-		StringBuilder sb = new StringBuilder();
-		String currentDate = formatterWithTime.print(DateUtils
-				.getLocalDateTimeOfTenant());
-		int iterations = 0;
-		for (Map<String, Object> details : scheduleDetails) {
-			Long count = (Long) details.get("futureInstallemts");
-			if (count == null) {
-				count = 0l;
-			}
-			final Long savingsId = (Long) details.get("savingsId");
-			final BigDecimal amount = (BigDecimal) details.get("amount");
-			final String recurrence = (String) details.get("recurrence");
-			Date date = (Date) details.get("dueDate");
-			LocalDate lastDepositDate = new LocalDate(date);
-			Integer installmentNumber = (Integer) details.get("installment");
-			while (count < DepositAccountUtils.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS) {
-				count++;
-				installmentNumber++;
-				lastDepositDate = DepositAccountUtils.calculateNextDepositDate(
-						lastDepositDate, recurrence);
-
-				if (sb.length() > 0) {
-					sb.append(", ");
-				}
-				sb.append("(");
-				sb.append(savingsId);
-				sb.append(",'");
-				sb.append(formatter.print(lastDepositDate));
-				sb.append("',");
-				sb.append(installmentNumber);
-				sb.append(",");
-				sb.append(amount);
-				sb.append(", b'0','");
-				sb.append(currentDate);
-				sb.append("','");
-				sb.append(currentDate);
-				sb.append("')");
-				iterations++;
-				if (iterations > 200) {
-					jdbcTemplate.update(insertSql + sb.toString(),currentDate);
-					sb = new StringBuilder();
-				}
-
-			}
-		}
-
-		if (sb.length() > 0) {
-			jdbcTemplate.update(insertSql + sb.toString(),currentDate);
-		}
-
-	}
+    @Override
+    @CronTarget(jobName = JobName.GENERATE_RD_SCEHDULE)
+    public void generateRDSchedule() {
+        final JdbcTemplate jdbcTemplate = new JdbcTemplate(this.dataSourceServiceFactory.determineDataSourceService().retrieveDataSource());
+        final Collection<Map<String, Object>> scheduleDetails = this.depositAccountReadPlatformService.retriveDataForRDScheduleCreation();
+        final String insertSql = "INSERT INTO `m_mandatory_savings_schedule` (`savings_account_id`, `actualduedate`, `duedate`, `installment`, `deposit_amount`, `completed_derived`, `created_date`, `lastmodified_date`) VALUES ";
+        StringBuilder sb = new StringBuilder();
+        String currentDate = formatterWithTime.print(DateUtils.getLocalDateTimeOfTenant());
+        int iterations = 0;
+        for (Map<String, Object> details : scheduleDetails) {
+            Long count = (Long) details.get("futureInstallemts");
+            if (count == null) {
+                count = 0l;
+            }
+            final Long savingsId = (Long) details.get("savingsId");
+            Long officeId = (Long) details.get("clientOfficeId");
+            if(officeId == null){
+                officeId = (Long) details.get("groupOfficeId");
+            }
+            final BigDecimal amount = (BigDecimal) details.get("amount");
+            final String recurrence = (String) details.get("recurrence");
+            CalendarFrequencyType calendarFrequencyType = CalendarUtils.getFrequency(recurrence);
+            final PeriodFrequencyType frequency = CalendarFrequencyType.from(calendarFrequencyType);
+            final Integer recurringEvery = CalendarUtils.getInterval(recurrence);
+            final Date actualDueDate = (Date) details.get("actualDueDate");
+            LocalDate lastDepositDate = new LocalDate(actualDueDate);
+            final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId,
+                    lastDepositDate.toDate());
+            final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidays);
+            Integer installmentNumber = (Integer) details.get("installment");
+            while (count < DepositAccountUtils.GENERATE_MINIMUM_NUMBER_OF_FUTURE_INSTALMENTS) {
+                count++;
+                installmentNumber++;
+                lastDepositDate = DepositAccountUtils.calculateNextDepositDate(lastDepositDate, recurrence);
+                final AdjustedDateDetailsDTO adjustedDateDetailsDTO = new AdjustedDateDetailsDTO(lastDepositDate, lastDepositDate,
+                        lastDepositDate);
+                DepositAccountUtils.adjustInstallmentDateBasedOnWorkingDaysAndHolidays(adjustedDateDetailsDTO, holidayDetailDTO, frequency,
+                        recurringEvery);
+                lastDepositDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+                if (sb.length() > 0) {
+                    sb.append(", ");
+                }
+                sb.append("(");
+                sb.append(savingsId);
+                sb.append(",'");
+                sb.append(formatter.print(adjustedDateDetailsDTO.getChangedActualRepaymentDate()));
+                sb.append(",'");
+                sb.append(formatter.print(adjustedDateDetailsDTO.getChangedScheduleDate()));
+                sb.append("',");
+                sb.append(installmentNumber);
+                sb.append(",");
+                sb.append(amount);
+                sb.append(", b'0','");
+                sb.append(currentDate);
+                sb.append("','");
+                sb.append(currentDate);
+                sb.append("')");
+                iterations++;
+                if (iterations > 200) {
+                    jdbcTemplate.update(insertSql + sb.toString(), currentDate);
+                    sb = new StringBuilder();
+                }
+            }
+        }
+        if (sb.length() > 0) {
+            jdbcTemplate.update(insertSql + sb.toString(), currentDate);
+        }
+    }
 
 	@Override
 	@CronTarget(jobName = JobName.HIGHMARK_ENQUIRY)
@@ -838,5 +859,70 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			throw new JobExecutionException(errorMsg.toString());
 		}
 	}
+	
+    @Override
+    @CronTarget(jobName = JobName.APPLY_HOLIDAYS)
+    public void applyHolidays() throws JobExecutionException {
+        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+        if (!isHolidayEnabled) { return; }
+
+        // Get all Holidays which are active/deleted and not processed
+        final List<Holiday> holidays = this.holidayRepository.findUnprocessed();
+
+        // Loop through all holidays to get the office Id's
+        final Map<Long, List<Holiday>> officeIds = getMapWithEachOfficeHolidays(holidays);
+        
+        final StringBuilder sb = new StringBuilder();
+        final Set<Long> failedForOffices = new HashSet<>();
+
+        final List<Holiday> holidaysList = null;
+        final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(holidaysList);
+
+        this.loanSchedularService.applyHolidaysToLoans(holidayDetailDTO, officeIds, failedForOffices, sb);
+
+        this.recurringDepositSchedularService.applyHolidaysToRecurringDeposits(holidayDetailDTO, officeIds, failedForOffices, sb);
+
+        boolean holidayStatusChanged = false;
+        for (final Holiday holiday : holidays) {
+            if (failedForOffices.isEmpty()) {
+                holiday.processed();
+                holidayStatusChanged = true;
+            } else {
+                final Set<Office> offices = holiday.getOffices();
+                boolean updateProcessedStatus = true;
+                for (final Office office : offices) {
+                    if (failedForOffices.contains(office.getId())) {
+                        updateProcessedStatus = false;
+                    }
+                }
+                if (updateProcessedStatus) {
+                    holiday.processed();
+                    holidayStatusChanged = true;
+                }
+            }
+        }
+        if (holidayStatusChanged) {
+            this.holidayRepository.save(holidays);
+        }
+        if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+    }
+
+    private Map<Long, List<Holiday>> getMapWithEachOfficeHolidays(final List<Holiday> holidays) {
+        final Map<Long, List<Holiday>> officeIds = new HashMap<>();
+        for (final Holiday holiday : holidays) {
+            // All offices to which holiday is applied
+            final Set<Office> offices = holiday.getOffices();
+            for (final Office office : offices) {
+                if (officeIds.containsKey(office.getId())) {
+                    officeIds.get(office.getId()).add(holiday);
+                } else {
+                    List<Holiday> holidaylist = new ArrayList<>();
+                    holidaylist.add(holiday);
+                    officeIds.put(office.getId(), holidaylist);
+                }
+            }
+        }
+        return officeIds;
+    }
 
 }

@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -36,6 +38,7 @@ import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
@@ -86,6 +89,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -110,7 +114,8 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 
     // pagination
     private final PaginationHelper<SavingsAccountData> paginationHelper = new PaginationHelper<>();
-
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    
     @Autowired
     public SavingsAccountReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
             final ClientReadPlatformService clientReadPlatformService, final GroupReadPlatformService groupReadPlatformService,
@@ -129,6 +134,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         this.savingAccountMapper = new SavingAccountMapper();
         // this.annualFeeMapper = new SavingsAccountAnnualFeeMapper();
         this.chargeReadPlatformService = chargeReadPlatformService;
+        this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
     }
 
     @Override
@@ -1360,5 +1366,56 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
             savingsAccountDpDetailsData = savingsAccountDpDetailsDatas.get(0);
         }
         return savingsAccountDpDetailsData;
+    }
+
+    @Override
+    public Collection<Long> retrieveRecurringDepositsIdByOfficesAndHoliday(final Long officeId, final List<Holiday> holidays,
+            final Collection<Integer> status, final LocalDate recalculateFrom) {
+        final StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT DISTINCT(sa.id) ");
+        sql.append("FROM m_office mo ");
+        sql.append("JOIN m_client mc ON mc.office_id = mo.id ");
+        sql.append("JOIN m_savings_account sa ON  sa.group_id is null and sa.client_id = mc.id and sa.status_enum in (:status) ");
+        sql.append("JOIN m_deposit_account_term_and_preclosure datp ON  datp.savings_account_id = sa.id and datp.maturity_date >= :date ");
+        sql.append("JOIN m_mandatory_savings_schedule ss on ss.completed_derived != 1 and ss.savings_account_id = sa.id and (");
+
+        generateConditionBasedOnHoliday(holidays, sql);
+        sql.append(") ");
+        sql.append("WHERE mo.id = :officeId  ");
+
+        sql.append(" union ");
+
+        sql.append("SELECT DISTINCT(sa.id) ");
+        sql.append("FROM m_office mo ");
+        sql.append("JOIN m_group mg ON mg.office_id = mo.id ");
+        sql.append("JOIN m_savings_account sa ON  sa.group_id = mg.id and sa.status_enum in (:status) ");
+        sql.append("JOIN m_deposit_account_term_and_preclosure datp ON  datp.savings_account_id = sa.id and datp.maturity_date >= :date ");
+        sql.append("JOIN m_mandatory_savings_schedule ss on ss.completed_derived != 1 and ss.savings_account_id = sa.id and (");
+
+        generateConditionBasedOnHoliday(holidays, sql);
+        sql.append(") ");
+        sql.append("WHERE mo.id = :officeId  ");
+
+        Map<String, Object> paramMap = new HashMap<>(4);
+        paramMap.put("date", formatter.print(recalculateFrom));
+        paramMap.put("status", status);
+        paramMap.put("officeId", officeId);
+        return this.namedParameterJdbcTemplate.queryForList(sql.toString(), paramMap, Long.class);
+    }
+    
+    private void generateConditionBasedOnHoliday(final List<Holiday> holidays, final StringBuilder sql) {
+        boolean isFirstTime = true;
+        for (Holiday holiday : holidays) {
+            if (!isFirstTime) {
+                sql.append(" or ");
+            }
+            sql.append("ss.duedate BETWEEN '");
+            sql.append(formatter.print(holiday.getFromDateLocalDate()));
+            sql.append("' and '");
+            sql.append(formatter.print(holiday.getToDateLocalDate()));
+            sql.append("'");
+            isFirstTime = false;
+        }
     }
 }

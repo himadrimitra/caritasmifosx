@@ -205,15 +205,15 @@ public class DepositAccountDataValidator {
         }
 
         if (clientId == null && groupId == null) {
-            baseDataValidator.reset().parameter(clientIdParamName).value(clientId).notNull().integerGreaterThanZero();
+            baseDataValidator.reset().parameter(clientIdParamName).value(clientId).notNull().longGreaterThanZero();
         }
 
         final Long productId = this.fromApiJsonHelper.extractLongNamed(productIdParamName, element);
-        baseDataValidator.reset().parameter(productIdParamName).value(productId).notNull().integerGreaterThanZero();
+        baseDataValidator.reset().parameter(productIdParamName).value(productId).notNull().longGreaterThanZero();
 
         if (this.fromApiJsonHelper.parameterExists(fieldOfficerIdParamName, element)) {
             final Long fieldOfficerId = this.fromApiJsonHelper.extractLongNamed(fieldOfficerIdParamName, element);
-            baseDataValidator.reset().parameter(fieldOfficerIdParamName).value(fieldOfficerId).ignoreIfNull().integerGreaterThanZero();
+            baseDataValidator.reset().parameter(fieldOfficerIdParamName).value(fieldOfficerId).ignoreIfNull().longGreaterThanZero();
         }
 
         final LocalDate submittedOnDate = this.fromApiJsonHelper.extractLocalDateNamed(submittedOnDateParamName, element);

@@ -44,9 +44,11 @@ public interface ScheduledJobRunnerService {
 	
     void highmarkEnquiry();
 
-	@CronTarget(jobName = JobName.INITIATE_BANK_TRANSACTION)
-	void initiateBankTransactions() throws JobExecutionException;
+    @CronTarget(jobName = JobName.INITIATE_BANK_TRANSACTION)
+    void initiateBankTransactions() throws JobExecutionException;
 
-	@CronTarget(jobName = JobName.UPDATE_BANK_TRANSACTION_STATUS)
-	void updateBankTransactionsStatus() throws JobExecutionException;
+    @CronTarget(jobName = JobName.UPDATE_BANK_TRANSACTION_STATUS)
+    void updateBankTransactionsStatus() throws JobExecutionException;
+    
+    void applyHolidays() throws JobExecutionException;
 }

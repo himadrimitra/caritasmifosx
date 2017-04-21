@@ -35,7 +35,7 @@ public class SchedulerJobHelper {
     public static final String UPDATE_LOAN_ARREARS_AGEING = "Update Loan Arrears Ageing";
     public static final String UPDATE_LOAN_PAID_IN_ADVANCE = "Update Loan Paid In Advance";
     public static final String APPLY_ANNUAL_FEE_FOR_SAVINGS = "Apply Annual Fee For Savings";
-    public static final String APPLY_HOLIDAYS_TO_LOANS = "Apply Holidays To Loans";
+    public static final String APPLY_HOLIDAYS = "Apply Holidays";
     public static final String POST_INTEREST_FOR_SAVINGS = "Post Interest For Savings";
     public static final String TRANSFER_FEE_CHARGE_FOR_LOANS = "Transfer Fee For Loans From Savings";
     public static final String ACCOUNTING_RUNNING_BALANCE_UPDATE = "Update Accounting Running Balances";

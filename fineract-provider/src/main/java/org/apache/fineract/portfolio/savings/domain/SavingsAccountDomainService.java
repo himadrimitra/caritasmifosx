@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
@@ -48,4 +49,8 @@ public interface SavingsAccountDomainService {
     SavingsAccountTransaction handleDeposit(String savingsAccountNumber, LocalDate transactionDate, BigDecimal transactionAmount,
             String paymentTypeName, String paymentDetailAccountNumber, String paymentDetailChequeNumber, String routingCode,
             String paymentDetailBankNumber, String receiptNumber, String note, DateTimeFormatter fmt);
+    
+    HolidayDetailDTO getHolidayDetails(final RecurringDepositAccount account);
+    
+    void updateMaturityDateAndAmount(final RecurringDepositAccount account);
 }

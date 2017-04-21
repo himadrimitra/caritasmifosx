@@ -21,8 +21,6 @@ package org.apache.fineract.portfolio.savings.domain;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +30,22 @@ import org.apache.fineract.accounting.journalentry.service.JournalEntryWritePlat
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.organisation.holiday.domain.Holiday;
+import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
+import org.apache.fineract.organisation.workingdays.data.WorkingDayExemptionsData;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
+import org.apache.fineract.organisation.workingdays.domain.WorkingDaysRepositoryWrapper;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
@@ -42,9 +53,6 @@ import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.exception.DepositAccountTransactionNotAllowedException;
-import org.apache.fineract.portfolio.savings.exception.SavingsAccountBlockedException;
-import org.apache.fineract.portfolio.savings.exception.SavingsAccountCreditsBlockedException;
-import org.apache.fineract.portfolio.savings.exception.SavingsAccountDebitsBlockedException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -65,6 +73,9 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     private final SavingsAccountAssembler savingsAccountAssembler;
     private final PaymentTypeRepository paymentTypeRepository;
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
+    private final HolidayRepositoryWrapper holidayRepository;
+    private final WorkingDaysRepositoryWrapper workingDaysRepository;
+    private final CalendarInstanceRepository calendarInstanceRepository;
 
     @Autowired
     public SavingsAccountDomainServiceJpa(final SavingsAccountRepositoryWrapper savingsAccountRepository,
@@ -73,7 +84,9 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
             final ConfigurationDomainService configurationDomainService, final PlatformSecurityContext context,
             final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
-            final SavingsAccountAssembler savingsAccountAssembler,final PaymentTypeRepository paymentTypeRepository,final PaymentDetailWritePlatformService paymentDetailWritePlatformService) {
+            final SavingsAccountAssembler savingsAccountAssembler, final PaymentTypeRepository paymentTypeRepository,
+            final PaymentDetailWritePlatformService paymentDetailWritePlatformService, final HolidayRepositoryWrapper holidayRepository,
+            final WorkingDaysRepositoryWrapper workingDaysRepository, final CalendarInstanceRepository calendarInstanceRepository) {
         this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.applicationCurrencyRepositoryWrapper = applicationCurrencyRepositoryWrapper;
@@ -84,6 +97,9 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         this.savingsAccountAssembler = savingsAccountAssembler;
         this.paymentTypeRepository = paymentTypeRepository;
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
+        this.holidayRepository = holidayRepository;
+        this.workingDaysRepository = workingDaysRepository;
+        this.calendarInstanceRepository = calendarInstanceRepository;
     }
 
     @Transactional
@@ -264,13 +280,12 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     
     @Override
     @Transactional
-	public List<Long> handleDepositAndwithdrawal(final Long accountId,
-			final List<SavingsAccountTransactionDTO> savingstransactions,
-			final SavingsTransactionBooleanValues transactionBooleanValues,
-			final boolean isSavingsInterestPostingAtCurrentPeriodEnd, final Integer financialYearBeginningMonth,
-			final boolean isSavingAccountsInculdedInCollectionSheet, final boolean isWithDrawForSavingsIncludedInCollectionSheet) {
-    	LocalDate postAsInterestOn = null;
-    	final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions = null;
+    public List<Long> handleDepositAndwithdrawal(final Long accountId, final List<SavingsAccountTransactionDTO> savingstransactions,
+            final SavingsTransactionBooleanValues transactionBooleanValues, final boolean isSavingsInterestPostingAtCurrentPeriodEnd,
+            final Integer financialYearBeginningMonth, final boolean isSavingAccountsInculdedInCollectionSheet,
+            final boolean isWithDrawForSavingsIncludedInCollectionSheet) {
+        LocalDate postAsInterestOn = null;
+        final List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions = null;
         final SavingsAccount account = this.savingsAccountAssembler.assembleFrom(accountId);
         List<Long> savingsTreansactionIds = new ArrayList<>();
         final MathContext mc = MathContext.DECIMAL64;
@@ -279,48 +294,42 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
         for (SavingsAccountTransactionDTO transactionDTO : savingstransactions) {
             if (transactionDTO.getIsDeposit()) {
-				if (account.depositAccountType().isSavingsDeposit() && !isSavingAccountsInculdedInCollectionSheet) {
-					throw new DepositAccountTransactionNotAllowedException(
-							"error.msg.deposit.for.account." + account.getId() + ".not.allowed.due.to.configiration",
-							"deposit for account " + account.getId() + " not allowed due to configuration", account.getId()+account.accountType);
-				}
-				if (transactionBooleanValues.isRegularTransaction() && !account.allowDeposit()) {
-					throw new DepositAccountTransactionNotAllowedException(
-							"error.msg.deposit.for.account." + account.getId() + ".not.allowed",
-							"deposit for account " + account.getId() + " not allowed", account.getId()+account.accountType);
-				}
-				final SavingsAccountTransaction deposit = account.deposit(transactionDTO);
-                if(account.depositAccountType().isRecurringDeposit()){
-                    RecurringDepositAccount rd = (RecurringDepositAccount) account;
+                if (account.depositAccountType().isSavingsDeposit() && !isSavingAccountsInculdedInCollectionSheet) { throw new DepositAccountTransactionNotAllowedException(
+                        "error.msg.deposit.for.account." + account.getId() + ".not.allowed.due.to.configiration", "deposit for account "
+                                + account.getId() + " not allowed due to configuration", account.getId() + account.accountType); }
+                if (transactionBooleanValues.isRegularTransaction() && !account.allowDeposit()) { throw new DepositAccountTransactionNotAllowedException(
+                        "error.msg.deposit.for.account." + account.getId() + ".not.allowed", "deposit for account " + account.getId()
+                                + " not allowed", account.getId() + account.accountType); }
+                final SavingsAccountTransaction deposit = account.deposit(transactionDTO);
+                if (account.depositAccountType().isRecurringDeposit()) {
+                    final RecurringDepositAccount rd = (RecurringDepositAccount) account;
                     rd.handleScheduleInstallments(deposit);
-                    rd.updateMaturityDateAndAmount(mc, false, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth);
+                    updateMaturityDateAndAmount(rd);
                     rd.updateOverduePayments(DateUtils.getLocalDateOfTenant());
                 }
                 saveTransactionToGenerateTransactionId(account.getTransactions());
                 savingsTreansactionIds.add(deposit.getId());
             } else {
-            	if(isWithDrawForSavingsIncludedInCollectionSheet){
-                if (transactionBooleanValues.isRegularTransaction()
-                        && !account.allowWithdrawal()) { throw new DepositAccountTransactionNotAllowedException(
-    							"error.msg.withdraw.for.account." + account.getId() + ".not.allowed",
-    							"withdraw for account " + account.getId() + " not allowed", account.getId()+account.accountType); }
+                if (isWithDrawForSavingsIncludedInCollectionSheet) {
+                    if (transactionBooleanValues.isRegularTransaction() && !account.allowWithdrawal()) { throw new DepositAccountTransactionNotAllowedException(
+                            "error.msg.withdraw.for.account." + account.getId() + ".not.allowed", "withdraw for account " + account.getId()
+                                    + " not allowed", account.getId() + account.accountType); }
 
-                final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO,
-                        transactionBooleanValues.isApplyWithdrawFee());
-                account.validateAccountBalanceDoesNotBecomeNegative(transactionDTO.getTransactionAmount(),
-                        transactionBooleanValues.isExceptionForBalanceCheck(),depositAccountOnHoldTransactions);
-                saveTransactionToGenerateTransactionId(account.getTransactions());
-                savingsTreansactionIds.add(withdrawal.getId());
-				} else {
-					throw new DepositAccountTransactionNotAllowedException(
-							"error.msg.withdraw.for.account." + account.getId() + ".not.allowed.due.to.configiration",
-							"withdraw for account " + account.getId() + " not allowed due to configuration",
-							account.getId() + account.accountType);
-				}
+                    final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO,
+                            transactionBooleanValues.isApplyWithdrawFee());
+                    account.validateAccountBalanceDoesNotBecomeNegative(transactionDTO.getTransactionAmount(),
+                            transactionBooleanValues.isExceptionForBalanceCheck(), depositAccountOnHoldTransactions);
+                    saveTransactionToGenerateTransactionId(account.getTransactions());
+                    savingsTreansactionIds.add(withdrawal.getId());
+                } else {
+                    throw new DepositAccountTransactionNotAllowedException("error.msg.withdraw.for.account." + account.getId()
+                            + ".not.allowed.due.to.configiration", "withdraw for account " + account.getId()
+                            + " not allowed due to configuration", account.getId() + account.accountType);
+                }
             }
             if (account.isBeforeLastPostingPeriod(transactionDTO.getTransactionDate())) {
                 final LocalDate today = DateUtils.getLocalDateOfTenant();
-                
+
                 account.postInterest(mc, today, transactionBooleanValues.isInterestTransfer(), isSavingsInterestPostingAtCurrentPeriodEnd,
                         financialYearBeginningMonth, postAsInterestOn);
             } else {
@@ -333,9 +342,42 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         this.savingsAccountRepository.save(account);
 
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds, transactionBooleanValues.isAccountTransfer());
-        
 
         return savingsTreansactionIds;
+    }
+
+    @Override
+    public HolidayDetailDTO getHolidayDetails(final RecurringDepositAccount account) {
+        final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
+        final Long officeId = account.officeId();
+        final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, account.getSubmittedOnDate()
+                .toDate());
+        final WorkingDays workingDays = this.workingDaysRepository.findOne();
+        final List<WorkingDayExemptionsData> workingDayExemptions = null;
+        return new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
+    }
+    
+    @Override
+    public void updateMaturityDateAndAmount(final RecurringDepositAccount account) {
+        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
+                .isSavingsInterestPostingAtCurrentPeriodEnd();
+        final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+        final boolean isPreMatureClosure = false;
+        final MathContext mc = MathContext.DECIMAL64;
+        PeriodFrequencyType frequencyType = null;
+        Integer recurringEvery = null;
+        final List<CalendarInstance> calendarInstances = (List<CalendarInstance>) this.calendarInstanceRepository
+                .findByEntityIdAndEntityTypeId(account.getId(), CalendarEntityType.SAVINGS.getValue());
+        if (calendarInstances != null && !calendarInstances.isEmpty()) {
+            final CalendarInstance calendarInstance = calendarInstances.get(0);
+            final Calendar calendar = calendarInstance.getCalendar();
+            CalendarFrequencyType calendarFrequencyType = CalendarUtils.getFrequency(calendar.getRecurrence());
+            frequencyType = CalendarFrequencyType.from(calendarFrequencyType);
+            recurringEvery = CalendarUtils.getInterval(calendar.getRecurrence());
+        }
+        final HolidayDetailDTO holidayDetails = getHolidayDetails(account);
+        account.updateMaturityDateAndAmount(mc, isPreMatureClosure, isSavingsInterestPostingAtCurrentPeriodEnd,
+                financialYearBeginningMonth, frequencyType, recurringEvery, holidayDetails);
     }
     
 }
