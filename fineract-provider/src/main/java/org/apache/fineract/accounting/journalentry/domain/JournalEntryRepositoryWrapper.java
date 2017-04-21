@@ -43,7 +43,7 @@ public class JournalEntryRepositoryWrapper extends AbstractPersistable<Long> {
         Long[] accountIdsAsArray = new Long[accountIds.size()];
         accountIds.toArray(accountIdsAsArray);
         List<AccountRunningComputationDetail> computationDetails = this.accountRunningComputationDetailRepository
-                .fetchAccountRunningComputationDetail(journalEntry.getOfficeId(), accountIdsAsArray);
+                .fetchAccountRunningComputationDetail(journalEntry.getOfficeId(), accountIdsAsArray, journalEntry.getCurrencyCode());
         for (AccountRunningComputationDetail computationDetail : computationDetails) {
             accountIds.remove(computationDetail.getGlAccountId());
             if (!journalEntry.getEffectiveDateAsLocalDate().isAfter(computationDetail.getComputedTillDateAsLocalDate())) {
