@@ -145,8 +145,10 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
                 baseDataValidator.reset().parameter("chargeCalculationType").value(chargeCalculationType)
                         .isOneOfTheseValues(ChargeCalculationType.validValuesForLoan());
             }
-            
-            final boolean isCapitalized = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isCapitalizedParamName, element);
+            boolean isCapitalized =  false;
+            if(this.fromApiJsonHelper.parameterExists(ChargesApiConstants.isCapitalizedParamName, element)){
+              isCapitalized = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isCapitalizedParamName, element);
+            }
             if (isCapitalized) {
                 baseDataValidator.reset().parameter("chargeTimeType").value(chargeTimeType)
                         .isOneOfTheseValues(ChargeTimeType.INSTALMENT_FEE.getValue());
@@ -356,7 +358,11 @@ public final class ChargeDefinitionCommandFromApiJsonDeserializer {
             baseDataValidator.reset().parameter("chargeAppliesTo").value(chargeAppliesTo).notNull()
                     .isOneOfTheseValues(ChargeAppliesTo.validValues());
         }
-        final boolean isCapitalized = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isCapitalizedParamName, element);
+        boolean isCapitalized =  false;
+        if(this.fromApiJsonHelper.parameterExists(ChargesApiConstants.isCapitalizedParamName, element)){
+          isCapitalized = this.fromApiJsonHelper.extractBooleanNamed(ChargesApiConstants.isCapitalizedParamName, element);
+        }
+        
         if (this.fromApiJsonHelper.parameterExists("chargeTimeType", element)) {
 
             final Integer chargeTimeType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed("chargeTimeType", element);
