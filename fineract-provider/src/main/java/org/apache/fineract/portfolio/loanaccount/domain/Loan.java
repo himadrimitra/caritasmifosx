@@ -2754,6 +2754,10 @@ public class Loan extends AbstractPersistable<Long> {
 
     public Money adjustDisburseAmount(final JsonCommand command, final LocalDate actualDisbursementDate) {
         setDiscountOnDisbursalAmount(command);
+        BigDecimal discountOnDisbursalAmount = BigDecimal.ZERO;
+        if(getDiscountOnDisburseAmount() != null){
+            discountOnDisbursalAmount = getDiscountOnDisburseAmount();
+        }
         Money disburseAmount = this.loanRepaymentScheduleDetail.getPrincipal().zero();
         BigDecimal principalDisbursed = command.bigDecimalValueOfParameterNamed(LoanApiConstants.principalDisbursedParameterName);
         if (this.actualDisbursementDate == null) {
@@ -2799,7 +2803,7 @@ public class Loan extends AbstractPersistable<Long> {
                     }
                 }
                 this.loanRepaymentScheduleDetail.setPrincipal(setPrincipalAmount);
-                if (totalAmount.compareTo(this.approvedPrincipal) == 1) {
+                if (totalAmount.add(discountOnDisbursalAmount).compareTo(this.approvedPrincipal) == 1) {
                     final String errorMsg = "Loan can't be disbursed,disburse amount is exceeding approved principal ";
                     throw new LoanDisbursalException(errorMsg, "disburse.amount.must.be.less.than.approved.principal", principalDisbursed,
                             this.approvedPrincipal);
@@ -2807,7 +2811,7 @@ public class Loan extends AbstractPersistable<Long> {
             } else {
                 this.loanRepaymentScheduleDetail.setPrincipal(this.loanRepaymentScheduleDetail.getPrincipal().minus(diff).getAmount());
             }
-            if (!(this.loanProduct().isMultiDisburseLoan()) && diff.compareTo(BigDecimal.ZERO) == -1) {
+            if (!(this.loanProduct().isMultiDisburseLoan()) && diff.subtract(discountOnDisbursalAmount).compareTo(BigDecimal.ZERO) == -1) {
                 final String errorMsg = "Loan can't be disbursed,disburse amount is exceeding approved amount ";
                 throw new LoanDisbursalException(errorMsg, "disburse.amount.must.be.less.than.approved.amount", principalDisbursed,
                         this.loanRepaymentScheduleDetail.getPrincipal().getAmount());
