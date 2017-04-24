@@ -3295,12 +3295,14 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 if (loanApplicationTerms.isAdjustInterestForRounding() && currentPeriodParams.getPrincipalForThisPeriod().isGreaterThanZero()) {
                     Money amountForAdjust = Money.of(currency,
 							emiDetails.getEmiAmount().subtract(emiDetails.getLastEmiAmount()));
-                    installment.addInterestAmount(amountForAdjust);
-                    if(loanApplicationTerms.getInterestMethod().isFlat()){
-                        loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().plus(amountForAdjust));
+                    if (!amountForAdjust.plus(installment.interestDue()).isLessThanZero()) {
+                        installment.addInterestAmount(amountForAdjust);
+                        if (loanApplicationTerms.getInterestMethod().isFlat()) {
+                            loanApplicationTerms.updateTotalInterestDue(loanApplicationTerms.getTotalInterestDue().plus(amountForAdjust));
+                        }
+                        currentPeriodParams.plusInterestForThisPeriod(amountForAdjust);
+                        scheduleParams.addTotalRepaymentExpected(amountForAdjust);
                     }
-                    currentPeriodParams.plusInterestForThisPeriod(amountForAdjust);
-                    scheduleParams.addTotalRepaymentExpected(amountForAdjust);
                 }
             } else if (scheduleParams.getPeriodNumber() == 1 && loanApplicationTerms.getFirstEmiAmount() != null) {
                 BigDecimal roundedFirstEmiAmount = loanApplicationTerms.roundAdjustedEmiAmount(loanApplicationTerms.getFirstEmiAmount());
