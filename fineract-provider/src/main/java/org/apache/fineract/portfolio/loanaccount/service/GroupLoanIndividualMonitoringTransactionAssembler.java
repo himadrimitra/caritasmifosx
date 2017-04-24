@@ -528,13 +528,13 @@ public class GroupLoanIndividualMonitoringTransactionAssembler {
             Boolean isGlimWriteOff = this.glimAssembler.isGLIMApplicableForWriteOf(glimMembersForStatusUpdate);
             if (isGlimWriteOff) {
                 loan.setLoanStatus(LoanStatus.CLOSED_WRITTEN_OFF.getValue());
-                this.loanRepository.save(loan);
             }else if(MathUtility.isGreaterThanZero(loan.getTotalOverpaid())){
                 loan.setLoanStatus(LoanStatus.OVERPAID.getValue());
-                this.loanRepository.save(loan);
             }
+        }else{
+            loan.setLoanStatus(LoanStatus.ACTIVE.getValue());
         }
-        
+        this.loanRepository.save(loan);
     }
     
     public boolean isLoanCompleted(List<GroupLoanIndividualMonitoring> glimMembersForStatusUpdate){
