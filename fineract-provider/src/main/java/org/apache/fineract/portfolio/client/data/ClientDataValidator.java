@@ -168,6 +168,12 @@ public final class ClientDataValidator {
                     .notExceedingLengthOf(50);
         }
 
+        if(this.fromApiJsonHelper.parameterExists(ClientApiConstants.emailAddress, element)){
+            isRegexValidationRequiredForClentFields = true;
+            final String emailAdd = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.emailAddress, element);
+            baseDataValidator.reset().parameter(ClientApiConstants.emailAddress).value(emailAdd).ignoreIfNull().notBlank().notExceedingLengthOf(100).validateEmailAddress();
+        }
+        
         final Boolean active = this.fromApiJsonHelper.extractBooleanNamed(ClientApiConstants.activeParamName, element);
         if (active != null) {
             if (active.booleanValue()) {
@@ -430,6 +436,12 @@ public final class ClientDataValidator {
             atLeastOneParameterPassedForUpdate = true;
             final String alternateMobileNo = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.alternateMobileNoParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.alternateMobileNoParamName).value(alternateMobileNo).notExceedingLengthOf(50);
+        }
+        
+        if(this.fromApiJsonHelper.parameterExists(ClientApiConstants.emailAddress, element)){
+            isRegexValidationRequiredForClentFields = true;
+            final String emailAdd = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.emailAddress, element);
+            baseDataValidator.reset().parameter(ClientApiConstants.emailAddress).value(emailAdd).ignoreIfNull().notBlank().notExceedingLengthOf(100).validateEmailAddress();
         }
 
         final Boolean active = this.fromApiJsonHelper.extractBooleanNamed(ClientApiConstants.activeParamName, element);

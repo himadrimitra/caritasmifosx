@@ -1021,6 +1021,25 @@ public class DataValidatorBuilder {
 		}
 		return this;
 	}
+	
+	
+    public DataValidatorBuilder validateEmailAddress() {
 
+        final String EMAIL_REGEX = "^[\\w!#$%&/’*+/=?`{|}~^-]+(?:\\.[\\w!#$%&/’*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+        final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
+        Matcher emailMatcher = EMAIL_PATTERN.matcher(this.value.toString());
+
+        if (!emailMatcher.matches() || this.value.toString().endsWith(".")) {
+
+            final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(this.resource).append(".")
+                    .append(this.parameter).append(".is.invalid");
+            final StringBuilder defaultEnglishMessage = new StringBuilder("The ").append(this.parameter).append(" is invalid ");
+            final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
+                    defaultEnglishMessage.toString(), this.parameter);
+            this.dataValidationErrors.add(error);
+        }
+
+        return this;
+    }
 
 }

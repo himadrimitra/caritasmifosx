@@ -239,6 +239,9 @@ public final class Client extends AbstractPersistable<Long> {
 
     @Column(name = "is_force_activated", nullable = false)
     private boolean isForceActivated = false;
+    
+    @Column(name = "email_id", length = 100, nullable = true)
+    private String emailId;
 
     public static Client createNew(final AppUser currentUser, final Office clientOffice, final Group clientParentGroup, final Staff staff,
             final SavingsProduct savingsProduct, final CodeValue gender, final CodeValue clientType, final CodeValue clientClassification,
@@ -248,6 +251,7 @@ public final class Client extends AbstractPersistable<Long> {
         final String externalId = command.stringValueOfParameterNamed(ClientApiConstants.externalIdParamName);
         final String mobileNo = command.stringValueOfParameterNamed(ClientApiConstants.mobileNoParamName);
         final String alternateMobileNo = command.stringValueOfParameterNamed(ClientApiConstants.alternateMobileNoParamName);
+        final String emailId = command.stringValueOfParameterNamed(ClientApiConstants.emailAddress);
 
         final String firstname = command.stringValueOfParameterNamed(ClientApiConstants.firstnameParamName);
         final String middlename = command.stringValueOfParameterNamed(ClientApiConstants.middlenameParamName);
@@ -280,7 +284,7 @@ public final class Client extends AbstractPersistable<Long> {
         final SavingsAccount account = null;
         return new Client(currentUser, status, clientOffice, clientParentGroup, accountNo, firstname, middlename, lastname, fullname,
                 activationDate, officeJoiningDate, externalId, mobileNo, alternateMobileNo, staff, submittedOnDate, savingsProduct, account, dataOfBirth,
-                gender, clientType, clientClassification, legalForm);
+                gender, clientType, clientClassification, legalForm, emailId);
     }
 
     protected Client() {
@@ -291,7 +295,7 @@ public final class Client extends AbstractPersistable<Long> {
             final String accountNo, final String firstname, final String middlename, final String lastname, final String fullname,
             final LocalDate activationDate, final LocalDate officeJoiningDate, final String externalId, final String mobileNo, final String alternateMobileNo,
             final Staff staff, final LocalDate submittedOnDate, final SavingsProduct savingsProduct, final SavingsAccount savingsAccount,
-            final LocalDate dateOfBirth, final CodeValue gender, final CodeValue clientType, final CodeValue clientClassification, final Integer legalForm) {
+            final LocalDate dateOfBirth, final CodeValue gender, final CodeValue clientType, final CodeValue clientClassification, final Integer legalForm, final String emailId) {
 
         if (StringUtils.isBlank(accountNo)) {
             this.accountNumber = new RandomPasswordGenerator(19).generate();
@@ -373,6 +377,13 @@ public final class Client extends AbstractPersistable<Long> {
         if (dateOfBirth != null) {
             this.dateOfBirth = dateOfBirth.toDateTimeAtStartOfDay().toDate();
         }
+        
+        if (StringUtils.isNotBlank(emailId)) {
+            this.emailId = emailId.trim();
+        } else {
+            this.emailId = null;
+        }
+        
         this.clientType = clientType;
         this.clientClassification = clientClassification;
         this.setLegalForm(legalForm);
@@ -380,6 +391,7 @@ public final class Client extends AbstractPersistable<Long> {
         deriveDisplayName();
         validate();
     }
+
 
     private void validate() {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -570,6 +582,12 @@ public final class Client extends AbstractPersistable<Long> {
             final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.alternateMobileNoParamName);
             actualChanges.put(ClientApiConstants.alternateMobileNoParamName, newValue);
             this.alternateMobileNo = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        
+        if(command.isChangeInStringParameterNamed(ClientApiConstants.emailAddress, this.emailId)){
+            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.emailAddress);
+            actualChanges.put(ClientApiConstants.emailAddress, newValue);
+            this.emailId = StringUtils.defaultIfEmpty(newValue, null);
         }
 
         if (command.isChangeInStringParameterNamed(ClientApiConstants.firstnameParamName, this.firstname)) {
@@ -1090,4 +1108,15 @@ public final class Client extends AbstractPersistable<Long> {
     public void setForceActivate() {
 	    this.isForceActivated = true;
     }
+
+    
+    public String getEmailId() {
+        return this.emailId;
+    }
+
+    
+    public void setEmailId(String emailId) {
+        this.emailId = emailId;
+    }
+    
 }
