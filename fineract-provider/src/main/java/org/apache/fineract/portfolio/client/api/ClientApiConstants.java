@@ -98,6 +98,7 @@ public class ClientApiConstants {
     public static final String closureDateParamName = "closureDate";
     public static final String closureReasonIdParamName = "closureReasonId";
     public static final String reopenedDateParamName = "reopenedDate";
+    public static final String emailAddress ="email";
 
 
     public static final String rejectionDateParamName = "rejectionDate";
@@ -207,7 +208,7 @@ public class ClientApiConstants {
             staffIdParamName, submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName,
             clientTypeIdParamName, clientClassificationIdParamName, clientNonPersonDetailsParamName, displaynameParamName,
             legalFormIdParamName, AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
-            ExistingLoanApiConstants.existingLoansParamName));
+            ExistingLoanApiConstants.existingLoansParamName,emailAddress));
 
     public static final Set<String> CLIENT_NON_PERSON_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
             Arrays.asList(localeParamName, dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 
@@ -218,7 +219,7 @@ public class ClientApiConstants {
             lastnameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName, savingsProductIdParamName,
             dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName, submittedOnDateParamName,
             clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName, AddressApiConstants.addressesParamName,
-            FamilyDetailsApiConstants.familyMembersParamName, ExistingLoanApiConstants.existingLoansParamName));
+            FamilyDetailsApiConstants.familyMembersParamName, ExistingLoanApiConstants.existingLoansParamName, emailAddress));
 
     public static final Set<String> CLIENT_NON_PERSON_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 
@@ -246,7 +247,7 @@ public class ClientApiConstants {
             transferToOfficeIdParamName, transferToOfficeNameParamName, hierarchyParamName, imageIdParamName, imagePresentParamName,
             staffIdParamName, staffNameParamName, timelineParamName, groupsParamName, officeOptionsParamName, staffOptionsParamName,
             dateOfBirthParamName, genderParamName, clientTypeParamName, clientClassificationParamName, legalFormParamName, 
-            clientNonPersonDetailsParamName));
+            clientNonPersonDetailsParamName,emailAddress));
 
     public static final Set<String> ACTIVATION_REQUEST_DATA_PARAMETERS = new HashSet<>(
             Arrays.asList(localeParamName, dateFormatParamName, activationDateParamName));
