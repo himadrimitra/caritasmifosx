@@ -126,10 +126,9 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                     notifyParentTask(performingUser, task.getParent(), task, status, TaskStatusType.fromInt(task.getStatus()));
                 }
             }
-         if(task.getCompleteOnAction().equals(actionType.getValue()))
-         {
-             doActionOnTask(performingUser, taskId, TaskActionType.ACTIVITYCOMPLETE);
-         }
+            if (task.getCompleteOnAction() != null && task.getCompleteOnAction().equals(actionType.getValue())) {
+                doActionOnTask(performingUser, taskId, TaskActionType.ACTIVITYCOMPLETE);
+            }
         }
         return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
         // do Action Log
