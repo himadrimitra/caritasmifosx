@@ -38,7 +38,7 @@ import javax.xml.bind.annotation.XmlType;
     "inquiryRequestInfo",
     "reportData"
 })
-@XmlRootElement(name = "RESPONSE")
+@XmlRootElement(name = "InquiryResponse")
 public class InquiryResponseType {
 
     @XmlElement(name = "InquiryResponseHeader", required = true)

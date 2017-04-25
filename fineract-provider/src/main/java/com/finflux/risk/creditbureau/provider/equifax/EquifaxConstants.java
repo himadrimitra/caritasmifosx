@@ -74,4 +74,9 @@ public interface EquifaxConstants {
     // Closed Loan Status
     String SETTLED = "Settled";
     String CLOSED = "Closed Account";
+    
+    //Report Parameters
+    String REPORT_CUSTOMER_TYPE = "MFI" ;
+    String REPORT_GROUP_TYPE = "REP" ;
+    String REPORT_REPORT_TYPE = "2" ; //Summary
 }
