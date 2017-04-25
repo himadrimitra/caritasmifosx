@@ -1900,7 +1900,7 @@ public final class LoanApplicationTerms {
     }
 
     public Boolean isInterestChargedFromDateSameAsDisbursalDateEnabled() {
-        return this.isInterestChargedFromDateSameAsDisbursalDateEnabled;
+        return this.isInterestChargedFromDateSameAsDisbursalDateEnabled || this.interestMethod.isFlat();
     }
 
     public Integer getNumberOfdays() {

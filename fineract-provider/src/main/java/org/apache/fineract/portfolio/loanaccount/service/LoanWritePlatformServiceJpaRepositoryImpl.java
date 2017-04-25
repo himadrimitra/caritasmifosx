@@ -2619,6 +2619,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     lastActualRepaymentDate = variation.getDateValue();
                 }
                 dueDate = variation.getDateValue();
+                adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(dueDate, loanApplicationTerms,
+                        scheduleGeneratorDTO.getHolidayDetailDTO());
+                if (!adjustedDateDetailsDTO.getChangedActualRepaymentDate().isEqual(dueDate)) {
+                    lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
+                }
+                dueDate = adjustedDateDetailsDTO.getChangedScheduleDate();
             }
             if (installment.getDueDate().isBefore(currentDate)) {
                 lastScheduledDate = dueDate;
