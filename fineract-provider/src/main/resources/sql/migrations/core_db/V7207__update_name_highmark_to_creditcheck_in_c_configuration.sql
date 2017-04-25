@@ -1,0 +1,2 @@
+UPDATE `c_configuration` SET `name`='credit-check', `description`='Enable credit-check features' WHERE  name = 'high-mark';
+UPDATE `c_configuration` SET `name`='tranche-disbursal-credit-check', `description`='Enable Tranche disbursal credit check features' WHERE name ='tranche-disbursal-high-mark';
