@@ -91,7 +91,7 @@ public class CreditBureauEnquiryWritePlatformServiceImpl implements CreditBureau
     @Override
     public void saveReportResponseDetails(LoanEnquiryReferenceData loanEnquiryReferenceData, CreditBureauResponse responseData) {
         try {
-            logger.info(this.gson.toJson(responseData));
+            //logger.info(this.gson.toJson(responseData));
             EnquiryResponse response = responseData.getEnquiryResponse();
             CreditBureauEnquiry creditBureauEnquiry = this.creditBureauEnquiryRepository.findOne(loanEnquiryReferenceData.getEnquiryId());
             creditBureauEnquiry.setStatus(response.getStatus().getValue());
