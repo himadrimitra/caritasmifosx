@@ -95,6 +95,8 @@ public class LoanChargeData {
     
     private TaxGroupData taxGroupData;
     
+    private final boolean isMandatory;
+    
     private Collection<LoanChargeTaxDetailsPaidByData> loanChargeTaxDetailsPaidByDatas = new ArrayList<>(1);
     
     private  List<ChargeSlabData> slabs;
@@ -102,8 +104,9 @@ public class LoanChargeData {
     public static LoanChargeData template(final Collection<ChargeData> chargeOptions) {
         final boolean isCapitalized = false;
         final Long taxGroupId = null;
+        final boolean isMandatory = false;
         return new LoanChargeData(null, null, null, null, null, null, null, null, chargeOptions, false, null, false, false, null, null,
-                null, null, null, false, isCapitalized, taxGroupId);
+                null, null, null, false, isCapitalized, taxGroupId, isMandatory);
     }
 
     /**
@@ -111,13 +114,14 @@ public class LoanChargeData {
      * charges)
      * @param isGlimCharge 
      * @param isCapitalized 
+     * @param isMandatory TODO
      */
     public static LoanChargeData newLoanChargeDetails(final Long chargeId, final String name, final CurrencyData currency,
             final BigDecimal amount, final BigDecimal percentage, final EnumOptionData chargeTimeType,
             final EnumOptionData chargeCalculationType, final boolean penalty, final EnumOptionData chargePaymentMode,
-            final BigDecimal minCap, final BigDecimal maxCap, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId) {
+            final BigDecimal minCap, final BigDecimal maxCap, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
         return new LoanChargeData(null, chargeId, name, currency, amount, percentage, chargeTimeType, chargeCalculationType, null, penalty,
-                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge, isCapitalized, taxGroupId);
+                chargePaymentMode, false, false, null, minCap, maxCap, null, null, isGlimCharge, isCapitalized, taxGroupId, isMandatory);
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
@@ -126,7 +130,7 @@ public class LoanChargeData {
             final EnumOptionData chargeCalculationType, final BigDecimal percentage, final BigDecimal amountPercentageAppliedTo,
             final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid, final boolean waived, final Long loanId,
             final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId,final boolean isMandatory) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -166,13 +170,14 @@ public class LoanChargeData {
         this.isGlimCharge = isGlimCharge;
         this.isCapitalized = isCapitalized;
         this.taxGroupId = taxGroupId;
+        this.isMandatory=isMandatory;
     }
 
     private LoanChargeData(final Long id, final Long chargeId, final String name, final CurrencyData currency, final BigDecimal amount,
             final BigDecimal percentage, final EnumOptionData chargeTimeType, final EnumOptionData chargeCalculationType,
             final Collection<ChargeData> chargeOptions, final boolean penalty, final EnumOptionData chargePaymentMode, final boolean paid,
             final boolean waived, final Long loanId, final BigDecimal minCap, final BigDecimal maxCap, final BigDecimal amountOrPercentage,
-            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId) {
+            Collection<LoanInstallmentChargeData> installmentChargeData, final boolean isGlimCharge, final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = name;
@@ -213,6 +218,7 @@ public class LoanChargeData {
         this.isGlimCharge  = isGlimCharge;
         this.isCapitalized = isCapitalized;
         this.taxGroupId = taxGroupId;
+        this.isMandatory=isMandatory;
     }
 
     public LoanChargeData(final Long id, final LocalDate dueAsOfDate, final BigDecimal amountOutstanding, EnumOptionData chargeTimeType,
@@ -246,11 +252,12 @@ public class LoanChargeData {
         this.amountUnrecognized = null;
         this.isCapitalized = false;
         this.taxGroupId = null;
+        this.isMandatory=false;
     }
 
     public LoanChargeData(final Long id, final Long chargeId, final LocalDate dueAsOfDate, EnumOptionData chargeTimeType,
             final BigDecimal amount, final BigDecimal amountAccrued, final BigDecimal amountWaived, final boolean penalty,
-            final boolean isCapitalized, final Long taxGroupId) {
+            final boolean isCapitalized, final Long taxGroupId, final boolean isMandatory) {
         this.id = id;
         this.chargeId = chargeId;
         this.name = null;
@@ -280,6 +287,7 @@ public class LoanChargeData {
         this.amountUnrecognized = null;
         this.isCapitalized = isCapitalized;
         this.taxGroupId = taxGroupId;
+        this.isMandatory=isMandatory;
     }
 
     public LoanChargeData(final BigDecimal amountUnrecognized, final LoanChargeData chargeData) {
@@ -312,6 +320,7 @@ public class LoanChargeData {
         this.amountUnrecognized = amountUnrecognized;
         this.isCapitalized = chargeData.isCapitalized;
         this.taxGroupId = chargeData.taxGroupId;
+        this.isMandatory=chargeData.isMandatory;
     }
 
     public LoanChargeData(final LoanChargeData chargeData, final Collection<LoanInstallmentChargeData> installmentChargeData) {
@@ -344,6 +353,7 @@ public class LoanChargeData {
         this.amountUnrecognized = chargeData.amountUnrecognized;
         this.isCapitalized = chargeData.isCapitalized;
         this.taxGroupId = chargeData.taxGroupId;
+        this.isMandatory=chargeData.isMandatory;
     }
 
     public LoanChargeData(final Long id, final LocalDate dueAsOfDate, final BigDecimal amountOrPercentage) {
@@ -376,6 +386,7 @@ public class LoanChargeData {
         this.amountUnrecognized = null;
         this.isCapitalized = false;
         this.taxGroupId = null;
+        this.isMandatory=false;
     }
 
     public boolean isChargePayable() {
