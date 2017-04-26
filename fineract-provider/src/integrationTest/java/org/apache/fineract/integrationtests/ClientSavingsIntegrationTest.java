@@ -880,7 +880,6 @@ public class ClientSavingsIntegrationTest {
 		DateFormat transactionDateFormat = new SimpleDateFormat("dd MMMM yyyy",
 				Locale.US);
 		Calendar transactionDate = Calendar.getInstance();
-		transactionDate.set(Calendar.DAY_OF_MONTH, 2);
 		String TRANSACTION_DATE = dateFormat.format(transactionDate.getTime());
 
 		/***
@@ -971,7 +970,7 @@ public class ClientSavingsIntegrationTest {
 		System.out
 				.println("-----Post Interest As on Successfully Worked----------");
 
-		transactionDate.set(Calendar.DAY_OF_MONTH, 3);
+		transactionDate = Calendar.getInstance();
 		TRANSACTION_DATE = dateFormat.format(transactionDate.getTime());
 
 		this.savingsAccountHelper.postInterestAsOnSavings(savingsId,
@@ -1094,7 +1093,7 @@ public class ClientSavingsIntegrationTest {
 					.println("-----Post Interest As on Successfully Worked----------");
 
 		}
-		transactionDate.set(Calendar.DAY_OF_MONTH, 1);
+		transactionDate = Calendar.getInstance();
 		TRANSACTION_DATE = dateFormat.format(transactionDate.getTime());
 		this.savingsAccountHelper.postInterestAsOnSavings(savingsId,
 				TRANSACTION_DATE);
@@ -1217,7 +1216,6 @@ public class ClientSavingsIntegrationTest {
 		DateFormat transactionDateFormat = new SimpleDateFormat("dd MMMM yyyy",
 				Locale.US);
 		Calendar transactionDate = Calendar.getInstance();
-		transactionDate.set(Calendar.DAY_OF_MONTH, 2);
 		String TRANSACTION_DATE = dateFormat.format(transactionDate.getTime());
 
 		 /***
@@ -1316,7 +1314,6 @@ public class ClientSavingsIntegrationTest {
 		System.out
 				.println("-----Post Interest As on Successfully Worked----------");
 
-		transactionDate.set(Calendar.DAY_OF_MONTH, 3);
 		TRANSACTION_DATE = dateFormat.format(transactionDate.getTime());
 
 		this.savingsAccountHelper.postInterestAsOnSavings(savingsId,
@@ -1439,7 +1436,7 @@ public class ClientSavingsIntegrationTest {
 					.println("-----Post Interest As on Successfully Worked----------");
 
 		}
-		transactionDate.set(Calendar.DAY_OF_MONTH, 1);
+		transactionDate = Calendar.getInstance();
 		TRANSACTION_DATE = dateFormat.format(transactionDate.getTime());
 		this.savingsAccountHelper.postInterestAsOnSavings(savingsId,
 				TRANSACTION_DATE);
@@ -1530,7 +1527,6 @@ public class ClientSavingsIntegrationTest {
         final String TRANSACTION_DATE = dateFormat.format(todaysDate.getTime());
         
         Calendar postedDate = Calendar.getInstance();
-        postedDate.set(Calendar.DAY_OF_MONTH, 2);
        
         final String POSTED_TRANSACTION_DATE = dateFormat.format(postedDate.getTime());
 
@@ -1624,6 +1620,7 @@ public class ClientSavingsIntegrationTest {
        System.out.println("------Post Interest As On After doing a post interest Successfully worked--------");
 
        todaysDate = Calendar.getInstance();
+       todaysDate.set(Calendar.DAY_OF_MONTH, 2);
        final String CLOSEDON_DATE = dateFormat.format(todaysDate.getTime());
        
        Calendar interestPostingDate = Calendar.getInstance();
@@ -1707,9 +1704,6 @@ public class ClientSavingsIntegrationTest {
        
         final String POSTED_TRANSACTION_DATE = dateFormat.format(postedDate.getTime());        
         Calendar postedLastDate = Calendar.getInstance();
-        int countOfDate=postedDate.getActualMaximum(Calendar.DAY_OF_MONTH);
-        System.out.println("count Of Date---> "+countOfDate);
-        postedLastDate.set(Calendar.DAY_OF_MONTH,countOfDate);
         final String POSTED_LAST_TRANSACTION_DATE = dateFormat.format(postedLastDate.getTime());
 
         /***
