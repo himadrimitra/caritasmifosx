@@ -3860,7 +3860,9 @@ public class Loan extends AbstractPersistable<Long> {
     private List<LoanTransaction> retreiveListOfTransactionsPostDisbursement() {
         final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
-            if (transaction.isNotReversed() && !(transaction.isDisbursement() || transaction.isNonMonetaryTransaction())) {
+            if (transaction.isNotReversed()
+                    && !(transaction.isDisbursement() || transaction.isNonMonetaryTransaction() || transaction
+                            .isBrokenPeriodInterestPosting())) {
                 repaymentsOrWaivers.add(transaction);
             }
         }
@@ -3874,7 +3876,8 @@ public class Loan extends AbstractPersistable<Long> {
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed()
                     && !(transaction.isDisbursement() || transaction.isAccrual() || transaction.isRepaymentAtDisbursement()
-                            || transaction.isNonMonetaryTransaction() || transaction.isIncomePosting())) {
+                            || transaction.isNonMonetaryTransaction() || transaction.isIncomePosting() || transaction
+                                .isBrokenPeriodInterestPosting())) {
                 repaymentsOrWaivers.add(transaction);
             }
         }
@@ -5129,7 +5132,7 @@ public class Loan extends AbstractPersistable<Long> {
         Money receivableInterest = Money.zero(getCurrency());
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed() && !transaction.isRepaymentAtDisbursement() && !transaction.isDisbursement()
-                    && !transaction.getTransactionDate().isAfter(tillDate)) {
+                    && !transaction.isBrokenPeriodInterestPosting() && !transaction.getTransactionDate().isAfter(tillDate)) {
                 if (transaction.isAccrual()) {
                     receivableInterest = receivableInterest.plus(transaction.getInterestPortion(getCurrency()));
                 } else if (transaction.isRepayment() || transaction.isInterestWaiver()) {
@@ -7356,7 +7359,7 @@ public class Loan extends AbstractPersistable<Long> {
         Money[] receivables = new Money[3];
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed() && !transaction.isRepaymentAtDisbursement() && !transaction.isDisbursement()
-                    && !transaction.getTransactionDate().isAfter(tillDate)) {
+                    && !transaction.isBrokenPeriodInterestPosting() && !transaction.getTransactionDate().isAfter(tillDate)) {
                 if (transaction.isAccrual()) {
                     receivableInterest = receivableInterest.plus(transaction.getInterestPortion(currency));
                     receivableFee = receivableFee.plus(transaction.getFeeChargesPortion(currency));
