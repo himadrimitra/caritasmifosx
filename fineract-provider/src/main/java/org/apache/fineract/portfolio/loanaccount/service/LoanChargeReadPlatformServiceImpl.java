@@ -87,10 +87,11 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("c.currency_code as currencyCode, oc.name as currencyName, ");
             sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
             sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
-            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId ");
+            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId,pc.is_mandatory as isMandatory ");
             sb.append("from m_charge c ");
             sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
             sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
+            sb.append("left join m_product_loan_charge pc on pc.charge_id=lc.charge_id ");
             sb.append("left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ");
             this.sqlSchema = sb.toString();
         }
@@ -114,11 +115,12 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("c.currency_code as currencyCode, oc.name as currencyName, ");
             sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
             sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
-            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId ");
+            sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId,pc.is_mandatory as isMandatory ");
             sb.append("from m_charge c ");
             sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
             sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
             sb.append(" LEFT JOIN f_charge_slab cs on cs.charge_id = lc.charge_id ");
+            sb.append("left join m_product_loan_charge pc on pc.charge_id=lc.charge_id ");
             sb.append("left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ");
             
             return sb.toString();
@@ -169,13 +171,14 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final boolean isGlimCharge = rs.getBoolean("isGlimCharge");
             final boolean isCapitalized = rs.getBoolean("isCapitalized");
             final Long taxGroupId = rs.getLong("taxGroupId");
+            final boolean isMandatory = rs.getBoolean("isMandatory");
             if (disbursementDate != null) {
                 dueAsOfDate = disbursementDate;
             }
 
             return new LoanChargeData(id, chargeId, name, currency, amount, amountPaid, amountWaived, amountWrittenOff, amountOutstanding,
                     chargeTimeType, dueAsOfDate, chargeCalculationType, percentageOf, amountPercentageAppliedTo, penalty, paymentMode,
-                    paid, waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge, isCapitalized, taxGroupId);
+                    paid, waived, null, minCap, maxCap, amountOrPercentage, null, isGlimCharge, isCapitalized, taxGroupId, isMandatory);
         }
     }
     
@@ -441,8 +444,9 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             final boolean penalty = rs.getBoolean("penalty");
             final boolean isCapitalized = rs.getBoolean("isCapitalized");
             final Long taxGroupId = rs.getLong("taxGroupId");
+            final boolean isMandatory =false; 
             return new LoanChargeData(id, chargeId, dueAsOfDate, chargeTimeType, amount, amountAccrued, amountWaived, penalty,
-                    isCapitalized, taxGroupId);
+                    isCapitalized, taxGroupId, isMandatory);
         }
     }
 
