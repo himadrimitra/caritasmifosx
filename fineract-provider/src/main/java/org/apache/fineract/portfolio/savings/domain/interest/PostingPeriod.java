@@ -34,7 +34,6 @@ import org.joda.time.LocalDate;
 
 public class PostingPeriod {
 
-    @SuppressWarnings("unused")
     private final LocalDateInterval periodInterval;
     private final MonetaryCurrency currency;
     private final SavingsCompoundingInterestPeriodType interestCompoundingType;
@@ -357,8 +356,10 @@ public class PostingPeriod {
                     periodStartDate = periodEndDate.plusDays(1);
                 }
             break;
-        // case NO_COMPOUNDING_SIMPLE_INTEREST:
-        // break;
+            case NO_COMPOUNDING:
+                compoundingPeriod = NoCompoundingPeriod.create(postingPeriodInterval, allEndOfDayBalances, upToInterestCalculationDate);
+                compoundingPeriods.add(compoundingPeriod);
+            break;
         }
 
         return compoundingPeriods;
@@ -371,6 +372,7 @@ public class PostingPeriod {
 
         switch (interestPeriodType) {
             case INVALID:
+            case NO_COMPOUNDING:
             break;
             case DAILY:
                 periodEndDate = periodStartDate;
@@ -417,11 +419,6 @@ public class PostingPeriod {
                 periodEndDate = periodStartDate.monthOfYear().withMaximumValue();
                 periodEndDate = periodEndDate.dayOfMonth().withMaximumValue();
             break;
-
-        // case NO_COMPOUNDING_SIMPLE_INTEREST:
-        // periodEndDate = periodStartDate.monthOfYear().withMaximumValue();
-        // periodEndDate = periodEndDate.dayOfMonth().withMaximumValue();
-        // break;
         }
 
         return periodEndDate;

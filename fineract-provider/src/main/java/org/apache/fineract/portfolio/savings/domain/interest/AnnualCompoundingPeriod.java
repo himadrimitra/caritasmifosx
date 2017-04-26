@@ -121,7 +121,8 @@ public class AnnualCompoundingPeriod implements CompoundingPeriod {
             switch (compoundingInterestPeriodType) {
                 case DAILY:
                     interestOnBalanceUnrounded = balance.calculateInterestOnBalanceAndInterest(interestToCompound, interestRateAsFraction,
-                            daysInYear, minBalanceForInterestCalculation, overdraftInterestRateAsFraction, minOverdraftForInterestCalculation);
+                            daysInYear, minBalanceForInterestCalculation, overdraftInterestRateAsFraction,
+                            minOverdraftForInterestCalculation, compoundingInterestPeriodType);
                 break;
                 case MONTHLY:
                     interestOnBalanceUnrounded = balance.calculateInterestOnBalance(interestToCompound, interestRateAsFraction, daysInYear,
@@ -143,8 +144,10 @@ public class AnnualCompoundingPeriod implements CompoundingPeriod {
                     interestOnBalanceUnrounded = balance.calculateInterestOnBalance(interestToCompound, interestRateAsFraction, daysInYear,
                             minBalanceForInterestCalculation, overdraftInterestRateAsFraction, minOverdraftForInterestCalculation);
                 break;
-                // case NO_COMPOUNDING_SIMPLE_INTEREST:
-                // break;
+                case NO_COMPOUNDING:
+                    interestOnBalanceUnrounded = balance.calculateInterestOnBalance(BigDecimal.ZERO, interestRateAsFraction, daysInYear,
+                            minBalanceForInterestCalculation, overdraftInterestRateAsFraction, minOverdraftForInterestCalculation);
+                break;
                 case INVALID:
                 break;
             }

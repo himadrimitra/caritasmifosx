@@ -24,6 +24,7 @@ import java.math.MathContext;
 import org.apache.fineract.infrastructure.core.domain.LocalDateInterval;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.joda.time.LocalDate;
 
 public class EndOfDayBalance {
@@ -92,13 +93,24 @@ public class EndOfDayBalance {
      * Interest = FV - PV PV = Principal or the Account Balance r = rate per
      * compounding period (so for daily, r = nominalInterestRateAsFraction x
      * 1/365 n = number of periods rate is compounded
+     * @param compoundingInterestPeriodType 
      */
     public BigDecimal calculateInterestOnBalanceAndInterest(final BigDecimal interestToCompound, final BigDecimal interestRateAsFraction,
             final long daysInYear, final BigDecimal minBalanceForInterestCalculation, final BigDecimal overdraftInterestRateAsFraction, 
-            final BigDecimal minOverdraftForInterestCalculation) {
+            final BigDecimal minOverdraftForInterestCalculation, final SavingsCompoundingInterestPeriodType compoundingInterestPeriodType) {
         final BigDecimal multiplicand = BigDecimal.ONE.divide(BigDecimal.valueOf(daysInYear), MathContext.DECIMAL64);
 
-        final BigDecimal presentValue = this.endOfDayBalance.getAmount().add(interestToCompound);
+        BigDecimal presentValue = BigDecimal.ZERO;
+        switch (compoundingInterestPeriodType) {
+            case NO_COMPOUNDING:
+                presentValue = this.endOfDayBalance.getAmount();
+            break;
+
+            default:
+                presentValue = this.endOfDayBalance.getAmount().add(interestToCompound);
+            break;
+        }
+                
         BigDecimal futureValue = presentValue.setScale(9, MoneyHelper.getRoundingMode());
         
         if(presentValue.compareTo(BigDecimal.ZERO) >= 0){
