@@ -827,8 +827,8 @@ public class Loan extends AbstractPersistable<Long> {
     private LocalDate getLastRepaymentPeriodDueDate(final boolean includeRecalculatedInterestComponent) {
         LocalDate lastRepaymentDate = getDisbursementDate();
         for (LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
-            if ((includeRecalculatedInterestComponent || !installment.isRecalculatedInterestComponent())
-                    && installment.getDueDate().isAfter(lastRepaymentDate)) {
+            if (((includeRecalculatedInterestComponent || installment.getPrincipal(getCurrency()).isGreaterThanZero()) || !installment
+                    .isRecalculatedInterestComponent()) && installment.getDueDate().isAfter(lastRepaymentDate)) {
                 lastRepaymentDate = installment.getDueDate();
             }
         }
