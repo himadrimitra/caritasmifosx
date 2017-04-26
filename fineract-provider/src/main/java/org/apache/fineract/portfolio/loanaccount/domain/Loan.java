@@ -7225,6 +7225,17 @@ public class Loan extends AbstractPersistable<Long> {
                 interest = interest.plus(installment.getInterestOutstanding(currency));
                 penalty = penalty.plus(installment.getPenaltyChargesOutstanding(currency));
                 fee = fee.plus(installment.getFeeChargesOutstanding(currency));
+                if(installment.getDueDate().isEqual(paymentDate)){
+                    for (LoanCharge loanCharge : this.charges) {
+                        if (loanCharge.isActive()
+                                && loanCharge.isOverdueInstallmentCharge()
+                                && loanCharge.getOverdueInstallmentCharge().getInstallment().getInstallmentNumber()
+                                        .equals(installment.getInstallmentNumber())) {
+                            penalty = penalty.minus(loanCharge.getAmount(currency));
+                        }
+
+                    }
+                }
             } else if (installment.getFromDate().isBefore(paymentDate)) {
                 Money[] balancesForCurrentPeroid = fetchInterestFeeAndPenaltyTillDate(paymentDate, currency, installment);                        
                 if (balancesForCurrentPeroid[0].isGreaterThan(balancesForCurrentPeroid[5])) {
@@ -7460,6 +7471,7 @@ public class Loan extends AbstractPersistable<Long> {
         Money totalPrincipal = Money.zero(currency);
         Money [] balances = retriveIncomeForOverlappingPeriod(transactionDate);
         boolean isInterestComponent = true;
+        int installmentNumberForRemovingCharges = this.repaymentScheduleInstallments.size();
         for (final LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
             if (!installment.getDueDate().isBefore(transactionDate)) {
                     totalPrincipal = totalPrincipal.plus(installment.getPrincipal(currency));
@@ -7467,6 +7479,9 @@ public class Loan extends AbstractPersistable<Long> {
                     if(installment.getDueDate().isEqual(transactionDate)){
                         isInterestComponent = false;
                     }
+                if (installmentNumberForRemovingCharges > installment.getInstallmentNumber()) {
+                    installmentNumberForRemovingCharges = installment.getInstallmentNumber();
+                }
             }   
             
         }
@@ -7505,6 +7520,9 @@ public class Loan extends AbstractPersistable<Long> {
             } else if (loanCharge.getDueLocalDate() == null) {
                 recalculateLoanCharge(loanCharge, penaltyWaitPeriod);
                 loanCharge.updateWaivedAmount(currency);
+            } else if (loanCharge.isOverdueInstallmentCharge()
+                    && loanCharge.getOverdueInstallmentCharge().getInstallment().getInstallmentNumber() >= installmentNumberForRemovingCharges){
+                loanCharge.setActive(false);
             }
         }
         
