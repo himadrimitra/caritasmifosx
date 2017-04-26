@@ -1025,7 +1025,7 @@ public class DataValidatorBuilder {
 	
     public DataValidatorBuilder validateEmailAddress() {
 
-        final String EMAIL_REGEX = "^[\\w!#$%&/’*+/=?`{|}~^-]+(?:\\.[\\w!#$%&/’*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+        final String EMAIL_REGEX = "^[\\w!#$%&/'*+=?`{|}~^-]+(?:\\.[\\w!#$%&/'*+=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
         final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
         Matcher emailMatcher = EMAIL_PATTERN.matcher(this.value.toString());
 
