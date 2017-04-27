@@ -1,10 +1,14 @@
 package com.finflux.mandates.service;
 
-import com.finflux.mandates.data.MandateTransactionsData;
-import com.finflux.mandates.data.MandatesProcessData;
-import com.finflux.mandates.data.MandatesSummaryData;
-import com.finflux.mandates.domain.MandateProcessStatusEnum;
-import com.finflux.portfolio.loan.mandate.domain.AccountTypeEnum;
+import java.math.BigDecimal;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.Page;
@@ -18,13 +22,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import com.finflux.mandates.data.MandateTransactionsData;
+import com.finflux.mandates.data.MandatesProcessData;
+import com.finflux.mandates.data.MandatesSummaryData;
+import com.finflux.mandates.domain.MandateProcessStatusEnum;
+import com.finflux.portfolio.loan.mandate.domain.AccountTypeEnum;
 
 @Service
 public class TransactionsProcessingReadPlatformServiceImpl implements  TransactionsProcessingReadPlatformService{
@@ -33,13 +35,16 @@ public class TransactionsProcessingReadPlatformServiceImpl implements  Transacti
         private final PlatformSecurityContext context;
         private final SimpleDateFormat yyyyMMddFormat = new SimpleDateFormat("yyyy-MM-dd");
         private final PaginationHelper<MandateTransactionsData> mandateTransactionsDataPaginationHelper = new PaginationHelper<>();
-
+        private final ConfigurationDomainService configurationDomainService;
+        private final Integer DEFAULT_NUMBER_OF_DAYS = 5 ;
+        
         @Autowired
         public TransactionsProcessingReadPlatformServiceImpl(final PlatformSecurityContext context,
-                final RoutingDataSource dataSource){
+                final RoutingDataSource dataSource, final ConfigurationDomainService configurationDomainService){
 
                 this.context = context;
                 this.jdbcTemplate = new JdbcTemplate(dataSource);
+                this.configurationDomainService = configurationDomainService;
 
         }
 
@@ -49,9 +54,13 @@ public class TransactionsProcessingReadPlatformServiceImpl implements  Transacti
                         AppUser user = this.context.authenticatedUser();
                         final String hierarchy = user.getOffice().getHierarchy();
                         final String hierarchySearchString = hierarchy + "%";
-
                         final Date curDate = new Date();
-                        final String startDate = yyyyMMddFormat.format(new Date(curDate.getTime() - (5*24*60*60*1000)));
+                        int totalNumberOfDays = DEFAULT_NUMBER_OF_DAYS ;
+                        
+                        if(this.configurationDomainService.retrieveNumberOfDays()!=null) {
+                        	totalNumberOfDays = this.configurationDomainService.retrieveNumberOfDays() ;
+                        }
+                        final String startDate	= yyyyMMddFormat.format(new Date(curDate.getTime() - (totalNumberOfDays*24*60*60*1000)));
                         final String endDate = yyyyMMddFormat.format(new Date(curDate.getTime() - (1*24*60*60*1000)));
 
                         MandatesTransactionsDataMapper mapper = new MandatesTransactionsDataMapper();
