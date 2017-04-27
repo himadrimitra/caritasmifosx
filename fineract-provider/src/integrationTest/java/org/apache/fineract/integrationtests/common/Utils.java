@@ -27,6 +27,8 @@ import static org.junit.Assert.fail;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
@@ -183,4 +185,16 @@ public class Utils {
         return randomStringGenerator(len, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
 
+    public static final DayOfWeek[] nonWorkingDays = {};
+
+    public static LocalDate getWorkingDay() {
+        return getWorkingDay(Utils.getLocalDateOfTenant());
+    }
+
+    public static LocalDate getWorkingDay(LocalDate date) {
+        if (Arrays.asList(nonWorkingDays).contains(DayOfWeek.of(date.getDayOfWeek()))) {
+            date = getWorkingDay(date.plusDays(1));
+        }
+        return date;
+    }
 }

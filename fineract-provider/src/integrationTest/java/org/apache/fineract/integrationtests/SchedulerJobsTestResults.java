@@ -53,6 +53,7 @@ import org.apache.fineract.integrationtests.common.savings.SavingsProductHelper;
 import org.apache.fineract.integrationtests.common.savings.SavingsStatusChecker;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
+import org.joda.time.LocalDate;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -280,6 +281,8 @@ public class SchedulerJobsTestResults {
         System.out.println("loanProductID..."+loanProductID);
         Assert.assertNotNull(loanProductID);
 
+        LocalDate date = Utils.getWorkingDay();
+        
         final Integer loanID = applyForLoanApplicationForHoliday(clientID.toString(), loanProductID.toString(), null);
         System.out.println("loanID..."+loanID);
         Assert.assertNotNull(loanID);
@@ -287,10 +290,12 @@ public class SchedulerJobsTestResults {
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
 
-        loanStatusHashMap = this.loanTransactionHelper.approveLoan(AccountTransferTest.LOAN_APPROVAL_DATE, loanID);
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(
+                new LocalDate(date.getYear(), date.getMonthOfYear(), 1).toString("dd MMMM yyyy"), loanID);
         LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
 
-        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(AccountTransferTest.LOAN_DISBURSAL_DATE, loanID);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(
+                new LocalDate(date.getYear(), date.getMonthOfYear(), 1).toString("dd MMMM yyyy"), loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
         
         final ArrayList<HashMap> repaymentScheduleData = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
@@ -298,52 +303,26 @@ public class SchedulerJobsTestResults {
         
         HashMap holidayData = this.holidayHelper.getHolidayById(this.requestSpec, this.responseSpec, christmasHolidayId.toString());
         ArrayList<Integer> repaymentsRescheduledDate = (ArrayList<Integer>) holidayData.get("repaymentsRescheduledTo");
-
-        ArrayList<Integer> rescheduleDateAfter = (ArrayList<Integer>) repaymentScheduleData.get(2).get("fromDate");
-        ArrayList<Integer> rescheduleDueDate = (ArrayList<Integer>) repaymentScheduleData.get(8).get("dueDate");
-        Integer rescheduleDaysInPeriod = (Integer) repaymentScheduleData.get(8).get("daysInPeriod");
-        ArrayList<Integer> rescheduleDueDate8 = new ArrayList<Integer>();
-        rescheduleDueDate8.add(7);
-        rescheduleDueDate8.add(12);
-        rescheduleDueDate8.add(2013);
-        rescheduleDueDate.removeAll(rescheduleDueDate8);
+        date = new LocalDate(date.getYear(), date.getMonthOfYear(), 1);
+        ArrayList<Integer> rescheduleDueDate = (ArrayList<Integer>) repaymentScheduleData.get(3).get("dueDate");
+        Integer rescheduleDaysInPeriod = (Integer) repaymentScheduleData.get(3).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDate3 = new ArrayList<Integer>();
+        date = date.plusMonths(3);
+        rescheduleDueDate3.add(date.getMonthOfYear());
+        rescheduleDueDate3.add(date.getDayOfMonth());
+        rescheduleDueDate3.add(date.getYear());
+        rescheduleDueDate.removeAll(rescheduleDueDate3);
         Assert.assertTrue(rescheduleDueDate.isEmpty());
                 
-        ArrayList<Integer> rescheduleDueDate9 = (ArrayList<Integer>) repaymentScheduleData.get(9).get("dueDate");
-        Integer rescheduleDaysInPeriod9 = (Integer) repaymentScheduleData.get(9).get("daysInPeriod");
-        ArrayList<Integer> rescheduleDueDat9 = new ArrayList<Integer>();
-        rescheduleDueDat9.add(14);
-        rescheduleDueDat9.add(12);
-        rescheduleDueDat9.add(2013);
-        rescheduleDueDate9.removeAll(rescheduleDueDat9);
-        Assert.assertTrue(rescheduleDueDate9.isEmpty());
-        
-        ArrayList<Integer> rescheduleDueDate10 = (ArrayList<Integer>) repaymentScheduleData.get(10).get("dueDate");
-        Integer rescheduleDaysInPeriod10 = (Integer) repaymentScheduleData.get(10).get("daysInPeriod");
-        ArrayList<Integer> rescheduleDueDat10 = new ArrayList<Integer>();
-        rescheduleDueDat10.add(31);
-        rescheduleDueDat10.add(12);
-        rescheduleDueDat10.add(2013);
-        rescheduleDueDate10.removeAll(rescheduleDueDat10);
-        Assert.assertTrue(rescheduleDueDate10.isEmpty());
-        
-        ArrayList<Integer> rescheduleDueDate11 = (ArrayList<Integer>) repaymentScheduleData.get(11).get("dueDate");
-        Integer rescheduleDaysInPeriod11 = (Integer) repaymentScheduleData.get(11).get("daysInPeriod");
-        ArrayList<Integer> rescheduleDueDat11 = new ArrayList<Integer>();
-        rescheduleDueDat11.add(31);
-        rescheduleDueDat11.add(12);
-        rescheduleDueDat11.add(2013);
-        rescheduleDueDate11.removeAll(rescheduleDueDat11);
-        Assert.assertTrue(rescheduleDueDate11.isEmpty());
-        
-        ArrayList<Integer> rescheduleDueDate12 = (ArrayList<Integer>) repaymentScheduleData.get(12).get("dueDate");
-        Integer rescheduleDaysInPeriod12 = (Integer) repaymentScheduleData.get(12).get("daysInPeriod");
-        ArrayList<Integer> rescheduleDueDat12 = new ArrayList<Integer>();
-        rescheduleDueDat12.add(4);
-        rescheduleDueDat12.add(1);
-        rescheduleDueDat12.add(2014);
-        rescheduleDueDate12.removeAll(rescheduleDueDat12);
-        Assert.assertTrue(rescheduleDueDate12.isEmpty());
+        ArrayList<Integer> rescheduleDueDate5 = (ArrayList<Integer>) repaymentScheduleData.get(5).get("dueDate");
+        Integer rescheduleDaysInPeriod5 = (Integer) repaymentScheduleData.get(5).get("daysInPeriod");
+        ArrayList<Integer> rescheduleDueDat5 = new ArrayList<Integer>();
+        date = date.plusMonths(2).plusDays(1);
+        rescheduleDueDat5.add(date.getMonthOfYear());
+        rescheduleDueDat5.add(date.getDayOfMonth());
+        rescheduleDueDat5.add(date.getYear());
+        rescheduleDueDate5.removeAll(rescheduleDueDat5);
+        Assert.assertTrue(rescheduleDueDate5.isEmpty());
         
         this.globalConfigurationHelper.setConfiguration("reschedule-repayments-on-holidays", false, requestSpec, responseSpec); 
         this.holidayHelper.deleteHolidays(requestSpec, responseSpec, christmasHolidayId.toString());
@@ -373,10 +352,10 @@ public class SchedulerJobsTestResults {
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
 
-        loanStatusHashMap = this.loanTransactionHelper.approveLoan(AccountTransferTest.LOAN_APPROVAL_DATE, loanID);
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(Utils.getWorkingDay().toString("dd MMMM yyyy"), loanID);
         LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
 
-        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(AccountTransferTest.LOAN_DISBURSAL_DATE, loanID);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(Utils.getWorkingDay().toString("dd MMMM yyyy"), loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
         
         final ArrayList<HashMap> repaymentScheduleDataBeforeJob = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
@@ -960,28 +939,29 @@ public class SchedulerJobsTestResults {
                 .withAmortizationTypeAsEqualInstallments() //
                 .withInterestTypeAsDecliningBalance() //
                 .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
-                .withExpectedDisbursementDate("10 January 2013") //
-                .withSubmittedOnDate("10 January 2013") //
+                .withExpectedDisbursementDate(Utils.getWorkingDay().toString("dd MMMM yyyy")) //
+                .withSubmittedOnDate(Utils.getWorkingDay().toString("dd MMMM yyyy")) //
                 .build(clientID, loanProductID, savingsID);
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }
     
     private Integer applyForLoanApplicationForHoliday(final String clientID, final String loanProductID, final String savingsID) {
         System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
+        final LocalDate date = Utils.getWorkingDay();
         final String loanApplicationJSON = new LoanApplicationTestBuilder() //
                 .withPrincipal("50,000.00") //
                 .withLoanTermFrequency("22") //
-                .withLoanTermFrequencyAsWeeks() //
+                .withLoanTermFrequencyAsMonths() //
                 .withNumberOfRepayments("22") //
                 .withRepaymentEveryAfter("1") //
-                .withRepaymentFrequencyTypeAsWeeks() //
+                .withRepaymentFrequencyTypeAsMonths() //
                 .withInterestRatePerPeriod("2") //
                 .withAmortizationTypeAsEqualInstallments() //
                 .withInterestTypeAsDecliningBalance() //
                 .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
-                .withExpectedDisbursementDate("05 October 2013") //
-                .withSubmittedOnDate("10 January 2013") //
-                .withFirstRepaymentDate("05 October 2013")
+                .withExpectedDisbursementDate(new LocalDate(date.getYear(), date.getMonthOfYear(), 1).toString("dd MMMM yyyy")) //
+                .withSubmittedOnDate(new LocalDate(date.getYear(), date.getMonthOfYear(), 1).toString("dd MMMM yyyy")) //
+                .withFirstRepaymentDate(new LocalDate(date.getYear(), date.getMonthOfYear(), 1).toString("dd MMMM yyyy"))
                 .build(clientID, loanProductID, savingsID);
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }
