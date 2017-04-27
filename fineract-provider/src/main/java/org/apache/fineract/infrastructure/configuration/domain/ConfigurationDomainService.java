@@ -136,5 +136,7 @@ public interface ConfigurationDomainService {
     boolean isGlimPaymentAsGroup();
 
     boolean isOfficeSpecificProductsEnabled();
+    
+    public Integer retrieveNumberOfDays();
 
 }

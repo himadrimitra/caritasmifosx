@@ -447,5 +447,13 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
     public boolean isOfficeSpecificProductsEnabled() {
         return getGlobalConfigurationPropertyData("office-specific-products-enabled").isEnabled();
     }
+    
+    @Override
+    public Integer retrieveNumberOfDays() {
+        final String propertyName = "number-of-days-for-ACH-failed-transactions";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        if (property.isEnabled()) { return integerValue(property.getValue()); }
+        return null;
+    }
 
 }
