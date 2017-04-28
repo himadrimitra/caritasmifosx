@@ -38,6 +38,42 @@ SELECT MIN(je.id) id
  LEFT JOIN m_payment_detail pds ON pds.id=st.payment_detail_id
  LEFT JOIN m_client_transaction ct ON ct.id=je.client_transaction_id
  LEFT JOIN m_payment_detail pdc ON pdc.id=ct.payment_detail_id
+ WHERE je.reversed=0
+GROUP BY je.transaction_id
+
+UNION
+
+SELECT MIN(je.id) id
+,je.office_id office_id
+,IFNULL(pdt.id,IFNULL(pds.id,pdc.id)) payment_detail_id
+,je.currency_code currency_code
+,je.transaction_id transaction_identifier
+,je.manual_entry manual_entry
+,je.reversed reversed
+,MIN(je.reversal_id) reversal_id
+,je.entry_date entry_date
+,je.entry_date value_date
+,je.entry_date effective_date
+,CASE je.manual_entry
+	WHEN 1 THEN NULL
+	ELSE IF(je.client_transaction_id IS NULL,IF(je.savings_transaction_id IS NULL,1,2),3)
+	END entity_type_enum
+,je.entity_id entity_id
+,IFNULL(je.client_transaction_id,IFNULL(je.savings_transaction_id,je.loan_transaction_id)) entity_transaction_id
+,je.ref_num ref_num
+,je.description description
+,je.createdby_id createdby_id
+,je.lastmodifiedby_id lastmodifiedby_id
+,je.created_date created_date
+,je.lastmodified_date lastmodified_date
+ FROM acc_gl_journal_entry je
+ LEFT JOIN m_loan_transaction t ON t.id=je.loan_transaction_id
+ LEFT JOIN m_payment_detail pdt ON pdt.id=t.payment_detail_id
+ LEFT JOIN m_savings_account_transaction st ON st.id=je.savings_transaction_id
+ LEFT JOIN m_payment_detail pds ON pds.id=st.payment_detail_id
+ LEFT JOIN m_client_transaction ct ON ct.id=je.client_transaction_id
+ LEFT JOIN m_payment_detail pdc ON pdc.id=ct.payment_detail_id
+ WHERE je.reversed=1
 GROUP BY je.transaction_id
 ORDER BY 1 DESC;
 
@@ -46,7 +82,17 @@ ORDER BY 1 DESC;
 INSERT INTO f_journal_entry_detail (journal_entry_id,account_id,type_enum,amount)
 SELECT fj.id,je.account_id,je.type_enum,je.amount
 FROM f_journal_entry fj
-JOIN acc_gl_journal_entry je ON je.transaction_id=fj.transaction_identifier;
+JOIN acc_gl_journal_entry je ON je.transaction_id=fj.transaction_identifier
+WHERE fj.reversed=0
+AND je.reversed=0
+
+UNION ALL
+
+SELECT fj.id,je.account_id,je.type_enum,je.amount
+FROM f_journal_entry fj
+JOIN acc_gl_journal_entry je ON je.transaction_id=fj.transaction_identifier
+WHERE fj.reversed=1
+AND je.reversed=1
 
 
 
