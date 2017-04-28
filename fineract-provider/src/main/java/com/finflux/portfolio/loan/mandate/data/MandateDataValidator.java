@@ -80,10 +80,14 @@ public class MandateDataValidator {
 
                 final LocalDate periodFromDate = this.fromApiJsonHelper.extractLocalDateNamed(MandateApiConstants.periodFromDate, element);
                 baseDataValidator.reset().parameter(MandateApiConstants.periodFromDate).value(periodFromDate).notNull();
-
+                if(periodFromDate != null) {
+                    LocalDate currentDate = DateUtils.getLocalDateOfTenant() ;
+                    if(periodFromDate.isAfter(currentDate)) {
+                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("periodFromDate.should.not.be.after.currentdate");
+                    }
+                }
                 final LocalDate periodToDate = this.fromApiJsonHelper.extractLocalDateNamed(MandateApiConstants.periodToDate, element);
                 final Boolean periodUntilCancelled = this.fromApiJsonHelper.extractBooleanNamed(MandateApiConstants.periodUntilCancelled, element);
-
                 baseDataValidator.reset().parameter(MandateApiConstants.periodToDate).value(periodToDate).ignoreIfNull().notNull();
                 if(periodToDate != null) {
                     LocalDate currentDate = DateUtils.getLocalDateOfTenant() ;
