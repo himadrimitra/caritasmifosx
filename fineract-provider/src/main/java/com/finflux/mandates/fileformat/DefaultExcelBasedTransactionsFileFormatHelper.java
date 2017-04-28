@@ -3,8 +3,11 @@ package com.finflux.mandates.fileformat;
 import com.finflux.mandates.data.MandateTransactionsData;
 import com.finflux.mandates.data.MandatesProcessData;
 import com.finflux.mandates.data.ProcessResponseData;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.configuration.data.NACHCredentialsData;
 import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
+import org.apache.http.impl.entity.StrictContentLengthStrategy;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.usermodel.*;
@@ -93,7 +96,10 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                                 extractSpecialValues(colIx, cellValue, data);
                         }
                         data.setRowId(rowIx);
-                        ret.add(data);
+                        if(!StringUtils.isEmpty(data.getReference()) && data.getTransactionDate() != null) {
+                            ret.add(data);
+                        }
+                       
                 }
 
                 return ret;
@@ -134,10 +140,15 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                         data.setFailureReason(cellValue);
                 }
                 if(specialValueColumnNumbers[3] != -1 && specialValueColumnNumbers[3] == colIx){
+                    if(!StringUtils.isEmpty(cellValue)) {
                         data.setAmount(new BigDecimal(cellValue));
+                    }
                 }
                 if(specialValueColumnNumbers[4] != -1 && specialValueColumnNumbers[4] == colIx){
+                    if(!StringUtils.isEmpty(cellValue)) {
                         data.setTransactionDate(new SimpleDateFormat(getDateFormatForTransactionUpload()).parse(cellValue));
+                    }
+                        
                 }
         }
 

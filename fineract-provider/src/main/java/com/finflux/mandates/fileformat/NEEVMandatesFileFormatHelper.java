@@ -11,7 +11,7 @@ public class NEEVMandatesFileFormatHelper extends DefaultExcelBasedMandatesFileF
                 "Customer Additional Identification- Permanent ID of customer"};
 
         private int[] contentsSpecForMandateDownload = {ACTION, UMRN, REQUEST_DATE, BANK_ACCOUNT_TYPE, BANK_ACCOUNT_NUMBER,
-                MICR, IFSC, DEBIT_AMOUNT, FREQUENCY, DEBIT_TYPE, REF_1, BLANK, BLANK, BLANK,
+                MICR, IFSC, DEBIT_AMOUNT, FREQUENCY, DEBIT_TYPE, REF_1, BLANK, PHONE, EMAIL,
                 START_DATE, END_DATE, UNTIL_CANCELLED, NAME_PRIMARY_ACNT_HOLDER,
                 BLANK, BLANK, BLANK};
 
