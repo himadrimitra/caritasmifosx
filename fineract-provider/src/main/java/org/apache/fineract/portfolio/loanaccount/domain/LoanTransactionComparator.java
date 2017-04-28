@@ -45,8 +45,14 @@ public class LoanTransactionComparator implements Comparator<LoanTransaction> {
             } else {
                 compareResult = 0;
             }
-            if (o1.getCreatedDate() != null && o2.getCreatedDate() != null) {
+            if (o1.getCreatedDate() != null || o2.getCreatedDate() != null) {
+                if(o1.getCreatedDate() != null && o2.getCreatedDate() != null){
                 comparisonBasedOnCreatedDate = o1.getCreatedDate().compareTo(o2.getCreatedDate());
+                }else if(o1.getCreatedDate() == null){
+                    comparisonBasedOnCreatedDate =  1;
+                }else{
+                    comparisonBasedOnCreatedDate =  -1;
+                }
             }
             // equal transaction dates
             if (comparisonBasedOnCreatedDate == 0) {
