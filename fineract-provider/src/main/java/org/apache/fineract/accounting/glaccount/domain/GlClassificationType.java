@@ -8,39 +8,38 @@ package org.apache.fineract.accounting.glaccount.domain;
 
 public enum GlClassificationType {
 
-	CashGL(1, "glClassificationType.CashGL"), BankGL(2, "glClassificationType.BankGL"), OtherJVGL(3,
-			"glClassificationType.OtherJVGL");
+    Cash(1, "glClassificationType.Cash"), Bank(2, "glClassificationType.Bank"), OtherJV(3, "glClassificationType.OtherJV");
 
-	private final Integer value;
-	private final String code;
+    private final Integer value;
+    private final String code;
 
-	private GlClassificationType(Integer value, String code) {
-		this.value = value;
-		this.code = code;
-	}
+    private GlClassificationType(Integer value, String code) {
+        this.value = value;
+        this.code = code;
+    }
 
-	public Integer getValue() {
-		return this.value;
-	}
+    public Integer getValue() {
+        return this.value;
+    }
 
-	public String getCode() {
-		return this.code;
-	}
+    public String getCode() {
+        return this.code;
+    }
 
-	public static GlClassificationType fromInt(final Integer frequency) {
-		GlClassificationType glClassificationType = GlClassificationType.CashGL;
-		if (frequency != null) {
-			switch (frequency) {
-			case 1:
-				glClassificationType = GlClassificationType.CashGL;
-				break;
-			case 2:
-				glClassificationType = GlClassificationType.BankGL;
-				break;
-			case 3:
-				glClassificationType = GlClassificationType.OtherJVGL;
-			}
-		}
-		return glClassificationType;
-	}
+    public static GlClassificationType fromInt(final Integer frequency) {
+        GlClassificationType glClassificationType = GlClassificationType.Cash;
+        if (frequency != null) {
+            switch (frequency) {
+                case 1:
+                    glClassificationType = GlClassificationType.Cash;
+                break;
+                case 2:
+                    glClassificationType = GlClassificationType.Bank;
+                break;
+                case 3:
+                    glClassificationType = GlClassificationType.OtherJV;
+            }
+        }
+        return glClassificationType;
+    }
 }
