@@ -212,7 +212,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         public String collectionSheetSchema(final boolean isCenterCollection) {
             StringBuffer sql = new StringBuffer(400);
-            sql.append("SELECT loandata.*, sum(lc.amount_outstanding_derived) as chargesDue from ")
+            sql.append("SELECT loandata.*, IFNULL(SUM(lc.amount_outstanding_derived),0)+ifnull(feeDue,0) +ifnull(penaltyDue,0) as chargesDue from ")
                     .append("(SELECT gp.display_name As groupName, ")
                     .append("gp.id As groupId, ")
                     .append("cl.display_name As clientName, ")
@@ -230,9 +230,11 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                     .append("if(ln.loan_status_id = 200 , ln.principal_amount , null) As disbursementAmount, ")
                     .append("sum(ifnull(if(ln.loan_status_id = 300, ls.principal_amount, 0.0), 0.0) - ifnull(if(ln.loan_status_id = 300, ls.principal_completed_derived, 0.0), 0.0)) As principalDue, ")
                     .append("ln.principal_repaid_derived As principalPaid, ")
-                    .append("sum(ifnull(if(ln.loan_status_id = 300, ls.interest_amount, 0.0), 0.0) - ifnull(if(ln.loan_status_id = 300, ls.interest_completed_derived, 0.0), 0.0)) As interestDue, ")
+                    .append("sum(ifnull(if(ln.loan_status_id = 300, ls.interest_amount, 0.0), 0.0) - ifnull(if(ln.loan_status_id = 300, ls.interest_completed_derived, 0.0), 0.0)-IFNULL(IF(ln.loan_status_id = 300, ls.interest_waived_derived, 0.0), 0.0)) As interestDue, ")
                     .append("ln.interest_repaid_derived As interestPaid, ")
-                    .append("ca.attendance_type_enum as attendanceTypeId ")
+                    .append("ca.attendance_type_enum as attendanceTypeId, ")
+                    .append("SUM(IFNULL(IF(ln.loan_status_id = 300, ls.fee_charges_amount, 0.0), 0.0) - IFNULL(IF(ln.loan_status_id = 300, ls.fee_charges_completed_derived, 0.0), 0.0)-IFNULL(IF(ln.loan_status_id = 300, ls.fee_charges_waived_derived, 0.0), 0.0)) AS feeDue, ")
+                    .append("SUM(IFNULL(IF(ln.loan_status_id = 300, ls.penalty_charges_amount, 0.0), 0.0) - IFNULL(IF(ln.loan_status_id = 300, ls.penalty_charges_completed_derived, 0.0), 0.0)-IFNULL(IF(ln.loan_status_id = 300, ls.penalty_charges_waived_derived, 0.0), 0.0)) AS penaltyDue ")
                     .append("FROM m_group gp ")
                     .append("LEFT JOIN m_office of ON of.id = gp.office_id AND of.hierarchy like :officeHierarchy ")
                     .append("JOIN m_group_level gl ON gl.id = gp.level_Id ")
@@ -258,7 +260,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                     .append("and (cl.status_enum = 300 or (cl.status_enum = 600 and cl.closedon_date >= :dueDate)) ")
                     .append("GROUP BY gp.id ,cl.id , ln.id ORDER BY gp.id , cl.id , ln.id ").append(") loandata ")
                     .append("LEFT JOIN m_loan_charge lc ON lc.loan_id = loandata.loanId AND lc.is_paid_derived = 0 AND lc.is_active = 1 ")
-                    .append("AND ( lc.due_for_collection_as_of_date  <= :dueDate OR lc.charge_time_enum = 1) ")
+                    .append("AND  lc.charge_time_enum = 1 ")
                     .append("GROUP BY loandata.groupId, ").append("loandata.clientId, ").append("loandata.loanId ")
                     .append("ORDER BY loandata.groupId, ").append("loandata.clientId, ").append("loandata.loanId ");
 
@@ -732,7 +734,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         public IndividualCollectionSheetFaltDataMapper(final boolean checkForOfficeId, final boolean checkforStaffId, final boolean isJlgLoansIncluded) {
             StringBuilder sb = new StringBuilder();
-            sb.append("SELECT loandata.*, sum(lc.amount_outstanding_derived) as chargesDue ");
+            sb.append("SELECT loandata.*, IFNULL(SUM(lc.amount_outstanding_derived),0)+ifnull(feeDue,0) +ifnull(penaltyDue,0) as chargesDue ");
             sb.append("from (SELECT cl.display_name As clientName, ");
             sb.append("cl.id As clientId, ln.id As loanId, ln.account_no As accountId, ln.loan_status_id As accountStatusId,");
             sb.append(" pl.short_name As productShortName, ln.product_id As productId, ");
@@ -741,8 +743,10 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
             sb.append("if(ln.loan_status_id = 200 , ln.principal_amount , null) As disbursementAmount, ");
             sb.append("sum(ifnull(if(ln.loan_status_id = 300, ls.principal_amount, 0.0), 0.0) - ifnull(if(ln.loan_status_id = 300, ls.principal_completed_derived, 0.0), 0.0)) As principalDue, ");
             sb.append("ln.principal_repaid_derived As principalPaid, ");
-            sb.append("sum(ifnull(if(ln.loan_status_id = 300, ls.interest_amount, 0.0), 0.0) - ifnull(if(ln.loan_status_id = 300, ls.interest_completed_derived, 0.0), 0.0)) As interestDue, ");
-            sb.append("ln.interest_repaid_derived As interestPaid ");
+            sb.append("sum(ifnull(if(ln.loan_status_id = 300, ls.interest_amount, 0.0), 0.0) - ifnull(if(ln.loan_status_id = 300, ls.interest_completed_derived, 0.0), 0.0)-IFNULL(IF(ln.loan_status_id = 300, ls.interest_waived_derived, 0.0), 0.0)) As interestDue, ");
+            sb.append("ln.interest_repaid_derived As interestPaid, ");
+            sb.append(" SUM(IFNULL(IF(ln.loan_status_id = 300, ls.fee_charges_amount, 0.0), 0.0) - IFNULL(IF(ln.loan_status_id = 300, ls.fee_charges_completed_derived, 0.0), 0.0)-IFNULL(IF(ln.loan_status_id = 300, ls.fee_charges_waived_derived, 0.0), 0.0)) AS feeDue, ");
+            sb.append(" SUM(IFNULL(IF(ln.loan_status_id = 300, ls.penalty_charges_amount, 0.0), 0.0) - IFNULL(IF(ln.loan_status_id = 300, ls.penalty_charges_completed_derived, 0.0), 0.0)-IFNULL(IF(ln.loan_status_id = 300, ls.penalty_charges_waived_derived, 0.0), 0.0)) AS penaltyDue ");
             sb.append("FROM m_loan ln ");
             sb.append("JOIN m_client cl ON cl.id = ln.client_id  ");
             sb.append("LEFT JOIN m_office of ON of.id = cl.office_id  AND of.hierarchy like :officeHierarchy ");
@@ -761,7 +765,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 				sb.append("and ln.group_id is null ");
 			}
             sb.append(" GROUP BY cl.id , ln.id ORDER BY cl.id , ln.id ) loandata ");
-            sb.append("LEFT JOIN m_loan_charge lc ON lc.loan_id = loandata.loanId AND lc.is_paid_derived = 0 AND lc.is_active = 1 AND ( lc.due_for_collection_as_of_date  <= :dueDate OR lc.charge_time_enum = 1) ");
+            sb.append("LEFT JOIN m_loan_charge lc ON lc.loan_id = loandata.loanId AND lc.is_paid_derived = 0 AND lc.is_active = 1 AND lc.charge_time_enum = 1 ");
             sb.append("GROUP BY loandata.clientId, loandata.loanId ORDER BY loandata.clientId, loandata.loanId ");
 
             sql = sb.toString();
