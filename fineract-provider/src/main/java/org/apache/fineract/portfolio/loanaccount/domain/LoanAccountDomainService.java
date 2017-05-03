@@ -20,7 +20,6 @@ package org.apache.fineract.portfolio.loanaccount.domain;
 
 import java.math.BigDecimal;
 import java.util.Locale;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -90,11 +89,9 @@ public interface LoanAccountDomainService {
     void recalculateAccruals(Loan loan, boolean isInterestCalcualtionHappened);
     
     LoanTransaction waiveInterest(Loan loan, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
-            BigDecimal transactionAmount, String noteText, Map<String, Object> changes, List<Long> existingTransactionIds,
-            List<Long> existingReversedTransactionIds);
+            BigDecimal transactionAmount, String noteText, Map<String, Object> changes);
 
-    LoanTransaction writeOffForGlimLoan(JsonCommand command, Loan loan, CommandProcessingResultBuilder builderResult, String noteText, Map<String, Object> changes,
-            List<Long> existingTransactionIds, List<Long> existingReversedTransactionIds);
+    LoanTransaction writeOffForGlimLoan(JsonCommand command, Loan loan, CommandProcessingResultBuilder builderResult, String noteText, Map<String, Object> changes);
 
     LoanTransaction makeRepayment(Loan loan, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
             BigDecimal transactionAmount, PaymentDetail paymentDetail, String noteText, String txnExternalId, boolean isRecoveryRepayment,
