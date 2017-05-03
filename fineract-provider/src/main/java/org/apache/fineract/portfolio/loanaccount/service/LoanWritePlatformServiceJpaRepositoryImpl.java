@@ -1280,13 +1280,10 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
 
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
-
         final String noteText = command.stringValueOfParameterNamed("note");
         final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
         this.loanAccountDomainService.waiveInterest(loan, commandProcessingResultBuilder, transactionDate, transactionAmount, noteText, 
-                changes, existingTransactionIds, existingReversedTransactionIds);
+                changes);
         return commandProcessingResultBuilder.withCommandId(command.commandId()) //
                 .withLoanId(loanId) //
                 .with(changes) //
@@ -2299,8 +2296,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         final WorkingDays workingDays = this.workingDaysRepository.findOne();
         final AppUser currentUser = getAppUserIfPresent();
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
         final Collection<Integer> loanStatuses = new ArrayList<>(Arrays.asList(LoanStatus.SUBMITTED_AND_PENDING_APPROVAL.getValue(),
                 LoanStatus.APPROVED.getValue(), LoanStatus.ACTIVE.getValue()));
         final Collection<Integer> loanTypes = new ArrayList<>(Arrays.asList(AccountType.GROUP.getValue(), AccountType.JLG.getValue()));
@@ -2321,7 +2316,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         // loop through each loan to reschedule the repayment dates
         for (final Loan loan : loans) {
             if (loan != null) {
-                
+                final List<Long> existingTransactionIds = new ArrayList<>();
+                final List<Long> existingReversedTransactionIds = new ArrayList<>();
+                Boolean runJournalEntries = false;
                 if (reschedulebasedOnMeetingDates && loan.getExpectedFirstRepaymentOnDate() != null
                         && loan.getExpectedFirstRepaymentOnDate().equals(presentMeetingDate)) {
                     loan.setExpectedFirstRepaymentOnDate(newMeetingDate.toDate());
@@ -2342,6 +2339,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     ChangedTransactionDetail changedTransactionDetail = loan.recalculateScheduleFromLastTransaction(scheduleGeneratorDTO, existingTransactionIds,
                             existingReversedTransactionIds, currentUser);
                     if (changedTransactionDetail != null) {
+                        runJournalEntries = true;
                         for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
                             this.loanTransactionRepository.save(mapEntry.getValue());
                             // update loan with references to the newly created
@@ -2360,7 +2358,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 }
 
                 saveLoanWithDataIntegrityViolationChecks(loan);
-                postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+                if (runJournalEntries) {
+                    postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+                }
             }
         }
     }

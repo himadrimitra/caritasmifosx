@@ -380,9 +380,6 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         final LocalDate transactionDate = command.localDateValueOfParameterNamed("transactionDate");
         final BigDecimal transactionAmount = command.bigDecimalValueOfParameterNamed("transactionAmount");
 
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
-
         final Map<String, Object> changes = new LinkedHashMap<>();
         final Collection<GroupLoanIndividualMonitoringDataChanges> clientMembers = new ArrayList<>();
         changes.put("transactionDate", command.stringValueOfParameterNamed("transactionDate"));
@@ -400,7 +397,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         final String noteText = command.stringValueOfParameterNamed("note");
         final CommandProcessingResultBuilder builderResult = new CommandProcessingResultBuilder();
         LoanTransaction loanTransaction = this.loanAccountDomainService.waiveInterest(loan, builderResult, transactionDate,
-                transactionAmount, noteText, changes, existingTransactionIds, existingReversedTransactionIds);
+                transactionAmount, noteText, changes);
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.waiveInterestForClients(
                 command, loanTransaction, clientMembers);
         changes.put("clientMembers", clientMembers);
@@ -433,8 +430,6 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
             loan.updateWriteOffReason(writeoffReason);
         }
         validateGlimTransaction(transactionDate, loan);
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
         final String noteText = command.stringValueOfParameterNamed("note");
         final CommandProcessingResultBuilder builderResult = new CommandProcessingResultBuilder();
         List<GroupLoanIndividualMonitoring> defaultGlimMembers = this.glimRepository.findByLoanIdAndIsClientSelected(loanId, true);
@@ -443,7 +438,7 @@ public class GroupLoanIndividualMonitoringTransactionWritePlatformServiceImpl im
         List<GroupLoanIndividualMonitoring> glimMembers = this.glimAssembler.assembleGlimFromJson(command, isRecoveryPayment);
         loan.updateGlim(glimMembers);
         LoanTransaction loanTransaction = this.loanAccountDomainService.writeOffForGlimLoan(command, loan, builderResult, noteText,
-                changes, existingTransactionIds, existingReversedTransactionIds);
+                changes);
         Collection<GroupLoanIndividualMonitoringTransaction> glimTransactions = this.glimTransactionAssembler.writeOffForClients(
                 loanTransaction, glimMembers, writeoffReason, clientMembers);
         changes.put("clientMembers", clientMembers);

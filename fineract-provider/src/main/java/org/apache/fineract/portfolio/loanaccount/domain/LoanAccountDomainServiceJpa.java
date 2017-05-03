@@ -194,8 +194,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
          * calendarInstance); }
          */
 
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
+        final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
+        final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
+        
 
         final Money repaymentAmount = Money.of(loan.getCurrency(), transactionAmount);
         LoanTransaction newRepaymentTransaction = null;
@@ -218,8 +219,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 holidayDetailDto);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.makeRepayment(newRepaymentTransaction,
-                defaultLoanLifecycleStateMachine(), existingTransactionIds, existingReversedTransactionIds, isRecoveryRepayment,
-                scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
+                defaultLoanLifecycleStateMachine(), isRecoveryRepayment, scheduleGeneratorDTO, currentUser,
+                isHolidayValidationDone);
         saveLoanTransactionWithDataIntegrityViolationChecks(newRepaymentTransaction);
         
         /***
@@ -239,8 +240,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         	final LoanTransaction newrealizationLoanSubsidyTransaction = LoanTransaction.realizationLoanSubsidy(loan.getOffice(),
                     loan.getTotalSubsidyAmount(), paymentDetail, transactionDate, txnExternalId);
 	        final ChangedTransactionDetail changedTransactionDetailAfterRealization = loan.makeRepayment(
-                    newrealizationLoanSubsidyTransaction, defaultLoanLifecycleStateMachine(), existingTransactionIds,
-                    existingReversedTransactionIds, isRecoveryRepayment, scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
+                    newrealizationLoanSubsidyTransaction, defaultLoanLifecycleStateMachine(), isRecoveryRepayment,
+                    scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
              saveLoanTransactionWithDataIntegrityViolationChecks(newrealizationLoanSubsidyTransaction);
             if (changedTransactionDetail != null && changedTransactionDetailAfterRealization != null) {
                 changedTransactionDetail.getNewTransactionMappings().putAll(
@@ -568,8 +569,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final Loan loan = this.loanAccountAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
         boolean isAccountTransfer = true;
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
+        final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
+        final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
+        
         final Money amount = Money.of(loan.getCurrency(), transactionAmount);
         LoanTransaction disbursementTransaction = LoanTransaction.disbursement(loan.getOffice(), amount, paymentDetail, transactionDate,
                 txnExternalId);
@@ -978,10 +980,11 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     
     @Override
     public LoanTransaction waiveInterest(Loan loan, CommandProcessingResultBuilder builderResult, LocalDate transactionDate,
-            BigDecimal transactionAmount, String noteText, Map<String, Object> changes, List<Long> existingTransactionIds,
-            List<Long> existingReversedTransactionIds) {
+            BigDecimal transactionAmount, String noteText, Map<String, Object> changes) {
         
         AppUser currentUser = getAppUserIfPresent();
+        final List<Long> existingTransactionIds = new ArrayList<>();
+        final List<Long> existingReversedTransactionIds = new ArrayList<>();
         
         final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
         Money unrecognizedIncome = transactionAmountAsMoney.zero();
@@ -1049,10 +1052,11 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
 
     @Override
     public LoanTransaction writeOffForGlimLoan(JsonCommand command, Loan loan, CommandProcessingResultBuilder builderResult,
-            String noteText, Map<String, Object> changes, List<Long> existingTransactionIds, List<Long> existingReversedTransactionIds) {
+            String noteText, Map<String, Object> changes) {
 
         AppUser currentUser = getAppUserIfPresent();
-
+        final List<Long> existingTransactionIds = new ArrayList<>();
+        final List<Long> existingReversedTransactionIds = new ArrayList<>();
         checkClientOrGroupActive(loan);
 
         final LocalDate writtenOffOnLocalDate = command.localDateValueOfParameterNamed("transactionDate");

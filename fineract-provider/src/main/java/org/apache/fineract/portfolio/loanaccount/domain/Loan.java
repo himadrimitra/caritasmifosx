@@ -3183,9 +3183,8 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public ChangedTransactionDetail makeRepayment(final LoanTransaction repaymentTransaction,
-            final LoanLifecycleStateMachine loanLifecycleStateMachine, final List<Long> existingTransactionIds,
-            final List<Long> existingReversedTransactionIds, boolean isRecoveryRepayment, final ScheduleGeneratorDTO scheduleGeneratorDTO,
-            final AppUser currentUser, Boolean isHolidayValidationDone) {
+            final LoanLifecycleStateMachine loanLifecycleStateMachine, boolean isRecoveryRepayment,
+            final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser, Boolean isHolidayValidationDone) {
         HolidayDetailDTO holidayDetailDTO = null;
         LoanEvent event = null;
         
@@ -3219,8 +3218,6 @@ public class Loan extends AbstractPersistable<Long> {
             validateRepaymentDateIsOnNonWorkingDay(repaymentTransaction.getTransactionDate(), holidayDetailDTO.getWorkingDays(),
                     holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
         }
-        existingTransactionIds.addAll(findExistingTransactionIds());
-        existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
         final ChangedTransactionDetail changedTransactionDetail = handleRepaymentOrRecoveryOrWaiverTransaction(repaymentTransaction,
                 loanLifecycleStateMachine, null, scheduleGeneratorDTO, currentUser);
@@ -7457,14 +7454,14 @@ public class Loan extends AbstractPersistable<Long> {
         BigDecimal totalPrincipalToBeWriteOff = BigDecimal.ZERO;
         BigDecimal totalInterestToBeWriteOff = BigDecimal.ZERO;
         BigDecimal totalChargeToBeWriteOff = BigDecimal.ZERO;
+        
+        existingTransactionIds.addAll(findExistingTransactionIds());
+        existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
         List<GroupLoanIndividualMonitoring> glimMembers = this.glimList;
         for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
 
             if (!glimMember.isWrittenOff()) {
-
-                existingTransactionIds.addAll(findExistingTransactionIds());
-                existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
                 this.closedOnDate = writtenOffOnLocalDate.toDate();
                 this.writtenOffOnDate = writtenOffOnLocalDate.toDate();
