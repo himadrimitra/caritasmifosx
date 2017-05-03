@@ -34,6 +34,7 @@ import org.apache.fineract.organisation.holiday.api.HolidayApiConstants;
 import org.apache.fineract.organisation.holiday.data.HolidayDataValidator;
 import org.apache.fineract.organisation.holiday.domain.Holiday;
 import org.apache.fineract.organisation.holiday.domain.HolidayRepositoryWrapper;
+import org.apache.fineract.organisation.holiday.exception.HolidayCannotBeDeletedException;
 import org.apache.fineract.organisation.holiday.exception.HolidayDateException;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
@@ -146,6 +147,9 @@ public class HolidayWritePlatformServiceJpaRepositoryImpl implements HolidayWrit
     public CommandProcessingResult deleteHoliday(final Long holidayId) {
         this.context.authenticatedUser();
         final Holiday holiday = this.holidayRepository.findOneWithNotFoundDetection(holidayId);
+        if(holiday.isProcessed()){
+            throw new HolidayCannotBeDeletedException(holidayId);
+        }
         holiday.delete();
         this.holidayRepository.saveAndFlush(holiday);
         return new CommandProcessingResultBuilder().withEntityId(holidayId).build();

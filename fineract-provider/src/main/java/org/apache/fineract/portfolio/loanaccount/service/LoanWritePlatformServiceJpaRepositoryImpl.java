@@ -2540,7 +2540,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                     this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
                 }
             }
-            createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
+            if (loan.isOpen()) {
+                createAndSaveLoanScheduleArchive(loan, scheduleGeneratorDTO);
+            }
         } else {
             updateScheduleDates(loan, scheduleGeneratorDTO);
         }
