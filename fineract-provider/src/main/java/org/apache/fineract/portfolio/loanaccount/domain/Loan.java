@@ -5927,19 +5927,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     private void recalculateSchedule(final ScheduleGeneratorDTO generatorDTO, final AppUser currentUser) {
-        if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+        if (this.isOpen() && this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             regenerateRepaymentScheduleWithInterestRecalculation(generatorDTO, currentUser);
-            if (!this.isOpen()) {
-                for (LoanCharge loanCharge : charges) {
-                    if (loanCharge.isDueAtDisbursement()) {
-                        if (!loanCharge.isWaived()) {
-                            recalculateLoanCharge(loanCharge, generatorDTO.getPenaltyWaitPeriod());
-                        }
-                    }
-                }
-            }
             updateSummaryWithTotalFeeChargesDueAtDisbursement();
-
         } else {
             regenerateRepaymentSchedule(generatorDTO, currentUser);
         }
@@ -5959,6 +5949,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public ChangedTransactionDetail processTransactions() {
+        if(!this.isOpen()){
+            return new ChangedTransactionDetail();
+        }
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
         final List<LoanTransaction> allNonContraTransactionsPostDisbursement = retreiveListOfTransactionsPostDisbursement();
