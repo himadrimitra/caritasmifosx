@@ -165,7 +165,8 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
          * Check Changed Schedule Date is holiday or is not a working day Then
          * re-call this method to get the non holiday and working day
          */
-        if (HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(), holidayDetailDTO.getHolidays()) != null
+        if ((holidayDetailDTO.isHolidayEnabled() && HolidayUtil.getApplicableHoliday(adjustedDateDetailsDTO.getChangedScheduleDate(),
+                holidayDetailDTO.getHolidays()) != null)
                 || WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(), adjustedDateDetailsDTO.getChangedScheduleDate())) {
             recursivelyCheckNonWorkingDaysAndHolidaysAndWorkingDaysExemptionToGenerateNextRepaymentPeriodDate(adjustedDateDetailsDTO,
                     loanApplicationTerms, holidayDetailDTO, isFirstRepayment);

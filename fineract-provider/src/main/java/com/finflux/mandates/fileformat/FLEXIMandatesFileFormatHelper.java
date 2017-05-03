@@ -8,8 +8,8 @@ public class FLEXIMandatesFileFormatHelper extends DefaultExcelBasedMandatesFile
         private String[] headersForMandateDownload = {"Consumer Code","Applicant Name","Bank A/c holder Name","Bank Name","Branch Name",
                 "Bank Account No","MICR","IFSC Code","Account Type","Email Id","Mobile No","Start Date","End Date","Amount ","Frequency"};
 
-        private int[] contentsSpecForMandateDownload = {REF_1, BLANK, NAME_PRIMARY_ACNT_HOLDER, BANK_NAME, BRANCH_NAME,
-                BANK_ACCOUNT_NUMBER, MICR, IFSC, BANK_ACCOUNT_TYPE, BLANK, BLANK, START_DATE, END_DATE, DEBIT_AMOUNT, FREQUENCY};
+        private int[] contentsSpecForMandateDownload = {REF_1, APPLICANT_NAME, NAME_PRIMARY_ACNT_HOLDER, BANK_NAME, BRANCH_NAME,
+                BANK_ACCOUNT_NUMBER, MICR, IFSC, BANK_ACCOUNT_TYPE, EMAIL, PHONE, START_DATE, END_DATE, DEBIT_AMOUNT, FREQUENCY};
 
         private String[] headersForMandateUpload = {"Sr No","Month","Unique Reference Number","Applicant Name","Bank A/c holder Name",
                 "Bank Name","Branch Name","Bank Account No","MICR","IFSC Code","Account Type","Email Id","Mobile No","Start Date",

@@ -1885,28 +1885,18 @@ public class RecurringDepositTest {
         this.accountHelper = new AccountHelper(this.requestSpec, this.responseSpec);
         this.savingsAccountHelper = new SavingsAccountHelper(this.requestSpec, this.responseSpec);
         this.recurringDepositAccountHelper = new RecurringDepositAccountHelper(this.requestSpec, this.responseSpec);
+        
+        
+        final String VALID_FROM = "01 January 2016";
+        final String VALID_TO = "01 January 2026";
+        final String SUBMITTED_ON_DATE = "08 January 2017";
+        final String APPROVED_ON_DATE = "08 January 2017";
+        final String ACTIVATION_DATE = "08 January 2017";
+        String EXPECTED_FIRST_DEPOSIT_ON_DATE = "08 January 2017";
+        final String EXPECTED_SECOND_DEPOSIT_ON_DATE = "23 January 2017";
+        final String CLOSED_ON_DATE = "23 February 2017";
 
-        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy", Locale.US);
-        DateFormat monthDayFormat = new SimpleDateFormat("dd MMM", Locale.US);
-        DateFormat currentDateFormat = new SimpleDateFormat("dd");
-
-        Calendar todaysDate = Calendar.getInstance();
-        todaysDate.add(Calendar.MONTH, -3);
-        final String VALID_FROM = dateFormat.format(todaysDate.getTime());
-        todaysDate.add(Calendar.YEAR, 10);
-        final String VALID_TO = dateFormat.format(todaysDate.getTime());
-
-        todaysDate = Calendar.getInstance();
-        todaysDate.add(Calendar.MONTH, -1);
-        todaysDate.add(Calendar.DAY_OF_MONTH, -1);
-        final String SUBMITTED_ON_DATE = dateFormat.format(todaysDate.getTime());
-        final String APPROVED_ON_DATE = dateFormat.format(todaysDate.getTime());
-        final String ACTIVATION_DATE = dateFormat.format(todaysDate.getTime());
-        String EXPECTED_FIRST_DEPOSIT_ON_DATE = dateFormat.format(todaysDate.getTime());
-        final String MONTH_DAY = monthDayFormat.format(todaysDate.getTime());
-        todaysDate.add(Calendar.MONTH, 1);
-        todaysDate.add(Calendar.DAY_OF_MONTH, 1);
-        final String CLOSED_ON_DATE = dateFormat.format(todaysDate.getTime());
+        
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
         final Account incomeAccount = this.accountHelper.createIncomeAccount();
@@ -1960,36 +1950,13 @@ public class RecurringDepositTest {
         Assert.assertNotNull(depositTransactionId);
 
         HashMap recurringDepositSummary = this.recurringDepositAccountHelper.getRecurringDepositSummary(recurringDepositAccountId);
-        Float principal = (Float) recurringDepositSummary.get("totalDeposits");
 
-        Float interestRate = this.recurringDepositAccountHelper.getInterestRate(interestRateChartData, depositedPeriod);
-        interestRate -= preClosurePenalInterestRate;
-        double interestRateInFraction = (interestRate / 100);
-        double perDay = (double) 1 / (daysInYear);
-        System.out.println("per day = " + perDay);
-        double interestPerDay = interestRateInFraction * perDay;
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MONTH, -1);
-        calendar.add(Calendar.DAY_OF_MONTH, -1);
-        Integer currentDate = new Integer(currentDateFormat.format(calendar.getTime()));
-        Integer daysInMonth = calendar.getActualMaximum(Calendar.DATE);
-        daysInMonth = (daysInMonth - currentDate) + 1;
-        Float interestPerMonth = (float) (interestPerDay * principal * daysInMonth);
-        principal += interestPerMonth + depositAmount;
-        calendar.add(Calendar.DATE, daysInMonth);
-        System.out.println(monthDayFormat.format(calendar.getTime()));
-
-        EXPECTED_FIRST_DEPOSIT_ON_DATE = dateFormat.format(calendar.getTime());
+        
         Integer transactionIdForDeposit = this.recurringDepositAccountHelper.depositToRecurringDepositAccount(recurringDepositAccountId,
-                DEPOSIT_AMOUNT, EXPECTED_FIRST_DEPOSIT_ON_DATE);
+                DEPOSIT_AMOUNT, EXPECTED_SECOND_DEPOSIT_ON_DATE);
         Assert.assertNotNull(transactionIdForDeposit);
 
-        currentDate = currentDate - 1;
-        interestPerMonth = (float) (interestPerDay * principal * currentDate);
-        System.out.println("IPM = " + interestPerMonth);
-        principal += interestPerMonth;
-        System.out.println("principal = " + principal);
+       
 
         HashMap recurringDepositPrematureData = this.recurringDepositAccountHelper.calculatePrematureAmountForRecurringDeposit(
                 recurringDepositAccountId, CLOSED_ON_DATE);
@@ -2007,7 +1974,7 @@ public class RecurringDepositTest {
         DecimalFormat decimalFormat = new DecimalFormat("", new DecimalFormatSymbols(Locale.US));
         decimalFormat.applyPattern(".");
 
-        principal = new Float(decimalFormat.format(principal));
+        Float principal = new Float(4013);
         Float maturityAmount = new Float(decimalFormat.format(recurringDepositAccountData.get("maturityAmount")));
 
         Assert.assertEquals("Verifying Pre-Closure maturity amount", principal, maturityAmount);
@@ -2026,27 +1993,14 @@ public class RecurringDepositTest {
         this.savingsAccountHelper = new SavingsAccountHelper(this.requestSpec, this.responseSpec);
         this.recurringDepositAccountHelper = new RecurringDepositAccountHelper(this.requestSpec, this.responseSpec);
 
-        DateFormat dateFormat = new SimpleDateFormat("dd MMMM yyyy", Locale.US);
-        DateFormat monthDayFormat = new SimpleDateFormat("dd MMM", Locale.US);
-        DateFormat currentDateFormat = new SimpleDateFormat("dd");
-
-        Calendar todaysDate = Calendar.getInstance();
-        todaysDate.add(Calendar.MONTH, -3);
-        final String VALID_FROM = dateFormat.format(todaysDate.getTime());
-        todaysDate.add(Calendar.YEAR, 10);
-        final String VALID_TO = dateFormat.format(todaysDate.getTime());
-
-        todaysDate = Calendar.getInstance();
-        todaysDate.add(Calendar.MONTH, -1);
-        todaysDate.add(Calendar.DAY_OF_MONTH, -1);
-        final String SUBMITTED_ON_DATE = dateFormat.format(todaysDate.getTime());
-        final String APPROVED_ON_DATE = dateFormat.format(todaysDate.getTime());
-        final String ACTIVATION_DATE = dateFormat.format(todaysDate.getTime());
-        String EXPECTED_FIRST_DEPOSIT_ON_DATE = dateFormat.format(todaysDate.getTime());
-        final String MONTH_DAY = monthDayFormat.format(todaysDate.getTime());
-        todaysDate.add(Calendar.MONTH, 1);
-        todaysDate.add(Calendar.DAY_OF_MONTH, 1);
-        final String CLOSED_ON_DATE = dateFormat.format(todaysDate.getTime());
+        final String VALID_FROM = "01 January 2016";
+        final String VALID_TO = "01 January 2026";
+        final String SUBMITTED_ON_DATE = "01 January 2017";
+        final String APPROVED_ON_DATE = "01 January 2017";
+        final String ACTIVATION_DATE = "01 January 2017";
+        String EXPECTED_FIRST_DEPOSIT_ON_DATE = "01 January 2017";
+        final String EXPECTED_SECOND_DEPOSIT_ON_DATE = "07 January 2017";
+        final String CLOSED_ON_DATE = "06 February 2017";
 
         final Account assetAccount = this.accountHelper.createAssetAccount();
         final Account incomeAccount = this.accountHelper.createIncomeAccount();
@@ -2081,61 +2035,15 @@ public class RecurringDepositTest {
                 ACTIVATION_DATE);
         RecurringDepositAccountStatusChecker.verifyRecurringDepositIsActive(recurringDepositAccountStatusHashMap);
 
-        HashMap recurringDepositAccountData = this.recurringDepositAccountHelper.getRecurringDepositAccountById(this.requestSpec,
-                this.responseSpec, recurringDepositAccountId);
-        Float depositAmount = (Float) recurringDepositAccountData.get("mandatoryRecommendedDepositAmount");
-        HashMap daysInYearMap = (HashMap) recurringDepositAccountData.get("interestCalculationDaysInYearType");
-        Float preClosurePenalInterestRate = (Float) recurringDepositAccountData.get("preClosurePenalInterest");
-        Integer daysInYear = (Integer) daysInYearMap.get("id");
-        ArrayList<ArrayList<HashMap>> interestRateChartData = this.recurringDepositProductHelper.getInterestRateChartSlabsByProductId(
-                this.requestSpec, this.responseSpec, recurringDepositProductId);
-
-        Calendar activationDate = Calendar.getInstance();
-        activationDate.add(Calendar.MONTH, -1);
-        activationDate.add(Calendar.DAY_OF_MONTH, -1);
-        DateTime start = new DateTime(activationDate.getTime());
-
-        Calendar prematureClosureDate = Calendar.getInstance();
-        DateTime end = new DateTime(prematureClosureDate.getTime());
-
-        Integer depositedPeriod = Months.monthsBetween(start, end).getMonths();
-
         Integer transactionIdForDeposit = this.recurringDepositAccountHelper.depositToRecurringDepositAccount(recurringDepositAccountId,
                 DEPOSIT_AMOUNT, EXPECTED_FIRST_DEPOSIT_ON_DATE);
         Assert.assertNotNull(transactionIdForDeposit);
 
-        HashMap recurringDepositSummary = this.recurringDepositAccountHelper.getRecurringDepositSummary(recurringDepositAccountId);
-        Float principal = (Float) recurringDepositSummary.get("totalDeposits");
-
-        Float interestRate = this.recurringDepositAccountHelper.getInterestRate(interestRateChartData, depositedPeriod);
-        interestRate -= preClosurePenalInterestRate;
-        double interestRateInFraction = (interestRate / 100);
-        double perDay = (double) 1 / (daysInYear);
-        System.out.println("per day = " + perDay);
-        double interestPerDay = interestRateInFraction * perDay;
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.MONTH, -1);
-        calendar.add(Calendar.DAY_OF_MONTH, -1);
-        Integer currentDate = new Integer(currentDateFormat.format(calendar.getTime()));
-        Integer daysInMonth = calendar.getActualMaximum(Calendar.DATE);
-        daysInMonth = (daysInMonth - currentDate) + 1;
-        Float interestPerMonth = (float) (interestPerDay * principal * daysInMonth);
-        principal += interestPerMonth + depositAmount;
-        calendar.add(Calendar.DATE, daysInMonth);
-        System.out.println(monthDayFormat.format(calendar.getTime()));
-
-        EXPECTED_FIRST_DEPOSIT_ON_DATE = dateFormat.format(calendar.getTime());
+   
         Integer newTransactionIdForDeposit = this.recurringDepositAccountHelper.depositToRecurringDepositAccount(recurringDepositAccountId,
-                DEPOSIT_AMOUNT, EXPECTED_FIRST_DEPOSIT_ON_DATE);
+                DEPOSIT_AMOUNT, EXPECTED_SECOND_DEPOSIT_ON_DATE);
         Assert.assertNotNull(newTransactionIdForDeposit);
-
-        currentDate = currentDate - 1;
-        interestPerMonth = (float) (interestPerDay * principal * currentDate);
-        System.out.println("IPM = " + interestPerMonth);
-        principal += interestPerMonth;
-        System.out.println("principal = " + principal);
-
+        
         HashMap recurringDepositPrematureData = this.recurringDepositAccountHelper.calculatePrematureAmountForRecurringDeposit(
                 recurringDepositAccountId, CLOSED_ON_DATE);
 
@@ -2147,15 +2055,15 @@ public class RecurringDepositTest {
                 this.responseSpec, recurringDepositAccountId.toString());
         RecurringDepositAccountStatusChecker.verifyRecurringDepositAccountIsPrematureClosed(recurringDepositAccountStatusHashMap);
 
-        recurringDepositAccountData = this.recurringDepositAccountHelper.getRecurringDepositAccountById(this.requestSpec,
+        HashMap  recurringDepositAccountData = this.recurringDepositAccountHelper.getRecurringDepositAccountById(this.requestSpec,
                 this.responseSpec, recurringDepositAccountId);
         DecimalFormat decimalFormat = new DecimalFormat("", new DecimalFormatSymbols(Locale.US));
         decimalFormat.applyPattern(".");
 
-        principal = new Float(decimalFormat.format(principal));
         Float maturityAmount = new Float(decimalFormat.format(recurringDepositAccountData.get("maturityAmount")));
+        Float principalAmount = new Float(4011);
 
-        Assert.assertEquals("Verifying Pre-Closure maturity amount", principal, maturityAmount);
+        Assert.assertEquals("Verifying Pre-Closure maturity amount", principalAmount, maturityAmount);
 
     }
 

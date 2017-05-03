@@ -9,6 +9,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -79,12 +80,21 @@ public class MandateDataValidator {
 
                 final LocalDate periodFromDate = this.fromApiJsonHelper.extractLocalDateNamed(MandateApiConstants.periodFromDate, element);
                 baseDataValidator.reset().parameter(MandateApiConstants.periodFromDate).value(periodFromDate).notNull();
-
+                if(periodFromDate != null) {
+                    LocalDate currentDate = DateUtils.getLocalDateOfTenant() ;
+                    if(periodFromDate.isAfter(currentDate)) {
+                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("periodFromDate.should.not.be.after.currentdate");
+                    }
+                }
                 final LocalDate periodToDate = this.fromApiJsonHelper.extractLocalDateNamed(MandateApiConstants.periodToDate, element);
                 final Boolean periodUntilCancelled = this.fromApiJsonHelper.extractBooleanNamed(MandateApiConstants.periodUntilCancelled, element);
-
                 baseDataValidator.reset().parameter(MandateApiConstants.periodToDate).value(periodToDate).ignoreIfNull().notNull();
-
+                if(periodToDate != null) {
+                    LocalDate currentDate = DateUtils.getLocalDateOfTenant() ;
+                    if(!periodToDate.isAfter(currentDate)) {
+                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("periodToDate.should.be.after.currentdate");
+                    }
+                }
                 baseDataValidator.reset().parameter(MandateApiConstants.periodUntilCancelled).value(periodUntilCancelled)
                         .ignoreIfNull().notNull().validateForBooleanValue();
 

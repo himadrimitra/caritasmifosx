@@ -3,6 +3,8 @@ package com.finflux.mandates.fileformat;
 import com.finflux.mandates.data.ProcessResponseData;
 import com.finflux.mandates.data.MandatesProcessData;
 import com.finflux.portfolio.loan.mandate.data.MandateData;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.configuration.data.NACHCredentialsData;
 import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -97,9 +99,10 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                                 extractSpecialValues(colIx, cellValue, data);
                         }
                         data.setRowId(rowIx);
-                        ret.add(data);
+                        if(!StringUtils.isEmpty(data.getReference()) && !StringUtils.isEmpty(data.getUMRN())) {
+                            ret.add(data);    
+                        }
                 }
-
                 return ret;
         }
 
@@ -200,6 +203,15 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                         case BRANCH_NAME:
                                 ret = data.getBranchName();
                                 break;
+                        case APPLICANT_NAME:
+                                ret = data.getApplicantName() ;
+                                break ;
+                        case PHONE:
+                                ret = data.getApplicantMobileNo() != null ? data.getApplicantMobileNo() : "";
+                                break ;
+                        case EMAIL:
+                                ret = data.getApplicantEmailId() != null ? data.getApplicantEmailId() : "";
+                                break ;
 
                 }
                 return ret;
