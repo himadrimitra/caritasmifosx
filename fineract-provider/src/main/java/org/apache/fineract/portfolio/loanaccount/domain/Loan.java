@@ -3270,9 +3270,8 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public ChangedTransactionDetail makeRepayment(final LoanTransaction repaymentTransaction,
-            final LoanLifecycleStateMachine loanLifecycleStateMachine, final List<Long> existingTransactionIds,
-            final List<Long> existingReversedTransactionIds, boolean isRecoveryRepayment, final ScheduleGeneratorDTO scheduleGeneratorDTO,
-            final AppUser currentUser, Boolean isHolidayValidationDone) {
+            final LoanLifecycleStateMachine loanLifecycleStateMachine, boolean isRecoveryRepayment,
+            final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser, Boolean isHolidayValidationDone) {
         HolidayDetailDTO holidayDetailDTO = null;
         LoanEvent event = null;
         
@@ -3306,8 +3305,6 @@ public class Loan extends AbstractPersistable<Long> {
             validateRepaymentDateIsOnNonWorkingDay(repaymentTransaction.getTransactionDate(), holidayDetailDTO.getWorkingDays(),
                     holidayDetailDTO.isAllowTransactionsOnNonWorkingDay());
         }
-        existingTransactionIds.addAll(findExistingTransactionIds());
-        existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
         final ChangedTransactionDetail changedTransactionDetail = handleRepaymentOrRecoveryOrWaiverTransaction(repaymentTransaction,
                 loanLifecycleStateMachine, null, scheduleGeneratorDTO, currentUser);
@@ -6042,19 +6039,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     private void recalculateSchedule(final ScheduleGeneratorDTO generatorDTO, final AppUser currentUser) {
-        if (this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+        if (this.isOpen() && this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             regenerateRepaymentScheduleWithInterestRecalculation(generatorDTO, currentUser);
-            if (!this.isOpen()) {
-                for (LoanCharge loanCharge : charges) {
-                    if (loanCharge.isDueAtDisbursement()) {
-                        if (!loanCharge.isWaived()) {
-                            recalculateLoanCharge(loanCharge, generatorDTO.getPenaltyWaitPeriod());
-                        }
-                    }
-                }
-            }
             updateSummaryWithTotalFeeChargesDueAtDisbursement();
-
         } else {
             regenerateRepaymentSchedule(generatorDTO, currentUser);
         }
@@ -6074,6 +6061,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public ChangedTransactionDetail processTransactions() {
+        if(!this.isOpen()){
+            return new ChangedTransactionDetail();
+        }
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
         final List<LoanTransaction> allNonContraTransactionsPostDisbursement = retreiveListOfTransactionsPostDisbursement();
@@ -7641,14 +7631,14 @@ public class Loan extends AbstractPersistable<Long> {
         BigDecimal totalPrincipalToBeWriteOff = BigDecimal.ZERO;
         BigDecimal totalInterestToBeWriteOff = BigDecimal.ZERO;
         BigDecimal totalChargeToBeWriteOff = BigDecimal.ZERO;
+        
+        existingTransactionIds.addAll(findExistingTransactionIds());
+        existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
         List<GroupLoanIndividualMonitoring> glimMembers = this.glimList;
         for (GroupLoanIndividualMonitoring glimMember : glimMembers) {
 
             if (!glimMember.isWrittenOff()) {
-
-                existingTransactionIds.addAll(findExistingTransactionIds());
-                existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
 
                 this.closedOnDate = writtenOffOnLocalDate.toDate();
                 this.writtenOffOnDate = writtenOffOnLocalDate.toDate();
