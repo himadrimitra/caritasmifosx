@@ -570,7 +570,11 @@ public final class LoanApplicationTerms {
         this.calendarHistoryDataWrapper = calendarHistoryDataWrapper;
         this.isInterestChargedFromDateSameAsDisbursalDateEnabled = isInterestChargedFromDateSameAsDisbursalDateEnabled;
         this.holidayDetailDTO = holidayDetailDTO;
-        this.allowCompoundingOnEod = allowCompoundingOnEod;
+        if (compoundingFrequencyType != null && compoundingFrequencyType.isSameAsRepayment()) {
+            this.allowCompoundingOnEod = false;
+        } else {
+            this.allowCompoundingOnEod = allowCompoundingOnEod;
+        }
         this.isSubsidyApplicable = isSubsidyApplicable;
         this.firstEmiAmount = firstEmiAmount;
         this.adjustInterestForRounding = adjustInterestForRounding;

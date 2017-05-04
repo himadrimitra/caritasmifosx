@@ -132,6 +132,7 @@ public class LoanSchedularServiceImpl implements LoanSchedularService {
     @CronTarget(jobName = JobName.RECALCULATE_INTEREST_FOR_LOAN)
     public void recalculateInterest() throws JobExecutionException {
         List<Long> loanIds = this.loanReadPlatformService.fetchLoansForInterestRecalculation();
+        logger.info("Loans taken for recalculate interest:"+loanIds.toString());
         JobRunner<List<Long>> runner = new RecalculateInterestJobRunner();
         final String errors = this.jobExecuter.executeJob(loanIds, runner);
         if (errors.length() > 0) { throw new JobExecutionException(errors); }
