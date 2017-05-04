@@ -26,12 +26,15 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.data.PortfolioAccountDTO;
 import org.apache.fineract.portfolio.account.data.PortfolioAccountData;
 import org.apache.fineract.portfolio.account.exception.AccountTransferNotFoundException;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,6 +50,7 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
     private final PortfolioSavingsAccountMapper savingsAccountMapper;
     private final PortfolioLoanAccountMapper loanAccountMapper;
     private final PortfolioLoanAccountRefundByTransferMapper accountRefundByTransferMapper;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public PortfolioAccountReadPlatformServiceImpl(final RoutingDataSource dataSource) {
@@ -294,7 +298,7 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
              amountQueryString.append(" SUM(ifnull(mr.penalty_charges_completed_derived, 0))) as total_in_advance_derived"); 
              amountQueryString.append(" from m_loan ml INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id"); 
              amountQueryString.append(" where ml.id=? and ml.loan_status_id = 300"); 
-             amountQueryString.append("  and  mr.duedate >= CURDATE() group by ml.id having"); 
+             amountQueryString.append("  and  mr.duedate >=? group by ml.id having"); 
              amountQueryString.append(" (SUM(ifnull(mr.principal_completed_derived, 0)) + "); 
              amountQueryString.append(" SUM(ifnull(mr.interest_completed_derived, 0)) + "); 
              amountQueryString.append("SUM(ifnull(mr.fee_charges_completed_derived, 0)) + "); 
@@ -362,7 +366,8 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
     @Override
     public PortfolioAccountData retrieveOneByPaidInAdvance(Long accountId, Integer accountTypeId) {
         // TODO Auto-generated method stub
-        Object[] sqlParams = new Object[] { accountId , accountId};
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
+        Object[] sqlParams = new Object[] { accountId , accountId, currentdate};
         PortfolioAccountData accountData = null;
         //String currencyCode = null;
         try {

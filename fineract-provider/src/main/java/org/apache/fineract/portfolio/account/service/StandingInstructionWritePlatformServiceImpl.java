@@ -62,6 +62,8 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDa
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +84,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
     private final StandingInstructionReadPlatformService standingInstructionReadPlatformService;
     private final AccountTransfersWritePlatformService accountTransfersWritePlatformService;
     private final JdbcTemplate jdbcTemplate;
+	private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public StandingInstructionWritePlatformServiceImpl(final StandingInstructionDataValidator standingInstructionDataValidator,
@@ -260,6 +263,7 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
      * @param accountTransferDTO
      */
     private boolean transferAmount(final StringBuilder sb, final AccountTransferDTO accountTransferDTO, final Long instructionId) {
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         boolean transferCompleted = true;
         StringBuffer errorLog = new StringBuffer();
         StringBuffer updateQuery = new StringBuffer(
@@ -296,9 +300,9 @@ public class StandingInstructionWritePlatformServiceImpl implements StandingInst
             updateQuery.append("'success'").append(",");
         }
         updateQuery.append(accountTransferDTO.getTransactionAmount().doubleValue());
-        updateQuery.append(", now(),");
+        updateQuery.append(", ?,");
         updateQuery.append("'").append(errorLog.toString()).append("')");
-        this.jdbcTemplate.update(updateQuery.toString());
+        this.jdbcTemplate.update(updateQuery.toString(),currentdate);
         return transferCompleted;
     }
 

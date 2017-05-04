@@ -12,11 +12,14 @@ import com.finflux.kyc.address.data.AddressEntityTypeEnums;
 import com.finflux.kyc.address.service.AddressReadPlatformService;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
 import org.apache.fineract.portfolio.client.service.ClientIdentifierReadPlatformService;
 import org.apache.fineract.spm.domain.SurveyEntityType;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -38,6 +41,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private final LoanApplicationDataLayerMapper loanApplicationDataLayerMapper = new LoanApplicationDataLayerMapper();
     private final ClientIdentifierReadPlatformService clientIdentifierReadPlatformService;
     private final AddressReadPlatformService addressReadPlatformService;
+	private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public DataLayerReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -255,13 +259,14 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
 
     private Map<String, Object> getClientMeetingAttendanceHistoryPercentage(Long clientId) {
         final StringBuilder sql = new StringBuilder(150);
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         sql.append("SELECT ");
         sql.append("ifNull(SUM(IF(ca.attendance_type_enum = 1,1,0))/COUNT(ca.id)*100,0) AS clientattendancepresentage ");
         sql.append("FROM m_client_attendance ca ");
-        sql.append("INNER JOIN m_meeting meeting on meeting.id = ca.meeting_id AND meeting.meeting_date >= DATE_SUB(NOW(), INTERVAL 180 DAY) ");
+        sql.append("INNER JOIN m_meeting meeting on meeting.id = ca.meeting_id AND meeting.meeting_date >= DATE_SUB(?, INTERVAL 180 DAY) ");
         sql.append("WHERE ca.client_id = ? ");
         sql.append("GROUP BY ca.client_id ");
-        return this.jdbcTemplate.queryForMap(sql.toString(), new Object[] { clientId });
+        return this.jdbcTemplate.queryForMap(sql.toString(), new Object[] { clientId,currentdate });
     }
 
     private List<Map<String, Object>> getClientLoanDetailsFromOtherLenders(final Long clientId) {
@@ -309,7 +314,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         public ClientDataLayerMapper() {
             final StringBuilder sqlBuilder = new StringBuilder(100);
             sqlBuilder.append(" ");
-            sqlBuilder.append("DATE_FORMAT(FROM_DAYS(DATEDIFF(now(),c.date_of_birth)), '%Y')+0 as age, ");
+            sqlBuilder.append("DATE_FORMAT(FROM_DAYS(DATEDIFF(?,c.date_of_birth)), '%Y')+0 as age, ");
             sqlBuilder.append("c.gender_cv_id  as gender ");
             sqlBuilder.append(",c.client_type_cv_id as clienttype ");
             sqlBuilder.append(",c.client_classification_cv_id as clientclassification ");

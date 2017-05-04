@@ -4,6 +4,7 @@ import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
 import com.finflux.portfolio.loanemipacks.exception.LoanEMIPackNotFoundException;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
@@ -12,6 +13,8 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,6 +34,7 @@ public class LoanEMIPacksReadPlatformServiceImpl implements LoanEMIPacksReadPlat
         private final FineractEntityAccessUtil fineractEntityAccessUtil;
         private final LoanProductReadPlatformService loanProductReadPlatformService;
         private final LoanDropdownReadPlatformService dropdownReadPlatformService;
+        private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
         @Autowired
         public LoanEMIPacksReadPlatformServiceImpl(final PlatformSecurityContext context,
@@ -49,6 +53,7 @@ public class LoanEMIPacksReadPlatformServiceImpl implements LoanEMIPacksReadPlat
         @Override
         public Collection<LoanEMIPackData> retrieveActiveLoanProductsWithoutEMIPacks() {
                 LoanProductMapper mapper = new LoanProductMapper();
+                String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
                 String sql = mapper.schemaActiveLoanProductsWithoutEMIPacks();
                 String inClause = this.fineractEntityAccessUtil
                         .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.LOAN_PRODUCT);
@@ -56,12 +61,13 @@ public class LoanEMIPacksReadPlatformServiceImpl implements LoanEMIPacksReadPlat
                         sql += " and lp.id in ( " + inClause + " )";
                 }
 
-                return this.jdbcTemplate.query(sql, mapper);
+                return this.jdbcTemplate.query(sql, mapper,currentdate);
         }
 
         @Override
         public Collection<LoanEMIPackData> retrieveActiveLoanProductsWithEMIPacks() {
                 LoanProductMapper mapper = new LoanProductMapper();
+                String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
                 String sql = mapper.schemaActiveLoanProductsWithEMIPacks();
                 String inClause = this.fineractEntityAccessUtil
                         .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.LOAN_PRODUCT);
@@ -69,7 +75,7 @@ public class LoanEMIPacksReadPlatformServiceImpl implements LoanEMIPacksReadPlat
                         sql += " and lp.id in ( " + inClause + " )";
                 }
 
-                return this.jdbcTemplate.query(sql, mapper);
+                return this.jdbcTemplate.query(sql, mapper,currentdate);
         }
 
         @Override
@@ -102,14 +108,14 @@ public class LoanEMIPacksReadPlatformServiceImpl implements LoanEMIPacksReadPlat
 
                 public String schemaActiveLoanProductsWithoutEMIPacks() {
                         return "select lp.id as loanProductId, lp.name as loanProductName from m_product_loan as lp "
-                                + "where (close_date is null or close_date >= CURDATE()) "
+                                + "where (close_date is null or close_date >= ?) "
                                 + "and lp.id not in (select distinct lep.loan_product_id from f_loan_emi_packs as lep) ";
                 }
 
                 public String schemaActiveLoanProductsWithEMIPacks() {
                         return "select distinct lep.loan_product_id as loanProductId, lp.name as loanProductName "
                                 + "from f_loan_emi_packs as lep left join m_product_loan as lp on lep.loan_product_id = lp.id "
-                                + "where (close_date is null or close_date >= CURDATE()) ";
+                                + "where (close_date is null or close_date >= ?) ";
                 }
 
                 @Override

@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
@@ -43,6 +44,8 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -56,6 +59,7 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
     private final PlatformSecurityContext context;
     private final ChargeDropdownReadPlatformService chargeDropdownReadPlatformService;
     private final DropdownReadPlatformService dropdownReadPlatformService;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // mappers
     private final SavingsAccountChargeDueMapper chargeDueMapper;
@@ -242,21 +246,23 @@ public class SavingsAccountChargeReadPlatformServiceImpl implements SavingsAccou
 
     @Override
     public Collection<SavingsAccountAnnualFeeData> retrieveChargesWithAnnualFeeDue() {
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         final String sql = "select " + this.chargeDueMapper.schema() + " where sac.charge_due_date is not null and sac.charge_time_enum = "
-                + ChargeTimeType.ANNUAL_FEE.getValue() + " and sac.charge_due_date <= NOW() and sa.status_enum = "
+                + ChargeTimeType.ANNUAL_FEE.getValue() + " and sac.charge_due_date <= ? and sa.status_enum = "
                 + SavingsAccountStatusType.ACTIVE.getValue();
 
-        return this.jdbcTemplate.query(sql, this.chargeDueMapper, new Object[] {});
+        return this.jdbcTemplate.query(sql, this.chargeDueMapper, new Object[] {currentdate});
     }
 
     @Override
     public Collection<SavingsAccountAnnualFeeData> retrieveChargesWithDue() {
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         final String sql = "select "
                 + this.chargeDueMapper.schema()
-                + " where sac.charge_due_date is not null and sac.charge_due_date <= NOW() and sac.waived = 0 and sac.is_paid_derived=0 and sac.is_active=1 and sa.status_enum = "
+                + " where sac.charge_due_date is not null and sac.charge_due_date <= ? and sac.waived = 0 and sac.is_paid_derived=0 and sac.is_active=1 and sa.status_enum = "
                 + SavingsAccountStatusType.ACTIVE.getValue() + " order by sac.charge_due_date ";
 
-        return this.jdbcTemplate.query(sql, this.chargeDueMapper, new Object[] {});
+        return this.jdbcTemplate.query(sql, this.chargeDueMapper, new Object[] {currentdate});
 
     }
 
