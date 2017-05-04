@@ -40,6 +40,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
@@ -65,6 +66,8 @@ import org.apache.fineract.portfolio.fund.exception.FundNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepositoryWrapper;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,7 +100,7 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     private final LoanRepositoryWrapper loanRepositoryWrapper;
     private final FundMappingQueryBuilderService fundMappingQueryBuilderService;
     private final FundMappingHistoryRepository fundMappingHistoryRepository;
-    
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public FundWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -640,8 +643,9 @@ public class FundWritePlatformServiceJpaRepositoryImpl implements FundWritePlatf
     @Override
     @CronTarget(jobName = JobName.FUND_STATUS_UPDATE)
     public void fundStatusUpdate() throws JobExecutionException {
-        final String query = "update m_fund f set f.is_active = (f.assignment_end_date < now()) where (f.assignment_end_date IS NOT NULL and f.is_manual_status_update = 0)";
-        this.jdbcTemplate.update(query);
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
+        final String query = "update m_fund f set f.is_active = (f.assignment_end_date <?) where (f.assignment_end_date IS NOT NULL and f.is_manual_status_update = 0)";
+        this.jdbcTemplate.update(query,currentdate);
     }
 
 }

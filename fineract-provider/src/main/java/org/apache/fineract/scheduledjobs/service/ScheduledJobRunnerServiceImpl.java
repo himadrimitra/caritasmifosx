@@ -250,7 +250,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	@Override
 	@CronTarget(jobName = JobName.UPDATE_LOAN_PAID_IN_ADVANCE)
 	public void updateLoanPaidInAdvance() {
-
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
 		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
 				this.dataSourceServiceFactory.determineDataSourceService()
 						.retrieveDataSource());
@@ -276,14 +276,14 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		updateSqlBuilder
 				.append(" INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id ");
 		updateSqlBuilder.append(" WHERE ml.loan_status_id = 300 ");
-		updateSqlBuilder.append(" and mr.duedate >= CURDATE() ");
+		updateSqlBuilder.append(" and mr.duedate >= ? ");
 		updateSqlBuilder.append(" GROUP BY ml.id");
 		updateSqlBuilder
 				.append(" HAVING (SUM(ifnull(mr.principal_completed_derived, 0)) + SUM(ifnull(mr.interest_completed_derived, 0)) +");
 		updateSqlBuilder
 				.append(" SUM(ifnull(mr.fee_charges_completed_derived, 0)) + SUM(ifnull(mr.penalty_charges_completed_derived, 0))) > 0.0");
 
-		final int result = jdbcTemplate.update(updateSqlBuilder.toString());
+		final int result = jdbcTemplate.update(updateSqlBuilder.toString(),currentdate);
 
 		logger.info(ThreadLocalContextUtil.getTenant().getName()
 				+ ": Results affected by update: " + result);
@@ -361,7 +361,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	@Override
 	@CronTarget(jobName = JobName.UPDATE_NPA)
 	public void updateNPA() {
-
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
 		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
 				this.dataSourceServiceFactory.determineDataSourceService()
 						.retrieveDataSource());
@@ -391,11 +391,11 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 				.append(" INNER JOIN m_product_loan mpl on mpl.id = loan.product_id AND mpl.overdue_days_for_npa is not null ");
 		updateSqlBuilder.append("WHERE loan.loan_status_id = 300  and ");
 		updateSqlBuilder
-				.append("laa.overdue_since_date_derived < SUBDATE(CURDATE(),INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day) ");
+				.append("laa.overdue_since_date_derived < SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day) ");
 		updateSqlBuilder.append("group by loan.id) as sl ");
 		updateSqlBuilder.append("SET ml.is_npa=1 where ml.id=sl.id ");
 
-		final int result = jdbcTemplate.update(updateSqlBuilder.toString());
+		final int result = jdbcTemplate.update(updateSqlBuilder.toString(),currentdate);
 
 		logger.info(ThreadLocalContextUtil.getTenant().getName()
 				+ ": Results affected by update: " + result);
@@ -480,7 +480,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 				sb.append("')");
 				iterations++;
 				if (iterations > 200) {
-					jdbcTemplate.update(insertSql + sb.toString());
+					jdbcTemplate.update(insertSql + sb.toString(),currentDate);
 					sb = new StringBuilder();
 				}
 
@@ -488,7 +488,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		}
 
 		if (sb.length() > 0) {
-			jdbcTemplate.update(insertSql + sb.toString());
+			jdbcTemplate.update(insertSql + sb.toString(),currentDate);
 		}
 
 	}
@@ -667,8 +667,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 							.append("crc.amount,crc.amount,0,0,crc.is_active,crc.inactivated_on_date ")
 							.append("from m_client_recurring_charge crc  where crc.id ="
 									+ clientRecurringChargeId
-									+ " and crc.charge_due_date <= CURDATE() and is_active = 1");
-					jdbcTemplate.update(insertSqlBuilder.toString());
+									+ " and crc.charge_due_date <= ? and is_active = 1");
+					jdbcTemplate.update(insertSqlBuilder.toString(),currentDate);
 					final StringBuilder updateSqlBuilder = new StringBuilder(
 							900);
 					updateSqlBuilder
@@ -678,8 +678,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 							.append(" WHEN crc.charge_time_enum = 11 THEN DATE_ADD(crc.charge_due_date,INTERVAL 7 DAY)")
 							.append("  ELSE DATE_ADD(crc.charge_due_date,INTERVAL 1 YEAR) END  WHERE crc.id ="
 									+ clientRecurringChargeId
-									+ " and is_active = 1 and crc.charge_due_date <= CURDATE()");
-					result = jdbcTemplate.update(updateSqlBuilder.toString());
+									+ " and is_active = 1 and crc.charge_due_date <= ?");
+					result = jdbcTemplate.update(updateSqlBuilder.toString(),currentDate);
 					// ClientRecurringCharge clientRecurringCharge =
 					// this.clientRecurringChargeRepository.findOne(clientRecurringChargeId);
 

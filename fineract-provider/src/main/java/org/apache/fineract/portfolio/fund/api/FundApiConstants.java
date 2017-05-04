@@ -11,6 +11,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 public class FundApiConstants {
 
     public static final String FUND_RESOURCE_NAME = "FUND";
@@ -52,6 +56,7 @@ public class FundApiConstants {
     public static final String activateOrDeactivateParamName = "activateOrDeactivate";
     public static final String externalIdParamName = "externalId";
     public static final String fundsParamName = "funds";
+    private final static DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // code values name
 
@@ -122,7 +127,7 @@ public class FundApiConstants {
     public static final String approvedDateSelectClause = " l.approvedon_date as approvedDate ";
     public static final String disbursementDateSelectClause = " l.disbursedon_date as disbursementDate ";
     public static final String overDueFromDaysParamName = "overDueFromDays";
-    public static final String overDueFromDaysSelectClause = " ifnull(DATEDIFF(CURDATE(),ageing.overdue_since_date_derived),0) as overDueFromDays ";
+    public static final String overDueFromDaysSelectClause = " ifnull(DATEDIFF(?,ageing.overdue_since_date_derived),0) as overDueFromDays ";
 
     public static Map<String, String> selectClauseMap = new HashMap<String, String>() {
 
@@ -146,7 +151,7 @@ public class FundApiConstants {
             put("paidRepayment", paidRepaymentSelectClause);
             put("pendingRepayment", pendingRepaymentSelectClause);
             put("principalOutstanding", "");
-            put("overDueFromDays", overDueFromDaysSelectClause);
+            put("overDueFromDays", "ifnull(DATEDIFF("+  formatter.print(DateUtils.getLocalDateOfTenant()) +",ageing.overdue_since_date_derived),0) as overDueFromDays ");
             put("trancheDisburse", " product.allow_multiple_disbursals as trancheDisburse ");
         }
     };

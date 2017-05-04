@@ -1925,19 +1925,19 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     public Collection<OverdueLoanScheduleData> retrieveAllLoansWithOverdueInstallments(final Long penaltyWaitPeriod,
             final Boolean backdatePenalties) {
         final MusoniOverdueLoanScheduleMapper rm = new MusoniOverdueLoanScheduleMapper();
-
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         final StringBuilder sqlBuilder = new StringBuilder(400);
         sqlBuilder.append("select ").append(rm.schema()).append(" where ml.loan_status_id = 300 ")
                 .append(" and mc.charge_time_enum = 9 ")
-                .append(" and DATE_SUB(CURDATE(),INTERVAL ? DAY) > ls.duedate ")
+                .append(" and DATE_SUB(?,INTERVAL ? DAY) > ls.duedate ")
                 .append(" and ls.recalculated_interest_component <> 1 ")
                 .append(" and ls.completed_derived <> 1 and mc.charge_applies_to_enum =1 ");
-        if (backdatePenalties) { return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { penaltyWaitPeriod }); }
+        if (backdatePenalties) { return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { currentdate,penaltyWaitPeriod }); }
         // Only apply for duedate = yesterday (so that we don't apply
         // penalties on the duedate itself)
-        sqlBuilder.append(" and ls.duedate >= DATE_SUB(CURDATE(),INTERVAL (? + 1) DAY)");
+        sqlBuilder.append(" and ls.duedate >= DATE_SUB(?,INTERVAL (? + 1) DAY)");
 
-        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { penaltyWaitPeriod, penaltyWaitPeriod });
+        return this.jdbcTemplate.query(sqlBuilder.toString(), rm, new Object[] { currentdate,penaltyWaitPeriod,currentdate, penaltyWaitPeriod });
 
     }
 
@@ -2054,12 +2054,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 .append(" and (((ls.fee_charges_amount <> if(ls.accrual_fee_charges_derived is null,0, ls.accrual_fee_charges_derived))")
                 .append(" or ( ls.penalty_charges_amount <> if(ls.accrual_penalty_charges_derived is null,0,ls.accrual_penalty_charges_derived))")
                 .append(" or ( ls.interest_amount <> if(ls.accrual_interest_derived is null,0,ls.accrual_interest_derived)))")
-                .append(" and loan.loan_status_id=:active and mpl.accounting_type=:type and loan.is_npa=0 and ls.duedate <= CURDATE()) ");
+                .append(" and loan.loan_status_id=:active and mpl.accounting_type=:type and loan.is_npa=0 and ls.duedate <= :currentdate) ");
         if(organisationStartDate != null){
             sqlBuilder.append(" and ls.duedate > :organisationstartdate ");
         }
             sqlBuilder.append(" order by loan.id,ls.duedate ");
-        Map<String, Object> paramMap = new HashMap<>(3);
+        Map<String, Object> paramMap = new HashMap<>(4);
+        paramMap.put("currentdate",formatter.print(DateUtils.getLocalDateOfTenant()));
         paramMap.put("active", LoanStatus.ACTIVE.getValue());
         paramMap.put("type", AccountingRuleType.ACCRUAL_PERIODIC.getValue());
         paramMap.put("organisationstartdate", formatter.print(new LocalDate(organisationStartDate)));
@@ -2489,16 +2490,18 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     @Override
     public PaidInAdvanceData retrieveTotalPaidInAdvance(Long loanId) {
         // TODO Auto-generated method stub
+    	
         try {
+            String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
             final String sql = "  select (SUM(ifnull(mr.principal_completed_derived, 0)) +"
                     + " + SUM(ifnull(mr.interest_completed_derived, 0)) " + " + SUM(ifnull(mr.fee_charges_completed_derived, 0)) "
                     + " + SUM(ifnull(mr.penalty_charges_completed_derived, 0))) as total_in_advance_derived "
                     + " from m_loan ml INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id "
-                    + " where ml.id=? and  mr.duedate >= CURDATE() group by ml.id having "
+                    + " where ml.id=? and  mr.duedate >= ? group by ml.id having "
                     + " (SUM(ifnull(mr.principal_completed_derived, 0))  " + " + SUM(ifnull(mr.interest_completed_derived, 0)) "
                     + " + SUM(ifnull(mr.fee_charges_completed_derived, 0)) "
                     + "+  SUM(ifnull(mr.penalty_charges_completed_derived, 0))) > 0";
-            BigDecimal bigDecimal = this.jdbcTemplate.queryForObject(sql, BigDecimal.class, loanId);
+            BigDecimal bigDecimal = this.jdbcTemplate.queryForObject(sql, BigDecimal.class, loanId,currentdate);
             return new PaidInAdvanceData(bigDecimal);
         } catch (DataAccessException e) {
             // TODO Auto-generated catch block

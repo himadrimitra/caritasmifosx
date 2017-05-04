@@ -54,6 +54,8 @@ import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductInactiveException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -67,6 +69,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     private final JdbcTemplate jdbcTemplate;
     private final ChargeReadPlatformService chargeReadPlatformService;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public LoanProductReadPlatformServiceImpl(final PlatformSecurityContext context,
@@ -148,11 +151,12 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     @Override
     public Collection<LoanProductData> retrieveAllLoanProductsForLookup(final boolean activeOnly) {
         this.context.authenticatedUser();
-
         final LoanProductLookupMapper rm = new LoanProductLookupMapper();
-
+        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         String sql = "select ";
+        List<Object> params = new ArrayList<>();
         if (activeOnly) {
+        	params.add(currentdate);
             sql += rm.activeOnlySchema();
         } else {
             sql += rm.schema();
@@ -170,7 +174,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             }
         }
 
-        return this.jdbcTemplate.query(sql, rm, new Object[] {});
+        return this.jdbcTemplate.query(sql, rm, params.toArray());
     }
 
     @Override
@@ -536,7 +540,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         }
 
         public String activeOnlySchema() {
-            return schema() + " where (close_date is null or close_date >= CURDATE())";
+            return schema() + " where (close_date is null or close_date >= ? )";
         }
 
         public String productMixSchema() {
