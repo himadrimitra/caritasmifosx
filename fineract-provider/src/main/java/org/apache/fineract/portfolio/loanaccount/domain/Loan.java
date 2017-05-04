@@ -817,7 +817,8 @@ public class Loan extends AbstractPersistable<Long> {
     private void validateChargeHasValidSpecifiedDateIfApplicable(final LoanCharge loanCharge, final LocalDate disbursementDate,
             final LocalDate lastRepaymentPeriodDueDate) {
         if (loanCharge.isSpecifiedDueDate()
-                && !loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate, lastRepaymentPeriodDueDate)) {
+                && !(loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate, DateUtils.getLocalDateOfTenant())
+                        || loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate, lastRepaymentPeriodDueDate))) {
             final String defaultUserMessage = "This charge with specified due date cannot be added as the it is not in schedule range.";
             throw new LoanChargeCannotBeAddedException("loanCharge", "specified.due.date.outside.range", defaultUserMessage,
                     getDisbursementDate(), lastRepaymentPeriodDueDate, loanCharge.name());
@@ -4198,16 +4199,27 @@ public class Loan extends AbstractPersistable<Long> {
         
         transactionForAdjustment.reverse();
         transactionForAdjustment.manuallyAdjustedOrReversed();
+        ArrayList<Integer> transactionTypeForReversal = new ArrayList<>();
         
-        if (isSubsidyApplicable() && getTotalSubsidyAmount().isGreaterThanZero()
-                && (status().isOverpaid() || status().isClosedObligationsMet() || status().isClosed())) {
-            final LoanTransaction realizationLoanTransaction = findRealizationTransaction();
-            if(realizationLoanTransaction == null){
-                final String errorMessage = "Only transactions of type realization cannot be adjusted.";
-                throw new InvalidLoanTransactionTypeException("transaction", "adjustment.is.only.allowed.to.repayment.or.waiver.transaction",
-                        errorMessage);
+        if (status().isOverpaid() || status().isClosedObligationsMet() || status().isClosed()) {
+            if (isSubsidyApplicable() && getTotalSubsidyAmount().isGreaterThanZero()) {
+                final LoanTransaction realizationLoanTransaction = findRealizationTransaction();
+                if (realizationLoanTransaction == null) {
+                    final String errorMessage = "Only transactions of type realization cannot be adjusted.";
+                    throw new InvalidLoanTransactionTypeException("transaction","adjustment.is.only.allowed.to.repayment.or.waiver.transaction", errorMessage);
+                }
+                realizationLoanTransaction.reverse();
             }
-            realizationLoanTransaction.reverse();
+            if (this.loanInterestRecalculationDetails != null && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()) {
+                Calendar calendar = scheduleGeneratorDTO.getCompoundingCalendarInstance().getCalendar();
+                if (!CalendarUtils.isValidRedurringDate(calendar.getRecurrence(), calendar.getStartDateLocalDate(),transactionForAdjustment.getTransactionDate())) {
+                    transactionTypeForReversal.add(LoanTransactionType.INCOME_POSTING.getValue());
+                    transactionTypeForReversal.add(LoanTransactionType.ACCRUAL.getValue());
+                }
+            }
+            if (!transactionTypeForReversal.isEmpty()) {
+                findAndReverseTransactionsOfType(transactionTypeForReversal, transactionForAdjustment.getTransactionDate());
+            }
         }
         
         if (isClosedWrittenOff()) {
@@ -4215,7 +4227,7 @@ public class Loan extends AbstractPersistable<Long> {
             final LoanTransaction writeOffTransaction = findWriteOffTransaction();
             writeOffTransaction.reverse();
         }
-
+        
         if (isClosedObligationsMet() || isClosedWrittenOff() || isClosedWithOutsandingAmountMarkedForReschedule()) {
             this.loanStatus = LoanStatus.ACTIVE.getValue();
             this.closedOnDate = null;
@@ -4235,6 +4247,15 @@ public class Loan extends AbstractPersistable<Long> {
         }
         
         return changedTransactionDetail;
+    }
+
+    private void findAndReverseTransactionsOfType(ArrayList<Integer> transactionType, LocalDate transactionDate) {
+        for (LoanTransaction loanTransaction : this.getLoanTransactions()) {
+            if (loanTransaction.isNotReversed() && loanTransaction.getTransactionDate().isEqual(transactionDate)
+                    && transactionType.contains(loanTransaction.getTypeOf().getValue())) {
+                loanTransaction.reverse();
+            }
+        }
     }
 
     private void validateModifiedGlimTransaction(final LoanTransaction newTransactionDetail, final LoanTransaction transactionForAdjustment) {
@@ -6226,7 +6247,7 @@ public class Loan extends AbstractPersistable<Long> {
     private void determineFeeDetails(LocalDate fromDate, LocalDate toDate, HashMap<String, Object> feeDetails) {
         BigDecimal fee = BigDecimal.ZERO;
         BigDecimal penalties = BigDecimal.ZERO;
-
+        
         List<Integer> installments = new ArrayList<>();
         for (LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment : this.repaymentScheduleInstallments) {
             if (loanRepaymentScheduleInstallment.getDueDate().isAfter(fromDate)

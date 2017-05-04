@@ -2289,6 +2289,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         List<Long> loanIds = null;
         sql.append("SELECT loan_id from reprocess_loans ");
         loanIds = this.jdbcTemplate.queryForList(sql.toString(), Long.class);
+        if (!loanIds.isEmpty()) {
+            this.jdbcTemplate.update("truncate reprocess_loans");
+        }
         sqlBuilder.append("SELECT ml.id FROM m_loan ml ");
         sqlBuilder.append(" INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id ");
         sqlBuilder.append(" LEFT JOIN m_loan_disbursement_detail dd on dd.loan_id=ml.id and dd.disbursedon_date is null ");

@@ -72,6 +72,7 @@ public class LoanScheduleParams {
     private final Map<LocalDate, Money> compoundingMap;
     private final Map<LocalDate, Map<LocalDate, Money>> compoundingDateVariations = new HashMap<>();
     private Money unCompoundedAmount;
+    private Money unCompoundedAccountedAmount;
     private Money compoundedInLastInstallment;
 
     
@@ -100,6 +101,7 @@ public class LoanScheduleParams {
     private int loanTermInDays;
     private final MonetaryCurrency currency;
     private final boolean applyInterestRecalculation;
+    private Money unProcessedAmountPostOutstandingBalance;
     private boolean resetEMI;
     
     /**
@@ -153,6 +155,8 @@ public class LoanScheduleParams {
             this.compoundedInLastInstallment = Money.zero(this.currency);
             this.totalCapitalizedChargeAmount = Money.zero(this.currency);
             this.totalAccountedCapitalizedCharge = Money.zero(this.currency);
+            this.unCompoundedAccountedAmount = Money.zero(this.currency);
+            this.unProcessedAmountPostOutstandingBalance = Money.zero(this.currency);
         }
         this.resetEMI = false;
     }
@@ -526,5 +530,25 @@ public class LoanScheduleParams {
 
     public void addTotalAccountedCapitalizedCharge(final Money amount) {
         this.totalAccountedCapitalizedCharge = this.totalAccountedCapitalizedCharge.plus(amount);
+    }
+    
+    public Money getUnCompoundedAccountedAmount() {
+        return this.unCompoundedAccountedAmount;
+    }
+    
+    public void addUnCompoundedAccountedAmount(Money unCompoundedAccountedAmount) {
+        this.unCompoundedAccountedAmount = this.unCompoundedAccountedAmount.plus(unCompoundedAccountedAmount);
+    }
+    
+    public void setUnCompoundedAccountedAmount(Money unCompoundedAccountedAmount) {
+        this.unCompoundedAccountedAmount = unCompoundedAccountedAmount;
+    }
+    
+    public Money getUnProcessedAmountPostOutstandingBalance() {
+        return this.unProcessedAmountPostOutstandingBalance;
+    }
+    
+    public void addUnProcessedAmountPostOutstandingBalance(Money unProcessedAmount) {
+        this.unProcessedAmountPostOutstandingBalance = this.unProcessedAmountPostOutstandingBalance.plus(unProcessedAmount);;
     }
 }
