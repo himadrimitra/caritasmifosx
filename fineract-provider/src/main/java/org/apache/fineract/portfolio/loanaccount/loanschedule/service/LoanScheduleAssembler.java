@@ -95,6 +95,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariations;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTermVariationsComparator;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
+import org.apache.fineract.portfolio.loanaccount.exception.IRRCalculationException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanApplicationTerms;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanScheduleGenerator;
@@ -212,6 +213,9 @@ public class LoanScheduleAssembler {
                     element);
             terms.setFlatInterestRate(interestRatePerPeriod);
             double annualIrr = IRRCalculator.calculateIrr(terms);
+            if(Double.isNaN(annualIrr)){
+                throw new IRRCalculationException();
+            }
             final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
             final MathContext mc = new MathContext(8, roundingMode);
             Money emi = terms.calculateEmiWithFlatInterestRate(mc);
@@ -226,11 +230,9 @@ public class LoanScheduleAssembler {
             Money interest = null;
             if(terms.isAdjustInterestForRounding()){
                 Money totalPayment = emi.multipliedBy(terms.getNumberOfRepayments());
+                totalPayment = totalPayment.plus(terms.getAmountForUpfrontCollection());
                 Money principal = terms.getPrincipalToBeScheduled();
                 interest = totalPayment.minus(principal);
-                if(terms.collectInterestUpfront()){
-                    interest = interest.plus(terms.calculateInterestWithFlatInterestRate(mc));
-                }
             }else{
                 interest = terms.calculateInterestWithFlatInterestRate(mc);
             }
@@ -543,13 +545,8 @@ public class LoanScheduleAssembler {
         HolidayDetailDTO detailDTO = new HolidayDetailDTO(isHolidayEnabled, holidays, workingDays, workingDayExemptions);
         final BigDecimal firstEmiAmount = null;
         final boolean considerFutureDisbursmentsInSchedule = loanProduct.considerFutureDisbursementsInSchedule();
-        Boolean collectInterestUpfront = null;
-        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.collectInterestUpfront, element)) {
-            collectInterestUpfront = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.collectInterestUpfront, element);
-        }
-        if (collectInterestUpfront == null) {
-            collectInterestUpfront = loanProduct.collectInterestUpfront();
-        }
+        final BigDecimal amountForUpfrontCollection = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(LoanApiConstants.amountForUpfrontCollectionParameterName, element);
+       
         
         LoanApplicationTerms loanApplicationTerms = LoanApplicationTerms.assembleFrom(applicationCurrency, loanTermFrequency, loanTermPeriodFrequencyType, numberOfRepayments,
                 repaymentEvery, repaymentPeriodFrequencyType, nthDay, weekDayType, amortizationMethod, interestMethod,
@@ -566,7 +563,7 @@ public class LoanScheduleAssembler {
                 firstEmiAmount, loanProduct.getAdjustedInstallmentInMultiplesOf(), 
                 loanProduct.adjustFirstEMIAmount(),considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule, loanProduct.getWeeksInYearType(),
                 loanProduct.isAdjustInterestForRounding(), isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, 
-                loanProduct.allowNegativeLoanBalances(), collectInterestUpfront, discountOnDisburseAmount);
+                loanProduct.allowNegativeLoanBalances(), amountForUpfrontCollection, discountOnDisburseAmount);
         LoanUtilService.calculateBrokenPeriodInterest(loanApplicationTerms, null);
         return  loanApplicationTerms;
     }

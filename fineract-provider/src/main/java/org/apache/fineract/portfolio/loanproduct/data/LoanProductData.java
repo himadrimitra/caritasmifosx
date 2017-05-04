@@ -218,7 +218,7 @@ public class LoanProductData {
     private final Boolean considerFutureDisbursementsInSchedule;
     private final Boolean considerAllDisbursementsInSchedule;
     private final Boolean allowNegativeLoanBalance;
-    private final Boolean collectInterestUpfront;
+    private final Boolean allowUpfrontCollection;
     private final BigDecimal percentageOfDisbursementToBeTransferred;
     
     /**
@@ -314,7 +314,7 @@ public class LoanProductData {
         final Boolean allowNegativeLoanBalance = null;
         final Boolean considerFutureDisbursementsInSchedule = null;
         final Boolean considerAllDisbursementsInSchedule = null;
-        final Boolean collectInterestUpfront = null;
+        final Boolean allowUpfrontCollection = null;
         final BigDecimal percentageOfDisbursementToBeTransferred = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
@@ -334,7 +334,7 @@ public class LoanProductData {
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, 
                 weeksInYear, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements,
                 brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, 
-                collectInterestUpfront, percentageOfDisbursementToBeTransferred);
+                allowUpfrontCollection, percentageOfDisbursementToBeTransferred);
 
     }
 
@@ -430,7 +430,7 @@ public class LoanProductData {
         final Boolean allowNegativeLoanBalance = null;
         final Boolean considerFutureDisbursementsInSchedule = null;
         final Boolean considerAllDisbursementsInSchedule = null;
-        final Boolean collectInterestUpfront = null;
+        final Boolean allowUpfrontCollection = null;
         final BigDecimal percentageOfDisbursementToBeTransferred = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
@@ -450,7 +450,7 @@ public class LoanProductData {
                 syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm,
                 loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements,
                 installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate,
-                allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, collectInterestUpfront, 
+                allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection, 
                 percentageOfDisbursementToBeTransferred);
 
     }
@@ -553,7 +553,7 @@ public class LoanProductData {
         final Boolean allowNegativeLoanBalance = null;
         final Boolean considerFutureDisbursementsInSchedule = null;
         final Boolean considerAllDisbursementsInSchedule = null;
-        final Boolean collectInterestUpfront = null;
+        final Boolean allowUpfrontCollection = null;
         final BigDecimal percentageOfDisbursementToBeTransferred = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
@@ -574,7 +574,7 @@ public class LoanProductData {
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
                 weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType,
                 isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance,
-                considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, collectInterestUpfront, percentageOfDisbursementToBeTransferred);
+                considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection, percentageOfDisbursementToBeTransferred);
 
     }
 
@@ -622,7 +622,7 @@ public class LoanProductData {
             final boolean canUseForTopup, final EnumOptionData weeksInYearType, final boolean adjustInterestForRounding, final Boolean isEmiBasedOnDisbursements,
             final EnumOptionData installmentCalculationPeriodType, final Boolean isMinDurationApplicableForAllDisbursements, final EnumOptionData brokenPeriodMethodType, 
             final Boolean isFlatInterestRate, final Boolean allowNegativeLoanBalance, final Boolean considerFutureDisbursementsInSchedule, final Boolean considerAllDisbursementsInSchedule, 
-            final Boolean collectInterestUpfront, BigDecimal percentageOfDisbursementToBeTransferred) {
+            final Boolean allowUpfrontCollection, BigDecimal percentageOfDisbursementToBeTransferred) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -748,7 +748,7 @@ public class LoanProductData {
         this.allowNegativeLoanBalance = allowNegativeLoanBalance;
         this.considerFutureDisbursementsInSchedule = considerFutureDisbursementsInSchedule;
         this.considerAllDisbursementsInSchedule = considerAllDisbursementsInSchedule;
-        this.collectInterestUpfront = collectInterestUpfront;
+        this.allowUpfrontCollection = allowUpfrontCollection;
         this.percentageOfDisbursementToBeTransferred = percentageOfDisbursementToBeTransferred;
     }
 
@@ -907,7 +907,7 @@ public class LoanProductData {
         this.allowNegativeLoanBalance = productData.allowNegativeLoanBalance;
         this.considerFutureDisbursementsInSchedule = productData.considerFutureDisbursementsInSchedule;
         this.considerAllDisbursementsInSchedule = productData.considerAllDisbursementsInSchedule;
-        this.collectInterestUpfront = productData.collectInterestUpfront;
+        this.allowUpfrontCollection = productData.allowUpfrontCollection;
         this.percentageOfDisbursementToBeTransferred = productData.percentageOfDisbursementToBeTransferred;
     }
     
@@ -1003,7 +1003,7 @@ public class LoanProductData {
         final Boolean allowNegativeLoanBalance = null;
         final Boolean considerFutureDisbursementsInSchedule = null;
         final Boolean considerAllDisbursementsInSchedule = null;
-        final Boolean collectInterestUpfront = null;
+        final Boolean allowUpfrontCollection = null;
         final BigDecimal percentageOfDisbursementToBeTransferred = null;
         return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                 numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
@@ -1024,7 +1024,7 @@ public class LoanProductData {
                 minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup,
                 weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType,
                 isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance,
-                considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, collectInterestUpfront, percentageOfDisbursementToBeTransferred);
+                considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, allowUpfrontCollection, percentageOfDisbursementToBeTransferred);
     }
 
 
@@ -1433,6 +1433,11 @@ public class LoanProductData {
     
     public boolean isFlatInterestRate() {
         return this.isFlatInterestRate;
+    }
+
+    
+    public Boolean allowUpfrontCollection() {
+        return this.allowUpfrontCollection;
     }
 
 }

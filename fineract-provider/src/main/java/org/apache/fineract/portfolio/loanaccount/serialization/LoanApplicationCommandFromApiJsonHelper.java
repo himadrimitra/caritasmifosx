@@ -100,8 +100,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             LoanApiConstants.recurringMoratoriumOnPrincipalPeriods, LoanProductConstants.isSubsidyApplicableParamName,
             LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.clientMembersParamName,
             LoanApiConstants.upfrontChargesAmountParamName,LoanApiConstants.expectedDisbursalPaymentTypeParamName,LoanApiConstants.expectedRepaymentPaymentTypeParamName,
-            LoanApiConstants.skipAuthenticationRule, LoanApiConstants.syncRepaymentsWithMeeting,LoanProductConstants.brokenPeriodMethodTypeParamName, 
-            LoanProductConstants.collectInterestUpfront,LoanApiConstants.discountOnDisbursalAmountParameterName));
+            LoanApiConstants.skipAuthenticationRule, LoanApiConstants.syncRepaymentsWithMeeting,LoanProductConstants.brokenPeriodMethodTypeParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
     private final CalculateLoanScheduleQueryFromApiJsonHelper apiJsonHelper;
@@ -119,12 +118,16 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        Set<String> loanSupportedParameters = this.supportedParameters;
+        Set<String> loanSupportedParameters =  new HashSet<>(this.supportedParameters);;
         if(loanProduct.isFlatInterestRate()){
-            loanSupportedParameters = new HashSet<>(this.supportedParameters);
-            loanSupportedParameters.add(LoanProductConstants.collectInterestUpfront);
             loanSupportedParameters.add(LoanApiConstants.discountOnDisbursalAmountParameterName);
         }
+        
+        if(loanProduct.allowUpfrontCollection()){
+            loanSupportedParameters.add(LoanApiConstants.amountForUpfrontCollectionParameterName);
+        }
+        
+        
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, loanSupportedParameters);
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -536,6 +539,11 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         baseDataValidator.reset().parameter(LoanApiConstants.discountOnDisbursalAmountParameterName).value(discountAmount).ignoreIfNull()
                 .positiveAmount();
         
+        final BigDecimal amountForUpfrontCollection = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                LoanApiConstants.amountForUpfrontCollectionParameterName, element);
+        baseDataValidator.reset().parameter(LoanApiConstants.amountForUpfrontCollectionParameterName).value(amountForUpfrontCollection).ignoreIfNull()
+                .positiveAmount().notGreaterThanMax(principal);
+        
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -545,11 +553,13 @@ public final class LoanApplicationCommandFromApiJsonHelper {
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
-        Set<String> loanSupportedParameters = this.supportedParameters;
+        Set<String> loanSupportedParameters =  new HashSet<>(this.supportedParameters);;
         if(loanProduct.isFlatInterestRate()){
-            loanSupportedParameters = new HashSet<>(this.supportedParameters);
-            loanSupportedParameters.add(LoanProductConstants.collectInterestUpfront);
             loanSupportedParameters.add(LoanApiConstants.discountOnDisbursalAmountParameterName);
+        }
+        
+        if(loanProduct.allowUpfrontCollection()){
+            loanSupportedParameters.add(LoanApiConstants.amountForUpfrontCollectionParameterName);
         }
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, loanSupportedParameters);
 
@@ -622,6 +632,8 @@ public final class LoanApplicationCommandFromApiJsonHelper {
             atLeastOneParameterPassedForUpdate = true;
             principal = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(principalParameterName, element);
             baseDataValidator.reset().parameter(principalParameterName).value(principal).notNull().positiveAmount();
+        }else{
+        	principal = existingLoanApplication.getPrincpal().getAmount();
         }
 
         final String inArrearsToleranceParameterName = "inArrearsTolerance";
@@ -1011,6 +1023,11 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                 LoanApiConstants.discountOnDisbursalAmountParameterName, element);
         baseDataValidator.reset().parameter(LoanApiConstants.discountOnDisbursalAmountParameterName).value(discountAmount).ignoreIfNull()
                 .positiveAmount();
+        
+        final BigDecimal amountForUpfrontCollection = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                LoanApiConstants.amountForUpfrontCollectionParameterName, element);
+        baseDataValidator.reset().parameter(LoanApiConstants.amountForUpfrontCollectionParameterName).value(amountForUpfrontCollection).ignoreIfNull()
+                .positiveAmount().notGreaterThanMax(principal);
 
         validateLoanMultiDisbursementdate(element, baseDataValidator, expectedDisbursementDate, principal);
         validatePartialPeriodSupport(interestCalculationPeriodType, baseDataValidator, element, loanProduct);

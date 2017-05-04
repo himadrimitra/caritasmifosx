@@ -105,7 +105,7 @@ public class LoanProductsApiResource {
             "floatingRatesId", "interestRateDifferential", "minDifferentialLendingRate", "defaultDifferentialLendingRate",
             "maxDifferentialLendingRate", "isFloatingInterestRateCalculationAllowed", LoanProductConstants.minLoanTerm, 
             LoanProductConstants.maxLoanTerm, LoanProductConstants.loanTenureFrequencyType,
-            LoanProductConstants.canUseForTopup , LoanProductConstants.collectInterestUpfront,"writeOffToExpenseAccountMapping", LoanProductConstants.weeksInYearType));
+            LoanProductConstants.canUseForTopup , LoanProductConstants.allowUpfrontCollection,"writeOffToExpenseAccountMapping", LoanProductConstants.weeksInYearType));
 
     private final Set<String> PRODUCT_MIX_DATA_PARAMETERS = new HashSet<>(Arrays.asList("productId", "productName", "restrictedProducts",
             "allowedProducts", "productOptions"));
