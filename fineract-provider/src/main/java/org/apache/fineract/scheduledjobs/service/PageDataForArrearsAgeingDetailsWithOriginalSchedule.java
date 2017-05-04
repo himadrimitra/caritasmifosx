@@ -20,7 +20,10 @@ package org.apache.fineract.scheduledjobs.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -54,13 +57,16 @@ public class PageDataForArrearsAgeingDetailsWithOriginalSchedule {
     public Page<Long> getPageData(int limit,int offset){
         final LoanArrearsAgingMapper loanArrearsAgingMapper = new LoanArrearsAgingMapper();
         final StringBuilder loanIdentifier = new StringBuilder();
+        Date currentDate = DateUtils.getDateOfTenant();
+        String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(currentDate);
+        formattedDate = "'" + formattedDate + "'";
         loanIdentifier.append("select SQL_CALC_FOUND_ROWS ");
         loanIdentifier.append(" ml.id as loanId FROM m_loan ml  ");
         loanIdentifier.append("INNER JOIN m_loan_repayment_schedule mr on mr.loan_id = ml.id ");
         loanIdentifier.append(
                 "inner join m_product_loan_recalculation_details prd on prd.product_id = ml.product_id and prd.arrears_based_on_original_schedule = 1  ");
         loanIdentifier.append(
-                "WHERE ml.loan_status_id = 300  and mr.completed_derived is false  and mr.duedate < SUBDATE(CURDATE(),INTERVAL  ifnull(ml.grace_on_arrears_ageing,0) day) group by ml.id");
+                "WHERE ml.loan_status_id = 300  and mr.completed_derived is false  and mr.duedate < SUBDATE(formattedDate,INTERVAL  ifnull(ml.grace_on_arrears_ageing,0) day) group by ml.id");
         loanIdentifier.append(" limit " + limit);
         loanIdentifier.append(" offset " + offset);
         final String sqlCountRows = "SELECT FOUND_ROWS()";

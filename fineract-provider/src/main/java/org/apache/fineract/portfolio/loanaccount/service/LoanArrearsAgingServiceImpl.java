@@ -21,7 +21,9 @@ package org.apache.fineract.portfolio.loanaccount.service;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -50,7 +52,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.data.LoanSchedulePeriodData;
 import org.apache.fineract.scheduledjobs.service.ExecuteBatchUpdateTransactional;
 import org.apache.fineract.scheduledjobs.service.PageDataForArrearsAgeingDetailsWithOriginalSchedule;
-import org.apache.fineract.scheduledjobs.service.ScheduledJobRunnerServiceImpl;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
@@ -107,6 +108,9 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         Map<String,Integer> returnMap = new HashMap<>();
         List<String> insertStatement = new ArrayList<>();
         int result = 0 ;
+        Date currentDate = DateUtils.getDateOfTenant();
+        String formattedDate = new SimpleDateFormat("yyyy-MM-dd").format(currentDate);
+        formattedDate = "'" + formattedDate + "'";
         
         this.jdbcTemplate.execute("truncate table m_loan_arrears_aging");
 
@@ -134,14 +138,14 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         updateSqlBuilder.append(" left join m_product_loan_recalculation_details prd on prd.product_id = ml.product_id ");
         updateSqlBuilder.append(" WHERE ml.loan_status_id = 300 "); // active
         updateSqlBuilder.append(" and mr.completed_derived is false ");
-        updateSqlBuilder.append(" and mr.duedate < SUBDATE(CURDATE(),INTERVAL  ifnull(ml.grace_on_arrears_ageing,0) day) ");
+        updateSqlBuilder.append(" and mr.duedate < SUBDATE("+formattedDate+",INTERVAL  ifnull(ml.grace_on_arrears_ageing,0) day) ");
         updateSqlBuilder.append(" and (prd.arrears_based_on_original_schedule = 0 or prd.arrears_based_on_original_schedule is null) ");
         updateSqlBuilder.append(" GROUP BY ml.id");
 
      //   returnMap = updateLoanArrearsAgeingDetailsWithOriginalSchedule();
         
         insertStatement.add(updateSqlBuilder.toString());
-        insertStatement.add("CALL ArrearsAging");
+        insertStatement.add("CALL ArrearsAging("+formattedDate+")");
         returnMap.putAll(this.executeBatchUpdateTransactional.executeBatchUpdate(insertStatement));
         for (String message : returnMap.keySet()) {
             if (!message.isEmpty()) {
