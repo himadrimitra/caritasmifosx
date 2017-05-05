@@ -68,9 +68,8 @@ public class NoCompoundingPeriod implements CompoundingPeriod {
         // calculations is 'compounded'
         BigDecimal interestToCompound = interestFromPreviousPostingPeriod;
         for (final EndOfDayBalance balance : this.endOfDayBalances) {
-            final BigDecimal interestOnBalanceUnrounded = balance.calculateInterestOnBalanceAndInterest(interestToCompound,
-                    interestRateAsFraction, daysInYear, minBalanceForInterestCalculation, overdraftInterestRateAsFraction,
-                    minOverdraftForInterestCalculation,compoundingInterestPeriodType);
+        	final BigDecimal interestOnBalanceUnrounded = balance.calculateInterestOnBalance(BigDecimal.ZERO, interestRateAsFraction, daysInYear,
+                     minBalanceForInterestCalculation, overdraftInterestRateAsFraction, minOverdraftForInterestCalculation);
             interestToCompound = interestToCompound.add(interestOnBalanceUnrounded, MathContext.DECIMAL64).setScale(9);
             interestEarned = interestEarned.add(interestOnBalanceUnrounded);
         }
