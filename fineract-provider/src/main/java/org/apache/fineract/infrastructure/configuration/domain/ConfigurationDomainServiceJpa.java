@@ -456,4 +456,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return null;
     }
 
+	@Override
+	public boolean allowClientsInMultipleGroups() {
+		final String propertyName = "allow-clients-in-multiple-groups";
+		final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+		return property.isEnabled();
+	}
+
 }

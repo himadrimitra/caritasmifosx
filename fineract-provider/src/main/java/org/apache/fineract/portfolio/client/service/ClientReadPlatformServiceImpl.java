@@ -27,6 +27,7 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.api.ApiParameterHelper;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -72,6 +73,8 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     private final StaffReadPlatformService staffReadPlatformService;
     private final CodeValueReadPlatformService codeValueReadPlatformService;
     private final SavingsProductReadPlatformService savingsProductReadPlatformService;
+    private final ConfigurationDomainService configurationDomainService;
+
     // data mappers
     private final PaginationHelper<ClientData> paginationHelper = new PaginationHelper<>();
     private final ClientMapper clientMapper = new ClientMapper();
@@ -83,13 +86,15 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     public ClientReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
             final OfficeReadPlatformService officeReadPlatformService, final StaffReadPlatformService staffReadPlatformService,
             final CodeValueReadPlatformService codeValueReadPlatformService,
-            final SavingsProductReadPlatformService savingsProductReadPlatformService) {
+			final SavingsProductReadPlatformService savingsProductReadPlatformService,
+			ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.officeReadPlatformService = officeReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.staffReadPlatformService = staffReadPlatformService;
         this.codeValueReadPlatformService = codeValueReadPlatformService;
         this.savingsProductReadPlatformService = savingsProductReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -145,7 +150,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         final String userOfficeHierarchy = this.context.officeHierarchy();
         final String underHierarchySearchString = userOfficeHierarchy + "%";
         final String appUserID = String.valueOf(context.authenticatedUser().getId());
-
+        final Long groupId = searchParameters.getGroupId();
         // if (searchParameters.isScopedByOfficeHierarchy()) {
         // this.context.validateAccessRights(searchParameters.getHierarchy());
         // underHierarchySearchString = searchParameters.getHierarchy() + "%";
@@ -182,11 +187,16 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
         }
 
         final String sqlCountRows = "SELECT FOUND_ROWS()";
-        Object[] params = new Object[] {underHierarchySearchString, underHierarchySearchString };
-        if(searchParameters.isSelfUser()){
-            params = new Object[] {underHierarchySearchString, underHierarchySearchString, appUserID };
+		List<Object> params = new ArrayList<>();
+		params.add(underHierarchySearchString);
+		params.add(underHierarchySearchString);
+		if (configurationDomainService.allowClientsInMultipleGroups()) {
+			params.add(groupId);
+		}
+		if (searchParameters.isSelfUser()) {
+			params.add(appUserID);
         }
-        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), params, this.clientMapper);
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), params.toArray(), this.clientMapper);
     }
 
     private String buildSqlStringFromClientCriteria(final SearchParameters searchParameters) {
@@ -231,8 +241,12 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             extraCriteria += " and o.hierarchy like " + ApiParameterHelper.sqlEncodeString(searchParameters.getHierarchy() + "%");
         }
         
-        if(searchParameters.isOrphansOnly()){
-        	extraCriteria += " and c.id NOT IN (select client_id from m_group_client) ";
+		if (searchParameters.isOrphansOnly()) {
+			if (configurationDomainService.allowClientsInMultipleGroups()) {
+				extraCriteria += " and c.id NOT IN (select client_id from m_group_client gc where gc.group_id =?)";
+			} else {
+				extraCriteria += " and c.id NOT IN (select client_id from m_group_client) ";
+			}
         }
 
         if (StringUtils.isNotBlank(extraCriteria)) {
