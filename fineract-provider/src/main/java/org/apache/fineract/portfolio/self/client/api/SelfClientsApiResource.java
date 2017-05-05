@@ -92,9 +92,10 @@ public class SelfClientsApiResource {
 		final String externalId = null;
 		final String hierarchy = null;
 		final Boolean orphansOnly = null;
+		final Long groupId = null;
 		return this.clientApiResource.retrieveAll(uriInfo, sqlSearch, officeId,
 				externalId, displayName, firstname, lastname, hierarchy,
-				offset, limit, orderBy, sortOrder, orphansOnly, true);
+				offset, limit, orderBy, sortOrder, orphansOnly, true, groupId);
 	}
 
 	@GET

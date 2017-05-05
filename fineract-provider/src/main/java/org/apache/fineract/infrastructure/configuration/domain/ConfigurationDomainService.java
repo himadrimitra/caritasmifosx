@@ -139,4 +139,6 @@ public interface ConfigurationDomainService {
     
     public Integer retrieveNumberOfDays();
 
+	boolean allowClientsInMultipleGroups();
+
 }
