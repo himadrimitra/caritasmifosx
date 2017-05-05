@@ -158,12 +158,11 @@ public class LoanProductRelatedDetailTestHelper {
         final boolean isEmiBasedOnDisbursements = false ;
         final Integer pmtCalculationPeriodMethod = null;
         final Integer brokenPeriodMethod = null;
-        final boolean collectInterestUpfront = false;
         
         return new LoanProductRelatedDetail(currency, defaultPrincipal, defaultNominalInterestRatePerPeriod, interestPeriodFrequencyType,
                 defaultAnnualNominalInterestRate, interestMethod, interestCalculationPeriodMethod, considerPartialPeriodInterest, repayEvery,
                 repaymentFrequencyType, defaultNumberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
                 amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType, isInterestRecalculationEnabled, weeksInMonthType,
-                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, collectInterestUpfront);
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
     }
 }

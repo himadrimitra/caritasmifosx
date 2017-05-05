@@ -740,7 +740,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" lp.is_linked_to_floating_interest_rates as isLoanProductLinkedToFloatingRate, ");
             sb.append(" lp.allow_variabe_installments as isvariableInstallmentsAllowed, ");
             sb.append(" lp.allow_multiple_disbursals as multiDisburseLoan,");
-            sb.append(" lp.can_define_fixed_emi_amount as canDefineInstallmentAmount,");
+            sb.append(" lp.can_define_fixed_emi_amount as canDefineInstallmentAmount, lp.allow_upfront_collection as allowUpfrontCollection,");
             sb.append(" lp.consider_future_disbursements_in_schedule as considerFutureDisbursmentsInSchedule, lp.consider_all_disbursements_in_schedule as considerAllDisbursementsInSchedule,");
             sb.append(" c.id as clientId, c.account_no as clientAccountNo, c.display_name as clientName, IFNULL(c.mobile_no,null) as mobileNo, c.office_id as clientOfficeId,");
             sb.append(" g.id as groupId, g.account_no as groupAccountNo, g.display_name as groupName,");
@@ -794,7 +794,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.total_writtenoff_derived as totalWrittenOff,");
             sb.append(" l.writeoff_reason_cv_id as writeoffReasonId,");
             sb.append(" l.flat_interest_rate as flatInterestRate,");
-            sb.append(" l.discount_on_disbursal_amount as discountOnDisbursalAmount, l.collect_interest_upfront as collectInterestUpfront,");
+            sb.append(" l.discount_on_disbursal_amount as discountOnDisbursalAmount, l.amount_for_upfront_collection as amountForUpfrontCollection,");
             sb.append(" codev.code_value as writeoffReason,");
             sb.append(" l.total_outstanding_derived as totalOutstanding,");
             sb.append(" l.total_overpaid_derived as totalOverpaid,");
@@ -1184,7 +1184,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             } 
             final BigDecimal flatInterestRate = rs.getBigDecimal("flatInterestRate");
             final BigDecimal discountOnDisbursalAmount = rs.getBigDecimal("discountOnDisbursalAmount");
-            final Boolean collectInterestUpfront = rs.getBoolean("collectInterestUpfront");
+            final Boolean allowUpfrontCollection = rs.getBoolean("allowUpfrontCollection");
+            final BigDecimal amountForUpfrontCollection = rs.getBigDecimal("amountForUpfrontCollection");
             
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
@@ -1201,7 +1202,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement, isvariableInstallmentsAllowed,
                     minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
                     topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate, 
-                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, collectInterestUpfront);
+                    brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, 
+                    allowUpfrontCollection, amountForUpfrontCollection);
         }
     }
     
@@ -2849,7 +2851,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.broken_period_method_enum as brokenPeriodMethodType,");
             sb.append(" l.flat_interest_rate as flatInterestRate,");
             sb.append(" l.broken_period_interest as brokenPeriodInterest,");
-            sb.append(" l.discount_on_disbursal_amount as discountOnDisbursalAmount, l.collect_interest_upfront as collectInterestUpfront,");
+            sb.append(" l.discount_on_disbursal_amount as discountOnDisbursalAmount, l.amount_for_upfront_collection as amountForUpfrontCollection,");
             sb.append(" l.is_topup as isTopup ");
             sb.append(" from m_loan l");
             this.loanSql = sb.toString();
@@ -3066,7 +3068,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final BigDecimal flatInterestRate = rs.getBigDecimal("flatInterestRate");
             final BigDecimal brokenPeriodInterest = JdbcSupport.getBigDecimalDefaultToZeroIfNull(rs, "brokenPeriodInterest");
             final BigDecimal discountOnDisbursalAmount = rs.getBigDecimal("discountOnDisbursalAmount");
-            final Boolean collectInterestUpfront = rs.getBoolean("collectInterestUpfront");
+            final BigDecimal amountForUpfrontCollection = rs.getBigDecimal("amountForUpfrontCollection");
             
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, groupData, loanType, loanProductId,
                     fundId, loanPurposeId, loanOfficerId, currencyData, proposedPrincipal, principal, approvedPrincipal, totalOverpaid,
@@ -3079,7 +3081,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     loanProductCounter, fixedEmiAmount, outstandingLoanBalance, inArrears, graceOnArrearsAgeing, isNPA, daysInMonthType,
                     daysInYearType, isInterestRecalculationEnabled, interestRecalculationData, createStandingInstructionAtDisbursement,
                     loanSubStatus, isTopup, weeksInYearType, expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, 
-                    flatInterestRate, brokenPeriodInterest, discountOnDisbursalAmount, collectInterestUpfront);
+                    flatInterestRate, brokenPeriodInterest, discountOnDisbursalAmount, amountForUpfrontCollection);
         }
     }
 

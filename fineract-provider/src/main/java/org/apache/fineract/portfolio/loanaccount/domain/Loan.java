@@ -107,6 +107,7 @@ import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.transactionprocessor.LoanRepaymentScheduleTransactionProcessor;
 import org.apache.fineract.portfolio.loanaccount.exception.ClientAlreadyWriteOffException;
 import org.apache.fineract.portfolio.loanaccount.exception.ExceedingTrancheCountException;
+import org.apache.fineract.portfolio.loanaccount.exception.IRRCalculationException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanStateTransitionException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanTransactionTypeException;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidRefundDateException;
@@ -459,6 +460,9 @@ public class Loan extends AbstractPersistable<Long> {
     
     @Column(name = "glim_payment_as_group", nullable = false)
     private boolean isGlimPaymentAsGroup;
+    
+    @Column(name = "amount_for_upfront_collection", scale = 6, precision = 19, nullable = true)
+    private BigDecimal amountForUpfrontCollection;
 
     public static Loan newIndividualLoanApplication(final String accountNo, final Client client, final Integer loanType,
             final LoanProduct loanProduct, final Fund fund, final Staff officer, final LoanPurpose loanPurpose,
@@ -467,14 +471,14 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final BigDecimal fixedEmiAmount, final List<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
             final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
-            final PaymentType expectedRepaymentPaymentType) {
+            final PaymentType expectedRepaymentPaymentType, final BigDecimal amountForUpfrontCollection) {
         final LoanStatus status = null;
         final Group group = null;
         final Boolean syncDisbursementWithMeeting = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType, amountForUpfrontCollection);
     }
 
     public static Loan newGroupLoanApplication(final String accountNo, final Group group, final Integer loanType,
@@ -484,13 +488,14 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
             final List<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
-            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,final PaymentType expectedRepaymentPaymentType) {
+            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,final PaymentType expectedRepaymentPaymentType, 
+            final BigDecimal amountForUpfrontCollection) {
         final LoanStatus status = null;
         final Client client = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType, amountForUpfrontCollection);
     }
 
     public static Loan newIndividualLoanApplicationFromGroup(final String accountNo, final Client client, final Group group,
@@ -500,12 +505,13 @@ public class Loan extends AbstractPersistable<Long> {
             final Set<LoanCollateral> collateral, final Boolean syncDisbursementWithMeeting, final BigDecimal fixedEmiAmount,
             final List<LoanDisbursementDetails> disbursementDetails, final BigDecimal maxOutstandingLoanBalance,
             final Boolean createStandingInstructionAtDisbursement, final Boolean isFloatingInterestRate,
-            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType) {
+            final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType, final PaymentType expectedRepaymentPaymentType, 
+            final BigDecimal amountForUpfrontCollection) {
         final LoanStatus status = null;
         return new Loan(accountNo, client, group, loanType, fund, officer, loanPurpose, transactionProcessingStrategy, loanProduct,
                 loanRepaymentScheduleDetail, status, loanCharges, collateral, syncDisbursementWithMeeting, fixedEmiAmount,
                 disbursementDetails, maxOutstandingLoanBalance, createStandingInstructionAtDisbursement, isFloatingInterestRate,
-                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType);
+                interestRateDifferential, expectedDisbursalPaymentType, expectedRepaymentPaymentType, amountForUpfrontCollection);
     }
 
     protected Loan() {
@@ -519,7 +525,7 @@ public class Loan extends AbstractPersistable<Long> {
             final BigDecimal fixedEmiAmount, final List<LoanDisbursementDetails> disbursementDetails,
             final BigDecimal maxOutstandingLoanBalance, final Boolean createStandingInstructionAtDisbursement,
             final Boolean isFloatingInterestRate, final BigDecimal interestRateDifferential, final PaymentType expectedDisbursalPaymentType,
-            final PaymentType expectedRepaymentPaymentType) {
+            final PaymentType expectedRepaymentPaymentType, final BigDecimal amountForUpfrontCollection) {
 
         this.loanRepaymentScheduleDetail = loanRepaymentScheduleDetail;
         this.loanRepaymentScheduleDetail.validateRepaymentPeriodWithGraceSettings();
@@ -587,6 +593,7 @@ public class Loan extends AbstractPersistable<Long> {
         this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
         updateNetAmountForTranches(getLoanCharges());
+        this.amountForUpfrontCollection = amountForUpfrontCollection;
     }
 
     private LoanSummary updateSummaryWithTotalFeeChargesDueAtDisbursement(final BigDecimal feeChargesDueAtDisbursement) {
@@ -1763,6 +1770,12 @@ public class Loan extends AbstractPersistable<Long> {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(LoanApiConstants.discountOnDisbursalAmountParameterName);
             this.discountOnDisbursalAmount = newValue;
             actualChanges.put(LoanApiConstants.discountOnDisbursalAmountParameterName, newValue);
+        }
+        
+        if (command.isChangeInBigDecimalParameterNamed(LoanApiConstants.amountForUpfrontCollectionParameterName, this.amountForUpfrontCollection)) {
+            final BigDecimal newValue = command.bigDecimalValueOfParameterNamed(LoanApiConstants.amountForUpfrontCollectionParameterName);
+            this.amountForUpfrontCollection = newValue;
+            actualChanges.put(LoanApiConstants.amountForUpfrontCollectionParameterName, newValue);
         }
         
         return actualChanges;
@@ -2966,6 +2979,9 @@ public class Loan extends AbstractPersistable<Long> {
         	}
         }
         updateSummaryWithTotalFeeChargesDueAtDisbursement();
+        if(!this.isOpen()){
+            updateNetAmountForTranches(charges);
+        }
     }
 
     public LoanScheduleModel regenerateScheduleModel(final ScheduleGeneratorDTO scheduleGeneratorDTO) {
@@ -6458,7 +6474,7 @@ public class Loan extends AbstractPersistable<Long> {
                 firstEmiAmount, this.loanProduct.getAdjustedInstallmentInMultiplesOf(), this.loanProduct.adjustFirstEMIAmount(),
                 scheduleGeneratorDTO.isConsiderFutureDisbursmentsInSchedule(), scheduleGeneratorDTO.isConsiderAllDisbursmentsInSchedule(),
                 this.loanProduct.isAdjustInterestForRounding(), this.loanProduct.allowNegativeLoanBalances(),
-                this.loanRepaymentScheduleDetail.collectInterestUpfront(), this.discountOnDisbursalAmount, reduceDiscountFromPricipal);
+                this.amountForUpfrontCollection, this.discountOnDisbursalAmount, reduceDiscountFromPricipal);
         loanApplicationTerms.setCapitalizedCharges(LoanUtilService.getCapitalizedCharges(this.getLoanCharges()));
         updateInterestRate(loanApplicationTerms,scheduleGeneratorDTO);
         if (this.isSubmittedAndPendingApproval()
@@ -6487,11 +6503,9 @@ public class Loan extends AbstractPersistable<Long> {
                 interest = Money.of(getCurrency(), this.summary.getTotalInterestCharged());
             } else if (loanApplicationTerms.isAdjustInterestForRounding()) {
                 Money totalPayment = emi.multipliedBy(loanApplicationTerms.getNumberOfRepayments());
+                totalPayment = totalPayment.plus(loanApplicationTerms.getAmountForUpfrontCollection());
                 Money principal = loanApplicationTerms.getPrincipalToBeScheduled();
                 interest = totalPayment.minus(principal);
-                if(loanApplicationTerms.collectInterestUpfront()){
-                    interest = interest.plus(loanApplicationTerms.calculateInterestWithFlatInterestRate(mc));
-                }
             } else {
                 interest = loanApplicationTerms.calculateInterestWithFlatInterestRate(mc);
             }
@@ -6507,6 +6521,9 @@ public class Loan extends AbstractPersistable<Long> {
             }
             if (!this.isOpen()) {
                 double annualIrr = IRRCalculator.calculateIrr(loanApplicationTerms);
+                if(Double.isNaN(annualIrr)){
+                    throw new IRRCalculationException();
+                }
                 loanApplicationTerms.updateAnnualNominalInterestRate(BigDecimal.valueOf(annualIrr));
                 if (loanApplicationTerms.getInterestRatePeriodFrequencyType().isMonthly()) {
                     double monthlyRate = annualIrr / 12;

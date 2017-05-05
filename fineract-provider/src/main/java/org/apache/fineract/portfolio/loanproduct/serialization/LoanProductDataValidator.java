@@ -116,7 +116,7 @@ public final class LoanProductDataValidator {
             LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
             LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
             LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, 
-            LoanProductConstants.canUseForTopup,LoanProductConstants.collectInterestUpfront,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
+            LoanProductConstants.canUseForTopup,LoanProductConstants.allowUpfrontCollection,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
             LoanProductConstants.adjustInterestForRoundingParamName, LoanProductConstants.isEmiBasedOnDisbursements,
             LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName,
             LoanProductConstants.brokenPeriodMethodTypeParamName,LoanProductConstants.isFlatInterestRateParamName,
@@ -738,10 +738,10 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter(LoanProductConstants.canUseForTopup).value(canUseForTopup).validateForBooleanValue();
         }
         
-        if(this.fromApiJsonHelper.parameterExists(LoanProductConstants.collectInterestUpfront, element)){
-            final Boolean collectInterestUpfront = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.collectInterestUpfront,
+        if(this.fromApiJsonHelper.parameterExists(LoanProductConstants.allowUpfrontCollection, element)){
+            final Boolean collectInterestUpfront = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.allowUpfrontCollection,
                     element);
-            baseDataValidator.reset().parameter(LoanProductConstants.collectInterestUpfront).value(collectInterestUpfront).ignoreIfNull().validateForBooleanValue();
+            baseDataValidator.reset().parameter(LoanProductConstants.allowUpfrontCollection).value(collectInterestUpfront).ignoreIfNull().validateForBooleanValue();
         }
         
         if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.weeksInYearType, element)) {
@@ -1745,10 +1745,10 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter(LoanProductConstants.canUseForTopup).value(canUseForTopup).validateForBooleanValue();
         }
         
-        if(this.fromApiJsonHelper.parameterExists(LoanProductConstants.collectInterestUpfront, element)){
-            final Boolean collectInterestUpfront = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.collectInterestUpfront,
+        if(this.fromApiJsonHelper.parameterExists(LoanProductConstants.allowUpfrontCollection, element)){
+            final Boolean collectInterestUpfront = this.fromApiJsonHelper.extractBooleanNamed(LoanProductConstants.allowUpfrontCollection,
                     element);
-            baseDataValidator.reset().parameter(LoanProductConstants.collectInterestUpfront).value(collectInterestUpfront).ignoreIfNull().validateForBooleanValue();
+            baseDataValidator.reset().parameter(LoanProductConstants.allowUpfrontCollection).value(collectInterestUpfront).ignoreIfNull().validateForBooleanValue();
         }
         
         if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.weeksInYearType, element)) {

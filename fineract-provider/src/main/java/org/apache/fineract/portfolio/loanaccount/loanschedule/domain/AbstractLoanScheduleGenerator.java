@@ -161,7 +161,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         
         if (!scheduleParams.isPartialUpdate()) {
             updateAmortization(mc, loanApplicationTerms, scheduleParams.getPeriodNumber(),
-                    scheduleParams.getOutstandingBalance().plus(scheduleParams.getTotalCapitalizedChargeAmount()));
+                    scheduleParams.getOutstandingBalance().plus(scheduleParams.getTotalCapitalizedChargeAmount())
+                            .minus(loanApplicationTerms.getAmountForUpfrontCollection()));
             
             if (loanApplicationTerms.isMultiDisburseLoan()) {
                 // fetches the first tranche amount and also updates other
@@ -174,7 +175,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 scheduleParams.setOutstandingBalance(Money.of(currency, disburseAmt));
                 scheduleParams.setOutstandingBalanceAsPerRest(Money.of(currency, disburseAmt));
                 if (loanApplicationTerms.isEmiBasedOnDisbursements()) {
-                    adjustInstallmentOrPrincipalAmount(loanApplicationTerms, Money.zero(loanApplicationTerms.getCurrency()),
+                    adjustInstallmentOrPrincipalAmount(loanApplicationTerms,
+                            Money.of(loanApplicationTerms.getCurrency(), loanApplicationTerms.getAmountForUpfrontCollection()),
                             scheduleParams.getPeriodNumber(), mc, scheduleParams.getPrincipalToBeScheduled());
                 }
             }
@@ -291,8 +293,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             ScheduleCurrentPeriodParams currentPeriodParams = new ScheduleCurrentPeriodParams(currency,
                     interestCalculationGraceOnRepaymentPeriodFraction);
             
-            applyUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods, scheduledDueDate,
-                    currentPeriodParams, mc);
+            applyUpfrontAmountCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods, scheduledDueDate,
+                    currentPeriodParams);
 
             if (loanApplicationTerms.isMultiDisburseLoan()) {
                 updateBalanceBasedOnDisbursement(mc, loanApplicationTerms, loanCharges, scheduleParams, periods,
@@ -478,23 +480,22 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 totalOutstanding);
     }
 
-    private void applyUpfrontInterestCollection(final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO,
+    private void applyUpfrontAmountCollection(final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO,
             final MonetaryCurrency currency, LoanScheduleParams scheduleParams, Collection<LoanScheduleModelPeriod> periods,
-            LocalDate scheduledDueDate, ScheduleCurrentPeriodParams currentPeriodParams, MathContext mc) {
-        if (loanApplicationTerms.collectInterestUpfront() && scheduleParams.getPeriodNumber() == 1) {
-            Money interest = loanApplicationTerms.calculateInterestWithFlatInterestRate(mc);
-            interest = interest.minus(loanApplicationTerms.getDiscountOnDisbursalAmount());
+            LocalDate scheduledDueDate, ScheduleCurrentPeriodParams currentPeriodParams) {
+        if (loanApplicationTerms.isAmountForUpfrontCollectionAvailable() && scheduleParams.getPeriodNumber() == 1) {
+            Money amountForUpfrontCollection = Money.of(currency, loanApplicationTerms.getAmountForUpfrontCollection());
             if (!scheduledDueDate.isEqual(loanApplicationTerms.getExpectedDisbursementDate())) {
-                addInstallmentForUpfrontInterestCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods,
-                        interest);
+                addInstallmentForUpfrontAmountCollection(loanApplicationTerms, holidayDetailDTO, currency, scheduleParams, periods,
+                        amountForUpfrontCollection);
             } else {
-                scheduleParams.reduceOutstandingBalance(interest);
-                currentPeriodParams.plusPrepaymentAmount(interest);
+                scheduleParams.reduceOutstandingBalance(amountForUpfrontCollection);
+                currentPeriodParams.plusPrepaymentAmount(amountForUpfrontCollection);
             }
         }
     }
 
-    private void addInstallmentForUpfrontInterestCollection(final LoanApplicationTerms loanApplicationTerms,
+    private void addInstallmentForUpfrontAmountCollection(final LoanApplicationTerms loanApplicationTerms,
             final HolidayDetailDTO holidayDetailDTO, final MonetaryCurrency currency, LoanScheduleParams scheduleParams,
             Collection<LoanScheduleModelPeriod> periods, Money interestToBeCollected) {
         scheduleParams.reduceOutstandingBalance(interestToBeCollected);
@@ -2459,7 +2460,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             LocalDate periodStartDate = loanApplicationTerms.getExpectedDisbursementDate();
             // Set fixed Amortization Amounts(either EMI or Principal )
             Money totalCapitalizedChargeAmount = LoanUtilService.getTotalCapitalizedCharge(loanApplicationTerms);
-            updateAmortization(mc, loanApplicationTerms, periodNumber, outstandingBalance.plus(totalCapitalizedChargeAmount));
+            updateAmortization(mc, loanApplicationTerms, periodNumber,
+                    outstandingBalance.plus(totalCapitalizedChargeAmount).minus(loanApplicationTerms.getAmountForUpfrontCollection()));
 
             final Map<LocalDate, Money> disburseDetailMap = new HashMap<>();
             boolean resetEMI = false;
@@ -2473,7 +2475,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 outstandingBalanceAsPerRest = outstandingBalance;
                 principalToBeScheduled = principalToBeScheduled.zero().plus(disburseAmt);
                 if(loanApplicationTerms.isEmiBasedOnDisbursements()) {
-                	adjustInstallmentOrPrincipalAmount(loanApplicationTerms, Money.zero(loanApplicationTerms.getCurrency()), periodNumber, mc, principalToBeScheduled);	
+                    adjustInstallmentOrPrincipalAmount(loanApplicationTerms,
+                            Money.of(loanApplicationTerms.getCurrency(), loanApplicationTerms.getAmountForUpfrontCollection()),
+                            periodNumber, mc, principalToBeScheduled);	
                 }
             }
             int loanTermInDays = 0;

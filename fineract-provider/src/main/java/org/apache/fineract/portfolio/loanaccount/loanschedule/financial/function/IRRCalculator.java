@@ -41,10 +41,9 @@ public class IRRCalculator {
         final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
         final MathContext mc = new MathContext(8, roundingMode);
         Money emi = terms.calculateEmiWithFlatInterestRate(mc);
-        if(terms.collectInterestUpfront()){
-            Money totalInterest = terms.calculateInterestWithFlatInterestRate(mc);
-            totalInterest = totalInterest.minus(terms.getDiscountOnDisbursalAmount());
-            addToMap(disbursements, terms.getExpectedDisbursementDate(), totalInterest.negated());
+        if(terms.isAmountForUpfrontCollectionAvailable()){
+            Money amountForUpfrontCollection = Money.of(emi.getCurrency(), terms.getAmountForUpfrontCollection());
+            addToMap(disbursements, terms.getExpectedDisbursementDate(), amountForUpfrontCollection.negated());
         }
         return calculateIrr(numberOfRepayments, disbursements, calendarStartDate, recurrence, firstRepaymentDate, emi);
 

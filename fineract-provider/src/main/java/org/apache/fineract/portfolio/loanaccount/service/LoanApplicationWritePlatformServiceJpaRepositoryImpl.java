@@ -1059,23 +1059,22 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         glimIds);
             }   
             	        
-	        if (changes.containsKey("recalculateLoanSchedule")) {
-	                changes.remove("recalculateLoanSchedule");
-
-	                final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
-	                final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
-	                final boolean considerAllDisbursmentsInSchedule = true;
-	                LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule);
-	                existingLoanApplication.setBrokenPeriodInterest(terms.getBrokenPeriodInterest().getAmount());
-	                if (existingLoanApplication.getFlatInterestRate() != null) {
-	                    existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
-	                }
-	                final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false,
-	                        considerAllDisbursmentsInSchedule);
-	                existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
-	                existingLoanApplication.recalculateAllCharges();
-	                // save GroupLoanIndividualMonitoring clients
-	            }
+            if (changes.containsKey("recalculateLoanSchedule")) {
+                changes.remove("recalculateLoanSchedule");
+                
+                final JsonElement parsedQuery = this.fromJsonHelper.parse(command.json());
+                final JsonQuery query = JsonQuery.from(command.json(), parsedQuery, this.fromJsonHelper);
+                final boolean considerAllDisbursmentsInSchedule = true;
+                LoanApplicationTerms terms = this.loanScheduleAssembler.assembleLoanTerms(parsedQuery, considerAllDisbursmentsInSchedule);
+                existingLoanApplication.setBrokenPeriodInterest(terms.getBrokenPeriodInterest().getAmount());
+                if (existingLoanApplication.getFlatInterestRate() != null) {
+                    existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
+                }
+                final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false,
+                        considerAllDisbursmentsInSchedule);
+                existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
+                existingLoanApplication.recalculateAllCharges();
+            }
 	        
             if (existingLoanApplication.isGLIMLoan()) {
                 updateGlimMemberOnModifyApplication(existingLoanApplication, glimList);

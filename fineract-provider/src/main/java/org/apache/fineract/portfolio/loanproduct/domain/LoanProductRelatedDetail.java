@@ -141,9 +141,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
     @Column(name = "broken_period_method_enum", nullable = true)
     private Integer brokenPeriodMethod;
     
-    @Column(name = "collect_interest_upfront", nullable = false)
-    private boolean collectInterestUpfront = false;
-    
     public static LoanProductRelatedDetail createFrom(final MonetaryCurrency currency, final BigDecimal principal,
             final BigDecimal nominalInterestRatePerPeriod, final PeriodFrequencyType interestRatePeriodFrequencyType,
             final BigDecimal nominalAnnualInterestRate, final InterestMethod interestMethod,
@@ -153,13 +150,13 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
             final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
             final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
-            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, Integer brokenPeriodMethod, boolean collectInterestUpfront) {
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, Integer brokenPeriodMethod) {
 
         return new LoanProductRelatedDetail(currency, principal, nominalInterestRatePerPeriod, interestRatePeriodFrequencyType,
                 nominalAnnualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion,
                 repaymentEvery, repaymentPeriodFrequencyType, numberOfRepayments, graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment,
                 graceOnInterestCharged, amortizationMethod, inArrearsTolerance, graceOnArrearsAgeing, daysInMonthType, daysInYearType,
-                isInterestRecalculationEnabled, weeksInYearType, isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod, collectInterestUpfront);
+                isInterestRecalculationEnabled, weeksInYearType, isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, brokenPeriodMethod);
     }
 
     protected LoanProductRelatedDetail() {
@@ -175,7 +172,7 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             final Integer graceOnInterestPayment, final Integer graceOnInterestCharged, final AmortizationMethod amortizationMethod,
             final BigDecimal inArrearsTolerance, final Integer graceOnArrearsAgeing, final Integer daysInMonthType,
             final Integer daysInYearType, final boolean isInterestRecalculationEnabled, final Integer weeksInYearType,
-            final boolean isEmiBasedOnDisbursements, final Integer pmtCalculationPeriodMethod, final Integer brokenPeriodMethod, boolean collectInterestUpfront) {
+            final boolean isEmiBasedOnDisbursements, final Integer pmtCalculationPeriodMethod, final Integer brokenPeriodMethod) {
         this.currency = currency;
         this.principal = defaultPrincipal;
         this.nominalInterestRatePerPeriod = defaultNominalInterestRatePerPeriod;
@@ -205,7 +202,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         this.isEmiBasedOnDisbursements = isEmiBasedOnDisbursements ;
         this.pmtCalculationPeriodMethod = pmtCalculationPeriodMethod;
         this.brokenPeriodMethod = brokenPeriodMethod;
-        this.collectInterestUpfront = collectInterestUpfront;
     }
 
     private Integer defaultToNullIfZero(final Integer value) {
@@ -548,12 +544,6 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
             this.brokenPeriodMethod = newValue;
         }
         
-        if (command.isChangeInBooleanParameterNamed(LoanProductConstants.collectInterestUpfront, this.collectInterestUpfront)) {
-            final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.collectInterestUpfront);
-            actualChanges.put(LoanProductConstants.collectInterestUpfront, newValue);
-            this.collectInterestUpfront = newValue;
-        }
-        
         validateRepaymentPeriodWithGraceSettings();
 
         return actualChanges;
@@ -751,7 +741,4 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         return brokenPeriodMethod;
     }
     
-    public boolean collectInterestUpfront(){
-        return this.collectInterestUpfront;
-    }
 }
