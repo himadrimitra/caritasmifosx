@@ -92,7 +92,7 @@ SELECT fj.id,je.account_id,je.type_enum,je.amount
 FROM f_journal_entry fj
 JOIN acc_gl_journal_entry je ON je.transaction_id=fj.transaction_identifier
 WHERE fj.reversed=1
-AND je.reversed=1
+AND je.reversed=1;
 
 
 
