@@ -142,10 +142,10 @@ public class ClientsApiResource {
             @QueryParam("lastName") final String lastname, @QueryParam("underHierarchy") final String hierarchy,
             @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("orderBy") final String orderBy, @QueryParam("sortOrder") final String sortOrder,
-            @QueryParam("orphansOnly") final Boolean orphansOnly) {
+            @QueryParam("orphansOnly") final Boolean orphansOnly,@QueryParam("groupId") final Long groupId) {
 
         return this.retrieveAll(uriInfo, sqlSearch, officeId, externalId, displayName, firstname, 
-        		lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, false);
+        		lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, false, groupId);
     }
     
     public String retrieveAll(final UriInfo uriInfo, final String sqlSearch,
@@ -154,12 +154,12 @@ public class ClientsApiResource {
             final String lastname, final String hierarchy,
             final Integer offset, final Integer limit,
             final String orderBy, final String sortOrder,
-            final Boolean orphansOnly, final boolean isSelfUser) {
+            final Boolean orphansOnly, final boolean isSelfUser, final Long groupId) {
 
         this.context.authenticatedUser().validateHasReadPermission(ClientApiConstants.CLIENT_RESOURCE_NAME);
 
         final SearchParameters searchParameters = SearchParameters.forClients(sqlSearch, officeId, externalId, displayName, firstname,
-                lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, isSelfUser);
+                lastname, hierarchy, offset, limit, orderBy, sortOrder, orphansOnly, isSelfUser, groupId);
 
         final Page<ClientData> clientData = this.clientReadPlatformService.retrieveAll(searchParameters);
 

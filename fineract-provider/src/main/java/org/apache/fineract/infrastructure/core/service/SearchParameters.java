@@ -86,7 +86,7 @@ public final class SearchParameters {
 
     public static SearchParameters forClients(final String sqlSearch, final Long officeId, final String externalId,
             final String displayName, final String firstname, final String lastname, final String hierarchy, final Integer offset,
-            final Integer limit, final String orderBy, final String sortOrder, final Boolean orphansOnly, final boolean isSelfUser) {
+            final Integer limit, final String orderBy, final String sortOrder, final Boolean orphansOnly, final boolean isSelfUser, final Long groupId) {
 
         final Integer maxLimitAllowed = getCheckedLimit(limit);
         final Long staffId = null;
@@ -94,7 +94,6 @@ public final class SearchParameters {
         final Long loanId = null;
         final Long savingsId = null;
         final Long centerId = null;
-        final Long groupId = null;
         final Long paymentTypeId = null;
         final Long clientId = null;
         return new SearchParameters(sqlSearch, officeId, externalId, displayName, hierarchy, firstname, lastname, offset, maxLimitAllowed,
