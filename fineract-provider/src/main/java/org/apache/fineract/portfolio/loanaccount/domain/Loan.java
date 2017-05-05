@@ -2707,7 +2707,8 @@ public class Loan extends AbstractPersistable<Long> {
                 || fetchRepaymentScheduleInstallment(1).getDueDate().isBefore(DateUtils.getLocalDateOfTenant()) || isDisbursementMissed()) {
             boolean generateSchedule = isApproved() || (!isAllPaymentsDone() && getMaturityDate().isAfter(actualDisbursementDate));
             if (generateSchedule) {
-                recalculateSchedule(scheduleGeneratorDTO, currentUser);
+            	 final boolean isDisburseInitiated = true;
+                 recalculateSchedule(scheduleGeneratorDTO, currentUser, isDisburseInitiated);
                 if(this.getFlatInterestRate() != null){
                     this.calculatedInstallmentAmount = scheduleGeneratorDTO.getCalculatedInstallmentAmount();
                 }
@@ -6038,8 +6039,8 @@ public class Loan extends AbstractPersistable<Long> {
 
     }
     
-    private void recalculateSchedule(final ScheduleGeneratorDTO generatorDTO, final AppUser currentUser) {
-        if (this.isOpen() && this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
+    private void recalculateSchedule(final ScheduleGeneratorDTO generatorDTO, final AppUser currentUser, final boolean isDisburseInitiated) {
+        if ((isDisburseInitiated || this.isOpen()) && this.repaymentScheduleDetail().isInterestRecalculationEnabled()) {
             regenerateRepaymentScheduleWithInterestRecalculation(generatorDTO, currentUser);
             updateSummaryWithTotalFeeChargesDueAtDisbursement();
         } else {
@@ -6049,7 +6050,8 @@ public class Loan extends AbstractPersistable<Long> {
 
     private ChangedTransactionDetail recalculateScheduleFromLastTransaction(final ScheduleGeneratorDTO generatorDTO,
             final AppUser currentUser) {
-        recalculateSchedule(generatorDTO, currentUser);
+        final boolean isDisburseInitiated = false;
+        recalculateSchedule(generatorDTO, currentUser, isDisburseInitiated);
         return processTransactions();
     }
 
