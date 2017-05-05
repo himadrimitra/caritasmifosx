@@ -306,18 +306,6 @@ public class FixedDepositProduct extends SavingsProduct {
                 Arrays.asList(new SavingsCompoundingInterestPeriodType[] { SavingsCompoundingInterestPeriodType.DAILY,
                         SavingsCompoundingInterestPeriodType.MONTHLY, SavingsCompoundingInterestPeriodType.QUATERLY,
                         SavingsCompoundingInterestPeriodType.BI_ANNUAL, SavingsCompoundingInterestPeriodType.ANNUAL }));
-
-        SavingsPostingInterestPeriodType savingsPostingInterestPeriodType = SavingsPostingInterestPeriodType
-                .fromInt(interestPostingPeriodType);
-        SavingsCompoundingInterestPeriodType savingsCompoundingInterestPeriodType = SavingsCompoundingInterestPeriodType
-                .fromInt(interestCompoundingPeriodType);
-
-        if (postingtoCompoundMap.get(savingsPostingInterestPeriodType) == null
-                || !postingtoCompoundMap.get(savingsPostingInterestPeriodType).contains(savingsCompoundingInterestPeriodType)) {
-            baseDataValidator.failWithCodeNoParameterAddedToErrorCode("posting.period.type.is.less.than.compound.period.type",
-                    savingsPostingInterestPeriodType.name(), savingsCompoundingInterestPeriodType.name());
-
-        }
     }
 
     public void validateDomainRules() {
