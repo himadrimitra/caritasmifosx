@@ -363,8 +363,11 @@ public class LoansApiResource {
                     currencyCode = currencyData.code();
                 }
                 final long[] accountStatus = { SavingsAccountStatusType.ACTIVE.getValue() };
+                Set <Integer> depositAccountTypes = new HashSet<Integer>();
+                depositAccountTypes.add(DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                depositAccountTypes.add(DepositAccountType.RECURRING_DEPOSIT.getValue());
                 PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(PortfolioAccountType.SAVINGS.getValue(), clientId,
-                        currencyCode, accountStatus, DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                        currencyCode, accountStatus, depositAccountTypes);
                 accountLinkingOptions = this.portfolioAccountReadPlatformService.retrieveAllForLookup(portfolioAccountDTO);
 
             }
@@ -664,8 +667,11 @@ public class LoansApiResource {
                     currencyCode = currencyData.code();
                 }
                 final long[] accountStatus = { SavingsAccountStatusType.ACTIVE.getValue() };
+                Set <Integer> depositAccountTypes = new HashSet<Integer>();
+                depositAccountTypes.add(DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                depositAccountTypes.add(DepositAccountType.RECURRING_DEPOSIT.getValue());
                 PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(PortfolioAccountType.SAVINGS.getValue(),
-                        loanBasicDetails.clientId(), currencyCode, accountStatus, DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                        loanBasicDetails.clientId(), currencyCode, accountStatus, depositAccountTypes);
                 accountLinkingOptions = this.portfolioAccountReadPlatformService.retrieveAllForLookup(portfolioAccountDTO);
 
                 if (!associationParameters.contains("linkedAccount")) {

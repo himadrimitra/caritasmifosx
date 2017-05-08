@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -142,8 +143,8 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
                 }
 
                 if (portfolioAccountDTO.getDepositType() != null) {
-                    sql += " and sa.deposit_type_enum = ?";
-                    sqlParams.add(portfolioAccountDTO.getDepositType());
+                	final String depositTyprStr = StringUtils.join(portfolioAccountDTO.getDepositType(), ',');
+                    sql += " and sa.deposit_type_enum IN(" + depositTyprStr + ") ";
                 }
                 
                 if(portfolioAccountDTO.isExcludeOverDraftAccounts()){
