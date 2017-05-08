@@ -27,8 +27,10 @@ import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConst
 
 import java.math.BigDecimal;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -44,6 +46,7 @@ import org.apache.fineract.portfolio.account.domain.AccountTransferRepository;
 import org.apache.fineract.portfolio.account.domain.AccountTransferTransaction;
 import org.apache.fineract.portfolio.account.domain.AccountTransferType;
 import org.apache.fineract.portfolio.account.exception.AccountClosedException;
+import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 import org.apache.fineract.portfolio.loanaccount.data.HolidayDetailDTO;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
@@ -65,7 +68,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.apache.fineract.portfolio.loanaccount.data.AdjustedLoanTransactionDetails;
 
 @Service
 public class AccountTransfersWritePlatformServiceImpl implements AccountTransfersWritePlatformService {
@@ -452,6 +454,7 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
     @Override
     public AccountTransferDetails repayLoanWithTopup(AccountTransferDTO accountTransferDTO) {
         final boolean isAccountTransfer = true;
+        final boolean isLoanToLoanTransfer = true;
         Loan fromLoanAccount = null;
         if (accountTransferDTO.getFromLoan() == null) {
             fromLoanAccount = this.loanAccountAssembler.assembleFrom(accountTransferDTO.getFromAccountId());
@@ -471,9 +474,17 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
                 accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
                 accountTransferDTO.getPaymentDetail(), accountTransferDTO.getNoteText(), accountTransferDTO.getTxnExternalId(), true);
 
-        LoanTransaction repayTransaction = this.loanAccountDomainService.makeRepayment(toLoanAccount, new CommandProcessingResultBuilder(),
-                accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
-                accountTransferDTO.getPaymentDetail(), null, null, false, isAccountTransfer,null,false, true);
+        LoanTransaction repayTransaction = null; 
+        if (toLoanAccount.isInterestRecalculationEnabledForProduct()) {
+            repayTransaction = this.loanAccountDomainService.makeRepayment(toLoanAccount, new CommandProcessingResultBuilder(),
+                    accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
+                    accountTransferDTO.getPaymentDetail(), null, null, false, isAccountTransfer, null, false, true);
+        } else {
+            final Map<String, Object> changes = new HashMap<>();
+            final String noteText = null;
+            repayTransaction = this.loanAccountDomainService.foreCloseLoan(toLoanAccount, accountTransferDTO.getTransactionDate(),
+                    noteText, isAccountTransfer, isLoanToLoanTransfer, changes);
+        }
 
         AccountTransferDetails accountTransferDetails = this.accountTransferAssembler.assembleLoanToLoanTransfer(accountTransferDTO, fromLoanAccount,
                 toLoanAccount, disburseTransaction, repayTransaction);

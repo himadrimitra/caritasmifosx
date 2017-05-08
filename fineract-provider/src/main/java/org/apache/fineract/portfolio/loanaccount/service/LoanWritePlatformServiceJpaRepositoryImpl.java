@@ -453,9 +453,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                             "Disbursal date of this loan application "+loan.getDisbursementDate()
                                     +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                 }
-
-                BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(loanIdToClose,
-                            actualDisbursementDate).getAmount();
+                boolean calcualteInterestTillDate = true;
+                BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(actualDisbursementDate,
+                        calcualteInterestTillDate, loanToClose).getAmount();
                 final BigDecimal firstDisbursalAmount = loan.getFirstDisbursalAmount();
                 if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
                     throw new GeneralPlatformDomainRuleException("error.msg.loan.amount.less.than.outstanding.of.loan.to.be.closed",
@@ -464,9 +464,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
                 amountToDisburse = disburseAmount.minus(loanOutstanding);
 
-                disburseLoanToLoan(loan, command, loanOutstanding);
+                disburseLoanToLoan(loan, loanToClose, command, loanOutstanding);
             }
-            disbursementTransaction = LoanTransaction.disbursement(loan.getOffice(), disburseAmount, paymentDetail,
+            disbursementTransaction = LoanTransaction.disbursement(loan.getOffice(), amountToDisburse, paymentDetail,
                     actualDisbursementDate, txnExternalId);
             if (isAccountTransfer) {
                 disburseLoanToSavings(loan, command, amountToDisburse, paymentDetail);
@@ -1994,7 +1994,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .withSavingsId(portfolioAccountData.accountId()).build();
     }
 
-    public void disburseLoanToLoan(final Loan loan, final JsonCommand command, final BigDecimal amount) {
+    public void disburseLoanToLoan(final Loan loan, Loan loanToClose, final JsonCommand command, final BigDecimal amount) {
 
         final LocalDate transactionDate = command.localDateValueOfParameterNamed("actualDisbursementDate");
         final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
@@ -2002,9 +2002,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Locale locale = command.extractLocale();
         final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
         final AccountTransferDTO accountTransferDTO = new AccountTransferDTO(transactionDate, amount,
-                PortfolioAccountType.LOAN, PortfolioAccountType.LOAN, loan.getId(), loan.getTopupLoanDetails().getLoanIdToClose(),
+                PortfolioAccountType.LOAN, PortfolioAccountType.LOAN, loan.getId(), loanToClose.getId(),
                 "Loan Topup", locale, fmt, LoanTransactionType.DISBURSEMENT.getValue(), LoanTransactionType.REPAYMENT.getValue(),
-                txnExternalId, loan, null);
+                txnExternalId, loan, loanToClose);
         AccountTransferDetails accountTransferDetails = this.accountTransfersWritePlatformService.repayLoanWithTopup(accountTransferDTO);
         loan.getTopupLoanDetails().setAccountTransferDetails(accountTransferDetails.getId());
         loan.getTopupLoanDetails().setTopupAmount(amount);
@@ -3383,9 +3383,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(loan.getRepaymentScheduleInstallments(),
                 loan, loanRescheduleRequest);
         
-
-        final Map<String, Object> modifications = this.loanAccountDomainService.foreCloseLoan(loan, transactionDate, noteText);
-        changes.putAll(modifications);
+        final boolean isAccountTransfer = false;
+        final boolean isLoanToLoanTransfer = false;
+        this.loanAccountDomainService.foreCloseLoan(loan, transactionDate, noteText, isAccountTransfer,  isLoanToLoanTransfer, changes);
 
         final CommandProcessingResultBuilder commandProcessingResultBuilder = new CommandProcessingResultBuilder();
         return commandProcessingResultBuilder.withLoanId(loanId) //

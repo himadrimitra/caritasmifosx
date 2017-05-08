@@ -77,7 +77,7 @@ public interface LoanAccountDomainService {
             BigDecimal transactionAmount, String txnExternalId, Locale locale, DateTimeFormatter dateFormat, String noteText,
             PaymentDetail paymentDetail, boolean isAccountTransfer);
 
-    Map<String, Object> foreCloseLoan(final Loan loan, final LocalDate foreClourseDate, String noteText);
+    LoanTransaction foreCloseLoan(final Loan loan, final LocalDate foreClourseDate, String noteText, boolean isAccountTransfer, boolean isLoanToLoanTransfer, Map<String, Object> changes);
     
     /**
      * Disables all standing instructions linked to a closed loan
