@@ -486,11 +486,16 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
 
     @Override
-    public LoanTransactionData retrieveLoanPrePaymentTemplate(final Long loanId, LocalDate onDate) {
+    public LoanTransactionData retrieveLoanPrePaymentTemplate(final Long loanId, LocalDate onDate, boolean calcualteInterestTillDate) {
 
         this.context.authenticatedUser();
 
         final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
+        return retrieveLoanPrePaymentTemplate(onDate, calcualteInterestTillDate, loan);
+    }
+
+    @Override
+    public LoanTransactionData retrieveLoanPrePaymentTemplate(final LocalDate onDate, boolean calcualteInterestTillDate, final Loan loan) {
         loan.setHelpers(LoanAssembler.defaultLoanLifecycleStateMachine(), null, loanRepaymentScheduleTransactionProcessorFactory);
 
         final MonetaryCurrency currency = loan.getCurrency();
@@ -501,7 +506,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final LocalDate earliestUnpaidInstallmentDate = DateUtils.getLocalDateOfTenant();
         final LocalDate recalculateFrom = null;
         final ScheduleGeneratorDTO scheduleGeneratorDTO = loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
-        final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = loan.fetchPrepaymentDetail(scheduleGeneratorDTO, onDate);
+        final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = loan.fetchPrepaymentDetail(scheduleGeneratorDTO, onDate, calcualteInterestTillDate);
         final LoanTransactionEnumData transactionType = LoanEnumerations.transactionType(LoanTransactionType.REPAYMENT);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         final BigDecimal outstandingLoanBalance = loanRepaymentScheduleInstallment.getPrincipalOutstanding(currency).getAmount();

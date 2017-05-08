@@ -75,6 +75,8 @@ import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
 import org.apache.fineract.portfolio.loanaccount.data.ScheduleGeneratorDTO;
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidLoanStateTransitionException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanForeclosureException;
+import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
+import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAccrualPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanAssembler;
 import org.apache.fineract.portfolio.loanaccount.service.LoanUtilService;
@@ -114,6 +116,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
     private final StandingInstructionRepository standingInstructionRepository;
+    private final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService;
 
     @Autowired
     public LoanAccountDomainServiceJpa(final LoanAssembler loanAccountAssembler, final LoanRepository loanRepository,
@@ -129,7 +132,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final BusinessEventNotifierService businessEventNotifierService, final LoanUtilService loanUtilService,
             final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
             final PaymentDetailWritePlatformService paymentDetailWritePlatformService, 
-            final StandingInstructionRepository standingInstructionRepository) {
+            final StandingInstructionRepository standingInstructionRepository,
+            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService) {
         this.loanAccountAssembler = loanAccountAssembler;
         this.loanRepository = loanRepository;
         this.loanTransactionRepository = loanTransactionRepository;
@@ -149,6 +153,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.workingDayExcumptionsReadPlatformService = workingDayExcumptionsReadPlatformService;
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
         this.standingInstructionRepository = standingInstructionRepository;
+        this.loanScheduleHistoryWritePlatformService = loanScheduleHistoryWritePlatformService;
     }
 
     @Override
@@ -294,8 +299,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         if (loan.getTotalSubsidyAmount().isGreaterThanZero() && loan.getTotalSubsidyAmount().plus(loan.getTotalTransactionAmountPaid())
                 .isGreaterThanOrEqualTo(loan.getPrincpal().plus(loan.getTotalInterestAmountTillDate(transactionDate)))) {
             final MonetaryCurrency currency = loan.getCurrency();
+            boolean calcualteInterestTillDate = false;
             final LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment = loan.fetchPrepaymentDetail(scheduleGeneratorDTO,
-                    transactionDate);
+                    transactionDate, calcualteInterestTillDate);
             Money totalOutstandingLoanBalance = loanRepaymentScheduleInstallment.getTotalOutstanding(currency).minus(
                     loan.getTotalSubsidyAmount().getAmount());
             if (totalOutstandingLoanBalance.isLessThan(Money.of(currency, BigDecimal.ONE))) { return true; }
@@ -756,7 +762,20 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     }
 
     @Override
-    public Map<String, Object> foreCloseLoan(final Loan loan, final LocalDate foreClosureDate, final String noteText) {
+    public LoanTransaction foreCloseLoan(final Loan loan, final LocalDate foreClosureDate, final String noteText,
+            final boolean isAccountTransfer, final boolean isLoanToLoanTransfer, Map<String, Object> changes) {
+        LoanRescheduleRequest loanRescheduleRequest = null;
+        for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
+            if (!loanDisbursementDetails.expectedDisbursementDateAsLocalDate().isAfter(foreClosureDate)
+                    && loanDisbursementDetails.actualDisbursementDate() == null) {
+                final String defaultUserMessage = "The loan with undisbrsed tranche before foreclosure cannot be foreclosed.";
+                throw new LoanForeclosureException("loan.with.undisbursed.tranche.before.foreclosure.cannot.be.foreclosured",
+                        defaultUserMessage, foreClosureDate);
+            }
+        }
+        this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(loan.getRepaymentScheduleInstallments(),
+                loan, loanRescheduleRequest);
+        
         final HolidayDetailDTO holidayDetailDTO = this.loanUtilService.constructHolidayDTO(loan);
         String errorMessage = "Foreclosure date should not be a holiday.";
         String errorCode = "foreclosure.date.on.holiday";
@@ -771,7 +790,6 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         
         MonetaryCurrency currency = loan.getCurrency();
         LocalDateTime createdDate = DateUtils.getLocalDateTimeOfTenant();
-        final Map<String, Object> changes = new LinkedHashMap<>();
         List<LoanTransaction> newTransactions = new ArrayList<>();
 
         final List<Long> existingTransactionIds = new ArrayList<>();
@@ -838,11 +856,11 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             this.noteRepository.save(note);
         }
 
-        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, false);
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer,isLoanToLoanTransfer);
         recalculateAccruals(loan);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_FORECLOSURE,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_TRANSACTION, payment));
-        return changes;
+        return payment;
 
     }
     

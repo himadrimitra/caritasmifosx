@@ -353,8 +353,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                 "Disbursal date of this loan application "+newLoanApplication.getDisbursementDate()
                                         +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                     }
-                    BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(loanIdToClose,
-                            newLoanApplication.getDisbursementDate()).getAmount();
+                    boolean calcualteInterestTillDate = true;
+                    BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(
+                            newLoanApplication.getDisbursementDate(), calcualteInterestTillDate, loanToClose).getAmount();
                     final BigDecimal firstDisbursalAmount = newLoanApplication.getFirstDisbursalAmount();
                     if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
                         throw new GeneralPlatformDomainRuleException("error.msg.loan.amount.less.than.outstanding.of.loan.to.be.closed",
@@ -980,8 +981,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                     "Disbursal date of this loan application "+existingLoanApplication.getDisbursementDate()
                                             +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                         }
-                        BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(loanIdToClose,
-                                existingLoanApplication.getDisbursementDate()).getAmount();
+                        boolean calcualteInterestTillDate = true;
+                        BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(
+                                existingLoanApplication.getDisbursementDate(), calcualteInterestTillDate, loanToClose).getAmount();
                         final BigDecimal firstDisbursalAmount = existingLoanApplication.getFirstDisbursalAmount();
                         if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
                             throw new GeneralPlatformDomainRuleException("error.msg.loan.amount.less.than.outstanding.of.loan.to.be.closed",
@@ -1515,8 +1517,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                             "Disbursal date of this loan application "+loan.getDisbursementDate()
                                     +" should be after last transaction date of loan to be closed "+ lastUserTransactionOnLoanToClose);
                 }
-                BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(loanIdToClose,
-                        expectedDisbursementDate).getAmount();
+                boolean calcualteInterestTillDate = true;
+                BigDecimal loanOutstanding = this.loanReadPlatformService.retrieveLoanPrePaymentTemplate(expectedDisbursementDate,
+                        calcualteInterestTillDate, loanToClose).getAmount();
                 final BigDecimal firstDisbursalAmount = loan.getFirstDisbursalAmount();
                 if(loanOutstanding.compareTo(firstDisbursalAmount) > 0){
                     throw new GeneralPlatformDomainRuleException("error.msg.loan.amount.less.than.outstanding.of.loan.to.be.closed",

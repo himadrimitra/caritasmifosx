@@ -6385,7 +6385,8 @@ public class Loan extends AbstractPersistable<Long> {
                 retreiveListOfTransactionsPostDisbursementExcludeAccruals(),loanRepaymentScheduleTransactionProcessor, generatorDTO.getRecalculateFrom());
     }
 
-    public LoanRepaymentScheduleInstallment fetchPrepaymentDetail(final ScheduleGeneratorDTO scheduleGeneratorDTO, final LocalDate onDate) {
+    public LoanRepaymentScheduleInstallment fetchPrepaymentDetail(final ScheduleGeneratorDTO scheduleGeneratorDTO, final LocalDate onDate,
+            final boolean calcualteInterestTillDate) {
         LoanRepaymentScheduleInstallment installment = null;
 
         if (this.loanRepaymentScheduleDetail.isInterestRecalculationEnabled()) {
@@ -6400,6 +6401,8 @@ public class Loan extends AbstractPersistable<Long> {
                     .determineProcessor(this.transactionProcessingStrategy);
             installment = loanScheduleGenerator.calculatePrepaymentAmount(getCurrency(), onDate, loanApplicationTerms, mc, this,
                     scheduleGeneratorDTO.getHolidayDetailDTO(), loanRepaymentScheduleTransactionProcessor);
+        }else if(calcualteInterestTillDate){
+            installment = fetchLoanForeclosureDetail(onDate);
         } else {
             installment = this.getTotalOutstandingOnLoan();
         }
