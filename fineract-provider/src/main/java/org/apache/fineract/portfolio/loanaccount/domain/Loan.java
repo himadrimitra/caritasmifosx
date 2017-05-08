@@ -4202,7 +4202,8 @@ public class Loan extends AbstractPersistable<Long> {
         validateActivityNotBeforeClientOrGroupTransferDate(LoanEvent.LOAN_REPAYMENT_OR_WAIVER,
                 transactionForAdjustment.getTransactionDate());
 
-        if (transactionForAdjustment.isNotRepayment() && transactionForAdjustment.isNotWaiver()) {
+        if (transactionForAdjustment.isNotRepayment() && transactionForAdjustment.isNotWaiver()
+                && !transactionForAdjustment.isRecoveryRepaymentTransaction()) {
             final String errorMessage = "Only transactions of type repayment or waiver can be adjusted.";
             throw new InvalidLoanTransactionTypeException("transaction", "adjustment.is.only.allowed.to.repayment.or.waiver.transaction",
                     errorMessage);
@@ -4239,13 +4240,14 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         
-        if (isClosedWrittenOff()) {
+        if (isClosedWrittenOff() && !transactionForAdjustment.isRecoveryRepaymentTransaction()) {
             // find write off transaction and reverse it
             final LoanTransaction writeOffTransaction = findWriteOffTransaction();
             writeOffTransaction.reverse();
         }
         
-        if (isClosedObligationsMet() || isClosedWrittenOff() || isClosedWithOutsandingAmountMarkedForReschedule()) {
+        if (isClosedObligationsMet() || (isClosedWrittenOff() && !transactionForAdjustment.isRecoveryRepaymentTransaction())
+                || isClosedWithOutsandingAmountMarkedForReschedule()) {
             this.loanStatus = LoanStatus.ACTIVE.getValue();
             this.closedOnDate = null;
             this.actualMaturityDate = this.expectedMaturityDate;
@@ -4258,7 +4260,8 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
         
-        if (newTransactionDetail.isRepayment() || newTransactionDetail.isInterestWaiver()) {
+        if (newTransactionDetail.isRepayment() || newTransactionDetail.isInterestWaiver()
+                || transactionForAdjustment.isRecoveryRepaymentTransaction()) {
             changedTransactionDetail = handleRepaymentOrRecoveryOrWaiverTransaction(newTransactionDetail, loanLifecycleStateMachine,
                     transactionForAdjustment, scheduleGeneratorDTO, currentUser);
         }

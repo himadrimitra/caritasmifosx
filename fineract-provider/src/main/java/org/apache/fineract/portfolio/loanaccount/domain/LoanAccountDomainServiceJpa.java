@@ -867,8 +867,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final String defaultUserMessage = "The loan cannot reopend as it is foreclosed.";
             throw new LoanForeclosureException("loan.cannot.be.reopened.as.it.is.foreclosured", defaultUserMessage, loan.getId());
         }
-        if (loan.isClosedWrittenOff()) { throw new PlatformServiceUnavailableException("error.msg.loan.written.off.update.not.allowed",
-                "Loan transaction:" + transactionId + " update not allowed as loan status is written off", transactionId); }
+        if (loan.isClosedWrittenOff()
+                && !transactionToAdjust.isRecoveryRepaymentTransaction()) { throw new PlatformServiceUnavailableException(
+                        "error.msg.loan.written.off.update.not.allowed",
+                        "Loan transaction:" + transactionId + " update not allowed as loan status is written off", transactionId); }
 
         changes.put("transactionDate", transactionDate);
         changes.put("transactionAmount", transactionAmount);
@@ -884,7 +886,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         if(transactionToAdjust.getTransactionSubTye().isPrePayment()){
              newTransactionDetail = LoanTransaction.prepayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
                     transactionDate, txnExternalId);
-        }else{
+        } else if (transactionToAdjust.isRecoveryRepaymentTransaction()) {
+            newTransactionDetail = LoanTransaction.recoveryRepayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
+                    transactionDate, txnExternalId);
+        } else {
             newTransactionDetail = LoanTransaction.repayment(loan.getOffice(), transactionAmountAsMoney, paymentDetail,
                     transactionDate, txnExternalId);
         }
