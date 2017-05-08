@@ -626,6 +626,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isRecoveryRepayment() {
         return LoanTransactionType.RECOVERY_REPAYMENT.equals(getTypeOf()) && isNotReversed();
     }
+
+    public boolean isRecoveryRepaymentTransaction(){
+        return LoanTransactionType.RECOVERY_REPAYMENT.equals(getTypeOf());
+    }
     
     public boolean isAddSubsidy() {
         return LoanTransactionType.ADD_SUBSIDY.equals(getTypeOf()) && isNotReversed();
