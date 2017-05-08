@@ -18,17 +18,19 @@
  */
 package org.apache.fineract.portfolio.account.data;
 
+import java.util.Set;
+
 public class PortfolioAccountDTO {
 
     private final Integer accountTypeId;
     private final Long clientId;
     private final String currencyCode;
     private final long[] accountStatus;
-    private final Integer depositType;
+    private final Set<Integer> depositType;
     private final boolean excludeOverDraftAccounts;
 
     public PortfolioAccountDTO(final Integer accountTypeId, final Long clientId, final String currencyCode, final long[] accountStatus,
-            final Integer depositType, final boolean excludeOverDraftAccounts) {
+            final Set<Integer> depositType, final boolean excludeOverDraftAccounts) {
         this.accountTypeId = accountTypeId;
         this.clientId = clientId;
         this.currencyCode = currencyCode;
@@ -47,7 +49,7 @@ public class PortfolioAccountDTO {
     }
     
     public PortfolioAccountDTO(final Integer accountTypeId, final Long clientId, final String currencyCode, final long[] accountStatus,
-            final Integer depositType) {
+            final Set<Integer> depositType) {
         this.accountTypeId = accountTypeId;
         this.clientId = clientId;
         this.currencyCode = currencyCode;
@@ -72,7 +74,7 @@ public class PortfolioAccountDTO {
         return this.accountStatus;
     }
 
-    public Integer getDepositType() {
+    public Set<Integer> getDepositType() {
         return this.depositType;
     }
 
