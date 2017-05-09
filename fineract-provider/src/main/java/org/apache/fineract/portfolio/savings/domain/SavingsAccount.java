@@ -1119,8 +1119,15 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             // deal with potential minRequiredBalance and
             // enforceMinRequiredBalance
             if (!isException && transaction.canProcessBalanceCheck()) {
-                if (runningBalance.minus(minRequiredBalance).isLessThanZero()) { throw new InsufficientAccountBalanceException(
-                        "transactionAmount", getAccountBalance(), getId(),withdrawalFee, transactionAmount); }
+                if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
+                    String errorMessage = product.shortName;
+                    if (client == null) {
+                        errorMessage = errorMessage + " - " + getId() + " - For group (" + group.getId() + ") " + group.getName();
+                    } else {
+                        errorMessage = errorMessage + " - " + getId() + " - For client (" + client.getId() + ") " + client.getDisplayName();
+                    }
+                    throw new InsufficientAccountBalanceException("transactionAmount", errorMessage, withdrawalFee, transactionAmount);
+                }
             }
             lastSavingsDate = transaction.transactionLocalDate();
 
