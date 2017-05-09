@@ -59,4 +59,12 @@ public interface LoanRescheduleRequestReadPlatformService {
      * @return list of LoanRescheduleRequestData objects
      **/
     public LoanRescheduleRequestData retrieveAllRescheduleReasons(String loanRescheduleReason);
+
+    /**
+     * Returns Active Loan variation Ids
+     * @param loanId 
+     *          the loan identifier
+     * @return
+     */
+    List<Long> retriveActiveLoanRescheduleRequestVariations(Long loanId);
 }
