@@ -646,10 +646,16 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         if(accrueAllInstallments){
             accruedTill = loan.getLastUserTransactionDate();
         }
-        
+        boolean changeAccrualDate = true;
         for (LoanRepaymentScheduleInstallment installment : installments) {
-             if (installment.getDueDate().isAfter(loan.getMaturityDate())) {
-                accruedTill = DateUtils.getLocalDateOfTenant();
+            
+            if (changeAccrualDate && accruedTill != null && accruedTill.isAfter(loan.getMaturityDate())) {
+                if (accruedTill.isEqual(installment.getDueDate())) {
+                    changeAccrualDate = false;
+                }else if (installment.getDueDate().isAfter(loan.getMaturityDate())) {
+                    accruedTill = DateUtils.getLocalDateOfTenant();
+                    changeAccrualDate = false;
+                }
             }
             if(!isOrganisationDateEnabled || new LocalDate(organisationStartDate).isBefore(installment.getDueDate())){
                 generateLoanScheduleAccrualData(accruedTill, loanScheduleAccrualDatas, loanId, officeId, accrualStartDate, repaymentFrequency, 
