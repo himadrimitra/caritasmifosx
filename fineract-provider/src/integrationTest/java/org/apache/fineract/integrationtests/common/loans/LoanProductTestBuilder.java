@@ -152,7 +152,7 @@ public class LoanProductTestBuilder {
             List<HashMap<String, Object>> charges = new ArrayList<>();
             HashMap<String, Object> chargeMap = new HashMap<>();
             chargeMap.put("id", chargeId);
-            chargeMap.put("isMandatory", false);
+            chargeMap.put("isMandatory", true);
             charges.add(chargeMap);
             map.put("charges", charges);
         }
