@@ -6947,7 +6947,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    public ChangedTransactionDetail undoLastDisbursal(ScheduleGeneratorDTO scheduleGeneratorDTO, AppUser currentUser, Map<String, Object> actualChanges) {
+    public ChangedTransactionDetail undoLastDisbursal(ScheduleGeneratorDTO scheduleGeneratorDTO, AppUser currentUser, Map<String, Object> actualChanges, List<Long> rescheduleVariations) {
 
         validateAccountStatus(LoanEvent.LOAN_DISBURSAL_UNDO_LAST);
         validateActivityNotBeforeClientOrGroupTransferDate(LoanEvent.LOAN_DISBURSAL_UNDO_LAST, getDisbursementDate());
@@ -6980,12 +6980,14 @@ public class Loan extends AbstractPersistable<Long> {
         updateLoanToLastDisbursalState(actualDisbursementDate, waivedDisburseCharges);
         for (Iterator<LoanTermVariations> iterator = this.loanTermVariations.iterator(); iterator.hasNext();) {
             LoanTermVariations loanTermVariations = iterator.next();
-            if (loanTermVariations.getTermType().isDueDateVariation()
-                    && loanTermVariations.fetchDateValue().isAfter(actualDisbursementDate)
-                    || loanTermVariations.getTermType().isEMIAmountVariation()
-                    && loanTermVariations.getTermApplicableFrom().equals(actualDisbursementDate.toDate())
-                    || loanTermVariations.getTermApplicableFrom().after(actualDisbursementDate.toDate())) {
-                iterator.remove();
+            if (!rescheduleVariations.contains(loanTermVariations.getId())
+                    && loanTermVariations.getOnLoanStatus().equals(LoanStatus.ACTIVE.getValue())
+                    && ((loanTermVariations.getTermType().isDueDateVariation() && loanTermVariations.fetchDateValue().isAfter(
+                            actualDisbursementDate))
+                            || (loanTermVariations.getTermType().isEMIAmountVariation() && loanTermVariations.getTermApplicableFrom()
+                                    .equals(actualDisbursementDate.toDate())) || loanTermVariations.getTermApplicableFrom().after(
+                            actualDisbursementDate.toDate()))) {
+                loanTermVariations.markAsInactive();
             }
         }
         reverseExistingTransactionsTillLastDisbursal(actualDisbursementDate);

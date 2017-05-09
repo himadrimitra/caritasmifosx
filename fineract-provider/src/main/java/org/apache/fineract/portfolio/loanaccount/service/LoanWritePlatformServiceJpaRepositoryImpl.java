@@ -184,6 +184,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.LoanSchedul
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.ScheduledDateGenerator;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanScheduleHistoryWritePlatformService;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.domain.LoanRescheduleRequest;
+import org.apache.fineract.portfolio.loanaccount.rescheduleloan.service.LoanRescheduleRequestReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanApplicationCommandFromApiJsonHelper;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanEventApiJsonValidator;
 import org.apache.fineract.portfolio.loanaccount.serialization.LoanUpdateCommandFromApiJsonDeserializer;
@@ -268,6 +269,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
     private final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler;
     private final LoanScheduleValidator loanScheduleValidator;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService;
 
     @Autowired
     public LoanWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -304,8 +306,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final LoanGlimRepaymentScheduleInstallmentRepository loanGlimRepaymentScheduleInstallmentRepository,
             final GlimLoanWriteServiceImpl glimLoanWriteServiceImpl,
             final GroupLoanIndividualMonitoringTransactionAssembler glimTransactionAssembler,            
-            final LoanScheduleValidator loanScheduleValidator,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final LoanScheduleValidator loanScheduleValidator, final FineractEntityAccessUtil fineractEntityAccessUtil,
+            final LoanRescheduleRequestReadPlatformService loanRescheduleRequestReadPlatformService) {
 
         this.context = context;
         this.loanEventApiJsonValidator = loanEventApiJsonValidator;
@@ -353,6 +355,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.glimTransactionAssembler = glimTransactionAssembler;
         this.loanScheduleValidator = loanScheduleValidator;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.loanRescheduleRequestReadPlatformService = loanRescheduleRequestReadPlatformService;
     }
 
     private LoanLifecycleStateMachine defaultLoanLifecycleStateMachine() {
@@ -3316,8 +3319,9 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
        
 
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFromDate);
+        final List<Long> rescheduleVariations = this.loanRescheduleRequestReadPlatformService.retriveActiveLoanRescheduleRequestVariations(loanId);
 
-        final ChangedTransactionDetail changedTransactionDetail = loan.undoLastDisbursal(scheduleGeneratorDTO, currentUser, changes);
+        final ChangedTransactionDetail changedTransactionDetail = loan.undoLastDisbursal(scheduleGeneratorDTO, currentUser, changes, rescheduleVariations);
         if (!changes.isEmpty()) {
             saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
             String noteText = null;

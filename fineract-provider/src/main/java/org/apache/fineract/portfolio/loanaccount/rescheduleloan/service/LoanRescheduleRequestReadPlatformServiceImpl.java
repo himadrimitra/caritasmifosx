@@ -243,4 +243,11 @@ public class LoanRescheduleRequestReadPlatformServiceImpl implements LoanResched
                 rescheduleReasonCodeValue, rescheduleReasonComment, timeline, clientName, loanAccountNumber, clientId, recalculateInterest,
                 rescheduleReasons, loanTermVariationsData);
     }
+    
+    @Override
+    public List<Long> retriveActiveLoanRescheduleRequestVariations(Long loanId) {
+        final String sql = "select tv.id from m_loan_reschedule_request_term_variations_mapping tvm join m_loan_term_variations tv on tvm.loan_term_variations_id = tv.id and tv.loan_id = ? and tv.is_active = 1 ";
+        return this.jdbcTemplate.queryForList(sql, Long.class, loanId);
+    }
+    
 }
