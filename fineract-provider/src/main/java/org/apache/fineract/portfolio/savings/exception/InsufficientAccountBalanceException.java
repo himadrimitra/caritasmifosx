@@ -28,10 +28,10 @@ import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainR
  */
 public class InsufficientAccountBalanceException extends AbstractPlatformDomainRuleException {
 
-    public InsufficientAccountBalanceException(final String paramName, final BigDecimal accountBalance, final Long accountId, final BigDecimal withdrawalFee,
+    public InsufficientAccountBalanceException(final String paramName, final String message, final BigDecimal withdrawalFee,
             final BigDecimal transactionAmount) {
         super(withdrawalFee != null ? "error.msg.savingsaccount.transaction.insufficient.account.balance.withdraw"
                 : "error.msg.savingsaccount.transaction.insufficient.account.balance", "Insufficient account balance.", paramName,
-                accountBalance, accountId,withdrawalFee, transactionAmount);
+                message,withdrawalFee, transactionAmount);
     }
 }
