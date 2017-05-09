@@ -35,6 +35,8 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.joda.time.LocalDate;
 import org.joda.time.Months;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -59,23 +61,36 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
     @CronTarget(jobName = JobName.POST_INTEREST_FOR_SAVINGS)
     @Override
     public void postInterestForAccounts() throws JobExecutionException {
-        final List<SavingsAccount> savingsAccounts = this.savingAccountRepository.findSavingAccountByStatus(SavingsAccountStatusType.ACTIVE
-                .getValue());
+        int offSet = 0;
+        Integer initialSize = 500;
+        Integer totalPageSize = 0;
         StringBuffer sb = new StringBuffer();
-        for (final SavingsAccount savingsAccount : savingsAccounts) {
-            try {
-                this.savingAccountAssembler.assignSavingAccountHelpers(savingsAccount);
-                boolean postInterestAsOn = false;
-                LocalDate transactionDate = null;
-                this.savingsAccountWritePlatformService.postInterest(savingsAccount, postInterestAsOn, transactionDate);
-            } catch (Exception e) {
-                String rootCause = ExceptionHelper.fetchExceptionMessage(e);
-                sb.append("failed to post interest for Savings with id " + savingsAccount.getId() + " with message "
-                        + rootCause);
+
+        do {
+            PageRequest pageRequest = new PageRequest(offSet, initialSize);
+            Page<SavingsAccount> savingsAccounts = this.savingAccountRepository.findByStatus(SavingsAccountStatusType.ACTIVE.getValue(),
+                    pageRequest);
+            for (SavingsAccount savingsAccount : savingsAccounts.getContent()) {
+                try {
+                    this.savingAccountAssembler.assignSavingAccountHelpers(savingsAccount);
+                    boolean postInterestAsOn = false;
+                    LocalDate transactionDate = null;
+                    this.savingsAccountWritePlatformService.postInterest(savingsAccount, postInterestAsOn, transactionDate);
+                } catch (Exception e) {
+                    Throwable realCause = e;
+                    if (e.getCause() != null) {
+                        realCause = e.getCause();
+                    }
+                    sb.append("failed to post interest for Savings with id " + savingsAccount.getId() + " with message "
+                            + realCause.getMessage());
+                }
             }
-        }
-        
+            offSet++;
+            totalPageSize = savingsAccounts.getTotalPages();
+        } while (offSet < totalPageSize);
+
         if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+
     }
 
     @CronTarget(jobName = JobName.UPDATE_SAVINGS_DORMANT_ACCOUNTS)
