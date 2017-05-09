@@ -1120,7 +1120,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             // enforceMinRequiredBalance
             if (!isException && transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) { throw new InsufficientAccountBalanceException(
-                        "transactionAmount", getAccountBalance(), withdrawalFee, transactionAmount); }
+                        "transactionAmount", getAccountBalance(), getId(),withdrawalFee, transactionAmount); }
             }
             lastSavingsDate = transaction.transactionLocalDate();
 
