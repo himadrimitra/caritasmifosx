@@ -797,7 +797,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 			}
 		} else {
 
-			builder.append(" order by tr.transaction_date DESC, tr.id DESC limit ? ");
+			builder.append(" order by tr.transaction_date DESC, tr.created_date DESC,tr.id DESC limit ? ");
 			params.add(searchParameters.getTransactionsCount());
 		}
 		Object[] paramArray = params.toArray();
