@@ -346,7 +346,8 @@ public class SchedulerJobsTestResults {
         final Integer loanProductID = createLoanProduct(null);
         Assert.assertNotNull(loanProductID);
 
-        final Integer loanID = applyForLoanApplication(clientID.toString(), loanProductID.toString(), null);
+        final String disbursementDate = Utils.getWorkingDay().toString("dd MMMM yyyy"); 
+        final Integer loanID = applyForLoanApplication(clientID.toString(), loanProductID.toString(), null, disbursementDate);
         Assert.assertNotNull(loanID);
 
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -379,7 +380,7 @@ public class SchedulerJobsTestResults {
                 repaymentsRescheduledDate, repaymentsRescheduledDate);
         
         this.globalConfigurationHelper.setConfiguration("reschedule-repayments-on-holidays", false, requestSpec, responseSpec); 
-        this.holidayHelper.deleteHolidays(requestSpec, responseSpec, holidayId.toString());
+        this.globalConfigurationHelper.setConfiguration("allow-transactions-on-holiday", true, requestSpec, responseSpec); 
 
     }
 
@@ -927,6 +928,11 @@ public class SchedulerJobsTestResults {
     }
 
     private Integer applyForLoanApplication(final String clientID, final String loanProductID, final String savingsID) {
+        final String disbursementDate = "10 January 2013";
+        return applyForLoanApplication(clientID, loanProductID, savingsID, disbursementDate);
+    }
+    
+    private Integer applyForLoanApplication(final String clientID, final String loanProductID, final String savingsID, final String disbursementDate) {
         System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
         final String loanApplicationJSON = new LoanApplicationTestBuilder() //
                 .withPrincipal("15,000.00") //
@@ -939,8 +945,8 @@ public class SchedulerJobsTestResults {
                 .withAmortizationTypeAsEqualInstallments() //
                 .withInterestTypeAsDecliningBalance() //
                 .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
-                .withExpectedDisbursementDate(Utils.getWorkingDay().toString("dd MMMM yyyy")) //
-                .withSubmittedOnDate(Utils.getWorkingDay().toString("dd MMMM yyyy")) //
+                .withExpectedDisbursementDate(disbursementDate) //
+                .withSubmittedOnDate(disbursementDate) //
                 .build(clientID, loanProductID, savingsID);
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
     }
