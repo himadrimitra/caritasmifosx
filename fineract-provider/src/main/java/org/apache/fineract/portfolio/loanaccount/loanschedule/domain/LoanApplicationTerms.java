@@ -2104,8 +2104,8 @@ public final class LoanApplicationTerms {
     }
     
     public Integer getAdjustedInstallmentInMultiplesOf() {
-                return this.adjustedInstallmentInMultiplesOf;
-        }
+        return this.adjustedInstallmentInMultiplesOf;
+    }
     
     public List<LoanCharge> getCapitalizedCharges() {
         return capitalizedCharges;

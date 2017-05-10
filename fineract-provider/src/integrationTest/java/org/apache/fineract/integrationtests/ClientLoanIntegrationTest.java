@@ -5851,17 +5851,17 @@ public class ClientLoanIntegrationTest {
         LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
         LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
 
+        ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
+                loanID);
+        HashMap installement = loanRepaymnetSchedule.get(12);
+        assertEquals("900.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        
         // DISBURSE A LOAN
         this.loanTransactionHelper.disburseLoan("15 November 2016", loanID);
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
 
         // VALIDATE THE LOAN IS ACTIVE STATUS
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
-
-        ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
-                loanID);
-        HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("992.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
@@ -5890,14 +5890,14 @@ public class ClientLoanIntegrationTest {
 
         // CREATE TRANCHES
         List<HashMap> createTranches = new ArrayList<>();
-        createTranches.add(this.loanApplicationApprovalTest.createTrancheDetail("15 May 2016", "10000"));
+        createTranches.add(this.loanApplicationApprovalTest.createTrancheDetail("15 May 2015", "10000"));
 
         // APPROVE TRANCHES
         List<HashMap> approveTranches = new ArrayList<>();
-        approveTranches.add(this.loanApplicationApprovalTest.createTrancheDetail("15 May 2016", "10000"));
+        approveTranches.add(this.loanApplicationApprovalTest.createTrancheDetail("15 May 2015", "10000"));
 
         // APPLY FOR LOAN WITH TRANCHES
-        final Integer loanID = applyForLoanApplicationWithTranches(clientID, loanProductID, "10000", createTranches, "15 May 2016");
+        final Integer loanID = applyForLoanApplicationWithTranches(clientID, loanProductID, "10000", createTranches, "15 May 2015");
         System.out.println("-----------------------------------LOAN CREATED WITH LOANID-------------------------------------------------"
                 + loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
@@ -5906,29 +5906,34 @@ public class ClientLoanIntegrationTest {
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
 
         System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------------------------");
-        loanStatusHashMap = this.loanTransactionHelper.approveLoanWithApproveAmount("15 May 2016", "15 May 2016", "10000",
+        loanStatusHashMap = this.loanTransactionHelper.approveLoanWithApproveAmount("15 May 2015", "15 May 2015", "10000",
                 loanID, approveTranches);
 
         // VALIDATE THE LOAN IS APPROVED
         LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
         LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+        
+        ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
+                loanID);
+        HashMap installement = loanRepaymnetSchedule.get(12);
+        assertEquals("907.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
         // DISBURSE A LOAN
-        this.loanTransactionHelper.disburseLoan("15 May 2016", loanID);
+        this.loanTransactionHelper.disburseLoan("15 May 2015", loanID);
         loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
 
         // VALIDATE THE LOAN IS ACTIVE STATUS
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
 
-        ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
+        loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
                 loanID);
-        HashMap installement = loanRepaymnetSchedule.get(12);
-        assertEquals("1392.00", String.valueOf(installement.get("totalOutstandingForPeriod")));
+        installement = loanRepaymnetSchedule.get(12);
+        assertEquals("1487.82", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
     @Test
-    public void testLoanInterestRoundingWithOutInterest() {
+    public void testLoanInterestRoundingWithOutInterestRecalculation() {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
 
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
@@ -5983,6 +5988,65 @@ public class ClientLoanIntegrationTest {
                 loanID);
         HashMap installement = loanRepaymnetSchedule.get(12);
         assertEquals("900.0", String.valueOf(installement.get("totalOutstandingForPeriod")));
+
+    }
+    
+    @Test
+    public void testLoanInterestRoundingWithOutInterestRecalculation_ROUND_TO_EMI() {
+        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
+        ClientHelper.verifyClientCreatedOnServer(this.requestSpec, this.responseSpec, clientID);
+        System.out.println(clientID);
+        final Integer loanProductID = this.loanTransactionHelper.getLoanProductId(new LoanProductTestBuilder()
+        .withPrincipal("10000")
+        .withinterestRatePerPeriod("12")
+        .withInterestRateFrequencyTypeAsYear()
+        .withRepaymentTypeAsWeek()
+        .withNumberOfRepayments("12")
+        .withInterestTypeAsDecliningBalance()
+        .withAmortizationTypeAsEqualInstallments()
+        .withInterestCalculationPeriodTypeAsDays()
+        .withAdjustInterestForRounding(true).build(null));
+        System.out.println("----------------------------------LOAN PRODUCT CREATED WITH ID-------------------------------------------"
+        + loanProductID);
+
+        // CREATE TRANCHES
+        List<HashMap> createTranches = new ArrayList<>();
+        createTranches.add(this.loanApplicationApprovalTest.createTrancheDetail("15 November 2016", "10000"));
+
+        // APPROVE TRANCHES
+        List<HashMap> approveTranches = new ArrayList<>();
+        approveTranches.add(this.loanApplicationApprovalTest.createTrancheDetail("15 November 2016", "10000"));
+
+        // APPLY FOR LOAN WITH TRANCHES
+        final Integer loanID = applyForLoanApplicationWithTranches(clientID, loanProductID, "10000", createTranches, "15 November 2016");
+        System.out.println("-----------------------------------LOAN CREATED WITH LOANID-------------------------------------------------"
+                + loanID);
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+
+        // VALIDATE THE LOAN STATUS
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        System.out.println("-----------------------------------APPROVE LOAN-----------------------------------------------------------");
+        loanStatusHashMap = this.loanTransactionHelper.approveLoanWithApproveAmount("15 November 2016", "15 November 2016", "10000",
+                loanID, approveTranches);
+
+        // VALIDATE THE LOAN IS APPROVED
+        LoanStatusChecker.verifyLoanIsApproved(loanStatusHashMap);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+
+        // DISBURSE A LOAN
+        this.loanTransactionHelper.disburseLoan("15 November 2016", loanID);
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+
+        // VALIDATE THE LOAN IS ACTIVE STATUS
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        ArrayList<HashMap> loanRepaymnetSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec,
+                loanID);
+        HashMap installement = loanRepaymnetSchedule.get(12);
+        assertEquals("892.34", String.valueOf(installement.get("totalOutstandingForPeriod")));
 
     }
     
