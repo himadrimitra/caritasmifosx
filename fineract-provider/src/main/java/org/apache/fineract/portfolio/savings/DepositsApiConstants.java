@@ -74,6 +74,7 @@ public class DepositsApiConstants {
     public static final String statusParamName = "status";
     public static final String clientIdParamName = "clientId";
     public static final String groupIdParamName = "groupId";
+    public static final String centerIdParamName = "centerId";
     public static final String productIdParamName = "productId";
     public static final String fieldOfficerIdParamName = "fieldOfficerId";
 
@@ -295,7 +296,7 @@ public class DepositsApiConstants {
 
     public static final Set<String> DEPOSIT_ACCOUNT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, monthDayFormatParamName, accountNoParamName, externalIdParamName, clientIdParamName, groupIdParamName,
-            productIdParamName, fieldOfficerIdParamName, submittedOnDateParamName, nominalAnnualInterestRateParamName,
+            centerIdParamName, productIdParamName, fieldOfficerIdParamName, submittedOnDateParamName, nominalAnnualInterestRateParamName,
             interestCompoundingPeriodTypeParamName, interestPostingPeriodTypeParamName, interestCalculationTypeParamName,
             interestCalculationDaysInYearTypeParamName, lockinPeriodFrequencyParamName, lockinPeriodFrequencyTypeParamName,
             chargesParamName, chartsParamName, depositAmountParamName, depositPeriodParamName, depositPeriodFrequencyIdParamName,
