@@ -367,6 +367,8 @@ public class TransferWritePlatformServiceJpaRepositoryImpl implements TransferWr
         final Long destinationOfficeId = jsonCommand.longValueOfParameterNamed(TransferApiConstants.destinationOfficeIdParamName);
         final Office office = this.officeRepository.findOneWithNotFoundDetection(destinationOfficeId);
         final Client client = this.clientRepository.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
+        if (client.officeId().equals(office.getId())) { throw new TransferNotSupportedException(
+                TRANSFER_NOT_SUPPORTED_REASON.SOURCE_AND_DESTINATION_OFFICE_CANNOT_BE_SAME, client.getId()); }
         handleClientTransferLifecycleEvent(client, office, TransferEventType.PROPOSAL, jsonCommand);
         this.clientRepository.save(client);
 
