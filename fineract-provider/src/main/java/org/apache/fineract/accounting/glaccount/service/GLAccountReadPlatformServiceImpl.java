@@ -32,8 +32,10 @@ import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.data.GLAccountDataForLookup;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountUsage;
+import org.apache.fineract.accounting.glaccount.domain.GLClassificationType;
 import org.apache.fineract.accounting.glaccount.exception.GLAccountInvalidClassificationException;
 import org.apache.fineract.accounting.glaccount.exception.GLAccountNotFoundException;
+import org.apache.fineract.accounting.glaccount.exception.GLClassificationTypeInvalidException;
 import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationParametersData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -126,39 +128,41 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
 
     @Override
     public List<GLAccountData> retrieveAllGLAccounts(final Integer accountClassification, final String searchParam, final Integer usage,
-            final Boolean manualTransactionsAllowed, final Boolean disabled, JournalEntryAssociationParametersData associationParametersData) {
+            final Boolean manualTransactionsAllowed, final Boolean disabled,
+            JournalEntryAssociationParametersData associationParametersData, final Integer glClassificationType) {
         if (accountClassification != null) {
             if (!checkValidGLAccountType(accountClassification)) { throw new GLAccountInvalidClassificationException(accountClassification); }
         }
-
         if (usage != null) {
             if (!checkValidGLAccountUsage(usage)) { throw new GLAccountInvalidClassificationException(accountClassification); }
         }
-
+        if (glClassificationType != null) {
+            if (!checkValidGLClassificationType(glClassificationType)) { throw new GLClassificationTypeInvalidException(glClassificationType); }
+        }
         final GLAccountMapper rm = new GLAccountMapper(associationParametersData);
-        String sql = "select " + rm.schema();
+        final StringBuilder sb = new StringBuilder(rm.schema().length()+50);
+        sb.append("select " + rm.schema());
         final Object[] paramaterArray = new Object[3];
         int arrayPos = 0;
         boolean filtersPresent = false;
         if ((accountClassification != null) || StringUtils.isNotBlank(searchParam) || (usage != null)
-                || (manualTransactionsAllowed != null) || (disabled != null)) {
+                || (manualTransactionsAllowed != null) || (disabled != null) || (glClassificationType != null)) {
             filtersPresent = true;
-            sql += " where";
+            sb.append(" where");
         }
-
         if (filtersPresent) {
             boolean firstWhereConditionAdded = false;
             if (accountClassification != null) {
-                sql += " classification_enum like ?";
+                sb.append(" classification_enum like ?");
                 paramaterArray[arrayPos] = accountClassification;
                 arrayPos = arrayPos + 1;
                 firstWhereConditionAdded = true;
             }
             if (StringUtils.isNotBlank(searchParam)) {
                 if (firstWhereConditionAdded) {
-                    sql += " and ";
+                    sb.append(" and ");
                 }
-                sql += " ( name like %?% or gl_code like %?% )";
+                sb.append(" ( name like %?% or gl_code like %?% )");
                 paramaterArray[arrayPos] = searchParam;
                 arrayPos = arrayPos + 1;
                 paramaterArray[arrayPos] = searchParam;
@@ -167,46 +171,60 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
             }
             if (usage != null) {
                 if (firstWhereConditionAdded) {
-                    sql += " and ";
+                    sb.append(" and ");
                 }
                 if (GLAccountUsage.HEADER.getValue().equals(usage)) {
-                    sql += " account_usage = 2 ";
+                    sb.append(" account_usage = 2 ");
                 } else if (GLAccountUsage.DETAIL.getValue().equals(usage)) {
-                    sql += " account_usage = 1 ";
+                    sb.append(" account_usage = 1 ");
                 }
                 firstWhereConditionAdded = true;
             }
             if (manualTransactionsAllowed != null) {
                 if (firstWhereConditionAdded) {
-                    sql += " and ";
+                    sb.append(" and ");
                 }
-
                 if (manualTransactionsAllowed) {
-                    sql += " manual_journal_entries_allowed = 1";
+                    sb.append(" manual_journal_entries_allowed = 1");
                 } else {
-                    sql += " manual_journal_entries_allowed = 0";
+                    sb.append(" manual_journal_entries_allowed = 0");
                 }
                 firstWhereConditionAdded = true;
             }
             if (disabled != null) {
                 if (firstWhereConditionAdded) {
-                    sql += " and ";
+                    sb.append(" and ");
                 }
 
                 if (disabled) {
-                    sql += " disabled = 1";
+                    sb.append(" disabled = 1");
                 } else {
-                    sql += " disabled = 0";
+                    sb.append(" disabled = 0");
                 }
                 firstWhereConditionAdded = true;
             }
+            if (glClassificationType != null) {
+                if (firstWhereConditionAdded) {
+                    sb.append(" and ");
+                }
+                sb.append(" gl_classification_type = ? ");
+                paramaterArray[arrayPos] = glClassificationType;
+                arrayPos = arrayPos + 1;
+                firstWhereConditionAdded = true;
+            }
         }
-
         final Object[] finalObjectArray = Arrays.copyOf(paramaterArray, arrayPos);
-        return this.jdbcTemplate.query(sql, rm, finalObjectArray);
+        return this.jdbcTemplate.query(sb.toString(), rm, finalObjectArray);
     }
 
-    @Override
+    private boolean checkValidGLClassificationType(final Integer glClassificationType) {
+        for (final GLClassificationType gLClassificationType : GLClassificationType.values()) {
+            if (gLClassificationType.getValue().equals(glClassificationType)) { return true; }
+        }
+        return false;
+    }
+
+	@Override
     public GLAccountData retrieveGLAccountById(final long glAccountId, JournalEntryAssociationParametersData associationParametersData) {
         try {
 
@@ -227,13 +245,16 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
 
     @Override
     public List<GLAccountData> retrieveAllEnabledDetailGLAccounts(final GLAccountType accountType) {
+        final Integer classificationType = null;
         return retrieveAllGLAccounts(accountType.getValue(), null, GLAccountUsage.DETAIL.getValue(), null, false,
-                new JournalEntryAssociationParametersData());
+                new JournalEntryAssociationParametersData(), classificationType);
     }
 
     @Override
     public List<GLAccountData> retrieveAllEnabledDetailGLAccounts() {
-        return retrieveAllGLAccounts(null, null, GLAccountUsage.DETAIL.getValue(), null, false, new JournalEntryAssociationParametersData());
+        final Integer classificationType = null;
+        return retrieveAllGLAccounts(null, null, GLAccountUsage.DETAIL.getValue(), null, false,
+                new JournalEntryAssociationParametersData(), classificationType);
     }
 
     private static boolean checkValidGLAccountType(final int type) {
@@ -257,8 +278,9 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
 
     @Override
     public List<GLAccountData> retrieveAllEnabledHeaderGLAccounts(final GLAccountType accountType) {
+        final Integer classificationType = null;
         return retrieveAllGLAccounts(accountType.getValue(), null, GLAccountUsage.HEADER.getValue(), null, false,
-                new JournalEntryAssociationParametersData());
+                new JournalEntryAssociationParametersData(), classificationType);
     }
 
     @Override

@@ -115,12 +115,13 @@ public class GLAccountsApiResource {
     public String retrieveAllAccounts(@Context final UriInfo uriInfo, @QueryParam("type") final Integer type,
             @QueryParam("searchParam") final String searchParam, @QueryParam("usage") final Integer usage,
             @QueryParam("manualEntriesAllowed") final Boolean manualEntriesAllowed, @QueryParam("disabled") final Boolean disabled,
-            @QueryParam("fetchRunningBalance") final boolean runningBalance) {
+            @QueryParam("fetchRunningBalance") final boolean runningBalance,
+            @QueryParam("classificationType") final Integer classificationType) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
         JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance);
         final List<GLAccountData> glAccountDatas = this.glAccountReadPlatformService.retrieveAllGLAccounts(type, searchParam, usage,
-                manualEntriesAllowed, disabled, associationParametersData);
+                manualEntriesAllowed, disabled, associationParametersData, classificationType);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.apiJsonSerializerService.serialize(settings, glAccountDatas, RESPONSE_DATA_PARAMETERS);

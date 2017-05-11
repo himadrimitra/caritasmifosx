@@ -29,7 +29,8 @@ import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationP
 public interface GLAccountReadPlatformService {
 
     List<GLAccountData> retrieveAllGLAccounts(Integer accountClassification, String searchParam, Integer usage,
-            Boolean manualTransactionsAllowed, Boolean disabled, JournalEntryAssociationParametersData associationParametersData);
+            Boolean manualTransactionsAllowed, Boolean disabled, JournalEntryAssociationParametersData associationParametersData,
+            final Integer glClassificationType);
 
     GLAccountData retrieveGLAccountById(long glAccountId, JournalEntryAssociationParametersData associationParametersData);
 

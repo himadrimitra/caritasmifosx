@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountUsage;
-import org.apache.fineract.accounting.glaccount.domain.GlClassificationType;
+import org.apache.fineract.accounting.glaccount.domain.GLClassificationType;
 import org.apache.fineract.accounting.glaccount.service.GlAccountEnumerations;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;

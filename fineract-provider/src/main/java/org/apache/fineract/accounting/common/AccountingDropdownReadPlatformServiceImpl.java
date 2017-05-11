@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountUsage;
-import org.apache.fineract.accounting.glaccount.domain.GlClassificationType;
+import org.apache.fineract.accounting.glaccount.domain.GLClassificationType;
 import org.apache.fineract.accounting.glaccount.service.GLAccountReadPlatformService;
 import org.apache.fineract.accounting.glaccount.service.GlAccountEnumerations;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntryType;
@@ -100,7 +100,7 @@ public class AccountingDropdownReadPlatformServiceImpl implements AccountingDrop
     
     @Override
     public List<EnumOptionData>retrieveGlClassificationTypeOptions(){
-    	return GlAccountEnumerations.glClassificationType(GlClassificationType.values());
+    	return GlAccountEnumerations.glClassificationType(GLClassificationType.values());
     	
     }
 

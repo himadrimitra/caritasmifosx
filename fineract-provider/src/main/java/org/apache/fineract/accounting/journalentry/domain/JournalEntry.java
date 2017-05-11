@@ -155,6 +155,9 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
         this.journalEntryDetails.add(journalEntryDetail);
     }
 
+    public void addAllJournalEntryDetail(final List<JournalEntryDetail> journalEntryDetails) {
+        this.journalEntryDetails.addAll(journalEntryDetails);
+    }
     
     public List<JournalEntryDetail> getJournalEntryDetails() {
         return this.journalEntryDetails;
@@ -241,6 +244,10 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
     
     public Long getEntityId() {
         return this.entityId;
+    }
+    
+    public void setPaymentDetailId(final Long paymentDetailId) {
+    	this.paymentDetailId = paymentDetailId ;
     }
 
 }
