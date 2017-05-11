@@ -25,6 +25,8 @@ import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.data.GLAccountDataForLookup;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountType;
 import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationParametersData;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
 public interface GLAccountReadPlatformService {
 
@@ -45,4 +47,7 @@ public interface GLAccountReadPlatformService {
     List<GLAccountDataForLookup> retrieveAccountsByTagId(final Long ruleId, final Integer transactionType);
 
     List<GLAccountDataForLookup> retrieveAccountsByTags(Collection<Long> tagIds);
+    
+    Page<GLAccountData> retrieveAllGLAccounts(JournalEntryAssociationParametersData associationParametersData,
+            SearchParameters searchParameters, final Integer usage, final Integer accountType, final Integer glAccounytClassificatioType);
 }
