@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanChargePaidBy;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionToRepaymentScheduleMapping;
@@ -56,12 +57,21 @@ public class EarlyPaymentLoanRepaymentScheduleTransactionProcessor extends Abstr
         Money penaltyChargesPortion = Money.zero(transactionAmountRemaining.getCurrency());
 
         if (loanTransaction.isChargesWaiver()) {
-            penaltyChargesPortion = currentInstallment.waivePenaltyChargesComponent(transactionDate,
-                    loanTransaction.getPenaltyChargesPortion(currency));
+
+            Money penaltyPortion = loanTransaction.getPenaltyChargesPortion(currency);
+            Money feePortion = loanTransaction.getFeeChargesPortion(currency);
+            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
+                if (loanChargePaidBy.getLoanCharge().isPenaltyCharge()) {
+                    penaltyPortion = loanTransaction.getAmount(currency);
+                } else {
+                    feePortion = loanTransaction.getAmount(currency);
+                }
+                break;
+            }
+            penaltyChargesPortion = currentInstallment.waivePenaltyChargesComponent(transactionDate, penaltyPortion);
             transactionAmountRemaining = transactionAmountRemaining.minus(penaltyChargesPortion);
 
-            feeChargesPortion = currentInstallment
-                    .waiveFeeChargesComponent(transactionDate, loanTransaction.getFeeChargesPortion(currency));
+            feeChargesPortion = currentInstallment.waiveFeeChargesComponent(transactionDate, feePortion);
             transactionAmountRemaining = transactionAmountRemaining.minus(feeChargesPortion);
 
         } else if (loanTransaction.isInterestWaiver()) {
@@ -125,8 +135,23 @@ public class EarlyPaymentLoanRepaymentScheduleTransactionProcessor extends Abstr
         Money penaltyChargesPortion = Money.zero(transactionAmountRemaining.getCurrency());
 
         if (loanTransaction.isChargesWaiver()) {
-            // zero this type of transaction and ignore it for now.
-            transactionAmountRemaining = Money.zero(currency);
+
+            Money penaltyPortion = loanTransaction.getPenaltyChargesPortion(currency);
+            Money feePortion = loanTransaction.getFeeChargesPortion(currency);
+            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
+                if (loanChargePaidBy.getLoanCharge().isPenaltyCharge()) {
+                    penaltyPortion = loanTransaction.getAmount(currency);
+                } else {
+                    feePortion = loanTransaction.getAmount(currency);
+                }
+                break;
+            }
+            penaltyChargesPortion = currentInstallment.waivePenaltyChargesComponent(transactionDate, penaltyPortion);
+            transactionAmountRemaining = transactionAmountRemaining.minus(penaltyChargesPortion);
+
+            feeChargesPortion = currentInstallment.waiveFeeChargesComponent(transactionDate, feePortion);
+            transactionAmountRemaining = transactionAmountRemaining.minus(feeChargesPortion);
+
         } else if (loanTransaction.isInterestWaiver()) {
             interestPortion = currentInstallment.waiveInterestComponent(transactionDate, transactionAmountRemaining);
             transactionAmountRemaining = transactionAmountRemaining.minus(interestPortion);
