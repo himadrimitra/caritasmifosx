@@ -195,8 +195,10 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                     final String routingCode = rs.getString("routingCode");
                     final String receiptNumber = rs.getString("receiptNumber");
                     final String bankNumber = rs.getString("bankNumber");
+                    final String branchName = null ;
+                    final Date paymentDate = null ;
                     paymentDetailData = new PaymentDetailData(id, paymentType, accountNumber, checkNumber, routingCode, receiptNumber,
-                            bankNumber);
+                            bankNumber, branchName, paymentDate);
                 }
                 NoteData noteData = null;
                 final Long noteId = JdbcSupport.getLong(rs, "noteId");
@@ -237,10 +239,10 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                     break;
                 }
             }
-
+            final Long reversalId = null ;
             return new JournalEntryData(id, officeId, officeName, transactionDate, valueDate, effectiveDate, transactionId, manualEntry,
                     entityType, entityId, entityTransactionId, createdByUserId, createdDate, createdByUserName, comments, reversed,
-                    referenceNumber, transactionDetailData, currency, journalEntryDetails);
+                    referenceNumber, transactionDetailData, currency, journalEntryDetails, reversalId);
         }
     }
     

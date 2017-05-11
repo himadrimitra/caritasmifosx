@@ -9,46 +9,46 @@ package org.apache.fineract.accounting.glaccount.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.fineract.accounting.glaccount.domain.GlClassificationType;
+import org.apache.fineract.accounting.glaccount.domain.GLClassificationType;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class GlAccountEnumerations {
 
     public static EnumOptionData glClassificationType(final int id) {
-        return glClassificationType(GlClassificationType.fromInt(id));
+        return glClassificationType(GLClassificationType.fromInt(id));
     }
 
-    public static EnumOptionData glClassificationType(final GlClassificationType type) {
+    public static EnumOptionData glClassificationType(final GLClassificationType type) {
         final String codePrefix = "glClassificationType.";
         EnumOptionData optionData = null;
         switch (type) {
             case Cash:
-                optionData = new EnumOptionData(GlClassificationType.Cash.getValue().longValue(),
-                        codePrefix + GlClassificationType.Cash.getCode(), "Cash");
+                optionData = new EnumOptionData(GLClassificationType.Cash.getValue().longValue(),
+                        codePrefix + GLClassificationType.Cash.getCode(), "Cash");
             break;
 
             case Bank:
-                optionData = new EnumOptionData(GlClassificationType.Bank.getValue().longValue(),
-                        codePrefix + GlClassificationType.Bank.getCode(), "Bank");
+                optionData = new EnumOptionData(GLClassificationType.Bank.getValue().longValue(),
+                        codePrefix + GLClassificationType.Bank.getCode(), "Bank");
             break;
 
             case OtherJV:
-                optionData = new EnumOptionData(GlClassificationType.OtherJV.getValue().longValue(),
-                        codePrefix + GlClassificationType.OtherJV.getCode(), "Other JV");
+                optionData = new EnumOptionData(GLClassificationType.OtherJV.getValue().longValue(),
+                        codePrefix + GLClassificationType.OtherJV.getCode(), "Other JV");
             break;
         }
         return optionData;
     }
 
-    public static EnumOptionData GlClassificationType(final GlClassificationType glClassificationType) {
+    public static EnumOptionData GlClassificationType(final GLClassificationType glClassificationType) {
         final EnumOptionData optionData = new EnumOptionData(glClassificationType.getValue().longValue(), glClassificationType.getCode(),
                 glClassificationType.toString());
         return optionData;
     }
 
-    public static List<EnumOptionData> glClassificationType(final GlClassificationType[] glClassificationTypes) {
+    public static List<EnumOptionData> glClassificationType(final GLClassificationType[] glClassificationTypes) {
         final List<EnumOptionData> optionDatas = new ArrayList<>();
-        for (final GlClassificationType glClassificationType : glClassificationTypes) {
+        for (final GLClassificationType glClassificationType : glClassificationTypes) {
             optionDatas.add(glClassificationType(glClassificationType));
         }
         return optionDatas;

@@ -70,18 +70,18 @@ public class JournalEntryData {
     @SuppressWarnings("unused")
     private final String referenceNumber;
 
-
+    private Long reversalId ;
     @SuppressWarnings("unused")
     private final TransactionDetailData transactionDetails;
     
-    private final Collection<JournalEntryDetailData> journalEntryDetails;
+    private Collection<JournalEntryDetailData> journalEntryDetails;
 
     public JournalEntryData(final Long id, final Long officeId, final String officeName, final LocalDate transactionDate,
             LocalDate valueDate, LocalDate effectiveDate, final String transactionId, final Boolean manualEntry,
             final EnumOptionData entityType, final Long entityId, Long entityTransactionId, final Long createdByUserId,
             final LocalDate createdDate, final String createdByUserName, final String comments, final Boolean reversed,
             final String referenceNumber, final TransactionDetailData transactionDetailData, final CurrencyData currency,
-            final Collection<JournalEntryDetailData> journalEntryDetails) {
+            final Collection<JournalEntryDetailData> journalEntryDetails, final Long reversalId) {
         this.id = id;
         this.officeId = officeId;
         this.officeName = officeName;
@@ -102,6 +102,7 @@ public class JournalEntryData {
         this.transactionDetails = transactionDetailData;
         this.currency = currency;
         this.journalEntryDetails = journalEntryDetails;
+        this.reversalId = reversalId ;
     }
 
     public Long getId() {
@@ -119,5 +120,9 @@ public class JournalEntryData {
     
     public Collection<JournalEntryDetailData> getJournalEntryDetails() {
         return this.journalEntryDetails;
+    }
+    
+    public void setJournalEntryDetails(final Collection<JournalEntryDetailData> journalEntryDetails) {
+        this.journalEntryDetails = journalEntryDetails ;
     }
 }

@@ -3965,4 +3965,22 @@ public class CommandWrapperBuilder {
         this.href = "/rescheduleloans";
         return this;
     }
+    
+    public CommandWrapperBuilder createVoucher(String voucherType) {
+        this.entityName = voucherType.toUpperCase()+"_VOUCHER" ; 
+        // To Support different type of vouchers
+        this.actionName = "CREATE";
+        this.entityId = null;
+        this.href = "/vouchers?voucherType=" + voucherType;
+        return this;
+    }
+    
+    public CommandWrapperBuilder updateVoucher(String voucherType, final Long voucherId) {
+        // To Support different type of vouchers
+        this.entityName = voucherType.toUpperCase()+"_VOUCHER" ; 
+        this.actionName = "UPDATE";
+        this.entityId = voucherId;
+        this.href = "/vouchers?voucherType=" + voucherType;
+        return this;
+    }
 }

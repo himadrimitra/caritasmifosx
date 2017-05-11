@@ -241,7 +241,8 @@ public class AccountingConstants {
         ASSET_TRANSFER(100, "assetTransfer", GLAccountType.ASSET), LIABILITY_TRANSFER(200, "liabilityTransfer", GLAccountType.LIABILITY), CASH_AT_MAINVAULT(
                 101, "cashAtMainVault", GLAccountType.ASSET), CASH_AT_TELLER(102, "cashAtTeller", GLAccountType.ASSET), OPENING_BALANCES_TRANSFER_CONTRA(
                 300, "openingBalancesTransferContra", GLAccountType.EQUITY), ASSET_FUND_SOURCE(103, "fundSource", GLAccountType.ASSET), PAYABLE_DIVIDENDS(
-                201, "payableDividends", GLAccountType.LIABILITY);
+                201, "payableDividends", GLAccountType.LIABILITY), INTERBRANCH_TRANSFER(
+                        104, "interbranchtransfer", GLAccountType.ASSET) ;
 
         private final Integer value;
         private final String code;
