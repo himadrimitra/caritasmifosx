@@ -11,6 +11,7 @@ import java.util.Date;
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.Page;
 import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -54,7 +55,7 @@ public class TransactionsProcessingReadPlatformServiceImpl implements  Transacti
                         AppUser user = this.context.authenticatedUser();
                         final String hierarchy = user.getOffice().getHierarchy();
                         final String hierarchySearchString = hierarchy + "%";
-                        final Date curDate = new Date();
+                        final Date curDate = DateUtils.getDateOfTenant();
                         int totalNumberOfDays = DEFAULT_NUMBER_OF_DAYS ;
                         
                         if(this.configurationDomainService.retrieveNumberOfDays()!=null) {

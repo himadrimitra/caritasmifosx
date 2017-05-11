@@ -17,6 +17,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
@@ -89,7 +90,7 @@ public class MandatesProcessingWritePlatformServiceImpl implements MandatesProce
                 }
 
                 final Map<String, Object> parameters = new HashMap<>();
-                parameters.put("request_date", yyyyMMddFormatter.format(new Date()));
+                parameters.put("request_date", yyyyMMddFormatter.format(DateUtils.getDateOfTenant()));
                 parameters.put("process_type",MandateProcessTypeEnum.MANDATES_DOWNLOAD.getValue());
                 parameters.put("process_status", MandateProcessStatusEnum.REQUESTED.getValue());
                 parameters.put("office_id", officeId);
@@ -111,7 +112,7 @@ public class MandatesProcessingWritePlatformServiceImpl implements MandatesProce
                 if(null != multiPart){
                         final AppUser user = this.context.authenticatedUser();
                         final Map<String, Object> parameters = new HashMap<>();
-                        parameters.put("request_date", yyyyMMddFormatter.format(new Date()));
+                        parameters.put("request_date", yyyyMMddFormatter.format(DateUtils.getDateOfTenant()));
                         parameters.put("process_type",MandateProcessTypeEnum.MANDATES_UPLOAD.getValue());
                         parameters.put("process_status", MandateProcessStatusEnum.REQUESTED.getValue());
                         parameters.put("office_id", user.getOffice().getId());
@@ -149,7 +150,7 @@ public class MandatesProcessingWritePlatformServiceImpl implements MandatesProce
                 }
 
                 final Map<String, Object> parameters = new HashMap<>();
-                parameters.put("request_date", yyyyMMddFormatter.format(new Date()));
+                parameters.put("request_date", yyyyMMddFormatter.format(DateUtils.getDateOfTenant()));
                 parameters.put("process_type",MandateProcessTypeEnum.TRANSACTIONS_DOWNLOAD.getValue());
                 parameters.put("process_status", MandateProcessStatusEnum.REQUESTED.getValue());
                 parameters.put("office_id", officeId);
@@ -173,7 +174,7 @@ public class MandatesProcessingWritePlatformServiceImpl implements MandatesProce
                 if(null != multiPart){
                         final AppUser user = this.context.authenticatedUser();
                         final Map<String, Object> parameters = new HashMap<>();
-                        parameters.put("request_date", yyyyMMddFormatter.format(new Date()));
+                        parameters.put("request_date", yyyyMMddFormatter.format(DateUtils.getDateOfTenant()));
                         parameters.put("process_type",MandateProcessTypeEnum.TRANSACTIONS_UPLOAD.getValue());
                         parameters.put("process_status", MandateProcessStatusEnum.REQUESTED.getValue());
                         parameters.put("office_id", user.getOffice().getId());
