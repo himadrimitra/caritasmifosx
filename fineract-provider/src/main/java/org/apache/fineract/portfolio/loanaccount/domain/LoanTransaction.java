@@ -310,11 +310,17 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public static LoanTransaction copyTransactionProperties(final LoanTransaction loanTransaction) {
         final Long originalTransactionId = (loanTransaction.getOriginalTransactionId() == null) ? loanTransaction.getId()
                 : loanTransaction.getOriginalTransactionId();
-        return new LoanTransaction(loanTransaction.loan, loanTransaction.officeId, loanTransaction.typeOf, loanTransaction.subTypeOf,
+        LoanTransaction copyTransaction =  new LoanTransaction(loanTransaction.loan, loanTransaction.officeId, loanTransaction.typeOf, loanTransaction.subTypeOf,
                 loanTransaction.dateOf, loanTransaction.amount, loanTransaction.principalPortion, loanTransaction.interestPortion,
                 loanTransaction.feeChargesPortion, loanTransaction.penaltyChargesPortion, loanTransaction.overPaymentPortion,
                 loanTransaction.reversed, loanTransaction.paymentDetail, loanTransaction.externalId, loanTransaction.getCreatedDate(),
                 loanTransaction.getCreatedBy(), loanTransaction.isReconciled, originalTransactionId);
+        for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
+            copyTransaction.getLoanChargesPaid().add(
+                    new LoanChargePaidBy(copyTransaction, loanChargePaidBy.getLoanCharge(), loanChargePaidBy.getAmount(), loanChargePaidBy
+                            .getInstallmentNumber()));
+        }
+        return copyTransaction;
     }
     
     private LoanTransaction(final Loan loan, final Long officeId, final Integer typeOf, final Integer loanTransactionSubType,final Date dateOf, final BigDecimal amount,

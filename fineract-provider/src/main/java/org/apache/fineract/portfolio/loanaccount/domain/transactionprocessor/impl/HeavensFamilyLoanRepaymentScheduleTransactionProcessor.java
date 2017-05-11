@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonitoringTransaction;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanChargePaidBy;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionToRepaymentScheduleMapping;
@@ -163,12 +164,20 @@ public class HeavensFamilyLoanRepaymentScheduleTransactionProcessor extends Abst
         Money penaltyChargesPortion = Money.zero(transactionAmountRemaining.getCurrency());
 
         if (loanTransaction.isChargesWaiver()) {
-            penaltyChargesPortion = currentInstallment.waivePenaltyChargesComponent(transactionDate,
-                    loanTransaction.getPenaltyChargesPortion(currency));
+            Money penaltyPortion = loanTransaction.getPenaltyChargesPortion(currency);
+            Money feePortion = loanTransaction.getFeeChargesPortion(currency);
+            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
+                if (loanChargePaidBy.getLoanCharge().isPenaltyCharge()) {
+                    penaltyPortion = loanTransaction.getAmount(currency);
+                } else {
+                    feePortion = loanTransaction.getAmount(currency);
+                }
+                break;
+            }
+            penaltyChargesPortion = currentInstallment.waivePenaltyChargesComponent(transactionDate, penaltyPortion);
             transactionAmountRemaining = transactionAmountRemaining.minus(penaltyChargesPortion);
 
-            feeChargesPortion = currentInstallment
-                    .waiveFeeChargesComponent(transactionDate, loanTransaction.getFeeChargesPortion(currency));
+            feeChargesPortion = currentInstallment.waiveFeeChargesComponent(transactionDate, feePortion);
             transactionAmountRemaining = transactionAmountRemaining.minus(feeChargesPortion);
 
         } else if (loanTransaction.isInterestWaiver()) {
