@@ -371,8 +371,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             }
             this.loanRepository.save(newLoanApplication);
 
-            if (loanProduct.isInterestRecalculationEnabled()) {
+            if (loanProduct.isInterestRecalculationEnabled() || loanProduct.isMultiDisburseLoan()) {
                 this.fromApiJsonDeserializer.validateLoanForInterestRecalculation(newLoanApplication);
+            }
+            if (loanProduct.isInterestRecalculationEnabled()) {
                 createAndPersistCalendarInstanceForInterestRecalculation(newLoanApplication);
             }
 
@@ -1264,8 +1266,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
             validatePledgeForLoan(command, existingLoanApplication);
 
-            if (productRelatedDetail.isInterestRecalculationEnabled()) {
+            if (productRelatedDetail.isInterestRecalculationEnabled() || existingLoanApplication.isMultiDisburmentLoan()) {
                 this.fromApiJsonDeserializer.validateLoanForInterestRecalculation(existingLoanApplication);
+            }
+            if (productRelatedDetail.isInterestRecalculationEnabled()) {
                 if (changes.containsKey(LoanProductConstants.isInterestRecalculationEnabledParameterName)) {
                     createAndPersistCalendarInstanceForInterestRecalculation(existingLoanApplication);
 

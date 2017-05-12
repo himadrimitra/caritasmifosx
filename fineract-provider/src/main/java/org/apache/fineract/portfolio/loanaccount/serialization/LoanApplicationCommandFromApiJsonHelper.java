@@ -1289,20 +1289,20 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                 .validateDateBeforeOrEqual(expectedDisbursementDate);
     }
 
-    public void validateLoanCharges(final Set<LoanCharge> charges, final List<ApiParameterError> dataValidationErrors) {
+    public void validateLoanCharges(final Set<LoanCharge> charges, final List<ApiParameterError> dataValidationErrors, final boolean isIntrestRecalculationEnabled) {
         if (charges == null) { return; }
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan");
         for (LoanCharge loanCharge : charges) {
             String errorcode = null;
             switch (loanCharge.getChargeCalculation()) {
                 case PERCENT_OF_AMOUNT:
-                    if (loanCharge.isInstalmentFee()) {
+                    if (loanCharge.isInstalmentFee() && isIntrestRecalculationEnabled) {
                         errorcode = "installment." + LoanApiConstants.LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_PRINCIPAL_CALCULATION_TYPE;
 
                     }
                 break;
                 case PERCENT_OF_AMOUNT_AND_INTEREST:
-                    if (loanCharge.isInstalmentFee()) {
+                    if (loanCharge.isInstalmentFee() && isIntrestRecalculationEnabled) {
                         errorcode = "installment." + LoanApiConstants.LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_PRINCIPAL_CALCULATION_TYPE;
                     } else if (loanCharge.isSpecifiedDueDate()) {
                         errorcode = "specific." + LoanApiConstants.LOAN_CHARGE_CAN_NOT_BE_ADDED_WITH_INTEREST_CALCULATION_TYPE;
@@ -1326,7 +1326,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
     public void validateLoanForInterestRecalculation(final Loan loan) {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
-        validateLoanCharges(loan.charges(), dataValidationErrors);
+        validateLoanCharges(loan.charges(), dataValidationErrors, loan.isInterestRecalculationEnabledForProduct());
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 

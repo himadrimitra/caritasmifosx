@@ -36,7 +36,8 @@ import org.joda.time.LocalDate;
 public class LoanRepaymentScheduleProcessingWrapper {
 
     public void reprocess(final MonetaryCurrency currency, final LocalDate disbursementDate,
-            final List<LoanRepaymentScheduleInstallment> repaymentPeriods, final Set<LoanCharge> loanCharges) {
+            final List<LoanRepaymentScheduleInstallment> repaymentPeriods, final Set<LoanCharge> loanCharges,
+            final List<LoanDisbursementDetails> disbursementDetails) {
 
         Money totalInterest = Money.zero(currency);
         Money totalPrincipal = Money.zero(currency);
@@ -44,9 +45,16 @@ public class LoanRepaymentScheduleProcessingWrapper {
             totalInterest = totalInterest.plus(installment.getInterestCharged(currency));
             totalPrincipal = totalPrincipal.plus(installment.getPrincipal(currency));
         }
+        
         LocalDate startDate = disbursementDate;
         for (final LoanRepaymentScheduleInstallment period : repaymentPeriods) {
-
+            if(disbursementDetails != null && !disbursementDetails.isEmpty()){
+                totalPrincipal = Money.zero(currency);
+                for (final LoanDisbursementDetails detail:disbursementDetails){
+                    if(detail.isDisbursed() && !detail.getDisbursementDateAsLocalDate().isAfter(period.getDueDate()))
+                    totalPrincipal = totalPrincipal.plus(detail.principal());
+                }
+            }
             final Money feeChargesDueForRepaymentPeriod = cumulativeFeeChargesDueWithin(startDate, period.getDueDate(), loanCharges,
                     currency, period, totalPrincipal, totalInterest, !period.isRecalculatedInterestComponent(), period.getInstallmentNumber());
             final Money feeChargesWaivedForRepaymentPeriod = cumulativeFeeChargesWaivedWithin(startDate, period.getDueDate(), loanCharges,
