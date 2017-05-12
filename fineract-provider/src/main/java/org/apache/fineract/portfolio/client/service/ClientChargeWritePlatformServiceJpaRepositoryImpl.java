@@ -63,6 +63,7 @@ import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientTransaction;
 import org.apache.fineract.portfolio.client.domain.ClientTransactionRepository;
 import org.apache.fineract.portfolio.client.exception.ClientHasNoGroupAssociationException;
+import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.exception.DuedateIsNotMeetingDateException;
 import org.apache.fineract.portfolio.client.exception.GroupAndClientChargeNotInSynWithMeeting;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
@@ -140,6 +141,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 			this.clientChargeDataValidator.validateAdd(command.json());
 
 			final Client client = clientRepository.getActiveClientInUserScope(clientId);
+                        if (client.isNotActive()) { throw new ClientNotActiveException(client.getId()); }
 			final Long chargeDefinitionId = command.longValueOfParameterNamed(ClientApiConstants.chargeIdParamName);
 			this.fineractEntityAccessUtil
                     .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
