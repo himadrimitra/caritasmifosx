@@ -23,7 +23,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
-import com.finflux.reconcilation.bank.data.BankData;
 import com.finflux.reconcilation.bank.service.BankReadPlatformService;
 import com.finflux.task.template.data.IdAndName;
 import com.finflux.task.template.data.TaskConfigTemplateEntityData;
@@ -98,16 +97,6 @@ public class TaskConfigTemplateReadServiceImpl implements TaskConfigTemplateRead
             for(OfficeData officeData:offices)
             {
                 IdAndName idAndName=new IdAndName(officeData.getId(),officeData.name());
-                idAndNameList.add(idAndName);
-            }
-            taskConfigTemplateEntityData=new TaskConfigTemplateEntityData(entity, idAndNameList);
-        }
-        else if(TaskConfigTemplateEntityType.BANK.getValue()==entity.getValue())
-        {
-            List<BankData> banks=this.bankReadPlatformService.retrieveAllBanks();
-            for(BankData bank:banks)
-            {
-                IdAndName idAndName=new IdAndName(bank.getId(),bank.getName());
                 idAndNameList.add(idAndName);
             }
             taskConfigTemplateEntityData=new TaskConfigTemplateEntityData(entity, idAndNameList);
