@@ -16,8 +16,7 @@ public enum TaskConfigTemplateEntityType
     CENTER(1,"taskTemplateEntityType.center",TaskEntityType.CENTER,TaskConfigKey.CENTER_ID),
     CLIENT(2,"taskTemplateEntityType.client",TaskEntityType.CLIENT,TaskConfigKey.CLIENT_ID),
     VILLAGE(3,"taskTemplateEntityType.village",TaskEntityType.VILLAGE,TaskConfigKey.VILLAGE_ID),
-    BANK(4,"taskTemplateEntityType.bank",TaskEntityType.BANK,TaskConfigKey.BANK_ID),
-    OFFICE(5,"taskTemplateEntityType.office",TaskEntityType.OFFICE,TaskConfigKey.OFFICE_ID);
+    OFFICE(4,"taskTemplateEntityType.office",TaskEntityType.OFFICE,TaskConfigKey.OFFICE_ID);
     
     private final Integer value;
     private final String code;

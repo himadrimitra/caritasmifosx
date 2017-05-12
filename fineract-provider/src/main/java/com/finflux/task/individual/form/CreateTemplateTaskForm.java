@@ -5,7 +5,7 @@ public class CreateTemplateTaskForm
 {
 
     private long templateId;
-    private long entity_id;
+    private long entityId;
     private long userId;
     private String duedate;
     private String duetime;
@@ -28,11 +28,11 @@ public class CreateTemplateTaskForm
     }
     
     public long getEntity_id() {
-        return this.entity_id;
+        return this.entityId;
     }
     
     public void setEntity_id(long entity_id) {
-        this.entity_id = entity_id;
+        this.entityId = entity_id;
     }
     
     public long getUserId() {

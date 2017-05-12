@@ -15,10 +15,12 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.task.data.TaskConfigKey;
 import com.finflux.task.data.TaskType;
+import com.finflux.task.domain.TaskActionGroupRepository;
 import com.finflux.task.domain.TaskActivity;
 import com.finflux.task.domain.TaskActivityRepository;
 import com.finflux.task.domain.TaskConfig;
 import com.finflux.task.domain.TaskConfigRepository;
+import com.finflux.task.template.data.TaskConfigActionGroupType;
 import com.finflux.task.template.data.TaskConfigTemplateDataValidator;
 import com.finflux.task.template.domain.TaskConfigTemplate;
 import com.finflux.task.template.domain.TaskConfigTemplateRepository;
@@ -33,16 +35,20 @@ public class TaskConfigTemplateWriteServiceImpl implements TaskConfigTemplateWri
     private final TaskActivityRepository taskActivityRepository;
     private final TaskConfigTemplateRepository taskConfigTemplateRepository;
     private final TaskConfigRepository taskConfigRepository;
+    private final TaskActionGroupRepository taskActionGroupRepository;
     
     @Autowired
-    public TaskConfigTemplateWriteServiceImpl(final TaskConfigRepository taskConfigRepository,final TaskConfigTemplateRepository taskConfigTemplateRepository,final TaskActivityRepository taskActivityRepository,final TaskConfigTemplateDataValidator taskConfigTemplateDataValidator,final PlatformSecurityContext context,final FromJsonHelper fromApiJsonHelper) 
-    {
-       this.context=context;
-       this.fromApiJsonHelper=fromApiJsonHelper;
-       this.taskConfigTemplateDataValidator=taskConfigTemplateDataValidator;
-       this.taskActivityRepository=taskActivityRepository;
-       this.taskConfigTemplateRepository=taskConfigTemplateRepository;
-       this.taskConfigRepository=taskConfigRepository;
+    public TaskConfigTemplateWriteServiceImpl(final TaskConfigRepository taskConfigRepository,
+            final TaskConfigTemplateRepository taskConfigTemplateRepository, final TaskActivityRepository taskActivityRepository,
+            final TaskConfigTemplateDataValidator taskConfigTemplateDataValidator, final PlatformSecurityContext context,
+            final FromJsonHelper fromApiJsonHelper, final TaskActionGroupRepository taskActionGroupRepository) {
+        this.context = context;
+        this.fromApiJsonHelper = fromApiJsonHelper;
+        this.taskConfigTemplateDataValidator = taskConfigTemplateDataValidator;
+        this.taskActivityRepository = taskActivityRepository;
+        this.taskConfigTemplateRepository = taskConfigTemplateRepository;
+        this.taskConfigRepository = taskConfigRepository;
+        this.taskActionGroupRepository = taskActionGroupRepository;
     }
     @Transactional
     @Override
@@ -58,6 +64,7 @@ public class TaskConfigTemplateWriteServiceImpl implements TaskConfigTemplateWri
         map.put(TaskConfigKey.TASKTEMPLATEENTITY_TYPE, form.getEntity_id().toString());
         String configValueMapStr = fromApiJsonHelper.toJson(map);
         taskConfig.setConfigValues(configValueMapStr);
+        taskConfig.setActionGroupId(this.taskActionGroupRepository.findOneByIdentifier(TaskConfigActionGroupType.AdhocTaskGroup.getIdentifier()).getId());
         this.taskConfigRepository.save(taskConfig);
         TaskConfigTemplate taskConfigTemplate=new TaskConfigTemplate();
         taskConfigTemplate.setName(form.getTaskName());

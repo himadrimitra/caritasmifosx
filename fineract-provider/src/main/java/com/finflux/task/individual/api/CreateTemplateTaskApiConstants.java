@@ -11,7 +11,7 @@ public class CreateTemplateTaskApiConstants
     public static final String TASK_ASSIGN = "taskAssign";
     public static final String TemplateIdParamName = "templateId";
     public static final String UserIdParamName = "userId";
-    public static final String EntityIdParamName = "entity_id";
+    public static final String EntityIdParamName = "entityId";
     public static final String DueDateParamName = "duedate";
     public static final String DueTimeParamName = "duetime";
     public static final String DateFormat = "dateFormat";
