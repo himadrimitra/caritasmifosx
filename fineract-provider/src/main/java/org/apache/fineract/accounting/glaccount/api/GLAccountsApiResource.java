@@ -53,6 +53,8 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -115,11 +117,19 @@ public class GLAccountsApiResource {
     public String retrieveAllAccounts(@Context final UriInfo uriInfo, @QueryParam("type") final Integer type,
             @QueryParam("searchParam") final String searchParam, @QueryParam("usage") final Integer usage,
             @QueryParam("manualEntriesAllowed") final Boolean manualEntriesAllowed, @QueryParam("disabled") final Boolean disabled,
-            @QueryParam("fetchRunningBalance") final boolean runningBalance,
+            @QueryParam("fetchRunningBalance") final boolean runningBalance, @QueryParam("isPagination") final boolean isPagination,
+            @QueryParam("offset") final Integer offset, @QueryParam("limit") final Integer limit,
             @QueryParam("classificationType") final Integer classificationType) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
         JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance);
+        if (isPagination) {
+            final SearchParameters searchParameters = SearchParameters.forPagination(offset, limit, null, null);
+            Page<GLAccountData> glAccountDatas = this.glAccountReadPlatformService.retrieveAllGLAccounts(associationParametersData,
+                    searchParameters, usage, type, classificationType);
+            final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+            return this.apiJsonSerializerService.serialize(settings, glAccountDatas, RESPONSE_DATA_PARAMETERS);
+        }
         final List<GLAccountData> glAccountDatas = this.glAccountReadPlatformService.retrieveAllGLAccounts(type, searchParam, usage,
                 manualEntriesAllowed, disabled, associationParametersData, classificationType);
 
