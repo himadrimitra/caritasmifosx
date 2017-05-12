@@ -1691,7 +1691,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
             final Set<LoanCharge> loanCharges = new HashSet<>(1);
             loanCharges.add(loanCharge);
-            this.loanApplicationCommandFromApiJsonHelper.validateLoanCharges(loanCharges, dataValidationErrors);
+            this.loanApplicationCommandFromApiJsonHelper.validateLoanCharges(loanCharges, dataValidationErrors, loan.repaymentScheduleDetail().isInterestRecalculationEnabled());
+            if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        } else if(loan.isMultiDisburmentLoan()){
+            final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+            final Set<LoanCharge> loanCharges = new HashSet<>(1);
+            loanCharges.add(loanCharge);
+            this.loanApplicationCommandFromApiJsonHelper.validateLoanCharges(loanCharges, dataValidationErrors, loan.repaymentScheduleDetail().isInterestRecalculationEnabled());
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
 
