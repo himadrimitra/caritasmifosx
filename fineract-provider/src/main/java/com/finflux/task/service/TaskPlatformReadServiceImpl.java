@@ -20,8 +20,6 @@ import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.Role;
 import org.joda.time.LocalDate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -42,7 +40,6 @@ import com.google.gson.reflect.TypeToken;
 @Service
 public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
-    private final static Logger logger = LoggerFactory.getLogger(TaskPlatformReadServiceImpl.class);
 
     private final JdbcTemplate jdbcTemplate;
     private final PlatformSecurityContext context;
@@ -172,7 +169,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sb.append(",t.short_name AS taskShortName ");
             sb.append(",t.entity_type AS taskEntityTypeId ");
             sb.append(",t.entity_id AS taskEntityId ");
-            sb.append(",t.`status` AS taskStatusId ");
+            sb.append(",t.status AS taskStatusId ");
             sb.append(",t.priority AS taskPriorityId ");
             sb.append(",t.due_date AS taskDueDate ");
             sb.append(",t.task_type AS taskType ");
