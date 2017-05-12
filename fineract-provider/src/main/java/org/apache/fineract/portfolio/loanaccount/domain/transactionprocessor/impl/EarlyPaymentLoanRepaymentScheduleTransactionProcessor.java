@@ -60,7 +60,7 @@ public class EarlyPaymentLoanRepaymentScheduleTransactionProcessor extends Abstr
 
             Money penaltyPortion = loanTransaction.getPenaltyChargesPortion(currency);
             Money feePortion = loanTransaction.getFeeChargesPortion(currency);
-            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
+            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaidForProcessing()) {
                 if (loanChargePaidBy.getLoanCharge().isPenaltyCharge()) {
                     penaltyPortion = loanTransaction.getAmount(currency);
                 } else {
@@ -138,7 +138,7 @@ public class EarlyPaymentLoanRepaymentScheduleTransactionProcessor extends Abstr
 
             Money penaltyPortion = loanTransaction.getPenaltyChargesPortion(currency);
             Money feePortion = loanTransaction.getFeeChargesPortion(currency);
-            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
+            for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaidForProcessing()) {
                 if (loanChargePaidBy.getLoanCharge().isPenaltyCharge()) {
                     penaltyPortion = loanTransaction.getAmount(currency);
                 } else {

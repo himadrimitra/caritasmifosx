@@ -38,6 +38,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.infrastructure.core.domain.AbstractAuditableEagerFetchCreatedBy;
@@ -147,6 +148,9 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     @LazyCollection(LazyCollectionOption.TRUE)
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "loanTransaction", orphanRemoval = true)
     private Set<GroupLoanIndividualMonitoringTransaction> groupLoanIndividualMonitoringTransactions = new HashSet<>();
+    
+    @Transient
+    private Set<LoanChargePaidBy> loanChargesPaidTemp = new HashSet<>();
 
     protected LoanTransaction() {
         this.loan = null;
@@ -316,7 +320,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 loanTransaction.reversed, loanTransaction.paymentDetail, loanTransaction.externalId, loanTransaction.getCreatedDate(),
                 loanTransaction.getCreatedBy(), loanTransaction.isReconciled, originalTransactionId);
         for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
-            copyTransaction.getLoanChargesPaid().add(
+            copyTransaction.getLoanChargesPaidTemp().add(
                     new LoanChargePaidBy(copyTransaction, loanChargePaidBy.getLoanCharge(), loanChargePaidBy.getAmount(), loanChargePaidBy
                             .getInstallmentNumber()));
         }
@@ -1017,6 +1021,17 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public void setOriginalTransactionId(Long originalTransactionId) {
         this.originalTransactionId = originalTransactionId;
     }
+
     
+    public Set<LoanChargePaidBy> getLoanChargesPaidTemp() {
+        return this.loanChargesPaidTemp;
+    }
     
+    public Set<LoanChargePaidBy> getLoanChargesPaidForProcessing() {
+        Set<LoanChargePaidBy> paidBy = this.loanChargesPaid;
+        if (this.loanChargesPaid.isEmpty()) {
+            paidBy = this.loanChargesPaidTemp;
+        }
+        return paidBy;
+    }
 }
