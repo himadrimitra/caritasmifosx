@@ -47,9 +47,9 @@ public class BankReceiptDataSerializer extends DefaultVoucherDataSerializer {
         PaymentDetail paymentDetail = retrievePaymentDetails(json);
         paymentDetail = this.paymentDetailRepository.save(paymentDetail);
         entry.setPaymentDetailId(paymentDetail.getId());
-        final String voucherNumber = generateVoucherNumber(VoucherType.BANK_RECEIPT.getValue(), entry.getOfficeId(), false);
+        final String voucherNumber = generateVoucherNumber(VoucherType.BANK_RECEIPT.getValue(), entry, false);
         final Long relatedVoucherId = null ;
-        Voucher voucher =  new Voucher(VoucherType.BANK_RECEIPT.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(), relatedVoucherId);
+        Voucher voucher =  new Voucher(VoucherType.BANK_RECEIPT.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(entry.getTransactionDate()), relatedVoucherId);
         List<Voucher> vouchers = new ArrayList<>() ;
         vouchers.add(voucher) ;
         return vouchers ;

@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.finflux.vouchers.data.VoucherData;
+import com.finflux.vouchers.exception.InvalidVoucherCommandQueryParamException;
 import com.finflux.vouchers.service.VoucherReadPlatformService;
 
 @Component
@@ -112,8 +113,16 @@ public class VouchersApiResource {
     public String updateVoucher(@QueryParam("voucherType") final String voucherType, @QueryParam("command") final String command, 
             @PathParam("voucherId") final Long voucherId, final String apiRequestBodyAsJson) {
         this.platformSecurityContext.authenticatedUser();
-        CommandWrapper commandWrapper = new CommandWrapperBuilder().updateVoucher(voucherType, voucherId).withJson(apiRequestBodyAsJson).build();
-        final CommandProcessingResult commandProcessingResult = this.commandsSourceWritePlatformService.logCommandSource(commandWrapper);
-        return this.toApiJsonSerializer.serialize(commandProcessingResult);
+        if("UpdateVoucher".equals(command)) {
+            CommandWrapper commandWrapper = new CommandWrapperBuilder().updateVoucher(voucherType, voucherId).withJson(apiRequestBodyAsJson).build();
+            final CommandProcessingResult commandProcessingResult = this.commandsSourceWritePlatformService.logCommandSource(commandWrapper);
+            return this.toApiJsonSerializer.serialize(commandProcessingResult);    
+        }else if("ReverseVoucher".equals(command)){
+            CommandWrapper commandWrapper = new CommandWrapperBuilder().reverseVoucher(voucherType, voucherId).withJson(apiRequestBodyAsJson).build();
+            final CommandProcessingResult commandProcessingResult = this.commandsSourceWritePlatformService.logCommandSource(commandWrapper);
+            return this.toApiJsonSerializer.serialize(commandProcessingResult); 
+        }
+        
+        throw new InvalidVoucherCommandQueryParamException(command) ;
     }
 }

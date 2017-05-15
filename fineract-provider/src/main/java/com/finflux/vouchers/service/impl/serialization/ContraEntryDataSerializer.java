@@ -47,9 +47,9 @@ public class ContraEntryDataSerializer extends DefaultVoucherDataSerializer {
         PaymentDetail paymentDetail = retrievePaymentDetails(json);
         paymentDetail = this.paymentDetailRepository.save(paymentDetail);
         entry.setPaymentDetailId(paymentDetail.getId());
-        final String voucherNumber = generateVoucherNumber(VoucherType.CONTRA_ENTRY.getValue(), entry.getOfficeId(), false);
+        final String voucherNumber = generateVoucherNumber(VoucherType.CONTRA_ENTRY.getValue(), entry, false);
         final Long relatedVoucherId = null ;
-        Voucher voucher = new Voucher(VoucherType.CONTRA_ENTRY.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(), relatedVoucherId);
+        Voucher voucher = new Voucher(VoucherType.CONTRA_ENTRY.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(entry.getTransactionDate()), relatedVoucherId);
         List<Voucher> vouchers = new ArrayList<>() ;
         vouchers.add(voucher) ;
         return vouchers ;

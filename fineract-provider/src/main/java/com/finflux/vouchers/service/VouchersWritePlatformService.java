@@ -8,4 +8,6 @@ public interface VouchersWritePlatformService {
     CommandProcessingResult createVoucher(final String voucherType, final JsonCommand command);
     
     CommandProcessingResult updateVoucher(final String voucherType, Long voucherId, JsonCommand command) ;
+    
+    CommandProcessingResult reverseVoucher(final String voucherType, Long voucherId, JsonCommand command) ;
 }

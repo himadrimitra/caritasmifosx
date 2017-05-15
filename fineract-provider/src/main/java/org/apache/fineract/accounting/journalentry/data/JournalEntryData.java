@@ -71,6 +71,7 @@ public class JournalEntryData {
     private final String referenceNumber;
 
     private Long reversalId ;
+    
     @SuppressWarnings("unused")
     private final TransactionDetailData transactionDetails;
     
@@ -124,5 +125,13 @@ public class JournalEntryData {
     
     public void setJournalEntryDetails(final Collection<JournalEntryDetailData> journalEntryDetails) {
         this.journalEntryDetails = journalEntryDetails ;
+    }
+    
+    public boolean isReversed() {
+        return this.reversed ;
+    }
+    
+    public Long getReversedJournalEntryId() {
+        return this.reversalId ;
     }
 }

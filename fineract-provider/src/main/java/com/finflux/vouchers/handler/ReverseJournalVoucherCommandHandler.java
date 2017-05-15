@@ -12,19 +12,19 @@ import com.finflux.vouchers.constants.VoucherType;
 import com.finflux.vouchers.service.VouchersWritePlatformService;
 
 @Service
-@CommandType(entity = "CASHPAYMENT_VOUCHER", action = "REVERSE")
-public class ReverseCashPaymentVoucherCommandHandler implements NewCommandSourceHandler {
+@CommandType(entity = "JVENTRY_VOUCHER", action = "REVERSE")
+public class ReverseJournalVoucherCommandHandler implements NewCommandSourceHandler {
 
     private final VouchersWritePlatformService voucherWritePlatformService ;
     
     @Autowired
-    public ReverseCashPaymentVoucherCommandHandler(final VouchersWritePlatformService voucherWritePlatformService) {
+    public ReverseJournalVoucherCommandHandler(final VouchersWritePlatformService voucherWritePlatformService) {
         this.voucherWritePlatformService = voucherWritePlatformService ;
     }
 
     @Transactional
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.voucherWritePlatformService.reverseVoucher(VoucherType.CASH_PAYMENT.getCode(), command.entityId(), command) ;
+        return this.voucherWritePlatformService.reverseVoucher(VoucherType.JV_ENTRY.getCode(), command.entityId(), command) ;
     }
 }

@@ -38,12 +38,13 @@ public class InterBranchCashTransferVoucherDataSerializer extends DefaultVoucher
     @Override
     public List<Voucher> validateAndCreateVouchers(final String json) {
         List<JournalEntry> journalEntries = retrieveFromJournalEnties(json, interbranch_supportedParameters) ;
-        final String financialYear = getCurrentFinancialYear() ;
+        
         final Long relatedVoucherId = null ;
         List<Voucher> vouchers = new ArrayList<>() ;
         for(int i = 0 ; i < journalEntries.size(); i++) {
             JournalEntry entry = journalEntries.get(i) ;
-            final String voucherNumber = generateVoucherNumber(VoucherType.INTER_BRANCH_CASH_TRANSFER.getValue(), entry.getOfficeId(), i>0);
+            final String financialYear = getCurrentFinancialYear(entry.getTransactionDate()) ;
+            final String voucherNumber = generateVoucherNumber(VoucherType.INTER_BRANCH_CASH_TRANSFER.getValue(), entry, i>0);
             vouchers.add(new Voucher(VoucherType.INTER_BRANCH_CASH_TRANSFER.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), financialYear, relatedVoucherId));
         }
         return vouchers ;
