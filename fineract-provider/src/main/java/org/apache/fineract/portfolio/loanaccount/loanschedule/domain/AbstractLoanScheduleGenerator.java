@@ -2084,7 +2084,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             if (map.containsKey(mapEntry.getKey())) {
                 value = value.plus(map.get(mapEntry.getKey()));
             }
-            if (!value.isZero()) {
+            if(value.isZero()){
+                map.remove(mapEntry.getKey());
+            }else{
                 map.put(mapEntry.getKey(), value);
             }
         }
@@ -2094,7 +2096,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             if (map.containsKey(mapEntry.getKey())) {
                 value = value.plus(map.get(mapEntry.getKey()));
             }
-            if (!value.isZero()) {
+            if(value.isZero()){
+                map.remove(mapEntry.getKey());
+            }else{
                 map.put(mapEntry.getKey(), value);
             }
         }
