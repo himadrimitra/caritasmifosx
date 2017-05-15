@@ -33,6 +33,6 @@ public interface VouchersApiConstants {
     String BANK_RECEIPT = "Bank Receipt";
     String CONTRA_ENTRY = "Contra Entry";
     String JV_ENTRY = "Journal Voucher";
-    String INTER_BRANCH_CASH_TRANSFER = "Inter Branch Cash Transfer";
-    String INTER_BRANCH_BANK_TRANSFER = "Inter Branch Bank Transfer";
+    String INTER_BRANCH_CASH_TRANSFER = "Inter-Branch Cash Transfer";
+    String INTER_BRANCH_BANK_TRANSFER = "Inter-Branch Bank Transfer";
 }

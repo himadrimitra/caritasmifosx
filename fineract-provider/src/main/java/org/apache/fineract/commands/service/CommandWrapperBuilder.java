@@ -3983,4 +3983,13 @@ public class CommandWrapperBuilder {
         this.href = "/vouchers?voucherType=" + voucherType;
         return this;
     }
+    
+    public CommandWrapperBuilder reverseVoucher(String voucherType, final Long voucherId) {
+        // To Support different type of vouchers
+        this.entityName = voucherType.toUpperCase()+"_VOUCHER" ; 
+        this.actionName = "REVERSE";
+        this.entityId = voucherId;
+        this.href = "/vouchers?voucherType=" + voucherType;
+        return this;
+    }
 }

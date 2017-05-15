@@ -9,4 +9,6 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long>, JpaSpec
 
     @Query("select count(voucher) from Voucher voucher where voucher.voucherType=:voucherType and voucher.financialYear=:financialYear")
     Integer retrieveVouchersCount(@Param("voucherType") Integer voucherType, @Param("financialYear") String financialYear);
+    
+    Voucher findVoucherByRelatedVoucherId(@Param("relatedVoucherId") Long relatedVoucherId);
 }

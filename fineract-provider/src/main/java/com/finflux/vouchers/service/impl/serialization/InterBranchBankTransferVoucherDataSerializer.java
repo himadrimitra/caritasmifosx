@@ -46,13 +46,13 @@ public class InterBranchBankTransferVoucherDataSerializer extends DefaultVoucher
         List<JournalEntry> journalEntries = retrieveFromJournalEnties(json, interbranch_supportedParameters_withPaymentDetails) ;
         PaymentDetail paymentDetail = retrievePaymentDetails(json);
         paymentDetail = this.paymentDetailRepository.save(paymentDetail);
-        String currentFinancialYear = getCurrentFinancialYear() ;
         final Long relatedVoucherId = null ;
         List<Voucher> vouchers = new ArrayList<>() ;
         for(int i = 0 ; i < journalEntries.size(); i++) {
             JournalEntry entry = journalEntries.get(i) ;
+            String currentFinancialYear = getCurrentFinancialYear(entry.getTransactionDate()) ;
             entry.setPaymentDetailId(paymentDetail.getId());
-            final String voucherNumber = generateVoucherNumber(VoucherType.INTER_BRANCH_BANK_TRANSFER.getValue(), entry.getOfficeId(), i>0);
+            final String voucherNumber = generateVoucherNumber(VoucherType.INTER_BRANCH_BANK_TRANSFER.getValue(), entry, i>0);
             vouchers.add(new Voucher(VoucherType.INTER_BRANCH_BANK_TRANSFER.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), currentFinancialYear, relatedVoucherId));
         }
         

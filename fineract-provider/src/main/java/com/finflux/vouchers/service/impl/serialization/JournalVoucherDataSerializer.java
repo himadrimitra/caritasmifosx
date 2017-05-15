@@ -38,9 +38,9 @@ public class JournalVoucherDataSerializer extends DefaultVoucherDataSerializer {
     @Override
     public List<Voucher> validateAndCreateVouchers(final String json) {
         JournalEntry entry = retrieveJournalEntry(json, supportedParameters);
-        final String voucherNumber = generateVoucherNumber(VoucherType.JV_ENTRY.getValue(), entry.getOfficeId(), false);
+        final String voucherNumber = generateVoucherNumber(VoucherType.JV_ENTRY.getValue(), entry, false);
         final Long relatedVoucherId = null ;
-        Voucher voucher = new Voucher(VoucherType.JV_ENTRY.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(), relatedVoucherId);
+        Voucher voucher = new Voucher(VoucherType.JV_ENTRY.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(entry.getTransactionDate()), relatedVoucherId);
         List<Voucher> vouchers = new ArrayList<>() ;
         vouchers.add(voucher) ;
         return vouchers ;

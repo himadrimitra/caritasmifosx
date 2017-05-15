@@ -38,9 +38,9 @@ public class CashPaymentDataSerializer extends DefaultVoucherDataSerializer {
     @Override
     public List<Voucher> validateAndCreateVouchers(final String json) {
         JournalEntry entry = retrieveJournalEntry(json, supportedParameters);
-        final String voucherNumber = generateVoucherNumber(VoucherType.CASH_PAYMENT.getValue(), entry.getOfficeId(), false);
+        final String voucherNumber = generateVoucherNumber(VoucherType.CASH_PAYMENT.getValue(), entry, false);
         final Long relatedVoucherId = null ;
-        Voucher voucher = new Voucher(VoucherType.CASH_PAYMENT.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(), relatedVoucherId);
+        Voucher voucher = new Voucher(VoucherType.CASH_PAYMENT.getValue(), voucherNumber, entry, getJournalEntryAmount(entry), getCurrentFinancialYear(entry.getTransactionDate()), relatedVoucherId);
         List<Voucher> vouchers = new ArrayList<>() ;
         vouchers.add(voucher) ;
         return vouchers ;

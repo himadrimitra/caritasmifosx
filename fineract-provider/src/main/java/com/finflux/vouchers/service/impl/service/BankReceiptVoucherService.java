@@ -6,6 +6,8 @@ import java.util.List;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.domain.GLClassificationType;
 import org.apache.fineract.accounting.glaccount.service.GLAccountReadPlatformService;
+import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepositoryWrapper;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
@@ -30,8 +32,10 @@ public class BankReceiptVoucherService extends VoucherService {
     public BankReceiptVoucherService(final BankReceiptDataSerializer bankReceiptDataSerializer,
             final VoucherRepositoryWrapper voucherRepostiroyWrapper, final PaymentDetailRepository paymentDetailsRepositoryWrapper,
             final GLAccountReadPlatformService glAccountReadPlatformService,
-            final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
-        super(key, voucherRepostiroyWrapper, paymentDetailsRepositoryWrapper, glAccountReadPlatformService, paymentTypeReadPlatformService);
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final PlatformSecurityContext context, final JournalEntryRepositoryWrapper  journalEntryRepositoryWrapper) {
+        super(key, voucherRepostiroyWrapper, paymentDetailsRepositoryWrapper, glAccountReadPlatformService, paymentTypeReadPlatformService,
+                context, journalEntryRepositoryWrapper);
         this.bankReceiptDataSerializer = bankReceiptDataSerializer;
     }
 

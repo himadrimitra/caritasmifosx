@@ -89,9 +89,15 @@ public class VoucherReadPlatformServiceImpl implements VoucherReadPlatformServic
         VoucherData voucherData = this.jdbcTemplate.queryForObject(sqlString, mapper, new Object[] { voucherId });
         JournalEntryDetailsMapper detailsMapper = new JournalEntryDetailsMapper();
         String detailsQuery = "select " + detailsMapper.schema() + " where journalEntryDetail.journal_entry_id = ?";
-        List<JournalEntryDetailData> journalEntryDetails = this.jdbcTemplate.query(detailsQuery, detailsMapper, new Object[] { voucherData
-                .getJournalEntryData().getId() });
-        voucherData.setJournalEntryDetails(journalEntryDetails);
+        List<JournalEntryDetailData> detailedEntries = new ArrayList<>() ;
+        detailedEntries.addAll(this.jdbcTemplate.query(detailsQuery, detailsMapper, new Object[] { voucherData
+                .getJournalEntryData().getId() }));
+        if(voucherData.isReversed()) {
+            detailsQuery = "select " + detailsMapper.schema() + " where journalEntryDetail.journal_entry_id = ?";
+            detailedEntries.addAll(this.jdbcTemplate.query(detailsQuery, detailsMapper, new Object[] { voucherData
+                    .getJournalEntryData().getReversedJournalEntryId()})) ;
+        }
+        voucherData.setJournalEntryDetails(detailedEntries);
         return voucherData;
     }
 

@@ -51,6 +51,10 @@ public class VoucherRepositoryWrapper {
         return voucher ;
     }
     
+    public Voucher findVoucherByRelatedVoucherId(final Long relatedVoucherId) {
+        return this.voucherRepository.findVoucherByRelatedVoucherId(relatedVoucherId) ;
+    }
+    
     private void updateAccountRunningComputationDetail(final JournalEntry journalEntry) {
 
         Set<Long> accountIds = new HashSet<>();

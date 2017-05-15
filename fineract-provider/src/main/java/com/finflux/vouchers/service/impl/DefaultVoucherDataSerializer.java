@@ -130,9 +130,9 @@ public abstract class DefaultVoucherDataSerializer {
         final LocalDate transactionDate = retrieveDateNamed(VouchersApiConstants.transactionDate_ParamName, element, baseDataValidator,
                 notNullCheckRequired);
         List<JournalEntryDetail> debitAccountsJsonArray = retrieveAccounts(VouchersApiConstants.debitAccounts_ParamName, element,
-                JournalEntryType.DEBIT);
+                JournalEntryType.DEBIT, baseDataValidator);
         List<JournalEntryDetail> creditAccountsJsonArray = retrieveAccounts(VouchersApiConstants.creditAccounts_ParamName, element,
-                JournalEntryType.CREDIT);
+                JournalEntryType.CREDIT, baseDataValidator);
         validateDebitAndCreditAccounts(debitAccountsJsonArray, creditAccountsJsonArray);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         this.officeRepositoryWrapper.findOneWithNotFoundDetection(officeId);
@@ -182,11 +182,11 @@ public abstract class DefaultVoucherDataSerializer {
 
         // From Office Credit accounts
         List<JournalEntryDetail> creditAccountsJsonArray = retrieveAccounts(VouchersApiConstants.creditAccounts_ParamName, element,
-                JournalEntryType.CREDIT);
+                JournalEntryType.CREDIT, baseDataValidator);
 
         // To Office Debit accounts
         List<JournalEntryDetail> debitAccountsJsonArray = retrieveAccounts(VouchersApiConstants.creditAccounts_ParamName, element,
-                JournalEntryType.DEBIT);
+                JournalEntryType.DEBIT, baseDataValidator);
 
         validateDebitAndCreditAccounts(debitAccountsJsonArray, creditAccountsJsonArray);
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
@@ -353,7 +353,7 @@ public abstract class DefaultVoucherDataSerializer {
     }
 
     protected List<JournalEntryDetail> retrieveAccounts(final String paramName, final JsonElement element,
-            final JournalEntryType entryType) {
+            final JournalEntryType entryType, final DataValidatorBuilder baseDataValidator) {
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         final List<JournalEntryDetail> accounts = new ArrayList<>();
@@ -363,6 +363,7 @@ public abstract class DefaultVoucherDataSerializer {
             final GLAccount glAccount = this.glAccountRepositoryWrapper.findOneWithNotFoundDetection(glAccountId);
             final BigDecimal transactionAmount = this.fromApiJsonHelper.extractBigDecimalNamed(VouchersApiConstants.amount_ParamName,
                     object, locale);
+            baseDataValidator.reset().parameter(VouchersApiConstants.amount_ParamName).value(transactionAmount).notNull().positiveAmount();
             accounts.add(JournalEntryDetail.createNew(glAccount, entryType, transactionAmount));
         }
         return accounts;
@@ -376,18 +377,17 @@ public abstract class DefaultVoucherDataSerializer {
         return transactionId;
     }
 
-    protected String generateVoucherNumber(final Integer voucherType, final Long officeId, boolean increment) {
-        final String finYear = getCurrentFinancialYear() ;
+    protected String generateVoucherNumber(final Integer voucherType, final JournalEntry entry, boolean increment) {
+        final String finYear = getCurrentFinancialYear(entry.getTransactionDate()) ;
         Integer count = this.voucherRepository.retrieveVouchersCount(voucherType, finYear) + 1;
         if (increment) count = count + 1;
-        return getVoucherPrefixKey() + "/" + officeId.toString() + "/" + finYear + "/" + count;
+        return getVoucherPrefixKey() + "/" + entry.getOfficeId().toString() + "/" + finYear + "/" + count;
     }
 
-    protected String getCurrentFinancialYear() {
+    protected String getCurrentFinancialYear(final Date transactionDate) {
         int  financialYearStart = getFinancialYearStart() ; 
-        Date currentDate = DateUtils.getDateOfTenant();
         Calendar cal = Calendar.getInstance();
-        cal.setTime(currentDate);
+        cal.setTime(transactionDate);
         int year = cal.get(Calendar.YEAR);
         Integer currentMonth = cal.get(Calendar.MONTH)+1 ; //Calendar month value for January is 0
         StringBuilder builder = new StringBuilder() ;

@@ -21,6 +21,8 @@ public class VoucherData {
 
     private final BigDecimal voucherAmount;
 
+    private final boolean isReversed ;
+    
     private VoucherData(Long voucherId, String voucherNumber, EnumOptionData voucherType, JournalEntryData journalEntryData,
             final VoucherTemplateData templateData, final BigDecimal voucherAmount) {
         super();
@@ -28,6 +30,11 @@ public class VoucherData {
         this.voucherNumber = voucherNumber;
         this.voucherType = voucherType;
         this.journalEntryData = journalEntryData;
+        if(this.journalEntryData != null && this.journalEntryData.getReversedJournalEntryId() != null && this.journalEntryData.getReversedJournalEntryId()> 0){
+            this.isReversed = true ;
+        }else {
+            this.isReversed = false ;
+        }
         this.templateData = templateData;
         this.voucherAmount = voucherAmount;
     }
@@ -73,5 +80,9 @@ public class VoucherData {
 
     public BigDecimal getVoucherAmount() {
         return this.voucherAmount;
+    }
+    
+    public boolean isReversed() {
+        return this.isReversed ;
     }
 }

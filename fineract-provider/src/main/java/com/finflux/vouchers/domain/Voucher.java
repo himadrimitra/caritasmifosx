@@ -77,4 +77,16 @@ public class Voucher extends AbstractPersistable<Long> {
     public void setRelatedVoucherId(final Long relatedVoucherId) {
         this.relatedVoucherId = relatedVoucherId ;
     }
+    
+    public Long getRelatedVoucherId() {
+        return this.relatedVoucherId ;
+    }
+    
+    public boolean isReversed() {
+        return this.journalEntry.isReversed() ;
+    }
+    
+    public String getTransactionId() {
+        return this.journalEntry.getTransactionIdentifier() ;
+    }
 }

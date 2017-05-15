@@ -9,8 +9,10 @@ import java.util.Map;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
 import org.apache.fineract.accounting.glaccount.domain.GLClassificationType;
 import org.apache.fineract.accounting.glaccount.service.GLAccountReadPlatformService;
+import org.apache.fineract.accounting.journalentry.domain.JournalEntryRepositoryWrapper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepositoryWrapper;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
@@ -42,8 +44,10 @@ public class InterBranchCashTransferVoucherService extends VoucherService {
             final VoucherRepositoryWrapper voucherRepostiroyWrapper, final OfficeRepositoryWrapper officeRepository,
             final PaymentDetailRepository paymentDetailsRepositoryWrapper,
             final GLAccountReadPlatformService glAccountReadPlatformService,
-            final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
-        super(key, voucherRepostiroyWrapper, paymentDetailsRepositoryWrapper, glAccountReadPlatformService, paymentTypeReadPlatformService);
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+            final PlatformSecurityContext context, final JournalEntryRepositoryWrapper  journalEntryRepositoryWrapper) {
+        super(key, voucherRepostiroyWrapper, paymentDetailsRepositoryWrapper, glAccountReadPlatformService, paymentTypeReadPlatformService,
+                context, journalEntryRepositoryWrapper);
         this.interBranchCashTransferVoucherDataSerializer = interBranchCashTransferVoucherDataSerializer;
         this.officeRepository = officeRepository;
     }
