@@ -158,4 +158,6 @@ public interface LoanReadPlatformService {
     Map<String, Object> retrieveLoanProductIdApprovedAmountClientId(final Long loanId);
 
     LoanTransactionData retrieveLoanPrePaymentTemplate(LocalDate onDate, boolean calcualteInterestTillDate, Loan loan);
+    
+    LoanTransactionData retrieveLoanInstallmentDetails(Long loanId);
 }

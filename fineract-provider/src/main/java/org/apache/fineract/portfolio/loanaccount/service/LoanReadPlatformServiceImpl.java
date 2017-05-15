@@ -3102,5 +3102,49 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         return this.namedParameterJdbcTemplate.queryForMap(sql.toString(), paramMap);
     }
+    
+    @Override
+    public LoanTransactionData retrieveLoanInstallmentDetails(Long id) {
+        try {
+
+            final LoanTransactionDataMapper loanTransactionDataMapper = new LoanTransactionDataMapper();
+            final String sql = loanTransactionDataMapper.installmentDetailsSchema();
+
+            Date currentDate = DateUtils.getDateOfTenant();
+            final LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, loanTransactionDataMapper,
+                    new Object[] {currentDate, id });
+
+            return loanTransactionData;
+        } catch (final EmptyResultDataAccessException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static final class LoanTransactionDataMapper implements RowMapper<LoanTransactionData> {
+
+        public String installmentDetailsSchema() {
+            return " SELECT loan.id,(IFNULL(repayment.principal_amount,0) + IFNULL(repayment.interest_amount,0) + IFNULL(repayment.fee_charges_amount,0)+ IFNULL(repayment.penalty_charges_amount,0)- IFNULL(repayment.total_paid_in_advance_derived,0)) AS EMI,  "
+                    + " repayment.dueDate AS next_EMI_Date, loan.total_outstanding_derived AS Total_Outstanding, IFNULL(loan_arre.total_overdue_derived,0) AS Total_Overdue, "
+                    + " (IFNULL(loan_arre.total_overdue_derived,0)+ IFNULL(repayment.principal_amount,0)+ IFNULL(repayment.interest_amount,0)+ IFNULL(repayment.fee_charges_amount,0)+ IFNULL(repayment.penalty_charges_amount,0)- IFNULL(repayment.total_paid_in_advance_derived,0)) AS Overdue_with_next_emi "
+                    + " FROM m_loan loan "
+                    + " INNER JOIN m_loan_repayment_schedule repayment ON loan.id = repayment.loan_id AND repayment.duedate >= ? "
+                    + " LEFT JOIN m_loan_arrears_aging loan_arre ON loan.id = loan_arre.loan_id " + " WHERE loan.id = ? LIMIT 1";
+        }
+
+        @Override
+        public LoanTransactionData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final BigDecimal emi = rs.getBigDecimal("EMI");
+            final LocalDate nextEMIDate = JdbcSupport.getLocalDate(rs, "next_EMI_Date");
+            final BigDecimal totalOutstanding = rs.getBigDecimal("Total_Outstanding");
+            final BigDecimal totalOverdue = rs.getBigDecimal("Total_Overdue");
+
+            final BigDecimal OverdueWithNextEMI = rs.getBigDecimal("Overdue_with_next_emi");
+
+            return new LoanTransactionData(id, emi, nextEMIDate, totalOutstanding, totalOverdue, OverdueWithNextEMI);
+        }
+    }
 
 }

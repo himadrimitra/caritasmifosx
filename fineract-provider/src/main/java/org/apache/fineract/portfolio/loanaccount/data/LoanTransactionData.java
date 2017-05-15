@@ -89,6 +89,8 @@ public class LoanTransactionData {
     private final LoanAccountData loanAccountData;
     private final Collection<FingerPrintData> fingerPrintData;
     private List<GroupLoanIndividualMonitoringTransactionData> glimTransactions;
+    @SuppressWarnings("unused")
+    private final LoanOverdueData loanOverdueData;
 
     public static LoanTransactionData templateOnTop(final LoanTransactionData loanTransactionData,
             final Collection<PaymentTypeData> paymentTypeOptions) {
@@ -209,6 +211,7 @@ public class LoanTransactionData {
         this.createdBy = null;
         this.updatedBy = null;
         this.glimTransactions = null;
+        this.loanOverdueData = null;
     }
     
     public LoanTransactionData(final Long id, final Long officeId, final String officeName, final LoanTransactionEnumData transactionType,
@@ -249,7 +252,7 @@ public class LoanTransactionData {
         this.loanAccountData = null;
         this.fingerPrintData = null;
         this.glimTransactions = glimTransactions;
-
+        this.loanOverdueData = null;
     }
 
     public LoanTransactionData(Long id, LoanTransactionEnumData transactionType, LocalDate date, BigDecimal totalAmount,
@@ -325,6 +328,7 @@ public class LoanTransactionData {
          this.createdBy = null;
          this.updatedBy = null;
          this.glimTransactions = null;
+         this.loanOverdueData = null;
 	}
 
     private LoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -363,6 +367,7 @@ public class LoanTransactionData {
         this.createdBy = null;
         this.updatedBy = null;
         this.glimTransactions = null;
+        this.loanOverdueData = null;
     }
 
     public static LoanTransactionData LoanTransactionDataForReconciliationLoanTransactionData(Long id, final Long officeId, final String officeName, LoanTransactionEnumData transactionType,
@@ -402,6 +407,7 @@ public class LoanTransactionData {
         this.createdBy = loanTransactionData.createdBy;
         this.updatedBy = loanTransactionData.updatedBy;
         this.glimTransactions = loanTransactionData.glimTransactions;
+        this.loanOverdueData = null;
     }
     
     public static LoanTransactionData LoanTransactionRepaymentTemplate(final LoanTransactionData loanTransactionData, final LoanAccountData loanAccountData){
@@ -437,6 +443,40 @@ public class LoanTransactionData {
 
 	}
 
+    public LoanTransactionData(final Long loanId, final BigDecimal emi, final LocalDate nextEMIDate, final BigDecimal totalOutstanding,
+            final BigDecimal totalOverdue, final BigDecimal OverdueWithNextEMI) {
+        this.id = loanId;
+        this.officeId = null;
+        this.officeName = null;
+        this.type = null;
+        this.paymentDetailData = null;
+        this.currency = null;
+        this.date = nextEMIDate;
+        this.amount = null;
+        this.principalPortion = null;
+        this.interestPortion = null;
+        this.feeChargesPortion = null;
+        this.penaltyChargesPortion = null;
+        this.unrecognizedIncomePortion = null;
+        this.paymentTypeOptions = null;
+        this.externalId = null;
+        this.transfer = null;
+        this.overpaymentPortion = null;
+        this.fixedEmiAmount = emi;
+        this.outstandingLoanBalance = totalOutstanding;
+        this.submittedOnDate = null;
+        this.manuallyReversed = false;
+        this.possibleNextRepaymentDate = null;
+        this.transactionAuthenticationOptions = null;
+        this.loanAccountData = null;
+        this.fingerPrintData = null;
+        this.createdDate = null;
+        this.updatedDate = null;
+        this.createdBy = null;
+        this.updatedBy = null;
+        this.glimTransactions = null;
+        this.loanOverdueData = new LoanOverdueData(totalOverdue, OverdueWithNextEMI);
+    }
 	public LocalDate dateOf() {
         return this.date;
     }

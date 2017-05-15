@@ -175,7 +175,8 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             sqlBuilder.append("sa.currency_code as currencyCode, sa.currency_digits as currencyDigits,");
             sqlBuilder.append("sa.currency_multiplesof as inMultiplesOf, ");
             sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ");
-            sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol ");
+            sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol, ");
+            sqlBuilder.append("sa.account_balance_derived as balance ");
             sqlBuilder.append("from m_savings_account sa ");
             sqlBuilder.append("join m_savings_product sp ON sa.product_id = sp.id ");
             sqlBuilder.append("join m_currency curr on curr.code = sa.currency_code ");
@@ -216,9 +217,11 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             final Integer inMulitplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
             final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf,
                     currencyDisplaySymbol, currencyNameCode);
+            
+            final BigDecimal balance = rs.getBigDecimal("balance");
 
-            return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
-                    fieldOfficerId, fieldOfficerName, currency);
+            return PortfolioAccountData.instance(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
+                    fieldOfficerId, fieldOfficerName, currency, null, balance);
         }
     }
 
@@ -281,8 +284,8 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf,
                     currencyDisplaySymbol, currencyNameCode);
 
-            return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
-                    fieldOfficerId, fieldOfficerName, currency, amtForTransfer);
+            return PortfolioAccountData.instance(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
+                    fieldOfficerId, fieldOfficerName, currency, amtForTransfer, null);
         }
     }
     
@@ -359,8 +362,8 @@ public class PortfolioAccountReadPlatformServiceImpl implements PortfolioAccount
             final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMulitplesOf,
                     currencyDisplaySymbol, currencyNameCode);
 
-            return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
-                    fieldOfficerId, fieldOfficerName, currency, amtForTransfer);
+            return PortfolioAccountData.instance(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
+                    fieldOfficerId, fieldOfficerName, currency, amtForTransfer, null);
         }
     }
     

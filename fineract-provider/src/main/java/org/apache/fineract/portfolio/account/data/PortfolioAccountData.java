@@ -43,32 +43,23 @@ public class PortfolioAccountData {
     private final String fieldOfficerName;
     private final CurrencyData currency;
     private final BigDecimal amtForTransfer;
+    private final BigDecimal balance;
 
     public static PortfolioAccountData lookup(final Long accountId, final String accountNo) {
-        return new PortfolioAccountData(accountId, accountNo, null, null, null, null, null, null, null, null, null, null, null);
+        return new PortfolioAccountData(accountId, accountNo, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
-    public PortfolioAccountData(final Long id, final String accountNo, final String externalId, final Long groupId, final String groupName,
-            final Long clientId, final String clientName, final Long productId, final String productName, final Long fieldofficerId,
-            final String fieldofficerName, final CurrencyData currency) {
-        this.id = id;
-        this.accountNo = accountNo;
-        this.externalId = externalId;
-        this.groupId = groupId;
-        this.groupName = groupName;
-        this.clientId = clientId;
-        this.clientName = clientName;
-        this.productId = productId;
-        this.productName = productName;
-        this.fieldOfficerId = fieldofficerId;
-        this.fieldOfficerName = fieldofficerName;
-        this.currency = currency;
-        this.amtForTransfer = null;
+    public static PortfolioAccountData instance(final Long id, final String accountNo, final String externalId, final Long groupId,
+            final String groupName, final Long clientId, final String clientName, final Long productId, final String productName,
+            final Long fieldofficerId, final String fieldofficerName, final CurrencyData currency, final BigDecimal amtForTransfer,
+            final BigDecimal balance) {
+        return new PortfolioAccountData(id, accountNo, externalId, groupId, groupName, clientId, clientName, productId, productName,
+                fieldofficerId, fieldofficerName, currency, amtForTransfer, balance);
     }
 
-    public PortfolioAccountData(final Long id, final String accountNo, final String externalId, final Long groupId, final String groupName,
+    private PortfolioAccountData(final Long id, final String accountNo, final String externalId, final Long groupId, final String groupName,
             final Long clientId, final String clientName, final Long productId, final String productName, final Long fieldofficerId,
-            final String fieldofficerName, final CurrencyData currency, final BigDecimal amtForTransfer) {
+            final String fieldofficerName, final CurrencyData currency, final BigDecimal amtForTransfer, final BigDecimal balance) {
         this.id = id;
         this.accountNo = accountNo;
         this.externalId = externalId;
@@ -82,8 +73,9 @@ public class PortfolioAccountData {
         this.fieldOfficerName = fieldofficerName;
         this.currency = currency;
         this.amtForTransfer = amtForTransfer;
+        this.balance = balance;
     }
-
+    
     @Override
     public boolean equals(final Object obj) {
 

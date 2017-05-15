@@ -30,7 +30,7 @@ import org.joda.time.LocalDate;
 public interface AccountTransfersReadPlatformService {
 
     AccountTransferData retrieveTemplate(Long fromOfficeId, Long fromClientId, Long fromAccountId, Integer fromAccountType,
-            Long toOfficeId, Long toClientId, Long toAccountId, Integer toAccountType);
+            Long toOfficeId, Long toClientId, Long toAccountId, Integer toAccountType, final Byte transferType);
 
     Page<AccountTransferData> retrieveAll(SearchParameters searchParameters, Long accountDetailId);
 
