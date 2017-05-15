@@ -19,18 +19,22 @@
 package org.apache.fineract.organisation.monetary.domain;
 
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
+import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MoneyHelper {
     
-    private static RoundingMode roundingMode = null;
-    private static RoundingMode adjustedAmountRoundingMode = null;
+    private static Map<String,RoundingMode> roundingMode = new HashMap<>();
+    private static Map<String,RoundingMode> adjustedAmountRoundingMode = new HashMap<>();
     private static ConfigurationDomainService staticConfigurationDomainService;
     private static final RoundingMode DEFAULT_INTERNAL_ROUNDING_MODE = RoundingMode.HALF_EVEN;
     private static final int DEFAULT_INTERNAL_SCALE = 2;
@@ -45,37 +49,11 @@ public class MoneyHelper {
 
     
     public static RoundingMode getRoundingMode() {
-        if (roundingMode == null) {
-            roundingMode = RoundingMode.valueOf(staticConfigurationDomainService.getRoundingMode());
+        FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        if (roundingMode.get(tenant.getTenantIdentifier()) == null) {
+            roundingMode.put(tenant.getTenantIdentifier(),RoundingMode.valueOf(staticConfigurationDomainService.getRoundingMode()));
         }
-        return roundingMode;
-    }
-    
-    //Glim loan round off interest to floor
-    public static RoundingMode getRoundingModeForInterest() {
-        int floor = 3;
-        if (roundingMode != null) {
-            roundingMode = RoundingMode.valueOf(floor);
-        }
-        return roundingMode;
-    }
-    
-  //Glim loan round off fee charge to half up
-    public static RoundingMode getRoundingModeForFeeCharges() {
-        int halfUp = 4;
-        if (roundingMode != null) {
-            roundingMode = RoundingMode.valueOf(halfUp);
-        }
-        return roundingMode;
-    }
-    
-    //Glim loan round off Emi amount to ceiling
-    public static RoundingMode getRoundingModeForGlimEmiAmount() {
-        int ceiling = 2;
-        if (roundingMode != null) {
-            roundingMode = RoundingMode.valueOf(ceiling);
-        }
-        return roundingMode;
+        return roundingMode.get(tenant.getTenantIdentifier());
     }
     
     public static RoundingMode getRoundingModeForInternalCalculations() {
@@ -87,10 +65,11 @@ public class MoneyHelper {
     }
     
     public static RoundingMode getAdjustedAmountRoundingMode() {
-        if (adjustedAmountRoundingMode == null) {
-            adjustedAmountRoundingMode = RoundingMode.valueOf(staticConfigurationDomainService.getAdjustedAmountRoundingMode());
+        FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        if (adjustedAmountRoundingMode.get(tenant.getTenantIdentifier()) == null) {
+            adjustedAmountRoundingMode.put(tenant.getTenantIdentifier(),RoundingMode.valueOf(staticConfigurationDomainService.getAdjustedAmountRoundingMode()));
         }
-        return adjustedAmountRoundingMode;
+        return adjustedAmountRoundingMode.get(tenant.getTenantIdentifier());
     }
 
 }
