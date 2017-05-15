@@ -48,6 +48,7 @@ import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSer
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
+import org.apache.fineract.portfolio.loanaccount.data.LoanOverdueData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionData;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
@@ -150,7 +151,10 @@ public class LoanTransactionsApiResource {
                 transactionDate = LocalDate.fromDateFields(transactionDateParam.getDate("transactionDate", dateFormat, locale));
             }
             transactionData = this.loanReadPlatformService.retrieveLoanForeclosureTemplate(loanId, transactionDate);
-        } else {
+        } else if (is(commandParam, "currentstatus")) {
+            transactionData = this.loanReadPlatformService.retrieveLoanInstallmentDetails(loanId);
+        }
+        else {
             throw new UnrecognizedQueryParamException("command", commandParam);
         }
 
@@ -246,5 +250,4 @@ public class LoanTransactionsApiResource {
 
         return this.toApiJsonSerializer.serialize(result);
     }
-
 }

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
@@ -70,6 +71,12 @@ public class AccountTransfersReadPlatformServiceImpl implements
 	private final PaginationHelper<AccountTransferData> paginationHelper = new PaginationHelper<>();
 	private final DateTimeFormatter formatter = DateTimeFormat
 			.forPattern("yyyy-MM-dd");
+	
+	//to indicate loan account type 
+	private final Integer mostRelevantForAccountTypeLoan = PortfolioProductType.LOAN.getValue();
+	
+	private final Byte transferToOwnAccount = 1;
+	private final Byte transferToOtherAccount = 2;
 
 	@Autowired
 	public AccountTransfersReadPlatformServiceImpl(
@@ -90,7 +97,7 @@ public class AccountTransfersReadPlatformServiceImpl implements
 			final Long fromClientId, final Long fromAccountId,
 			final Integer fromAccountType, final Long toOfficeId,
 			final Long toClientId, final Long toAccountId,
-			final Integer toAccountType) {
+			final Integer toAccountType, final Byte transferType) {
 
 		final EnumOptionData loanAccountType = AccountTransferEnumerations
 				.accountType(PortfolioAccountType.LOAN);
@@ -128,6 +135,10 @@ public class AccountTransfersReadPlatformServiceImpl implements
 		// template
 		Collection<PortfolioAccountData> fromAccountOptions = null;
 		Collection<PortfolioAccountData> toAccountOptions = null;
+                
+		// For transferring to own account
+         Collection<PortfolioAccountData> toSavingAccountOptions = null;
+                Collection<PortfolioAccountData> toLoanAccountOptions = null;
 
 		Long mostRelevantFromOfficeId = fromOfficeId;
 		Long mostRelevantFromClientId = fromClientId;
@@ -214,13 +225,18 @@ public class AccountTransfersReadPlatformServiceImpl implements
 						mostRelevantToAccountType, mostRelevantToClientId);
 			}
 		}
+		
+               if(transferType != null && transferType.equals(transferToOwnAccount)){
+                        toSavingAccountOptions = retrieveToAccounts(fromAccount, mostRelevantFromAccountType, mostRelevantFromClientId);
+                        toLoanAccountOptions = retrieveToAccounts(fromAccount, mostRelevantForAccountTypeLoan, mostRelevantFromClientId);
+                }
 
 		return AccountTransferData.template(fromOffice, fromClient,
 				fromAccountTypeData, fromAccount, transferDate, toOffice,
 				toClient, toAccountTypeData, toAccount, fromOfficeOptions,
 				fromClientOptions, fromAccountTypeOptions, fromAccountOptions,
 				toOfficeOptions, toClientOptions, toAccountTypeOptions,
-				toAccountOptions);
+				toAccountOptions,toSavingAccountOptions,toLoanAccountOptions);
 	}
 
 	private Collection<PortfolioAccountData> retrieveToAccounts(
@@ -672,7 +688,7 @@ public class AccountTransfersReadPlatformServiceImpl implements
 				toClient, toAccountTypeData, toAccount, fromOfficeOptions,
 				fromClientOptions, fromAccountTypeOptions, fromAccountOptions,
 				toOfficeOptions, toClientOptions, toAccountTypeOptions,
-				toAccountOptions);
+				toAccountOptions,null,null);
 	}
 
 	@Override

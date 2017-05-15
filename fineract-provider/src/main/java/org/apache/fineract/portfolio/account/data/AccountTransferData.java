@@ -57,6 +57,8 @@ public class AccountTransferData {
     private final Collection<ClientData> toClientOptions;
     private final Collection<EnumOptionData> toAccountTypeOptions;
     private final Collection<PortfolioAccountData> toAccountOptions;
+    private final Collection<PortfolioAccountData> toSavingAccountOptions;
+    private final Collection<PortfolioAccountData> toLoanAccountOptions;
 
     public static AccountTransferData template(final OfficeData fromOffice, final ClientData fromClient,
             final EnumOptionData fromAccountType, final PortfolioAccountData fromAccount, final LocalDate transferDate,
@@ -64,7 +66,7 @@ public class AccountTransferData {
             final Collection<OfficeData> fromOfficeOptions, final Collection<ClientData> fromClientOptions,
             final Collection<EnumOptionData> fromAccountTypeOptions, final Collection<PortfolioAccountData> fromAccountOptions,
             final Collection<OfficeData> toOfficeOptions, final Collection<ClientData> toClientOptions,
-            final Collection<EnumOptionData> toAccountTypeOptions, final Collection<PortfolioAccountData> toAccountOptions) {
+            final Collection<EnumOptionData> toAccountTypeOptions, final Collection<PortfolioAccountData> toAccountOptions, final Collection<PortfolioAccountData> toSavingAccountOptions, final Collection<PortfolioAccountData> toLoanAccountOptions) {
         final Long id = null;
         CurrencyData currency = null;
         BigDecimal transferAmount = BigDecimal.ZERO;
@@ -78,7 +80,7 @@ public class AccountTransferData {
         final Boolean reversed = null;
         return new AccountTransferData(id, reversed, fromOffice, fromClient, fromAccountType, fromAccount, currency, transferAmount,
                 transferDate, transferDescription, toOffice, toClient, toAccountType, toAccount, fromOfficeOptions, fromClientOptions,
-                fromAccountTypeOptions, fromAccountOptions, toOfficeOptions, toClientOptions, toAccountTypeOptions, toAccountOptions);
+                fromAccountTypeOptions, fromAccountOptions, toOfficeOptions, toClientOptions, toAccountTypeOptions, toAccountOptions,toSavingAccountOptions,toLoanAccountOptions);
     }
 
     public static AccountTransferData instance(final Long id, final Boolean reversed, final LocalDate transferDate,
@@ -88,7 +90,7 @@ public class AccountTransferData {
 
         return new AccountTransferData(id, reversed, fromOffice, fromClient, fromAccountType, fromAccount, currency, transferAmount,
                 transferDate, transferDescription, toOffice, toClient, toAccountType, toAccount, null, null, null, null, null, null, null,
-                null);
+                null,null,null);
     }
 
     public static AccountTransferData transferBasicDetails(final Long id, final CurrencyData currency, final BigDecimal transferAmount,
@@ -98,7 +100,7 @@ public class AccountTransferData {
         final EnumOptionData toAccountType = null;
 
         return new AccountTransferData(id, reversed, null, null, fromAccountType, null, currency, transferAmount, transferDate,
-                description, null, null, toAccountType, null, null, null, null, null, null, null, null, null);
+                description, null, null, toAccountType, null, null, null, null, null, null, null, null, null,null,null);
     }
 
     private AccountTransferData(final Long id, final Boolean reversed, final OfficeData fromOffice, final ClientData fromClient,
@@ -108,7 +110,7 @@ public class AccountTransferData {
             final Collection<OfficeData> fromOfficeOptions, final Collection<ClientData> fromClientOptions,
             final Collection<EnumOptionData> fromAccountTypeOptions, final Collection<PortfolioAccountData> fromAccountOptions,
             final Collection<OfficeData> toOfficeOptions, final Collection<ClientData> toClientOptions,
-            final Collection<EnumOptionData> toAccountTypeOptions, final Collection<PortfolioAccountData> toAccountOptions) {
+            final Collection<EnumOptionData> toAccountTypeOptions, final Collection<PortfolioAccountData> toAccountOptions, final Collection<PortfolioAccountData> toSavingAccountOptions,final Collection<PortfolioAccountData> toLoanAccountOptions) {
         this.id = id;
         this.reversed = reversed;
         this.fromOffice = fromOffice;
@@ -133,5 +135,7 @@ public class AccountTransferData {
         this.toClientOptions = toClientOptions;
         this.toAccountTypeOptions = toAccountTypeOptions;
         this.toAccountOptions = toAccountOptions;
+        this.toLoanAccountOptions = toLoanAccountOptions;
+        this.toSavingAccountOptions = toSavingAccountOptions;
     }
 }
