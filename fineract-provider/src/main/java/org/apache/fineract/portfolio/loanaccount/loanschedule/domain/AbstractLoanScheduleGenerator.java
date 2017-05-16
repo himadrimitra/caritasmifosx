@@ -1384,12 +1384,16 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     
                 break;
                 case EMI_AMOUNT:
-                    loanApplicationTerms.setFixedEmiAmount(loanTermVariationsData.getDecimalValue());
-                    loanApplicationTerms.setActualFixedEmiAmount(loanTermVariationsData.getDecimalValue());
+                    if(!loanTermVariationsData.isSpecificToInstallment()){
+                        loanApplicationTerms.setFixedEmiAmount(loanTermVariationsData.getDecimalValue());
+                        loanApplicationTerms.setActualFixedEmiAmount(loanTermVariationsData.getDecimalValue());
+                    }
                     variationsData.add(loanTermVariationsData);
                 break;
                 case PRINCIPAL_AMOUNT:
-                    loanApplicationTerms.setFixedPrincipalAmount(loanTermVariationsData.getDecimalValue());
+                    if(!loanTermVariationsData.isSpecificToInstallment()){
+                        loanApplicationTerms.setFixedPrincipalAmount(loanTermVariationsData.getDecimalValue());
+                    }
                     variationsData.add(loanTermVariationsData);
                 break;
                 case GRACE_ON_PRINCIPAL:
