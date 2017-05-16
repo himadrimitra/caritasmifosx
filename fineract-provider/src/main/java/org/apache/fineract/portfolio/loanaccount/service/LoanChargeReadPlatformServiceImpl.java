@@ -261,7 +261,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
         final LoanChargeMapper rm = new LoanChargeMapper();
 
-        final String sql = "select " + rm.schema() + " where lc.id=? and lc.loan_id=?";
+        final String sql = "select " + rm.schema() + " where lc.id=? and lc.loan_id=? group by lc.id";
 
         return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { id, loanId });
     }

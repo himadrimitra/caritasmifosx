@@ -129,6 +129,10 @@ public class DepositTermDetail {
             actualChanges.put(inMultiplesOfDepositTermTypeIdParamName, SavingsEnumerations.inMultiplesOfDepositTermFrequencyType(newValue));
             this.inMultiplesOfDepositTermType = newValue;
         }
+        
+        if(this.inMultiplesOfDepositTerm == null){
+            this.inMultiplesOfDepositTermType = null;
+        }
 
         if (isMinDepositTermGreaterThanMaxDepositTerm()) {
             baseDataValidator.parameter(minDepositTermParamName).value(this.minDepositTerm)
