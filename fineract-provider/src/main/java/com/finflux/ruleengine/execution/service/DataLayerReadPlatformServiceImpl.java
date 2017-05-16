@@ -18,6 +18,7 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
 import org.apache.fineract.portfolio.client.service.ClientIdentifierReadPlatformService;
 import org.apache.fineract.spm.domain.SurveyEntityType;
+import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +42,7 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
     private final LoanApplicationDataLayerMapper loanApplicationDataLayerMapper = new LoanApplicationDataLayerMapper();
     private final ClientIdentifierReadPlatformService clientIdentifierReadPlatformService;
     private final AddressReadPlatformService addressReadPlatformService;
-	private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     public DataLayerReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -61,7 +62,8 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         Map<String, Object> allClientData = new HashMap<>();
         final String sql = "select " + clientDataLayerMapper.schema() + " where c.id = ?";
         try {
-            Map<String, Object> clientDataMap = this.jdbcTemplate.queryForObject(sql, clientDataLayerMapper, clientId);
+            String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
+            Map<String, Object> clientDataMap = this.jdbcTemplate.queryForObject(sql, clientDataLayerMapper,new Object[]  {currentdate,clientId});
             if (clientDataMap != null) {
                 allClientData.putAll(clientDataMap);
             }
@@ -310,8 +312,9 @@ public class DataLayerReadPlatformServiceImpl implements DataLayerReadPlatformSe
         private static FromJsonHelper jsonHelper = new FromJsonHelper();
 
         private final String schemaSql;
-
         public ClientDataLayerMapper() {
+  
+            
             final StringBuilder sqlBuilder = new StringBuilder(100);
             sqlBuilder.append(" ");
             sqlBuilder.append("DATE_FORMAT(FROM_DAYS(DATEDIFF(?,c.date_of_birth)), '%Y')+0 as age, ");
