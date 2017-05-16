@@ -976,10 +976,8 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             if (!isException && canProcessBalance) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) { throw new InsufficientAccountBalanceException(
                 		account.accountNumber,accountName); }
-            }else if(!isException && ((runningBalance.minus(txnAmountInMoney).isLessThanZero()) ||
-            		(runningBalance.minus(minRequiredBalance).isLessThanZero()) || 
-            		(runningBalanceAsOnDate.isLessThanZero())
-            		)){
+            }else if(!isException && ((runningBalance.minus(minRequiredBalance).isLessThanZero()) || 
+            		(runningBalanceAsOnDate.isLessThanZero()))){
             	 throw new InsufficientAccountBalanceException(
                  		account.accountNumber,accountName); 
             }
