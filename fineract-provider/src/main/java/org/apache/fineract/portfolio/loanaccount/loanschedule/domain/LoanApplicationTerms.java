@@ -2353,6 +2353,9 @@ public final class LoanApplicationTerms {
         return this.discountOnDisbursalAmount;
     }
 
+    public boolean isDiscountOnDisbursalAmountAvailable() {
+        return this.discountOnDisbursalAmount != null && this.discountOnDisbursalAmount.compareTo(BigDecimal.ZERO) == 1;
+    }
     
     public boolean isAmountForUpfrontCollectionAvailable() {
         return this.amountForUpfrontCollection != null && this.amountForUpfrontCollection.compareTo(BigDecimal.ZERO) == 1;
