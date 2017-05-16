@@ -28,6 +28,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.fineract.commands.domain.CommandWrapper;
 
+import com.finflux.bulkoperations.BulkStatementEnumType;
 import com.finflux.commands.service.CommandWrapperBuilder;
 
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
@@ -135,7 +136,8 @@ public class BankStatementsApiResource {
 
     	this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME);
 
-        final Collection<BankStatementData> bankStatementData = this.bankStatementReadPlatformService.retrieveAllBankStatements();
+        final Collection<BankStatementData> bankStatementData = this.bankStatementReadPlatformService
+                .retrieveAllBankStatements(BulkStatementEnumType.BANKTRANSACTIONS.getValue(), null);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 

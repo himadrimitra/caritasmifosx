@@ -35,6 +35,8 @@ import org.apache.fineract.organisation.monetary.domain.ApplicationCurrency;
 import org.apache.fineract.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
 import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
@@ -57,6 +59,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     private final ConfigurationDomainService configurationDomainService;
     private final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository;
     private final SavingsAccountAssembler savingsAccountAssembler;
+    private final PaymentTypeRepository paymentTypeRepository;
+    private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
 
     @Autowired
     public SavingsAccountDomainServiceJpa(final SavingsAccountRepositoryWrapper savingsAccountRepository,
@@ -65,7 +69,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final JournalEntryWritePlatformService journalEntryWritePlatformService,
             final ConfigurationDomainService configurationDomainService, final PlatformSecurityContext context,
             final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
-            final SavingsAccountAssembler savingsAccountAssembler) {
+            final SavingsAccountAssembler savingsAccountAssembler,final PaymentTypeRepository paymentTypeRepository,final PaymentDetailWritePlatformService paymentDetailWritePlatformService) {
         this.savingsAccountRepository = savingsAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
         this.applicationCurrencyRepositoryWrapper = applicationCurrencyRepositoryWrapper;
@@ -74,6 +78,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         this.context = context;
         this.depositAccountOnHoldTransactionRepository = depositAccountOnHoldTransactionRepository;
         this.savingsAccountAssembler = savingsAccountAssembler;
+        this.paymentTypeRepository = paymentTypeRepository;
+        this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
     }
 
     @Transactional
@@ -138,6 +144,26 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final boolean isAccountTransfer, final boolean isRegularTransaction) {
         final SavingsAccountTransactionType savingsAccountTransactionType = SavingsAccountTransactionType.DEPOSIT;
         return handleDeposit(account, fmt, transactionDate, transactionAmount, paymentDetail, isAccountTransfer, isRegularTransaction,
+                savingsAccountTransactionType);
+    }
+    
+    @Transactional
+    @Override
+    public SavingsAccountTransaction handleDeposit(final String savingsAccountNumber, final LocalDate transactionDate,
+            final BigDecimal transactionAmount, final String paymentTypeName, final String paymentDetailAccountNumber,
+            final String paymentDetailChequeNumber, final String routingCode, final String paymentDetailBankNumber,
+            final String receiptNumber, final String note, final DateTimeFormatter fmt) {
+        final SavingsAccountTransactionType savingsAccountTransactionType = SavingsAccountTransactionType.DEPOSIT;
+        final boolean isAccountTransfer = false;
+        final boolean isRegularTransaction = true;
+        final SavingsAccount savings = this.savingsAccountAssembler.assembleFromAccountNumber(savingsAccountNumber);
+        PaymentDetail paymentDetail = null;
+        if (paymentTypeName != null) {
+            paymentDetail = PaymentDetail.instance(this.paymentTypeRepository.findByPaymentTypeName(paymentTypeName),
+                    paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber, paymentDetailBankNumber);
+            this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
+        }
+        return handleDeposit(savings, fmt, transactionDate, transactionAmount, paymentDetail, isAccountTransfer, isRegularTransaction,
                 savingsAccountTransactionType);
     }
 

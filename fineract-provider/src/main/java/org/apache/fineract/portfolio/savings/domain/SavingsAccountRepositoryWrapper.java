@@ -68,4 +68,10 @@ public class SavingsAccountRepositoryWrapper {
     public void saveAndFlush(final SavingsAccount account) {
         this.repository.saveAndFlush(account);
     }
+
+    public SavingsAccount findOneWithNotFoundDetection(String accountNumber) {
+        final SavingsAccount account = this.repository.findByAccountNumber(accountNumber);
+        if (account == null) { throw new SavingsAccountNotFoundException(accountNumber); }
+        return account;
+    }
 }

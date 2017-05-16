@@ -111,7 +111,6 @@ public class SavingsAccountAssembler {
     private final FromJsonHelper fromApiJsonHelper;
     private final PlatformSecurityContext context;
     private final ConfigurationDomainService configurationDomainService;
-
     @Autowired
     public SavingsAccountAssembler(final SavingsAccountTransactionSummaryWrapper savingsAccountTransactionSummaryWrapper,
             final ClientRepositoryWrapper clientRepository, final GroupRepositoryWrapper groupRepository,
@@ -465,5 +464,11 @@ public class SavingsAccountAssembler {
         }
 
         return transactionMap;
+    }
+
+    public SavingsAccount assembleFromAccountNumber(final String savingsAccountNumber) {
+        final SavingsAccount savingAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountNumber);
+        savingAccount.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
+        return savingAccount;
     }
 }

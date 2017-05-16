@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+
 public class ReconciliationApiConstants {
 
     public static final String BANK_STATEMENT_RESOURCE_NAME = "BANKSTATEMENT";
@@ -112,7 +113,6 @@ public class ReconciliationApiConstants {
     public static final String miscellaneousUnReconciledOutflowAmount = "miscellaneousUnReconciledOutflowAmount";
     
     public static final String accountingTypeParamName = "accountingType";
-
     public static final List<String> EXCEL_FILE = Arrays.asList(xlsFileExtension, xlsxFileExtension);
 
     public static final Set<String> BANK_STATEMENT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParamName, cifKeyParamName,
@@ -158,4 +158,9 @@ public class ReconciliationApiConstants {
     public static final String INVALID_TRANSACTION_DATE = "Transaction Date format is invalid.";
     public static final String PORTFOLIO_TRANSACTIONS = "PORTFOLIOTRANSACTIONS";
     public static final String LOAN_ACCOUNT_NUMBER_CAN_NOT_BE_BLANK = "Loan Account Number can not be blank.";
+    public static final String ACCOUNT_TYPE_CAN_NOT_BE_BLANK = "Account type can not be blank or invalid";
+    public static final String ACCOUNT_NUMBER_CAN_NOT_BE_BLANK = "Account Number can not be blank";
+    public static final String BULK_PORTFOLIO_TRANSACTIONS = "BULKPORTFOLIOTRANSACTIONS";
+    public static final String INVALID_ACCOUNT_TYPE = "Invalid Account Type";
+    public static final String INVALID_PAYMENT_TYPE = "Invalid Paymnet Type";
 }

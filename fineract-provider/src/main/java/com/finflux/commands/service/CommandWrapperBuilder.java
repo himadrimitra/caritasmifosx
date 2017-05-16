@@ -128,6 +128,14 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder completePortfolioTransactions(final Long bankStatementId) {
+        this.actionName = ReconciliationApiConstants.CREATE_ACTION;
+        this.entityName = ReconciliationApiConstants.BULK_PORTFOLIO_TRANSACTIONS;
+        this.entityId = bankStatementId;
+        this.href = "/bulkstatements/" + bankStatementId + "/generatetransactions";
+        return this;
+    }
+
     public CommandWrapperBuilder createBank() {
         this.actionName = ReconciliationApiConstants.CREATE_ACTION;
         this.entityName = ReconciliationApiConstants.BANK_RESOURCE_NAME;

@@ -20,10 +20,8 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
-import org.apache.fineract.portfolio.cgt.api.CgtApiConstants;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransaction;
 import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.finflux.reconcilation.ReconciliationApiConstants;
@@ -102,6 +100,30 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     
     @Column(name = "gl_account")
     private String glAccount;
+
+    @Column(name = "savings_account_number")
+    private String savingsAccountNumber;
+
+    @Column(name = "payment_type")
+    private String paymentTypeName;
+
+    @Column(name = "payment_detail_account_number")
+    private String paymentDetailAccountNumber;
+
+    @Column(name = "payment_detail_cheque_number")
+    private String paymentDetailChequeNumber;
+
+    @Column(name = "routing_code")
+    private String routingCode;
+
+    @Column(name = "payment_detail_bank_number")
+    private String paymentDetailBankNumber;
+
+    @Column(name = "note")
+    private String note;
+    
+    @Column(name = "error_msg", nullable = true)
+    private String errmsg;
 
     public BankStatementDetails(final BankStatement bankStatement, final String transactionId, final Date transactionDate,
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
@@ -345,5 +367,79 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
 
         return actualChanges;
     }
-	
+
+    public static BankStatementDetails instance(final BankStatement bankStatement, final String accountingType,
+            final String loanAccountNumber, final Date transactionDate, final BigDecimal amount, final String paymentTypeName,
+            final String paymentDetailAccountNumber, final String paymentDetailChequeNumber, final String routingCode,
+            final String receiptNumber, final String paymentDetailBankNumber, final String note, final Integer bankStatementDetailType,
+            final String savingsAccountNumber, boolean isReconciled) {
+
+        return new BankStatementDetails(bankStatement, accountingType, loanAccountNumber, transactionDate, amount, paymentTypeName,
+                paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber, paymentDetailBankNumber, note,
+                bankStatementDetailType, savingsAccountNumber);
+    }
+
+    public BankStatementDetails(final BankStatement bankStatement, final String accountingType, final String loanAccountNumber,
+            final Date transactionDate, final BigDecimal amount, final String paymentTypeName, final String paymentDetailAccountNumber,
+            final String paymentDetailChequeNumber, final String routingCode, final String receiptNumber,
+            final String paymentDetailBankNumber, final String note, final Integer bankStatementDetailType,
+            final String savingsAccountNumber) {
+        this.bankStatement = bankStatement;
+        this.accountingType = accountingType;
+        this.loanAccountNumber = loanAccountNumber;
+        this.transactionDate = transactionDate;
+        this.amount = amount;
+        this.paymentTypeName = paymentTypeName;
+        this.paymentDetailAccountNumber = paymentDetailAccountNumber;
+        this.paymentDetailChequeNumber = paymentDetailChequeNumber;
+        this.routingCode = routingCode;
+        this.receiptNumber = receiptNumber;
+        this.paymentDetailBankNumber = paymentDetailBankNumber;
+        this.note = note;
+        this.bankStatementDetailType = bankStatementDetailType;
+        this.savingsAccountNumber = savingsAccountNumber;
+        this.isReconciled = false;
+    }
+
+    public String getSavingsAccountNumber() {
+        return this.savingsAccountNumber;
+    }
+
+    public void setSavingsAccountNumber(String savingsAccountNumber) {
+        this.savingsAccountNumber = savingsAccountNumber;
+    }
+
+    public String getPaymentDetailAccountNumber() {
+        return this.paymentDetailAccountNumber;
+    }
+
+    public String getPaymentDetailChequeNumber() {
+        return this.paymentDetailChequeNumber;
+    }
+
+    public String getRoutingCode() {
+        return this.routingCode;
+    }
+
+    public String getPaymentDetailBankNumber() {
+        return this.paymentDetailBankNumber;
+    }
+
+    public String getNote() {
+        return this.note;
+    }
+
+    public String getPaymentTypeName() {
+        return this.paymentTypeName;
+    }
+
+    public String getErrmsg() {
+        return this.errmsg;
+    }
+
+    public void setErrmsg(String errmsg) {
+        this.isError = true;
+        this.errmsg = errmsg;
+    }
+
 }

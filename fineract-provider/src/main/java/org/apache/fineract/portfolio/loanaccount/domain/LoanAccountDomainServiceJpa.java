@@ -84,6 +84,7 @@ import org.apache.fineract.portfolio.note.domain.Note;
 import org.apache.fineract.portfolio.note.domain.NoteRepository;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.service.PaymentDetailWritePlatformService;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
@@ -117,6 +118,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
     private final StandingInstructionRepository standingInstructionRepository;
     private final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService;
+    private final PaymentTypeRepository paymentTypeRepository;
 
     @Autowired
     public LoanAccountDomainServiceJpa(final LoanAssembler loanAccountAssembler, final LoanRepository loanRepository,
@@ -133,7 +135,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService,
             final PaymentDetailWritePlatformService paymentDetailWritePlatformService, 
             final StandingInstructionRepository standingInstructionRepository,
-            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService) {
+            final LoanScheduleHistoryWritePlatformService loanScheduleHistoryWritePlatformService, final PaymentTypeRepository paymentTypeRepository) {
         this.loanAccountAssembler = loanAccountAssembler;
         this.loanRepository = loanRepository;
         this.loanTransactionRepository = loanTransactionRepository;
@@ -154,6 +156,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
         this.standingInstructionRepository = standingInstructionRepository;
         this.loanScheduleHistoryWritePlatformService = loanScheduleHistoryWritePlatformService;
+        this.paymentTypeRepository=paymentTypeRepository;
     }
 
     @Override
@@ -173,6 +176,31 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         
         final boolean isPrepayment = false;
         return makeRepayment(loan, builderResult, transactionDate, transactionAmount, paymentDetail, noteText, txnExternalId,
+                isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone, isLoanToLoanTransfer, isPrepayment);
+    }
+    
+    @Override
+    @Transactional
+    public LoanTransaction makeRepayment(final String loanAccountNumber, final LocalDate transactionDate,
+            final BigDecimal transactionAmount, final String paymentTypeName, final String paymentDetailAccountNumber,
+            final String paymentDetailChequeNumber, final String routingCode, final String paymentDetailBankNumber,
+            final String receiptNumber, final String note) {
+        final CommandProcessingResultBuilder builderResult = new CommandProcessingResultBuilder();
+        final String txnExternalId = null;
+        final boolean isRecoveryRepayment = false;
+        final boolean isAccountTransfer = false;
+        final HolidayDetailDTO holidayDetailDto = null;
+        final Boolean isHolidayValidationDone = false;
+        final boolean isLoanToLoanTransfer = false;
+        final boolean isPrepayment = false;
+        final Loan loan = this.loanAccountAssembler.assembleFromAccountNumber(loanAccountNumber);
+        PaymentDetail paymentDetail = null;
+        if (paymentTypeName != null) {
+            paymentDetail = PaymentDetail.instance(this.paymentTypeRepository.findByPaymentTypeName(paymentTypeName),
+                    paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber, paymentDetailBankNumber);
+            this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
+        }
+        return makeRepayment(loan, builderResult, transactionDate, transactionAmount, paymentDetail, note, txnExternalId,
                 isRecoveryRepayment, isAccountTransfer, holidayDetailDto, isHolidayValidationDone, isLoanToLoanTransfer, isPrepayment);
     }
 

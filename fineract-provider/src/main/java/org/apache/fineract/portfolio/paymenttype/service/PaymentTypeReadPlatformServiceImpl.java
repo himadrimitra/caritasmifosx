@@ -20,7 +20,9 @@ package org.apache.fineract.portfolio.paymenttype.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
@@ -63,6 +65,22 @@ public class PaymentTypeReadPlatformServiceImpl implements PaymentTypeReadPlatfo
         final String sql = "select " + ptm.schema() + "where pt.id = ?";
 
         return this.jdbcTemplate.queryForObject(sql, ptm, new Object[] { paymentTypeId });
+    }
+    
+    @Override
+    public List<String> retrieveAllPaymentTypeNames() {
+        this.context.authenticatedUser();
+        final String sql = "select group_concat(value separator ', ')  from m_payment_type";
+        String paymntNamesAsString= this.jdbcTemplate.queryForObject(sql, String.class);
+        
+        List<String> strary =new ArrayList<>();
+        if(paymntNamesAsString!=null){
+        for(String s:paymntNamesAsString.split(",")){
+            strary.add(s.trim());
+        }
+        return strary;
+        }
+        return  strary;
     }
 
     private static final class PaymentTypeMapper implements RowMapper<PaymentTypeData> {
