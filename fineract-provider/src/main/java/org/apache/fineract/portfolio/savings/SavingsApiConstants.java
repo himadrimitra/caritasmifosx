@@ -171,12 +171,15 @@ public class SavingsApiConstants {
     // Savings DP Limit
     public static final String allowDpLimitParamName = "allowDpLimit";
     public static final String dpLimitAmountParamName = "dpLimitAmount";
-    public static final String savingsDpLimitFrequencyTypeParamName = "savingsDpLimitFrequencyType";
     public static final String savingsDpLimitCalculationTypeParamName = "savingsDpLimitCalculationType";
-    public static final String dpLimitReductionEveryParamName = "dpLimitReductionEvery";
     public static final String dpCalculateOnAmountParamName = "dpCalculateOnAmount";
     public static final String dpDurationParamName = "dpDuration";
-    
+    public static final String dpFrequencyTypeParamName = "dpFrequencyType";
+    public static final String dpFrequencyIntervalParamName = "dpFrequencyInterval";
+    public static final String dpFrequencyNthDayParamName = "dpFrequencyNthDay";
+    public static final String dpFrequencyDayOfWeekTypeParamName = "dpFrequencyDayOfWeekType";
+    public static final String dpFrequencyOnDayParamName = "dpFrequencyOnDay";
+    public static final String dpStartDateParamName = "dpStartDate";
 
     public static final Set<String> SAVINGS_PRODUCT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             monthDayFormatParamName, nameParamName, shortNameParamName, descriptionParamName, currencyCodeParamName,
@@ -195,12 +198,13 @@ public class SavingsApiConstants {
             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.PENALTY_INCOME_ACCOUNT_MAPPING.getValue(),
             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.OVERDRAFT_PORTFOLIO_CONTROL.getValue(),
             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.LOSSES_WRITTEN_OFF.getValue(),
-            SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_INTEREST.getValue(), 
-            SAVINGS_PRODUCT_ACCOUNTING_PARAMS.ESCHEAT_LIABILITY.getValue(),
-            isDormancyTrackingActiveParamName, daysToDormancyParamName, daysToInactiveParamName, daysToEscheatParamName,
-            allowOverdraftParamName, overdraftLimitParamName,
+            SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_INTEREST.getValue(),
+            SAVINGS_PRODUCT_ACCOUNTING_PARAMS.ESCHEAT_LIABILITY.getValue(), isDormancyTrackingActiveParamName, daysToDormancyParamName,
+            daysToInactiveParamName, daysToEscheatParamName, allowOverdraftParamName, overdraftLimitParamName,
             nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, minRequiredBalanceParamName,
-            enforceMinRequiredBalanceParamName, minBalanceForInterestCalculationParamName, withHoldTaxParamName, taxGroupIdParamName,externalIdParamName));
+            enforceMinRequiredBalanceParamName, minBalanceForInterestCalculationParamName, withHoldTaxParamName, taxGroupIdParamName,
+            externalIdParamName, allowDpLimitParamName, dpFrequencyTypeParamName, dpFrequencyNthDayParamName, dpFrequencyIntervalParamName,
+            dpFrequencyDayOfWeekTypeParamName, dpFrequencyOnDayParamName));
 
     /**
      * These parameters will match the class level parameters of
@@ -222,16 +226,18 @@ public class SavingsApiConstants {
     public static final Set<String> SAVINGS_ACCOUNT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, monthDayFormatParamName, staffIdParamName, accountNoParamName, externalIdParamName, clientIdParamName,
             groupIdParamName, productIdParamName, fieldOfficerIdParamName, submittedOnDateParamName, nominalAnnualInterestRateParamName,
-            interestCompoundingPeriodTypeParamName, interestPostingPeriodTypeParamName, interestCalculationTypeParamName,
-            interestCalculationDaysInYearTypeParamName, minRequiredOpeningBalanceParamName,
+            interestCompoundingPeriodTypeParamName, interestPostingPeriodTypeParamName,
+            interestCalculationTypeParamName,
+            interestCalculationDaysInYearTypeParamName,
+            minRequiredOpeningBalanceParamName,
             lockinPeriodFrequencyParamName,
             lockinPeriodFrequencyTypeParamName,
             // withdrawalFeeAmountParamName, withdrawalFeeTypeParamName,
             withdrawalFeeForTransfersParamName, feeAmountParamName, feeOnMonthDayParamName, chargesParamName, allowOverdraftParamName,
             overdraftLimitParamName, minRequiredBalanceParamName, enforceMinRequiredBalanceParamName,
             nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, withHoldTaxParamName,
-            allowDpLimitParamName, dpCalculateOnAmountParamName, dpLimitAmountParamName, dpLimitReductionEveryParamName,
-            savingsDpLimitFrequencyTypeParamName, savingsDpLimitCalculationTypeParamName, dpDurationParamName));
+            allowDpLimitParamName, dpCalculateOnAmountParamName, dpLimitAmountParamName, savingsDpLimitCalculationTypeParamName,
+            dpDurationParamName, dpStartDateParamName));
 
     public static final Set<String> SAVINGS_ACCOUNT_CREATE_OR_ACTIVATE_DATA_PARAMETER = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, monthDayFormatParamName, staffIdParamName, accountNoParamName, clientIdParamName, productIdParamName,
@@ -287,4 +293,5 @@ public class SavingsApiConstants {
 
     public static final Set<String> SAVINGS_ACCOUNT_ON_HOLD_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
             amountParamName, onHoldTransactionTypeParamName, onHoldTransactionDateParamName, onHoldReversedParamName));
+    
 }

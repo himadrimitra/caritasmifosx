@@ -61,6 +61,7 @@ import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.exception.ChargeCannotBeAppliedToException;
 import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
+import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
@@ -86,7 +87,7 @@ public class SavingsProductAssembler {
         this.taxGroupRepository = taxGroupRepository;
     }
 
-    public SavingsProduct assemble(final JsonCommand command) {
+    public SavingsProduct createAssemble(final JsonCommand command) {
 
         final String name = command.stringValueOfParameterNamed(nameParamName);
         final String shortName = command.stringValueOfParameterNamed(shortNameParamName);
@@ -185,12 +186,42 @@ public class SavingsProductAssembler {
         final Long daysToDormancy = command.longValueOfParameterNamed(daysToDormancyParamName);
         final Long daysToEscheat = command.longValueOfParameterNamed(daysToEscheatParamName);
 
-        return SavingsProduct.createNew(name, shortName, description, currency, interestRate, interestCompoundingPeriodType,
-                interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
-                lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer, accountingRuleType, charges,
-                allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance, minBalanceForInterestCalculation,
-                nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax, taxGroup,
-                isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+        final SavingsProduct savingsProduct = SavingsProduct.createNew(name, shortName, description, currency, interestRate,
+                interestCompoundingPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
+                minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, iswithdrawalFeeApplicableForTransfer,
+                accountingRuleType, charges, allowOverdraft, overdraftLimit, enforceMinRequiredBalance, minRequiredBalance,
+                minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
+                taxGroup, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+        
+        /**
+         * Construct Savings Product Drawing Power Details
+         */
+        final SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails = constructSavingsProductDrawingPowerDetailsObject(
+                savingsProduct, allowOverdraft, command);
+        savingsProduct.updateSavingsProductDrawingPowerDetails(savingsProductDrawingPowerDetails);
+        return savingsProduct;
+    }
+
+    private SavingsProductDrawingPowerDetails constructSavingsProductDrawingPowerDetailsObject(final SavingsProduct savingsProduct,
+            final boolean allowOverdraft, final JsonCommand command) {
+        SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails = null;
+        if (allowOverdraft) {
+            if (command.parameterExists(SavingsApiConstants.allowDpLimitParamName)) {
+                final boolean allowDpLimit = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName);
+                if (allowDpLimit) {
+                    final Integer frequencyType = command.integerValueOfParameterNamed(SavingsApiConstants.dpFrequencyTypeParamName);
+                    final Integer frequencyInterval = command
+                            .integerValueOfParameterNamed(SavingsApiConstants.dpFrequencyIntervalParamName);
+                    final Integer frequencyNthDay = command.integerValueOfParameterNamed(SavingsApiConstants.dpFrequencyNthDayParamName);
+                    final Integer frequencyDayOfWeekType = command
+                            .integerValueOfParameterNamed(SavingsApiConstants.dpFrequencyDayOfWeekTypeParamName);
+                    final Integer frequencyOnDay = command.integerValueOfParameterNamed(SavingsApiConstants.dpFrequencyOnDayParamName);
+                    savingsProductDrawingPowerDetails = SavingsProductDrawingPowerDetails.create(savingsProduct, frequencyType,
+                            frequencyInterval, frequencyNthDay, frequencyDayOfWeekType, frequencyOnDay);
+                }
+            }
+        }
+        return savingsProductDrawingPowerDetails;
     }
 
     public Set<Charge> assembleListOfSavingsProductCharges(final JsonCommand command, final String savingsProductCurrencyCode) {

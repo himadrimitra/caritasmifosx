@@ -150,9 +150,9 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
     }
 
     public static Calendar createRepeatingCalendar(final String title, final LocalDate startDate, final Integer typeId,
-            final CalendarFrequencyType frequencyType, final Integer interval, final Integer repeatsOnDay,
+            final CalendarFrequencyType frequencyType, final Integer interval, final Integer repeatsOnDayOfWeek,
             final Integer repeatsOnNthDayOfMonth, Collection<Integer> repeatsOnDayOfMonth) {
-        final String recurrence = constructRecurrence(frequencyType, interval, repeatsOnDay, repeatsOnNthDayOfMonth, repeatsOnDayOfMonth);
+        final String recurrence = constructRecurrence(frequencyType, interval, repeatsOnDayOfWeek, repeatsOnNthDayOfMonth, repeatsOnDayOfMonth);
         return createRepeatingCalendar(title, startDate, typeId, recurrence);
     }
 
@@ -598,8 +598,17 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
         return "";
     }
 
+    /**
+     * 
+     * @param frequencyType
+     * @param interval
+     * @param repeatsOnDayOfWeek : value should be map with CalendarWeekDaysType
+     * @param repeatsOnNthDayOfMonth
+     * @param repeatsOnDayOfMonth
+     * @return
+     */
     public static String constructRecurrence(final CalendarFrequencyType frequencyType, final Integer interval,
-            final Integer repeatsOnDay, final Integer repeatsOnNthDayOfMonth, final Collection<Integer> repeatsOnDayOfMonth) {
+            final Integer repeatsOnDayOfWeek, final Integer repeatsOnNthDayOfMonth, final Collection<Integer> repeatsOnDayOfMonth) {
         final StringBuilder recurrenceBuilder = new StringBuilder(200);
 
         recurrenceBuilder.append("FREQ=");
@@ -609,8 +618,8 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
             recurrenceBuilder.append(interval);
         }
         if (frequencyType.isWeekly()) {
-            if (repeatsOnDay != null) {
-                final CalendarWeekDaysType weekDays = CalendarWeekDaysType.fromInt(repeatsOnDay);
+            if (repeatsOnDayOfWeek != null) {
+                final CalendarWeekDaysType weekDays = CalendarWeekDaysType.fromInt(repeatsOnDayOfWeek);
                 if (!weekDays.isInvalid()) {
                     recurrenceBuilder.append(";BYDAY=");
                     recurrenceBuilder.append(weekDays.toString().toUpperCase());
@@ -618,7 +627,7 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
             }
         }
         if (frequencyType.isMonthly()) {
-            if (repeatsOnNthDayOfMonth != null && (repeatsOnDay == null || repeatsOnDay == CalendarWeekDaysType.INVALID.getValue())) {
+            if (repeatsOnNthDayOfMonth != null && (repeatsOnDayOfWeek == null || repeatsOnDayOfWeek == CalendarWeekDaysType.INVALID.getValue())) {
                 boolean firstTIme = true;
                 for (Integer repeatsOnNthDay : repeatsOnDayOfMonth) {
                     if (repeatsOnNthDay >= -1 && repeatsOnNthDay <= 28) {
@@ -631,13 +640,13 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
                         recurrenceBuilder.append(repeatsOnNthDay);
                     }
                 }
-            } else if (repeatsOnNthDayOfMonth != null && repeatsOnDay != null && repeatsOnDay != CalendarWeekDaysType.INVALID.getValue()) {
+            } else if (repeatsOnNthDayOfMonth != null && repeatsOnDayOfWeek != null && repeatsOnDayOfWeek != CalendarWeekDaysType.INVALID.getValue()) {
                 final NthDayType nthDay = NthDayType.fromInt(repeatsOnNthDayOfMonth);
                 if (!nthDay.isInvalid()) {
                     recurrenceBuilder.append(";BYSETPOS=");
                     recurrenceBuilder.append(nthDay.getValue());
                 }
-                final CalendarWeekDaysType weekday = CalendarWeekDaysType.fromInt(repeatsOnDay);
+                final CalendarWeekDaysType weekday = CalendarWeekDaysType.fromInt(repeatsOnDayOfWeek);
                 if (!weekday.isInvalid()) {
                     recurrenceBuilder.append(";BYDAY=");
                     recurrenceBuilder.append(weekday.toString().toUpperCase());

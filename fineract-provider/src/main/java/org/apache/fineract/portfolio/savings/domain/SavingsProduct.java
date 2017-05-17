@@ -23,14 +23,19 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accounti
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.currencyCodeParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToDormancyParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToEscheatParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToInactiveParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.descriptionParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.digitsAfterDecimalParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.enforceMinRequiredBalanceParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.externalIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.inMultiplesOfParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCalculationDaysInYearTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCalculationTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCompoundingPeriodTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestPostingPeriodTypeParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDormancyTrackingActiveParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.localeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.lockinPeriodFrequencyTypeParamName;
@@ -43,15 +48,9 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.nominalA
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.nominalAnnualInterestRateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.overdraftLimitParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.shortNameParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDormancyTrackingActiveParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToInactiveParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToDormancyParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.daysToEscheatParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.externalIdParamName;
-
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -61,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.DiscriminatorColumn;
 import javax.persistence.DiscriminatorType;
@@ -72,6 +72,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -84,12 +85,15 @@ import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChart;
+import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPeriodFrequencyType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
 import org.apache.fineract.portfolio.tax.domain.TaxGroup;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
@@ -115,7 +119,7 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @Column(name = "external_id", length = 50, nullable = true, unique = true)
     private String externalId;
 
-	@Embedded
+    @Embedded
     protected MonetaryCurrency currency;
 
     @Column(name = "nominal_annual_interest_rate", scale = 6, precision = 19, nullable = false)
@@ -200,17 +204,21 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @JoinColumn(name = "tax_group_id")
     private TaxGroup taxGroup;
 
-	@Column(name = "is_dormancy_tracking_active")
-	private Boolean isDormancyTrackingActive;
+    @Column(name = "is_dormancy_tracking_active")
+    private Boolean isDormancyTrackingActive;
 
     @Column(name = "days_to_inactive")
-	private Long daysToInactive;
+    private Long daysToInactive;
 
     @Column(name = "days_to_dormancy")
-	private Long daysToDormancy;
+    private Long daysToDormancy;
 
     @Column(name = "days_to_escheat")
-	private Long daysToEscheat;
+    private Long daysToEscheat;
+
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsProduct", optional = true, orphanRemoval = true)
+    private SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails;
 
     public static SavingsProduct createNew(final String name, final String shortName, final String description,
             final MonetaryCurrency currency, final BigDecimal interestRate,
@@ -515,6 +523,17 @@ public class SavingsProduct extends AbstractPersistable<Long> {
             this.allowOverdraft = newValue;
         }
 
+        if (this.allowOverdraft && command.parameterExists(SavingsApiConstants.allowDpLimitParamName)
+                && command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName)) {
+            if (this.getSavingsProductDrawingPowerDetails() == null) {
+                this.savingsProductDrawingPowerDetails = new SavingsProductDrawingPowerDetails();
+            }
+            this.getSavingsProductDrawingPowerDetails().update(this, command, actualChanges);
+        } else {
+            final SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails = null;
+            this.updateSavingsProductDrawingPowerDetails(savingsProductDrawingPowerDetails);
+        }
+        
         if (command.isChangeInBigDecimalParameterNamedDefaultingZeroToNull(overdraftLimitParamName, this.overdraftLimit)) {
             final BigDecimal newValue = command.bigDecimalValueOfParameterNamedDefaultToNullIfZero(overdraftLimitParamName);
             actualChanges.put(overdraftLimitParamName, newValue);
@@ -748,23 +767,31 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     }
 
     public boolean isDormancyTrackingActive() {
-		return null == this.isDormancyTrackingActive? false: this.isDormancyTrackingActive;
-	}
+        return null == this.isDormancyTrackingActive ? false : this.isDormancyTrackingActive;
+    }
 
-	public Long getDaysToInactive() {
-		return this.daysToInactive;
-	}
+    public Long getDaysToInactive() {
+        return this.daysToInactive;
+    }
 
-	public Long getDaysToDormancy() {
-		return this.daysToDormancy;
-	}
+    public Long getDaysToDormancy() {
+        return this.daysToDormancy;
+    }
 
-	public Long getDaysToEscheat() {
-		return this.daysToEscheat;
-	}
+    public Long getDaysToEscheat() {
+        return this.daysToEscheat;
+    }
 
-	public String getExternalId() {
-		return this.externalId;
-	}
+    public String getExternalId() {
+        return this.externalId;
+    }
+
+    public void updateSavingsProductDrawingPowerDetails(final SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails) {
+        this.savingsProductDrawingPowerDetails = savingsProductDrawingPowerDetails;
+    }
+
+    public SavingsProductDrawingPowerDetails getSavingsProductDrawingPowerDetails() {
+        return this.savingsProductDrawingPowerDetails;
+    }
 
 }

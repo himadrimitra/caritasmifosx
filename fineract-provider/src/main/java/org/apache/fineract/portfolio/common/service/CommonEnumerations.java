@@ -23,8 +23,10 @@ import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.ConditionType;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.DaysInMonthType;
 import org.apache.fineract.portfolio.common.domain.DaysInYearType;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 
 public class CommonEnumerations {
@@ -161,6 +163,54 @@ public class CommonEnumerations {
                 optionData = new EnumOptionData(DaysInYearType.INVALID.getValue().longValue(), DaysInYearType.INVALID.getCode(), "Invalid");
             break;
         }
+        return optionData;
+    }
+    
+    public static EnumOptionData nthDayType(final Integer id, final String codePrefix) {
+        if (id == null) { return null; }
+        return nthDayType(NthDayType.fromInt(id), codePrefix);
+    }
+    
+    public static EnumOptionData nthDayType(final NthDayType type, final String codePrefix) {
+        //final String codePrefix = "interestRecalculationCompounding.";
+        long nthDayValue = type.getValue().longValue();
+        EnumOptionData optionData = null;
+        switch (type) {
+            case ONE:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "first");
+            break;
+            case TWO:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "second");
+            break;
+            case THREE:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "third");
+            break;
+            case FOUR:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "fourth");
+            break;
+            case FIVE:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "fifth");
+            break;
+            case LAST:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "last");
+            break;
+            case ONDAY:
+                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "on day");
+            break;
+            default:
+                optionData = new EnumOptionData(new Integer(0).longValue(), codePrefix + type.getCode(), "invalid");
+            break;
+        }
+        return optionData;
+    }
+    
+    public static EnumOptionData dayOfWeekType(final Integer id, final String codePrefix) {
+        if (id == null) { return null; }
+        return dayOfWeekType(DayOfWeekType.fromInt(id), codePrefix);
+    }
+    
+    public static EnumOptionData dayOfWeekType(final DayOfWeekType type, final String codePrefix) {
+        EnumOptionData optionData = new EnumOptionData(type.getValue().longValue(), codePrefix + type.getCode(), type.toString());
         return optionData;
     }
 

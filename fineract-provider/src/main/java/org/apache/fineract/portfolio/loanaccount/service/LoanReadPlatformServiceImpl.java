@@ -1114,7 +1114,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             LoanInterestRecalculationData interestRecalculationData = null;
             if (isInterestRecalculationEnabled) {
-
+                final String codePrefix = "interestRecalculationCompounding.";
                 final Long lprId = JdbcSupport.getLong(rs, "lirId");
                 final Long productId = JdbcSupport.getLong(rs, "loanId");
                 final int compoundTypeEnumValue = JdbcSupport.getInteger(rs, "compoundType");
@@ -1129,13 +1129,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 final Integer restFrequencyNthDayEnumValue = JdbcSupport.getInteger(rs, "restFrequencyNthDayEnum");
                 EnumOptionData restFrequencyNthDayEnum = null;
                 if (restFrequencyNthDayEnumValue != null) {
-                    restFrequencyNthDayEnum = LoanEnumerations.interestRecalculationCompoundingNthDayType(restFrequencyNthDayEnumValue);
+                    restFrequencyNthDayEnum = CommonEnumerations.nthDayType(restFrequencyNthDayEnumValue, codePrefix);
                 }
                 final Integer restFrequencyWeekDayEnumValue = JdbcSupport.getInteger(rs, "restFrequencyWeekDayEnum");
                 EnumOptionData restFrequencyWeekDayEnum = null;
                 if (restFrequencyWeekDayEnumValue != null) {
-                    restFrequencyWeekDayEnum = LoanEnumerations
-                            .interestRecalculationCompoundingDayOfWeekType(restFrequencyWeekDayEnumValue);
+                    restFrequencyWeekDayEnum = CommonEnumerations.dayOfWeekType(restFrequencyWeekDayEnumValue, codePrefix);
                 }
                 final Integer restFrequencyOnDay = JdbcSupport.getInteger(rs, "restFrequencyOnDay");
                 final CalendarData compoundingCalendarData = null;
@@ -1148,14 +1147,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 final Integer compoundingFrequencyNthDayEnumValue = JdbcSupport.getInteger(rs, "compoundingFrequencyNthDayEnum");
                 EnumOptionData compoundingFrequencyNthDayEnum = null;
                 if (compoundingFrequencyNthDayEnumValue != null) {
-                    compoundingFrequencyNthDayEnum = LoanEnumerations
-                            .interestRecalculationCompoundingNthDayType(compoundingFrequencyNthDayEnumValue);
+                    compoundingFrequencyNthDayEnum = CommonEnumerations.nthDayType(compoundingFrequencyNthDayEnumValue, codePrefix);
                 }
                 final Integer compoundingFrequencyWeekDayEnumValue = JdbcSupport.getInteger(rs, "compoundingFrequencyWeekDayEnum");
                 EnumOptionData compoundingFrequencyWeekDayEnum = null;
                 if (compoundingFrequencyWeekDayEnumValue != null) {
-                    compoundingFrequencyWeekDayEnum = LoanEnumerations
-                            .interestRecalculationCompoundingDayOfWeekType(compoundingFrequencyWeekDayEnumValue);
+                    compoundingFrequencyWeekDayEnum = CommonEnumerations.dayOfWeekType(compoundingFrequencyWeekDayEnumValue, codePrefix);
                 }
                 final Integer compoundingFrequencyOnDay = JdbcSupport.getInteger(rs, "compoundingFrequencyOnDay");
                 
