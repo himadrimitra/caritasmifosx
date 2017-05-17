@@ -35,6 +35,7 @@ public class LoanTermVariationsDataWrapper {
     private final List<LoanTermVariationsData> interestRateFromInstallment;
     private final List<LoanTermVariationsData> dueDateVariation;
     private ListIterator<LoanTermVariationsData> dueDateIterator;
+    private final List<LoanTermVariationsData> nonInstallmentSpecificDueDateVariation;
 
     public LoanTermVariationsDataWrapper(final List<LoanTermVariationsData> exceptionData) {
         if (exceptionData == null) {
@@ -45,6 +46,7 @@ public class LoanTermVariationsDataWrapper {
         this.interestRateChanges = new ArrayList<>();
         this.dueDateVariation = new ArrayList<>();
         this.interestRateFromInstallment = new ArrayList<>();
+        this.nonInstallmentSpecificDueDateVariation = new ArrayList<>();
         deriveLoanTermVariations();
     }
 
@@ -148,6 +150,16 @@ public class LoanTermVariationsDataWrapper {
         }
         return data;
     }
+    
+    public LoanTermVariationsData fetchNonSpecificInstallmentLoanTermDueDateVariationsData(final LocalDate onDate) {
+        LoanTermVariationsData data = null;
+        for (LoanTermVariationsData termVariationsData : this.nonInstallmentSpecificDueDateVariation) {
+            if (!onDate.isBefore(termVariationsData.getTermApplicableFrom())) {
+                data = termVariationsData;
+            }
+        }
+        return data;
+    }
 
     public boolean hasExceptionVariation(final LocalDate date, ListIterator<LoanTermVariationsData> exceptionDataListIterator) {
         ListIterator<LoanTermVariationsData> iterator = exceptionDataListIterator;
@@ -168,6 +180,9 @@ public class LoanTermVariationsDataWrapper {
                 this.interestRateChanges.add(loanTermVariationsData);
             } else if (loanTermVariationsData.getTermVariationType().isDueDateVariation()) {
                 this.dueDateVariation.add(loanTermVariationsData);
+                if(!loanTermVariationsData.isSpecificToInstallment()){
+                    this.nonInstallmentSpecificDueDateVariation.add(loanTermVariationsData);
+                }
             } else if (loanTermVariationsData.getTermVariationType().isInterestRateFromInstallment()) {
                 this.interestRateFromInstallment.add(loanTermVariationsData);
             }
