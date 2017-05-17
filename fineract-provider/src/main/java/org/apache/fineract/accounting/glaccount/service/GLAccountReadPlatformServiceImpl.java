@@ -268,7 +268,7 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
                     sql += " and ";
                 }
                 sql += " gl_classification_type like ?";
-                paramaterArray[arrayPos] = accountType;
+                paramaterArray[arrayPos] = glAccounytClassificatioType;
                 arrayPos = arrayPos + 1;
                 firstWhereConditionAdded = true;
             }
