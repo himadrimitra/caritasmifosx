@@ -42,7 +42,7 @@ public class VouchersWritePlatformServiceJpaRepositoryImpl implements VouchersWr
     @Transactional
     public CommandProcessingResult reverseVoucher(final String voucherType, final Long voucherId, JsonCommand command) {
         final Voucher voucher = this.voucherRepostiroyWrapper.findVoucher(voucherId) ;
-        if(voucher.getRelatedVoucherId() != null) {
+        if(voucher.isReversed()) {
             throw new VoucherAlreadyReversedException(voucherId) ;
         }
         final VoucherService service = this.voucherServiceFactory.findVoucherService(voucherType);

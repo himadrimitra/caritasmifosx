@@ -83,7 +83,7 @@ public class Voucher extends AbstractPersistable<Long> {
     }
     
     public boolean isReversed() {
-        return this.journalEntry.isReversed() ;
+        return this.journalEntry.getReversalJournalEntry() != null ;
     }
     
     public String getTransactionId() {
