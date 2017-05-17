@@ -44,4 +44,8 @@ public interface SavingsAccountDomainService {
 			SavingsTransactionBooleanValues transactionBooleanValues,
 			boolean isSavingsInterestPostingAtCurrentPeriodEnd, Integer financialYearBeginningMonth, 
 			final boolean isSavingAccountsInculdedInCollectionSheet, final boolean isWithDrawForSavingsIncludedInCollectionSheet);
+
+    SavingsAccountTransaction handleDeposit(String savingsAccountNumber, LocalDate transactionDate, BigDecimal transactionAmount,
+            String paymentTypeName, String paymentDetailAccountNumber, String paymentDetailChequeNumber, String routingCode,
+            String paymentDetailBankNumber, String receiptNumber, String note, DateTimeFormatter fmt);
 }

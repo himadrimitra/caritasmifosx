@@ -158,7 +158,14 @@ public class LoanAssembler {
 
         return loanAccount;
     }
-    
+    public Loan assembleFromAccountNumber(final String loanAccountNumber) {
+        final Loan loanAccount = this.loanRepository.findOneWithNotFoundDetectionAndLazyInitialize(loanAccountNumber);
+        loanAccount.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,
+                this.loanRepaymentScheduleTransactionProcessorFactory);
+
+        return loanAccount;
+    }
+  
     public Loan assembleFromWithInitializeLazy(final Long accountId) {
         final Loan loanAccount = this.loanRepository.findOneWithNotFoundDetectionAndLazyInitialize(accountId);
         loanAccount.setHelpers(defaultLoanLifecycleStateMachine(), this.loanSummaryWrapper,

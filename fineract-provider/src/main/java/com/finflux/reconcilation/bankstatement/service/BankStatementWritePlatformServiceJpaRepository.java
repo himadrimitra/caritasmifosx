@@ -34,8 +34,12 @@ import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
 import org.apache.fineract.commands.service.PortfolioCommandSourceWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleException;
+import org.apache.fineract.infrastructure.core.exception.AbstractPlatformResourceNotFoundException;
+import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommandValidator;
@@ -66,6 +70,8 @@ import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetailRepository;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
 import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountDomainService;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.joda.time.LocalDate;
@@ -78,6 +84,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.bulkoperations.BulkStatementEnumType;
 import com.finflux.reconcilation.ReconciliationApiConstants;
 import com.finflux.reconcilation.bank.domain.Bank;
 import com.finflux.reconcilation.bank.domain.BankRepositoryWrapper;
@@ -128,7 +135,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     private final BankStatementDetailsRepository bankStatementDetailsRepository;
     private final OfficeReadPlatformService readPlatformService;
     private final JournalEntryWritePlatformService journalEntryWritePlatformService;
-
+    private final SavingsAccountDomainService savingsAccountDomainService;
     @Autowired
     public BankStatementWritePlatformServiceJpaRepository(final PlatformSecurityContext context,
             final DocumentRepository documentRepository, final ContentRepositoryFactory contentRepositoryFactory,
@@ -148,7 +155,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             final PaymentDetailRepository  paymentDetailRepository,
             final BankStatementDetailsRepository bankStatementDetailsRepository,
             final OfficeReadPlatformService readPlatformService,
-            final JournalEntryWritePlatformService journalEntryWritePlatformService) {
+            final JournalEntryWritePlatformService journalEntryWritePlatformService,
+            final SavingsAccountDomainService savingsAccountDomainService) {
         this.context = context;
         this.documentRepository = documentRepository;
         this.contentRepositoryFactory = contentRepositoryFactory;
@@ -172,6 +180,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         this.bankStatementDetailsRepository = bankStatementDetailsRepository;
         this.readPlatformService = readPlatformService;
         this.journalEntryWritePlatformService = journalEntryWritePlatformService;
+        this.savingsAccountDomainService = savingsAccountDomainService;
     }
 
     @Transactional
@@ -193,7 +202,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     validateExcel(cpifDocument, bank.getSupportSimplifiedStatement());                	
                 }
                 BankStatement bankStatement = BankStatement.instance(cpifDocument.getName(), cpifDocument.getDescription(), cpifDocument,
-                        orgDocument, false, bank);
+                        orgDocument, false, bank, BulkStatementEnumType.BANKTRANSACTIONS.getValue());
                 bankStatement = saveBankStatementDetails(cpifDocument.getId(), bankStatement, bank.getSupportSimplifiedStatement());
                 return bankStatement.getId();
             }
@@ -238,6 +247,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 String accountingType = null;
                 String glCode = "";
                 String bankStatementTransactionType = "";
+                String errmsg = null;
                 if (row.getRowNum() != 0) {
                     for (int i = 0; i < ReconciliationApiConstants.HEADER_DATA.length; i++) {
                         Cell cell = row.getCell(i);
@@ -1014,6 +1024,78 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         .build();
     }
     
+    @Override
+    public CommandProcessingResult completePortfolioTransactions(JsonCommand command) {
+        this.context.authenticatedUser();
+        BankStatement bankStatement = bankStatementRepository.findOneWithNotFoundDetection(command.entityId());
+        List<BankStatementDetailsData> bankStatementDetailsDataList = this.bankStatementDetailsReadPlatformService
+                .retrieveGeneratePortfolioData(command.entityId(), " and bsd.is_reconciled = 0 and bsd.is_error = 0 ");
+        bankStatement.setIsReconciled(true);
+        this.bankStatementRepository.save(bankStatement);
+        for (BankStatementDetailsData bankStatementDetailsData : bankStatementDetailsDataList) {
+            BankStatementDetails bankStatementDetail = this.bankStatementDetailsRepositoryWrapper
+                    .findOneWithNotFoundDetection(bankStatementDetailsData.getId());
+            final LocalDate transactionDate = new LocalDate(bankStatementDetail.getTransactionDate());
+            final BigDecimal transactionAmount = bankStatementDetail.getAmount();
+            final String loanAccountNumber = bankStatementDetail.getLoanAccountNumber();
+            final String savingsAccountNumber = bankStatementDetail.getSavingsAccountNumber();
+            final String paymentTypeName = bankStatementDetail.getPaymentTypeName();
+            final String paymentDetailAccountNumber = bankStatementDetail.getPaymentDetailAccountNumber();
+            final String paymentDetailChequeNumber = bankStatementDetail.getPaymentDetailChequeNumber();
+            final String routingCode = bankStatementDetail.getRoutingCode();
+            final String paymentDetailBankNumber = bankStatementDetail.getPaymentDetailBankNumber();
+            final String receiptNumber = bankStatementDetail.getReceiptNumber();
+            final String note = bankStatementDetail.getNote();
+            final Locale locale = command.extractLocale();
+            final String errmsg = bankStatementDetail.getErrmsg();
+            if (errmsg != null) {
+                continue;
+            }
+            final DateTimeFormatter fmt = DateTimeFormat.forPattern(command.dateFormat()).withLocale(locale);
+            try {
+                if (loanAccountNumber != null) {
+                    LoanTransaction loanTransaction = this.loanAccountDomainService.makeRepayment(loanAccountNumber, transactionDate,
+                            transactionAmount, paymentTypeName, paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode,
+                            paymentDetailBankNumber, receiptNumber, note);
+                    bankStatementDetail.setLoanTransaction(loanTransaction);
+                    bankStatementDetail.setTransactionId(loanTransaction.getId().toString());
+                    bankStatementDetail.setIsReconciled(true);
+                } else if (savingsAccountNumber != null) {
+                    SavingsAccountTransaction savingsTransaction = this.savingsAccountDomainService.handleDeposit(savingsAccountNumber,
+                            transactionDate, transactionAmount, paymentTypeName, paymentDetailAccountNumber, paymentDetailChequeNumber,
+                            routingCode, paymentDetailBankNumber, receiptNumber, note, fmt);
+                    bankStatementDetail.setTransactionId(savingsTransaction.getId().toString());
+                    bankStatementDetail.setIsReconciled(true);
+                } else {
+                    bankStatementDetail.setErrmsg("Account Number Not Found");
+                }
+            } catch (RuntimeException e) {
+                if (e instanceof PlatformApiDataValidationException) {
+                    PlatformApiDataValidationException exc = (PlatformApiDataValidationException) e;
+                    final List<ApiParameterError> errors = exc.getErrors();
+                    StringBuilder sb = new StringBuilder();
+                    for (final ApiParameterError error : errors) {
+                        sb.append(error.getDeveloperMessage()).append(" : ");
+                    }
+                    bankStatementDetail.setErrmsg(sb.toString());
+                } else if (e instanceof AbstractPlatformDomainRuleException) {
+                    AbstractPlatformDomainRuleException exc = (AbstractPlatformDomainRuleException) e;
+                    bankStatementDetail.setErrmsg(exc.getDefaultUserMessage());
+                } else if (e instanceof AbstractPlatformResourceNotFoundException) {
+                    AbstractPlatformResourceNotFoundException exc = (AbstractPlatformResourceNotFoundException) e;
+                    bankStatementDetail.setErrmsg(exc.getDefaultUserMessage());
+                } else {
+                    bankStatementDetail.setErrmsg("Failed due to domain rule or platform error");
+                }
+            }
+            this.bankStatementDetailsRepository.save(bankStatementDetail);
+        }
+
+        return new CommandProcessingResultBuilder() //
+                .withEntityId(command.entityId()) //
+                .build();
+    }
+
     public static String getFormattedDate(Date transactionDate, DateFormat formatFromExcel, DateFormat targetFormat){
         Date date;
         try {

@@ -21,6 +21,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.bulkoperations.BulkStatementEnumType;
 import com.finflux.reconcilation.bankstatement.data.BankStatementDetailsData;
 import com.finflux.reconcilation.bankstatement.domain.BankStatement;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailType;
@@ -49,16 +50,15 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
     private static final class BankStatementDetailsNonPortfolioMapper implements RowMapper<BankStatementDetailsData> {
     	
         public String schema() {
-            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "+
-            		" bsd.transaction_id as transactionId, bsd.amount as amount, "+
-            		" bsd.transaction_date as transactionDate, bsd.accounting_type as accountingType, "+
-            		" bsd.gl_code as glCode, bsd.is_reconciled as isReconciled, office.name as branchName, office.id as branch, bsd.branch_external_id as branchExternalId, "+
-            		" gl.name as glAccount, bsd.is_error as isError "+
-            		" from f_bank_statement_details bsd "+
-            		" join f_bank_statement bs on (bs.id=bsd.bank_statement_id and bsd.bank_statement_id = ? and bsd.bank_statement_detail_type = "+BankStatementDetailType.NONPORTFOLIO.getValue()+" )"+
-            		" left join f_bank b on b.id=bs.bank "+
-            		" left join m_office office on office.external_id=bsd.branch_external_id"+
-            		" left join acc_gl_account gl on (gl.gl_code=bsd.gl_code )";
+            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "
+                    + " bsd.transaction_id as transactionId, bsd.amount as amount, "
+                    + " bsd.transaction_date as transactionDate, bsd.accounting_type as accountingType,bsd.loan_account_number as loanAccountNumber,bsd.savings_account_number as savingsAccountNumber "
+                    + " bsd.gl_code as glCode, bsd.is_reconciled as isReconciled, office.name as branchName, office.id as branch, bsd.branch_external_id as branchExternalId, "
+                    + " gl.name as glAccount, bsd.is_error as isError,bsd.error_msg as errMsg " + " from f_bank_statement_details bsd "
+                    + " join f_bank_statement bs on (bs.id=bsd.bank_statement_id and bsd.bank_statement_id = ? and bsd.bank_statement_detail_type = "
+                    + BankStatementDetailType.NONPORTFOLIO.getValue() + " )" + " left join f_bank b on b.id=bs.bank "
+                    + " left join m_office office on office.external_id=bsd.branch_external_id"
+                    + " left join acc_gl_account gl on (gl.gl_code=bsd.gl_code )";
         }
 
         @Override
@@ -77,8 +77,10 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             final String branchExternalId = rs.getString("branchExternalId");
             final boolean isReconciled = rs.getBoolean("isReconciled");
             final boolean isError = rs.getBoolean("isError");
+            final String savingsAccountNumber = rs.getString("savingsAccountNumber");
+            final String errMsg = rs.getString("errMsg");
             return new BankStatementDetailsData(id, bankStatementId, transactionId, transactionDate,
-        			amount, branchExternalId, branch,glAccount,branchName,accountingType,glCode, isReconciled, isError);
+        			amount, branchExternalId, branch,glAccount,branchName,accountingType,glCode, isReconciled, isError,savingsAccountNumber, errMsg);
 
         }
     }
@@ -86,11 +88,10 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
     private static final class BankStatementDetailsGeneratePortfolioMapper implements RowMapper<BankStatementDetailsData> {
         
         public String schema() {
-            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "+
-                        " bsd.transaction_id as transactionId, bsd.amount as amount, "+
-                        " bsd.transaction_date as transactionDate, bsd.is_error as isError, bsd.receipt_number as receiptNumber , bsd.description as description, bsd.transaction_type as transactionType, bsd.loan_account_number as loanAccountNumber "+
-                        " from f_bank_statement_details bsd "+
-                        " where bsd.bank_statement_id = ? ";
+            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "
+                    + " bsd.transaction_id as transactionId, bsd.amount as amount, "
+                    + " bsd.transaction_date as transactionDate, bsd.is_error as isError, bsd.receipt_number as receiptNumber , bsd.description as description, bsd.transaction_type as transactionType, bsd.loan_account_number as loanAccountNumber, bsd.accounting_type as accountingType, bsd.savings_account_number as savingsAccountNumber,bsd.is_reconciled as isReconciled,bsd.error_msg as errMsg "
+                    + " from f_bank_statement bs join f_bank_statement_details bsd on bs.id = bsd.bank_statement_id " + " where bs.id = ? ";
         }
 
         @Override
@@ -106,7 +107,14 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             final String loanAccountNumber = rs.getString("loanAccountNumber");
             final String receiptNumber = rs.getString("receiptNumber");
             final Boolean isError = rs.getBoolean("isError");
-            return BankStatementDetailsData.generatePortfolioTransactions(id, bankStatementId, transactionId, transactionDate, amount, description, transactionType, loanAccountNumber, receiptNumber, isError);
+            final String savingsAccountNumber = rs.getString("savingsAccountNumber");
+            final String accountingType = rs.getString("accountingType");
+            final Boolean isReconciled = rs.getBoolean("isReconciled");
+            final String errMsg = rs.getString("errMsg");
+
+            return BankStatementDetailsData.generatePortfolioTransactions(id, bankStatementId, transactionId, transactionDate, amount,
+                    description, transactionType, accountingType, loanAccountNumber, receiptNumber, isError, savingsAccountNumber,
+                    isReconciled,errMsg);
 
         }
     }
@@ -116,14 +124,13 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
 
    	 public String schema() {
        	
-       return	" bsd.id as id, bsd.bank_statement_id as bankStatementId, bsd.description as "+
-       		" description, bsd.mobile_number as mobileNumber, bsd.is_manual_reconciled as isManualReconciled, "+
-       		" bsd.amount as amount, bsd.transaction_date as transactionDate,bsd.transaction_id as transactionId, "+
-       		" bsd.transaction_type as transactionType, bsd.is_reconciled as isReconciled , "+
-       		" bsd.loan_account_number as loanAccountNumber, bsd.accounting_type as accountingType,"+
-       		" bsd.group_external_id as groupExternalId,bsd.loan_transaction as loanTransactionId "+
-       		" from f_bank_statement_details bsd "+
-       		" where bsd.bank_statement_id = ? ";
+            return " bsd.id as id, bsd.bank_statement_id as bankStatementId, bsd.description as "
+                    + " description, bsd.mobile_number as mobileNumber, bsd.is_manual_reconciled as isManualReconciled, "
+                    + " bsd.amount as amount, bsd.transaction_date as transactionDate,bsd.transaction_id as transactionId, "
+                    + " bsd.transaction_type as transactionType, bsd.is_reconciled as isReconciled , "
+                    + " bsd.loan_account_number as loanAccountNumber, bsd.accounting_type as accountingType,"
+                    + " bsd.group_external_id as groupExternalId,bsd.loan_transaction as loanTransactionId,bsd.error_msg as errMsg "
+                    + " from f_bank_statement_details bsd " + " where bsd.bank_statement_id = ? ";
        }
 
        @Override
@@ -143,9 +150,12 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
            final boolean isReconciled = rs.getBoolean("isReconciled");
            final boolean isManualReconciled = rs.getBoolean("isManualReconciled");
            final String transactionId = rs.getString("transactionId");
+           final String savingsAccountNumber = rs.getString("loanAccountNumber");
+           final String errMsg = rs.getString("errMsg");
+
            return BankStatementDetailsData.reconciledData(id, bankStatementId, transactionDate, description,
            		amount, mobileNumber, loanAccountNumber, transactionType, groupExternalId, loanTransactionId,
-           		isReconciled, accountingType, isManualReconciled, transactionId);
+           		isReconciled, accountingType, isManualReconciled, transactionId,savingsAccountNumber,errMsg);
 
        }
    }
@@ -154,10 +164,10 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
     private static final class BankStatementDetailsRevertMapper implements RowMapper<BankStatementDetailsData> {
     	
         public String schema() {
-            return " bsd.id as id, bsd.bank_statement_id as bankStatementId,bsd.is_manual_reconciled as isManualReconciled, "+
-            		" bsd.transaction_id as transactionId, bsd.loan_transaction as loanTransaction, "+
-            		" bsd.bank_statement_detail_type as bankStatementDetailType, bsd.loan_account_number as loanAccountNumber from f_bank_statement_details bsd "+
-            		" where bsd.bank_statement_id = ? and  bsd.is_reconciled = 1 ";
+            return " bsd.id as id, bsd.bank_statement_id as bankStatementId,bsd.is_manual_reconciled as isManualReconciled, "
+                    + " bsd.transaction_id as transactionId, bsd.loan_transaction as loanTransaction, "
+                    + " bsd.bank_statement_detail_type as bankStatementDetailType, bsd.loan_account_number as loanAccountNumber,bsd.error_msg as errMsg from f_bank_statement_details bsd "
+                    + " where bsd.bank_statement_id = ? and  bsd.is_reconciled = 1 ";
         }
 
         @Override
@@ -170,8 +180,11 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
             final Integer bankStatementDetailType = JdbcSupport.getInteger(rs, "bankStatementDetailType");
             final String loanAccountNumber = rs.getString("loanAccountNumber");
             final boolean isManualReconciled = rs.getBoolean("isManualReconciled");
+            final String savingsAccountNumber = rs.getString("loanAccountNumber");
+            final String errmsg = rs.getString("errmsg");
+
             return new BankStatementDetailsData(id, bankStatementId, transactionId, loanTransaction, 
-            		bankStatementDetailType, loanAccountNumber, isManualReconciled);
+            		bankStatementDetailType, loanAccountNumber, isManualReconciled,savingsAccountNumber, errmsg);
 
         }
     } 
@@ -281,9 +294,9 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
         
         final BankStatementDetailsGeneratePortfolioMapper rm = new BankStatementDetailsGeneratePortfolioMapper();
 
-        final String sql = "SELECT " + rm.schema() +" and bsd.loan_account_number IS NOT NULL "+searchCriteria;
+        final String sql = "SELECT " + rm.schema() +" and (bs.statement_type != ? or bsd.loan_account_number IS NOT NULL) "+searchCriteria;
         
-        return this.jdbcTemplate.query(sql, rm, new Object[] { bankStatementId });
+        return this.jdbcTemplate.query(sql, rm, new Object[] { bankStatementId,BulkStatementEnumType.BANKTRANSACTIONS.getValue() });
         
     }
 
@@ -293,11 +306,14 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
 		HashMap<String, Object> responseData = new HashMap<>();
         Gson gson = new Gson();     
         BankStatement bankStatement = this.bankStatementReadPlatformService.findOneWithNotFoundDetection(bankStatementId);
-        final String sql = "SELECT count(*) from f_bank_statement_details bsd where bsd.bank_statement_id = ? and bsd.loan_account_number IS NULL and bsd.bank_statement_detail_type = "+ BankStatementDetailType.PORTFOLIO.getValue();
+        final String sql = "SELECT count(*) from f_bank_statement_details bsd where bsd.bank_statement_id = ? and bsd.loan_account_number IS NULL and bsd.bank_statement_detail_type = "
+                + BankStatementDetailType.PORTFOLIO.getValue();
         int totalTransactions = this.jdbcTemplate.queryForObject(
                 sql, new Object[] { bankStatementId }, Integer.class);
         responseData.put("totalTransactions", totalTransactions);
-        responseData.put("bankName", bankStatement.getBank().getName());
+        if (bankStatement.getBank() != null) {
+            responseData.put("bankName", bankStatement.getBank().getName());
+        }
         responseData.put("bankStatementName", bankStatement.getName());
         responseData.put("bankStatementDetails", bankStatementDetailData);
         return gson.toJson(responseData);

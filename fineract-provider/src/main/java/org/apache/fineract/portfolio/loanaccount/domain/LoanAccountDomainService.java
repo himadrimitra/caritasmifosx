@@ -103,4 +103,8 @@ public interface LoanAccountDomainService {
             boolean isAccountTransfer, HolidayDetailDTO holidayDetailDto, Boolean isHolidayValidationDone, boolean isLoanToLoanTransfer,
             boolean isPrepayment);
 
+    LoanTransaction makeRepayment(String loanAccountNumber, LocalDate transactionDate, BigDecimal transactionAmount, String paymentTypeName,
+            String paymentDetailAccountNumber, String paymentDetailChequeNumber, String routingCode, String paymentDetailBankNumber,
+            String receiptNumber, String note);
+
 }

@@ -94,5 +94,12 @@ public class LoanRepositoryWrapper {
     public Loan getActiveLoanByAccountNumber(String accountNumber){
     	return this.repository.findActiveLoanByAccountNumber(accountNumber);
     }
+    
+    public Loan findOneWithNotFoundDetectionAndLazyInitialize(final String accountNumber) {
+        final Loan loan = this.repository.findByAccountNumber(accountNumber);
+        if (loan == null) { throw new LoanNotFoundException(accountNumber); }
+        initializeLazyEntities(loan);
+        return loan;
+    }
 
 }

@@ -46,15 +46,19 @@ public class BankStatement extends AbstractAuditableCustom<AppUser, Long> {
     
     @Column(name = "payment_type")
     private String paymentType;
+    
+    @Column(name = "statement_type")
+    private Integer statementType;
 
     public BankStatement(final String name, final String description, final Document cpifDocument, final Document orgStatementDocument,
-            final Boolean isReconciled, final Bank bank) {
+            final Boolean isReconciled, final Bank bank, Integer statementType) {
         this.name = name;
         this.description = description;
         this.cpifDocument = cpifDocument;
         this.orgStatementDocument = orgStatementDocument;
         this.isReconciled = isReconciled;
         this.bank = bank;
+        this.statementType = statementType;
     };
 
     public BankStatement() {
@@ -63,8 +67,8 @@ public class BankStatement extends AbstractAuditableCustom<AppUser, Long> {
 
     public static BankStatement instance(final String name, final String description, final Document cpifDocument,
             final Document orgStatementDocument, final Boolean isReconciled,
-            final Bank bank) {
-        return new BankStatement(name, description, cpifDocument, orgStatementDocument, isReconciled, bank);
+            final Bank bank, Integer statementType) {
+        return new BankStatement(name, description, cpifDocument, orgStatementDocument, isReconciled, bank, statementType);
     }
 
     public Document getCpifDocument() {

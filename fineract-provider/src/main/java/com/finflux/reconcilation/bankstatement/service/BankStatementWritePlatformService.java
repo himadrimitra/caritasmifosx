@@ -33,4 +33,6 @@ public interface BankStatementWritePlatformService {
     
     public CommandProcessingResult generatePortfolioTransactions(JsonCommand command);
 
+    CommandProcessingResult completePortfolioTransactions(JsonCommand command);
+
 }
