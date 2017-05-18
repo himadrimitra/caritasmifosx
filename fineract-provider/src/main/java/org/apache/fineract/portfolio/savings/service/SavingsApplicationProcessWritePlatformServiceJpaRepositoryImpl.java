@@ -189,7 +189,7 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
                     .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
                             FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
-            final SavingsAccount account = this.savingAccountAssembler.assembleFrom(command, submittedBy);
+            final SavingsAccount account = this.savingAccountAssembler.submitApplicationAssembleFrom(command, submittedBy);
             this.savingAccountRepository.save(account);
 
             generateAccountNumber(account);
@@ -222,7 +222,10 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
     @Override
     public CommandProcessingResult modifyApplication(final Long savingsId, final JsonCommand command) {
         try {
-            this.savingsAccountDataValidator.validateForUpdate(command.json());
+            
+            final SavingsAccount account = this.savingAccountAssembler.assembleFrom(savingsId);
+            
+            this.savingsAccountDataValidator.validateForUpdate(account, command.json());
 
             if(command.hasParameter(productIdParamName)){
                 Long productId = command.longValueOfParameterNamed(productIdParamName);
@@ -237,7 +240,6 @@ public class SavingsApplicationProcessWritePlatformServiceJpaRepositoryImpl impl
 
             final Map<String, Object> changes = new LinkedHashMap<>(20);
 
-            final SavingsAccount account = this.savingAccountAssembler.assembleFrom(savingsId);
             checkClientOrGroupActive(account);
             account.modifyApplication(command, changes);
             account.validateNewApplicationState(DateUtils.getLocalDateOfTenant(), SAVINGS_ACCOUNT_RESOURCE_NAME);

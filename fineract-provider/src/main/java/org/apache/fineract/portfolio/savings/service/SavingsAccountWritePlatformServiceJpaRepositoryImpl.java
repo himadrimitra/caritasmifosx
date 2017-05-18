@@ -68,11 +68,18 @@ import org.apache.fineract.portfolio.account.domain.StandingInstructionRepositor
 import org.apache.fineract.portfolio.account.domain.StandingInstructionStatus;
 import org.apache.fineract.portfolio.account.service.AccountAssociationsReadPlatformService;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
+import org.apache.fineract.portfolio.calendar.domain.Calendar;
+import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepositoryWrapper;
+import org.apache.fineract.portfolio.calendar.domain.CalendarType;
 import org.apache.fineract.portfolio.charge.domain.Charge;
 import org.apache.fineract.portfolio.charge.domain.ChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.charge.domain.ChargeTimeType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.group.exception.GroupNotActiveException;
 import org.apache.fineract.portfolio.group.exception.UpdateStaffHierarchyException;
@@ -99,6 +106,7 @@ import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepositoryWrap
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransactionRepository;
+import org.apache.fineract.portfolio.savings.domain.SavingsProductDrawingPowerDetails;
 import org.apache.fineract.portfolio.savings.exception.PostInterestAsOnDateException;
 import org.apache.fineract.portfolio.savings.exception.PostInterestAsOnDateException.PostInterestAsOnException_TYPE;
 import org.apache.fineract.portfolio.savings.exception.PostInterestClosingDateException;
@@ -145,6 +153,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final AppUserRepositoryWrapper appuserRepository;
     private final StandingInstructionRepository standingInstructionRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final CalendarInstanceRepositoryWrapper calendarInstanceRepository;
 
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -164,9 +173,9 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final SavingsAccountDataValidator fromApiJsonDeserializer, final SavingsAccountRepositoryWrapper savingsRepository,
             final StaffRepositoryWrapper staffRepository, final ConfigurationDomainService configurationDomainService,
             final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
-            final AppUserRepositoryWrapper appuserRepository, 
-            final StandingInstructionRepository standingInstructionRepository,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final AppUserRepositoryWrapper appuserRepository, final StandingInstructionRepository standingInstructionRepository,
+            final FineractEntityAccessUtil fineractEntityAccessUtil,
+            final CalendarInstanceRepositoryWrapper calendarInstanceRepository) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
@@ -192,6 +201,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.appuserRepository = appuserRepository;
         this.standingInstructionRepository = standingInstructionRepository;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.calendarInstanceRepository = calendarInstanceRepository;
     }
 
     @Transactional
@@ -216,7 +226,10 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
 
             this.savingAccountRepository.save(account);
         }
-
+        if (account.allowOverdraft() && account.getSavingsAccountDpDetails() != null) {
+            createSavingsAccountDpDetailsCalendarInstance(account);
+        }
+        
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds);
 
         return new CommandProcessingResultBuilder() //
@@ -227,6 +240,29 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
                 .withSavingsId(savingsId) //
                 .with(changes) //
                 .build();
+    }
+
+    /**
+     * Create Savings Account Drawing Power Details Calendar Instance
+     * @param account
+     */
+    private void createSavingsAccountDpDetailsCalendarInstance(final SavingsAccount account) {
+        final SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails = account.savingsProduct()
+                .getSavingsProductDrawingPowerDetails();
+        final Integer frequencyType = savingsProductDrawingPowerDetails.getFrequencyType();
+        final CalendarFrequencyType calendarFrequencyType = CalendarFrequencyType.from(PeriodFrequencyType.fromInt(frequencyType));
+        final String title = "savings_account_" + account.getSavingsAccountDpDetails().getId() + "_dp_details";
+        final Collection<Integer> repeatsOnDayOfMonth = new ArrayList<>(1);
+        if (savingsProductDrawingPowerDetails.getFrequencyOnDay() != null) {
+            repeatsOnDayOfMonth.add(savingsProductDrawingPowerDetails.getFrequencyOnDay());
+        }
+        final Calendar calendar = Calendar.createRepeatingCalendar(title,
+                new LocalDate(account.getSavingsAccountDpDetails().getStartDate()), CalendarType.COLLECTION.getValue(),
+                calendarFrequencyType, savingsProductDrawingPowerDetails.getFrequencyInterval(),
+                savingsProductDrawingPowerDetails.getFrequencyDayOfWeekType(), savingsProductDrawingPowerDetails.getFrequencyNthDay(),
+                repeatsOnDayOfMonth);
+        this.calendarInstanceRepository.save(CalendarInstance.from(calendar, account.getSavingsAccountDpDetails().getId(),
+                CalendarEntityType.SAVINGS_DP_DETAILS.getValue()));
     }
 
     @Override

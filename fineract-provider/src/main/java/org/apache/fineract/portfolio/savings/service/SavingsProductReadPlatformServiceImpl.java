@@ -31,8 +31,13 @@ import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
+import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
+import org.apache.fineract.portfolio.common.domain.NthDayType;
+import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
+import org.apache.fineract.portfolio.savings.data.SavingsProductDrawingPowerDetailsData;
 import org.apache.fineract.portfolio.savings.exception.SavingsProductNotFoundException;
 import org.apache.fineract.portfolio.tax.data.TaxGroupData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -139,7 +144,13 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             sqlBuilder.append("sp.days_to_inactive as daysToInactive,");
             sqlBuilder.append("sp.days_to_dormancy as daysToDormancy,");
             sqlBuilder.append("sp.days_to_escheat as daysToEscheat ");
+            sqlBuilder.append(",spdpd.frequency_type_enum as frequencyType ");
+            sqlBuilder.append(",spdpd.frequency_interval as frequencyInterval ");
+            sqlBuilder.append(",spdpd.frequency_nth_day_enum as frequencyNthDay ");
+            sqlBuilder.append(",spdpd.frequency_day_of_week_type_enum as frequencyDayOfWeekType ");
+            sqlBuilder.append(",spdpd.frequency_on_day as frequencyOnDay ");
             sqlBuilder.append("from m_savings_product sp ");
+            sqlBuilder.append("left join f_savings_product_drawing_power_details spdpd on spdpd.product_id = sp.id ");
             sqlBuilder.append("join m_currency curr on curr.code = sp.currency_code ");
             sqlBuilder.append("left join m_tax_group tg on tg.id = sp.tax_group_id  ");
 
@@ -221,12 +232,40 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
             final Long daysToDormancy = JdbcSupport.getLong(rs, "daysToDormancy");
             final Long daysToEscheat = JdbcSupport.getLong(rs, "daysToEscheat");
             
+            final String codePrefix = "savingsproductdrawingpower.";
+
+            final Integer frequencyTypeValue = JdbcSupport.getInteger(rs, "frequencyType");
+            EnumOptionData frequencyType = null;
+            if (frequencyTypeValue != null) {
+                frequencyType = PeriodFrequencyType.periodFrequencyType(frequencyTypeValue);
+            }
+
+            final Integer frequencyInterval = JdbcSupport.getInteger(rs, "frequencyInterval");
+
+            final Integer frequencyNthDayValue = JdbcSupport.getInteger(rs, "frequencyNthDay");
+            EnumOptionData frequencyNthDay = null;
+            if (frequencyNthDayValue != null) {
+                frequencyNthDay = CommonEnumerations.nthDayType(NthDayType.fromInt(frequencyNthDayValue), codePrefix);
+            }
+
+            final Integer frequencyDayOfWeekTypeValue = JdbcSupport.getInteger(rs, "frequencyDayOfWeekType");
+            EnumOptionData frequencyDayOfWeekType = null;
+            if (frequencyDayOfWeekTypeValue != null) {
+                frequencyDayOfWeekType = CommonEnumerations.dayOfWeekType(DayOfWeekType.fromInt(frequencyDayOfWeekTypeValue), codePrefix);
+            }
+
+            final Integer frequencyOnDay = JdbcSupport.getInteger(rs, "frequencyOnDay");
+
+            final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData = SavingsProductDrawingPowerDetailsData
+                    .createNew(frequencyType, frequencyInterval, frequencyNthDay, frequencyDayOfWeekType, frequencyOnDay);
+
             return SavingsProductData.instance(id, name, shortName, description, currency, nominalAnnualInterestRate,
                     compoundingInterestPeriodType, interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType,
                     minRequiredOpeningBalance, lockinPeriodFrequency, lockinPeriodFrequencyType, withdrawalFeeForTransfers,
                     accountingRuleType, allowOverdraft, overdraftLimit, minRequiredBalance, enforceMinRequiredBalance,
                     minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                    taxGroupData, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+                    taxGroupData, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId,
+                    savingsProductDrawingPowerDetailsData);
         }
     }
 

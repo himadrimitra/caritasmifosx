@@ -21,8 +21,6 @@ package org.apache.fineract.portfolio.loanproduct.service;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.amortizationType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestCalculationPeriodType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRateFrequencyType;
-import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingDayOfWeekType;
-import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingNthDayType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationCompoundingType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestRecalculationFrequencyType;
 import static org.apache.fineract.portfolio.loanproduct.service.LoanEnumerations.interestType;
@@ -43,6 +41,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionProcessingStrategyRepository;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.AmortizationMethod;
@@ -175,24 +174,22 @@ public class LoanDropdownReadPlatformServiceImpl implements LoanDropdownReadPlat
 
     @Override
     public List<EnumOptionData> retrieveInterestRecalculationNthDayTypeOptions() {
-        final List<EnumOptionData> interestRecalculationCompoundingNthDayTypeOptions = Arrays.asList(
-                interestRecalculationCompoundingNthDayType(NthDayType.ONE), interestRecalculationCompoundingNthDayType(NthDayType.TWO),
-                interestRecalculationCompoundingNthDayType(NthDayType.THREE), interestRecalculationCompoundingNthDayType(NthDayType.FOUR),
-                interestRecalculationCompoundingNthDayType(NthDayType.LAST));
-        return interestRecalculationCompoundingNthDayTypeOptions;
+        final String codePrefix = "interestRecalculationCompounding.";
+        return Arrays.asList(CommonEnumerations.nthDayType(NthDayType.ONE, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.TWO, codePrefix), CommonEnumerations.nthDayType(NthDayType.THREE, codePrefix),
+                CommonEnumerations.nthDayType(NthDayType.FOUR, codePrefix), CommonEnumerations.nthDayType(NthDayType.LAST, codePrefix));
     }
 
     @Override
     public List<EnumOptionData> retrieveInterestRecalculationDayOfWeekTypeOptions() {
-        final List<EnumOptionData> interestRecalculationCompoundingNthDayTypeOptions = Arrays.asList(
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.SUNDAY),
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.MONDAY),
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.TUESDAY),
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.WEDNESDAY),
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.THURSDAY),
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.FRIDAY),
-                interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.SATURDAY));
-        return interestRecalculationCompoundingNthDayTypeOptions;
+        final String codePrefix = "interestRecalculationCompounding.";
+        return Arrays.asList(CommonEnumerations.dayOfWeekType(DayOfWeekType.SUNDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.MONDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.TUESDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.WEDNESDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.THURSDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.FRIDAY, codePrefix),
+                CommonEnumerations.dayOfWeekType(DayOfWeekType.SATURDAY, codePrefix));
     }
 
     @Override

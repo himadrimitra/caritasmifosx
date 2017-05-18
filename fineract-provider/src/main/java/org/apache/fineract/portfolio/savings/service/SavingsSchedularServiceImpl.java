@@ -19,21 +19,27 @@
 package org.apache.fineract.portfolio.savings.service;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
+import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
+import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
+import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.savings.SavingsDpLimitCalculationType;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountRepository;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountStatusType;
 import org.joda.time.LocalDate;
-import org.joda.time.Months;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,16 +52,19 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
     private final SavingsAccountRepository savingAccountRepository;
     private final SavingsAccountReadPlatformService savingAccountReadPlatformService;
+    private final CalendarInstanceRepository calendarInstanceRepository;
 
     @Autowired
     public SavingsSchedularServiceImpl(final SavingsAccountAssembler savingAccountAssembler,
             final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
             final SavingsAccountRepository savingAccountRepository,
-            final SavingsAccountReadPlatformService savingAccountReadPlatformService) {
+            final SavingsAccountReadPlatformService savingAccountReadPlatformService,
+            final CalendarInstanceRepository calendarInstanceRepository) {
         this.savingAccountAssembler = savingAccountAssembler;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
         this.savingAccountRepository = savingAccountRepository;
         this.savingAccountReadPlatformService = savingAccountReadPlatformService;
+        this.calendarInstanceRepository = calendarInstanceRepository;
     }
 
     @CronTarget(jobName = JobName.POST_INTEREST_FOR_SAVINGS)
@@ -127,65 +136,54 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
     @Override
     public void reduceDpLimitForAccounts() throws JobExecutionException {
         final LocalDate today = DateUtils.getLocalDateOfTenant();
-        Collection<SavingsAccountDpDetailsData>  savingsAccountDpDetailsDatas = this.savingAccountReadPlatformService.retriveSavingsAccountDpDetailsDatas();
-        
-        for (SavingsAccountDpDetailsData savingsAccountDpDetailsData : savingsAccountDpDetailsDatas) {
-            int periodNumber = calculatePeriodsBetweenDates(new LocalDate(savingsAccountDpDetailsData.getsavingsActivatedonDate()), today, savingsAccountDpDetailsData);
+        final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
+        final MathContext mc = new MathContext(8, roundingMode);
+        final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
+        final Collection<SavingsAccountDpDetailsData> savingsAccountDpDetailsDatas = this.savingAccountReadPlatformService
+                .retriveSavingsAccountDpDetailsDatas();
+        for (final SavingsAccountDpDetailsData savingsAccountDpDetailsData : savingsAccountDpDetailsDatas) {
+            final CalendarInstance calendarInstance = this.calendarInstanceRepository.findCalendarInstaneByEntityId(
+                    savingsAccountDpDetailsData.getId(), CalendarEntityType.SAVINGS_DP_DETAILS.getValue());
+            final String recurringRule = calendarInstance.getCalendar().getRecurrence();
+            final LocalDate seedDate = calendarInstance.getCalendar().getStartDateLocalDate();
+            final LocalDate periodStartDate = new LocalDate(savingsAccountDpDetailsData.getSavingsActivatedonDate());
+            final LocalDate periodEndDate = today;
+            final Integer duration = savingsAccountDpDetailsData.getDuration();
+            final boolean isSkippMeetingOnFirstDay = false;
+            final Integer numberOfDays = null;
+            final Collection<LocalDate> localDates = CalendarUtils.getRecurringDates(recurringRule, seedDate, periodStartDate,
+                    periodEndDate, duration, isSkippMeetingOnFirstDay, numberOfDays);
+            final int periodNumber = localDates.size();
             if (periodNumber > 0) {
-                BigDecimal dpAmount = savingsAccountDpDetailsData.getDpAmount();
-                BigDecimal amount = savingsAccountDpDetailsData.getAmount();
-                Integer duration = savingsAccountDpDetailsData.getDuration();
+                final BigDecimal dpAmount = savingsAccountDpDetailsData.getDpAmount();
                 BigDecimal dpLimitAmount = BigDecimal.ZERO;
                 if (isPeriodNumberFallsInDuration(periodNumber, duration)) {
-                    if (!isLastPeriod(periodNumber, duration)) {
-                        dpLimitAmount = dpAmount.subtract(BigDecimal.valueOf(periodNumber).multiply(amount));
-                        if (dpLimitAmount.compareTo(BigDecimal.ZERO) == -1) {
-                            dpLimitAmount = BigDecimal.ZERO;
-                        }
-                    } 
-                } 
-                this.savingAccountReadPlatformService.updateSavingsAccountDpLimit(dpLimitAmount, savingsAccountDpDetailsData.getSavingsAccountId());
+                    BigDecimal amount = BigDecimal.ZERO;
+                    final Integer calculationTypeId = savingsAccountDpDetailsData.getCalculationType().getId().intValue();
+                    final SavingsDpLimitCalculationType savingsDpLimitCalculationType = SavingsDpLimitCalculationType
+                            .fromInt(calculationTypeId);
+                    if (savingsDpLimitCalculationType.isFlat()) {
+                        amount = savingsAccountDpDetailsData.getAmount();
+                    } else {
+                        final BigDecimal percentOfAmount = savingsAccountDpDetailsData.getAmount();
+                        amount = dpAmount.multiply(percentOfAmount).divide(divisor, mc);
+                    }
+                    dpLimitAmount = dpAmount.subtract(BigDecimal.valueOf(periodNumber).multiply(amount));
+                    if (dpLimitAmount.compareTo(BigDecimal.ZERO) == -1) {
+                        dpLimitAmount = BigDecimal.ZERO;
+                    }
+                }
+                this.savingAccountReadPlatformService.updateSavingsAccountDpLimit(dpLimitAmount,
+                        savingsAccountDpDetailsData.getSavingsAccountId());
             }
         }
-        
-        
-    }
-    
-    private boolean isLastPeriod(int periodNumber, Integer duration) {
-        boolean isLastPeriod = false;
-        if (periodNumber == duration.intValue()) {
-            isLastPeriod = true;
-        }
-        return isLastPeriod;
     }
 
     private boolean isPeriodNumberFallsInDuration(int periodNumber, Integer duration) {
         boolean isNumberOfPeriodFallsInDuring = false;
-        if (periodNumber <= duration.intValue()) {
+        if (periodNumber < duration.intValue()) {
             isNumberOfPeriodFallsInDuring = true;
         }
         return isNumberOfPeriodFallsInDuring;
-    }
-
-    public int calculatePeriodsBetweenDates(final LocalDate startDate, LocalDate endDate, SavingsAccountDpDetailsData savingsAccountDpDetailsData) {
-        int periodNumber = 0;
-        switch(savingsAccountDpDetailsData.getFrequencyType()) {
-            case DAYS:
-                break;
-            case MONTHS:
-                int reduceEvery = savingsAccountDpDetailsData.getDpReductionEvery();
-                periodNumber = Months.monthsBetween(startDate, endDate).getMonths();
-                if (reduceEvery > 1) {
-                    periodNumber = periodNumber / reduceEvery;
-                }
-                break;
-            case YEARS:
-                break;
-            default:
-                break;
-                
-        }
-        return periodNumber;
-        
     }
 }

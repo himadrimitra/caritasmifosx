@@ -55,6 +55,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -79,7 +80,7 @@ import org.springframework.util.CollectionUtils;
 public class SavingsProductsApiResource {
 
     private final SavingsProductReadPlatformService savingProductReadPlatformService;
-    private final SavingsDropdownReadPlatformService dropdownReadPlatformService;
+    private final SavingsDropdownReadPlatformService savingsDropdownReadPlatformService;
     private final CurrencyReadPlatformService currencyReadPlatformService;
     private final PlatformSecurityContext context;
     private final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer;
@@ -90,10 +91,11 @@ public class SavingsProductsApiResource {
     private final ChargeReadPlatformService chargeReadPlatformService;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final TaxReadPlatformService taxReadPlatformService;
+    private final DropdownReadPlatformService dropdownReadPlatformService;
 
     @Autowired
     public SavingsProductsApiResource(final SavingsProductReadPlatformService savingProductReadPlatformService,
-            final SavingsDropdownReadPlatformService dropdownReadPlatformService,
+            final SavingsDropdownReadPlatformService savingsDropdownReadPlatformService,
             final CurrencyReadPlatformService currencyReadPlatformService, final PlatformSecurityContext context,
             final DefaultToApiJsonSerializer<SavingsProductData> toApiJsonSerializer,
             final PortfolioCommandSourceWritePlatformService commandsSourceWritePlatformService,
@@ -101,9 +103,9 @@ public class SavingsProductsApiResource {
             final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
             final ProductToGLAccountMappingReadPlatformService accountMappingReadPlatformService,
             final ChargeReadPlatformService chargeReadPlatformService, PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-            final TaxReadPlatformService taxReadPlatformService) {
+            final TaxReadPlatformService taxReadPlatformService,final DropdownReadPlatformService dropdownReadPlatformService) {
         this.savingProductReadPlatformService = savingProductReadPlatformService;
-        this.dropdownReadPlatformService = dropdownReadPlatformService;
+        this.savingsDropdownReadPlatformService = savingsDropdownReadPlatformService;
         this.currencyReadPlatformService = currencyReadPlatformService;
         this.context = context;
         this.toApiJsonSerializer = toApiJsonSerializer;
@@ -114,6 +116,7 @@ public class SavingsProductsApiResource {
         this.chargeReadPlatformService = chargeReadPlatformService;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
         this.taxReadPlatformService = taxReadPlatformService;
+        this.dropdownReadPlatformService = dropdownReadPlatformService;
     }
 
     @POST
@@ -229,22 +232,22 @@ public class SavingsProductsApiResource {
             currency = new ArrayList<>(currencyOptions).get(0);
         }
 
-        final Collection<EnumOptionData> interestCompoundingPeriodTypeOptions = this.dropdownReadPlatformService
+        final Collection<EnumOptionData> interestCompoundingPeriodTypeOptions = this.savingsDropdownReadPlatformService
                 .retrieveCompoundingInterestPeriodTypeOptions();
 
-        final Collection<EnumOptionData> interestPostingPeriodTypeOptions = this.dropdownReadPlatformService
+        final Collection<EnumOptionData> interestPostingPeriodTypeOptions = this.savingsDropdownReadPlatformService
                 .retrieveInterestPostingPeriodTypeOptions();
 
-        final Collection<EnumOptionData> interestCalculationTypeOptions = this.dropdownReadPlatformService
+        final Collection<EnumOptionData> interestCalculationTypeOptions = this.savingsDropdownReadPlatformService
                 .retrieveInterestCalculationTypeOptions();
 
-        final Collection<EnumOptionData> interestCalculationDaysInYearTypeOptions = this.dropdownReadPlatformService
+        final Collection<EnumOptionData> interestCalculationDaysInYearTypeOptions = this.savingsDropdownReadPlatformService
                 .retrieveInterestCalculationDaysInYearTypeOptions();
 
-        final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions = this.dropdownReadPlatformService
+        final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions = this.savingsDropdownReadPlatformService
                 .retrieveLockinPeriodFrequencyTypeOptions();
 
-        final Collection<EnumOptionData> withdrawalFeeTypeOptions = this.dropdownReadPlatformService.retrievewithdrawalFeeTypeOptions();
+        final Collection<EnumOptionData> withdrawalFeeTypeOptions = this.savingsDropdownReadPlatformService.retrievewithdrawalFeeTypeOptions();
 
         final Collection<PaymentTypeData> paymentTypeOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
 
@@ -261,18 +264,26 @@ public class SavingsProductsApiResource {
         Collection<ChargeData> penaltyOptions = this.chargeReadPlatformService.retrieveSavingsApplicablePenalties();
         penaltyOptions = CollectionUtils.isEmpty(penaltyOptions) ? null : penaltyOptions;
         final Collection<TaxGroupData> taxGroupOptions = this.taxReadPlatformService.retrieveTaxGroupsForLookUp();
+        
+        final Collection<EnumOptionData> periodFrequencyTypeOptions = this.dropdownReadPlatformService.retrievePeriodFrequencyTypeOptions();
+        final String codePrefix = "savingsproductdrawingpower.";
+        final Collection<EnumOptionData> nthDayTypeOptions = this.dropdownReadPlatformService.retrieveNthDayTypeOptions(codePrefix);
+        final Collection<EnumOptionData> dayOfWeekTypeOptions = this.dropdownReadPlatformService.retrieveDayOfWeekTypeOptions(codePrefix);
+        
         SavingsProductData savingsProductToReturn = null;
         if (savingsProduct != null) {
             savingsProductToReturn = SavingsProductData.withTemplate(savingsProduct, currencyOptions, interestCompoundingPeriodTypeOptions,
                     interestPostingPeriodTypeOptions, interestCalculationTypeOptions, interestCalculationDaysInYearTypeOptions,
                     lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions, paymentTypeOptions, accountingRuleOptions,
-                    accountingMappingOptions, chargeOptions, penaltyOptions, taxGroupOptions);
+                    accountingMappingOptions, chargeOptions, penaltyOptions, taxGroupOptions, periodFrequencyTypeOptions,
+                    nthDayTypeOptions, dayOfWeekTypeOptions);
         } else {
             savingsProductToReturn = SavingsProductData.template(currency, interestCompoundingPeriodType, interestPostingPeriodType,
                     interestCalculationType, interestCalculationDaysInYearType, accountingRule, currencyOptions,
                     interestCompoundingPeriodTypeOptions, interestPostingPeriodTypeOptions, interestCalculationTypeOptions,
                     interestCalculationDaysInYearTypeOptions, lockinPeriodFrequencyTypeOptions, withdrawalFeeTypeOptions,
-                    paymentTypeOptions, accountingRuleOptions, accountingMappingOptions, chargeOptions, penaltyOptions, taxGroupOptions);
+                    paymentTypeOptions, accountingRuleOptions, accountingMappingOptions, chargeOptions, penaltyOptions, taxGroupOptions,
+                    periodFrequencyTypeOptions, nthDayTypeOptions, dayOfWeekTypeOptions);
         }
 
         return savingsProductToReturn;

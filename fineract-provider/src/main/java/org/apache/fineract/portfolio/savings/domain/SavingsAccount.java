@@ -1386,63 +1386,18 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             this.minOverdraftForInterestCalculation = newValue;
         }
         
-        if (command.parameterExists(SavingsApiConstants.allowDpLimitParamName)) {
-            boolean allowDpLimit = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName);
-            if (!allowDpLimit) {
-                this.savingsAccountDpDetails = null;
+        /**
+         * This code is for create or modify account DP Details based on the
+         * passed parameters
+         */
+        if (this.allowOverdraft && command.parameterExists(SavingsApiConstants.allowDpLimitParamName)
+                && command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName)) {
+            if (this.savingsAccountDpDetails == null) {
+                this.savingsAccountDpDetails = new SavingsAccountDpDetails();
             }
-        }
-        
-        if (this.savingsAccountDpDetails != null) {
-            boolean  isRecalculateDpReducationAmount = false;
-            BigDecimal dpAmount = this.savingsAccountDpDetails.getDpAmount();
-            if (command.isChangeInBigDecimalParameterNamedDefaultingZeroToNull(SavingsApiConstants.dpLimitAmountParamName,
-                    dpAmount)) {
-                dpAmount = command
-                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpLimitAmountParamName);
-                this.savingsAccountDpDetails.setDpAmount(dpAmount);
-                updateOverDraftLimit(dpAmount);
-                isRecalculateDpReducationAmount = true;
-            }
-
-            if (command.isChangeInIntegerParameterNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName,
-                    this.savingsAccountDpDetails.getFrequencyType())) {
-                final Integer newValue = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName);
-                this.savingsAccountDpDetails.setFrequencyType(newValue);
-            }
-
-            Integer calculationType = this.savingsAccountDpDetails.getCalculationType();
-            if (command.isChangeInIntegerParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName,
-                    calculationType)) {
-                calculationType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName);
-                this.savingsAccountDpDetails.setCalculationType(calculationType);
-                isRecalculateDpReducationAmount = true;
-            }
-
-            if (command.isChangeInIntegerParameterNamed(SavingsApiConstants.dpLimitReductionEveryParamName,
-                    this.savingsAccountDpDetails.getDpReductionEvery())) {
-                final Integer newValue = command.integerValueOfParameterNamed(SavingsApiConstants.dpLimitReductionEveryParamName);
-                this.savingsAccountDpDetails.setDpReductionEvery(newValue);
-            }
-
-            if (command
-                    .isChangeInIntegerParameterNamed(SavingsApiConstants.dpDurationParamName, this.savingsAccountDpDetails.getDuration())) {
-                final Integer newValue = command.integerValueOfParameterNamed(SavingsApiConstants.dpDurationParamName);
-                this.savingsAccountDpDetails.setDuration(newValue);
-            }
-
-            BigDecimal amountOrPercentage = this.savingsAccountDpDetails.getAmountOrPercentage();
-            if (command.isChangeInBigDecimalParameterNamedDefaultingZeroToNull(SavingsApiConstants.dpCalculateOnAmountParamName,
-                    amountOrPercentage)) {
-                amountOrPercentage = command
-                        .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpCalculateOnAmountParamName);
-                this.savingsAccountDpDetails.setAmountOrPercentage(amountOrPercentage);
-                isRecalculateDpReducationAmount = true;
-            }
-            
-            if (isRecalculateDpReducationAmount) {
-                this.savingsAccountDpDetails.setAmount(this.savingsAccountDpDetails.populateDerivedFields(calculationType, amountOrPercentage, dpAmount));
-            }
+            this.savingsAccountDpDetails.update(this, command, actualChanges);
+        } else {
+            this.savingsAccountDpDetails = null;
         }
 
         if (!this.allowOverdraft) {
@@ -2716,6 +2671,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         return charge;
     }
 
+    @SuppressWarnings("unused")
     public Set<SavingsAccountCharge> charges() {
         return (this.charges == null) ? new HashSet<SavingsAccountCharge>() : this.charges;
     }
@@ -2942,5 +2898,9 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     
     public void updateOverDraftLimit(BigDecimal dpLimitAmount) {
         this.overdraftLimit = dpLimitAmount;
+    }
+
+    public SavingsAccountDpDetails getSavingsAccountDpDetails() {
+        return this.savingsAccountDpDetails;
     }
 }

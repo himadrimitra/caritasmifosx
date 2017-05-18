@@ -71,4 +71,12 @@ public enum SavingsDpLimitCalculationType {
         }
         return optionData;
     }
+    
+    public boolean isFlat() {
+        return this.value.equals(SavingsDpLimitCalculationType.FLAT.value);
+    }
+
+    public boolean isPercentOfAmount() {
+        return this.value.equals(SavingsDpLimitCalculationType.PERCENT_OF_AMOUNT.value);
+    }
 }

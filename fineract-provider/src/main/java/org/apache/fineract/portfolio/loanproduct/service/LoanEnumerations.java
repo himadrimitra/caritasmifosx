@@ -654,48 +654,6 @@ public class LoanEnumerations {
         }
         return optionData;
     }
-    public static EnumOptionData interestRecalculationCompoundingNthDayType(final Integer id) {
-        if (id == null) { return null; }
-        return interestRecalculationCompoundingNthDayType(NthDayType.fromInt(id));
-    }
-    public static EnumOptionData interestRecalculationCompoundingNthDayType(final NthDayType type) {
-    	final String codePrefix = "interestRecalculationCompounding.";
-        long nthDayValue = type.getValue().longValue();
-        EnumOptionData optionData = null;
-        switch (type) {
-            case ONE:
-                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "first");
-            break;
-            case TWO:
-                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "second");
-            break;
-            case THREE:
-                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "third");
-            break;
-            case FOUR:
-                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "fourth");
-            break;
-            case FIVE:
-                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "fifth");
-            break;
-            case LAST:
-                optionData = new EnumOptionData(nthDayValue, codePrefix + type.getCode(), "last");
-            break;
-            default:
-                optionData = new EnumOptionData(new Integer(0).longValue(), codePrefix + type.getCode(), "invalid");
-            break;
-        }
-        return optionData;
-    }
-    public static EnumOptionData interestRecalculationCompoundingDayOfWeekType(final Integer id) {
-        if (id == null) { return null; }
-        return interestRecalculationCompoundingDayOfWeekType(DayOfWeekType.fromInt(id));
-    }
-    public static EnumOptionData interestRecalculationCompoundingDayOfWeekType(final DayOfWeekType type) {
-        final String codePrefix = "interestRecalculationCompounding.";
-        EnumOptionData optionData = new EnumOptionData(type.getValue().longValue(), codePrefix + type.getCode(), type.toString());
-        return optionData;
-    }
 
     public static EnumOptionData rescheduleStrategyType(final int id) {
         return rescheduleStrategyType(LoanRescheduleStrategyMethod.fromInt(id));
