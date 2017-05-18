@@ -996,8 +996,13 @@ public final class LoanApplicationTerms {
                 if (calendarStartDate == null) {
                     calendarStartDate = getExpectedDisbursementDate();
                 }
+                
                 String recurrence = null;
                 if (this.loanCalendar == null) {
+                    LoanTermVariationsData data = this.variationsDataWrapper.fetchNonSpecificInstallmentLoanTermDueDateVariationsData(endDate);
+                    if (data != null) {
+                        calendarStartDate = data.getDateValue();
+                    }
                     recurrence = "FREQ=MONTHLY;INTERVAL="+getRepaymentEvery()+";BYMONTHDAY=" + calendarStartDate.getDayOfMonth();
                 } else {
                     recurrence = loanCalendar.getRecurrence();
