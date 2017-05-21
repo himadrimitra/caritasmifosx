@@ -139,8 +139,12 @@ public interface ConfigurationDomainService {
     
     public Integer retrieveNumberOfDays();
 
-	boolean allowClientsInMultipleGroups();
-	
-	boolean includeClientChargesInCollectionSheet();
+    boolean allowClientsInMultipleGroups();
+
+    boolean includeClientChargesInCollectionSheet();
+
+    boolean isEnabledEncryptLoginPasswordForAuthentication();
+
+    boolean isEnabledEveryUserLoginGenerateNewCryptographicKeyPair();
 
 }

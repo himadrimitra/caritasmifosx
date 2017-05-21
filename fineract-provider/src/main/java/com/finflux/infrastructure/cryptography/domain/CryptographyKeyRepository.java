@@ -7,7 +7,5 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface CryptographyKeyRepository extends JpaRepository<CryptographyKey, Long>, JpaSpecificationExecutor<CryptographyKey> {
 
-    CryptographyKey findByEntityTypeAndKeyType(final String entityType, final String keyType);
-
-    List<CryptographyKey> findByEntityType(final String entityType);
+    List<CryptographyKey> findByEntityType(final Integer entityType);
 }

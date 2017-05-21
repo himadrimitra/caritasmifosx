@@ -36,6 +36,8 @@
 			entry-point-ref="basicAuthenticationEntryPoint">
 			<intercept-url pattern="/api/*/authentication" access="permitAll"
 				method="POST" requires-channel="https" />
+				<intercept-url pattern="/api/*/cryptography/*/publickey" access="permitAll"
+				method="GET" requires-channel="https" />
 			<intercept-url pattern="/api/*/self/authentication" access="permitAll"
 				method="POST" requires-channel="https" />
 			<intercept-url pattern="/api/**" access="isFullyAuthenticated()"

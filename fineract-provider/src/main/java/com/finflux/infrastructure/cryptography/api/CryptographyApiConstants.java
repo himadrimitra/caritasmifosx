@@ -6,5 +6,5 @@ public class CryptographyApiConstants {
     public static final String dBConnectionEncDecKey = "greLgszVtTcrTSYtK+Cv230ys4J9zyG44bNpdFOUPaM=";
     public static final String publicKey = "public";
     public static final String privateKey = "private";
-    public static final String keyTypeLogin = "login";
+    public static final String entityTypeLogin = "login";
 }
