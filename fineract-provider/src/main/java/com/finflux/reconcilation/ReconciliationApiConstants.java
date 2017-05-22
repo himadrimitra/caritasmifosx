@@ -163,4 +163,5 @@ public class ReconciliationApiConstants {
     public static final String BULK_PORTFOLIO_TRANSACTIONS = "BULKPORTFOLIOTRANSACTIONS";
     public static final String INVALID_ACCOUNT_TYPE = "Invalid Account Type";
     public static final String INVALID_PAYMENT_TYPE = "Invalid Paymnet Type";
+	public static final String AMOUNT_CAN_NOT_BE_NEGATIVE = "Amount cannot be Negative";
 }

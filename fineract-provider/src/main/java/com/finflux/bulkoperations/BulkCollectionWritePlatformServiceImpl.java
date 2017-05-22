@@ -233,6 +233,11 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                 if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK) {
                                     try {
                                         amount = new BigDecimal(cell.toString());
+                                        if(amount.compareTo(BigDecimal.ZERO) == -1){
+                                        	errorRows.add(row.getRowNum() + 1);
+                                        	rowError.add(ReconciliationApiConstants.AMOUNT_CAN_NOT_BE_NEGATIVE);
+                                        	isValid = false;
+                                        	}
                                     } catch (NumberFormatException e) {
                                         errorRows.add(row.getRowNum() + 1);
                                         rowError.add(ReconciliationApiConstants.AMOUNT_INVALID);
