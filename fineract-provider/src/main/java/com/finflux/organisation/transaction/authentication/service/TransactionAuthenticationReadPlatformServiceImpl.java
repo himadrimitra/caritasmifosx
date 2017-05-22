@@ -332,4 +332,21 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 		}
 		return productName;
 	}
+
+	@Override
+	public Collection<TransactionAuthenticationData> findAuthenticationRuleByProductId(Long productId) {
+		StringBuilder sqlBuilder = new StringBuilder();
+		sqlBuilder.append("select " + this.dataMapper.schema());
+		sqlBuilder.append(" from f_transaction_authentication a ");
+		sqlBuilder.append("join m_code_value cv on a.identifier_type_id = cv.id ");
+		sqlBuilder.append("where a.product_id = ?;");
+		String sql = sqlBuilder.toString();
+		try {
+			Collection<TransactionAuthenticationData> transactionAuthenticationDatas = this.jdbcTemplate.query(sql,
+					this.dataMapper, new Object[] { productId });
+			return transactionAuthenticationDatas;
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
 }

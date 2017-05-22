@@ -2,6 +2,7 @@ package com.finflux.organisation.transaction.authentication.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -86,7 +87,7 @@ public class TransactionAuthenticationService {
 		@SuppressWarnings("unused")
 		@Override
 		public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-			JsonCommand jsonCommand = (JsonCommand)businessEventEntity.get(BUSINESS_ENTITY.JSON_COMMAND);
+			JsonCommand jsonCommand = (JsonCommand) businessEventEntity.get(BUSINESS_ENTITY.JSON_COMMAND);
 			Loan loan = (Loan) businessEventEntity.get(BUSINESS_ENTITY.LOAN);
 			executeTransactionAuthenticationService(jsonCommand, loan);
 		}
@@ -118,7 +119,8 @@ public class TransactionAuthenticationService {
 				.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
 		if (secondaryAuthenticationService.isActive()) {
 			if (secondaryAuthenticationService.getName().equals(TransactionAuthenticationApiConstants.AADHAAR_OTP)) {
-				String aadhaarNumber = this.clientData.getAadhaarNumberOfClient(clientId,transactionAuthentication.getIdentificationType().getId());
+				String aadhaarNumber = this.clientData.getAadhaarNumberOfClient(clientId,
+						transactionAuthentication.getIdentificationType().getId());
 				final GenerateOtpService generateOtpService = this.generateOtpFactory
 						.getOtpService(secondaryAuthenticationService.getAuthServiceClassName());
 				return generateOtpService.generateOtp(aadhaarNumber);
@@ -135,52 +137,57 @@ public class TransactionAuthenticationService {
 
 	public void executeTransactionAuthenticationService(final JsonCommand command, final Loan loan) {
 		final Integer count = this.transactionAuthenticationRepository.getPortfolioTypeAndTransactionType(
-				SupportedAuthenticationPortfolioTypes.LOANS.getValue(), SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue());
+				SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+				SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue());
 		if (count > 0 && loan.getClient() != null) {
-			this.transactionAuthenticationDataValidator.validateForDisbursement(command);
-			final Integer portfolioTypeId = SupportedAuthenticationPortfolioTypes.LOANS.getValue();
-			final Integer transactionTypeId = SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue();
-			final Long paymentTypeId = command
-					.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID);
-			final BigDecimal amountGreaterThan = command
-					.bigDecimalValueOfParameterNamed(TransactionAuthenticationApiConstants.TRANSACTION_AMOUNT);
 			Long productId = loan.getLoanProduct().getId();
-			
-			final TransactionAuthenticationData transactionAuthentication = this.transactionAuthenticationReadPlatformService
-					.retriveTransactionAuthenticationDetails(portfolioTypeId, transactionTypeId, paymentTypeId,
-							amountGreaterThan, productId);
+			final Collection<TransactionAuthenticationData> authenticationRule = this.transactionAuthenticationReadPlatformService
+					.findAuthenticationRuleByProductId(productId);
+			if (authenticationRule != null && authenticationRule.size() > 0) {
+				this.transactionAuthenticationDataValidator.validateForDisbursement(command);
+				final Integer portfolioTypeId = SupportedAuthenticationPortfolioTypes.LOANS.getValue();
+				final Integer transactionTypeId = SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue();
+				final Long paymentTypeId = command
+						.longValueOfParameterNamed(TransactionAuthenticationApiConstants.PAYMENT_TYPE_ID);
+				final BigDecimal amountGreaterThan = command
+						.bigDecimalValueOfParameterNamed(TransactionAuthenticationApiConstants.TRANSACTION_AMOUNT);
 
-			if (transactionAuthentication != null) {
-				
-				this.transactionAuthenticationDataValidator.checkForAuthenticationRuleId(command);
-				final Long authenticationRuleId = command
-						.longValueOfParameterNamed(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID);
+				final TransactionAuthenticationData transactionAuthentication = this.transactionAuthenticationReadPlatformService
+						.retriveTransactionAuthenticationDetails(portfolioTypeId, transactionTypeId, paymentTypeId,
+								amountGreaterThan, productId);
 
-				if (!authenticationRuleId.equals(transactionAuthentication.getId())) {
-					throw new TransactionAuthenticationMismatchException(authenticationRuleId);
-				}
-				final SecondaryAuthenticationService secondaryAuthenticationService = this.repository
-						.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
+				if (transactionAuthentication != null) {
 
-				if (secondaryAuthenticationService.isActive()) {
-					final ClientDataForAuthentication clientDataForAuthentication = clientData
-							.validateAndAssembleClientDataForAuthentication(command,
-									SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
-									SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(),
-									secondaryAuthenticationService, productId, loan);
+					this.transactionAuthenticationDataValidator.checkForAuthenticationRuleId(command);
+					final Long authenticationRuleId = command
+							.longValueOfParameterNamed(TransactionAuthenticationApiConstants.AUTHENTICAION_RULE_ID);
 
-					final String aadhaarNumber = clientDataForAuthentication.getClientAadhaarNumber();
-					final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory
-							.getSecondLevelAuthenticationService(
-									secondaryAuthenticationService.getAuthServiceClassName());
-					Location location = getLocationDetails(clientDataForAuthentication);
-					final String otp = clientDataForAuthentication.getClientAuthdata();
-					Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, otp,
-							location);
-					secondLevelAuthenticationService.responseValidation(response);
-				} else {
-					throw new InAcitiveExternalServiceexception(secondaryAuthenticationService.getName(),
-							secondaryAuthenticationService.getId());
+					if (!authenticationRuleId.equals(transactionAuthentication.getId())) {
+						throw new TransactionAuthenticationMismatchException(authenticationRuleId);
+					}
+					final SecondaryAuthenticationService secondaryAuthenticationService = this.repository
+							.findOneWithNotFoundDetection(transactionAuthentication.getAuthenticationTypeId());
+
+					if (secondaryAuthenticationService.isActive()) {
+						final ClientDataForAuthentication clientDataForAuthentication = clientData
+								.validateAndAssembleClientDataForAuthentication(command,
+										SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+										SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(),
+										secondaryAuthenticationService, productId, loan);
+
+						final String aadhaarNumber = clientDataForAuthentication.getClientAadhaarNumber();
+						final SecondLevelAuthenticationService secondLevelAuthenticationService = this.secondaryAuthenticationFactory
+								.getSecondLevelAuthenticationService(
+										secondaryAuthenticationService.getAuthServiceClassName());
+						Location location = getLocationDetails(clientDataForAuthentication);
+						final String otp = clientDataForAuthentication.getClientAuthdata();
+						Object response = secondLevelAuthenticationService.authenticateUser(aadhaarNumber, otp,
+								location);
+						secondLevelAuthenticationService.responseValidation(response);
+					} else {
+						throw new InAcitiveExternalServiceexception(secondaryAuthenticationService.getName(),
+								secondaryAuthenticationService.getId());
+					}
 				}
 			}
 		}
