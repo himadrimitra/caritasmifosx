@@ -3974,6 +3974,28 @@
                             <td></td>
                             <td></td>
                         </tr>
+						<tr>
+							<td><a href="#bulkcollection">Bulk Collection</a></td>
+							<td>bulkcollection</td>
+							<td><a href="#bulkcollection_upload">Bulkcollection Upload</a></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td>bankstatements/{bankstatementId}/details?command=generatetransactions</td>
+							<td></td>
+							<td><a href="#retrieve_uploadData">Retrieve Upload Data</a></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td>bulkcollection/{bulkcollection}/generatetransactions</td>
+							<td><a href="#generate_transactions">Generate Bulk Transactions</a></td>
+							<td></td>
+							<td></td>
+							<td></td>
+						</tr>
                     </table>
                     <table class=matrixHeading>
                         <tr class="matrixHeadingBG">
@@ -44047,7 +44069,180 @@ No Request Body:
             </div>
         </div>
         <!-- End of Tax Group -->
-
+		<a id="bulkcollection" name="bulkcollection" class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h3>Bulk Collection</h3>
+                <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Field Descriptions</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>upload</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>uploads Bulk Collection Sheet from Excel
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+		 <a id="bulkcollection_upload" name="bulkcollection_upload"
+           class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Upload Bulk Collection Sheet</h4>
+                <p>Upload Bulk Collection Sheet</p>
+                <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Mandatory Fields</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>account Type</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>account Number</td>
+                    </tr>
+					<tr class=alt>
+                        <td>transaction Date</td>
+                    </tr>
+					<tr class=alt>
+                        <td>transaction Amount</td>
+                    </tr>
+                </table>
+                <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Optional Fields</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>paymentType</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>account#</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>cheque#</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>routingCode</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>receipt</td>
+                    </tr>
+					<tr class=alt>
+                        <td>bank#</td>
+                    </tr>
+					<tr class=alt>
+                        <td>note</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">
+                    POST https://DomainName/api/v1/bulkcollection
+                </code>
+                <code class="method-request">
+                    POST bulkcollection
+                    Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                    
+                </code>
+                <code class="method-response">
+                    {"resourceId":21,"resourceIdentifier":"21"}
+                </code>
+            </div>
+        </div>
+		<a id="retrieve_uploadData" name="retrieve_uploadData"
+           class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Retrieve Upload Data</h4>
+                <p>Retrieve Upload Data</p>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">
+                    GET https://DomainName/api/v1/bankstatements/{bankstatementId}/details?command=generatetransactions
+                </code>
+                <code class="method-request">
+                    GET bankstatements/{bankstatementId}/details?command=generatetransactions
+                    Content-Type: application/json
+                </code>
+                <code class="method-response">
+				{
+					"totalTransactions": 0,
+					"bankStatementDetails": [{
+						"id": 30,
+						"bankStatementId": 21,
+						"transactionDate": "May 15, 2017",
+						"amount": 1200.000000,
+						"isReconciled": false,
+						"accountingType": "deposits",
+						"receiptNumber": "455",
+						"isError": false,
+						"savingsAccountNumber": "000000008"
+					},
+					{
+						"id": 31,
+						"bankStatementId": 21,
+						"transactionDate": "May 16, 2017",
+						"amount": 500.000000,
+						"loanAccountNumber": "000000001",
+						"isReconciled": false,
+						"accountingType": "loans",
+						"receiptNumber": "4",
+						"isError": false
+					}],
+					"bankStatementName": "1"
+				}
+                </code>
+            </div>
+        </div>
+		 <a id="generate_transactions" name="generate_transactionsd"
+           class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Generate Bulk Transactions</h4>
+                <p>Generate Bulk Transactions</p>
+                <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Mandatory Fields</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>account Type</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>account Number</td>
+                    </tr>
+					<tr class=alt>
+                        <td>transaction Date</td>
+                    </tr>
+					<tr class=alt>
+                        <td>transaction Amount</td>
+                    </tr>
+                </table>
+                <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Optional Fields</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>paymentTypeDetail</td>
+                    </tr>
+                   
+                </table>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">
+                    POST https://DomainName/api/v1/bulkcollection/{bulkcollection}/generatetransactions
+                </code>
+                <code class="method-request">
+                    POST bulkcollection/{bulkcollection}/generatetransactions
+                    Content-Type: application/json
+                   {"locale":"en","dateFormat":"dd MMMM yyyy"}
+                </code>
+                <code class="method-response">
+                    {"resourceId":21}
+                </code>
+            </div>
+        </div>
         <!-- start of clients api docs -->
         <a id="templates" name="clients" class="old-syle-anchor">&nbsp;</a>
         <div class="method-section">
