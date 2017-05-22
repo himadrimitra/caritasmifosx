@@ -51,5 +51,9 @@ public class LoanChargeTaxDetails extends AbstractPersistable<Long> {
     public void updateAmount(Money amount) {
         this.amount = amount.getAmount();
     }
+    
+    public static LoanChargeTaxDetails copyLoanChargeTaxDetails(final LoanChargeTaxDetails loanChargeTaxDetails){
+        return new LoanChargeTaxDetails(loanChargeTaxDetails.taxComponentId,loanChargeTaxDetails.amount);
+    }
 
 }

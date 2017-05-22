@@ -51,6 +51,16 @@ public class LoanOverdueInstallmentCharge extends AbstractPersistable<Long> {
         this.installment = installment;
         this.frequencyNumber = frequencyNumber;
     }
+    
+    public static LoanOverdueInstallmentCharge copyLoanOverdueInstallmentCharge(final LoanOverdueInstallmentCharge charge, final LoanCharge loancharge){
+        return new LoanOverdueInstallmentCharge(charge, loancharge);
+    }
+    
+    private LoanOverdueInstallmentCharge(final LoanOverdueInstallmentCharge charge,final LoanCharge loancharge){
+        this.loancharge = loancharge;
+        this.installment = charge.installment;
+        this.frequencyNumber = charge.frequencyNumber;
+    }
 
     public void updateLoanRepaymentScheduleInstallment(LoanRepaymentScheduleInstallment loanRepaymentScheduleInstallment) {
         this.installment = loanRepaymentScheduleInstallment;

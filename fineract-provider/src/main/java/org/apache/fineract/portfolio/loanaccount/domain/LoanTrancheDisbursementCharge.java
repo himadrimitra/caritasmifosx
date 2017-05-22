@@ -50,5 +50,14 @@ public class LoanTrancheDisbursementCharge extends AbstractPersistable<Long> {
     public LoanDisbursementDetails getloanDisbursementDetails(){
         return this.loanDisbursementDetails;
     }
+    
+    public static LoanTrancheDisbursementCharge copyLoanTrancheDisbursementCharge(final LoanTrancheDisbursementCharge charge, final LoanCharge loancharge){
+        return new LoanTrancheDisbursementCharge(charge, loancharge);
+    }
+    
+    private LoanTrancheDisbursementCharge(final LoanTrancheDisbursementCharge charge,final LoanCharge loancharge){
+        this.loancharge = loancharge;
+        this.loanDisbursementDetails = charge.loanDisbursementDetails;
+    }
 
 }
