@@ -500,7 +500,6 @@
 								<td></td>
 								<td></td>
 							</tr>
-<<<<<<< HEAD
                             <tr>
 								<td><a href="#family_details">Family Details</a></td>
 								<td>clients/3/familydetails</td>
@@ -544,7 +543,6 @@
 								<td><a href="#family_detail_get">GET Family Detail</a></td>
 								<td></td>
 								<td></td>
-=======
 							<tr>
 								<td><a href="#client_income">Client Income And Expense</td>
 								<td>/clients/{clientId}/incomesandexpenses</td>
@@ -559,7 +557,6 @@
 								<td></td>
 								<td><a href="#Get_ClientIncomeExpense">Get Client's Income and Expense Details</td>
 								<td><a href="#Put_ClientIncomeExpense">Update Client's Income and Expense Details</td>
->>>>>>> v17.01.1_RC
 								<td></td>
 							</tr>
 						</table>
@@ -21971,7 +21968,97 @@ Content-Type: application/json
         "name" : "Savings charge 2",
         "penalty" : false
       }
-    ]
+    ],
+	"taxGroupOptions": [{
+		"id": 1,
+		"name": "SA TAXES"
+	}],
+	"isDormancyTrackingActive": false,
+	"periodFrequencyTypeOptions": [{
+		"id": 0,
+		"code": "frequencyperiodFrequencyType.days",
+		"value": "Days"
+	},
+	{
+		"id": 1,
+		"code": "frequencyperiodFrequencyType.weeks",
+		"value": "Weeks"
+	},
+	{
+		"id": 2,
+		"code": "frequencyperiodFrequencyType.months",
+		"value": "Months"
+	},
+	{
+		"id": 3,
+		"code": "frequencyperiodFrequencyType.years",
+		"value": "Years"
+	}],
+	"nthDayTypeOptions": [{
+		"id": 1,
+		"code": "savingsproductdrawingpower.nthDayType.one",
+		"value": "first"
+	},
+	{
+		"id": 2,
+		"code": "savingsproductdrawingpower.nthDayType.two",
+		"value": "second"
+	},
+	{
+		"id": 3,
+		"code": "savingsproductdrawingpower.nthDayType.three",
+		"value": "third"
+	},
+	{
+		"id": 4,
+		"code": "savingsproductdrawingpower.nthDayType.four",
+		"value": "fourth"
+	},
+	{
+		"id": -1,
+		"code": "savingsproductdrawingpower.nthDayType.last",
+		"value": "last"
+	},
+	{
+		"id": -2,
+		"code": "savingsproductdrawingpower.nthDayType.onday",
+		"value": "on day"
+	}],
+	"dayOfWeekTypeOptions": [{
+		"id": 7,
+		"code": "savingsproductdrawingpower.weekDayType.sunday",
+		"value": "SUNDAY"
+	},
+	{
+		"id": 1,
+		"code": "savingsproductdrawingpower.weekDayType.monday",
+		"value": "MONDAY"
+	},
+	{
+		"id": 2,
+		"code": "savingsproductdrawingpower.weekDayType.tuesday",
+		"value": "TUESDAY"
+	},
+	{
+		"id": 3,
+		"code": "savingsproductdrawingpower.weekDayType.wednesday",
+		"value": "WEDNESDAY"
+	},
+	{
+		"id": 4,
+		"code": "savingsproductdrawingpower.weekDayType.thursday",
+		"value": "THURSDAY"
+	},
+	{
+		"id": 5,
+		"code": "savingsproductdrawingpower.weekDayType.friday",
+		"value": "FRIDAY"
+	},
+	{
+		"id": 6,
+		"code": "savingsproductdrawingpower.weekDayType.saturday",
+		"value": "SATURDAY"
+	}]
 }
 			</code>
         </div>
@@ -22482,6 +22569,13 @@ Request Body:
                 </tr>
             </table>
             <br/>
+			<table class=matrixHeading>
+                <tr class="matrixHeadingBG"><td><div class="fineractHeading2">Mandatory Fields for DP limit allowed is enabled</div></td></tr>
+                <tr class=alt>
+                	<td>dpFrequencyType, dpFrequencyInterval</td>
+                </tr>
+            </table>
+            <br/>
             <table class=matrixHeading>
                 <tr class="matrixHeadingBG"><td><div class="fineractHeading2">Mandatory Fields for Cash based accounting (accountingRule = 2)</div></td></tr>
                 <tr class=alt>
@@ -22500,20 +22594,38 @@ Request Body:
 Content-Type: application/json
 Request Body:
 {
-  "name": "Passbook Savings",
-  "shortName": "PBSV",
-  "description": "Daily compounding using Daily Balance, 5% per year, 365 days in year",
-  "currencyCode": "USD",
-  "digitsAfterDecimal": 2,
-  "inMultiplesOf": 0,
-  "locale": "en",
-  "nominalAnnualInterestRate": "5.0",
-  "interestCompoundingPeriodType": 1,
-  "interestPostingPeriodType":4,
-  "interestCalculationType": 1,
-  "interestCalculationDaysInYearType": "365",
-  "accountingRule":"1",
-  "charges":[{"id":"1"}]
+	"name" : "Passbook Savings",
+	"shortName" : "PBSV",
+	"description" : "Daily compounding using Daily Balance, 5% per year, 365 days in year",
+	"currencyCode" : "USD",
+	"digitsAfterDecimal" : 2,
+	"inMultiplesOf" : 0,
+	"nominalAnnualInterestRate" : 5,
+	"withdrawalFeeForTransfers" : "false",
+	"interestCompoundingPeriodType" : 1,
+	"interestPostingPeriodType" : 4,
+	"interestCalculationType" : 1,
+	"interestCalculationDaysInYearType" : 365,
+	"accountingRule" : 1,
+	"allowOverdraft" : "true",
+	"overdraftLimit" : 100000,
+	"nominalAnnualInterestRateOverdraft" : 0,
+	"minOverdraftForInterestCalculation" : 0,
+	"enforceMinRequiredBalance" : false,
+	"minRequiredBalance" : 0,
+	"withHoldTax" : "false",
+	"isDormancyTrackingActive" : "false",
+	"allowDpLimit" : "true",
+	"dpFrequencyType" : 2,
+	"dpFrequencyInterval" : 1,
+	"paymentChannelToFundSourceMappings" : [],
+	"feeToIncomeAccountMappings" : [],
+	"penaltyToIncomeAccountMappings" : [],
+	"charges" : [{
+			"id" : "1"
+		}
+	],
+	"locale" : "en"
 }
 			</code>
 			<code class="method-response">
@@ -22597,121 +22709,761 @@ Request Body:
 			<code class="method-declaration">GET https://Domain Name/api/v1/savingsproducts/1</code>
 			<code class="method-response">
 {
-  "id": 1,
-  "name": "savings product",
-  "shortName": "sa1",
-  "description": "gtasga",
-  "currency": {
-    "code": "USD",
-    "name": "US Dollar",
-    "decimalPlaces": 2,
-    "displaySymbol": "$",
-    "nameCode": "currency.USD",
-    "displayLabel": "US Dollar ($)"
-  },
-  "nominalAnnualInterestRate": 5.000000,
-  "interestCompoundingPeriodType": {
-    "id": 1,
-    "code": "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
-    "value": "Daily"
-  },
-  "interestPostingPeriodType": {
-    "id": 4,
-    "code": "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
-    "value": "Monthly"
-  },
-  "interestCalculationType": {
-    "id": 1,
-    "code": "savingsInterestCalculationType.dailybalance",
-    "value": "Daily Balance"
-  },
-  "interestCalculationDaysInYearType": {
-    "id": 365,
-    "code": "savingsInterestCalculationDaysInYearType.days365",
-    "value": "365 Days"
-  },
-  "withdrawalFeeForTransfers": false,
-  "accountingRule": {
-    "id": 2,
-    "code": "accountingRuleType.cash",
-    "value": "CASH BASED"
-  },
-  "accountingMappings": {
-    "savingsReferenceAccount": {
-      "id": 12,
-      "name": "savings ref",
-      "glCode": "20"
-    },
-    "incomeFromFeeAccount": {
-      "id": 16,
-      "name": "income from savings fee",
-      "glCode": "24"
-    },
-    "incomeFromPenaltyAccount": {
-      "id": 17,
-      "name": "income from sav penalites",
-      "glCode": "25"
-    },
-    "interestOnSavingsAccount": {
-      "id": 15,
-      "name": "interest on savings",
-      "glCode": "23"
-    },
-    "savingsControlAccount": {
-      "id": 13,
-      "name": "savings ref tool kit",
-      "glCode": "21"
-    },
-    "transfersInSuspenseAccount": {
-      "id": 14,
-      "name": "saving transfers",
-      "glCode": "22"
-    }
-  },
-  "paymentChannelToFundSourceMappings": [
-    {
-      "paymentType": {
-        "id": 10,
-        "name": "check"
-      },
-      "fundSourceAccount": {
-        "id": 12,
-        "name": "savings ref",
-        "glCode": "20"
-      }
-    }
-  ],
-  "feeToIncomeAccountMappings": [
-    {
-      "charge": {
-        "id": 11,
-        "name": "sav charge",
-        "active": false,
-        "penalty": false
-      },
-      "incomeAccount": {
-        "id": 16,
-        "name": "income from savings fee",
-        "glCode": "24"
-      }
-    }
-  ],
-  "penaltyToIncomeAccountMappings": [
-    {
-      "charge": {
-        "id": 12,
-        "name": "sav 2",
-        "active": false,
-        "penalty": true
-      },
-      "incomeAccount": {
-        "id": 17,
-        "name": "income from sav penalites",
-        "glCode": "25"
-      }
-    }
-  ],
-  "charges": []
+	"id": 1,
+	"name": "savings account",
+	"shortName": "sa1",
+	"description": "gtasga",
+	"currency": {
+		"code": "USD",
+		"name": "US Dollar",
+		"decimalPlaces": 2,
+		"displaySymbol": "$",
+		"nameCode": "currency.USD",
+		"displayLabel": "US Dollar ($)"
+	},
+	"nominalAnnualInterestRate": 0.000000,
+	"interestCompoundingPeriodType": {
+		"id": 1,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
+		"value": "Daily"
+	},
+	"interestPostingPeriodType": {
+		"id": 4,
+		"code": "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
+		"value": "Monthly"
+	},
+	"interestCalculationType": {
+		"id": 1,
+		"code": "savingsInterestCalculationType.dailybalance",
+		"value": "Daily Balance"
+	},
+	"interestCalculationDaysInYearType": {
+		"id": 365,
+		"code": "savingsInterestCalculationDaysInYearType.days365",
+		"value": "365 Days"
+	},
+	"withdrawalFeeForTransfers": true,
+	"allowOverdraft": false,
+	"enforceMinRequiredBalance": false,
+	"withHoldTax": false,
+	"savingsProductDrawingPowerDetailsData": {
+		
+	},
+	"accountingRule": {
+		"id": 1,
+		"code": "accountingRuleType.none",
+		"value": "NONE"
+	},
+	"charges": [],
+	"currencyOptions": [{
+		"code": "ZAR",
+		"name": "South African Rand",
+		"decimalPlaces": 2,
+		"displaySymbol": "R",
+		"nameCode": "currency.ZAR",
+		"displayLabel": "South African Rand (R)"
+	}],
+	"interestCompoundingPeriodTypeOptions": [{
+		"id": 1,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
+		"value": "Daily"
+	},
+	{
+		"id": 4,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.monthly",
+		"value": "Monthly"
+	},
+	{
+		"id": 5,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.quarterly",
+		"value": "Quarterly"
+	},
+	{
+		"id": 6,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.biannual",
+		"value": "Semi-Annual"
+	},
+	{
+		"id": 7,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.annual",
+		"value": "Annually"
+	},
+	{
+		"id": 8,
+		"code": "savings.interest.period.savingsCompoundingInterestPeriodType.nocompounding",
+		"value": "None"
+	}],
+	"interestPostingPeriodTypeOptions": [{
+		"id": 4,
+		"code": "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
+		"value": "Monthly"
+	},
+	{
+		"id": 5,
+		"code": "savings.interest.posting.period.savingsPostingInterestPeriodType.quarterly",
+		"value": "Quarterly"
+	},
+	{
+		"id": 6,
+		"code": "savings.interest.posting.period.savingsPostingInterestPeriodType.biannual",
+		"value": "BiAnnual"
+	},
+	{
+		"id": 7,
+		"code": "savings.interest.posting.period.savingsPostingInterestPeriodType.annual",
+		"value": "Annually"
+	}],
+	"interestCalculationTypeOptions": [{
+		"id": 1,
+		"code": "savingsInterestCalculationType.dailybalance",
+		"value": "Daily Balance"
+	},
+	{
+		"id": 2,
+		"code": "savingsInterestCalculationType.averagedailybalance",
+		"value": "Average Daily Balance"
+	}],
+	"interestCalculationDaysInYearTypeOptions": [{
+		"id": 360,
+		"code": "savingsInterestCalculationDaysInYearType.days360",
+		"value": "360 Days"
+	},
+	{
+		"id": 365,
+		"code": "savingsInterestCalculationDaysInYearType.days365",
+		"value": "365 Days"
+	}],
+	"lockinPeriodFrequencyTypeOptions": [{
+		"id": 0,
+		"code": "savings.lockin.savingsPeriodFrequencyType.days",
+		"value": "Days"
+	},
+	{
+		"id": 1,
+		"code": "savings.lockin.savingsPeriodFrequencyType.weeks",
+		"value": "Weeks"
+	},
+	{
+		"id": 2,
+		"code": "savings.lockin.savingsPeriodFrequencyType.months",
+		"value": "Months"
+	},
+	{
+		"id": 3,
+		"code": "savings.lockin.savingsPeriodFrequencyType.years",
+		"value": "Years"
+	}],
+	"withdrawalFeeTypeOptions": [{
+		"id": 1,
+		"code": "savingsWithdrawalFeesType.flat",
+		"value": "Flat"
+	},
+	{
+		"id": 2,
+		"code": "savingsWithdrawalFeesType.percent.of.amount",
+		"value": "% of Amount"
+	}],
+	"paymentTypeOptions": [],
+	"accountingRuleOptions": [{
+		"id": 1,
+		"code": "accountingRuleType.none",
+		"value": "NONE"
+	},
+	{
+		"id": 2,
+		"code": "accountingRuleType.cash",
+		"value": "CASH BASED"
+	},
+	{
+		"id": 3,
+		"code": "accountingRuleType.accrual.periodic",
+		"value": "ACCRUAL PERIODIC"
+	},
+	{
+		"id": 4,
+		"code": "accountingRuleType.accrual.upfront",
+		"value": "ACCRUAL UPFRONT"
+	}],
+	"accountingMappingOptions": {
+		"liabilityAccountOptions": [{
+			"id": 16,
+			"name": "Over payment liability",
+			"glCode": "Over payment liability",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 2,
+				"code": "accountType.liability",
+				"value": "LIABILITY"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Over payment liability",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 21,
+			"name": "Overpayment Liability",
+			"glCode": "60003",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 2,
+				"code": "accountType.liability",
+				"value": "LIABILITY"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Overpayment Liability",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 22,
+			"name": "VAT Liability",
+			"glCode": "60004",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 2,
+				"code": "accountType.liability",
+				"value": "LIABILITY"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "VAT Liability",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		}],
+		"expenseAccountOptions": [{
+			"id": 17,
+			"name": "Loan write-off-IL",
+			"glCode": "1700/807",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 5,
+				"code": "accountType.expense",
+				"value": "EXPENSE"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "Loan write-off-IL",
+			"nameDecorated": "Loan write-off-IL",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		}],
+		"assetAccountOptions": [{
+			"id": 3,
+			"name": "INTEREST RECEIVABLE",
+			"glCode": "7803/00",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "INTEREST RECEIVABLE 7803/00",
+			"nameDecorated": "INTEREST RECEIVABLE",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 5,
+			"name": "FEES RECIEVABLE-IL",
+			"glCode": "7804/001",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "FEES RECEIVABLES 7804/01",
+			"nameDecorated": "FEES RECIEVABLE-IL",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 7,
+			"name": "LOAN PORTFOLIO",
+			"glCode": "7802/00",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "lOAN PORTFOLIO 7802/00",
+			"nameDecorated": "LOAN PORTFOLIO",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 9,
+			"name": "Interest receivable-logbook",
+			"glCode": "7803/01",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "Interest receivable-logbook 7801/01",
+			"nameDecorated": "Interest receivable-logbook",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 13,
+			"name": "Nedbank Bank Balance",
+			"glCode": "7801/02",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "Nedbank Bank Balance 7801/02",
+			"nameDecorated": "Nedbank Bank Balance",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 14,
+			"name": "loans- IL",
+			"glCode": "7803/002",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "loans- IL",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 19,
+			"name": "Asset Transfer Contra",
+			"glCode": "100020",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Asset Transfer Contra",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 23,
+			"name": "CashInHand",
+			"glCode": "200/200",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 1,
+				"code": "accountType.asset",
+				"value": "ASSET"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "CashInHand",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		}],
+		"incomeAccountOptions": [{
+			"id": 6,
+			"name": "Service fees recovered-il",
+			"glCode": "0120/030",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "service fees receovered 0120/030",
+			"nameDecorated": "Service fees recovered-il",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 8,
+			"name": "INITIATION FEES-IL",
+			"glCode": "0120/040",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "INITIATION FEES-IL",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 12,
+			"name": "Loan interest earned",
+			"glCode": "0120/010",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Loan interest earned",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 15,
+			"name": "ACC 133-IL",
+			"glCode": "0120/020",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"description": "ACC 133 0120/020",
+			"nameDecorated": "ACC 133-IL",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 20,
+			"name": "Income from recovery payments",
+			"glCode": "0120/090",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Income from recovery payments",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 24,
+			"name": "Income From Interest",
+			"glCode": "210/210",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Income From Interest",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		{
+			"id": 25,
+			"name": "Income From Fees",
+			"glCode": "220/220",
+			"disabled": false,
+			"manualEntriesAllowed": true,
+			"type": {
+				"id": 4,
+				"code": "accountType.income",
+				"value": "INCOME"
+			},
+			"usage": {
+				"id": 1,
+				"code": "accountUsage.detail",
+				"value": "DETAIL"
+			},
+			"nameDecorated": "Income From Fees",
+			"tagId": {
+				"id": 0,
+				"isActive": false,
+				"mandatory": false
+			}
+		}]
+	},
+	"chargeOptions": [{
+		"id": 8,
+		"name": "Bank charges",
+		"active": true,
+		"penalty": false,
+		"currency": {
+			"code": "ZAR",
+			"name": "South African Rand",
+			"decimalPlaces": 2,
+			"displaySymbol": "R",
+			"nameCode": "currency.ZAR",
+			"displayLabel": "South African Rand (R)"
+		},
+		"amount": 1.000000,
+		"chargeTimeType": {
+			"id": 2,
+			"code": "chargeTimeType.specifiedDueDate",
+			"value": "Specified due date"
+		},
+		"chargeAppliesTo": {
+			"id": 2,
+			"code": "chargeAppliesTo.savings",
+			"value": "Savings"
+		},
+		"chargeCalculationType": {
+			"id": 1,
+			"code": "chargeCalculationType.flat",
+			"value": "Flat"
+		},
+		"chargePaymentMode": {
+			"id": 0,
+			"code": "chargepaymentmode.regular",
+			"value": "Regular"
+		},
+		"emiRoundingGoalSeek": false,
+		"isGlimCharge": false,
+		"glimChargeCalculation": {
+			"id": 1,
+			"code": "glimChargeCalculationType.round",
+			"value": "round"
+		},
+		"isCapitalized": false
+	}],
+	"taxGroupOptions": [{
+		"id": 1,
+		"name": "SA TAXES"
+	}],
+	"isDormancyTrackingActive": false,
+	"periodFrequencyTypeOptions": [{
+		"id": 0,
+		"code": "frequencyperiodFrequencyType.days",
+		"value": "Days"
+	},
+	{
+		"id": 1,
+		"code": "frequencyperiodFrequencyType.weeks",
+		"value": "Weeks"
+	},
+	{
+		"id": 2,
+		"code": "frequencyperiodFrequencyType.months",
+		"value": "Months"
+	},
+	{
+		"id": 3,
+		"code": "frequencyperiodFrequencyType.years",
+		"value": "Years"
+	}],
+	"nthDayTypeOptions": [{
+		"id": 1,
+		"code": "savingsproductdrawingpower.nthDayType.one",
+		"value": "first"
+	},
+	{
+		"id": 2,
+		"code": "savingsproductdrawingpower.nthDayType.two",
+		"value": "second"
+	},
+	{
+		"id": 3,
+		"code": "savingsproductdrawingpower.nthDayType.three",
+		"value": "third"
+	},
+	{
+		"id": 4,
+		"code": "savingsproductdrawingpower.nthDayType.four",
+		"value": "fourth"
+	},
+	{
+		"id": -1,
+		"code": "savingsproductdrawingpower.nthDayType.last",
+		"value": "last"
+	},
+	{
+		"id": -2,
+		"code": "savingsproductdrawingpower.nthDayType.onday",
+		"value": "on day"
+	}],
+	"dayOfWeekTypeOptions": [{
+		"id": 7,
+		"code": "savingsproductdrawingpower.weekDayType.sunday",
+		"value": "SUNDAY"
+	},
+	{
+		"id": 1,
+		"code": "savingsproductdrawingpower.weekDayType.monday",
+		"value": "MONDAY"
+	},
+	{
+		"id": 2,
+		"code": "savingsproductdrawingpower.weekDayType.tuesday",
+		"value": "TUESDAY"
+	},
+	{
+		"id": 3,
+		"code": "savingsproductdrawingpower.weekDayType.wednesday",
+		"value": "WEDNESDAY"
+	},
+	{
+		"id": 4,
+		"code": "savingsproductdrawingpower.weekDayType.thursday",
+		"value": "THURSDAY"
+	},
+	{
+		"id": 5,
+		"code": "savingsproductdrawingpower.weekDayType.friday",
+		"value": "FRIDAY"
+	},
+	{
+		"id": 6,
+		"code": "savingsproductdrawingpower.weekDayType.saturday",
+		"value": "SATURDAY"
+	}]
 }
 			</code>
         </div>
@@ -22779,48 +23531,62 @@ Content-Type: application/json
         <div class="method-example">
             <code class="method-declaration">GET https://Domain Name/api/v1/savingsproducts</code>
             <code class="method-response">
-[
-  {
-    "id": 1,
-    "name": "Savings product",
-    "shortName": "sa1",
-    "description": "gtasga",
-    "currency": {
-      "code": "USD",
-      "name": "US Dollar",
-      "decimalPlaces": 2,
-      "displaySymbol": "$",
-      "nameCode": "currency.USD",
-      "displayLabel": "US Dollar ($)"
-    },
-    "nominalAnnualInterestRate": 5.000000,
-    "interestCompoundingPeriodType": {
-      "id": 1,
-      "code": "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
-      "value": "Daily"
-    },
-    "interestPostingPeriodType": {
-      "id": 4,
-      "code": "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
-      "value": "Monthly"
-    },
-    "interestCalculationType": {
-      "id": 1,
-      "code": "savingsInterestCalculationType.dailybalance",
-      "value": "Daily Balance"
-    },
-    "interestCalculationDaysInYearType": {
-      "id": 365,
-      "code": "savingsInterestCalculationDaysInYearType.days365",
-      "value": "365 Days"
-    },
-    "withdrawalFeeForTransfers": false,
-    "accountingRule": {
-      "id": 2,
-      "code": "accountingRuleType.cash",
-      "value": "CASH BASED"
-    }
-  }
+[{
+		"id" : 1,
+		"name" : "Savings product",
+		"shortName" : "sa1",
+		"description" : "gtasga",
+		"currency" : {
+			"code" : "USD",
+			"name" : "US Dollar",
+			"decimalPlaces" : 2,
+			"displaySymbol" : "$",
+			"nameCode" : "currency.USD",
+			"displayLabel" : "US Dollar ($)"
+		},
+		"nominalAnnualInterestRate" : 5.000000,
+		"interestCompoundingPeriodType" : {
+			"id" : 1,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
+			"value" : "Daily"
+		},
+		"interestPostingPeriodType" : {
+			"id" : 4,
+			"code" : "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
+			"value" : "Monthly"
+		},
+		"interestCalculationType" : {
+			"id" : 1,
+			"code" : "savingsInterestCalculationType.dailybalance",
+			"value" : "Daily Balance"
+		},
+		"interestCalculationDaysInYearType" : {
+			"id" : 365,
+			"code" : "savingsInterestCalculationDaysInYearType.days365",
+			"value" : "365 Days"
+		},
+		"withdrawalFeeForTransfers" : false,
+		"allowOverdraft" : true,
+		"overdraftLimit" : 100000.000000,
+		"enforceMinRequiredBalance" : false,
+		"nominalAnnualInterestRateOverdraft" : 0.000000,
+		"minOverdraftForInterestCalculation" : 0.000000,
+		"withHoldTax" : false,
+		"savingsProductDrawingPowerDetailsData" : {
+			"frequencyType" : {
+				"id" : 2,
+				"code" : "periodFrequencyType.months",
+				"value" : "MONTHS"
+			},
+			"frequencyInterval" : 1
+		},
+		"accountingRule" : {
+			"id" : 1,
+			"code" : "accountingRuleType.none",
+			"value" : "NONE"
+		},
+		"isDormancyTrackingActive" : false
+	}
 ]			</code>
         </div>
     </div>
@@ -25118,300 +25884,237 @@ No Request Body:
 	        <code class="method-declaration">GET https://Domain Name/api/v1/savingsaccounts/template?clientId={clientId}&productId={productId}</code>
 			<code class="method-response">
 {
-  "clientId": 1,
-  "clientName": "small business",
-  "savingsProductId": 1,
-  "savingsProductName": "Passbook Savings",
-  "timeline": {},
-  "currency": {
-    "code": "USD",
-    "name": "US Dollar",
-    "decimalPlaces": 2,
-    "displaySymbol": "$",
-    "nameCode": "currency.USD",
-    "displayLabel": "US Dollar ($)"
-  },
-  "nominalAnnualInterestRate": 5,
-  "interestCompoundingPeriodType": {
-    "id": 1,
-    "code": "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
-    "value": "Daily"
-  },
-  "interestPostingPeriodType": {
-    "id": 4,
-    "code": "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
-    "value": "Monthly"
-  },
-  "interestCalculationType": {
-    "id": 1,
-    "code": "savingsInterestCalculationType.dailybalance",
-    "value": "Daily Balance"
-  },
-  "interestCalculationDaysInYearType": {
-    "id": 365,
-    "code": "savingsInterestCalculationDaysInYearType.days365",
-    "value": "365 Days"
-  },
-  "productOptions": [
-    {
-      "id": 1,
-      "name": "Passbook Savings"
-    }
-  ],
-  "fieldOfficerOptions": [
-    {
-      "id": 3,
-      "firstname": "Mrs.",
-      "lastname": "loanofficerB1",
-      "displayName": "loanofficerB1, Mrs.",
-      "officeId": 2,
-      "officeName": "branch 1",
-      "isLoanOfficer": true
-    },
-    {
-      "id": 1,
-      "firstname": "Mr.",
-      "lastname": "loanofficerHO",
-      "displayName": "loanofficerHO, Mr.",
-      "officeId": 1,
-      "officeName": "branch 1",
-      "isLoanOfficer": true
-    }
-  ],
-  "interestCompoundingPeriodTypeOptions": [
-    {
-      "id": 1,
-      "code": "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
-      "value": "Daily"
-    },
-    {
-      "id": 4,
-      "code": "savings.interest.period.savingsCompoundingInterestPeriodType.monthly",
-      "value": "Monthly"
-    }
-  ],
-  "interestPostingPeriodTypeOptions": [
-    {
-      "id": 4,
-      "code": "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
-      "value": "Monthly"
-    },
-    {
-      "id": 5,
-      "code": "savings.interest.posting.period.savingsPostingInterestPeriodType.quarterly",
-      "value": "Quarterly"
-    },
-    {
-      "id": 7,
-      "code": "savings.interest.posting.period.savingsPostingInterestPeriodType.annual",
-      "value": "Annually"
-    }
-  ],
-  "interestCalculationTypeOptions": [
-    {
-      "id": 1,
-      "code": "savingsInterestCalculationType.dailybalance",
-      "value": "Daily Balance"
-    },
-    {
-      "id": 2,
-      "code": "savingsInterestCalculationType.averagedailybalance",
-      "value": "Average Daily Balance"
-    }
-  ],
-  "interestCalculationDaysInYearTypeOptions": [
-    {
-      "id": 360,
-      "code": "savingsInterestCalculationDaysInYearType.days360",
-      "value": "360 Days"
-    },
-    {
-      "id": 365,
-      "code": "savingsInterestCalculationDaysInYearType.days365",
-      "value": "365 Days"
-    }
-  ],
-  "lockinPeriodFrequencyTypeOptions": [
-    {
-      "id": 0,
-      "code": "savings.lockin.savingsPeriodFrequencyType.days",
-      "value": "Days"
-    },
-    {
-      "id": 1,
-      "code": "savings.lockin.savingsPeriodFrequencyType.weeks",
-      "value": "Weeks"
-    },
-    {
-      "id": 2,
-      "code": "savings.lockin.savingsPeriodFrequencyType.months",
-      "value": "Months"
-    },
-    {
-      "id": 3,
-      "code": "savings.lockin.savingsPeriodFrequencyType.years",
-      "value": "Years"
-    }
-  ],
-  "withdrawalFeeTypeOptions": [
-    {
-      "id": 1,
-      "code": "savingsWithdrawalFeesType.flat",
-      "value": "Flat"
-    },
-    {
-      "id": 2,
-      "code": "savingsWithdrawalFeesType.percent.of.amount",
-      "value": "% of Amount"
-    }
-  ],
-  "chargeOptions": [
-    {
-      "id": 4,
-      "name": "Savings charge 1",
-      "active": true,
-      "penalty": false,
-      "currency": {
-        "code": "USD",
-        "name": "US Dollar",
-        "decimalPlaces": 2,
-        "displaySymbol": "$",
-        "nameCode": "currency.USD",
-        "displayLabel": "US Dollar ($)"
-      },
-      "amount": 200,
-      "chargeTimeType": {
-        "id": 2,
-        "code": "chargeTimeType.specifiedDueDate",
-        "value": "Specified due date"
-      },
-      "chargeAppliesTo": {
-        "id": 2,
-        "code": "chargeAppliesTo.savings",
-        "value": "Savings"
-      },
-      "chargeCalculationType": {
-        "id": 1,
-        "code": "chargeCalculationType.flat",
-        "value": "Flat"
-      },
-      "chargePaymentMode": {
-        "id": 0,
-        "code": "chargepaymentmode.regular",
-        "value": "chargepaymentmode.regular"
-      }
-    },
-    {
-      "id": 5,
-      "name": "Savings charge 2",
-      "active": true,
-      "penalty": false,
-      "currency": {
-        "code": "USD",
-        "name": "US Dollar",
-        "decimalPlaces": 2,
-        "displaySymbol": "$",
-        "nameCode": "currency.USD",
-        "displayLabel": "US Dollar ($)"
-      },
-      "amount": 300,
-      "chargeTimeType": {
-        "id": 2,
-        "code": "chargeTimeType.specifiedDueDate",
-        "value": "Specified due date"
-      },
-      "chargeAppliesTo": {
-        "id": 2,
-        "code": "chargeAppliesTo.savings",
-        "value": "Savings"
-      },
-      "chargeCalculationType": {
-        "id": 1,
-        "code": "chargeCalculationType.flat",
-        "value": "Flat"
-      },
-      "chargePaymentMode": {
-        "id": 0,
-        "code": "chargepaymentmode.regular",
-        "value": "chargepaymentmode.regular"
-      }
-    },
-    {
-      "id": 6,
-      "name": "Annual fee",
-      "active": true,
-      "penalty": false,
-      "currency": {
-        "code": "USD",
-        "name": "US Dollar",
-        "decimalPlaces": 2,
-        "displaySymbol": "$",
-        "nameCode": "currency.USD",
-        "displayLabel": "US Dollar ($)"
-      },
-      "amount": 50,
-      "chargeTimeType": {
-        "id": 6,
-        "code": "chargeTimeType.annualFee",
-        "value": "Annual Fee"
-      },
-      "chargeAppliesTo": {
-        "id": 2,
-        "code": "chargeAppliesTo.savings",
-        "value": "Savings"
-      },
-      "chargeCalculationType": {
-        "id": 1,
-        "code": "chargeCalculationType.flat",
-        "value": "Flat"
-      },
-      "chargePaymentMode": {
-        "id": 0,
-        "code": "chargepaymentmode.regular",
-        "value": "Regular"
-      }
-    },
-    {
-      "id": 7,
-      "name": "Quarterly fee",
-      "active": true,
-      "penalty": false,
-      "currency": {
-        "code": "USD",
-        "name": "US Dollar",
-        "decimalPlaces": 2,
-        "displaySymbol": "$",
-        "nameCode": "currency.USD",
-        "displayLabel": "US Dollar ($)"
-      },
-      "amount": 5,
-      "chargeTimeType": {
-        "id": 7,
-        "code": "chargeTimeType.monthlyFee",
-        "value": "Monthly Fee"
-      },
-      "chargeAppliesTo": {
-        "id": 2,
-        "code": "chargeAppliesTo.savings",
-        "value": "Savings"
-      },
-      "chargeCalculationType": {
-        "id": 1,
-        "code": "chargeCalculationType.flat",
-        "value": "Flat"
-      },
-      "chargePaymentMode": {
-        "id": 0,
-        "code": "chargepaymentmode.regular",
-        "value": "Regular"
-      },
-      "feeOnMonthDay": [
-        10,
-        5
-      ],
-      "feeInterval": 4
-    }
-  ]
+	"clientId" : 1,
+	"clientName" : "small business",
+	"savingsProductId" : 1,
+	"savingsProductName" : "Passbook Savings",
+	"timeline" : {},
+	"currency" : {
+		"code" : "USD",
+		"name" : "US Dollar",
+		"decimalPlaces" : 2,
+		"displaySymbol" : "$",
+		"nameCode" : "currency.USD",
+		"displayLabel" : "US Dollar ($)"
+	},
+	"nominalAnnualInterestRate" : 5.000000,
+	"interestCompoundingPeriodType" : {
+		"id" : 1,
+		"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
+		"value" : "Daily"
+	},
+	"interestPostingPeriodType" : {
+		"id" : 4,
+		"code" : "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
+		"value" : "Monthly"
+	},
+	"interestCalculationType" : {
+		"id" : 1,
+		"code" : "savingsInterestCalculationType.dailybalance",
+		"value" : "Daily Balance"
+	},
+	"interestCalculationDaysInYearType" : {
+		"id" : 365,
+		"code" : "savingsInterestCalculationDaysInYearType.days365",
+		"value" : "365 Days"
+	},
+	"withdrawalFeeForTransfers" : false,
+	"allowOverdraft" : true,
+	"overdraftLimit" : 100000.000000,
+	"enforceMinRequiredBalance" : false,
+	"withHoldTax" : false,
+	"isDormancyTrackingActive" : false,
+	"charges" : [{
+		"id": 1,
+		"name": "Savings charge 1",
+		"active": true,
+		"penalty": false,
+		"currency": {
+			"code": "USD",
+			"name": "US Dollar",
+			"decimalPlaces": 2,
+			"displaySymbol": "$",
+			"nameCode": "currency.USD",
+			"displayLabel": "US Dollar ($)"
+		},
+	}],
+	"productOptions" : [{
+			"id" : 1,
+			"name" : "Savings Product",
+			"withdrawalFeeForTransfers" : false,
+			"allowOverdraft" : false,
+			"enforceMinRequiredBalance" : false,
+			"withHoldTax" : false
+		}
+	],
+	"fieldOfficerOptions" : [{
+			"id" : 4,
+			"externalId" : "231",
+			"firstname" : "Anil",
+			"lastname" : "Chittari",
+			"displayName" : "Chittari, Anil",
+			"officeId" : 10,
+			"officeName" : "Accounting Demo",
+			"isLoanOfficer" : true,
+			"isActive" : true
+		}
+	],
+	"interestCompoundingPeriodTypeOptions" : [{
+			"id" : 1,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.daily",
+			"value" : "Daily"
+		}, {
+			"id" : 4,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.monthly",
+			"value" : "Monthly"
+		}, {
+			"id" : 5,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.quarterly",
+			"value" : "Quarterly"
+		}, {
+			"id" : 6,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.biannual",
+			"value" : "Semi-Annual"
+		}, {
+			"id" : 7,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.annual",
+			"value" : "Annually"
+		}, {
+			"id" : 8,
+			"code" : "savings.interest.period.savingsCompoundingInterestPeriodType.nocompounding",
+			"value" : "None"
+		}
+	],
+	"interestPostingPeriodTypeOptions" : [{
+			"id" : 4,
+			"code" : "savings.interest.posting.period.savingsPostingInterestPeriodType.monthly",
+			"value" : "Monthly"
+		}, {
+			"id" : 5,
+			"code" : "savings.interest.posting.period.savingsPostingInterestPeriodType.quarterly",
+			"value" : "Quarterly"
+		}, {
+			"id" : 6,
+			"code" : "savings.interest.posting.period.savingsPostingInterestPeriodType.biannual",
+			"value" : "BiAnnual"
+		}, {
+			"id" : 7,
+			"code" : "savings.interest.posting.period.savingsPostingInterestPeriodType.annual",
+			"value" : "Annually"
+		}
+	],
+	"interestCalculationTypeOptions" : [{
+			"id" : 1,
+			"code" : "savingsInterestCalculationType.dailybalance",
+			"value" : "Daily Balance"
+		}, {
+			"id" : 2,
+			"code" : "savingsInterestCalculationType.averagedailybalance",
+			"value" : "Average Daily Balance"
+		}
+	],
+	"interestCalculationDaysInYearTypeOptions" : [{
+			"id" : 360,
+			"code" : "savingsInterestCalculationDaysInYearType.days360",
+			"value" : "360 Days"
+		}, {
+			"id" : 365,
+			"code" : "savingsInterestCalculationDaysInYearType.days365",
+			"value" : "365 Days"
+		}
+	],
+	"lockinPeriodFrequencyTypeOptions" : [{
+			"id" : 0,
+			"code" : "savings.lockin.savingsPeriodFrequencyType.days",
+			"value" : "Days"
+		}, {
+			"id" : 1,
+			"code" : "savings.lockin.savingsPeriodFrequencyType.weeks",
+			"value" : "Weeks"
+		}, {
+			"id" : 2,
+			"code" : "savings.lockin.savingsPeriodFrequencyType.months",
+			"value" : "Months"
+		}, {
+			"id" : 3,
+			"code" : "savings.lockin.savingsPeriodFrequencyType.years",
+			"value" : "Years"
+		}
+	],
+	"withdrawalFeeTypeOptions" : [{
+			"id" : 1,
+			"code" : "savingsWithdrawalFeesType.flat",
+			"value" : "Flat"
+		}, {
+			"id" : 2,
+			"code" : "savingsWithdrawalFeesType.percent.of.amount",
+			"value" : "% of Amount"
+		}
+	],
+	"chargeOptions" : [{
+			"id" : 8,
+			"name" : "Bank charges",
+			"active" : true,
+			"penalty" : false,
+			"currency" : {
+				"code" : "ZAR",
+				"name" : "South African Rand",
+				"decimalPlaces" : 2,
+				"displaySymbol" : "R",
+				"nameCode" : "currency.ZAR",
+				"displayLabel" : "South African Rand (R)"
+			},
+			"amount" : 1.000000,
+			"chargeTimeType" : {
+				"id" : 2,
+				"code" : "chargeTimeType.specifiedDueDate",
+				"value" : "Specified due date"
+			},
+			"chargeAppliesTo" : {
+				"id" : 2,
+				"code" : "chargeAppliesTo.savings",
+				"value" : "Savings"
+			},
+			"chargeCalculationType" : {
+				"id" : 1,
+				"code" : "chargeCalculationType.flat",
+				"value" : "Flat"
+			},
+			"chargePaymentMode" : {
+				"id" : 0,
+				"code" : "chargepaymentmode.regular",
+				"value" : "Regular"
+			},
+			"emiRoundingGoalSeek" : false,
+			"isGlimCharge" : false,
+			"glimChargeCalculation" : {
+				"id" : 1,
+				"code" : "glimChargeCalculationType.round",
+				"value" : "round"
+			},
+			"isCapitalized" : false
+		}
+	],
+	"savingsDpLimitCalculationTypeOptions" : [{
+			"id" : 1,
+			"code" : "savings.calculationType.SavingsDpLimitCalculationType.flat",
+			"value" : "Flat"
+		}, {
+			"id" : 2,
+			"code" : "savings.calculationType.SavingsDpLimitCalculationType.percent.of.amount",
+			"value" : "PercentOfAmount"
+		}
+	],
+	"savingsAccountDpDetailsData" : {
+		"savingsProductDrawingPowerDetailsData" : {
+			"frequencyType" : {
+				"id" : 2,
+				"code" : "periodFrequencyType.months",
+				"value" : "MONTHS"
+			},
+			"frequencyInterval" : 1
+		}
+	}
 }
 			</code>
 	    </div>
@@ -25430,6 +26133,11 @@ No Request Body:
 	        <table class=matrixHeading>
 	            <tr class="matrixHeadingBG"><td><div class="fineractHeading2">Optional Fields</div></td></tr>
 	            <tr class=alt><td>accountNo, externalId, fieldOfficerId</td></tr>
+	        </table>
+	        <br/>
+			<table class=matrixHeading>
+	            <tr class="matrixHeadingBG"><td><div class="fineractHeading2">Mandatory Fields for DP limit allowed is enabled</div></td></tr>
+	            <tr class=alt><td>overdraftLimit, dpLimitAmount, dpCalculateOnAmount, dpStartDate, dpDuration</td></tr>
 	        </table>
 	        <br/>
 	        <table class=matrixHeading>
@@ -25471,25 +26179,38 @@ Request Body:
 Content-Type: application/json
 Request Body:
 {
-  "clientId": 1,
-  "productId": 1,
-  "fieldOfficerId": 1,
-  "locale": "en",
-  "dateFormat": "dd MMMM yyyy",
-  "submittedOnDate": "01 March 2013",
-  "accountNo": "SA000023",
-  "externalId": "SYS-23",
-  "nominalAnnualInterestRate": "5.65",
-  "interestCompoundingPeriodType": 1,
-  "interestPostingPeriodType": 4,
-  "interestCalculationType": 1,
-  "interestCalculationDaysInYearType": 365,
-  "minRequiredOpeningBalance": "1,000",
-  "lockinPeriodFrequency": 6,
-  "lockinPeriodFrequencyType": 2,
-  "allowOverdraft":true,
-  "overdraftLimit":5000,
-  "charges":[{"id":"1"}]
+	"clientId" : 1,
+	"productId" : 1,
+	"fieldOfficerId" : 1,
+	"nominalAnnualInterestRate" : 5,
+	"withdrawalFeeForTransfers" : false,
+	"allowOverdraft" : true,
+	"allowDpLimit" : true,
+	"overdraftLimit" : 100000,
+	"enforceMinRequiredBalance" : false,
+	"withHoldTax" : false,
+	"interestCompoundingPeriodType" : 1,
+	"externalId" : "SYS-23",
+	"minRequiredOpeningBalance" : "1,000",
+	"lockinPeriodFrequency" : 6,
+	"lockinPeriodFrequencyType" : 2,
+	"interestPostingPeriodType" : 4,
+	"interestCalculationType" : 1,
+	"interestCalculationDaysInYearType" : 365,
+	"savingsDpLimitCalculationType" : 1,
+	"dpLimitAmount" : "10000",
+	"dpCalculateOnAmount" : "1000",
+	"dpStartDate" : "22 May 2017",
+	"dpDuration" : "10",
+	"submittedOnDate" : "22 May 2017",
+	"locale" : "en",
+	"dateFormat" : "dd MMMM yyyy",
+	"monthDayFormat" : "dd MMM",
+	"charges" : [{
+			"id" : "1"
+		}
+	]
+
 }
 			</code>
 	        <code class="method-response">
