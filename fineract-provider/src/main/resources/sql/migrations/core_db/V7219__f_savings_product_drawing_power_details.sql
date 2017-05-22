@@ -24,9 +24,9 @@ INSERT INTO m_calendar (title,start_date,calendar_type_enum,repeating,recurrence
 SELECT CONCAT ('savings_account_', dp.id,'_dp_details'), 
 sa.activatedon_date, 
 1,
-dp.dp_reduction_every, CONCAT ('FREQ=', CASE WHEN dp.frequency = 0 THEN 'DAILY' WHEN dp.frequency = 1 THEN 'WEEKLY' WHEN dp.frequency = 2 THEN 'MONTHLY' WHEN dp.frequency = 3 THEN 'YEARLY' END, CASE WHEN dp.dp_reduction_every > 1 THEN CONCAT(';INTERVAL=',dp.dp_reduction_every) END
-),
-dp.savings_id
+dp.dp_reduction_every, 
+CONCAT ('FREQ=', CASE dp.frequency WHEN 0 THEN 'DAILY' WHEN 1 THEN 'WEEKLY' WHEN 2 THEN	'MONTHLY' WHEN 3 THEN 'YEARLY' END, CASE WHEN dp.dp_reduction_every > 1 THEN CONCAT(';INTERVAL=',dp.dp_reduction_every) ELSE '' END),
+dp.id
 FROM f_savings_account_dp_details dp
 JOIN m_savings_account sa ON dp.savings_id = sa.id
 WHERE sa.activatedon_date IS NOT NULL;
