@@ -21,15 +21,16 @@ public class BankAccountDetailConstants {
     public static final String localeParameterName = "locale";
     public static final String lastTransactionDate = "lastTransactionDate";
     public static final String dateFormat = "dateFormat";
-
+    public final static String micrCodeParameterName = "micrCode" ;
+    public final static String branchNameParameterName = "branchName" ;
     
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParameterName,
             accountNumberParameterName, ifscCodeParameterName, mobileNumberParameterName, emailParameterName,
             bankNameParameterName, bankCityParameterName,accountTypeIdParamName,localeParameterName, lastTransactionDate,
-            dateFormat));
+            dateFormat, micrCodeParameterName, branchNameParameterName));
 
     public static final Set<String> UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParameterName,
             accountNumberParameterName, ifscCodeParameterName, mobileNumberParameterName, emailParameterName,
             bankNameParameterName, bankCityParameterName,accountTypeIdParamName,localeParameterName, lastTransactionDate,
-            dateFormat));
+            dateFormat, micrCodeParameterName, branchNameParameterName));
 }

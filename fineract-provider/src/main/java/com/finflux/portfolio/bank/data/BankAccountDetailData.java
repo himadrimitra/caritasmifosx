@@ -7,31 +7,24 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public class BankAccountDetailData {
 
-    @SuppressWarnings("unused")
     private final Long id;
-    @SuppressWarnings("unused")
     private final String name;
-    @SuppressWarnings("unused")
     private final String accountNumber;
     private final EnumOptionData accountType;
-    @SuppressWarnings("unused")
     private final String ifscCode;
-    @SuppressWarnings("unused")
     private final String mobileNumber;
-    @SuppressWarnings("unused")
     private final String email;
-    @SuppressWarnings("unused")
     private final String bankName;
-    @SuppressWarnings("unused")
     private final String bankCity;
-    @SuppressWarnings("unused")
     private final EnumOptionData status;
-    private  Collection<EnumOptionData> bankAccountTypeOptions;
-    
+    private Collection<EnumOptionData> bankAccountTypeOptions;
+
     private final Date lastTransactionDate;
+
+    private final String micrCode ;
+    private final String branchName ;
     
-    
-    public BankAccountDetailData(Collection<EnumOptionData> bankAccountTypeOptions){
+    public BankAccountDetailData(Collection<EnumOptionData> bankAccountTypeOptions) {
         this.id = null;
         this.name = null;
         this.accountNumber = null;
@@ -44,12 +37,14 @@ public class BankAccountDetailData {
         this.accountType = null;
         this.bankAccountTypeOptions = bankAccountTypeOptions;
         this.lastTransactionDate = null;
-        
+        this.micrCode = null ;
+        this.branchName = null ;
+
     }
 
     public BankAccountDetailData(final Long id, final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email,final String bankName, final String bankCity, final EnumOptionData status, final EnumOptionData accountType,
-            final Date lastTransactionDate) {
+            final String mobileNumber, final String email, final String bankName, final String bankCity, final EnumOptionData status,
+            final EnumOptionData accountType, final Date lastTransactionDate, final String micrCode, final String branchName) {
         this.id = id;
         this.name = name;
         this.accountNumber = accountNumber;
@@ -62,6 +57,8 @@ public class BankAccountDetailData {
         this.accountType = accountType;
         this.bankAccountTypeOptions = null;
         this.lastTransactionDate = lastTransactionDate;
+        this.micrCode = micrCode ;
+        this.branchName = branchName ;
     }
 
     public Collection<EnumOptionData> getBankAccountTypeOptions() {
@@ -88,6 +85,10 @@ public class BankAccountDetailData {
         return ifscCode;
     }
 
+    public String getMicrCode() {
+        return this.micrCode ;
+    }
+    
     public String getMobileNumber() {
         return mobileNumber;
     }
@@ -104,10 +105,17 @@ public class BankAccountDetailData {
         return bankName;
     }
 
+    public String getBranchName() {
+        return this.branchName ;
+    }
+    
     public String getBankCity() {
         return bankCity;
     }
 
+    public Date getLastTransactionDate() {
+        return this.lastTransactionDate ;
+    }
     
     public void setBankAccountTypeOptions(Collection<EnumOptionData> bankAccountTypeOptions) {
         this.bankAccountTypeOptions = bankAccountTypeOptions;
