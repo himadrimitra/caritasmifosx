@@ -336,7 +336,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                 "Topup on loan with multi-tranche disbursal and without interest recalculation is not supported.");
                     }
                     final LocalDate disbursalDateOfLoanToClose = loanToClose.getDisbursementDate();
-                    if(!newLoanApplication.getSubmittedOnDate().isAfter(disbursalDateOfLoanToClose)){
+                    if(newLoanApplication.getSubmittedOnDate().isBefore(disbursalDateOfLoanToClose)){
                         throw new GeneralPlatformDomainRuleException(
                                 "error.msg.loan.submitted.date.should.be.after.topup.loan.disbursal.date",
                                 "Submitted date of this loan application "+newLoanApplication.getSubmittedOnDate()
@@ -347,7 +347,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                 "loanIdToClose is invalid, Currency code is different.");
                     }
                     final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                    if(!newLoanApplication.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                    if(newLoanApplication.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                         throw new GeneralPlatformDomainRuleException(
                                 "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                                 "Disbursal date of this loan application "+newLoanApplication.getDisbursementDate()
@@ -966,7 +966,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                     "Topup on loan with multi-tranche disbursal and without interest recalculation is not supported.");
                         }
                         final LocalDate disbursalDateOfLoanToClose = loanToClose.getDisbursementDate();
-                        if(!existingLoanApplication.getSubmittedOnDate().isAfter(disbursalDateOfLoanToClose)){
+                        if(existingLoanApplication.getSubmittedOnDate().isBefore(disbursalDateOfLoanToClose)){
                             throw new GeneralPlatformDomainRuleException(
                                     "error.msg.loan.submitted.date.should.be.after.topup.loan.disbursal.date",
                                     "Submitted date of this loan application "+existingLoanApplication.getSubmittedOnDate()
@@ -977,7 +977,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                     "loanIdToClose is invalid, Currency code is different.");
                         }
                         final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                        if(!existingLoanApplication.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                        if(existingLoanApplication.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                             throw new GeneralPlatformDomainRuleException(
                                     "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                                     "Disbursal date of this loan application "+existingLoanApplication.getDisbursementDate()
@@ -1515,7 +1515,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
 
                 final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                if(!loan.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                if(loan.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                     throw new GeneralPlatformDomainRuleException(
                             "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                             "Disbursal date of this loan application "+loan.getDisbursementDate()
