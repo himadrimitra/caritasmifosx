@@ -190,7 +190,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
 		List<Object> params = new ArrayList<>();
 		params.add(underHierarchySearchString);
 		params.add(underHierarchySearchString);
-		if (configurationDomainService.allowClientsInMultipleGroups()) {
+		if (groupId != null && configurationDomainService.allowClientsInMultipleGroups()) {
 			params.add(groupId);
 		}
 		if (searchParameters.isSelfUser()) {
