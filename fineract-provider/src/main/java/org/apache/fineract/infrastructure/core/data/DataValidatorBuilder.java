@@ -1025,11 +1025,9 @@ public class DataValidatorBuilder {
 	
     public DataValidatorBuilder validateEmailAddress() {
 
-        final String EMAIL_REGEX = "^[\\w!#$%&/'*+=?`{|}~^-]+(?:\\.[\\w!#$%&/'*+=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
-        final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
-        Matcher emailMatcher = EMAIL_PATTERN.matcher(this.value.toString());
+        if (this.value == null && this.ignoreNullValue) { return this; }
 
-        if (!emailMatcher.matches() || this.value.toString().endsWith(".")) {
+        if (this.value != null && isInvalidEmailAddress()) {
 
             final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(this.resource).append(".")
                     .append(this.parameter).append(".is.invalid");
@@ -1037,9 +1035,16 @@ public class DataValidatorBuilder {
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter);
             this.dataValidationErrors.add(error);
-        }
 
+        }
         return this;
+    }
+
+    private boolean isInvalidEmailAddress() {
+        final String EMAIL_REGEX = "^[\\w!#$%&/'*+=?`{|}~^-]+(?:\\.[\\w!#$%&/'*+=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+        final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
+        Matcher emailMatcher = EMAIL_PATTERN.matcher(this.value.toString());
+        return (!emailMatcher.matches() || this.value.toString().endsWith("."));
     }
 
 }
