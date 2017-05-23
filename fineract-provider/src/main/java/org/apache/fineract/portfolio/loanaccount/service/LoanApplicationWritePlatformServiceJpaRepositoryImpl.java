@@ -330,9 +330,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         throw new GeneralPlatformDomainRuleException("error.msg.loan.loanIdToClose.no.active.loan.associated.to.client.found",
                                 "loanIdToClose is invalid, No Active Loan associated with the given Client ID found.");
                     }
-                    if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct()){
+                    if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct() && loanToClose.hasUndisbursedTranches()){
                         throw new GeneralPlatformDomainRuleException(
-                                "error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.not.supported",
+                                "error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.and.non.disbursed.tranche.not.supported",
                                 "Topup on loan with multi-tranche disbursal and without interest recalculation is not supported.");
                     }
                     final LocalDate disbursalDateOfLoanToClose = loanToClose.getDisbursementDate();
@@ -961,8 +961,9 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                             throw new GeneralPlatformDomainRuleException("error.msg.loan.loanIdToClose.no.active.loan.associated.to.client.found",
                                     "loanIdToClose is invalid, No Active Loan associated with the given Client ID found.");
                         }
-                        if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct()){
-                            throw new GeneralPlatformDomainRuleException("error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.not.supported",
+                        if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct() && loanToClose.hasUndisbursedTranches()){
+                            throw new GeneralPlatformDomainRuleException(
+                                    "error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.and.non.disbursed.tranche.not.supported",
                                     "Topup on loan with multi-tranche disbursal and without interest recalculation is not supported.");
                         }
                         final LocalDate disbursalDateOfLoanToClose = loanToClose.getDisbursementDate();

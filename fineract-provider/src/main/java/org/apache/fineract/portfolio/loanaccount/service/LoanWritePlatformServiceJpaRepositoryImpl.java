@@ -166,7 +166,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.InvalidPaidInAdvanceA
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidRefundDateException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursalException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursementDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanForeclosureException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanMultiDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignmentException;
@@ -3381,18 +3380,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         changes.put("transactionDate", transactionDate);
 
         String noteText = this.fromApiJsonHelper.extractStringNamed(LoanApiConstants.noteParamName, element);
-        LoanRescheduleRequest loanRescheduleRequest = null;
-        for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
-            if (!loanDisbursementDetails.expectedDisbursementDateAsLocalDate().isAfter(transactionDate)
-                    && loanDisbursementDetails.actualDisbursementDate() == null) {
-                final String defaultUserMessage = "The loan with undisbrsed tranche before foreclosure cannot be foreclosed.";
-                throw new LoanForeclosureException("loan.with.undisbursed.tranche.before.foreclosure.cannot.be.foreclosured",
-                        defaultUserMessage, transactionDate);
-            }
-        }
-        this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(loan.getRepaymentScheduleInstallments(),
-                loan, loanRescheduleRequest);
-        
         final boolean isAccountTransfer = false;
         final boolean isLoanToLoanTransfer = false;
         this.loanAccountDomainService.foreCloseLoan(loan, transactionDate, noteText, isAccountTransfer,  isLoanToLoanTransfer, changes);

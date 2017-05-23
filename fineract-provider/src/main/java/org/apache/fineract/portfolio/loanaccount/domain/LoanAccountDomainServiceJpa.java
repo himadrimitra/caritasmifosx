@@ -810,13 +810,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
     public LoanTransaction foreCloseLoan(final Loan loan, final LocalDate foreClosureDate, final String noteText,
             final boolean isAccountTransfer, final boolean isLoanToLoanTransfer, Map<String, Object> changes) {
         LoanRescheduleRequest loanRescheduleRequest = null;
-        for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
-            if (!loanDisbursementDetails.expectedDisbursementDateAsLocalDate().isAfter(foreClosureDate)
-                    && loanDisbursementDetails.actualDisbursementDate() == null) {
-                final String defaultUserMessage = "The loan with undisbrsed tranche before foreclosure cannot be foreclosed.";
-                throw new LoanForeclosureException("loan.with.undisbursed.tranche.before.foreclosure.cannot.be.foreclosured",
-                        defaultUserMessage, foreClosureDate);
-            }
+        if (loan.hasUndisbursedTranches()) {
+            final String defaultUserMessage = "The loan with undisbrsed tranche cannot be foreclosed.";
+            throw new LoanForeclosureException("loan.with.undisbursed.tranche.cannot.be.foreclosured",
+                    defaultUserMessage, foreClosureDate);
         }
         this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(loan.getRepaymentScheduleInstallments(),
                 loan, loanRescheduleRequest);
