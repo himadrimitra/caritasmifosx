@@ -1586,6 +1586,62 @@
 								<td></td>
 								<td></td>
 							</tr>
+							<tr>
+								<td><a href="#loans_transactions">GLIM Loan Transactions</a></td>
+								<td>grouploanindividualmonitoring/{loanId}/transactions?command=repayment</td>
+								<td><a href="#glimloans_transaction_repayment">Enter a repayment</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+							<tr>
+								<td></td>
+								<td>grouploanindividualmonitoring/{loanId}/transactions?command=waiveInterest</td>
+								<td><a href="#glimloans_transaction_waiveinterest">Waive Interest</a></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+                            <tr>
+                                <td></td>
+                                <td>grouploanindividualmonitoring/{loanId}/transactions?command=writeoff</td>
+                                <td><a href="#glimloans_transaction_write-off_loan">Write-off GLIM Loan</a></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                <td>grouploanindividualmonitoring/{loanId}/transactions?command=waivecharge</td>
+                                <td><a href="#glimloans_transaction_waive_charge"> GLIM Waive charge</a></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+							 <tr>
+                                <td></td>
+                                <td>grouploanindividualmonitoring/{loanId}/transactions?command=repayment</td>
+                                <td><a href="#glimloans_transaction_pre_close_loan">GLIM Loan Pre-Closure transaction template</a></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+							<tr>
+                                <td></td>
+                                <td>grouploanindividualmonitoring/{loanId}/transactions?command=recoverypayment</td>
+                                <td><a href="#glimloans_transaction_recovery_payment">Make a GLIM Recovery Payment</a></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+							<tr>
+								<td></td>
+								<td>loans/{loanId}/transactions/{transactionId}</td>
+								<td></td>
+								<td><a href="#glimloans_transaction_retrieve">Retrieve a transactions details of GLIM</a></td>
+								<td></td>
+								<td></td>
+							</tr>
 						</table>
 					</div>
 				</div>
@@ -1823,13 +1879,13 @@
 								<td></td>
 							</tr>
                             <tr>
-															<td></td>
-															<td>centers/{centerId}/accounts</td>
-															<td></td>
-															<td><a href="#centers_accounts">Retrieve Center accounts summary</a></td>
-															<td></td>
-															<td></td>
-														</tr>
+                                <td></td>
+                                <td>centers/{centerId}/accounts</td>
+                                <td></td>
+                                <td><a href="#centers_accounts">Retrieve Center accounts summary</a></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
                             <tr>
                                 <td></td>
                                 <td>centers/{centerId}?command=generateCollectionSheet</td>
@@ -9185,6 +9241,23 @@ An enumeration that indicates the type of transaction processing strategy to be 
 							</td>
 						</tr>
 					</table>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Additional Field Descriptions For GLIM</div></td>
+						</tr>
+						<tr class=alt>
+							<td>client specific amount</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>The loan amount of client specific to be disbursed to through loan.</td>
+						</tr>
+						<tr class=alt>
+							<td>Loan Type</td>
+						</tr>
+						<tr>
+							<td class=fielddesc><b>glim</b>: Group loan individual monitoring loan given to group as a whole but loan amount divided into member on individual basis.</td>
+						</tr>
+					</table>
 				</div>
 			</div>
 
@@ -9279,6 +9352,165 @@ GET https://DomainName/api/v1/loans/template?templateType=individual&clientId=1
   ]
 }
 					</code>
+for glim loan:
+	<code class="method-declaration">
+GET https://localhost:8443/fineract-provider/api/v1/loans/template?activeOnly=true&groupId=3&staffInSelectedOfficeOnly=true&templateType=glim
+	</code>
+	<code class="method-response">
+
+{
+	"group": {
+		"id": 3,
+		"accountNo": "000000003",
+		"name": "CGL group",
+		"status": {
+			"id": 300,
+			"code": "clientStatusType.active",
+			"value": "Active"
+		},
+		"active": true,
+		"activationDate": [2017, 3, 1],
+		"officeId": 1,
+		"officeName": "Head Office",
+		"hierarchy": ".3.",
+		"groupLevel": "2",
+		"clientMembers": [{
+			"id": 6,
+			"accountNo": "000000006",
+			"status": {
+				"id": 300,
+				"code": "clientStatusType.active",
+				"value": "Active"
+			},
+			"subStatus": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"active": true,
+			"activationDate": [2017, 3, 1],
+			"firstname": "sampath",
+			"lastname": "kumar",
+			"displayName": "sampath kumar",
+			"gender": {
+				"id": 23,
+				"name": "Male",
+				"isActive": false,
+				"mandatory": false
+			},
+			"clientType": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"clientClassification": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"officeId": 1,
+			"officeName": "Head Office",
+			"timeline": {
+				"submittedOnDate": [2017, 3, 1],
+				"submittedByUsername": "conflux",
+				"submittedByFirstname": "App",
+				"submittedByLastname": "Administrator",
+				"activatedOnDate": [2017, 3, 1],
+				"activatedByUsername": "conflux",
+				"activatedByFirstname": "App",
+				"activatedByLastname": "Administrator"
+			},
+			"legalForm": {
+				"id": 1,
+				"code": "legalFormType.person",
+				"value": "PERSON"
+			},
+			"clientNonPersonDetails": {
+				"constitution": {
+					"isActive": false,
+					"mandatory": false
+				},
+				"mainBusinessLine": {
+					"isActive": false,
+					"mandatory": false
+				}
+			}
+		}],
+		"timeline": {
+			"submittedOnDate": [2017, 3, 1],
+			"submittedByUsername": "conflux",
+			"submittedByFirstname": "App",
+			"submittedByLastname": "Administrator",
+			"activatedOnDate": [2017, 3, 1],
+			"activatedByUsername": "conflux",
+			"activatedByFirstname": "App",
+			"activatedByLastname": "Administrator"
+		},
+		"isShowLoanDetailsInCenterPageEnabled": false
+	},
+	"isLoanProductLinkedToFloatingRate": false,
+	"isFloatingInterestRate": false,
+	"timeline": {
+		"expectedDisbursementDate": [2017, 5, 10]
+	},
+	"productOptions": [{
+		"id": 1,
+		"name": "myloan",
+		"includeInBorrowerCycle": false,
+		"useBorrowerCycle": false,
+		"isLinkedToFloatingInterestRates": false,
+		"isFloatingInterestRateCalculationAllowed": false,
+		"allowVariableInstallments": false,
+		"isInterestRecalculationEnabled": false,
+		"canDefineInstallmentAmount": false,
+		"adjustFirstEMIAmount": false,
+		"adjustInterestForRounding": false,
+		"principalVariationsForBorrowerCycle": [],
+		"interestRateVariationsForBorrowerCycle": [],
+		"numberOfRepaymentVariationsForBorrowerCycle": [],
+		"canUseForTopup": false,
+		"holdGuaranteeFunds": false,
+		"accountMovesOutOfNPAOnlyOnArrearsCompletion": false,
+		"closeLoanOnOverpayment": false,
+		"syncExpectedWithDisbursementDate": false,
+		"isEmiBasedOnDisbursements": false
+	}, {
+		"id": 2,
+		"name": "glim loan",
+		"includeInBorrowerCycle": false,
+		"useBorrowerCycle": false,
+		"isLinkedToFloatingInterestRates": false,
+		"isFloatingInterestRateCalculationAllowed": false,
+		"allowVariableInstallments": false,
+		"isInterestRecalculationEnabled": false,
+		"canDefineInstallmentAmount": false,
+		"adjustFirstEMIAmount": false,
+		"adjustInterestForRounding": false,
+		"principalVariationsForBorrowerCycle": [],
+		"interestRateVariationsForBorrowerCycle": [],
+		"numberOfRepaymentVariationsForBorrowerCycle": [],
+		"canUseForTopup": false,
+		"holdGuaranteeFunds": false,
+		"accountMovesOutOfNPAOnlyOnArrearsCompletion": false,
+		"closeLoanOnOverpayment": false,
+		"syncExpectedWithDisbursementDate": false,
+		"isEmiBasedOnDisbursements": false
+	}],
+	"loanOfficerOptions": [{
+		"id": 1,
+		"externalId": "1",
+		"firstname": "ram",
+		"lastname": "awale",
+		"displayName": "awale, ram",
+		"officeId": 1,
+		"officeName": "Head Office",
+		"isLoanOfficer": true,
+		"isActive": true
+	}],
+	"canDisburse": false,
+	"isTopup": false,
+	"isInterestRecalculationEnabled": false,
+	"isVariableInstallmentsAllowed": false
+}
+
+</code>
 					<code class="method-declaration">
 GET https://DomainName/api/v1/loans/template?templateType=individual&clientId=1&productId=1
 					</code>
@@ -9567,6 +9799,829 @@ GET https://DomainName/api/v1/loans/template?templateType=individual&clientId=1&
   ]
 }
 					</code>
+for glim loan:
+	<code class="method-declaration">
+GET https://localhost:8443/fineract-provider/api/v1/loans/template?activeOnly=true&groupId=3&productId=3&staffInSelectedOfficeOnly=true&templateType=glim
+	</code>
+	<code class="method-response">
+
+{
+	"group": {
+		"id": 3,
+		"accountNo": "000000003",
+		"name": "CGL group",
+		"status": {
+			"id": 300,
+			"code": "clientStatusType.active",
+			"value": "Active"
+		},
+		"active": true,
+		"activationDate": [2017, 3, 1],
+		"officeId": 1,
+		"officeName": "Head Office",
+		"hierarchy": ".3.",
+		"groupLevel": "2",
+		"clientMembers": [{
+			"id": 6,
+			"accountNo": "000000006",
+			"status": {
+				"id": 300,
+				"code": "clientStatusType.active",
+				"value": "Active"
+			},
+			"subStatus": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"active": true,
+			"activationDate": [2017, 3, 1],
+			"firstname": "sampath",
+			"lastname": "kumar",
+			"displayName": "sampath kumar",
+			"gender": {
+				"id": 23,
+				"name": "Male",
+				"isActive": false,
+				"mandatory": false
+			},
+			"clientType": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"clientClassification": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"officeId": 1,
+			"officeName": "Head Office",
+			"timeline": {
+				"submittedOnDate": [2017, 3, 1],
+				"submittedByUsername": "conflux",
+				"submittedByFirstname": "App",
+				"submittedByLastname": "Administrator",
+				"activatedOnDate": [2017, 3, 1],
+				"activatedByUsername": "conflux",
+				"activatedByFirstname": "App",
+				"activatedByLastname": "Administrator"
+			},
+			"legalForm": {
+				"id": 1,
+				"code": "legalFormType.person",
+				"value": "PERSON"
+			},
+			"clientNonPersonDetails": {
+				"constitution": {
+					"isActive": false,
+					"mandatory": false
+				},
+				"mainBusinessLine": {
+					"isActive": false,
+					"mandatory": false
+				}
+			}
+		}],
+		"timeline": {
+			"submittedOnDate": [2017, 3, 1],
+			"submittedByUsername": "conflux",
+			"submittedByFirstname": "App",
+			"submittedByLastname": "Administrator",
+			"activatedOnDate": [2017, 3, 1],
+			"activatedByUsername": "conflux",
+			"activatedByFirstname": "App",
+			"activatedByLastname": "Administrator"
+		},
+		"isShowLoanDetailsInCenterPageEnabled": false
+	},
+	"loanProductId": 3,
+	"loanProductName": "glim loan",
+	"isLoanProductLinkedToFloatingRate": false,
+	"currency": {
+		"code": "USD",
+		"name": "US Dollar",
+		"decimalPlaces": 2,
+		"inMultiplesOf": 0,
+		"displaySymbol": "$",
+		"nameCode": "currency.USD",
+		"displayLabel": "US Dollar ($)"
+	},
+	"principal": 3500.000000,
+	"approvedPrincipal": 3500.000000,
+	"proposedPrincipal": 3500.000000,
+	"termFrequency": 6,
+	"termPeriodFrequencyType": {
+		"id": 2,
+		"code": "repaymentFrequency.periodFrequencyType.months",
+		"value": "Months"
+	},
+	"numberOfRepayments": 6,
+	"repaymentEvery": 1,
+	"repaymentFrequencyType": {
+		"id": 2,
+		"code": "repaymentFrequency.periodFrequencyType.months",
+		"value": "Months"
+	},
+	"interestRatePerPeriod": 2.771000,
+	"interestRateFrequencyType": {
+		"id": 2,
+		"code": "interestRateFrequency.periodFrequencyType.months",
+		"value": "Per month"
+	},
+	"annualInterestRate": 33.252000,
+	"isFloatingInterestRate": false,
+	"allowUpfrontCollection": false,
+	"amortizationType": {
+		"id": 1,
+		"code": "amortizationType.equal.installments",
+		"value": "Equal installments"
+	},
+	"interestType": {
+		"id": 0,
+		"code": "interestType.declining.balance",
+		"value": "Declining Balance"
+	},
+	"interestCalculationPeriodType": {
+		"id": 1,
+		"code": "interestCalculationPeriodType.same.as.repayment.period",
+		"value": "Same as repayment period"
+	},
+	"allowPartialPeriodInterestCalcualtion": false,
+	"transactionProcessingStrategyId": 1,
+	"timeline": {
+		"expectedDisbursementDate": [2017, 5, 10]
+	},
+	"charges": [{
+		"chargeId": 1,
+		"name": "IF",
+		"chargeTimeType": {
+			"id": 8,
+			"code": "chargeTimeType.instalmentFee",
+			"value": "Installment Fee"
+		},
+		"chargeCalculationType": {
+			"id": 5,
+			"code": "chargeCalculationType.percent.of.disbursement.amount",
+			"value": "% Disbursement Amount"
+		},
+		"currency": {
+			"code": "USD",
+			"name": "US Dollar",
+			"decimalPlaces": 2,
+			"displaySymbol": "$",
+			"nameCode": "currency.USD",
+			"displayLabel": "US Dollar ($)"
+		},
+		"amount": 9.000000,
+		"amountPaid": 0,
+		"amountWaived": 0,
+		"amountWrittenOff": 0,
+		"amountOutstanding": 9.000000,
+		"penalty": false,
+		"chargePaymentMode": {
+			"id": 0,
+			"code": "chargepaymentmode.regular",
+			"value": "Regular"
+		},
+		"paid": false,
+		"waived": false,
+		"chargePayable": false,
+		"minCap": 1.000000,
+		"maxCap": 2600.000000,
+		"isGlimCharge": true,
+		"isCapitalized": false,
+		"taxGroupId": 1,
+		"isMandatory": false,
+		"loanChargeTaxDetailsPaidByDatas": []
+	}, {
+		"chargeId": 2,
+		"name": "SF",
+		"chargeTimeType": {
+			"id": 8,
+			"code": "chargeTimeType.instalmentFee",
+			"value": "Installment Fee"
+		},
+		"chargeCalculationType": {
+			"id": 5,
+			"code": "chargeCalculationType.percent.of.disbursement.amount",
+			"value": "% Disbursement Amount"
+		},
+		"currency": {
+			"code": "USD",
+			"name": "US Dollar",
+			"decimalPlaces": 2,
+			"displaySymbol": "$",
+			"nameCode": "currency.USD",
+			"displayLabel": "US Dollar ($)"
+		},
+		"amount": 5.000000,
+		"amountPaid": 0,
+		"amountWaived": 0,
+		"amountWrittenOff": 0,
+		"amountOutstanding": 5.000000,
+		"penalty": false,
+		"chargePaymentMode": {
+			"id": 0,
+			"code": "chargepaymentmode.regular",
+			"value": "Regular"
+		},
+		"paid": false,
+		"waived": false,
+		"chargePayable": false,
+		"minCap": 1.000000,
+		"maxCap": 326.000000,
+		"isGlimCharge": true,
+		"isCapitalized": false,
+		"taxGroupId": 1,
+		"isMandatory": false,
+		"loanChargeTaxDetailsPaidByDatas": []
+	}],
+	"productOptions": [{
+		"id": 1,
+		"name": "myloan",
+		"includeInBorrowerCycle": false,
+		"useBorrowerCycle": false,
+		"isLinkedToFloatingInterestRates": false,
+		"isFloatingInterestRateCalculationAllowed": false,
+		"allowVariableInstallments": false,
+		"isInterestRecalculationEnabled": false,
+		"canDefineInstallmentAmount": false,
+		"adjustFirstEMIAmount": false,
+		"adjustInterestForRounding": false,
+		"principalVariationsForBorrowerCycle": [],
+		"interestRateVariationsForBorrowerCycle": [],
+		"numberOfRepaymentVariationsForBorrowerCycle": [],
+		"canUseForTopup": false,
+		"holdGuaranteeFunds": false,
+		"accountMovesOutOfNPAOnlyOnArrearsCompletion": false,
+		"closeLoanOnOverpayment": false,
+		"syncExpectedWithDisbursementDate": false,
+		"isEmiBasedOnDisbursements": false
+	}, {
+		"id": 2,
+		"name": "glim loan",
+		"includeInBorrowerCycle": false,
+		"useBorrowerCycle": false,
+		"isLinkedToFloatingInterestRates": false,
+		"isFloatingInterestRateCalculationAllowed": false,
+		"allowVariableInstallments": false,
+		"isInterestRecalculationEnabled": false,
+		"canDefineInstallmentAmount": false,
+		"adjustFirstEMIAmount": false,
+		"adjustInterestForRounding": false,
+		"principalVariationsForBorrowerCycle": [],
+		"interestRateVariationsForBorrowerCycle": [],
+		"numberOfRepaymentVariationsForBorrowerCycle": [],
+		"canUseForTopup": false,
+		"holdGuaranteeFunds": false,
+		"accountMovesOutOfNPAOnlyOnArrearsCompletion": false,
+		"closeLoanOnOverpayment": false,
+		"syncExpectedWithDisbursementDate": false,
+		"isEmiBasedOnDisbursements": false
+	}],
+	"loanOfficerOptions": [{
+		"id": 1,
+		"externalId": "1",
+		"firstname": "ram",
+		"lastname": "awale",
+		"displayName": "awale, ram",
+		"officeId": 1,
+		"officeName": "Head Office",
+		"isLoanOfficer": true,
+		"isActive": true
+	}],
+	"termFrequencyTypeOptions": [{
+		"id": 0,
+		"code": "loanTermFrequency.periodFrequencyType.days",
+		"value": "Days"
+	}, {
+		"id": 1,
+		"code": "loanTermFrequency.periodFrequencyType.weeks",
+		"value": "Weeks"
+	}, {
+		"id": 2,
+		"code": "loanTermFrequency.periodFrequencyType.months",
+		"value": "Months"
+	}, {
+		"id": 3,
+		"code": "loanTermFrequency.periodFrequencyType.years",
+		"value": "Years"
+	}],
+	"repaymentFrequencyTypeOptions": [{
+		"id": 0,
+		"code": "repaymentFrequency.periodFrequencyType.days",
+		"value": "Days"
+	}, {
+		"id": 1,
+		"code": "repaymentFrequency.periodFrequencyType.weeks",
+		"value": "Weeks"
+	}, {
+		"id": 2,
+		"code": "repaymentFrequency.periodFrequencyType.months",
+		"value": "Months"
+	}],
+	"repaymentFrequencyNthDayTypeOptions": [{
+		"id": 1,
+		"code": "repaymentFrequency.nthDayType.one",
+		"value": "first"
+	}, {
+		"id": 2,
+		"code": "repaymentFrequency.nthDayType.two",
+		"value": "second"
+	}, {
+		"id": 3,
+		"code": "repaymentFrequency.nthDayType.three",
+		"value": "third"
+	}, {
+		"id": 4,
+		"code": "repaymentFrequency.nthDayType.four",
+		"value": "fourth"
+	}, {
+		"id": -1,
+		"code": "repaymentFrequency.nthDayType.last",
+		"value": "last"
+	}, {
+		"id": -2,
+		"code": "repaymentFrequency.nthDayType.onday",
+		"value": "onday"
+	}],
+	"repaymentFrequencyDaysOfWeekTypeOptions": [{
+		"id": 7,
+		"code": "repaymentFrequency.weekDayType.sunday",
+		"value": "SUNDAY"
+	}, {
+		"id": 1,
+		"code": "repaymentFrequency.weekDayType.monday",
+		"value": "MONDAY"
+	}, {
+		"id": 2,
+		"code": "repaymentFrequency.weekDayType.tuesday",
+		"value": "TUESDAY"
+	}, {
+		"id": 3,
+		"code": "repaymentFrequency.weekDayType.wednesday",
+		"value": "WEDNESDAY"
+	}, {
+		"id": 4,
+		"code": "repaymentFrequency.weekDayType.thursday",
+		"value": "THURSDAY"
+	}, {
+		"id": 5,
+		"code": "repaymentFrequency.weekDayType.friday",
+		"value": "FRIDAY"
+	}, {
+		"id": 6,
+		"code": "repaymentFrequency.weekDayType.saturday",
+		"value": "SATURDAY"
+	}],
+	"interestRateFrequencyTypeOptions": [{
+		"id": 2,
+		"code": "interestRateFrequency.periodFrequencyType.months",
+		"value": "Per month"
+	}, {
+		"id": 3,
+		"code": "interestRateFrequency.periodFrequencyType.years",
+		"value": "Per year"
+	}],
+	"amortizationTypeOptions": [{
+		"id": 1,
+		"code": "amortizationType.equal.installments",
+		"value": "Equal installments"
+	}, {
+		"id": 0,
+		"code": "amortizationType.equal.principal",
+		"value": "Equal principal payments"
+	}],
+	"interestTypeOptions": [{
+		"id": 1,
+		"code": "interestType.flat",
+		"value": "Flat"
+	}, {
+		"id": 0,
+		"code": "interestType.declining.balance",
+		"value": "Declining Balance"
+	}],
+	"interestCalculationPeriodTypeOptions": [{
+		"id": 0,
+		"code": "interestCalculationPeriodType.daily",
+		"value": "Daily"
+	}, {
+		"id": 1,
+		"code": "interestCalculationPeriodType.same.as.repayment.period",
+		"value": "Same as repayment period"
+	}],
+	"transactionProcessingStrategyOptions": [{
+		"id": 1,
+		"code": "mifos-standard-strategy",
+		"name": "Penalties, Fees, Interest, Principal order"
+	}, {
+		"id": 4,
+		"code": "rbi-india-strategy",
+		"name": "Overdue/Due Fee/Int,Principal"
+	}, {
+		"id": 5,
+		"code": "principal-interest-penalties-fees-order-strategy",
+		"name": "Principal, Interest, Penalties, Fees Order"
+	}, {
+		"id": 6,
+		"code": "interest-principal-penalties-fees-order-strategy",
+		"name": "Interest, Principal, Penalties, Fees Order"
+	}, {
+		"id": 7,
+		"code": "early-repayment-strategy",
+		"name": "Early Repayment Strategy"
+	}, {
+		"id": 2,
+		"code": "heavensfamily-strategy",
+		"name": "HeavensFamily Unique"
+	}, {
+		"id": 3,
+		"code": "creocore-strategy",
+		"name": "Creocore Unique"
+	}],
+	"chargeOptions": [{
+		"id": 1,
+		"name": "IF",
+		"active": true,
+		"penalty": false,
+		"currency": {
+			"code": "USD",
+			"name": "US Dollar",
+			"decimalPlaces": 2,
+			"displaySymbol": "$",
+			"nameCode": "currency.USD",
+			"displayLabel": "US Dollar ($)"
+		},
+		"amount": 9.000000,
+		"chargeTimeType": {
+			"id": 8,
+			"code": "chargeTimeType.instalmentFee",
+			"value": "Installment Fee"
+		},
+		"chargeAppliesTo": {
+			"id": 1,
+			"code": "chargeAppliesTo.loan",
+			"value": "Loan"
+		},
+		"chargeCalculationType": {
+			"id": 5,
+			"code": "chargeCalculationType.percent.of.disbursement.amount",
+			"value": "% Disbursement Amount"
+		},
+		"chargePaymentMode": {
+			"id": 0,
+			"code": "chargepaymentmode.regular",
+			"value": "Regular"
+		},
+		"minCap": 1.000000,
+		"maxCap": 2600.000000,
+		"taxGroup": {
+			"id": 1,
+			"name": "vat"
+		},
+		"emiRoundingGoalSeek": false,
+		"isGlimCharge": true,
+		"glimChargeCalculation": {
+			"id": 1,
+			"code": "glimChargeCalculationType.round",
+			"value": "round"
+		},
+		"isCapitalized": false
+	}, {
+		"id": 2,
+		"name": "SF",
+		"active": true,
+		"penalty": false,
+		"currency": {
+			"code": "USD",
+			"name": "US Dollar",
+			"decimalPlaces": 2,
+			"displaySymbol": "$",
+			"nameCode": "currency.USD",
+			"displayLabel": "US Dollar ($)"
+		},
+		"amount": 5.000000,
+		"chargeTimeType": {
+			"id": 8,
+			"code": "chargeTimeType.instalmentFee",
+			"value": "Installment Fee"
+		},
+		"chargeAppliesTo": {
+			"id": 1,
+			"code": "chargeAppliesTo.loan",
+			"value": "Loan"
+		},
+		"chargeCalculationType": {
+			"id": 5,
+			"code": "chargeCalculationType.percent.of.disbursement.amount",
+			"value": "% Disbursement Amount"
+		},
+		"chargePaymentMode": {
+			"id": 0,
+			"code": "chargepaymentmode.regular",
+			"value": "Regular"
+		},
+		"minCap": 1.000000,
+		"maxCap": 326.000000,
+		"taxGroup": {
+			"id": 1,
+			"name": "vat"
+		},
+		"emiRoundingGoalSeek": true,
+		"isGlimCharge": true,
+		"glimChargeCalculation": {
+			"id": 2,
+			"code": "glimChargeCalculationType.roundWithMaxCharge",
+			"value": "round with max charge"
+		},
+		"isCapitalized": false
+	}],
+	"multiDisburseLoan": false,
+	"canDefineInstallmentAmount": false,
+	"canDisburse": false,
+	"canUseForTopup": false,
+	"isTopup": false,
+	"product": {
+		"id": 3,
+		"name": "glim loan",
+		"shortName": "gl",
+		"includeInBorrowerCycle": false,
+		"useBorrowerCycle": false,
+		"status": "loanProduct.active",
+		"currency": {
+			"code": "USD",
+			"name": "US Dollar",
+			"decimalPlaces": 2,
+			"inMultiplesOf": 0,
+			"displaySymbol": "$",
+			"nameCode": "currency.USD",
+			"displayLabel": "US Dollar ($)"
+		},
+		"principal": 3500.000000,
+		"numberOfRepayments": 6,
+		"repaymentEvery": 1,
+		"repaymentFrequencyType": {
+			"id": 2,
+			"code": "repaymentFrequency.periodFrequencyType.months",
+			"value": "Months"
+		},
+		"interestRatePerPeriod": 2.771000,
+		"interestRateFrequencyType": {
+			"id": 2,
+			"code": "interestRateFrequency.periodFrequencyType.months",
+			"value": "Per month"
+		},
+		"annualInterestRate": 33.252000,
+		"isFlatInterestRate": false,
+		"isLinkedToFloatingInterestRates": false,
+		"isFloatingInterestRateCalculationAllowed": false,
+		"allowVariableInstallments": false,
+		"minimumGap": 0,
+		"maximumGap": 0,
+		"amortizationType": {
+			"id": 1,
+			"code": "amortizationType.equal.installments",
+			"value": "Equal installments"
+		},
+		"interestType": {
+			"id": 0,
+			"code": "interestType.declining.balance",
+			"value": "Declining Balance"
+		},
+		"interestCalculationPeriodType": {
+			"id": 1,
+			"code": "interestCalculationPeriodType.same.as.repayment.period",
+			"value": "Same as repayment period"
+		},
+		"allowPartialPeriodInterestCalcualtion": false,
+		"transactionProcessingStrategyId": 1,
+		"transactionProcessingStrategyName": "Penalties, Fees, Interest, Principal order",
+		"daysInMonthType": {
+			"id": 1,
+			"code": "DaysInMonthType.actual",
+			"value": "Actual"
+		},
+		"daysInYearType": {
+			"id": 1,
+			"code": "DaysInYearType.actual",
+			"value": "Actual"
+		},
+		"isInterestRecalculationEnabled": false,
+		"isMinDurationApplicableForAllDisbursements": false,
+		"canDefineInstallmentAmount": false,
+		"adjustFirstEMIAmount": false,
+		"adjustInterestForRounding": false,
+		"installmentCalculationPeriodType": {
+			"id": 1,
+			"code": "interestCalculationPeriodType.same.as.repayment.period",
+			"value": "Same as repayment period"
+		},
+		"charges": [{
+			"id": 5,
+			"productLoanId": 3,
+			"chargeData": {
+				"id": 1,
+				"name": "IF",
+				"active": true,
+				"penalty": false,
+				"currency": {
+					"code": "USD",
+					"name": "US Dollar",
+					"decimalPlaces": 2,
+					"displaySymbol": "$",
+					"nameCode": "currency.USD",
+					"displayLabel": "US Dollar ($)"
+				},
+				"amount": 9.000000,
+				"chargeTimeType": {
+					"id": 8,
+					"code": "chargeTimeType.instalmentFee",
+					"value": "Installment Fee"
+				},
+				"chargeAppliesTo": {
+					"id": 1,
+					"code": "chargeAppliesTo.loan",
+					"value": "Loan"
+				},
+				"chargeCalculationType": {
+					"id": 5,
+					"code": "chargeCalculationType.percent.of.disbursement.amount",
+					"value": "% Disbursement Amount"
+				},
+				"chargePaymentMode": {
+					"id": 0,
+					"code": "chargepaymentmode.regular",
+					"value": "Regular"
+				},
+				"minCap": 1.000000,
+				"maxCap": 2600.000000,
+				"taxGroup": {
+					"id": 1,
+					"name": "vat"
+				},
+				"emiRoundingGoalSeek": false,
+				"isGlimCharge": true,
+				"glimChargeCalculation": {
+					"id": 1,
+					"code": "glimChargeCalculationType.round",
+					"value": "round"
+				},
+				"slabs": [{
+					"id": 0
+				}],
+				"isCapitalized": false
+			},
+			"isMandatory": true
+		}, {
+			"id": 6,
+			"productLoanId": 3,
+			"chargeData": {
+				"id": 2,
+				"name": "SF",
+				"active": true,
+				"penalty": false,
+				"currency": {
+					"code": "USD",
+					"name": "US Dollar",
+					"decimalPlaces": 2,
+					"displaySymbol": "$",
+					"nameCode": "currency.USD",
+					"displayLabel": "US Dollar ($)"
+				},
+				"amount": 5.000000,
+				"chargeTimeType": {
+					"id": 8,
+					"code": "chargeTimeType.instalmentFee",
+					"value": "Installment Fee"
+				},
+				"chargeAppliesTo": {
+					"id": 1,
+					"code": "chargeAppliesTo.loan",
+					"value": "Loan"
+				},
+				"chargeCalculationType": {
+					"id": 5,
+					"code": "chargeCalculationType.percent.of.disbursement.amount",
+					"value": "% Disbursement Amount"
+				},
+				"chargePaymentMode": {
+					"id": 0,
+					"code": "chargepaymentmode.regular",
+					"value": "Regular"
+				},
+				"minCap": 1.000000,
+				"maxCap": 326.000000,
+				"taxGroup": {
+					"id": 1,
+					"name": "vat"
+				},
+				"emiRoundingGoalSeek": true,
+				"isGlimCharge": true,
+				"glimChargeCalculation": {
+					"id": 2,
+					"code": "glimChargeCalculationType.roundWithMaxCharge",
+					"value": "round with max charge"
+				},
+				"slabs": [{
+					"id": 0
+				}],
+				"isCapitalized": false
+			},
+			"isMandatory": true
+		}],
+		"principalVariationsForBorrowerCycle": [],
+		"interestRateVariationsForBorrowerCycle": [],
+		"numberOfRepaymentVariationsForBorrowerCycle": [],
+		"accountingRule": {
+			"id": 2,
+			"code": "accountingRuleType.cash",
+			"value": "CASH BASED"
+		},
+		"canUseForTopup": false,
+		"multiDisburseLoan": false,
+		"maxTrancheCount": 0,
+		"principalThresholdForLastInstallment": 0.00,
+		"holdGuaranteeFunds": false,
+		"accountMovesOutOfNPAOnlyOnArrearsCompletion": false,
+		"allowAttributeOverrides": {
+			"amortizationType": true,
+			"interestType": true,
+			"transactionProcessingStrategyId": true,
+			"interestCalculationPeriodType": true,
+			"inArrearsTolerance": true,
+			"repaymentEvery": true,
+			"graceOnPrincipalAndInterestPayment": true,
+			"graceOnArrearsAgeing": true
+		},
+		"closeLoanOnOverpayment": false,
+		"syncExpectedWithDisbursementDate": false,
+		"loanTenureFrequencyType": {
+			"id": 4,
+			"code": "periodFrequencyType.invalid",
+			"value": "Invalid"
+		},
+		"weeksInYearType": {
+			"id": 1,
+			"code": "52",
+			"value": "52"
+		},
+		"isEmiBasedOnDisbursements": false,
+		"brokenPeriodMethodType": {
+			"id": 2,
+			"code": "brokenPeriodMethod.post.interest",
+			"value": "Post interest"
+		},
+		"considerFutureDisbursementsInSchedule": false,
+		"considerAllDisbursementsInSchedule": false,
+		"allowNegativeLoanBalance": false,
+		"allowUpfrontCollection": false
+	},
+	"overdueCharges": [],
+	"daysInMonthType": {
+		"id": 1,
+		"code": "DaysInMonthType.actual",
+		"value": "Actual"
+	},
+	"daysInYearType": {
+		"id": 1,
+		"code": "DaysInYearType.actual",
+		"value": "Actual"
+	},
+	"isInterestRecalculationEnabled": false,
+	"interestRecalculationData": {
+		"isSubsidyApplicable": false
+	},
+	"isVariableInstallmentsAllowed": false,
+	"minimumGap": 0,
+	"maximumGap": 0,
+	"paymentOptions": [{
+		"id": 1,
+		"name": "recovery payment",
+		"description": "recovery payment",
+		"isCashPayment": true,
+		"position": 0
+	}],
+	"brokenPeriodMethodType": {
+		"id": 2,
+		"code": "brokenPeriodMethod.post.interest",
+		"value": "Post interest"
+	},
+	"brokenPeriodMethodTypeOptions": [{
+		"id": 0,
+		"code": "brokenPeriodMethod.distribute.equally",
+		"value": "Distribute equally among all installments"
+	}, {
+		"id": 1,
+		"code": "brokenPeriodMethod.adjust.in.first.emi",
+		"value": "Add to first installment interest"
+	}, {
+		"id": 2,
+		"code": "brokenPeriodMethod.post.interest",
+		"value": "Post interest"
+	}]
+}
+</code>
+
+					
+					
 				</div>
 			</div>
 
@@ -10131,6 +11186,65 @@ No Request Body:
   "expectedDisbursementDate": "04 March 2014",
   "transactionProcessingStrategyId": 1
 }
+
+for glim loans:
+{
+	"groupId": 1,
+	"disbursementData": [],
+	"submittedOnDate": "09 May 2017",
+	"expectedDisbursementDate": "09 May 2017",
+	"productId": 3,
+	"principal": 3500,
+	"loanTermFrequencyType": 2,
+	"numberOfRepayments": 6,
+	"repaymentEvery": 1,
+	"repaymentFrequencyType": 2,
+	"interestRatePerPeriod": 2.771,
+	"amortizationType": 1,
+	"interestType": 0,
+	"interestCalculationPeriodType": 1,
+	"allowPartialPeriodInterestCalcualtion": false,
+	"transactionProcessingStrategyId": 1,
+	"createStandingInstructionAtDisbursement": false,
+	"isTopup": false,
+	"loanIdToClose": 0,
+	"brokenPeriodMethodType": 2,
+	"syncDisbursementWithMeeting": false,
+	"clientMembers": [{
+		"id": 2,
+		"glimId": 67,
+		"clientName": "venkat pakuru",
+		"transactionAmount": 1700,
+		"isClientSelected": true,
+		"accountNo": 2,
+		"displayName": "venkat pakuru",
+		"upfrontChargeAmount": 274
+	}, {
+		"id": 3,
+		"glimId": 68,
+		"clientName": "jinju rajan",
+		"transactionAmount": 1800,
+		"isClientSelected": true,
+		"accountNo": 3,
+		"displayName": "jinju rajan",
+		"upfrontChargeAmount": 290
+	}],
+	"charges": [{
+		"id": 32,
+		"chargeId": 1,
+		"amount": 9
+	}, {
+		"id": 33,
+		"chargeId": 2,
+		"amount": 5
+	}],
+	"collateral": [],
+	"locale": "en",
+	"dateFormat": "dd MMMM yyyy",
+	"loanType": "glim",
+	"loanTermFrequency": 6,
+	"repeatsOnDayOfMonth": []
+}
 					</code>
 					<code class="method-response">
 {
@@ -10331,6 +11445,14 @@ Request Body:
 							<td>recalculationCompoundingFrequencyDate</td>
 						</tr>
 					</table>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Additional Mandatory Fields for GLIM loan</div></td>
+						</tr>
+						<tr class=alt>
+							<td>clientMembers</td>
+						</tr>
+					</table>
 					<br/>
 					<table class=matrixHeading>
 						<tr class="matrixHeadingBG">
@@ -10376,6 +11498,165 @@ Request Body:
     "disbursementData":[{"expectedDisbursementDate":"01 November 2013",
     					"principal":22000,"approvedPrincipal":22000}]
 }
+
+for glim loan:
+
+Request Body:
+{
+	"isSubsidyApplicable": false,
+	"clientMembers": [{
+		"id": 2,
+		"accountNo": "000000002",
+		"status": {
+			"id": 300,
+			"code": "clientStatusType.active",
+			"value": "Active"
+		},
+		"subStatus": {
+			"isActive": false,
+			"mandatory": false
+		},
+		"active": true,
+		"activationDate": [2017, 2, 2],
+		"firstname": "venkat",
+		"lastname": "pakuru",
+		"displayName": "venkat pakuru",
+		"gender": {
+			"id": 23,
+			"name": "Male",
+			"isActive": false,
+			"mandatory": false
+		},
+		"clientType": {
+			"isActive": false,
+			"mandatory": false
+		},
+		"clientClassification": {
+			"isActive": false,
+			"mandatory": false
+		},
+		"officeId": 1,
+		"officeName": "Head Office",
+		"timeline": {
+			"submittedOnDate": [2017, 2, 2],
+			"submittedByUsername": "conflux",
+			"submittedByFirstname": "App",
+			"submittedByLastname": "Administrator",
+			"activatedOnDate": [2017, 2, 2],
+			"activatedByUsername": "conflux",
+			"activatedByFirstname": "App",
+			"activatedByLastname": "Administrator"
+		},
+		"legalForm": {
+			"id": 1,
+			"code": "legalFormType.person",
+			"value": "PERSON"
+		},
+		"clientNonPersonDetails": {
+			"constitution": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"mainBusinessLine": {
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		"isClientSelected": true,
+		"transactionAmount": "1700"
+	}, {
+		"id": 3,
+		"accountNo": "000000003",
+		"status": {
+			"id": 300,
+			"code": "clientStatusType.active",
+			"value": "Active"
+		},
+		"subStatus": {
+			"isActive": false,
+			"mandatory": false
+		},
+		"active": true,
+		"activationDate": [2017, 2, 2],
+		"firstname": "jinju",
+		"lastname": "rajan",
+		"displayName": "jinju rajan",
+		"gender": {
+			"id": 23,
+			"name": "Male",
+			"isActive": false,
+			"mandatory": false
+		},
+		"clientType": {
+			"isActive": false,
+			"mandatory": false
+		},
+		"clientClassification": {
+			"isActive": false,
+			"mandatory": false
+		},
+		"officeId": 1,
+		"officeName": "Head Office",
+		"timeline": {
+			"submittedOnDate": [2017, 2, 2],
+			"submittedByUsername": "conflux",
+			"submittedByFirstname": "App",
+			"submittedByLastname": "Administrator",
+			"activatedOnDate": [2017, 2, 2],
+			"activatedByUsername": "conflux",
+			"activatedByFirstname": "App",
+			"activatedByLastname": "Administrator"
+		},
+		"legalForm": {
+			"id": 1,
+			"code": "legalFormType.person",
+			"value": "PERSON"
+		},
+		"clientNonPersonDetails": {
+			"constitution": {
+				"isActive": false,
+				"mandatory": false
+			},
+			"mainBusinessLine": {
+				"isActive": false,
+				"mandatory": false
+			}
+		},
+		"isClientSelected": true,
+		"transactionAmount": "1800"
+	}],
+	"groupId": "1",
+	"productId": 3,
+	"disbursementData": [],
+	"fundId": "",
+	"principal": 3500,
+	"loanTermFrequencyType": 2,
+	"numberOfRepayments": 6,
+	"repaymentEvery": 1,
+	"repaymentFrequencyType": 2,
+	"interestRatePerPeriod": 2.771,
+	"amortizationType": 1,
+	"interestType": 0,
+	"interestCalculationPeriodType": 1,
+	"allowPartialPeriodInterestCalcualtion": false,
+	"transactionProcessingStrategyId": 1,
+	"brokenPeriodMethodType": 2,
+	"locale": "en",
+	"dateFormat": "dd MMMM yyyy",
+	"loanType": "glim",
+	"expectedDisbursementDate": "08 May 2017",
+	"submittedOnDate": "08 May 2017",
+	"loanTermFrequency": 6,
+	"repeatsOnDayOfMonth": [],
+	"charges": [{
+		"chargeId": 1,
+		"amount": 9
+	}, {
+		"chargeId": 2,
+		"amount": 5
+	}]
+}
+
 					</code>
 					<code class="method-response">
 {
@@ -10400,7 +11681,14 @@ Request Body:
 							<td>approvedOnDate</td>
 						</tr>
 					</table>
-				</br>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2">Additional Mandatory Fields For GLIM</div></td>
+						</tr>
+						<tr class=alt>
+							<td>clientMembers</td>
+						</tr>
+					</table>
 					<table class=matrixHeading>
 						<tr class="matrixHeadingBG">
 							<td><div class="fineractHeading2">Optional Fields</div></td>
@@ -10430,6 +11718,19 @@ Request Body:
     "disbursementData" : [{ id=226, principal="5", expectedDisbursementDate="20 September 2011"},
     { id=227, principal="91", expectedDisbursementDate="21 September 2011"}]
 }
+
+for glim loan:
+
+Request Body:
+{
+"approvedOnDate":"09 May 2017",
+"approvedLoanAmount":3500,
+"expectedDisbursementDate":"09 May 2017",
+"disbursementData":[],
+"clientMembers":[{"id":71,"transactionAmount":1800},{"id":72,"transactionAmount":1700}],
+"locale":"en",
+"dateFormat":"dd MMMM yyyy"
+}
 </code>
 					<code class="method-response">
 {
@@ -10456,6 +11757,30 @@ Request Body:
     "approvedOnDate": "20 September 2011",
     "note": "Loan approval note"
   }
+}
+
+for glim loans:
+{
+"officeId":1,
+"groupId":1,
+"loanId":57,
+"resourceId":57,
+"changes":{"status":{"id":200,
+"code":"loanStatusType.approved",
+"value":"Approved",
+"pendingApproval":false,
+"waitingForDisbursal":true,
+"active":false,
+"closedObligationsMet":false,
+"closedWrittenOff":false,
+"closedRescheduled":false,
+"closed":false,"overpaid":false},
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"approvedOnDate":"09 May 2017",
+"expectedDisbursementDate":"May 9, 2017 12:00:00 AM",
+"clientMembers":[{"glimId":71,"transactionAmount":1800},{"glimId":72,"transactionAmount":1700}]
+}
 }
 					</code>
 				</div>
@@ -10715,6 +12040,14 @@ Request Body:
 							<td>actualDisbursementDate</td>
 						</tr>
 					</table>
+					<table class=matrixHeading>
+						<tr class="matrixHeadingBG">
+							<td><div class="fineractHeading2"> Addition Mandatory Fields For GLIM</div></td>
+						</tr>
+						<tr class=alt>
+							<td>clientMembers,transactionAmount</td>
+						</tr>
+					</table>
 					<br/>
 					<table class=matrixHeading>
 						<tr class="matrixHeadingBG">
@@ -10746,6 +12079,18 @@ Request Body:
   "routingCode": "rou123",
   "receiptNumber": "rec123",
   "bankNumber": "ban123"
+}
+
+for glim loans:
+
+Request Body:
+{
+"transactionAmount":3500,
+"paymentTypeId":1,
+"actualDisbursementDate":"09 May 2017",
+"clientMembers":[{"id":61,"transactionAmount":1700},{"id":62,"transactionAmount":1800}],
+"locale":"en",
+"dateFormat":"dd MMMM yyyy"
 }
 </code>
 					<code class="method-response">
@@ -10779,6 +12124,30 @@ Request Body:
     "transactionAmount":10000
   }
 }
+
+for glim loans:
+{
+"officeId":1,
+"groupId":1,
+"loanId":47,
+"resourceId":47,
+"changes":{"clientMembers":[{"glimId":61,"transactionAmount":1700},
+{"glimId":62,"transactionAmount":1800}],
+"status":{"id":300,"code":"loanStatusType.active",
+"value":"Active",
+"pendingApproval":false,
+"waitingForDisbursal":false,
+"active":true,
+"closedObligationsMet":false,
+"closedWrittenOff":false,
+"closedRescheduled":false,
+"closed":false,"overpaid":false},
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"actualDisbursementDate":"09 May 2017"
+}
+}
+
 					</code>
 				</div>
 			</div>
@@ -11201,6 +12570,45 @@ Request Body:
 					</code>
 				</div>
 			</div>
+			<a id="glimloans_transaction_repayment" name="glimloans_transaction_repayment" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Make a GLIM Repayment </h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/grouploanindividualmonitoring/{loanId}/transactions?command=repayment
+					</code>
+					<code class="method-request">
+POST grouploanindividualmonitoring/{loanId}/transactions?command=repayment
+Content-Type: application/json
+Request Body:
+{
+"paymentTypeId":1,
+"transactionDate":"09 May 2017",
+"transactionAmount":"735.00","locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"clientMembers":[{"id":75,"transactionAmount":357},{"id":76,"transactionAmount":378}]
+}
+					</code>
+					<code class="method-response">
+{
+"officeId":1,
+"groupId":1,
+"loanId":59,
+"resourceId":173,
+"transactionId":"173",
+"changes":{"transactionDate":"09 May 2017",
+"transactionAmount":"735.00",
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"paymentTypeId":"1",
+"clientMember":[{"glimId":75,"transactionAmount":357},{"glimId":76,"transactionAmount":378}]
+}
+}
+					</code>
+				</div>
+			</div>
 
 			<a id="loans_transaction_refund_by_cash" name="loans_transaction_refund_by_cash" class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
@@ -11315,6 +12723,44 @@ Request Body:
 					</code>
 				</div>
 			</div>
+			<a id="glimloans_transaction_waiveinterest" name="glimloans_transaction_waiveinterest" class="old-syle-anchor">&nbsp;</a>
+			<div class="method-section">
+				<div class="method-description">
+					<h4>Waive Interest For GLIM</h4>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/grouploanindividualmonitoring/{glimLoanId}/transactions?command=waiveInterest
+					</code>
+					<code class="method-request">
+POST grouploanindividualmonitoring/{glimLoanId}/transactions?command=waiveInterest
+Content-Type: application/json
+Request Body:
+{
+"transactionDate":"09 May 2017",
+"transactionAmount":249.02,
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"clientMembers":[{"id":75,"transactionAmount":120.91},{"id":76,"transactionAmount":128.11}]
+}
+					</code>
+					<code class="method-response">
+{
+"officeId":1,
+"groupId":1,
+"resourceId":174,
+"transactionId":"174",
+"changes":{
+"transactionDate":"09 May 2017",
+"transactionAmount":"249.02",
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"clientMembers":[{"glimId":75,"transactionAmount":120.91},{"glimId":76,"transactionAmount":128.11}]
+}
+}
+					</code>
+				</div>
+			</div>
 
 
             <a id="loans_transaction_write-off_loan" name="loans_transaction_write-off_loan" class="old-syle-anchor">&nbsp;</a>
@@ -11369,6 +12815,82 @@ Request Body:
                     </code>
                 </div>
             </div>
+<a id="glimloans_transaction_write-off_loan" name="glimloans_transaction_write-off_loan" class="old-syle-anchor">&nbsp;</a>
+       <div class="method-section">
+            <div class="method-description">
+                 <h4>Write-off GLIM Loan</h4>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">
+                    POST https://DomainName/api/v1/grouploanindividualmonitoring/{loanId}/transactions?command=writeoff
+                </code>
+                <code class="method-request">
+                    POST grouploanindividualmonitoring/{loanId}/transactions?command=writeoff
+                    Content-Type: application/json
+                    Request Body:
+                    {
+					"transactionDate":"09 May 2017",
+					"locale":"en",
+					"dateFormat":"dd MMMM yyyy",
+					"clientMembers":[{"id":75,"transactionAmount":1664.09},{"id":76,"transactionAmount":1761.89}],
+					"transactionAmount":3425.98
+					}
+                </code>
+                <code class="method-response">
+                    {
+					"transactionId":"175",
+					"changes":{
+					"transactionDate":"09 May 2017",
+					"locale":"en",
+					"dateFormat":"dd MMMM yyyy",
+					"closedOnDate":"09 May 2017",
+					"writtenOffOnDate":"09 May 2017",
+					"clientMembers":[{"glimId":75,"transactionAmount":1664.09},{"glimId":76,"transactionAmount":1761.89}]
+					}
+					}
+
+                </code>
+            </div>
+        </div>
+		<!------glim waive charge----->
+<a id="glimloans_transaction_waive_charge" name="glimloans_transaction_waive_charge" class="old-syle-anchor">&nbsp;</a>
+    <div class="method-section">
+        <div class="method-description">
+            <h4>GLIM Waive Charge</h4>
+        </div>
+        <div class="method-example">
+            <code class="method-declaration">
+                POST https://DomainName/api/v1/grouploanindividualmonitoring/{loanId}/transactions?command=waivecharge
+            </code>
+            <code class="method-request">
+                POST grouploanindividualmonitoring/{loanId}/transactions?command=waivecharge
+                Content-Type: application/json
+                Request Body:
+                {
+				"locale":"en",
+				"dateFormat":"dd MMMM yyyy",
+				"transactionDate":"09 May 2017",
+				"transactionAmount":564,
+				"clientMembers":[{"id":81,"transactionAmount":274},{"id":82,"transactionAmount":290}]
+				}
+            </code>
+            <code class="method-response">
+
+		       {
+			   "officeId":1,
+			   "groupId":1,
+			   "loanId":62,
+			   "changes":{
+			   "transactionDate":[2017,5,9],
+			   "transactionAmount":564,
+			   "locale":"en",
+			   "dateFormat":"dd MMMM yyyy",
+			   "clientMembers":[{"glimId":81,"transactionAmount":274.00},{"glimId":82,"transactionAmount":290.00}]
+			   }
+			   }
+            </code>
+        </div>
+    </div>
         <!------recovery payment -->
 		        <a id="loans_transaction_recovery_payment" name="loans_transaction_recovery_payment" class="old-syle-anchor">&nbsp;</a>
 	    		<div class="method-section">
@@ -11420,6 +12942,48 @@ Request Body:
 					</code>
 				</div>
 			</div>
+			<a id="glimloans_transaction_recovery_payment" name="glimloans_transaction_recovery_payment" class="old-syle-anchor">&nbsp;</a>
+	    		<div class="method-section">
+				<div class="method-description">
+					<h4>Make GLIM Recovery Payment </h4>
+					<p>This API allows collecting glim recovery payments for written-off loans</p>
+				</div>
+				<div class="method-example">
+					<code class="method-declaration">
+POST https://DomainName/api/v1/grouploanindividualmonitoring/{loanId}/transactions?command=recoverypayment
+					</code>
+					<code class="method-request">
+POST grouploanindividualmonitoring/{loanId}/transactions?command=recoverypayment
+Content-Type: application/json
+Request Body:
+{
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"transactionDate":"09 May 2017",
+"transactionAmount":3425.98,
+"clientMembers":[{"id":75,"transactionAmount":1664.09},{"id":76,"transactionAmount":1761.89}]
+}
+					</code>
+					<code class="method-response">
+{
+"officeId":1,
+"groupId":1,
+"loanId":59,
+"resourceId":180,
+"transactionId":"180",
+"changes":{
+"transactionDate":"09 May 2017",
+"transactionAmount":"3425.98",
+"locale":"en",
+"dateFormat":"dd MMMM yyyy",
+"paymentTypeId":"",
+"clientMember":[{"glimId":75,"transactionAmount":1664.09},{"glimId":76,"transactionAmount":1761.89}]
+}
+}
+					</code>
+				</div>
+			</div>
+
 
 
 		<!--- end of recovery payment -->
@@ -11481,13 +13045,56 @@ Request Body:
                     </code>
                 </div>
             </div>
+			<a id="glimloans_transaction_pre_close_loan" name="glimloans_transaction_pre_close_loan" class="old-syle-anchor">&nbsp;</a>
+            <div class="method-section">
+                <div class="method-description">
+					<h4> Pre-Close template for GLIM</h4>
+                    <p>This Api retrieves pre closure details of glim loan</p>
+                </div>
+                <div class="method-example">
+                    <code class="method-declaration">
+                        POST https://DomainName/api/v1/grouploanindividualmonitoring/{loanId}/transactions?command=repayment 
+                    </code>
+                    <code class="method-request">
+                        POST grouploanindividualmonitoring/{loanId}/transactions?command=repayment 
+                        Content-Type: application/json
+                        Request Body:
+                        {
+						"locale":"en",
+						"dateFormat":"dd MMMM yyyy",
+						"transactionDate":"09 May 2017",
+						"transactionAmount":3846,
+						"clientMembers":[{"id":81,"transactionAmount":1868},{"id":82,"transactionAmount":1978}]
+						}
+                    </code>
+                    <code class="method-response">
 
-            <a id="loans_transaction_retrieve" name="loans_transaction_retrieve" class="old-syle-anchor">&nbsp;</a>
+		        {
+				"officeId":1,
+				"groupId":1,
+				"loanId":62,
+				"resourceId":204,
+				"transactionId":"204",
+				"changes":{
+				"transactionDate":"09 May 2017",
+				"transactionAmount":"3846",
+				"locale":"en",
+				"dateFormat":"dd MMMM yyyy",
+				"paymentTypeId":"",
+				"clientMember":[{"glimId":81,"transactionAmount":1868},{"glimId":82,"transactionAmount":1978}]
+				}
+				}
+                    </code>
+                </div>
+            </div>
+
+           
+		    <a id="glimloans_transaction_retrieve" name="glimloans_transaction_retrieve" class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
 				<div class="method-description">
-					<h4>Retrieve a Transaction Details</h4>
+					<h4>Retrieve a Transaction Details for GLIM</h4>
 					<p>Example Request:</p>
-					<div class=apiClick>loans/5/transactions/3</div>
+					<div class=apiClick>loans/65/transactions/216</div>
 				</div>
 				<div class="method-example">
 					<code class="method-declaration">
@@ -11495,36 +13102,76 @@ GET https://DomainName/api/v1/loans/{loanId}/transactions/{transactionId}
 					</code>
 					<code class="method-response">
 {
-  "id": 3,
-  "type": {
-    "id": 2,
-    "code": "loanTransactionType.repayment",
-    "value": "Repayment",
-    "disbursement": false,
-    "repaymentAtDisbursement": false,
-    "repayment": true,
-    "contra": false,
-    "waiveInterest": false,
-    "waiveCharges": false,
-    "writeOff": false,
-    "recoveryRepayment": false
-  },
-  "date": [
-    2012,
-    5,
-    14
-  ],
-  "manuallyReversed": false,
-  "currency": {
-    "code": "USD",
-    "name": "US Dollar",
-    "decimalPlaces": 2,
-    "displaySymbol": "$",
-    "nameCode": "currency.USD",
-    "displayLabel": "US Dollar ($)"
-  },
-  "amount": 559.88,
-  "interestPortion": 559.88
+"id":216,
+"officeId":1,
+"officeName":"Head Office",
+"type":{
+"id":2,
+"code":"loanTransactionType.repayment",
+"value":"Repayment",
+"disbursement":false,
+"repaymentAtDisbursement":false,
+"repayment":true,
+"contra":false,
+"waiveInterest":false,
+"waiveCharges":false,
+"accrual":false,
+"writeOff":false,
+"recoveryRepayment":false,
+"initiateTransfer":false,
+"approveTransfer":false,
+"withdrawTransfer":false,
+"rejectTransfer":false,
+"chargePayment":false,
+"refund":false,
+"refundForActiveLoans":false,
+"addSubsidy":false,
+"revokeSubsidy":false,
+"realizationSubsidy":false,
+"brokenPeriodInterestPosting":false},
+"date":[2017,5,9],
+"createdDate":{"iLocalMillis":1494354363000,"iChronology":{"iBase":{"iMinDaysInFirstWeek":4}}},
+"updatedDate":{"iLocalMillis":1494354363000,"iChronology":{"iBase":{"iMinDaysInFirstWeek":4}}},
+"createdBy":{"id":1,"username":"conflux","firstname":"App","lastname":"Administrator"},
+"updatedBy":{"id":1,"username":"conflux","firstname":"App","lastname":"Administrator"},
+"currency":{
+"code":"USD","name":"US Dollar","decimalPlaces":2,"inMultiplesOf":0,
+"displaySymbol":"$","nameCode":"currency.USD","displayLabel":"US Dollar ($)"},
+"paymentDetailData":{"id":216,"paymentType":{"id":1,"name":"recovery payment"},
+"accountNumber":"","checkNumber":"","routingCode":"","receiptNumber":"","bankNumber":""
+},
+"amount":735.000000,
+"principalPortion":544.010000,
+"interestPortion":96.980000,
+"feeChargesPortion":94.010000,
+"penaltyChargesPortion":0,
+"overpaymentPortion":0,
+"unrecognizedIncomePortion":0,
+"outstandingLoanBalance":2955.990000,
+"submittedOnDate":[2017,5,9],
+"manuallyReversed":false,
+"glimTransactions":[
+{
+"id":117,"glimId":85,"clientId":2,"clientName":"venkat pakuru","loanTransactionId":216,
+"transactionType":{"id":2,"code":"loanTransactionType.repayment","value":"Repayment",
+"disbursement":false,"repaymentAtDisbursement":false,"repayment":true,"contra":false,
+"waiveInterest":false,"waiveCharges":false,"accrual":false,"writeOff":false,"recoveryRepayment":false,
+"initiateTransfer":false,"approveTransfer":false,"withdrawTransfer":false,"rejectTransfer":false,
+"chargePayment":false,"refund":false,"refundForActiveLoans":false,"addSubsidy":false,"revokeSubsidy":false,
+"realizationSubsidy":false,"brokenPeriodInterestPosting":false},"principalPortion":264.240000,"interestPortion":47.090000,
+"feePortion":45.670000,"penaltyPortion":0.000000,"transactionAmount":357.000000
+},
+{
+"id":118,"glimId":86,"clientId":3,"clientName":"jinju rajan","loanTransactionId":216,
+"transactionType":{"id":2,"code":"loanTransactionType.repayment","value":"Repayment",
+"disbursement":false,"repaymentAtDisbursement":false,"repayment":true,"contra":false,
+"waiveInterest":false,"waiveCharges":false,"accrual":false,"writeOff":false,"recoveryRepayment":false,
+"initiateTransfer":false,"approveTransfer":false,"withdrawTransfer":false,"rejectTransfer":false,
+"chargePayment":false,"refund":false,"refundForActiveLoans":false,"addSubsidy":false,"revokeSubsidy":false,
+"realizationSubsidy":false,"brokenPeriodInterestPosting":false},"principalPortion":279.770000,"interestPortion":49.890000,
+"feePortion":48.340000,"penaltyPortion":0.000000,"transactionAmount":378.000000
+}
+]
 }
 					</code>
 				</div>
