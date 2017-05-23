@@ -463,4 +463,11 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
 		return property.isEnabled();
 	}
 
+	@Override
+	public boolean includeClientChargesInCollectionSheet() {
+		final String propertyName = "include-client-charges-in-collection-sheet";
+		final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+		return property.isEnabled();
+	}
+
 }

@@ -43,9 +43,13 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
+import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.domain.CalendarRepositoryWrapper;
 import org.apache.fineract.portfolio.calendar.exception.NotValidRecurringDateException;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
+import org.apache.fineract.portfolio.client.data.ClientChargeData;
+import org.apache.fineract.portfolio.client.service.ClientChargeReadPlatformService;
 import org.apache.fineract.portfolio.collectionsheet.data.IndividualClientData;
 import org.apache.fineract.portfolio.collectionsheet.data.IndividualCollectionSheetData;
 import org.apache.fineract.portfolio.collectionsheet.data.IndividualCollectionSheetLoanFlatData;
@@ -92,6 +96,8 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final ConfigurationDomainService configurationDomainService;
+    private final ClientChargeReadPlatformService clientChargeReadPlatformService;
+    private final CalendarInstanceRepository calendarInstanceRepository;
 
     @Autowired
     public CollectionSheetReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -100,7 +106,9 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
             final CalendarRepositoryWrapper calendarRepositoryWrapper,
             final AttendanceDropdownReadPlatformService attendanceDropdownReadPlatformService,
             final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-            final CalendarReadPlatformService calendarReadPlatformService, final ConfigurationDomainService configurationDomainService) {
+            final CalendarReadPlatformService calendarReadPlatformService, final ConfigurationDomainService configurationDomainService,
+            final ClientChargeReadPlatformService clientChargeReadPlatformService,
+            final CalendarInstanceRepository calendarInstanceRepository) {
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
         this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
@@ -111,6 +119,8 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
         this.calendarReadPlatformService = calendarReadPlatformService;
         this.configurationDomainService = configurationDomainService;
+        this.clientChargeReadPlatformService = clientChargeReadPlatformService;
+        this.calendarInstanceRepository = calendarInstanceRepository;
     }
 
     /*
@@ -120,13 +130,14 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
      */
     @SuppressWarnings("null")
     private JLGCollectionSheetData buildJLGCollectionSheet(final LocalDate dueDate,
-            final Collection<JLGCollectionSheetFlatData> jlgCollectionSheetFlatData) {
+            final Collection<JLGCollectionSheetFlatData> jlgCollectionSheetFlatData, final Long calendarId) {
 
         boolean firstTime = true;
         Long prevGroupId = null;
         Long prevClientId = null;
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         final boolean isWithDrawForSavingsIncludedInCollectionSheet = this.configurationDomainService.isWithDrawForSavingsIncludedInCollectionSheet();
+        final boolean includeClientChargesInCollectionSheet = this.configurationDomainService.includeClientChargesInCollectionSheet();
                 
 
         final List<JLGGroupData> jlgGroupsData = new ArrayList<>();
@@ -201,8 +212,24 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                 jlgGroupsData.add(jlgGroupData);
             }
 
-            jlgCollectionSheetData = JLGCollectionSheetData.instance(dueDate, loanProducts, jlgGroupsData,
-                    this.attendanceDropdownReadPlatformService.retrieveAttendanceTypeOptions(), paymentOptions, isWithDrawForSavingsIncludedInCollectionSheet);
+			Collection<ClientChargeData> clientsCharges = new ArrayList<ClientChargeData>();
+
+			if (includeClientChargesInCollectionSheet) {
+
+				Collection<CalendarInstance> calendarInstances = this.calendarInstanceRepository
+						.findByCalendarIdAndEntityTypeId(calendarId, CalendarEntityType.CHARGES.getValue());
+				for (CalendarInstance calendarInstance : calendarInstances) {
+					Long recurringId = calendarInstance.getEntityId();
+					clientsCharges.addAll(this.clientChargeReadPlatformService
+							.retriveUnPaidActiveClientCharges(recurringId, dueDate.toDate()));
+
+				}
+
+			}
+
+			jlgCollectionSheetData = JLGCollectionSheetData.instance(dueDate, loanProducts, jlgGroupsData,
+					this.attendanceDropdownReadPlatformService.retrieveAttendanceTypeOptions(), paymentOptions,
+					isWithDrawForSavingsIncludedInCollectionSheet, clientsCharges);
         }
 
         return jlgCollectionSheetData;
@@ -369,7 +396,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                 mapper.collectionSheetSchema(false), namedParameters, mapper);
 
         // loan data for collection sheet
-        JLGCollectionSheetData collectionSheetData = buildJLGCollectionSheet(transactionDate, collectionSheetFlatDatas);
+        JLGCollectionSheetData collectionSheetData = buildJLGCollectionSheet(transactionDate, collectionSheetFlatDatas, calendarId);
 
         // mandatory savings data for collection sheet
         Collection<JLGGroupData> groupsWithSavingsData = this.namedParameterjdbcTemplate.query(
@@ -447,6 +474,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
         this.collectionSheetGenerateCommandFromApiJsonDeserializer.validateForGenerateCollectionSheet(query.json());
         final boolean issavingsIncludedInCollectionSheet = this.configurationDomainService.isSavingAccountsInculdedInCollectionSheet();
+		final Long calendarId = query.longValueOfParameterNamed(calendarIdParamName);
         
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
@@ -470,7 +498,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
                 namedParameters, mapper);
 
         // loan data for collection sheet
-        JLGCollectionSheetData collectionSheetData = buildJLGCollectionSheet(transactionDate, collectionSheetFlatDatas);
+        JLGCollectionSheetData collectionSheetData = buildJLGCollectionSheet(transactionDate, collectionSheetFlatDatas, calendarId);
 
         // mandatory savings data for collection sheet
         Collection<JLGGroupData> groupsWithSavingsData = this.namedParameterjdbcTemplate.query(

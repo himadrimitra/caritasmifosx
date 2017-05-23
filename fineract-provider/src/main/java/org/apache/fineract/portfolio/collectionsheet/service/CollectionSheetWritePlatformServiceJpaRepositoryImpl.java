@@ -27,11 +27,14 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.portfolio.client.service.ClientChargeWritePlatformService;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkDisbursalCommand;
 import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetBulkRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
 import org.apache.fineract.portfolio.collectionsheet.data.CollectionSheetTransactionDataValidator;
 import org.apache.fineract.portfolio.collectionsheet.serialization.CollectionSheetBulkDisbursalCommandFromApiJsonDeserializer;
 import org.apache.fineract.portfolio.collectionsheet.serialization.CollectionSheetBulkRepaymentCommandFromApiJsonDeserializer;
+import org.apache.fineract.portfolio.collectionsheet.serialization.CollectionSheetChargeRepaymentCommandFromApiJsonDeserializer;
 import org.apache.fineract.portfolio.loanaccount.service.LoanWritePlatformService;
 import org.apache.fineract.portfolio.meeting.service.MeetingWritePlatformService;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
@@ -53,6 +56,8 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
     private final PaymentDetailWritePlatformService paymentDetailWritePlatformService;
     private final SavingsAccountAssembler savingsAccountAssembler;
     private final SavingsAccountWritePlatformService savingsAccountWritePlatformService;
+    private final ClientChargeWritePlatformService clientChargeWritePlatformService;
+    private final CollectionSheetChargeRepaymentCommandFromApiJsonDeserializer ChargeRepaymentCommandFromApiJsonDeserializer;
 
     @Autowired
     public CollectionSheetWritePlatformServiceJpaRepositoryImpl(final LoanWritePlatformService loanWritePlatformService,
@@ -62,7 +67,9 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
             final MeetingWritePlatformService meetingWritePlatformService, 
             final PaymentDetailWritePlatformService paymentDetailWritePlatformService,
             final SavingsAccountAssembler savingsAccountAssembler,
-            final SavingsAccountWritePlatformService savingsAccountWritePlatformService) {
+            final SavingsAccountWritePlatformService savingsAccountWritePlatformService,
+            final ClientChargeWritePlatformService clientChargeWritePlatformService,
+            final CollectionSheetChargeRepaymentCommandFromApiJsonDeserializer ChargeRepaymentCommandFromApiJsonDeserializer) {
         this.loanWritePlatformService = loanWritePlatformService;
         this.bulkRepaymentCommandFromApiJsonDeserializer = bulkRepaymentCommandFromApiJsonDeserializer;
         this.bulkDisbursalCommandFromApiJsonDeserializer = bulkDisbursalCommandFromApiJsonDeserializer;
@@ -71,6 +78,8 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
         this.paymentDetailWritePlatformService = paymentDetailWritePlatformService;
         this.savingsAccountAssembler = savingsAccountAssembler;
         this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
+        this.clientChargeWritePlatformService = clientChargeWritePlatformService;
+        this.ChargeRepaymentCommandFromApiJsonDeserializer = ChargeRepaymentCommandFromApiJsonDeserializer;
     }
 
     @Override
@@ -93,6 +102,8 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
         changes.putAll(updateBulkDisbursals(command));
 
         changes.putAll(updateSavingsDepositAndWithdraw(command,paymentDetail));
+        
+        changes.putAll(updateClientCharges(command, paymentDetail));
         
         this.meetingWritePlatformService.updateCollectionSheetAttendance(command);
         return new CommandProcessingResultBuilder() //
@@ -154,6 +165,16 @@ public class CollectionSheetWritePlatformServiceJpaRepositoryImpl implements Col
                 .assembleBulkSavingsAccountDepositAndWithdrawTransactionDTOs(command, paymentDetail);
         savingsTransactionIds.addAll(this.savingsAccountWritePlatformService.depositAndWithdraw(savingstransactions));
         changes.put("savingsTransactions", savingsTransactionIds);
+        return changes;
+    }
+    
+    private Map<String, Object> updateClientCharges(final JsonCommand command, PaymentDetail paymentDetail) {
+        final Map<String, Object> changes = new HashMap<>();
+        final CollectionSheetClientChargeRepaymentCommand chargeRepaymentCommand = this.ChargeRepaymentCommandFromApiJsonDeserializer
+                .commandFromApiJson(command.json());
+
+        changes.putAll(this.clientChargeWritePlatformService.payChargeFromCollectionsheet(chargeRepaymentCommand,paymentDetail));
+
         return changes;
     }
 
