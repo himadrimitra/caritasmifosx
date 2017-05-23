@@ -29,6 +29,15 @@ public class SavingsApplicationTestBuilder {
     private String submittedOnDate = "";
     
     private HashMap<String, String> addParams = null;
+    
+    private String allowOverdraft = null;
+    private String allowDpLimit = null;
+    private String overdraftLimit = null;
+    private String savingsDpLimitCalculationType = null;
+    private String dpLimitAmount = null;
+    private String dpCalculateOnAmount = null;
+    private String dpStartDate = null;
+    private String dpDuration = null;
 
     public String build(final String ID, final String savingsProductId, final String accountType) {
 
@@ -40,6 +49,16 @@ public class SavingsApplicationTestBuilder {
             map.put("clientId", ID);
         }        
         map.put("productId", savingsProductId);
+        if (this.allowDpLimit != null && this.allowDpLimit.equalsIgnoreCase("true")) {
+            map.put("allowOverdraft", this.allowOverdraft);
+            map.put("allowDpLimit", this.allowDpLimit);
+            map.put("overdraftLimit", this.overdraftLimit);
+            map.put("savingsDpLimitCalculationType", this.savingsDpLimitCalculationType);
+            map.put("dpLimitAmount", this.dpLimitAmount);
+            map.put("dpCalculateOnAmount", this.dpCalculateOnAmount);
+            map.put("dpStartDate", this.dpStartDate);
+            map.put("dpDuration", this.dpDuration);
+        }
         map.put("locale", LOCALE);
         map.put("submittedOnDate", this.submittedOnDate);
         if(addParams!=null && addParams.size() > 0){
@@ -55,9 +74,19 @@ public class SavingsApplicationTestBuilder {
         return this;
     }
 
-	public SavingsApplicationTestBuilder withParams(
-			HashMap<String, String> params) {
-		this.addParams = params;
-		return this;
-	}
+    public SavingsApplicationTestBuilder withParams(HashMap<String, String> params) {
+        this.addParams = params;
+        return this;
+    }
+
+    public void withAllowDpLimit() {
+        this.allowOverdraft = "true";
+        this.allowDpLimit = "true";
+        this.overdraftLimit = "100000.00";
+        this.savingsDpLimitCalculationType = "1";
+        this.dpLimitAmount = "10000.00";
+        this.dpCalculateOnAmount = "1000";
+        this.dpStartDate = "02 January 2017";
+        this.dpDuration = "10";
+    }
 }
