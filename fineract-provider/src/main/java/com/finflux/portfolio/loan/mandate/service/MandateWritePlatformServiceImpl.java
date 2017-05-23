@@ -88,11 +88,10 @@ public class MandateWritePlatformServiceImpl implements MandateWritePlatformServ
 
                 if(null == mandates || mandates.size() == 0 || !containsActiveMandate(mandates)){
                         throw new NoActiveMandateFoundException();
-                } else {
-                        MandateStatusEnum status = containsRequestedOrInProcessMandate(mandates);
-                        if(!status.hasStateOf(MandateStatusEnum.INVALID)){
-                                throw new InvalidMandateStateForOperationException("UPDATE", status);
-                        }
+                } 
+                MandateStatusEnum status = containsRequestedOrInProcessMandate(mandates);
+                if(!status.hasStateOf(MandateStatusEnum.INVALID)){
+                    throw new InvalidMandateStateForOperationException("UPDATE", status);
                 }
 
                 final String umrn = command.stringValueOfParameterNamed(MandateApiConstants.umrn);

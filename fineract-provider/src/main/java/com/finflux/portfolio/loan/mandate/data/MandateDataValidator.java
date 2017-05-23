@@ -67,7 +67,7 @@ public class MandateDataValidator {
                 baseDataValidator.reset().parameter(MandateApiConstants.bankAccountNumber).value(bankAccountNumber).notNull().notBlank().notExceedingLengthOf(20);
 
                 final String micr = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.micr, element);
-                baseDataValidator.reset().parameter(MandateApiConstants.micr).value(micr).notNull().notBlank().notExceedingLengthOf(10);
+                baseDataValidator.reset().parameter(MandateApiConstants.micr).value(micr).ignoreIfNull().notExceedingLengthOf(10);
 
                 final String ifsc = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.ifsc, element);
                 baseDataValidator.reset().parameter(MandateApiConstants.ifsc).value(ifsc).notNull().notBlank().notExceedingLengthOf(10);
