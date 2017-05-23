@@ -66,6 +66,9 @@ import org.apache.fineract.portfolio.client.exception.ClientHasNoGroupAssociatio
 import org.apache.fineract.portfolio.client.exception.ClientNotActiveException;
 import org.apache.fineract.portfolio.client.exception.DuedateIsNotMeetingDateException;
 import org.apache.fineract.portfolio.client.exception.GroupAndClientChargeNotInSynWithMeeting;
+import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
+import org.apache.fineract.portfolio.collectionsheet.CollectionSheetConstants;
+import org.apache.fineract.portfolio.collectionsheet.command.ClientChargeRepaymentCommand;
 import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformServiceImpl;
 import org.apache.fineract.portfolio.meeting.exception.MeetingNotFoundException;
@@ -80,6 +83,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements ClientChargeWritePlatformService {
@@ -270,7 +274,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
             ClientTransaction clientTransaction = ClientTransaction.payCharge(client, client.getOffice(), paymentDetail, transactionDate,
                     chargePaid, clientCharge.getCurrency().getCode(), getAppUserIfPresent());
-            this.clientTransactionRepository.saveAndFlush(clientTransaction);
+            this.clientTransactionRepository.save(clientTransaction);
 
             // update charge paid by associations
             final ClientChargePaidBy chargePaidBy = ClientChargePaidBy.instance(clientTransaction, clientCharge, amountPaid);
@@ -530,5 +534,64 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         throw new PlatformDataIntegrityException("error.msg.client.charges.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource.");
     }
+    
+	@Transactional
+	@Override
+	public Map<String, Object> payChargeFromCollectionsheet(CollectionSheetClientChargeRepaymentCommand chargeRepaymentCommand, PaymentDetail paymentDetail){
+		
+		final ClientChargeRepaymentCommand[] payChargeCommand = chargeRepaymentCommand.getChargeTransactions();
+		final Locale locale=chargeRepaymentCommand.getLocale();
+		final LocalDate transactionDate = chargeRepaymentCommand.getTransactionDate();
+		final String dateFormat = chargeRepaymentCommand.getDateFormat();
+        final Map<String, Object> changes = new LinkedHashMap<>();
+        List<Long> transactionIds = new ArrayList<>();
+        
+        if (payChargeCommand == null) { return changes; }
+        for(int i=0;i<payChargeCommand.length;i++){
+        	ClientChargeRepaymentCommand singlePayChargeCommand = payChargeCommand[i];
+        	if(singlePayChargeCommand != null){
+        	final Long clientChargeId = singlePayChargeCommand.getChargeId();
+        	final BigDecimal clientChargeAmountPaid = singlePayChargeCommand.getTransactionAmount();
+        	final DateTimeFormatter fmt = DateTimeFormat.forPattern(
+        			dateFormat).withLocale(locale);
 
+			final ClientCharge clientCharge = this.clientChargeRepository
+					.findOneWithNotFoundDetection(clientChargeId);
+        	
+        	final Money chargePaid = Money.of(clientCharge.getCurrency(),
+					clientChargeAmountPaid);
+        	
+        	validatePaymentTransaction(clientCharge.getClient(), clientCharge, fmt,
+					transactionDate, clientChargeAmountPaid);
+
+			// pay the charge
+			clientCharge.pay(chargePaid);
+			
+		// create Payment Transaction
+					//final Map<String, Object> changes = new LinkedHashMap<>();
+					/*final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService
+							.createAndPersistPaymentDetail(command, changes);*/
+
+			ClientTransaction clientTransaction = ClientTransaction.payCharge(
+					clientCharge.getClient(), clientCharge.getClient().getOffice(), paymentDetail, transactionDate,
+					chargePaid, clientCharge.getCurrency().getCode(),
+					getAppUserIfPresent());
+			this.clientTransactionRepository.save(clientTransaction);
+
+			// update charge paid by associations
+			final ClientChargePaidBy chargePaidBy = ClientChargePaidBy
+					.instance(clientTransaction, clientCharge, clientChargeAmountPaid);
+			clientTransaction.getClientChargePaidByCollection().add(
+					chargePaidBy);
+
+			// generate accounting entries
+			generateAccountingEntries(clientTransaction);
+			transactionIds.add(clientTransaction.getId());
+        	}
+
+        }
+        changes.put(CollectionSheetConstants.clientChargeTransactionsParamName, transactionIds);
+		return changes;
+			
+	}
 }

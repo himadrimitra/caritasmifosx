@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -166,5 +167,21 @@ public class ClientChargeReadPlatformServiceImpl implements ClientChargeReadPlat
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), new Object[] { clientId },
                 this.clientChargeMapper);
     }
+
+	@Override
+	public Collection<ClientChargeData> retriveUnPaidActiveClientCharges(Long clientRecurringChargeId, Date duedate) {
+		try {
+			this.context.authenticatedUser();
+
+			final ClientChargeMapper rm = new ClientChargeMapper();
+
+			final String sql = "select " + rm.schema()
+					+ " where cc.client_recurring_charge_id=? and cc.charge_due_date <=? and cc.is_active = 1 and cc.is_paid_derived = 0 and cc.waived = 0 ";
+
+			return this.jdbcTemplate.query(sql, rm, new Object[] { clientRecurringChargeId, duedate });
+		} catch (final EmptyResultDataAccessException e) {
+			throw new ClientChargeNotFoundException(clientRecurringChargeId);
+		}
+	}
 
 }

@@ -18,8 +18,12 @@
  */
 package org.apache.fineract.portfolio.client.service;
 
+import java.util.Map;
+
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.portfolio.collectionsheet.command.CollectionSheetClientChargeRepaymentCommand;
+import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface ClientChargeWritePlatformService {
@@ -41,5 +45,8 @@ public interface ClientChargeWritePlatformService {
 
     @Transactional
     CommandProcessingResult inactivateCharge(Long clientId, Long clientChargeId);
+    
+    @Transactional
+	Map<String, Object> payChargeFromCollectionsheet(CollectionSheetClientChargeRepaymentCommand ChargeRepaymentCommand, PaymentDetail paymentDetail);
 
 }
