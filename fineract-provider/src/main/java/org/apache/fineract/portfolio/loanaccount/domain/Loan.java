@@ -5988,6 +5988,17 @@ public class Loan extends AbstractPersistable<Long> {
     public List<LoanDisbursementDetails> getDisbursementDetails() {
         return this.disbursementDetails;
     }
+    
+    public boolean hasUndisbursedTranches() {
+        boolean hasActiveUndisbursedTranches = false;
+        for(LoanDisbursementDetails loanDisbursementDetails : this.getDisbursementDetails()){
+            if (loanDisbursementDetails.actualDisbursementDate() == null) {
+                hasActiveUndisbursedTranches = true;
+                break;
+            }
+        }
+        return hasActiveUndisbursedTranches;
+    }
 
     public ChangedTransactionDetail updateDisbursementDateAndAmountForTranche(final LoanDisbursementDetails disbursementDetails,
             final JsonCommand command, final Map<String, Object> actualChanges, final ScheduleGeneratorDTO scheduleGeneratorDTO,
