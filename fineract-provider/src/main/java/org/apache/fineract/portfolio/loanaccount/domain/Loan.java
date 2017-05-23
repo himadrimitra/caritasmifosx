@@ -3900,6 +3900,21 @@ public class Loan extends AbstractPersistable<Long> {
         Collections.sort(repaymentsOrWaivers, transactionComparator);
         return repaymentsOrWaivers;
     }
+    
+    public List<LoanTransaction> retreiveCopyOfTransactionsPostDisbursementExcludeAccruals() {
+        final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
+        for (final LoanTransaction transaction : this.loanTransactions) {
+            if (transaction.isNotReversed()
+                    && !(transaction.isDisbursement() || transaction.isAccrual() || transaction.isRepaymentAtDisbursement()
+                            || transaction.isNonMonetaryTransaction() || transaction.isIncomePosting() || transaction
+                                .isBrokenPeriodInterestPosting())) {
+                repaymentsOrWaivers.add(LoanTransaction.copyTransactionProperties(transaction));
+            }
+        }
+        final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
+        Collections.sort(repaymentsOrWaivers, transactionComparator);
+        return repaymentsOrWaivers;
+    }
 
     private List<LoanTransaction> retreiveListOfTransactionsExcludeAccruals() {
         final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
@@ -5700,6 +5715,18 @@ public class Loan extends AbstractPersistable<Long> {
             for (LoanCharge charge : this.charges) {
                 if (charge.isActive()) {
                     loanCharges.add(charge);
+                }
+            }
+        }
+        return loanCharges;
+    }
+    
+    public Set<LoanCharge> chargesCopy() {
+        Set<LoanCharge> loanCharges = new HashSet<>();
+        if (this.charges != null) {
+            for (LoanCharge charge : this.charges) {
+                if (charge.isActive()) {
+                    loanCharges.add(LoanCharge.copyCharge(charge));
                 }
             }
         }

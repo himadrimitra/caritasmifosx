@@ -102,6 +102,25 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> implements 
             }
         }      
     }
+    
+    public static LoanInstallmentCharge copyLoanInstallmentCharge(final LoanInstallmentCharge loanInstallmentCharge, final LoanCharge loancharge){
+        return new LoanInstallmentCharge(loanInstallmentCharge, loancharge);
+    }
+    
+    private LoanInstallmentCharge(final LoanInstallmentCharge loanInstallmentCharge,final LoanCharge loancharge){
+        this.loancharge = loancharge;
+        this.installment = loanInstallmentCharge.installment;
+        this.amount = loanInstallmentCharge.amount;
+        this.amountOutstanding = loanInstallmentCharge.amountOutstanding;
+        this.amountPaid = loanInstallmentCharge.amountPaid;
+        this.amountWaived = loanInstallmentCharge.amountWaived;
+        this.amountWrittenOff = loanInstallmentCharge.amountWrittenOff;
+        this.paid = loanInstallmentCharge.paid;
+        this.waived = loanInstallmentCharge.waived;
+        this.amountThroughChargePayment = loanInstallmentCharge.amountThroughChargePayment;
+        this.amountSansTax = loanInstallmentCharge.amountSansTax;
+        this.taxAmount = loanInstallmentCharge.taxAmount;
+    }
 
     private void updateTaxAmount(final BigDecimal taxAmount) {
         this.taxAmount = taxAmount;
