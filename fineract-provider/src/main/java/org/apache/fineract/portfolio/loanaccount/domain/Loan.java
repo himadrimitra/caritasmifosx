@@ -1741,6 +1741,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (loanProduct.isMultiDisburseLoan() || loanProduct.canDefineInstallmentAmount()) {
             if (command.isChangeInBigDecimalParameterNamed(LoanApiConstants.emiAmountParameterName, this.fixedEmiAmount)) {
                 this.fixedEmiAmount = command.bigDecimalValueOfParameterNamed(LoanApiConstants.emiAmountParameterName);
+                setCalculatedInstallmentAmount(this.fixedEmiAmount);
                 actualChanges.put(LoanApiConstants.emiAmountParameterName, this.fixedEmiAmount);
                 actualChanges.put("recalculateLoanSchedule", true);
             }

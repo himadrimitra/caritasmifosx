@@ -103,7 +103,11 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
 
     @Override
     public LoanScheduleModel calculateLoanSchedule(final JsonQuery query, Boolean validateParams, final boolean considerAllDisbursmentsInSchedule) {
+        validateLoanParameters(query, validateParams); 
+        return this.loanScheduleAssembler.assembleLoanScheduleFrom(query.parsedJson(), considerAllDisbursmentsInSchedule);
+    }
 
+    private void validateLoanParameters(JsonQuery query, Boolean validateParams) {
         /***
          * TODO: Vishwas, this is probably not required, test and remove the
          * same
@@ -136,10 +140,13 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
             this.loanProductCommandFromApiJsonDeserializer.validateMinMaxConstraints(query.parsedJson(), baseDataValidator, loanProduct);
         }
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-
-        return this.loanScheduleAssembler.assembleLoanScheduleFrom(query.parsedJson(), considerAllDisbursmentsInSchedule);
     }
-
+    @Override
+    public LoanScheduleModel calculateLoanSchedule(JsonQuery query, Boolean validateParams, LoanApplicationTerms terms) {
+        validateLoanParameters(query, validateParams);
+        return this.loanScheduleAssembler.assembleLoanScheduleFrom(query.parsedJson(), terms);
+    }
+    
     @Override
     public void updateFutureSchedule(LoanScheduleData loanScheduleData, final Long loanId) {
 
@@ -292,5 +299,4 @@ public class LoanScheduleCalculationPlatformServiceImpl implements LoanScheduleC
         LoanApplicationTerms loanApplicationTerms = loan.constructLoanApplicationTerms(scheduleGeneratorDTO);
         return loanApplicationTerms;
     }
-
 }

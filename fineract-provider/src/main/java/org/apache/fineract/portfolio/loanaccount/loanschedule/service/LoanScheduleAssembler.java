@@ -662,7 +662,11 @@ public class LoanScheduleAssembler {
     public LoanScheduleModel assembleLoanScheduleFrom(final JsonElement element, final boolean considerAllDisbursmentsInSchedule) {
         // This method is getting called from calculate loan schedule.
         final LoanApplicationTerms loanApplicationTerms = assembleLoanTerms(element, considerAllDisbursmentsInSchedule);
-        // Get holiday details
+        return assembleLoanScheduleFrom(element, loanApplicationTerms) ;
+    }
+
+    public LoanScheduleModel assembleLoanScheduleFrom(final JsonElement element, final LoanApplicationTerms loanApplicationTerms) {
+     // Get holiday details
         final boolean isHolidayEnabled = this.configurationDomainService.isRescheduleRepaymentsOnHolidaysEnabled();
 
         final Long clientId = this.fromApiJsonHelper.extractLongNamed("clientId", element);
@@ -683,7 +687,7 @@ public class LoanScheduleAssembler {
         final BigDecimal interestRate = loanApplicationTerms.getAnnualNominalInterestRate();
         final Integer numberOfRepayments = loanApplicationTerms.getNumberOfRepayments();
         final List<GroupLoanIndividualMonitoring> glimList = this.groupLoanIndividualMonitoringAssembler.createOrUpdateIndividualClientsAmountSplit(null, 
-        		element, interestRate, numberOfRepayments, loanApplicationTerms.getInterestMethod());
+                        element, interestRate, numberOfRepayments, loanApplicationTerms.getInterestMethod());
 
         final LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed("expectedDisbursementDate", element);
         final List<Holiday> holidays = this.holidayRepository.findByOfficeIdAndGreaterThanDate(officeId, expectedDisbursementDate.toDate(),
@@ -693,7 +697,6 @@ public class LoanScheduleAssembler {
         List<LoanDisbursementDetails> loanDisbursementDetails = this.loanUtilService.fetchDisbursementData(element.getAsJsonObject());
         return assembleLoanScheduleFrom(loanApplicationTerms, isHolidayEnabled, holidays, workingDays, element, loanDisbursementDetails, glimList);
     }
-
     public LoanScheduleModel assembleLoanScheduleFrom(final LoanApplicationTerms loanApplicationTerms, final boolean isHolidayEnabled,
             final List<Holiday> holidays, final WorkingDays workingDays, final JsonElement element,
             List<LoanDisbursementDetails> disbursementDetails, List<GroupLoanIndividualMonitoring> glimList) {

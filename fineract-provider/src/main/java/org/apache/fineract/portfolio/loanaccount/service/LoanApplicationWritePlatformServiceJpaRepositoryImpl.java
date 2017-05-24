@@ -1076,9 +1076,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
                 }
                 final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false,
-                        considerAllDisbursmentsInSchedule);
+                        terms);
                 existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
                 existingLoanApplication.recalculateAllCharges();
+                existingLoanApplication.setCalculatedInstallmentAmount(terms.getFixedEmiAmount());
             }
 	        
             if (existingLoanApplication.isGLIMLoan()) {
