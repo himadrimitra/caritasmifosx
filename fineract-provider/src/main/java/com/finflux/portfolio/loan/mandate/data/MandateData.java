@@ -139,7 +139,7 @@ public class MandateData {
                 final Date periodToDate = null;
                 final Boolean periodUntilCancelled = true;
                 final EnumOptionData debitType = DebitTypeEnum.enumOptionDataFrom(DebitTypeEnum.MAXIMUM_AMOUNT.getValue());
-                final BigDecimal amount = loan.getPrincipal();
+                final BigDecimal amount = loan.getCalculatedEmiAmount();
                 final EnumOptionData debitFrequency = DebitFrequencyEnum.enumOptionDataFrom(DebitFrequencyEnum.AS_AND_WHEN_PRESENTED.getValue());
                 final Long scannedDocumentId = null;
                 final String scannedDocumentName = null;
