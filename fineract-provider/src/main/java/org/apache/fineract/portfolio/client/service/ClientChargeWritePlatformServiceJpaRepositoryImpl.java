@@ -147,6 +147,20 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
                     .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
                             FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, chargeDefinitionId);
 			LocalDate dueDate = command.localDateValueOfParameterNamed(ClientApiConstants.dueAsOfDateParamName);
+			final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+			if (dueDate != null && client.getActivationLocalDate() != null
+					&& client.getActivationLocalDate().isAfter(dueDate)) {
+
+				final String defaultUserMessage = "client activation date cannot be after the charge due date";
+				final ApiParameterError error = ApiParameterError.parameterError(
+						"error.msg.clients.activationOnDate.after.charge.due.date", defaultUserMessage,
+						ClientApiConstants.dueAsOfDateParamName, dueDate);
+
+				dataValidationErrors.add(error);
+			}
+			if (!dataValidationErrors.isEmpty()) {
+				throw new PlatformApiDataValidationException(dataValidationErrors);
+			}
 			final Boolean isSynchMeeting = command
 					.booleanPrimitiveValueOfParameterNamed(ClientApiConstants.chargesynchmeetingParamName);
 
