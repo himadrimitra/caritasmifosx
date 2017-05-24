@@ -239,7 +239,7 @@ public class LoanCharge extends AbstractPersistable<Long> {
         return new LoanCharge(null, chargeDefinition, loanPrincipal, amount, chargeTime, chargeCalculation, dueDate, chargePaymentMode,
                 numberOfRepayments, BigDecimal.ZERO, clientMembers, glimCharges, totalFee);
     }
-
+    
     protected LoanCharge() {
         //
     }
@@ -352,7 +352,60 @@ public class LoanCharge extends AbstractPersistable<Long> {
             createLoanChargeTaxDetails(loan.getDisbursementDate(), chargeAmount);
         }
     }
+    
+    public static LoanCharge copyCharge(final LoanCharge charge) {
+        return new LoanCharge(charge);
+    }
 
+    private LoanCharge(final LoanCharge charge) {
+        this.active = charge.active;
+        this.amount = charge.amount;
+        this.amountOrPercentage = charge.amountOrPercentage;
+        this.amountOutstanding = charge.amountOutstanding;
+        this.amountPaid = charge.amountPaid;
+        this.amountPercentageAppliedTo = charge.amountPercentageAppliedTo;
+        this.amountSansTax = charge.amountSansTax;
+        this.amountWaived = charge.amountWaived;
+        this.amountWrittenOff = charge.amountWrittenOff;
+        this.charge = charge.charge;
+        this.chargeCalculation = charge.chargeCalculation;
+        this.chargePaymentMode = charge.chargePaymentMode;
+        this.chargeTime = charge.chargeTime;
+        this.dueDate = charge.dueDate;
+        this.isCapitalized = charge.isCapitalized;
+        this.loan = charge.loan;
+        this.paid = charge.paid;
+        this.waived = charge.waived;
+        this.penaltyCharge = charge.penaltyCharge;
+        this.percentage = charge.percentage;
+        this.taxAmount = charge.taxAmount;
+        this.maxCap = charge.maxCap;
+        this.minCap = charge.minCap;
+        this.taxGroup = charge.taxGroup;
+        if (charge.overdueInstallmentCharge != null) {
+            this.overdueInstallmentCharge = LoanOverdueInstallmentCharge.copyLoanOverdueInstallmentCharge(charge.overdueInstallmentCharge,
+                    this);
+        }
+        if (charge.loanTrancheDisbursementCharge != null) {
+            this.loanTrancheDisbursementCharge = LoanTrancheDisbursementCharge.copyLoanTrancheDisbursementCharge(
+                    charge.loanTrancheDisbursementCharge, this);
+        }
+        copyLoanInstallmentCharge(charge.loanInstallmentCharge, this.loanInstallmentCharge);
+        copyLoanChargeTaxDetails(charge.taxDetails, this.taxDetails);
+    }
+
+    private void copyLoanChargeTaxDetails(final List<LoanChargeTaxDetails> fromTaxDetails, final List<LoanChargeTaxDetails> toTaxDetails) {
+        for (LoanChargeTaxDetails details : fromTaxDetails) {
+            toTaxDetails.add(LoanChargeTaxDetails.copyLoanChargeTaxDetails(details));
+        }
+    }
+
+    private void copyLoanInstallmentCharge(final Set<LoanInstallmentCharge> from, final Set<LoanInstallmentCharge> to) {
+        for (LoanInstallmentCharge details : from) {
+            to.add(LoanInstallmentCharge.copyLoanInstallmentCharge(details, this));
+        }
+    }
+    
 
     private void populateDerivedFields(final BigDecimal amountPercentageAppliedTo, final BigDecimal chargeAmount,
             Integer numberOfRepayments, BigDecimal loanCharge) {

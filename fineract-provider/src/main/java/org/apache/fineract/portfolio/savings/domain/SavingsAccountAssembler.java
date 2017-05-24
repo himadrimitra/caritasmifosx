@@ -111,7 +111,6 @@ public class SavingsAccountAssembler {
     private final FromJsonHelper fromApiJsonHelper;
     private final PlatformSecurityContext context;
     private final ConfigurationDomainService configurationDomainService;
-
     @Autowired
     public SavingsAccountAssembler(final SavingsAccountTransactionSummaryWrapper savingsAccountTransactionSummaryWrapper,
             final ClientRepositoryWrapper clientRepository, final GroupRepositoryWrapper groupRepository,
@@ -138,7 +137,7 @@ public class SavingsAccountAssembler {
      * request inheriting details where relevant from chosen
      * {@link SavingsProduct}.
      */
-    public SavingsAccount assembleFrom(final JsonCommand command, final AppUser submittedBy) {
+    public SavingsAccount submitApplicationAssembleFrom(final JsonCommand command, final AppUser submittedBy) {
 
         final JsonElement element = command.parsedJson();
 
@@ -333,26 +332,23 @@ public class SavingsAccountAssembler {
     }
 
     private SavingsAccountDpDetails assembleSavingsAccountDpDetails(SavingsAccount account, JsonCommand command) {
-        
         SavingsAccountDpDetails savingsAccountDpDetails = null;
         if (command.parameterExists(SavingsApiConstants.allowDpLimitParamName)) {
             boolean allowDpLimit = command.booleanPrimitiveValueOfParameterNamed(SavingsApiConstants.allowDpLimitParamName);
             if (allowDpLimit) {
                 BigDecimal dpLimitAmount = command
                         .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpLimitAmountParamName);
-                Integer frequencyType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName);
-                Integer dpReductionEvery = command.integerValueOfParameterNamed(SavingsApiConstants.dpLimitReductionEveryParamName);
                 Integer duration = command.integerValueOfParameterNamed(SavingsApiConstants.dpDurationParamName);
                 Integer calculationType = command.integerValueOfParameterNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName);
                 BigDecimal amountOrPercentage = command
                         .bigDecimalValueOfParameterNamedDefaultToNullIfZero(SavingsApiConstants.dpCalculateOnAmountParamName);
-                // update overdraft amount 
+                // update overdraft amount
                 account.updateOverDraftLimit(dpLimitAmount);
-                savingsAccountDpDetails = SavingsAccountDpDetails.createNew(account, frequencyType, dpReductionEvery, duration,
-                        dpLimitAmount, calculationType, amountOrPercentage);
+                final Date dpStartDate = command.DateValueOfParameterNamed(SavingsApiConstants.dpStartDateParamName);
+                savingsAccountDpDetails = SavingsAccountDpDetails.createNew(account, duration, dpLimitAmount, calculationType,
+                        amountOrPercentage, dpStartDate);
             }
         }
-        
         return savingsAccountDpDetails;
     }
     
@@ -465,5 +461,11 @@ public class SavingsAccountAssembler {
         }
 
         return transactionMap;
+    }
+
+    public SavingsAccount assembleFromAccountNumber(final String savingsAccountNumber) {
+        final SavingsAccount savingAccount = this.savingsAccountRepository.findOneWithNotFoundDetection(savingsAccountNumber);
+        savingAccount.setHelpers(this.savingsAccountTransactionSummaryWrapper, this.savingsHelper);
+        return savingAccount;
     }
 }

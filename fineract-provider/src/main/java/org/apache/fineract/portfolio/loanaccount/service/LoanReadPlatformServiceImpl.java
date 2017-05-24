@@ -768,6 +768,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" l.allow_partial_period_interest_calcualtion as allowPartialPeriodInterestCalcualtion,");
             sb.append(" l.loan_status_id as lifeCycleStatusId, l.loan_transaction_strategy_id as transactionStrategyId, ");
             sb.append(" lps.name as transactionStrategyName, lps.code as transactionStrategyCode,");
+            sb.append(" l.calculated_installment_amount as calculatedEmiAmount, ");
             sb.append(" l.currency_code as currencyCode, l.currency_digits as currencyDigits, l.currency_multiplesof as inMultiplesOf, rc.`name` as currencyName, rc.display_symbol as currencyDisplaySymbol, rc.internationalized_name_code as currencyNameCode, ");
             sb.append(" l.loan_officer_id as loanOfficerId, s.display_name as loanOfficerName, ");
             sb.append(" l.principal_disbursed_derived as principalDisbursed,");
@@ -1114,7 +1115,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
             LoanInterestRecalculationData interestRecalculationData = null;
             if (isInterestRecalculationEnabled) {
-
+                final String codePrefix = "interestRecalculationCompounding.";
                 final Long lprId = JdbcSupport.getLong(rs, "lirId");
                 final Long productId = JdbcSupport.getLong(rs, "loanId");
                 final int compoundTypeEnumValue = JdbcSupport.getInteger(rs, "compoundType");
@@ -1129,13 +1130,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 final Integer restFrequencyNthDayEnumValue = JdbcSupport.getInteger(rs, "restFrequencyNthDayEnum");
                 EnumOptionData restFrequencyNthDayEnum = null;
                 if (restFrequencyNthDayEnumValue != null) {
-                    restFrequencyNthDayEnum = LoanEnumerations.interestRecalculationCompoundingNthDayType(restFrequencyNthDayEnumValue);
+                    restFrequencyNthDayEnum = CommonEnumerations.nthDayType(restFrequencyNthDayEnumValue, codePrefix);
                 }
                 final Integer restFrequencyWeekDayEnumValue = JdbcSupport.getInteger(rs, "restFrequencyWeekDayEnum");
                 EnumOptionData restFrequencyWeekDayEnum = null;
                 if (restFrequencyWeekDayEnumValue != null) {
-                    restFrequencyWeekDayEnum = LoanEnumerations
-                            .interestRecalculationCompoundingDayOfWeekType(restFrequencyWeekDayEnumValue);
+                    restFrequencyWeekDayEnum = CommonEnumerations.dayOfWeekType(restFrequencyWeekDayEnumValue, codePrefix);
                 }
                 final Integer restFrequencyOnDay = JdbcSupport.getInteger(rs, "restFrequencyOnDay");
                 final CalendarData compoundingCalendarData = null;
@@ -1148,14 +1148,12 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 final Integer compoundingFrequencyNthDayEnumValue = JdbcSupport.getInteger(rs, "compoundingFrequencyNthDayEnum");
                 EnumOptionData compoundingFrequencyNthDayEnum = null;
                 if (compoundingFrequencyNthDayEnumValue != null) {
-                    compoundingFrequencyNthDayEnum = LoanEnumerations
-                            .interestRecalculationCompoundingNthDayType(compoundingFrequencyNthDayEnumValue);
+                    compoundingFrequencyNthDayEnum = CommonEnumerations.nthDayType(compoundingFrequencyNthDayEnumValue, codePrefix);
                 }
                 final Integer compoundingFrequencyWeekDayEnumValue = JdbcSupport.getInteger(rs, "compoundingFrequencyWeekDayEnum");
                 EnumOptionData compoundingFrequencyWeekDayEnum = null;
                 if (compoundingFrequencyWeekDayEnumValue != null) {
-                    compoundingFrequencyWeekDayEnum = LoanEnumerations
-                            .interestRecalculationCompoundingDayOfWeekType(compoundingFrequencyWeekDayEnumValue);
+                    compoundingFrequencyWeekDayEnum = CommonEnumerations.dayOfWeekType(compoundingFrequencyWeekDayEnumValue, codePrefix);
                 }
                 final Integer compoundingFrequencyOnDay = JdbcSupport.getInteger(rs, "compoundingFrequencyOnDay");
                 
@@ -1191,7 +1189,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final BigDecimal discountOnDisbursalAmount = rs.getBigDecimal("discountOnDisbursalAmount");
             final Boolean allowUpfrontCollection = rs.getBoolean("allowUpfrontCollection");
             final BigDecimal amountForUpfrontCollection = rs.getBigDecimal("amountForUpfrontCollection");
-            
+            final BigDecimal calculatedEmiAmount = rs.getBigDecimal("calculatedEmiAmount") ;
             return LoanAccountData.basicLoanDetails(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo,
                     clientOfficeId, groupData, loanType, loanProductId, loanProductName, loanProductDescription,
                     isLoanProductLinkedToFloatingRate, fundId, fundName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName,
@@ -1208,7 +1206,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     minimumGap,maximumGap,loanSubStatus, canUseForTopup, isTopup, closureLoanId, closureLoanAccountNo,
                     topupAmount, weeksInYearType,expectedDisbursalPaymentType, expectedRepaymentPaymentType, brokenPeriodMethodType, flatInterestRate, 
                     brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, 
-                    allowUpfrontCollection, amountForUpfrontCollection);
+                    allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
         }
     }
     

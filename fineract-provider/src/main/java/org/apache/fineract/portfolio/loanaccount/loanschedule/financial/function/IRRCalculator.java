@@ -1,5 +1,6 @@
 package org.apache.fineract.portfolio.loanaccount.loanschedule.financial.function;
 
+import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Collection;
@@ -45,11 +46,16 @@ public class IRRCalculator {
             Money amountForUpfrontCollection = Money.of(emi.getCurrency(), terms.getAmountForUpfrontCollection());
             addToMap(disbursements, terms.getExpectedDisbursementDate(), amountForUpfrontCollection.negated());
         }
+        
+        if((terms.getFlatInterestRate() == null || terms.getFlatInterestRate().compareTo(BigDecimal.ZERO) != 1 ) && !terms.isDiscountOnDisbursalAmountAvailable()){
+            return 0;
+        }
+        
         return calculateIrr(numberOfRepayments, disbursements, calendarStartDate, recurrence, firstRepaymentDate, emi);
 
     }
 
-    public static double calculateIrr(final int numberOfRepayments, Map<LocalDate, Money> disbursements, final LocalDate seedDate,
+    private static double calculateIrr(final int numberOfRepayments, Map<LocalDate, Money> disbursements, final LocalDate seedDate,
             final String recurrence, final LocalDate firstRepaymentDate, final Money emi) {
         final Map<LocalDate, Money> values = new TreeMap<>();
         for (Map.Entry<LocalDate, Money> disbursement : disbursements.entrySet()) {

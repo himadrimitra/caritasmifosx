@@ -62,6 +62,7 @@ public class SavingsProductData {
     private final BigDecimal minOverdraftForInterestCalculation;
     private final boolean withHoldTax;
     private final TaxGroupData taxGroup;
+    private final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData;
 
     // accounting
     private final EnumOptionData accountingRule;
@@ -87,10 +88,13 @@ public class SavingsProductData {
     private final Collection<ChargeData> chargeOptions;
     private final Collection<ChargeData> penaltyOptions;
     private final Collection<TaxGroupData> taxGroupOptions;
-	private final Boolean isDormancyTrackingActive;
-	private final Long daysToInactive;
-	private final Long daysToDormancy;
-	private final Long daysToEscheat;
+    private final Boolean isDormancyTrackingActive;
+    private final Long daysToInactive;
+    private final Long daysToDormancy;
+    private final Long daysToEscheat;
+    private final Collection<EnumOptionData> periodFrequencyTypeOptions;
+    private final Collection<EnumOptionData> nthDayTypeOptions;
+    private final Collection<EnumOptionData> dayOfWeekTypeOptions;
 
     public static SavingsProductData template(final CurrencyData currency, final EnumOptionData interestCompoundingPeriodType,
             final EnumOptionData interestPostingPeriodType, final EnumOptionData interestCalculationType,
@@ -102,7 +106,9 @@ public class SavingsProductData {
             final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions, final Collection<EnumOptionData> withdrawalFeeTypeOptions,
             final Collection<PaymentTypeData> paymentTypeOptions, final Collection<EnumOptionData> accountingRuleOptions,
             final Map<String, List<GLAccountData>> accountingMappingOptions, final Collection<ChargeData> chargeOptions,
-            final Collection<ChargeData> penaltyOptions, final Collection<TaxGroupData> taxGroupOptions) {
+            final Collection<ChargeData> penaltyOptions, final Collection<TaxGroupData> taxGroupOptions,
+            final Collection<EnumOptionData> periodFrequencyTypeOptions, final Collection<EnumOptionData> nthDayTypeOptions,
+            final Collection<EnumOptionData> dayOfWeekTypeOptions) {
 
         final Long id = null;
         final String name = null;
@@ -132,6 +138,7 @@ public class SavingsProductData {
         final Long daysToDormancy = null;
         final Long daysToEscheat = null;
         final String externalId = null;
+        final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData = null;
 
         return new SavingsProductData(id, name, shortName, description, currency, nominalAnnualInterestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
@@ -142,7 +149,8 @@ public class SavingsProductData {
                 accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, allowOverdraft, overdraftLimit, minRequiredBalance, enforceMinRequiredBalance,
                 minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                taxGroup, taxGroupOptions, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+                taxGroup, taxGroupOptions, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId,
+                periodFrequencyTypeOptions, nthDayTypeOptions, dayOfWeekTypeOptions, savingsProductDrawingPowerDetailsData);
     }
 
     public static SavingsProductData withCharges(final SavingsProductData product, final Collection<ChargeData> charges) {
@@ -158,8 +166,9 @@ public class SavingsProductData {
                 product.feeToIncomeAccountMappings, product.penaltyToIncomeAccountMappings, product.allowOverdraft, product.overdraftLimit,
                 product.minRequiredBalance, product.enforceMinRequiredBalance, product.minBalanceForInterestCalculation,
                 product.nominalAnnualInterestRateOverdraft, product.minOverdraftForInterestCalculation, product.withHoldTax,
-                product.taxGroup, product.taxGroupOptions, product.isDormancyTrackingActive, product.daysToInactive, 
-                product.daysToDormancy, product.daysToEscheat, product.externalId);
+                product.taxGroup, product.taxGroupOptions, product.isDormancyTrackingActive, product.daysToInactive,
+                product.daysToDormancy, product.daysToEscheat, product.externalId, product.periodFrequencyTypeOptions,
+                product.nthDayTypeOptions, product.dayOfWeekTypeOptions, product.savingsProductDrawingPowerDetailsData);
     }
 
     /**
@@ -168,6 +177,9 @@ public class SavingsProductData {
      * 
      * @param taxGroupOptions
      *            TODO
+     * @param dayOfWeekTypeOptions
+     * @param nthDayTypeOptions
+     * @param periodFrequencyTypeOptions
      */
     public static SavingsProductData withTemplate(final SavingsProductData existingProduct, final Collection<CurrencyData> currencyOptions,
             final Collection<EnumOptionData> interestCompoundingPeriodTypeOptions,
@@ -177,8 +189,9 @@ public class SavingsProductData {
             final Collection<EnumOptionData> lockinPeriodFrequencyTypeOptions, final Collection<EnumOptionData> withdrawalFeeTypeOptions,
             final Collection<PaymentTypeData> paymentTypeOptions, final Collection<EnumOptionData> accountingRuleOptions,
             final Map<String, List<GLAccountData>> accountingMappingOptions, final Collection<ChargeData> chargeOptions,
-            final Collection<ChargeData> penaltyOptions, Collection<TaxGroupData> taxGroupOptions) {
-
+            final Collection<ChargeData> penaltyOptions, Collection<TaxGroupData> taxGroupOptions,
+            final Collection<EnumOptionData> periodFrequencyTypeOptions, final Collection<EnumOptionData> nthDayTypeOptions,
+            final Collection<EnumOptionData> dayOfWeekTypeOptions) {
         return new SavingsProductData(existingProduct.id, existingProduct.name, existingProduct.shortName, existingProduct.description,
                 existingProduct.currency, existingProduct.nominalAnnualInterestRate, existingProduct.interestCompoundingPeriodType,
                 existingProduct.interestPostingPeriodType, existingProduct.interestCalculationType,
@@ -192,8 +205,10 @@ public class SavingsProductData {
                 existingProduct.feeToIncomeAccountMappings, existingProduct.penaltyToIncomeAccountMappings, existingProduct.allowOverdraft,
                 existingProduct.overdraftLimit, existingProduct.minRequiredBalance, existingProduct.enforceMinRequiredBalance,
                 existingProduct.minBalanceForInterestCalculation, existingProduct.nominalAnnualInterestRateOverdraft,
-                existingProduct.minOverdraftForInterestCalculation, existingProduct.withHoldTax, existingProduct.taxGroup, taxGroupOptions, 
-                existingProduct.isDormancyTrackingActive, existingProduct.daysToInactive, existingProduct.daysToDormancy, existingProduct.daysToEscheat, existingProduct.externalId);
+                existingProduct.minOverdraftForInterestCalculation, existingProduct.withHoldTax, existingProduct.taxGroup, taxGroupOptions,
+                existingProduct.isDormancyTrackingActive, existingProduct.daysToInactive, existingProduct.daysToDormancy,
+                existingProduct.daysToEscheat, existingProduct.externalId, periodFrequencyTypeOptions, nthDayTypeOptions,
+                dayOfWeekTypeOptions, existingProduct.savingsProductDrawingPowerDetailsData);
     }
 
     public static SavingsProductData withAccountingDetails(final SavingsProductData existingProduct,
@@ -229,8 +244,10 @@ public class SavingsProductData {
                 existingProduct.minRequiredBalance, existingProduct.enforceMinRequiredBalance,
                 existingProduct.minBalanceForInterestCalculation, existingProduct.nominalAnnualInterestRateOverdraft,
                 existingProduct.minOverdraftForInterestCalculation, existingProduct.withHoldTax, existingProduct.taxGroup,
-                existingProduct.taxGroupOptions, existingProduct.isDormancyTrackingActive, existingProduct.daysToInactive, 
-                existingProduct.daysToDormancy, existingProduct.daysToEscheat, existingProduct.externalId);
+                existingProduct.taxGroupOptions, existingProduct.isDormancyTrackingActive, existingProduct.daysToInactive,
+                existingProduct.daysToDormancy, existingProduct.daysToEscheat, existingProduct.externalId,
+                existingProduct.periodFrequencyTypeOptions, existingProduct.nthDayTypeOptions, existingProduct.dayOfWeekTypeOptions,
+                existingProduct.savingsProductDrawingPowerDetailsData);
     }
 
     public static SavingsProductData instance(final Long id, final String name, final String shortName, final String description,
@@ -241,8 +258,9 @@ public class SavingsProductData {
             final EnumOptionData accountingType, final boolean allowOverdraft, final BigDecimal overdraftLimit,
             final BigDecimal minRequiredBalance, final boolean enforceMinRequiredBalance,
             final BigDecimal minBalanceForInterestCalculation, final BigDecimal nominalAnnualInterestRateOverdraft,
-            final BigDecimal minOverdraftForInterestCalculation, final boolean withHoldTax, final TaxGroupData taxGroup, 
-            final Boolean isDormancyTrackingActive, final Long daysToInactive, final Long daysToDormancy, final Long daysToEscheat, String externalId) {
+            final BigDecimal minOverdraftForInterestCalculation, final boolean withHoldTax, final TaxGroupData taxGroup,
+            final Boolean isDormancyTrackingActive, final Long daysToInactive, final Long daysToDormancy, final Long daysToEscheat,
+            String externalId, final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData) {
 
         final Map<String, Object> accountingMappings = null;
         final Collection<PaymentTypeToGLAccountMapper> paymentChannelToFundSourceMappings = null;
@@ -263,6 +281,9 @@ public class SavingsProductData {
         final Collection<ChargeToGLAccountMapper> feeToIncomeAccountMappings = null;
         final Collection<ChargeToGLAccountMapper> penaltyToIncomeAccountMappings = null;
         final Collection<TaxGroupData> taxGroupOptions = null;
+        final Collection<EnumOptionData> periodFrequencyTypeOptions = null;
+        final Collection<EnumOptionData> nthDayTypeOptions = null;
+        final Collection<EnumOptionData> dayOfWeekTypeOptions = null;
 
         return new SavingsProductData(id, name, shortName, description, currency, nominalAnnualInterestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
@@ -273,7 +294,8 @@ public class SavingsProductData {
                 accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, allowOverdraft, overdraftLimit, minRequiredBalance, enforceMinRequiredBalance,
                 minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                taxGroup, taxGroupOptions, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+                taxGroup, taxGroupOptions, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId,
+                periodFrequencyTypeOptions, nthDayTypeOptions, dayOfWeekTypeOptions, savingsProductDrawingPowerDetailsData);
     }
 
     public static SavingsProductData lookup(final Long id, final String name) {
@@ -324,6 +346,10 @@ public class SavingsProductData {
         final Long daysToDormancy = null;
         final Long daysToEscheat = null;
         final String externalId = null;
+        final Collection<EnumOptionData> periodFrequencyTypeOptions = null;
+        final Collection<EnumOptionData> nthDayTypeOptions = null;
+        final Collection<EnumOptionData> dayOfWeekTypeOptions = null;
+        final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData = null;
 
         return new SavingsProductData(id, name, shortName, description, currency, nominalAnnualInterestRate, interestCompoundingPeriodType,
                 interestPostingPeriodType, interestCalculationType, interestCalculationDaysInYearType, minRequiredOpeningBalance,
@@ -334,7 +360,8 @@ public class SavingsProductData {
                 accountingMappingOptions, charges, chargeOptions, penaltyOptions, feeToIncomeAccountMappings,
                 penaltyToIncomeAccountMappings, allowOverdraft, overdraftLimit, minRequiredBalance, enforceMinRequiredBalance,
                 minBalanceForInterestCalculation, nominalAnnualInterestRateOverdraft, minOverdraftForInterestCalculation, withHoldTax,
-                taxGroup, taxGroupOptions, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId);
+                taxGroup, taxGroupOptions, isDormancyTrackingActive, daysToInactive, daysToDormancy, daysToEscheat, externalId,
+                periodFrequencyTypeOptions, nthDayTypeOptions, dayOfWeekTypeOptions, savingsProductDrawingPowerDetailsData);
     }
 
     private SavingsProductData(final Long id, final String name, final String shortName, final String description,
@@ -357,8 +384,11 @@ public class SavingsProductData {
             final BigDecimal overdraftLimit, final BigDecimal minRequiredBalance, final boolean enforceMinRequiredBalance,
             final BigDecimal minBalanceForInterestCalculation, final BigDecimal nominalAnnualInterestRateOverdraft,
             final BigDecimal minOverdraftForInterestCalculation, final boolean withHoldTax, final TaxGroupData taxGroup,
-            final Collection<TaxGroupData> taxGroupOptions, final Boolean isDormancyTrackingActive, final Long daysToInactive, 
-            final Long daysToDormancy, final Long daysToEscheat, String externalId) {
+            final Collection<TaxGroupData> taxGroupOptions, final Boolean isDormancyTrackingActive, final Long daysToInactive,
+            final Long daysToDormancy, final Long daysToEscheat, String externalId,
+            final Collection<EnumOptionData> periodFrequencyTypeOptions, final Collection<EnumOptionData> nthDayTypeOptions,
+            final Collection<EnumOptionData> dayOfWeekTypeOptions,
+            final SavingsProductDrawingPowerDetailsData savingsProductDrawingPowerDetailsData) {
         this.id = id;
         this.name = name;
         this.shortName = shortName;
@@ -416,6 +446,12 @@ public class SavingsProductData {
         this.daysToInactive = daysToInactive;
         this.daysToDormancy = daysToDormancy;
         this.daysToEscheat = daysToEscheat;
+
+        this.periodFrequencyTypeOptions = periodFrequencyTypeOptions;
+        this.nthDayTypeOptions = nthDayTypeOptions;
+        this.dayOfWeekTypeOptions = dayOfWeekTypeOptions;
+
+        this.savingsProductDrawingPowerDetailsData = savingsProductDrawingPowerDetailsData;
     }
 
     public boolean hasAccountingEnabled() {
@@ -440,7 +476,7 @@ public class SavingsProductData {
     public String getName() {
         return this.name;
     }
-    
+
     public Long getId() {
         return this.id;
     }

@@ -171,7 +171,7 @@ public final class ClientDataValidator {
         if(this.fromApiJsonHelper.parameterExists(ClientApiConstants.emailAddress, element)){
             isRegexValidationRequiredForClentFields = true;
             final String emailAdd = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.emailAddress, element);
-            baseDataValidator.reset().parameter(ClientApiConstants.emailAddress).value(emailAdd).ignoreIfNull().notBlank().notExceedingLengthOf(100).validateEmailAddress();
+            baseDataValidator.reset().parameter(ClientApiConstants.emailAddress).value(emailAdd).ignoreIfNull().notExceedingLengthOf(100).validateEmailAddress();
         }
         
         final Boolean active = this.fromApiJsonHelper.extractBooleanNamed(ClientApiConstants.activeParamName, element);
@@ -441,7 +441,7 @@ public final class ClientDataValidator {
         if(this.fromApiJsonHelper.parameterExists(ClientApiConstants.emailAddress, element)){
             isRegexValidationRequiredForClentFields = true;
             final String emailAdd = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.emailAddress, element);
-            baseDataValidator.reset().parameter(ClientApiConstants.emailAddress).value(emailAdd).ignoreIfNull().notBlank().notExceedingLengthOf(100).validateEmailAddress();
+            baseDataValidator.reset().parameter(ClientApiConstants.emailAddress).value(emailAdd).ignoreIfNull().notExceedingLengthOf(100).validateEmailAddress();
         }
 
         final Boolean active = this.fromApiJsonHelper.extractBooleanNamed(ClientApiConstants.activeParamName, element);

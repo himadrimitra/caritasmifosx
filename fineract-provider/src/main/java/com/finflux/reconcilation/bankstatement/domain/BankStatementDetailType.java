@@ -11,8 +11,8 @@ public enum BankStatementDetailType {
 	PORTFOLIO(1, "bankStatementDetailsType.portfolio"), //
     NONPORTFOLIO(2, "bankStatementDetailsType.nonportfolio"), //
     MISCELLANEOUS(3, "bankStatementDetailsType.miscellaneous"), //
-    SIMPLIFIED_PORTFOLIO(4, "bankStatementDetailsType.simplifiedPortfolio"); //
-	
+    SIMPLIFIED_PORTFOLIO(4, "bankStatementDetailsType.simplifiedPortfolio"), //
+    LOANS(5, "bankStatementDetailsType.loan"), DEPOSITS(6, "bankStatementDetailsType.deposits");
 
     private final Integer value;
     private final String code;
@@ -43,9 +43,21 @@ public enum BankStatementDetailType {
             case 3:
                 enumeration = BankStatementDetailType.MISCELLANEOUS;
             break;
+            case 4:
+                enumeration = BankStatementDetailType.LOANS;
+            break;
+            case 5:
+                enumeration = BankStatementDetailType.DEPOSITS;
+            break;
         }
         return enumeration;
     }
+    
+    public boolean isLoanType() {
+        return this.value.equals(BankStatementDetailType.LOANS.getValue());
+    }
 
-
+    public boolean isDepositType() {
+        return this.value.equals(BankStatementDetailType.DEPOSITS.getValue());
+    }
 }

@@ -1,6 +1,9 @@
 package com.finflux.portfolio.loan.mandate.service;
 
 import com.finflux.mandates.data.MandatesSummaryData;
+import com.finflux.portfolio.bank.data.BankAccountDetailData;
+import com.finflux.portfolio.bank.domain.BankAccountDetailEntityType;
+import com.finflux.portfolio.bank.service.BankAccountDetailsReadService;
 import com.finflux.portfolio.loan.mandate.data.MandateData;
 import com.finflux.portfolio.loan.mandate.domain.AccountTypeEnum;
 import com.finflux.portfolio.loan.mandate.domain.DebitFrequencyEnum;
@@ -38,22 +41,21 @@ import java.util.Date;
 public class MandateReadPlatformServiceImpl implements MandateReadPlatformService {
 
         private final JdbcTemplate jdbcTemplate;
-        private final PlatformSecurityContext context;
         private final DocumentReadPlatformService documentReadPlatformService;
         private final LoanReadPlatformService loanReadPlatformService;
         private final SimpleDateFormat yyyyMMddFormat = new SimpleDateFormat("yyyy-MM-dd");
         private final PaginationHelper<MandateData> mandateDataPaginationHelper = new PaginationHelper<>();
-
+        private final BankAccountDetailsReadService bankAccountDetailsReadPlatformService ;
         @Autowired
-        public MandateReadPlatformServiceImpl(final PlatformSecurityContext context,
-                final RoutingDataSource dataSource,
+        public MandateReadPlatformServiceImpl(final RoutingDataSource dataSource,
                 final DocumentReadPlatformService documentReadPlatformService,
-                final LoanReadPlatformService loanReadPlatformService){
+                final LoanReadPlatformService loanReadPlatformService,
+                final BankAccountDetailsReadService bankAccountDetailsReadPlatformService){
                 
-                this.context = context;
                 this.jdbcTemplate = new JdbcTemplate(dataSource);
                 this.documentReadPlatformService = documentReadPlatformService;
                 this.loanReadPlatformService = loanReadPlatformService;
+                this.bankAccountDetailsReadPlatformService = bankAccountDetailsReadPlatformService ;
 
         }
 
@@ -81,40 +83,34 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
         }
 
         private MandateData retrieveCreateTemplate(final LoanAccountData loan) {
-                return MandateData.createTemplate(getDocumentEnumOptionData(loan.getId()), loan);
+            BankAccountDetailData bankAccountDetailsData = this.bankAccountDetailsReadPlatformService.retrieveOneBy(BankAccountDetailEntityType.CLIENTS, loan.clientId()) ;
+                return MandateData.createTemplate(getDocumentEnumOptionData(loan.getId()), loan, bankAccountDetailsData);
         }
 
-        private MandateData retrieveUpdateTemplate(final Long loanId) {
-                final MandateData data = retrieveActiveMandate(loanId);
-                if(null != data){
-                        return MandateData.createTemplateFrom(data, getDocumentEnumOptionData(loanId));
-                }else{
-                        throw new NoActiveMandateFoundException();
-                }
-        }
+    private MandateData retrieveUpdateTemplate(final Long loanId) {
+        final MandateData data = retrieveActiveMandate(loanId);
+        if (null != data) { return MandateData.createTemplateFrom(data, getDocumentEnumOptionData(loanId)); }
+        throw new NoActiveMandateFoundException();
+    }
 
         private MandateData retrieveCancelTemplate(final Long loanId) {
                 final MandateData data = retrieveActiveMandate(loanId);
                 if(null != data){
                         return MandateData.createTemplateFrom(data, getDocumentEnumOptionData(loanId));
-                }else{
-                        throw new NoActiveMandateFoundException();
                 }
+                throw new NoActiveMandateFoundException();
         }
 
-        private Collection<EnumOptionData> getDocumentEnumOptionData(final Long loanId) {
-                Collection<DocumentData> documents = this.documentReadPlatformService.retrieveAllDocuments("loans", loanId);
+    private Collection<EnumOptionData> getDocumentEnumOptionData(final Long loanId) {
+        Collection<DocumentData> documents = this.documentReadPlatformService.retrieveAllDocuments("loans", loanId);
 
-                if(null == documents || documents.size() < 1){
-                        return null;
-                }else{
-                        Collection<EnumOptionData> ret = new ArrayList<>();
-                        for (DocumentData document : documents) {
-                                ret.add(new EnumOptionData(document.getId(), document.getName(), document.getName()));
-                        }
-                        return ret;
-                }
+        if (null == documents || documents.size() < 1) { return null; }
+        Collection<EnumOptionData> ret = new ArrayList<>();
+        for (DocumentData document : documents) {
+            ret.add(new EnumOptionData(document.getId(), document.getName(), document.getName()));
         }
+        return ret;
+    }
 
         @Override
         public MandateData retrieveActiveMandate(final Long loanId) {

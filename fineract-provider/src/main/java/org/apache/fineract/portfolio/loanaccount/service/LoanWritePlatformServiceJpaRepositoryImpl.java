@@ -166,7 +166,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.InvalidPaidInAdvanceA
 import org.apache.fineract.portfolio.loanaccount.exception.InvalidRefundDateException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursalException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanDisbursementDateException;
-import org.apache.fineract.portfolio.loanaccount.exception.LoanForeclosureException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanMultiDisbursementException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerAssignmentException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanOfficerUnassignmentException;
@@ -442,7 +441,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             boolean recalculateSchedule = amountBeforeAdjust.isNotEqualTo(loan.getPrincpal());
             final String txnExternalId = command.stringValueOfParameterNamedAllowingNull("externalId");
 
-            if(loan.isTopup() && loan.getClientId() != null){
+            if(loan.isApproved() && loan.isTopup() && loan.getClientId() != null){
                 final Long loanIdToClose = loan.getTopupLoanDetails().getLoanIdToClose();
                 final Loan loanToClose = this.loanRepository.findNonClosedLoanThatBelongsToClient(loanIdToClose, loan.getClientId());
                 if(loanToClose == null){
@@ -450,7 +449,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                             "Loan to be closed with this topup is not active.");
                 }
                 final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                if(!loan.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                if(loan.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                     throw new GeneralPlatformDomainRuleException(
                             "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                             "Disbursal date of this loan application "+loan.getDisbursementDate()
@@ -3381,18 +3380,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         changes.put("transactionDate", transactionDate);
 
         String noteText = this.fromApiJsonHelper.extractStringNamed(LoanApiConstants.noteParamName, element);
-        LoanRescheduleRequest loanRescheduleRequest = null;
-        for (LoanDisbursementDetails loanDisbursementDetails : loan.getDisbursementDetails()) {
-            if (!loanDisbursementDetails.expectedDisbursementDateAsLocalDate().isAfter(transactionDate)
-                    && loanDisbursementDetails.actualDisbursementDate() == null) {
-                final String defaultUserMessage = "The loan with undisbrsed tranche before foreclosure cannot be foreclosed.";
-                throw new LoanForeclosureException("loan.with.undisbursed.tranche.before.foreclosure.cannot.be.foreclosured",
-                        defaultUserMessage, transactionDate);
-            }
-        }
-        this.loanScheduleHistoryWritePlatformService.createAndSaveLoanScheduleArchive(loan.getRepaymentScheduleInstallments(),
-                loan, loanRescheduleRequest);
-        
         final boolean isAccountTransfer = false;
         final boolean isLoanToLoanTransfer = false;
         this.loanAccountDomainService.foreCloseLoan(loan, transactionDate, noteText, isAccountTransfer,  isLoanToLoanTransfer, changes);

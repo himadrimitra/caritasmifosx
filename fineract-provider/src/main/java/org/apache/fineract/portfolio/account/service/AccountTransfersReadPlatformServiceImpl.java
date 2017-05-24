@@ -74,6 +74,7 @@ public class AccountTransfersReadPlatformServiceImpl implements
 	
 	//to indicate loan account type 
 	private final Integer mostRelevantForAccountTypeLoan = PortfolioProductType.LOAN.getValue();
+	private final Integer mostRelevantForAccountTypeSavings = PortfolioProductType.SAVING.getValue();
 	
 	private final Byte transferToOwnAccount = 1;
 	private final Byte transferToOtherAccount = 2;
@@ -137,7 +138,7 @@ public class AccountTransfersReadPlatformServiceImpl implements
 		Collection<PortfolioAccountData> toAccountOptions = null;
                 
 		// For transferring to own account
-         Collection<PortfolioAccountData> toSavingAccountOptions = null;
+                Collection<PortfolioAccountData> toSavingAccountOptions = null;
                 Collection<PortfolioAccountData> toLoanAccountOptions = null;
 
 		Long mostRelevantFromOfficeId = fromOfficeId;
@@ -227,7 +228,7 @@ public class AccountTransfersReadPlatformServiceImpl implements
 		}
 		
                if(transferType != null && transferType.equals(transferToOwnAccount)){
-                        toSavingAccountOptions = retrieveToAccounts(fromAccount, mostRelevantFromAccountType, mostRelevantFromClientId);
+                        toSavingAccountOptions = retrieveToAccounts(fromAccount, mostRelevantForAccountTypeSavings, mostRelevantFromClientId);
                         toLoanAccountOptions = retrieveToAccounts(fromAccount, mostRelevantForAccountTypeLoan, mostRelevantFromClientId);
                 }
 

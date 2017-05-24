@@ -9,11 +9,15 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
 import org.apache.fineract.infrastructure.documentmanagement.exception.DocumentNotFoundException;
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentReadPlatformService;
@@ -37,6 +41,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
     private final PlatformSecurityContext context;
     private final DocumentReadPlatformService documentReadPlatformService;
     private final BankStatementDetailsReadPlatformService bankStatementDetailsReadPlatformService;
+    private final PaginationHelper<BankStatementData> paginationHelper = new PaginationHelper<>();
 
     @Autowired
     public BankStatementReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -61,7 +66,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
                     + " join m_appuser m on m.id=bs.createdby_id " + " left join m_document d on d.id = bs.cif_key_document_id "
                     + " left join m_appuser m1 on m1.id = bs.lastmodifiedby_id " + " left join f_bank b on b.id = bs.bank "
                     + " left join acc_gl_account gl on gl.id = b.gl_account "
-                    + " left join m_document d1 on d1.id = bs.org_statement_key_document_id";
+                    + " left join m_document d1 on d1.id = bs.org_statement_key_document_id ";
 
         }
 
@@ -107,15 +112,63 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
     }
 
     @Override
-    public List<BankStatementData> retrieveAllBankStatements() {
+    public List<BankStatementData> retrieveAllBankStatements(Integer statementType, Boolean isProcessed) {
 
         this.context.authenticatedUser();
 
         final BankStatementMapper rm = new BankStatementMapper();
+        List<Object> params = new ArrayList<>();
+        final StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ");
+        sb.append(rm.schema());
+        sb.append(" where bs.statementType = ?");
+        params.add(statementType);
+        if (isProcessed != null) {
+            sb.append(" and bs.is_reconciled = ?");
+            params.add(isProcessed);
+        }
+        sb.append(" ORDER BY is_reconciled, created_date DESC ");
 
-        final String sql = "SELECT " + rm.schema() + " ORDER BY is_reconciled, created_date DESC ";
+        return this.jdbcTemplate.query(sb.toString(), rm, params.toArray());
+    }
+    
+    @Override
+    public Page<BankStatementData> retrieveAllBankStatements(Integer statementType, Boolean isProcessed,
+            SearchParameters searchParameters) {
 
-        return this.jdbcTemplate.query(sql, rm);
+        this.context.authenticatedUser();
+
+        final BankStatementMapper rm = new BankStatementMapper();
+        List<Object> params = new ArrayList<>();
+        final StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ");
+        sb.append(rm.schema());
+        sb.append(" where bs.statement_type = ?");
+        params.add(statementType);
+        if (isProcessed != null) {
+            sb.append(" and bs.is_reconciled = ?");
+            params.add(isProcessed);
+        }
+
+        if (searchParameters.isOrderByRequested()) {
+            sb.append(" order by ").append(searchParameters.getOrderBy());
+
+            if (searchParameters.isSortOrderProvided()) {
+                sb.append(' ').append(searchParameters.getSortOrder());
+            }
+        } else {
+            sb.append(" ORDER BY is_reconciled, created_date DESC ");
+        }
+
+        if (searchParameters.isLimited()) {
+            sb.append(" limit ").append(searchParameters.getLimit());
+            if (searchParameters.isOffset()) {
+                sb.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
+
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sb.toString(), params.toArray(), rm);
     }
 
     @Override
@@ -226,5 +279,6 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
 		bankStatementData.setMiscellaneousUnReconciledOutflowAmount(miscellaneousUnReconciledOutflowAmount);
 		return bankStatementData;
 	}
+
 
 }

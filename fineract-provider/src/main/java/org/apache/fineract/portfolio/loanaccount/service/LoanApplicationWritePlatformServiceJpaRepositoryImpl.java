@@ -330,13 +330,13 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                         throw new GeneralPlatformDomainRuleException("error.msg.loan.loanIdToClose.no.active.loan.associated.to.client.found",
                                 "loanIdToClose is invalid, No Active Loan associated with the given Client ID found.");
                     }
-                    if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct()){
+                    if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct() && loanToClose.hasUndisbursedTranches()){
                         throw new GeneralPlatformDomainRuleException(
-                                "error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.not.supported",
+                                "error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.and.non.disbursed.tranche.not.supported",
                                 "Topup on loan with multi-tranche disbursal and without interest recalculation is not supported.");
                     }
                     final LocalDate disbursalDateOfLoanToClose = loanToClose.getDisbursementDate();
-                    if(!newLoanApplication.getSubmittedOnDate().isAfter(disbursalDateOfLoanToClose)){
+                    if(newLoanApplication.getSubmittedOnDate().isBefore(disbursalDateOfLoanToClose)){
                         throw new GeneralPlatformDomainRuleException(
                                 "error.msg.loan.submitted.date.should.be.after.topup.loan.disbursal.date",
                                 "Submitted date of this loan application "+newLoanApplication.getSubmittedOnDate()
@@ -347,7 +347,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                 "loanIdToClose is invalid, Currency code is different.");
                     }
                     final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                    if(!newLoanApplication.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                    if(newLoanApplication.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                         throw new GeneralPlatformDomainRuleException(
                                 "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                                 "Disbursal date of this loan application "+newLoanApplication.getDisbursementDate()
@@ -961,12 +961,13 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                             throw new GeneralPlatformDomainRuleException("error.msg.loan.loanIdToClose.no.active.loan.associated.to.client.found",
                                     "loanIdToClose is invalid, No Active Loan associated with the given Client ID found.");
                         }
-                        if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct()){
-                            throw new GeneralPlatformDomainRuleException("error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.not.supported",
+                        if(loanToClose.isMultiDisburmentLoan() && !loanToClose.isInterestRecalculationEnabledForProduct() && loanToClose.hasUndisbursedTranches()){
+                            throw new GeneralPlatformDomainRuleException(
+                                    "error.msg.loan.topup.on.multi.tranche.loan.without.interest.recalculation.and.non.disbursed.tranche.not.supported",
                                     "Topup on loan with multi-tranche disbursal and without interest recalculation is not supported.");
                         }
                         final LocalDate disbursalDateOfLoanToClose = loanToClose.getDisbursementDate();
-                        if(!existingLoanApplication.getSubmittedOnDate().isAfter(disbursalDateOfLoanToClose)){
+                        if(existingLoanApplication.getSubmittedOnDate().isBefore(disbursalDateOfLoanToClose)){
                             throw new GeneralPlatformDomainRuleException(
                                     "error.msg.loan.submitted.date.should.be.after.topup.loan.disbursal.date",
                                     "Submitted date of this loan application "+existingLoanApplication.getSubmittedOnDate()
@@ -977,7 +978,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                                     "loanIdToClose is invalid, Currency code is different.");
                         }
                         final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                        if(!existingLoanApplication.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                        if(existingLoanApplication.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                             throw new GeneralPlatformDomainRuleException(
                                     "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                                     "Disbursal date of this loan application "+existingLoanApplication.getDisbursementDate()
@@ -1075,9 +1076,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     existingLoanApplication.repaymentScheduleDetail().updateInterestRate(terms.getAnnualNominalInterestRate());
                 }
                 final LoanScheduleModel loanSchedule = this.calculationPlatformService.calculateLoanSchedule(query, false,
-                        considerAllDisbursmentsInSchedule);
+                        terms);
                 existingLoanApplication.updateLoanSchedule(loanSchedule, currentUser);
                 existingLoanApplication.recalculateAllCharges();
+                existingLoanApplication.setCalculatedInstallmentAmount(terms.getFixedEmiAmount());
             }
 	        
             if (existingLoanApplication.isGLIMLoan()) {
@@ -1515,7 +1517,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
 
                 final LocalDate lastUserTransactionOnLoanToClose = loanToClose.getLastUserTransactionDate();
-                if(!loan.getDisbursementDate().isAfter(lastUserTransactionOnLoanToClose)){
+                if(loan.getDisbursementDate().isBefore(lastUserTransactionOnLoanToClose)){
                     throw new GeneralPlatformDomainRuleException(
                             "error.msg.loan.disbursal.date.should.be.after.last.transaction.date.of.loan.to.be.closed",
                             "Disbursal date of this loan application "+loan.getDisbursementDate()

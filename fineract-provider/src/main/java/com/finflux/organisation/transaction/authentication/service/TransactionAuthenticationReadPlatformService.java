@@ -30,4 +30,6 @@ public interface TransactionAuthenticationReadPlatformService {
 			final Long loanId, final Long productId);
 
 	Collection<TransactionAuthenticationData> retriveAllTransactionAuthenticationDeatails();
+	
+	Collection<TransactionAuthenticationData> findAuthenticationRuleByProductId(final Long productId);
 }

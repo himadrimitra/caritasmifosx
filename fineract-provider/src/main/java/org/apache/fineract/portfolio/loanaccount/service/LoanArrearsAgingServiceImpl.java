@@ -95,7 +95,7 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_WAIVE_CHARGE, this);
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_CHARGE_PAYMENT, this);
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_APPLY_OVERDUE_CHARGE, this);
-        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL, new DisbursementEventListner());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_DISBURSAL, this);
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_FORECLOSURE, this);
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_WRITTEN_OFF, this);
     }
@@ -547,23 +547,4 @@ public class LoanArrearsAgingServiceImpl implements LoanArrearsAgingService, Bus
         
     }
 
-    private class DisbursementEventListner implements BusinessEventListner {
-
-        @SuppressWarnings("unused")
-        @Override
-        public void businessEventToBeExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            // TODO Auto-generated method stub
-
-        }
-
-        @Override
-        public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
-            Object loanEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN);
-            if (loanEntity != null) {
-                Loan loan = (Loan) loanEntity;
-                updateLoanArrearsAgeingDetails(loan);
-            }
-
-        }
-    }
 }

@@ -31,7 +31,8 @@ public enum CalendarEntityType {
     SAVINGS(5, "calendarEntityType.savings"), //
     LOAN_RECALCULATION_REST_DETAIL(6, "calendarEntityType.loan.recalculation.rest.detail"), //
     LOAN_RECALCULATION_COMPOUNDING_DETAIL(7, "calendarEntityType.loan.recalculation.compounding.detail"),
-    CHARGES(8, "calendarEntityType.charges");
+    CHARGES(8, "calendarEntityType.charges"), //
+    SAVINGS_DP_DETAILS(9, "calendarEntityType.savings.dp.details"); //
 
     private final Integer value;
     private final String code;
@@ -157,6 +158,10 @@ public enum CalendarEntityType {
 
     public boolean isSavings() {
         return this.value.equals(CalendarEntityType.SAVINGS.getValue());
+    }
+    
+    public boolean isSavingsDpDetails() {
+        return this.value.equals(CalendarEntityType.SAVINGS_DP_DETAILS.getValue());
     }
 
 }

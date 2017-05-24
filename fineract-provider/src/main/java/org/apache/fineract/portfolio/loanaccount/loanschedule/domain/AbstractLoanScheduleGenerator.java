@@ -2399,6 +2399,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         LoanTransaction.copyTransactionProperties(loanTransaction)));
             }
         }
+        
+        Set<LoanCharge> charges = loan.chargesCopy();
+        
         final boolean applyInterestRecalculation = loanApplicationTerms.isInterestRecalculationEnabled();
 
         LoanScheduleParams loanScheduleParams = null;
@@ -2417,7 +2420,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             // this is required to update total fee amounts in the
             // LoanScheduleModel
-            final BigDecimal chargesDueAtTimeOfDisbursement = deriveTotalChargesDueAtTimeOfDisbursement(loan.charges(),loanApplicationTerms);
+            final BigDecimal chargesDueAtTimeOfDisbursement = deriveTotalChargesDueAtTimeOfDisbursement(charges,loanApplicationTerms);
             periods = createNewLoanScheduleListWithDisbursementDetails(loanApplicationTerms.fetchNumberOfRepaymentsAfterExceptions(),
                     loanApplicationTerms, chargesDueAtTimeOfDisbursement);
             MonetaryCurrency currency = outstandingBalance.getCurrency();
@@ -2478,7 +2481,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 // tranche
                 // details to map
                 BigDecimal disburseAmt = getDisbursementAmount(loanApplicationTerms, loanApplicationTerms.getExpectedDisbursementDate(),
-                        periods, disburseDetailMap, loan.charges());
+                        periods, disburseDetailMap, charges);
                 outstandingBalance = outstandingBalance.zero().plus(disburseAmt);
                 outstandingBalanceAsPerRest = outstandingBalance;
                 principalToBeScheduled = principalToBeScheduled.zero().plus(disburseAmt);
@@ -2576,7 +2579,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                             && !disburseDetail.getKey().isAfter(installment.getDueDate())) {
                         // creates and add disbursement detail to the repayments
                         // period
-                        BigDecimal chargesDueAtTimeOfDisbursementForPeriod = fetchTotalTrancheChargeForDisburesement(loan.charges(), disburseDetail.getKey());
+                        BigDecimal chargesDueAtTimeOfDisbursementForPeriod = fetchTotalTrancheChargeForDisburesement(charges, disburseDetail.getKey());
                         final LoanScheduleModelDisbursementPeriod disbursementPeriod = LoanScheduleModelDisbursementPeriod.disbursement(
                                 disburseDetail.getKey(), disburseDetail.getValue(), chargesDueAtTimeOfDisbursementForPeriod);
                         periods.add(disbursementPeriod);
@@ -2729,7 +2732,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             periods.clear();
         }
         EmiDetails emiDetails  = new EmiDetails();
-        LoanScheduleModel loanScheduleModel = generate(mc, loanApplicationTerms, loan.charges(), holidayDetailDTO, loanScheduleParams, emiDetails);
+        LoanScheduleModel loanScheduleModel = generate(mc, loanApplicationTerms, charges, holidayDetailDTO, loanScheduleParams, emiDetails);
         for (LoanScheduleModelPeriod loanScheduleModelPeriod : loanScheduleModel.getPeriods()) {
             if (loanScheduleModelPeriod.isRepaymentPeriod()) {
                 // adding newly created repayment periods to installments
@@ -3050,13 +3053,13 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         if (loanApplicationTerms.getPreClosureInterestCalculationStrategy().calculateTillRestFrequencyEnabled()) {
             calculateTill = getNextRestScheduleDate(onDate.minusDays(1), loanApplicationTerms, holidayDetailDTO);
         }
-        List<LoanTransaction> loanTransactions = loan.retreiveListOfTransactionsPostDisbursementExcludeAccruals();
+        List<LoanTransaction> loanTransactions = loan.retreiveCopyOfTransactionsPostDisbursementExcludeAccruals();
         
         LoanScheduleDTO loanScheduleDTO = rescheduleNextInstallments(mc, loanApplicationTerms, loan, holidayDetailDTO, loanTransactions,
                 loanRepaymentScheduleTransactionProcessor, onDate, calculateTill);
 
         loanRepaymentScheduleTransactionProcessor.handleTransaction(loanApplicationTerms.getExpectedDisbursementDate(), loanTransactions,
-                currency, loanScheduleDTO.getInstallments(), loan.charges(), loan.getDisbursementDetails());
+                currency, loanScheduleDTO.getInstallments(), loan.chargesCopy(), loan.getDisbursementDetails());
         Money feeCharges = Money.zero(currency);
         Money penaltyCharges = Money.zero(currency);
         Money totalPrincipal = Money.zero(currency);

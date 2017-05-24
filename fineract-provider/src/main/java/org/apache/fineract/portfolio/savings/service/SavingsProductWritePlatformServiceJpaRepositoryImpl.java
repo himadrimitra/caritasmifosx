@@ -23,10 +23,12 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accounti
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
@@ -36,7 +38,6 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
-import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.domain.Charge;
@@ -53,6 +54,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 
 @Service
 public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements SavingsProductWritePlatformService {
@@ -125,7 +129,7 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
                     .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
                             FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
-            final SavingsProduct product = this.savingsProductAssembler.assemble(command);
+            final SavingsProduct product = this.savingsProductAssembler.createAssemble(command);
 
             this.savingProductRepository.save(product);
 

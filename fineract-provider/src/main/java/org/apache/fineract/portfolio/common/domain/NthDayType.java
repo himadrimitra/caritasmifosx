@@ -19,34 +19,34 @@
 package org.apache.fineract.portfolio.common.domain;
 
 public enum NthDayType {
-	
-	ONE(1,"nthDayType.one"),
-	TWO(2,"nthDayType.two"),
-	THREE(3,"nthDayType.three"),
-	FOUR(4,"nthDayType.four"),
-	FIVE(5,"nthDayType.five"),
-	LAST(-1,"nthDayType.last"),
-	ONDAY(-2,"nthDayType.onday"),
-	INVALID(0,"nthDayType.invalid");
-	
-	private final Integer value;
+
+    ONE(1, "nthDayType.one"), //
+    TWO(2, "nthDayType.two"), //
+    THREE(3, "nthDayType.three"), //
+    FOUR(4, "nthDayType.four"), //
+    FIVE(5, "nthDayType.five"), //
+    LAST(-1, "nthDayType.last"), //
+    ONDAY(-2, "nthDayType.onday"), //
+    INVALID(0, "nthDayType.invalid");
+
+    private final Integer value;
     private final String code;
-	
+
     private NthDayType(Integer value, String code) {
-		this.value = value;
-		this.code = code;
-	}
+        this.value = value;
+        this.code = code;
+    }
 
-	public Integer getValue() {
-		return this.value;
-	}
+    public Integer getValue() {
+        return this.value;
+    }
 
-	public String getCode() {
-		return this.code;
-	}
-	
-	public static NthDayType fromInt(final Integer frequency) {
-		NthDayType repaymentFrequencyNthDayType = NthDayType.INVALID;
+    public String getCode() {
+        return this.code;
+    }
+
+    public static NthDayType fromInt(final Integer frequency) {
+        NthDayType repaymentFrequencyNthDayType = NthDayType.INVALID;
         if (frequency != null) {
             switch (frequency) {
                 case 1:
@@ -76,14 +76,32 @@ public enum NthDayType {
         }
         return repaymentFrequencyNthDayType;
     }
-   
+
     public boolean isInvalid() {
         return this.value.equals(NthDayType.INVALID.value);
     }
+
     public boolean isLastDay() {
         return this.value.equals(NthDayType.LAST.value);
     }
+
     public boolean isOnDay() {
         return this.value.equals(NthDayType.ONDAY.value);
+    }
+
+    public boolean isOne() {
+        return this.value.equals(NthDayType.ONE.value);
+    }
+
+    public boolean isTwo() {
+        return this.value.equals(NthDayType.TWO.value);
+    }
+
+    public boolean isThree() {
+        return this.value.equals(NthDayType.THREE.value);
+    }
+
+    public boolean isFour() {
+        return this.value.equals(NthDayType.FOUR.value);
     }
 }

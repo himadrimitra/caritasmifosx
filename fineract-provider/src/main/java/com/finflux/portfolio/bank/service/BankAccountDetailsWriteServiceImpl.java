@@ -74,7 +74,8 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
         final String bankName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankNameParameterName, element);
         final String bankCity = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.bankCityParameterName, element);
         final Integer accountTypeId = this.fromApiJsonHelper.extractLongNamed(BankAccountDetailConstants.accountTypeIdParamName, element).intValue();
-        
+        final String micrCode = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.micrCodeParameterName, element);
+        final String branchName = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.branchNameParameterName, element);
         Date lastTransactionDate = null;
         if(this.fromApiJsonHelper.extractLocalDateNamed(BankAccountDetailConstants.lastTransactionDate, element) != null){
         lastTransactionDate = this.fromApiJsonHelper.extractLocalDateNamed(BankAccountDetailConstants.lastTransactionDate, element).toDate();
@@ -82,7 +83,7 @@ public class BankAccountDetailsWriteServiceImpl implements BankAccountDetailsWri
        
        
         BankAccountDetails accountDetails = BankAccountDetails.create(name, accountNumber, ifscCode, mobileNumber, email,
-                bankName, bankCity, accountTypeId, lastTransactionDate);
+                bankName, bankCity, accountTypeId, lastTransactionDate, micrCode, branchName);
         accountDetails.updateStatus(BankAccountDetailStatus.ACTIVE.getValue());
         return accountDetails;
     }

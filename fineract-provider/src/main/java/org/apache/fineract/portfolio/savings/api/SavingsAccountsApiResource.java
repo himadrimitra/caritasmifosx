@@ -100,7 +100,7 @@ public class SavingsAccountsApiResource {
             @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
-        SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
+        final SavingsAccountDpDetailsData savingsAccountDpDetailsData = null;
         final SavingsAccountData savingsAccount = this.savingsAccountReadPlatformService.retrieveTemplate(clientId, groupId, productId,
                 staffInSelectedOfficeOnly, savingsAccountDpDetailsData);
 

@@ -19,11 +19,13 @@
 package org.apache.fineract.portfolio.savings.data;
 
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.accountNoParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.activeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.allowOverdraftParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.amountParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargeIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.chargesParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.clientIdParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.dateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.externalIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.feeIntervalParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.feeOnMonthDayParamName;
@@ -44,8 +46,6 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.productI
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.submittedOnDateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.dateParamName;
-import static org.apache.fineract.portfolio.savings.SavingsApiConstants.activeParamName;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -60,16 +60,17 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
-import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
+import org.apache.fineract.portfolio.savings.SavingsDpLimitCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -246,46 +247,88 @@ public class SavingsAccountDataValidator {
             final String withHoldTax = this.fromApiJsonHelper.extractStringNamed(withHoldTaxParamName, element);
             baseDataValidator.reset().parameter(withHoldTaxParamName).value(withHoldTax).ignoreIfNull().validateForBooleanValue();
         }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowDpLimitParamName, element)) {
-            final boolean allowDpLimit = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowDpLimitParamName, element);
-            
-            if (allowDpLimit) {
-                final BigDecimal dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpLimitAmountParamName, element);
-                baseDataValidator.reset().parameter(SavingsApiConstants.dpLimitAmountParamName).value(dpLimitAmount).notNull().integerGreaterThanZero();
-                
-                final Integer savingsDpLimitFrequencyType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName, element);
-                baseDataValidator.reset().parameter(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName).value(savingsDpLimitFrequencyType).notNull()
-                .inMinMaxRange(0, 4);
-                
-                final Integer savingsDpLimitCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element);
-                baseDataValidator.reset().parameter(SavingsApiConstants.savingsDpLimitCalculationTypeParamName).value(savingsDpLimitCalculationType).notNull()
-                .inMinMaxRange(0, 2);
-                
-                final Integer dpLimitReductionEvery = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.dpLimitReductionEveryParamName, element);
-                baseDataValidator.reset().parameter(SavingsApiConstants.dpLimitReductionEveryParamName).value(dpLimitReductionEvery).notNull()
-                .integerGreaterThanZero();
-                
-                final Integer dpDuration = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.dpDurationParamName, element);
-                baseDataValidator.reset().parameter(SavingsApiConstants.dpDurationParamName).value(dpDuration).notNull()
-                .integerGreaterThanZero();
-                
-                final BigDecimal dpCalculateOnAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpCalculateOnAmountParamName, element);
-                baseDataValidator.reset().parameter(SavingsApiConstants.dpCalculateOnAmountParamName).value(dpCalculateOnAmount).notNull()
-                .integerGreaterThanZero();
-            }
-        }
 
         validateSavingsCharges(element, baseDataValidator);
 
         validateOverdraftParams(baseDataValidator, element);
-        
-        validateDpLimitAmount(element);
+
+        validateDPParamsForSubmit(baseDataValidator, element);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    private void validateDpLimitAmount(JsonElement element) {
+    private void validateDPParamsForSubmit(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowOverdraftParamName, element)
+                && this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowDpLimitParamName, element)) {
+            final boolean allowOverdraft = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowOverdraftParamName, element);
+            final boolean allowDpLimit = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowDpLimitParamName, element);
+            if (allowOverdraft && allowDpLimit) {
+
+                final BigDecimal overdraftLimit = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(overdraftLimitParamName, element);
+                baseDataValidator.reset().parameter(overdraftLimitParamName).value(overdraftLimit).notNull().positiveAmount();
+
+                final BigDecimal dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                        SavingsApiConstants.dpLimitAmountParamName, element);
+                baseDataValidator.reset().parameter(SavingsApiConstants.dpLimitAmountParamName).value(dpLimitAmount).notNull()
+                        .positiveAmount();
+
+                validateDpLimitAmount(baseDataValidator, element);
+
+                final Integer savingsDpLimitCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
+                        SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element);
+                baseDataValidator
+                        .reset()
+                        .parameter(SavingsApiConstants.savingsDpLimitCalculationTypeParamName)
+                        .value(savingsDpLimitCalculationType)
+                        .notNull()
+                        .isOneOfTheseValues(SavingsDpLimitCalculationType.FLAT.getValue(),
+                                SavingsDpLimitCalculationType.PERCENT_OF_AMOUNT.getValue());
+
+                final Integer dpDuration = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.dpDurationParamName,
+                        element);
+                baseDataValidator.reset().parameter(SavingsApiConstants.dpDurationParamName).value(dpDuration).notNull()
+                        .integerGreaterThanZero();
+
+                final BigDecimal dpCalculateOnAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                        SavingsApiConstants.dpCalculateOnAmountParamName, element);
+                baseDataValidator.reset().parameter(SavingsApiConstants.dpCalculateOnAmountParamName).value(dpCalculateOnAmount).notNull()
+                        .positiveAmount();
+
+                validateDpCalculateOnAmount(baseDataValidator, element);
+
+                final LocalDate dpStartDate = this.fromApiJsonHelper.extractLocalDateNamed(SavingsApiConstants.dpStartDateParamName,
+                        element);
+                baseDataValidator.reset().parameter(SavingsApiConstants.dpStartDateParamName).value(dpStartDate).notNull();
+            }
+        }
+    }
+    
+    private void validateDpCalculateOnAmount(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        BigDecimal dpLimitAmount = BigDecimal.ZERO;
+        BigDecimal dpCalculateOnAmount = BigDecimal.ZERO;
+        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpLimitAmountParamName, element)) {
+            dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpLimitAmountParamName, element);
+        }
+        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpCalculateOnAmountParamName, element)) {
+            dpCalculateOnAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpCalculateOnAmountParamName,
+                    element);
+        }
+        final Integer savingsDpLimitCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
+                SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element);
+        if (SavingsDpLimitCalculationType.fromInt(savingsDpLimitCalculationType).isPercentOfAmount()) {
+            baseDataValidator.reset().parameter(SavingsApiConstants.dpCalculateOnAmountParamName).value(dpCalculateOnAmount)
+                    .notGreaterThanMax(BigDecimal.valueOf(100.00));
+        } else {
+            if (MathUtility.isGreater(dpCalculateOnAmount, dpLimitAmount)) {
+                final String errorCode = "should.not.be.greater.than.dpLimitAmount";
+                final String userMessage = "" + dpCalculateOnAmount + " amount should not be greater than " + dpLimitAmount + " amount";
+                baseDataValidator.reset().parameter(SavingsApiConstants.dpCalculateOnAmountParamName).value(dpCalculateOnAmount)
+                        .failWithCode(errorCode, userMessage, dpCalculateOnAmount, dpLimitAmount);
+            }
+        }
+    }
+
+    private void validateDpLimitAmount(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
         BigDecimal overdraftLimit = BigDecimal.ZERO;
         boolean allowDpLimit = false;
         BigDecimal dpLimitAmount = BigDecimal.ZERO;
@@ -302,10 +345,12 @@ public class SavingsAccountDataValidator {
         if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpLimitAmountParamName, element)) {
             dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpLimitAmountParamName, element);
         }
-        if (allowOverdraft && allowDpLimit && MathUtility.isGreater(dpLimitAmount, overdraftLimit)) { throw new GeneralPlatformDomainRuleException(
-                "error.msg.dpLimitAmount.should.not.be.greater.than.overdraftLimit", "" + dpLimitAmount
-                        + " amount should not be greater than " + overdraftLimit + " amount", dpLimitAmount, overdraftLimit); }
-        
+        if (allowOverdraft && allowDpLimit && MathUtility.isGreater(dpLimitAmount, overdraftLimit)) {
+            final String errorCode = "should.not.be.greater.than.overdraftLimit";
+            final String userMessage = "" + dpLimitAmount + " amount should not be greater than " + overdraftLimit + " amount";
+            baseDataValidator.reset().parameter(SavingsApiConstants.allowDpLimitParamName).value(allowDpLimit)
+                    .failWithCode(errorCode, userMessage, dpLimitAmount, overdraftLimit);
+        }
     }
 
     private void validateSavingsCharges(final JsonElement element, final DataValidatorBuilder baseDataValidator) {
@@ -346,7 +391,7 @@ public class SavingsAccountDataValidator {
         }
     }
 
-    public void validateForUpdate(final String json) {
+    public void validateForUpdate(final SavingsAccount account, final String json) {
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
@@ -485,49 +530,72 @@ public class SavingsAccountDataValidator {
             baseDataValidator.reset().parameter(withHoldTaxParamName).value(withHoldTax).ignoreIfNull().validateForBooleanValue();
         }
         
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowDpLimitParamName, element)) {
-            final Boolean allowDpLimit = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowDpLimitParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.allowDpLimitParamName).value(allowDpLimit).ignoreIfNull().validateForBooleanValue();;
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpLimitAmountParamName, element)) {
-            final BigDecimal dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpLimitAmountParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.dpLimitAmountParamName).value(dpLimitAmount).notNull().integerGreaterThanZero();
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName, element)) {
-            final Integer savingsDpLimitFrequencyType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.savingsDpLimitFrequencyTypeParamName).value(savingsDpLimitFrequencyType).notNull()
-            .inMinMaxRange(0, 4);
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element)) {
-            final Integer savingsDpLimitCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.savingsDpLimitCalculationTypeParamName).value(savingsDpLimitCalculationType).notNull()
-            .inMinMaxRange(0, 2);
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpLimitReductionEveryParamName, element)) {
-            final Integer dpLimitReductionEvery = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.dpLimitReductionEveryParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.dpLimitReductionEveryParamName).value(dpLimitReductionEvery).notNull()
-            .integerGreaterThanZero();
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpDurationParamName, element)) {
-            final Integer dpDuration = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(SavingsApiConstants.dpDurationParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.dpDurationParamName).value(dpDuration).notNull()
-            .integerGreaterThanZero();
-        }
-        
-        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpCalculateOnAmountParamName, element)) {
-            final BigDecimal dpCalculateOnAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(SavingsApiConstants.dpCalculateOnAmountParamName, element);
-            baseDataValidator.reset().parameter(SavingsApiConstants.dpCalculateOnAmountParamName).value(dpCalculateOnAmount).notNull()
-            .integerGreaterThanZero();
-        }
-        
         validateOverdraftParams(baseDataValidator, element);
-        validateDpLimitAmount(element);
+
+        if (account.getSavingsAccountDpDetails() != null) {
+            validateDPParamsForUpdate(baseDataValidator, element);
+        } else {
+            validateDPParamsForSubmit(baseDataValidator, element);
+        }
+
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    private void validateDPParamsForUpdate(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowOverdraftParamName, element)
+                && this.fromApiJsonHelper.parameterExists(SavingsApiConstants.allowDpLimitParamName, element)) {
+            final boolean allowOverdraft = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowOverdraftParamName, element);
+            final boolean allowDpLimit = this.fromApiJsonHelper.extractBooleanNamed(SavingsApiConstants.allowDpLimitParamName, element);
+            if (allowOverdraft && allowDpLimit) {
+
+                if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpLimitAmountParamName, element)) {
+
+                    final BigDecimal overdraftLimit = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(overdraftLimitParamName,
+                            element);
+                    baseDataValidator.reset().parameter(overdraftLimitParamName).value(overdraftLimit).notNull().positiveAmount();
+
+                    final BigDecimal dpLimitAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                            SavingsApiConstants.dpLimitAmountParamName, element);
+                    baseDataValidator.reset().parameter(SavingsApiConstants.dpLimitAmountParamName).value(dpLimitAmount).notNull()
+                            .positiveAmount();
+
+                    validateDpLimitAmount(baseDataValidator, element);
+                }
+
+                if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element)) {
+                    final Integer savingsDpLimitCalculationType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
+                            SavingsApiConstants.savingsDpLimitCalculationTypeParamName, element);
+                    baseDataValidator
+                            .reset()
+                            .parameter(SavingsApiConstants.savingsDpLimitCalculationTypeParamName)
+                            .value(savingsDpLimitCalculationType)
+                            .notNull()
+                            .isOneOfTheseValues(SavingsDpLimitCalculationType.FLAT.getValue(),
+                                    SavingsDpLimitCalculationType.PERCENT_OF_AMOUNT.getValue());
+                }
+
+                if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpDurationParamName, element)) {
+                    final Integer dpDuration = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(
+                            SavingsApiConstants.dpDurationParamName, element);
+                    baseDataValidator.reset().parameter(SavingsApiConstants.dpDurationParamName).value(dpDuration).notNull()
+                            .integerGreaterThanZero();
+                }
+
+                if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpCalculateOnAmountParamName, element)) {
+                    final BigDecimal dpCalculateOnAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
+                            SavingsApiConstants.dpCalculateOnAmountParamName, element);
+                    baseDataValidator.reset().parameter(SavingsApiConstants.dpCalculateOnAmountParamName).value(dpCalculateOnAmount)
+                            .notNull().positiveAmount();
+                    validateDpCalculateOnAmount(baseDataValidator, element);
+                }
+
+                if (this.fromApiJsonHelper.parameterExists(SavingsApiConstants.dpStartDateParamName, element)) {
+                    final LocalDate dpStartDate = this.fromApiJsonHelper.extractLocalDateNamed(SavingsApiConstants.dpStartDateParamName,
+                            element);
+                    baseDataValidator.reset().parameter(SavingsApiConstants.dpStartDateParamName).value(dpStartDate).notNull();
+                }
+            }
+        }
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {

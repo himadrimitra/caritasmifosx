@@ -1741,6 +1741,7 @@ public class Loan extends AbstractPersistable<Long> {
         if (loanProduct.isMultiDisburseLoan() || loanProduct.canDefineInstallmentAmount()) {
             if (command.isChangeInBigDecimalParameterNamed(LoanApiConstants.emiAmountParameterName, this.fixedEmiAmount)) {
                 this.fixedEmiAmount = command.bigDecimalValueOfParameterNamed(LoanApiConstants.emiAmountParameterName);
+                setCalculatedInstallmentAmount(this.fixedEmiAmount);
                 actualChanges.put(LoanApiConstants.emiAmountParameterName, this.fixedEmiAmount);
                 actualChanges.put("recalculateLoanSchedule", true);
             }
@@ -2970,13 +2971,15 @@ public class Loan extends AbstractPersistable<Long> {
         Set<LoanCharge> charges = this.charges();
         LocalDate lastRepaymentDate = this.getLastRepaymentPeriodDueDate(true);
         for (LoanCharge loanCharge : charges) {
-        	if(loanCharge.getDueLocalDate() == null || !lastRepaymentDate.isBefore(loanCharge.getDueLocalDate())){
-        		if(!loanCharge.isWaived()){
-        			recalculateLoanCharge(loanCharge, scheduleGeneratorDTO.getPenaltyWaitPeriod());
-        			}	
-        	}else{
-        		loanCharge.setActive(false);
-        	}
+            if (loanCharge.getDueLocalDate() == null
+                    || (!lastRepaymentDate.isBefore(loanCharge.getDueLocalDate()) && getDisbursementDate().isBefore(
+                            loanCharge.getDueLocalDate()))) {
+                if (!loanCharge.isWaived()) {
+                    recalculateLoanCharge(loanCharge, scheduleGeneratorDTO.getPenaltyWaitPeriod());
+                }
+            } else {
+                loanCharge.setActive(false);
+            }
         }
         updateSummaryWithTotalFeeChargesDueAtDisbursement();
         if(!this.isOpen()){
@@ -3900,6 +3903,21 @@ public class Loan extends AbstractPersistable<Long> {
         Collections.sort(repaymentsOrWaivers, transactionComparator);
         return repaymentsOrWaivers;
     }
+    
+    public List<LoanTransaction> retreiveCopyOfTransactionsPostDisbursementExcludeAccruals() {
+        final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
+        for (final LoanTransaction transaction : this.loanTransactions) {
+            if (transaction.isNotReversed()
+                    && !(transaction.isDisbursement() || transaction.isAccrual() || transaction.isRepaymentAtDisbursement()
+                            || transaction.isNonMonetaryTransaction() || transaction.isIncomePosting() || transaction
+                                .isBrokenPeriodInterestPosting())) {
+                repaymentsOrWaivers.add(LoanTransaction.copyTransactionProperties(transaction));
+            }
+        }
+        final LoanTransactionComparator transactionComparator = new LoanTransactionComparator();
+        Collections.sort(repaymentsOrWaivers, transactionComparator);
+        return repaymentsOrWaivers;
+    }
 
     private List<LoanTransaction> retreiveListOfTransactionsExcludeAccruals() {
         final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
@@ -3980,7 +3998,7 @@ public class Loan extends AbstractPersistable<Long> {
 
         boolean isAllChargesPaid = true;
         for (final LoanCharge loanCharge : this.charges) {
-            if (loanCharge.isActive() && !(loanCharge.isPaid() || loanCharge.isWaived())) {
+            if (loanCharge.isActive() && !(loanCharge.isPaid() || loanCharge.isWaived() || loanCharge.getAmountOutstanding(getCurrency()).isZero())) {
                 if (loanCharge.isTrancheDisbursementCharge()) {
                     LoanDisbursementDetails disbursementDetails = loanCharge.getTrancheDisbursementCharge().getloanDisbursementDetails();
                     if (loanCharge.isNotFullyPaid() && disbursementDetails.actualDisbursementDate() != null) {
@@ -5705,6 +5723,18 @@ public class Loan extends AbstractPersistable<Long> {
         }
         return loanCharges;
     }
+    
+    public Set<LoanCharge> chargesCopy() {
+        Set<LoanCharge> loanCharges = new HashSet<>();
+        if (this.charges != null) {
+            for (LoanCharge charge : this.charges) {
+                if (charge.isActive()) {
+                    loanCharges.add(LoanCharge.copyCharge(charge));
+                }
+            }
+        }
+        return loanCharges;
+    }
 
     public Set<LoanTrancheCharge> trancheCharges() {
         Set<LoanTrancheCharge> loanCharges = new HashSet<>();
@@ -5961,6 +5991,17 @@ public class Loan extends AbstractPersistable<Long> {
     public List<LoanDisbursementDetails> getDisbursementDetails() {
         return this.disbursementDetails;
     }
+    
+    public boolean hasUndisbursedTranches() {
+        boolean hasActiveUndisbursedTranches = false;
+        for(LoanDisbursementDetails loanDisbursementDetails : this.getDisbursementDetails()){
+            if (loanDisbursementDetails.actualDisbursementDate() == null) {
+                hasActiveUndisbursedTranches = true;
+                break;
+            }
+        }
+        return hasActiveUndisbursedTranches;
+    }
 
     public ChangedTransactionDetail updateDisbursementDateAndAmountForTranche(final LoanDisbursementDetails disbursementDetails,
             final JsonCommand command, final Map<String, Object> actualChanges, final ScheduleGeneratorDTO scheduleGeneratorDTO,
@@ -6141,7 +6182,9 @@ public class Loan extends AbstractPersistable<Long> {
         for (LoanCharge loanCharge : charges) {
             if (!loanCharge.isDueAtDisbursement()) {
                 updateOverdueScheduleInstallment(loanCharge);
-                if (loanCharge.getDueLocalDate() == null || (!lastRepaymentDate.isBefore(loanCharge.getDueLocalDate()))) {
+                if (loanCharge.getDueLocalDate() == null
+                        || (!lastRepaymentDate.isBefore(loanCharge.getDueLocalDate()) && getDisbursementDate().isBefore(
+                                loanCharge.getDueLocalDate()))) {
                     if (!loanCharge.isWaived()
                             && (loanCharge.getDueLocalDate() == null || !lastTransactionDate.isAfter(loanCharge.getDueLocalDate()))) {
                         recalculateLoanCharge(loanCharge, generatorDTO.getPenaltyWaitPeriod());
