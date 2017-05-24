@@ -10,31 +10,21 @@ import javax.persistence.UniqueConstraint;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
-@Table(name = "f_cryptography_key", uniqueConstraints = { @UniqueConstraint(columnNames = { "entity_type", "key_type" }, name = "UQ_f_cryptography_entity_type_key_type") })
+@Table(name = "f_cryptography_key", uniqueConstraints = { @UniqueConstraint(columnNames = { "entity_type", "key_type", "user_id" }, name = "UQ_f_cryptography_entity_type_key_type") })
 public class CryptographyKey extends AbstractPersistable<Long> {
 
-    @Column(name = "entity_type", length = 100, nullable = false)
-    private String entityType;
+    @Column(name = "entity_type", nullable = false)
+    private Integer entityType;
 
     @Column(name = "key_type", length = 100, nullable = false)
-    private String keyType;
+    private Integer keyType;
 
     @Column(name = "key_value", nullable = false)
     private Blob keyValue;
 
+    @Column(name = "user_id", nullable = true)
+    private Long userId;
+
     protected CryptographyKey() {}
 
-    CryptographyKey(final String entityType, final String keyType, final Blob keyValue) {
-        this.entityType = entityType;
-        this.keyType = keyType;
-        this.keyValue = keyValue;
-    }
-
-    public static CryptographyKey create(final String entityType, final String keyType, final Blob keyValue) {
-        return new CryptographyKey(entityType, keyType, keyValue);
-    }
-
-    public Blob getKeyValue() {
-        return this.keyValue;
-    }
 }

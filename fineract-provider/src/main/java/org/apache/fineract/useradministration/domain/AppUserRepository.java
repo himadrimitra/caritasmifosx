@@ -32,4 +32,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long>, JpaSpec
     @Query("Select appUser from AppUser appUser where appUser.username = :username")
     @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
     AppUser findAppUserByName(@Param("username") String username);
+    
+    @Query("Select appUser.id from AppUser appUser where appUser.username = :username")
+    @QueryHints({ @QueryHint(name = "org.hibernate.cacheable", value ="true") })
+    Long findAppUserIdByName(@Param("username") String username);
 }

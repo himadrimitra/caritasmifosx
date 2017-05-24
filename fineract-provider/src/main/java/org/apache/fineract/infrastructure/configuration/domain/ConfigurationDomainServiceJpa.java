@@ -456,18 +456,30 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return null;
     }
 
-	@Override
-	public boolean allowClientsInMultipleGroups() {
-		final String propertyName = "allow-clients-in-multiple-groups";
-		final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-		return property.isEnabled();
-	}
+    @Override
+    public boolean allowClientsInMultipleGroups() {
+        final String propertyName = "allow-clients-in-multiple-groups";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
+    }
 
-	@Override
-	public boolean includeClientChargesInCollectionSheet() {
-		final String propertyName = "include-client-charges-in-collection-sheet";
-		final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
-		return property.isEnabled();
-	}
+    @Override
+    public boolean includeClientChargesInCollectionSheet() {
+        final String propertyName = "include-client-charges-in-collection-sheet";
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        return property.isEnabled();
+    }
 
+    @Override
+    public boolean isEnabledEncryptLoginPasswordForAuthentication() {
+        return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.ENCRYPT_LOGIN_PASSWORD_FOR_AUTHENTICATION)
+                .isEnabled();
+    }
+
+    @Override
+    public boolean isEnabledEveryUserLoginGenerateNewCryptographicKeyPair() {
+        return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.EVERY_USER_LOGIN_GENERATE_NEW_CRYPTOGRAPHIC_KEY_PAIR)
+                .isEnabled();
+    }
+    
 }
