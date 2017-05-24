@@ -972,8 +972,11 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
             recalculateFrom = transactionToAdjust.getTransactionDate().isAfter(transactionDate) ? transactionDate : transactionToAdjust
                     .getTransactionDate();
         }
+        final boolean considerFutureDisbursmentsInSchedule = loan.loanProduct().considerFutureDisbursementsInSchedule();
+        final boolean considerAllDisbursmentsInSchedule =loan.loanProduct().considerAllDisbursementsInSchedule();
 
-        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
+        ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
+                considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.adjustExistingTransaction(newTransactionDetail,
                 defaultLoanLifecycleStateMachine(), transactionToAdjust, existingTransactionIds, existingReversedTransactionIds,
