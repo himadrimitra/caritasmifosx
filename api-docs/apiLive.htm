@@ -500,6 +500,7 @@
 								<td></td>
 								<td></td>
 							</tr>
+
                             <tr>
 								<td><a href="#family_details">Family Details</a></td>
 								<td>clients/3/familydetails</td>
@@ -1274,7 +1275,7 @@
 								<td></td>
 								<td>loans/{loanId}?command=approve</td>
 								<td><a href="#loans_approve">Approve Loan Application</a></td>
-								<td></td>
+								<td><a href="#retrieve_loan_current_status"> Retrieve Loan's EMI details</a></td>
 								<td></td>
 								<td></td>
 							</tr>
@@ -10911,6 +10912,34 @@ GET https://DomainName/api/v1/loans/{loanId}
 				</div>
 			</div>
 
+		<a id="retrieve_loan_current_status" name="retrieve_loan_current_status" class="old-syle-anchor">&nbsp;</a>
+	<div class="method-section">
+	    <div class="method-description">
+	        <h4>Retrieve Loan status for Account Transfer:</h4>
+	        <p>It retrieves loan's emi details and overdue amount</p>
+	    </div>
+	    <div class="method-example">
+	        <code class="method-declaration">GET https://DomainName/api/v1/loans/12/transactions/template?command=currentstatus</code>
+	        <code class="method-response">
+{  
+   "id":12,
+   "date":[  
+      2017,
+      6,
+      22
+   ],
+   "fixedEmiAmount":1000.000000,
+   "outstandingLoanBalance":12310.830000,
+   "manuallyReversed":false,
+   "loanOverdueData":{  
+      "totalOverDue":50.000000,
+      "overdueWithNextInstallment":1050.000000
+   }
+}
+	        </code>
+	    </div>
+	</div>
+			
 			<a id="loans_list" name="loans_list" class="old-syle-anchor">&nbsp;</a>
 			<div class="method-section">
 				<div class="method-description">
@@ -32860,9 +32889,13 @@ No Request Body:
 <a id="accounttransfers" name="accounttransfers" class="old-syle-anchor">&nbsp;</a>
 	<div class="method-section">
 	    <div class="method-description">
-	        <h2>Account Transfers:</h2>
+	        <h2>Account Transfers to Other Client Accounts and Within Client's accounts</h2>
+			<h4>Account Transfers to other Client Accounts: </h4>
 	        <p>Ability to be able to transfer monetary funds from one account to another.</p>
-	        <p>Note: At present only savings account to savings account transfers are supported.</p>
+	        <p>Note: At present savings account to savings account/Loan account and transfer of overpaid amount from loan account to saving accounts are supported.</p>
+			<p>Account Transfer within Client's Accounts: </p>
+	        <p>Ability to transfer monetary funds from client's Saving account to another loan/savings account of same client.</p>
+			<p>When a client wants to transfer monetary funds to a loan account, client has to select the loan account from the list of loans provided, on selecting the loan its installment details and overdue amount will be displayed. Client can use the information to transfer the amount.</p>
 	      	<table class=matrixHeading>
 	            <tr class="matrixHeadingBG"><td><div class="fineractHeading2">Mandatory Parameters</div></td></tr>
 
@@ -33325,18 +33358,371 @@ No Request Body:
 }
 			</code>
 	    </div>
+		
+		<div class="method-description">
+    <h4>Retrieve Client's savings and Loan accounts for transfer</h4>
+    <p>Lists Loan and Savings account details of current client for monetary fund transfer</p>
+</div>
+<div class="method-example">
+    <code class="method-declaration">GET https://Domain Name/api/v1/accounttransfers/template?fromAccountId=13&fromAccountType=2&transferType=1</code>
+    <code class="method-response">
+{  
+   "currency":{  
+      "code":"USD",
+      "name":"US Dollar",
+      "decimalPlaces":2,
+      "inMultiplesOf":1,
+      "displaySymbol":"$",
+      "nameCode":"currency.USD",
+      "displayLabel":"US Dollar ($)"
+   },
+   "transferAmount":0,
+   "transferDate":[  
+      2017,
+      5,
+      22
+   ],
+   "fromOffice":{  
+      "id":1,
+      "name":"Head Office",
+      "nameDecorated":"Head Office",
+      "externalId":"1",
+      "openingDate":[  
+         2009,
+         1,
+         1
+      ],
+      "hierarchy":"."
+   },
+   "fromClient":{  
+      "id":8,
+      "accountNo":"000000008",
+      "status":{  
+         "id":300,
+         "code":"clientStatusType.active",
+         "value":"Active"
+      },
+      "subStatus":{  
+         "isActive":false,
+         "mandatory":false
+      },
+      "active":true,
+      "activationDate":[  
+         2017,
+         5,
+         22
+      ],
+      "firstname":"test bug",
+      "lastname":"test",
+      "displayName":"test bug test",
+      "dateOfBirth":[  
+         2017,
+         5,
+         22
+      ],
+      "gender":{  
+         "id":23,
+         "name":"Male",
+         "isActive":false,
+         "mandatory":false
+      },
+      "clientType":{  
+         "isActive":false,
+         "mandatory":false
+      },
+      "clientClassification":{  
+         "isActive":false,
+         "mandatory":false
+      },
+      "officeId":1,
+      "officeName":"Head Office",
+      "timeline":{  
+         "submittedOnDate":[  
+            2017,
+            5,
+            22
+         ],
+         "submittedByUsername":"conflux",
+         "submittedByFirstname":"App",
+         "submittedByLastname":"Administrator",
+         "activatedOnDate":[  
+            2017,
+            5,
+            22
+         ],
+         "activatedByUsername":"conflux",
+         "activatedByFirstname":"App",
+         "activatedByLastname":"Administrator"
+      },
+      "legalForm":{  
+         "id":1,
+         "code":"legalFormType.person",
+         "value":"PERSON"
+      },
+      "groups":[  
+
+      ],
+      "clientNonPersonDetails":{  
+         "constitution":{  
+            "isActive":false,
+            "mandatory":false
+         },
+         "mainBusinessLine":{  
+            "isActive":false,
+            "mandatory":false
+         }
+      }
+   },
+   "fromAccountType":{  
+      "id":2,
+      "code":"accountType.savings",
+      "value":"Savings Account"
+   },
+   "fromAccount":{  
+      "id":13,
+      "accountNo":"000000013",
+      "clientId":8,
+      "clientName":"test bug test",
+      "productId":1,
+      "productName":"Saving AC",
+      "fieldOfficerId":0,
+      "currency":{  
+         "code":"USD",
+         "name":"US Dollar",
+         "decimalPlaces":2,
+         "inMultiplesOf":1,
+         "displaySymbol":"$",
+         "nameCode":"currency.USD",
+         "displayLabel":"US Dollar ($)"
+      },
+      "balance":18771.750000
+   },
+   "fromOfficeOptions":[  
+      {  
+         "id":1,
+         "name":"Head Office",
+         "nameDecorated":"Head Office"
+      },
+      {  
+         "id":2,
+         "name":"Test",
+         "nameDecorated":"....Test"
+      }
+   ],
+   "fromClientOptions":[  
+      {  
+         "id":1,
+         "displayName":"Client 1 TEst",
+         "officeId":1,
+         "officeName":"Head Office"
+      },
+      {  
+         "id":2,
+         "displayName":"Client 2 Test",
+         "officeId":1,
+         "officeName":"Head Office"
+      },
+      {  
+         "id":3,
+         "displayName":"Client 3 Test",
+         "officeId":1,
+         "officeName":"Head Office"
+      },
+      {  
+         "id":5,
+         "displayName":"Client 5 test",
+         "officeId":1,
+         "officeName":"Head Office"
+      },
+      {  
+         "id":6,
+         "displayName":"client Activation test",
+         "officeId":1,
+         "officeName":"Head Office"
+      },
+      {  
+         "id":7,
+         "displayName":"client 6 test",
+         "officeId":1,
+         "officeName":"Head Office"
+      },
+      {  
+         "id":8,
+         "displayName":"test bug test",
+         "officeId":1,
+         "officeName":"Head Office"
+      }
+   ],
+   "fromAccountTypeOptions":[  
+      {  
+         "id":2,
+         "code":"accountType.savings",
+         "value":"Savings Account"
+      },
+      {  
+         "id":1,
+         "code":"accountType.loan",
+         "value":"Loan Account"
+      }
+   ],
+   "fromAccountOptions":[  
+      {  
+         "id":13,
+         "accountNo":"000000013",
+         "clientId":8,
+         "clientName":"test bug test",
+         "productId":1,
+         "productName":"Saving AC",
+         "fieldOfficerId":0,
+         "currency":{  
+            "code":"USD",
+            "name":"US Dollar",
+            "decimalPlaces":2,
+            "inMultiplesOf":1,
+            "displaySymbol":"$",
+            "nameCode":"currency.USD",
+            "displayLabel":"US Dollar ($)"
+         },
+         "balance":18771.750000
+      },
+      {  
+         "id":14,
+         "accountNo":"000000014",
+         "clientId":8,
+         "clientName":"test bug test",
+         "productId":2,
+         "productName":"Test 1",
+         "fieldOfficerId":0,
+         "currency":{  
+            "code":"USD",
+            "name":"US Dollar",
+            "decimalPlaces":2,
+            "inMultiplesOf":1,
+            "displaySymbol":"$",
+            "nameCode":"currency.USD",
+            "displayLabel":"US Dollar ($)"
+         },
+         "balance":15099.920000
+      },
+      {  
+         "id":15,
+         "accountNo":"000000015",
+         "clientId":8,
+         "clientName":"test bug test",
+         "productId":1,
+         "productName":"Saving AC",
+         "fieldOfficerId":0,
+         "currency":{  
+            "code":"USD",
+            "name":"US Dollar",
+            "decimalPlaces":2,
+            "inMultiplesOf":1,
+            "displaySymbol":"$",
+            "nameCode":"currency.USD",
+            "displayLabel":"US Dollar ($)"
+         },
+         "balance":0.000000
+      }
+   ],
+   "toOfficeOptions":[  
+      {  
+         "id":1,
+         "name":"Head Office",
+         "nameDecorated":"Head Office"
+      },
+      {  
+         "id":2,
+         "name":"Test",
+         "nameDecorated":"....Test"
+      }
+   ],
+   "toAccountTypeOptions":[  
+      {  
+         "id":1,
+         "code":"accountType.loan",
+         "value":"Loan Account"
+      },
+      {  
+         "id":2,
+         "code":"accountType.savings",
+         "value":"Savings Account"
+      }
+   ],
+   "toSavingAccountOptions":[  
+      {  
+         "id":14,
+         "accountNo":"000000014",
+         "clientId":8,
+         "clientName":"test bug test",
+         "productId":2,
+         "productName":"Test 1",
+         "fieldOfficerId":0,
+         "currency":{  
+            "code":"USD",
+            "name":"US Dollar",
+            "decimalPlaces":2,
+            "inMultiplesOf":1,
+            "displaySymbol":"$",
+            "nameCode":"currency.USD",
+            "displayLabel":"US Dollar ($)"
+         },
+         "balance":15099.920000
+      },
+      {  
+         "id":15,
+         "accountNo":"000000015",
+         "clientId":8,
+         "clientName":"test bug test",
+         "productId":1,
+         "productName":"Saving AC",
+         "fieldOfficerId":0,
+         "currency":{  
+            "code":"USD",
+            "name":"US Dollar",
+            "decimalPlaces":2,
+            "inMultiplesOf":1,
+            "displaySymbol":"$",
+            "nameCode":"currency.USD",
+            "displayLabel":"US Dollar ($)"
+         },
+         "balance":0.000000
+      }
+   ],
+   "toLoanAccountOptions":[  
+      {  
+         "id":12,
+         "accountNo":"000000012",
+         "clientId":8,
+         "clientName":"test bug test",
+         "productId":1,
+         "productName":"VehicleLoan",
+         "fieldOfficerId":0,
+         "currency":{  
+            "code":"USD",
+            "name":"US Dollar",
+            "decimalPlaces":2,
+            "inMultiplesOf":0,
+            "displaySymbol":"$",
+            "nameCode":"currency.USD",
+            "displayLabel":"US Dollar ($)"
+         }
+      }
+   ]
+}
+		 </code>
+        </div>
 
 	</div>
 
 	<a id="accounttransfers_create" name="accounttransfers_create" class="old-syle-anchor">&nbsp;</a>
-	<div class="method-section">
-	    <div class="method-description">
-	        <h2>Create new Transfer</h2>
-	        <p>Ability to create new transfer of monetary funds from one account to another.</p>
-	    </div>
-	    <div class="method-example">
-	        <code class="method-declaration">POST https://Domain Name/api/v1/accounttransfers</code>
-	        <code class="method-request">POST accounttransfers/
+<div class="method-section">
+    <div class="method-description">
+        <h2>Create new Transfer</h2>
+        <p>Ability to create new transfer of monetary funds from one account to another.</p>
+    </div>
+    <div class="method-example">
+        <code class="method-declaration">POST https://Domain Name/api/v1/accounttransfers</code>
+        <code class="method-request">POST accounttransfers/
 Content-Type: application/json
 No Request Body:
 {
@@ -33362,8 +33748,36 @@ No Request Body:
 }
 	        </code>
 	    </div>
-	</div>
 
+	    <div class="method-example">
+	        <code class="method-request">POST accounttransfers/
+Content-Type: application/json
+No Request Body:
+{
+	"fromOfficeId": 1,
+	"fromClientId": 8,
+	"fromAccountType": 2,
+	"fromAccountId": 13,
+	"toOfficeId": 1,
+	"toClientId": 1,
+	"toAccountType": 1,
+	"toAccountId": 12,
+	"dateFormat": "dd MMMM yyyy",
+	"locale": "en",
+	"transferDate": "21 May 2017",
+	"transferAmount": "100",
+	"transferDescription": "An example of monetary fund transfer within client's accounts"
+}
+	        </code>
+	        <code class="method-response">
+{
+"savingsId": 13,
+"resourceId": 15
+}
+	        </code>
+	    </div>
+</div>
+	
 	<a id="accounttransfers_list" name="accounttransfers_list" class="old-syle-anchor">&nbsp;</a>
     <div class="method-section">
         <div class="method-description">
@@ -33683,7 +34097,6 @@ No Request Body:
 	        </code>
 	    </div>
 	</div>
-
 		<a id="accounttransfers_retrieve_template_refund_by_transfer" name="accounttransfers_retrieve_template_refund_by_transfer" class="old-syle-anchor">&nbsp;</a>
 	<div class="method-section">
 	    <div class="method-description">
