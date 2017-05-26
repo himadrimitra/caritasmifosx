@@ -42,6 +42,7 @@ import org.apache.fineract.accounting.journalentry.data.OfficeOpeningBalancesDat
 import org.apache.fineract.accounting.journalentry.data.TransactionDetailData;
 import org.apache.fineract.accounting.journalentry.data.TransactionTypeEnumData;
 import org.apache.fineract.accounting.journalentry.exception.JournalEntriesNotFoundException;
+import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
@@ -283,7 +284,10 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
 
         GLJournalEntryMapper rm = new GLJournalEntryMapper(associationParametersData);
         List<Object> paramList = new ArrayList<>();
-
+        Integer derivedEntityType = entityType ;
+        if(derivedEntityType == null) {
+            derivedEntityType = deriveEntityType(searchParameters) ;
+        }
         String sql = constructSqlForPaginatedJournalEntry(searchParameters, glAccountId, onlyManualEntries, fromDate, toDate,
                 transactionId, entityType, associationParametersData, paramList);
 
@@ -292,6 +296,19 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sql, finalObjectArray, rm);
     }
     
+    private Integer deriveEntityType(final SearchParameters params) {
+        Integer derivedEntityType = null ;
+        if(params.getLoanId() != null) {
+            derivedEntityType = PortfolioProductType.LOAN.getValue() ;
+        }else if(params.getSavingsId() != null) {
+            derivedEntityType = PortfolioProductType.SAVING.getValue() ;
+        }else if(params.getClientId() != null) {
+            derivedEntityType = PortfolioProductType.CLIENT.getValue() ;
+        }else if(params.getProvisioningEntryId() != null) {
+            derivedEntityType = PortfolioProductType.PROVISIONING.getValue() ;
+        }
+        return derivedEntityType ;
+    }
     
     private String constructSqlForPaginatedJournalEntry(final SearchParameters searchParameters, final Long glAccountId,
             final Boolean onlyManualEntries, final Date fromDate, final Date toDate, final String transactionId, final Integer entityType,
