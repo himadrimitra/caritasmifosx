@@ -289,7 +289,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
             derivedEntityType = deriveEntityType(searchParameters) ;
         }
         String sql = constructSqlForPaginatedJournalEntry(searchParameters, glAccountId, onlyManualEntries, fromDate, toDate,
-                transactionId, entityType, associationParametersData, paramList);
+                transactionId, derivedEntityType, associationParametersData, paramList);
 
         final Object[] finalObjectArray = paramList.toArray();
         final String sqlCountRows = "SELECT FOUND_ROWS()";
