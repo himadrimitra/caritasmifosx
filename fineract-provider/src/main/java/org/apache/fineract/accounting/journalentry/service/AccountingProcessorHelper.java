@@ -1275,7 +1275,7 @@ public class AccountingProcessorHelper {
 
     public JournalEntry createSavingsJournalEntry(final String currencyCode, final Date transactionDate, Date valueDate,
             Date effectiveDate, final String transactionId, final Long officeId, final Long savingsId) {
-        final int entityType = PortfolioProductType.LOAN.getValue();
+        final int entityType = PortfolioProductType.SAVING.getValue();
         String transactionIdentifier = null;
         Long entityTransactionId = null;
         if (StringUtils.isNumeric(transactionId)) {
@@ -1289,7 +1289,7 @@ public class AccountingProcessorHelper {
 
     public JournalEntry createShareJournalEntry(final String currencyCode, final Date transactionDate, Date valueDate, Date effectiveDate,
             final String transactionId, final Long officeId, final Long shareAccountId) {
-        final int entityType = PortfolioProductType.LOAN.getValue();
+        final int entityType = PortfolioProductType.SHARES.getValue();
         String transactionIdentifier = null;
         Long entityTransactionId = null;
         if (StringUtils.isNumeric(transactionId)) {
@@ -1303,7 +1303,7 @@ public class AccountingProcessorHelper {
 
     public JournalEntry createClientJournalEntry(final String currencyCode, final Date transactionDate, Date valueDate, Date effectiveDate,
             final Long transactionId, final Long officeId, final Long clientId) {
-        final int entityType = PortfolioProductType.LOAN.getValue();
+        final int entityType = PortfolioProductType.CLIENT.getValue();
         String transactionIdentifier = null;
         Long entityTransactionId = transactionId;
         transactionIdentifier = AccountingProcessorHelper.CLIENT_TRANSACTION_IDENTIFIER + transactionId;
@@ -1314,7 +1314,7 @@ public class AccountingProcessorHelper {
 
     public JournalEntry createProvioningJournalEntry(final String currencyCode, final Date transactionDate, Date valueDate,
             Date effectiveDate, final Long officeId, final Long provioningId) {
-        final int entityType = PortfolioProductType.LOAN.getValue();
+        final int entityType = PortfolioProductType.PROVISIONING.getValue();
         String transactionIdentifier = null;
         Long entityTransactionId = null;
         transactionIdentifier = AccountingProcessorHelper.PROVISIONING_TRANSACTION_IDENTIFIER + provioningId;
