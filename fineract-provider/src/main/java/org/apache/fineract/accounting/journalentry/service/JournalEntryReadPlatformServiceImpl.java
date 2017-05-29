@@ -330,7 +330,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 .append(" journalEntry.created_date as createdDate, journalEntry.reversed as reversed, ")
                 .append(" journalEntry.currency_code as currencyCode, curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ")
                 .append(" curr.display_symbol as currencyDisplaySymbol, curr.decimal_places as currencyDigits, curr.currency_multiplesof as inMultiplesOf ");
-        if (associationParametersData.isTransactionDetailsRequired()) {
+        if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
             sb.append(" ,pd.receipt_number as receiptNumber, ").append(" pd.check_number as checkNumber, ")
                     .append(" pd.account_number as accountNumber, ").append(" pt.value as paymentTypeName, ")
                     .append(" pd.payment_type_id as paymentTypeId,").append(" pd.bank_number as bankNumber, ")
@@ -429,7 +429,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 .append(" left join m_office as office on office.id = journalEntry.office_id")
                 .append(" left join m_appuser as creatingUser on creatingUser.id = journalEntry.createdby_id ")
                 .append(" join m_currency curr on curr.code = journalEntry.currency_code ");
-        if (associationParametersData.isTransactionDetailsRequired()) {
+        if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
             sb.append(
                     " left join m_loan_transaction as lt on journalEntry.entity_type_enum = ? and  journalEntry.entity_transaction_id = lt.id ")
                     .append(" left join m_savings_account_transaction as st on journalEntry.entity_type_enum = ? and journalEntry.entity_transaction_id = st.id ")
@@ -438,7 +438,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                     .append(" left join m_note as note on lt.id = note.loan_transaction_id or st.id = note.savings_account_transaction_id ");
         }
 
-        if (associationParametersData.isTransactionDetailsRequired()) {
+        if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
             paramList.add(PortfolioAccountType.LOAN.getValue());
             paramList.add(PortfolioAccountType.SAVINGS.getValue());
         }
