@@ -1,19 +1,5 @@
 package com.finflux.mandates.fileformat;
 
-import com.finflux.mandates.data.MandateTransactionsData;
-import com.finflux.mandates.data.MandatesProcessData;
-import com.finflux.mandates.data.ProcessResponseData;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.infrastructure.configuration.data.NACHCredentialsData;
-import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
-import org.apache.http.impl.entity.StrictContentLengthStrategy;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.util.NumberToTextConverter;
-import org.springframework.stereotype.Component;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -23,6 +9,24 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.data.NACHCredentialsData;
+import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.NumberToTextConverter;
+import org.springframework.stereotype.Component;
+
+import com.finflux.mandates.data.MandateTransactionsData;
+import com.finflux.mandates.data.MandatesProcessData;
+import com.finflux.mandates.data.ProcessResponseData;
+import com.finflux.mandates.processor.NachStatusValues;
 
 @Component("DefaultExcelBasedTransactionsFileFormatHelper")
 public class DefaultExcelBasedTransactionsFileFormatHelper implements TransactionsFileFormatHelper{
@@ -211,21 +215,21 @@ public class DefaultExcelBasedTransactionsFileFormatHelper implements Transactio
                 return ret;
         }
 
-        protected String parseStatus(String cellValue) {
-                String value = cellValue.toUpperCase();
-                String ret = "INVALID";
-                switch (value){
-                        case "SUCCESS":
-                        case "ACCEPTED":
-                                ret = "SUCCESS";
-                                break;
-                        case "REJECTED":
-                        case "FAILED":
-                                ret = "FAILED";
-                                break;
-                }
-                return ret;
+    protected String parseStatus(String cellValue) {
+        String value = cellValue.toUpperCase();
+        String ret = NachStatusValues.INVALID;
+        switch (value) {
+            case NachStatusValues.SUCCESS:
+            case NachStatusValues.ACCEPTED:
+                ret = NachStatusValues.SUCCESS;
+            break;
+            case NachStatusValues.REJECTED:
+            case NachStatusValues.FAILED:
+                ret = NachStatusValues.FAILED;
+            break;
         }
+        return ret;
+    }
 
         // reference, status, failure reason, amount, transaction date
         protected int[] getSpecialValueColumnNumbers() {

@@ -26,11 +26,6 @@ import java.util.Collection;
 @Component
 public class MandateUploadProcessor {
 
-        private final static String FAILED = "FAILED";
-        private final static String SUCCESS = "SUCCESS";
-        private final static String PROCESSED = "PROCESSED";
-        private final static String NOT_PROCESSED = "NOT PROCESSED";
-
         private final MandatesProcessingReadPlatformService mandatesProcessingReadPlatformService;
         private final MandatesProcessingStatusPlatformWriteService mandatesProcessingWritePlatformService;
         private final DocumentReadPlatformService documentReadPlatformService;
@@ -89,15 +84,15 @@ public class MandateUploadProcessor {
         private void updateMandateResponseStatus(final ProcessResponseData data, final Long requestId, MandateProcessCounts counts) {
                 Mandate mandate = this.mandateRepository.findOneByLoanAccountNoAndInprocessStatus(data.getReference());
                 if(null == mandate){
-                        data.setProcessStatus(NOT_PROCESSED, "Couldn't find matching Mandate based on reference");
+                        data.setProcessStatus(NachStatusValues.NOT_PROCESSED, "Couldn't find matching Mandate based on reference");
                         counts.setUnprocessedRecords(counts.getUnprocessedRecords()+1);
                 }else{
-                        if(data.getStatus().equalsIgnoreCase(FAILED)){
+                        if(data.getStatus().equalsIgnoreCase(NachStatusValues.FAILED)){
                                 mandate.setFailed(data.getFailureReason(), requestId);
                                 this.mandateRepository.save(mandate);
-                                data.setProcessStatus(PROCESSED,"Mandate Id:"+mandate.getId());
+                                data.setProcessStatus(NachStatusValues.PROCESSED,"Mandate Id:"+mandate.getId());
                                 counts.setFailedRecords(counts.getFailedRecords()+1);
-                        }else if(data.getStatus().equalsIgnoreCase(SUCCESS)){
+                        }else if(data.getStatus().equalsIgnoreCase(NachStatusValues.SUCCESS)){
                                 Mandate oldActiveMandate = this.mandateRepository.findOneByLoanAccountNoAndActiveStatus(data.getReference());
                                 if(null != oldActiveMandate){
                                         oldActiveMandate.setInactive();
@@ -105,11 +100,16 @@ public class MandateUploadProcessor {
                                 }
                                 mandate.setSuccess(requestId, data.getUMRN());
                                 this.mandateRepository.save(mandate);
-                                data.setProcessStatus(PROCESSED,"Mandate Id:"+mandate.getId());
+                                data.setProcessStatus(NachStatusValues.PROCESSED,"Mandate Id:"+mandate.getId());
                                 counts.setSuccessRecords(counts.getSuccessRecords()+1);
-                        }else{
-                                data.setProcessStatus(NOT_PROCESSED, "Couldn't parse status column");
-                                counts.setUnprocessedRecords(counts.getUnprocessedRecords()+1);
+                        }else if(data.getStatus().equals(NachStatusValues.INTERMEDIATE_STATE)) {
+                            mandate.setUMRN(data.getUMRN()); //Updating only UMRN in case of intermediate states
+                            this.mandateRepository.save(mandate);
+                            data.setProcessStatus(NachStatusValues.PROCESSED,"Mandate Id:"+mandate.getId());
+                            counts.setSuccessRecords(counts.getSuccessRecords()+1);
+                        }else {
+                            data.setProcessStatus(NachStatusValues.NOT_PROCESSED, "Couldn't parse status column");
+                            counts.setUnprocessedRecords(counts.getUnprocessedRecords()+1);
                         }
                 }
         }
