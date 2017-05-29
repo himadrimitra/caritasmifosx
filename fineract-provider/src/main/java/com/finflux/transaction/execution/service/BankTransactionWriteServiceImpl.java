@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -25,6 +26,7 @@ import com.finflux.transaction.execution.domain.BankAccountTransactionRepository
 public class BankTransactionWriteServiceImpl implements BankTransactionWriteService {
 
     private final BankAccountTransactionRepository repository;
+    private final PlatformSecurityContext context;
     private final BankAccountTransactionRepositoryWrapper repositoryWrapper;
     private final BankTransactionDataValidator bankTransactionDataValidator;
     private final BankTransactionDataAssembler bankTransactionDataAssembler;
@@ -34,14 +36,17 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
     public BankTransactionWriteServiceImpl(final BankAccountTransactionRepository repository,
             final BankAccountTransactionRepositoryWrapper repositoryWrapper,
             final BankTransactionDataValidator bankTransactionDataValidator,
-            final BankTransactionDataAssembler bankTransactionDataAssembler) {
+            final BankTransactionDataAssembler bankTransactionDataAssembler,
+            final PlatformSecurityContext context) {
         this.repository = repository;
         this.repositoryWrapper = repositoryWrapper;
         this.bankTransactionDataValidator = bankTransactionDataValidator;
         this.bankTransactionDataAssembler = bankTransactionDataAssembler;
+        this.context=context;
     }
 
     @Override public CommandProcessingResult initiateTransaction(Long transactionId) {
+        this.context.authenticatedUser().validateHasPermissionTo("INITIATE_BANK_TRANSACTION");
         final BankAccountTransaction bankTransaction = this.repositoryWrapper.findOneWithNotFoundDetection(transactionId);
         TransactionStatus status = TransactionStatus.fromInt(bankTransaction.getStatus());
         if(TransactionStatus.SUBMITTED.equals(status)){

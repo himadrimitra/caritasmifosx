@@ -3992,4 +3992,12 @@ public class CommandWrapperBuilder {
         this.href = "/vouchers?voucherType=" + voucherType;
         return this;
     }
+
+    public CommandWrapperBuilder submitForApprovalLoanApplicationReference(Long loanApplicationReferenceId) {
+        this.actionName = "SUBMITFORAPPROVAL";
+        this.entityName = "LOANAPPLICATIONREFERENCE";
+        this.entityId = loanApplicationReferenceId;
+        this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
+        return this;
+    }
 }

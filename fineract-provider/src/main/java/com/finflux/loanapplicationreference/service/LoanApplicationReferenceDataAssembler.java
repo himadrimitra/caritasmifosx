@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import com.finflux.portfolio.loanemipacks.domain.LoanEMIPack;
-import com.finflux.portfolio.loanemipacks.domain.LoanEMIPackRepository;
-import com.finflux.portfolio.loanemipacks.exception.LoanEMIPackNotFoundException;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
@@ -44,6 +41,9 @@ import com.finflux.loanapplicationreference.domain.LoanApplicationSanction;
 import com.finflux.loanapplicationreference.domain.LoanApplicationSanctionTranche;
 import com.finflux.portfolio.loan.purpose.domain.LoanPurpose;
 import com.finflux.portfolio.loan.purpose.domain.LoanPurposeRepositoryWrapper;
+import com.finflux.portfolio.loanemipacks.domain.LoanEMIPack;
+import com.finflux.portfolio.loanemipacks.domain.LoanEMIPackRepository;
+import com.finflux.portfolio.loanemipacks.exception.LoanEMIPackNotFoundException;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -331,18 +331,19 @@ public class LoanApplicationReferenceDataAssembler {
         return actualChanges;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public Map<String, Object> assembleApproveForm(final LoanApplicationReference loanApplicationReference, final JsonCommand command) {
-
-        final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
+    @SuppressWarnings("rawtypes")
+	public Map<String, Object> assembleApproveForm(final LoanApplicationReference loanApplicationReference, final JsonCommand command,boolean isDataSubmit) {
+    	final List<LoanApplicationCharge> loanApplicationCharges = assembleCreateLoanApplicationCharge(loanApplicationReference,
                 command.json());
         loanApplicationReference.updateLoanApplicationCharges(loanApplicationCharges);
 
         Map<String, Object> changes = new LinkedHashMap<>(10);
         final LoanProduct loanProduct = loanApplicationReference.getLoanProduct();
-        final Integer statusEnum = LoanApplicationReferenceStatus.APPLICATION_APPROVED.getValue();
-        changes.put("statusEnum", statusEnum);
-        loanApplicationReference.updateStatusEnum(statusEnum);
+        if(!isDataSubmit){
+        	final Integer statusEnum = LoanApplicationReferenceStatus.APPLICATION_APPROVED.getValue();
+        	changes.put("statusEnum", statusEnum);
+        	loanApplicationReference.updateStatusEnum(statusEnum);
+        }
         LoanApplicationSanction loanApplicationSanction = loanApplicationReference.getLoanApplicationSanction();
         BigDecimal loanAmountApproved = null;
         if (loanApplicationSanction != null && loanApplicationSanction.getId() != null) {
