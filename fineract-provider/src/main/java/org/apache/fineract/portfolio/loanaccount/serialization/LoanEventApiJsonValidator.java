@@ -113,8 +113,7 @@ public final class LoanEventApiJsonValidator {
 
         final BigDecimal emiAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(LoanApiConstants.emiAmountParameterName,
                 element);
-        baseDataValidator.reset().parameter(LoanApiConstants.emiAmountParameterName).value(emiAmount).ignoreIfNull().positiveAmount()
-                .notGreaterThanMax(principal);
+        baseDataValidator.reset().parameter(LoanApiConstants.emiAmountParameterName).value(emiAmount).ignoreIfNull().positiveAmount();
 
         validatePaymentDetails(baseDataValidator, element);
 
