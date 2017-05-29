@@ -245,20 +245,24 @@ public class Mandate extends AbstractPersistable<Long>{
                 this.mandateStatusEnum = 500;
         }
 
-        public void setSuccess(final Long requestId, final String UMRN) {
-                this.returnProcessReferenceId = requestId.toString();
-                this.returnProcessDate = new Date();
-                switch(this.mandateStatusEnum){
-                        case 101:
-                                this.mandateStatusEnum = 400;
-                                this.umrn = UMRN;
-                                break;
-                        case 201:
-                                this.mandateStatusEnum = 400;
-                                break;
-                        case 301:
-                                this.mandateStatusEnum = 500;
-                                break;
-                }
+    public void setSuccess(final Long requestId, final String UMRN) {
+        this.returnProcessReferenceId = requestId.toString();
+        this.returnProcessDate = new Date();
+        switch (this.mandateStatusEnum) {
+            case 101:
+                this.mandateStatusEnum = 400;
+                this.umrn = UMRN;
+            break;
+            case 201:
+                this.mandateStatusEnum = 400;
+            break;
+            case 301:
+                this.mandateStatusEnum = 500;
+            break;
         }
+    }
+    
+    public void setUMRN(final String umrn) {
+        this.umrn = umrn ;
+    }
 }
