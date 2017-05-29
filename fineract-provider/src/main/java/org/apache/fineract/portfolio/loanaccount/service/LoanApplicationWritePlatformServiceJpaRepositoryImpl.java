@@ -114,6 +114,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanSummaryWrapper;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTopupDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTrancheCharge;
+import org.apache.fineract.portfolio.loanaccount.exception.GlimNotSupportedException;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationNotInSubmittedAndPendingApprovalStateCannotBeDeleted;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationNotInSubmittedAndPendingApprovalStateCannotBeModified;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
@@ -367,6 +368,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 }
             }
             if(newLoanApplication.isGLIMLoan()){
+            	if(loanProduct.isInterestRecalculationEnabled()){
+            		throw new GlimNotSupportedException("interest.calculation", "interest calculation.");
+            	}else if(loanProduct.isMultiDisburseLoan()){
+            		throw new GlimNotSupportedException("multi.tranche"," multi tanche.");
+            	}
                 newLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
             }
             this.loanRepository.save(newLoanApplication);
@@ -597,7 +603,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                     }
                     
                     if (!charge.isGlimCharge()) {
-                        final String entityName = " GLIM Loan";
+                        final String entityName = "glim";
                         final String userErrorMessage = "Charge can not be applied to GLIM Loan";
                         throw new ChargeNotSupportedException(entityName, charge.getId(), userErrorMessage);
                     }

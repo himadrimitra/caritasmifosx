@@ -1780,9 +1780,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         // Charges may be edited only when the loan associated with them are
         // yet to be approved (are in submitted and pending status)
-        if (!loan.status().isSubmittedAndPendingApproval()) { throw new LoanChargeCannotBeUpdatedException(
-                LOAN_CHARGE_CANNOT_BE_UPDATED_REASON.LOAN_NOT_IN_SUBMITTED_AND_PENDING_APPROVAL_STAGE, loanCharge.getId()); }
-
+        validateForUpdate(loan, loanCharge);
         this.businessEventNotifierService.notifyBusinessEventToBeExecuted(BUSINESS_EVENTS.LOAN_UPDATE_CHARGE,
                 constructEntityMap(BUSINESS_ENTITY.LOAN_CHARGE, loanCharge));
 
@@ -2555,6 +2553,15 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
             }
         }
         this.loanRepository.save(loansToUpdate);
+    }
+    
+    private void validateForUpdate(Loan loan, LoanCharge loanCharge){
+    	if (!loan.status().isSubmittedAndPendingApproval()) { throw new LoanChargeCannotBeUpdatedException(
+                LOAN_CHARGE_CANNOT_BE_UPDATED_REASON.LOAN_NOT_IN_SUBMITTED_AND_PENDING_APPROVAL_STAGE, loanCharge.getId()); }
+        if(loan.isGLIMLoan() && !loanCharge.isUpfrontFee()){
+        	throw new LoanChargeCannotBeUpdatedException(
+                    LOAN_CHARGE_CANNOT_BE_UPDATED_REASON.GLIM_LOAN, loanCharge.getId()); 
+        }
     }
 
     @Override
