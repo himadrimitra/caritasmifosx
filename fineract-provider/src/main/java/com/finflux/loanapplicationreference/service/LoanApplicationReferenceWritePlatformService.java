@@ -22,5 +22,7 @@ public interface LoanApplicationReferenceWritePlatformService {
     CommandProcessingResult addCoApplicant(final JsonCommand command);
 
     CommandProcessingResult deleteCoApplicant(final JsonCommand command);
+    
+    CommandProcessingResult submitForApproval(final Long loanApplicationReferenceId, final JsonCommand command);
 
 }

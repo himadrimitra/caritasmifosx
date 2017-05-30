@@ -153,7 +153,10 @@ public class LoanApplicationReferenceApiResource {
         } else if (is(commandParam, "disburse")) {
             final CommandWrapper commandRequest = builder.disburseLoanApplicationReference(loanApplicationReferenceId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        } else {
+        }else if (is(commandParam, "submitforapproval")) {
+            final CommandWrapper commandRequest = builder.submitForApprovalLoanApplicationReference(loanApplicationReferenceId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        }else {
             final CommandWrapper commandRequest = builder.updateLoanApplicationReference(loanApplicationReferenceId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }

@@ -1,6 +1,8 @@
 package com.finflux.ruleengine.configuration.data;
 
+import com.amazonaws.util.json.JSONArray;
 import com.finflux.ruleengine.configuration.api.RiskConfigurationApiConstants;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.StringUtils;
@@ -50,8 +52,10 @@ public class RiskDataValidator {
                 .notExceedingLengthOf(30);
 
         final String description = this.fromApiJsonHelper.extractStringNamed(RiskConfigurationApiConstants.descriptionParamName, element);
-        baseDataValidator.reset().parameter(RiskConfigurationApiConstants.descriptionParamName).value(description).ignoreIfNull();
-
+        baseDataValidator.reset().parameter(RiskConfigurationApiConstants.descriptionParamName).value(description).notNull();
+        
+        final JsonArray buckets=this.fromApiJsonHelper.extractJsonArrayNamed(RiskConfigurationApiConstants.bucketsParamName, element);
+        baseDataValidator.reset().parameter(RiskConfigurationApiConstants.bucketsParamName).value(buckets).jsonArrayNotEmpty();
 //        if (this.fromApiJsonHelper.parameterExists(RiskConfigurationApiConstants.loanPurposeGroupTypeIdParamName, element)) {
 //            final String[] loanPurposeGroupIds = this.fromApiJsonHelper.extractArrayNamed(
 //                    RiskConfigurationApiConstants.loanPurposeGroupTypeIdParamName, element);
@@ -92,7 +96,11 @@ public class RiskDataValidator {
                 .notExceedingLengthOf(30);
 
         final String description = this.fromApiJsonHelper.extractStringNamed(RiskConfigurationApiConstants.descriptionParamName, element);
-        baseDataValidator.reset().parameter(RiskConfigurationApiConstants.descriptionParamName).value(description).ignoreIfNull();
+        baseDataValidator.reset().parameter(RiskConfigurationApiConstants.descriptionParamName).value(description).notNull();
+        
+        final JsonArray buckets=this.fromApiJsonHelper.extractJsonArrayNamed(RiskConfigurationApiConstants.bucketsParamName, element);
+        baseDataValidator.reset().parameter(RiskConfigurationApiConstants.bucketsParamName).value(buckets).jsonArrayNotEmpty();
+//      
 
 //        if (this.fromApiJsonHelper.parameterExists(RiskConfigurationApiConstants.loanPurposeGroupTypeIdParamName, element)) {
 //            final String[] loanPurposeGroupIds = this.fromApiJsonHelper.extractArrayNamed(
