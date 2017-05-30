@@ -313,14 +313,29 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                 if (loanCalendar == null) {
                     idealDisbursementDate = firstRepaymentDate.minusMonths(repaidEvery);
                 } else {
-                    LocalDate meetingStartDate = loanCalendar.getStartDateLocalDate();
-                    while (!meetingStartDate.isBefore(loanApplicationTerms.getExpectedDisbursementDate())) {
+                    LocalDate meetingStartDate = loanCalendar.getStartDateLocalDate(); 
+                    String recurrence = loanCalendar.getRecurrence();
+                    CalendarHistory calendarHistory = null;
+                    CalendarHistoryDataWrapper calendarHistoryDataWrapper = loanApplicationTerms.getCalendarHistoryDataWrapper();
+                    if(calendarHistoryDataWrapper != null){
+                        calendarHistory = loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistory(firstRepaymentDate);
+                    }
+     
+                    // get the start date from the calendar history
+                    if (calendarHistory != null) {
+                        meetingStartDate = calendarHistory.getStartDateLocalDate();
+                        recurrence = calendarHistory.getRecurrence();
+                    }
+                    
+                   
+                    while (!meetingStartDate.isBefore(loanApplicationTerms.getExpectedDisbursementDate())
+                            || meetingStartDate.getMonthOfYear() == loanApplicationTerms.getExpectedDisbursementDate().getMonthOfYear()) {
                         meetingStartDate = meetingStartDate.minusMonths(repaidEvery);
                     }
                     LocalDate idealDisbursementDateTemp = meetingStartDate;
                     while (idealDisbursementDateTemp.isBefore(firstRepaymentDate)) {
                         idealDisbursementDate = idealDisbursementDateTemp;
-                        idealDisbursementDateTemp = CalendarUtils.getNewRepaymentMeetingDate(loanCalendar.getRecurrence(),
+                        idealDisbursementDateTemp = CalendarUtils.getNewRepaymentMeetingDate(recurrence,
                                 meetingStartDate, idealDisbursementDateTemp.plusDays(1), repaidEvery,
                                 CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(repaymentPeriodFrequencyType),
                                 holidayDetailDTO.getWorkingDays(), loanApplicationTerms.isSkipRepaymentOnFirstDayofMonth(),

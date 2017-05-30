@@ -37,6 +37,7 @@ import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.calendar.data.CalendarHistoryDataWrapper;
 import org.apache.fineract.portfolio.calendar.domain.Calendar;
 import org.apache.fineract.portfolio.calendar.domain.CalendarFrequencyType;
+import org.apache.fineract.portfolio.calendar.domain.CalendarHistory;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
@@ -62,7 +63,6 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanRescheduleStrategyMe
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
-import org.joda.time.Months;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 import org.joda.time.Weeks;
@@ -1000,13 +1000,26 @@ public final class LoanApplicationTerms {
                 if (this.loanCalendar == null) {
                     recurrence = "FREQ=MONTHLY;INTERVAL="+getRepaymentEvery()+";BYMONTHDAY=" + calendarStartDate.getDayOfMonth();
                 } else {
-                    recurrence = loanCalendar.getRecurrence();
-                    calendarStartDate = loanCalendar.getStartDateLocalDate();
+                    CalendarHistory calendarHistory = null;
+                    CalendarHistoryDataWrapper calendarHistoryDataWrapper = this.getCalendarHistoryDataWrapper();
+                    if(calendarHistoryDataWrapper != null){
+                        calendarHistory = this.getCalendarHistoryDataWrapper().getCalendarHistory(endDate);
+                    }
+     
+                    // get the start date from the calendar history
+                    if (calendarHistory == null) {
+                        recurrence = loanCalendar.getRecurrence();
+                        calendarStartDate = loanCalendar.getStartDateLocalDate();
+                    } else {
+                        calendarStartDate = calendarHistory.getStartDateLocalDate();
+                        recurrence = calendarHistory.getRecurrence();
+                    }
+                    
                 }
 
                 LocalDate expectedStartDate = startDate;
                 LocalDate meetingStartDate = calendarStartDate;
-                while (!meetingStartDate.isBefore(expectedStartDate)) {
+                while (!meetingStartDate.isBefore(expectedStartDate) || meetingStartDate.getMonthOfYear() == expectedStartDate.getMonthOfYear()) {
                     meetingStartDate = meetingStartDate.minusMonths(getRepaymentEvery());
                 }
 
@@ -1067,27 +1080,17 @@ public final class LoanApplicationTerms {
     private BigDecimal calcualtePartialPeriodsBasedOnCalendar(final LocalDate startDate, LocalDate modifiedDate, LocalDate meetingStartDate, String recurrence) {
         LocalDate previousMeetingDate = modifiedDate;
         LocalDate previousMeetingDateTemp = meetingStartDate;
+        final String singlePeriodRecurrence = removeIntervalFromRecurrence(recurrence);
         while (!previousMeetingDateTemp.isAfter(startDate)) {
             previousMeetingDate = previousMeetingDateTemp;
-            previousMeetingDateTemp = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate,
-                    previousMeetingDateTemp, getRepaymentEvery(),
-                    CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
-                    this.holidayDetailDTO.getWorkingDays(), isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
-            if(previousMeetingDate.isEqual(previousMeetingDateTemp)){
-                previousMeetingDateTemp = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate,
-                        previousMeetingDateTemp, getRepaymentEvery(),
-                        CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
-                        isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
-            }
+            previousMeetingDateTemp = CalendarUtils.getNextRecurringDate(singlePeriodRecurrence, previousMeetingDateTemp, previousMeetingDateTemp);
         }
-        int monthsBetween = Months.monthsBetween(previousMeetingDate, startDate).getMonths();
-        previousMeetingDate = previousMeetingDate.plusMonths(monthsBetween);
-        monthsBetween = Months.monthsBetween(startDate, modifiedDate).getMonths();
-        LocalDate startDateTemp = modifiedDate.minusMonths(monthsBetween);
-        while(startDateTemp.isBefore(startDate) && !startDate.isEqual(getExpectedDisbursementDate())){
-            startDateTemp = startDateTemp.plusMonths(1);
-            monthsBetween--;
-        }
+        
+        LocalDate startDateTemp = CalendarUtils.getNextRecurringDate(singlePeriodRecurrence, meetingStartDate, startDate);
+        
+        Collection<LocalDate> dates = CalendarUtils.getRecurringDatesWithNoLimit(singlePeriodRecurrence, meetingStartDate, startDateTemp.plusDays(1), modifiedDate.plusDays(1));
+        int monthsBetween = dates.size();
+        
         int daysInPeriodAfterMonths = Days.daysBetween(previousMeetingDate, startDateTemp).getDays();
         int actualDays = Days.daysBetween(startDate, startDateTemp).getDays();
         BigDecimal numberOfPeriods = BigDecimal.valueOf(monthsBetween);
@@ -1095,6 +1098,23 @@ public final class LoanApplicationTerms {
             numberOfPeriods = numberOfPeriods.add(BigDecimal.valueOf((double) actualDays / daysInPeriodAfterMonths));
         }
         return numberOfPeriods;
+    }
+    
+    private String removeIntervalFromRecurrence(final String recurrence) {
+        int indexOfInterval = recurrence.indexOf("INTERVAL=");
+        StringBuilder sb = new StringBuilder();
+        if (indexOfInterval == -1) {
+            sb.append(recurrence);
+        } else {
+            sb.append(recurrence.substring(0, indexOfInterval - 1));
+            String s2 = recurrence.substring(indexOfInterval);
+            int indexOfEnd = s2.indexOf(";");
+            if (indexOfEnd > 0) {
+                sb.append(s2.substring(indexOfEnd));
+            }
+        }
+
+        return sb.toString();
     }
 
     public void updateLoanEndDate(final LocalDate loanEndDate) {
