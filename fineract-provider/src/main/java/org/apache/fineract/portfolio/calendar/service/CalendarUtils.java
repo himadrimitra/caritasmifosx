@@ -69,6 +69,18 @@ public class CalendarUtils {
         return getNextRecurringDate(recur, seedDate, startDate);
     }
 
+    public static LocalDate adjustDate(final LocalDate date, final LocalDate seedDate, final Recur recur) {
+        LocalDate adjustedVal = date;
+        final PeriodFrequencyType frequencyType = getMeetingPeriodFrequencyType(recur);
+        NumberList monthDays = recur.getMonthDayList();
+        WeekDayList weekdays = recur.getDayList();
+
+        if (monthDays.isEmpty() && weekdays.isEmpty()) {
+            adjustedVal = adjustDate(date, seedDate, frequencyType);
+        }
+        return adjustedVal;
+    }
+    
     public static LocalDate adjustDate(final LocalDate date, final LocalDate seedDate, final PeriodFrequencyType frequencyType) {
         LocalDate adjustedVal = date;
         if (date!= null && frequencyType.isMonthly() && seedDate.getDayOfMonth() > 28) {
@@ -107,7 +119,7 @@ public class CalendarUtils {
         final Date seed = convertToiCal4JCompatibleDate(seedDate);
         final Date nextRecDate = recur.getNextDate(seed, periodStart);
         LocalDate nextDate = nextRecDate == null ? null : new LocalDate(nextRecDate);
-        nextDate = adjustDate(nextDate, seedDate, getMeetingPeriodFrequencyType(recur));
+        nextDate = adjustDate(nextDate, seedDate, recur);
         return nextDate;
     }
 
@@ -174,19 +186,19 @@ public class CalendarUtils {
 
         final Value value = new Value(Value.DATE.getValue());
         final DateList recurringDates = recur.getDates(seed, periodStart, periodEnd, value, maxCount);
-        return convertToLocalDateList(recurringDates, seedDate, getMeetingPeriodFrequencyType(recur), isSkippMeetingOnFirstDay,
+        return convertToLocalDateList(recurringDates, seedDate, recur, isSkippMeetingOnFirstDay,
                 numberOfDays);
     }
 
     private static Collection<LocalDate> convertToLocalDateList(final DateList dates, final LocalDate seedDate,
-            final PeriodFrequencyType frequencyType, boolean isSkippMeetingOnFirstDay, final Integer numberOfDays) {
+            final Recur recur, boolean isSkippMeetingOnFirstDay, final Integer numberOfDays) {
 
         final Collection<LocalDate> recurringDates = new ArrayList<>();
 
         for (@SuppressWarnings("rawtypes")
         final Iterator iterator = dates.iterator(); iterator.hasNext();) {
             final Date date = (Date) iterator.next();
-            recurringDates.add(adjustDate(new LocalDate(date), seedDate, frequencyType));
+            recurringDates.add(adjustDate(new LocalDate(date), seedDate, recur));
         }
 
         if (isSkippMeetingOnFirstDay) { return skipMeetingOnFirstdayOfMonth(recurringDates, numberOfDays); }
