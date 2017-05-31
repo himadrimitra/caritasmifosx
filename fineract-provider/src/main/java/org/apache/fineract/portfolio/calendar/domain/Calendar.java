@@ -708,7 +708,7 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
         this.startDate = startDate;
     }
     
-    public void updateStartDateAndNthDayAndDayOfWeekType(LocalDate newMeetingStartDate) {
+    public void updateStartDateAndNthDayAndDayOfWeekType(LocalDate newMeetingStartDate, boolean isMeetingAttached) {
 
         final LocalDate currentDate = DateUtils.getLocalDateOfTenant();
 
@@ -723,11 +723,11 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
             throw new CalendarDateException("new.start.date.before.existing.date", defaultUserMessage, newMeetingStartDate,
                     getStartDateLocalDate());
         } else {
-            updateStartDateAndNthDayAndDayOfWeek(newMeetingStartDate);
+            updateStartDateAndNthDayAndDayOfWeek(newMeetingStartDate, isMeetingAttached);
         }
     }
     
-    public void updateStartDateAndNthDayAndDayOfWeek(LocalDate newMeetingStartDate) {
+    public void updateStartDateAndNthDayAndDayOfWeek(LocalDate newMeetingStartDate, boolean isMeetingAttached) {
         this.startDate = newMeetingStartDate.toDate();
 
         /*
@@ -755,7 +755,7 @@ public class Calendar extends AbstractAuditableCustom<AppUser, Long> {
         }
 
         // TODO cover other recurrence also
-        if (!isNthDayFrequency()) {
+        if (!isNthDayFrequency() || !isMeetingAttached) {
             this.recurrence = constructRecurrence(calendarFrequencyType, interval, repeatsOnDay, weekOfMonth, repeatsOnDayOfMonth);
         }
     }
