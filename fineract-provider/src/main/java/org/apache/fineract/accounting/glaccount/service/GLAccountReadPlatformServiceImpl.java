@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.accounting.glaccount.service;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -90,12 +91,20 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
             if (this.associationParametersData.isRunningBalanceRequired()) {
                 sb.append(",gl_j.closing_balance as organizationRunningBalance ");
             }
+            if(this.associationParametersData.isOfficeRunningBalancerequired()){
+            	sb.append(",gl_f.closing_balance as officeRunningBalance ");
+            }
             sb.append("from acc_gl_account gl left join m_code_value cv on tag_id=cv.id ");
-            if (this.associationParametersData.isRunningBalanceRequired()) {
+            if (this.associationParametersData.isRunningBalanceRequired() || this.associationParametersData.isOfficeRunningBalancerequired()) {
                 sb.append(" LEFT OUTER JOIN (SELECT date(ifnull(rcc.computed_till_date,MAX(rc.date))) AS minDate, rc.account_id AS accountId ");
                 sb.append(" FROM f_org_running_balance rc left join f_running_balance_computation_detail rcc on rc.account_id=rcc.account_id ");
                 sb.append(" GROUP BY rc.account_id) as rbd on  rbd.accountId = gl.id");
-                sb.append(" LEFT OUTER JOIN f_org_running_balance gl_j ON gl_j.account_id = gl.id and gl_j.date = rbd.minDate ");
+            }
+            if (this.associationParametersData.isRunningBalanceRequired()){
+            	sb.append(" LEFT OUTER JOIN f_org_running_balance gl_j ON gl_j.account_id = gl.id and gl_j.date = rbd.minDate ");
+            }
+            if (this.associationParametersData.isOfficeRunningBalancerequired()) {
+                sb.append(" LEFT OUTER JOIN f_office_running_balance gl_f ON gl_f.account_id = gl.id and gl_f.date = rbd.minDate ");
             }
             return sb.toString();
         }
@@ -118,9 +127,14 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
             final Long codeId = rs.wasNull() ? null : rs.getLong("codeId");
             final String codeValue = rs.getString("codeValue");
             final CodeValueData tagId = CodeValueData.instance(codeId, codeValue);
-            Long organizationRunningBalance = null;
+            BigDecimal organizationRunningBalance = null;
             if (associationParametersData.isRunningBalanceRequired()) {
-                organizationRunningBalance = rs.getLong("organizationRunningBalance");
+                organizationRunningBalance = rs.getBigDecimal("organizationRunningBalance");
+            }
+            BigDecimal officeRunningBalance = null;
+            if (associationParametersData.isOfficeRunningBalancerequired()){
+            	officeRunningBalance = rs.getBigDecimal("officeRunningBalance");
+  
             }
             final Integer glClassificationTypeEnum = JdbcSupport.getInteger(rs, "glClassificationTypeEnum");
             EnumOptionData glClassificationType = null;
@@ -128,7 +142,7 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
             	glClassificationType = GlAccountEnumerations.glClassificationType(glClassificationTypeEnum);
             }
             return new GLAccountData(id, name, parentId, glCode, disabled, manualEntriesAllowed, accountType, usage, description,
-                    nameDecorated, tagId, organizationRunningBalance, glClassificationType);
+                    nameDecorated, tagId, organizationRunningBalance, glClassificationType, officeRunningBalance);
         }
     }
 
@@ -287,24 +301,37 @@ public class GLAccountReadPlatformServiceImpl implements GLAccountReadPlatformSe
     }
 	
     @Override
-    public GLAccountData retrieveGLAccountById(final long glAccountId, JournalEntryAssociationParametersData associationParametersData) {
+    public GLAccountData retrieveGLAccountById(final long glAccountId, final Long officeId, JournalEntryAssociationParametersData associationParametersData) {
         try {
 
             final GLAccountMapper rm = new GLAccountMapper(associationParametersData);
+            final Long[] paramaterArray = new Long[2];
+            int arrayPos = 0;
             final StringBuilder sql = new StringBuilder();
             sql.append("select ").append(rm.schema());
+            if(associationParametersData.isOfficeRunningBalancerequired() && officeId != null){
+            	sql.append(" and gl_f.office_id = ? ");
+            	paramaterArray[arrayPos] = officeId;
+            	arrayPos = arrayPos + 1;
+            }
             sql.append(" where gl.id = ?");
             if (associationParametersData.isRunningBalanceRequired()) {
                 sql.append("  ORDER BY gl_j.date LIMIT 1");
             }
-            final GLAccountData glAccountData = this.jdbcTemplate.queryForObject(sql.toString(), rm, new Object[] { glAccountId });
+            if (associationParametersData.isOfficeRunningBalancerequired() && officeId != null) {
+                sql.append("  ORDER BY gl_f.date LIMIT 1");
+            }
+            paramaterArray[arrayPos] = glAccountId;
+            arrayPos = arrayPos + 1 ;
+            final Object[] finalObjectArray = Arrays.copyOf(paramaterArray, arrayPos);
+            final GLAccountData glAccountData = this.jdbcTemplate.queryForObject(sql.toString(), rm, finalObjectArray);
 
             return glAccountData;
         } catch (final EmptyResultDataAccessException e) {
             throw new GLAccountNotFoundException(glAccountId);
         }
     }
-
+    
     @Override
     public List<GLAccountData> retrieveAllEnabledDetailGLAccounts(final GLAccountType accountType) {
         final Integer classificationType = null;
