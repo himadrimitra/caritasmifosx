@@ -3237,7 +3237,7 @@ public class Loan extends AbstractPersistable<Long> {
     private final void reverseExistingTransactions() {
         Collection<LoanTransaction> retainTransactions = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
-            transaction.reverse();
+            transaction.reverseAndResetTransaction();
             if(transaction.getId() != null){
                 retainTransactions.add(transaction);
             }
