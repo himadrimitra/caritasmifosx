@@ -998,7 +998,7 @@ public final class LoanApplicationTerms {
                 }
                 String recurrence = null;
                 if (this.loanCalendar == null) {
-                    recurrence = "FREQ=MONTHLY;INTERVAL="+getRepaymentEvery()+";BYMONTHDAY=" + calendarStartDate.getDayOfMonth();
+                    recurrence = "FREQ=MONTHLY;INTERVAL="+getRepaymentEvery();
                 } else {
                     CalendarHistory calendarHistory = null;
                     CalendarHistoryDataWrapper calendarHistoryDataWrapper = this.getCalendarHistoryDataWrapper();
@@ -1019,8 +1019,12 @@ public final class LoanApplicationTerms {
 
                 LocalDate expectedStartDate = startDate;
                 LocalDate meetingStartDate = calendarStartDate;
-                while (!meetingStartDate.isBefore(expectedStartDate) || meetingStartDate.getMonthOfYear() == expectedStartDate.getMonthOfYear()) {
-                    meetingStartDate = meetingStartDate.minusMonths(getRepaymentEvery());
+                int dayOfMonth = calendarStartDate.getDayOfMonth();
+                while (!meetingStartDate.isBefore(expectedStartDate)
+                        || meetingStartDate.getMonthOfYear() == expectedStartDate.getMonthOfYear()
+                        || dayOfMonth != meetingStartDate.getDayOfMonth()) {
+                    meetingStartDate = meetingStartDate.minusMonths(1);
+                    meetingStartDate = CalendarUtils.adjustDate(meetingStartDate, calendarStartDate, this.repaymentPeriodFrequencyType);
                 }
 
                 if (!CalendarUtils.isValidRedurringDate(recurrence, meetingStartDate, startDate)) {
@@ -1034,8 +1038,8 @@ public final class LoanApplicationTerms {
                 }
 
                 LocalDate expectedEndDate = endDate;
-                if (!CalendarUtils.isValidRedurringDate(recurrence, calendarStartDate, endDate)) {
-                    expectedEndDate = CalendarUtils.getNextRepaymentMeetingDate(recurrence, calendarStartDate, endDate,
+                if (!CalendarUtils.isValidRedurringDate(recurrence, meetingStartDate, endDate)) {
+                    expectedEndDate = CalendarUtils.getNextRepaymentMeetingDate(recurrence, meetingStartDate, endDate,
                             getRepaymentEvery(),
                             CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(getLoanTermPeriodFrequencyType()),
                             this.holidayDetailDTO.getWorkingDays(), isSkipRepaymentOnFirstDayOfMonth, numberOfDays);
