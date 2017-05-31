@@ -1792,12 +1792,13 @@ public class Loan extends AbstractPersistable<Long> {
         updateNetAmountForTranches(charges);
     }
 
-    public boolean isInterestRecalculationEnabledForProduct() {
-        return this.loanProduct.isInterestRecalculationEnabled();
+    public boolean isInterestRecalculationEnabled() {
+        return this.loanRepaymentScheduleDetail.isInterestRecalculationEnabled() ;
     }
 
     public boolean isMultiDisburmentLoan() {
-        return this.loanProduct.isMultiDisburseLoan();
+        //If this loan is multi tranche loan disbursementDetails object size should be greater 0
+        return this.disbursementDetails != null ? (this.disbursementDetails.size() > 0? true : false) : false ;
     }
 
     /**
@@ -3236,7 +3237,7 @@ public class Loan extends AbstractPersistable<Long> {
     private final void reverseExistingTransactions() {
         Collection<LoanTransaction> retainTransactions = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
-            transaction.reverse();
+            transaction.reverseAndResetTransaction();
             if(transaction.getId() != null){
                 retainTransactions.add(transaction);
             }
@@ -4320,7 +4321,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     private void handleAccrualsForClosedLoanTransactionReversal() {
-        if (isPeriodicAccrualAccountingEnabledOnLoanProduct() && !isInterestRecalculationEnabledForProduct()
+        if (isPeriodicAccrualAccountingEnabledOnLoanProduct() && !isInterestRecalculationEnabled()
                 && (status().isOverpaid() || status().isClosedObligationsMet())) {
             LocalDate lastUserTransactionDate = getLastUserTransactionDate();
             LocalDate lastScheduleDate = determineExpectedMaturityDate();
@@ -5640,7 +5641,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
     
     private void validatePrepayment(final LoanTransaction loanTransaction) {
-        if(!this.isInterestRecalculationEnabledForProduct()){
+        if(!this.isInterestRecalculationEnabled()){
             String action = "prepayment";
             String errorMessage = "Must be interest reclculation product for prepayment";
             String postfix = "must.be.interest.recalution.product";
@@ -6074,7 +6075,7 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void updateIsInterestRecalculationEnabled() {
-        this.loanRepaymentScheduleDetail.updateIsInterestRecalculationEnabled(isInterestRecalculationEnabledForProduct());
+        this.loanRepaymentScheduleDetail.updateIsInterestRecalculationEnabled(isInterestRecalculationEnabled());
     }
 
     public LoanInterestRecalculationDetails loanInterestRecalculationDetails() {
@@ -6420,7 +6421,7 @@ public class Loan extends AbstractPersistable<Long> {
             loanApplicationTerms.setFirstEmiAmount(firstInstallmentEmiAmount);
             this.firstEmiAmount = firstInstallmentEmiAmount;
         }
-        if (!this.getDisbursementDate().isBefore(DateUtils.getLocalDateOfTenant()) && this.isInterestRecalculationEnabledForProduct()
+        if (!this.getDisbursementDate().isBefore(DateUtils.getLocalDateOfTenant()) && this.isInterestRecalculationEnabled()
                 && this.loanProduct().isAdjustInterestForRounding()) {
             loanApplicationTerms.setAdjustLastInstallmentInterestForRounding(true);
         }
@@ -7247,7 +7248,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     public Boolean isSubsidyApplicable() {
         boolean isSubsidyApplicable = false;
-        if (this.isInterestRecalculationEnabledForProduct()) {
+        if (this.isInterestRecalculationEnabled()) {
             isSubsidyApplicable = this.loanInterestRecalculationDetails.isSubsidyApplicable();
         }
         return isSubsidyApplicable;
@@ -7526,7 +7527,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     public void validateForForeclosure(final LocalDate transactionDate) {
 
-        if (isInterestRecalculationEnabledForProduct()) {
+        if (isInterestRecalculationEnabled()) {
             final String defaultUserMessage = "The loan with interest recalculation enabled cannot be foreclosed.";
             throw new LoanForeclosureException("loan.with.interest.recalculation.enabled.cannot.be.foreclosured", defaultUserMessage,
                     getId());

@@ -42,6 +42,7 @@ import org.apache.fineract.accounting.journalentry.data.OfficeOpeningBalancesDat
 import org.apache.fineract.accounting.journalentry.data.TransactionDetailData;
 import org.apache.fineract.accounting.journalentry.data.TransactionTypeEnumData;
 import org.apache.fineract.accounting.journalentry.exception.JournalEntriesNotFoundException;
+import org.apache.fineract.accounting.producttoaccountmapping.domain.PortfolioProductType;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
@@ -283,15 +284,31 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
 
         GLJournalEntryMapper rm = new GLJournalEntryMapper(associationParametersData);
         List<Object> paramList = new ArrayList<>();
-
+        Integer derivedEntityType = entityType ;
+        if(derivedEntityType == null) {
+            derivedEntityType = deriveEntityType(searchParameters) ;
+        }
         String sql = constructSqlForPaginatedJournalEntry(searchParameters, glAccountId, onlyManualEntries, fromDate, toDate,
-                transactionId, entityType, associationParametersData, paramList);
+                transactionId, derivedEntityType, associationParametersData, paramList);
 
         final Object[] finalObjectArray = paramList.toArray();
         final String sqlCountRows = "SELECT FOUND_ROWS()";
         return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sql, finalObjectArray, rm);
     }
     
+    private Integer deriveEntityType(final SearchParameters params) {
+        Integer derivedEntityType = null ;
+        if(params.getLoanId() != null) {
+            derivedEntityType = PortfolioProductType.LOAN.getValue() ;
+        }else if(params.getSavingsId() != null) {
+            derivedEntityType = PortfolioProductType.SAVING.getValue() ;
+        }else if(params.getClientId() != null) {
+            derivedEntityType = PortfolioProductType.CLIENT.getValue() ;
+        }else if(params.getProvisioningEntryId() != null) {
+            derivedEntityType = PortfolioProductType.PROVISIONING.getValue() ;
+        }
+        return derivedEntityType ;
+    }
     
     private String constructSqlForPaginatedJournalEntry(final SearchParameters searchParameters, final Long glAccountId,
             final Boolean onlyManualEntries, final Date fromDate, final Date toDate, final String transactionId, final Integer entityType,
@@ -313,7 +330,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 .append(" journalEntry.created_date as createdDate, journalEntry.reversed as reversed, ")
                 .append(" journalEntry.currency_code as currencyCode, curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, ")
                 .append(" curr.display_symbol as currencyDisplaySymbol, curr.decimal_places as currencyDigits, curr.currency_multiplesof as inMultiplesOf ");
-        if (associationParametersData.isTransactionDetailsRequired()) {
+        if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
             sb.append(" ,pd.receipt_number as receiptNumber, ").append(" pd.check_number as checkNumber, ")
                     .append(" pd.account_number as accountNumber, ").append(" pt.value as paymentTypeName, ")
                     .append(" pd.payment_type_id as paymentTypeId,").append(" pd.bank_number as bankNumber, ")
@@ -412,7 +429,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 .append(" left join m_office as office on office.id = journalEntry.office_id")
                 .append(" left join m_appuser as creatingUser on creatingUser.id = journalEntry.createdby_id ")
                 .append(" join m_currency curr on curr.code = journalEntry.currency_code ");
-        if (associationParametersData.isTransactionDetailsRequired()) {
+        if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
             sb.append(
                     " left join m_loan_transaction as lt on journalEntry.entity_type_enum = ? and  journalEntry.entity_transaction_id = lt.id ")
                     .append(" left join m_savings_account_transaction as st on journalEntry.entity_type_enum = ? and journalEntry.entity_transaction_id = st.id ")
@@ -421,7 +438,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                     .append(" left join m_note as note on lt.id = note.loan_transaction_id or st.id = note.savings_account_transaction_id ");
         }
 
-        if (associationParametersData.isTransactionDetailsRequired()) {
+        if (associationParametersData != null && associationParametersData.isTransactionDetailsRequired()) {
             paramList.add(PortfolioAccountType.LOAN.getValue());
             paramList.add(PortfolioAccountType.SAVINGS.getValue());
         }
@@ -474,7 +491,8 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 "office-opening-balances-contra-account value can not be null", "office-opening-balances-contra-account"); }
 
         final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData();
-        final GLAccountData contraAccount = this.glAccountReadPlatformService.retrieveGLAccountById(contraId, associationParametersData);
+        final Long oficeId = null;
+        final GLAccountData contraAccount = this.glAccountReadPlatformService.retrieveGLAccountById(contraId, oficeId, associationParametersData);
         if (!GLAccountType.fromInt(contraAccount.getTypeId()).isEquityType()) { throw new GeneralPlatformDomainRuleException(
                 "error.msg.configuration.opening.balance.contra.account.value.is.invalid.account.type",
                 "Global configuration 'office-opening-balances-contra-account' value is not an equity type account", contraId); }
@@ -590,7 +608,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
 
     @Override
     public Page<JournalEntryData> retrieveJournalEntriesByEntityId(String transactionId, Long entityId, Integer entityType) {
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(true, true);
+        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(true, true, false);
         try {
             final GLJournalEntryMapper rm = new GLJournalEntryMapper(associationParametersData);
             final String sql = "select " + rm.schema()

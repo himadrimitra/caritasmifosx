@@ -471,6 +471,12 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.reversed = true;
         this.loanTransactionToRepaymentScheduleMappings.clear();
     }
+    
+    public void reverseAndResetTransaction(){
+        this.reversed = true;
+        this.loanTransactionToRepaymentScheduleMappings.clear();
+        this.manuallyAdjustedOrReversed = false;
+    }
 
     public void resetDerivedComponents() {
         this.principalPortion = null;
@@ -860,8 +866,6 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public void manuallyAdjustedOrReversed() {
         this.manuallyAdjustedOrReversed = true;
     }
-
-    
 
     public boolean isLastTransaction(final LoanTransaction loanTransaction) {
         boolean isLatest = false;

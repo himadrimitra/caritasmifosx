@@ -475,7 +475,7 @@ public class AccountTransfersWritePlatformServiceImpl implements AccountTransfer
                 accountTransferDTO.getPaymentDetail(), accountTransferDTO.getNoteText(), accountTransferDTO.getTxnExternalId(), true);
 
         LoanTransaction repayTransaction = null; 
-        if (toLoanAccount.isInterestRecalculationEnabledForProduct()) {
+        if (toLoanAccount.isInterestRecalculationEnabled()) {
             repayTransaction = this.loanAccountDomainService.makeRepayment(toLoanAccount, new CommandProcessingResultBuilder(),
                     accountTransferDTO.getTransactionDate(), accountTransferDTO.getTransactionAmount(),
                     accountTransferDTO.getPaymentDetail(), null, null, false, isAccountTransfer, null, false, true);

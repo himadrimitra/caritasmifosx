@@ -474,7 +474,7 @@ public class SchedulerJobsTestResults {
         this.schedulerJobHelper.executeJob(JobName);
         final HashMap runningBalanceAfter = this.accountHelper.getAccountingWithRunningBalanceById(accountID.toString());
 
-        final Integer INT_BALANCE = new Integer(MINIMUM_OPENING_BALANCE);
+        final Float INT_BALANCE = new Float(MINIMUM_OPENING_BALANCE);
 
         Assert.assertEquals("Verifying Account Running Balance after running Update Accounting Running Balances Scheduler Job",
                 INT_BALANCE, runningBalanceAfter.get("organizationRunningBalance"));

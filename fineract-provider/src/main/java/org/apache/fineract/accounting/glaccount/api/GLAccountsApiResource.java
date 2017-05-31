@@ -122,7 +122,7 @@ public class GLAccountsApiResource {
             @QueryParam("classificationType") final Integer classificationType) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance);
+        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance, false);
         if (isPagination) {
             final SearchParameters searchParameters = SearchParameters.forPagination(offset, limit, null, null);
             Page<GLAccountData> glAccountDatas = this.glAccountReadPlatformService.retrieveAllGLAccounts(associationParametersData,
@@ -142,13 +142,15 @@ public class GLAccountsApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retreiveAccount(@PathParam("glAccountId") final Long glAccountId, @Context final UriInfo uriInfo,
-            @QueryParam("fetchRunningBalance") final boolean runningBalance) {
+            @QueryParam("fetchRunningBalance") final boolean runningBalance, 
+            @QueryParam("fetchOfficeRunningBalance") final boolean officeRunningBalance,
+            @QueryParam("officeId") final Long officeId) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermission);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance);
-        GLAccountData glAccountData = this.glAccountReadPlatformService.retrieveGLAccountById(glAccountId, associationParametersData);
+        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(false, runningBalance, officeRunningBalance);
+        GLAccountData glAccountData = this.glAccountReadPlatformService.retrieveGLAccountById(glAccountId, officeId, associationParametersData);
         if (settings.isTemplate()) {
             glAccountData = handleTemplate(glAccountData);
         }

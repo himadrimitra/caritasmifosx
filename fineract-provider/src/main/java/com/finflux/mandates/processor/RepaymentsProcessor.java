@@ -33,10 +33,6 @@ import com.finflux.mandates.service.TransactionsProcessingWritePlatformService;
 @Component
 public class RepaymentsProcessor {
 
-        private final static String FAILED = "FAILED";
-        private final static String SUCCESS = "SUCCESS";
-        private final static String PROCESSED = "PROCESSED";
-        private final static String NOT_PROCESSED = "NOT PROCESSED";
         private final MandatesProcessingStatusPlatformWriteService mandatesProcessingWritePlatformService;
         private final DocumentReadPlatformService documentReadPlatformService;
         private final ExternalServicesPropertiesReadPlatformService externalServicesPropertiesReadPlatformService;
@@ -84,21 +80,21 @@ public class RepaymentsProcessor {
                 MandateTransactionsData transactionToProcess = this.transactionsProcessingReadPlatformService
                         .findOneByLoanAccountNoAndInprocessStatus(data.getReference());
                 if(null == transactionToProcess){
-                        data.setProcessStatus(NOT_PROCESSED, "Couldn't find matching Transaction based on reference");
+                        data.setProcessStatus(NachStatusValues.NOT_PROCESSED, "Couldn't find matching Transaction based on reference");
                         counts.setUnprocessedRecords(counts.getUnprocessedRecords()+1);
                 }else{
-                        if(data.getStatus().equalsIgnoreCase(FAILED)){
+                        if(data.getStatus().equalsIgnoreCase(NachStatusValues.FAILED)){
                                 this.transactionsProcessingWritePlatformService.updateTransactionAsFailed(transactionToProcess.getId(),
                                         data.getFailureReason(), mandateProcessId.toString());
-                                data.setProcessStatus(PROCESSED,"Mandate Transaction Id marked as failed:"+transactionToProcess.getId());
+                                data.setProcessStatus(NachStatusValues.PROCESSED,"Mandate Transaction Id marked as failed:"+transactionToProcess.getId());
                                 counts.setFailedRecords(counts.getFailedRecords()+1);
-                        }else if(data.getStatus().equalsIgnoreCase(SUCCESS)){
+                        }else if(data.getStatus().equalsIgnoreCase(NachStatusValues.SUCCESS)){
                                 try{
                                         Long repaymentTransactionId = processRepayment(data, transactionToProcess);
                                         this.transactionsProcessingWritePlatformService
                                                 .updateTransactionAsSuccess(transactionToProcess.getId(),
                                                         repaymentTransactionId, mandateProcessId.toString());
-                                        data.setProcessStatus(PROCESSED,"Repayment Transaction Id:"+repaymentTransactionId);
+                                        data.setProcessStatus(NachStatusValues.PROCESSED,"Repayment Transaction Id:"+repaymentTransactionId);
                                         counts.setSuccessRecords(counts.getSuccessRecords()+1);
                                 }catch (RuntimeException e){
                                     AbstractPlatformDomainRuleException exc ;
@@ -106,18 +102,18 @@ public class RepaymentsProcessor {
                                         exc = (AbstractPlatformDomainRuleException) e ;
                                         this.transactionsProcessingWritePlatformService.updateTransactionAsFailed(transactionToProcess.getId(),
                                                 exc.getDefaultUserMessage(), mandateProcessId.toString());
-                                        data.setProcessStatus(PROCESSED,exc.getDefaultUserMessage());
+                                        data.setProcessStatus(NachStatusValues.PROCESSED,exc.getDefaultUserMessage());
                                         counts.setFailedRecords(counts.getFailedRecords()+1);
                                     }else {
                                         this.transactionsProcessingWritePlatformService.updateTransactionAsFailed(transactionToProcess.getId(),
                                                 ""+e.getClass(), mandateProcessId.toString());
-                                        data.setProcessStatus(PROCESSED,"Failed due to domain rule or platform error");
+                                        data.setProcessStatus(NachStatusValues.PROCESSED,"Failed due to domain rule or platform error");
                                         counts.setFailedRecords(counts.getFailedRecords()+1);
                                     }
                                 }
-                        }else{
-                                data.setProcessStatus(NOT_PROCESSED, "Couldn't parse status column");
-                                counts.setUnprocessedRecords(counts.getUnprocessedRecords()+1);
+                        }else if(!data.getStatus().equals(NachStatusValues.INTERMEDIATE_STATE)) {
+                            data.setProcessStatus(NachStatusValues.NOT_PROCESSED, "Couldn't parse status column");
+                            counts.setUnprocessedRecords(counts.getUnprocessedRecords()+1);
                         }
                 }
         }

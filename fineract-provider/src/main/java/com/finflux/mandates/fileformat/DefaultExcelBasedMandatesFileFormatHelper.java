@@ -1,18 +1,5 @@
 package com.finflux.mandates.fileformat;
 
-import com.finflux.mandates.data.ProcessResponseData;
-import com.finflux.mandates.data.MandatesProcessData;
-import com.finflux.portfolio.loan.mandate.data.MandateData;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.fineract.infrastructure.configuration.data.NACHCredentialsData;
-import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.util.NumberToTextConverter;
-import org.springframework.stereotype.Component;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,6 +7,24 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.configuration.data.NACHCredentialsData;
+import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.util.NumberToTextConverter;
+import org.springframework.stereotype.Component;
+
+import com.finflux.mandates.data.MandatesProcessData;
+import com.finflux.mandates.data.ProcessResponseData;
+import com.finflux.mandates.processor.NachStatusValues;
+import com.finflux.portfolio.loan.mandate.data.MandateData;
 
 @Component("DefaultExcelBasedMandatesFileFormatHelper")
 public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFormatHelper{
@@ -238,21 +243,21 @@ public class DefaultExcelBasedMandatesFileFormatHelper implements MandatesFileFo
                 return headersForMandateUpload;
         }
 
-        protected String parseStatus(String cellValue) {
-                String value = cellValue.toUpperCase();
-                String ret = "INVALID";
-                switch (value){
-                        case "SUCCESS":
-                        case "ACCEPTED":
-                                ret = "SUCCESS";
-                                break;
-                        case "REJECTED":
-                        case "FAILED":
-                                ret = "FAILED";
-                                break;
-                }
-                return ret;
+    protected String parseStatus(String cellValue) {
+        String value = cellValue.toUpperCase();
+        String ret = NachStatusValues.INVALID;
+        switch (value) {
+            case NachStatusValues.SUCCESS:
+            case NachStatusValues.ACCEPTED:
+                ret = NachStatusValues.SUCCESS;
+            break;
+            case NachStatusValues.REJECTED:
+            case NachStatusValues.FAILED:
+                ret = NachStatusValues.FAILED;
+            break;
         }
+        return ret;
+    }
 
         private void extractSpecialValues(short colIx, String cellValue, ProcessResponseData data) {
                 int[] specialValueColumnNumbers = getSpecialValueColumnNumbers();

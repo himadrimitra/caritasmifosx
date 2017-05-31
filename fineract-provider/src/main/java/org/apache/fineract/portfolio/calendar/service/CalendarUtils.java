@@ -66,13 +66,24 @@ public class CalendarUtils {
     public static LocalDate getNextRecurringDate(final String recurringRule, final LocalDate seedDate, final LocalDate startDate) {
         final Recur recur = CalendarUtils.getICalRecur(recurringRule);
         if (recur == null) { return null; }
-        final LocalDate nextDate = getNextRecurringDate(recur, seedDate, startDate);
-        return adjustDate(nextDate, seedDate, getMeetingPeriodFrequencyType(recurringRule));
+        return getNextRecurringDate(recur, seedDate, startDate);
     }
 
+    public static LocalDate adjustDate(final LocalDate date, final LocalDate seedDate, final Recur recur) {
+        LocalDate adjustedVal = date;
+        final PeriodFrequencyType frequencyType = getMeetingPeriodFrequencyType(recur);
+        NumberList monthDays = recur.getMonthDayList();
+        WeekDayList weekdays = recur.getDayList();
+
+        if (monthDays.isEmpty() && weekdays.isEmpty()) {
+            adjustedVal = adjustDate(date, seedDate, frequencyType);
+        }
+        return adjustedVal;
+    }
+    
     public static LocalDate adjustDate(final LocalDate date, final LocalDate seedDate, final PeriodFrequencyType frequencyType) {
         LocalDate adjustedVal = date;
-        if (frequencyType.isMonthly() && seedDate.getDayOfMonth() > 28) {
+        if (date!= null && frequencyType.isMonthly() && seedDate.getDayOfMonth() > 28) {
             switch (date.getMonthOfYear()) {
                 case 2:
                     if (date.year().isLeap()) {
@@ -107,7 +118,9 @@ public class CalendarUtils {
         final DateTime periodStart = new DateTime(startDate.toDate());
         final Date seed = convertToiCal4JCompatibleDate(seedDate);
         final Date nextRecDate = recur.getNextDate(seed, periodStart);
-        return nextRecDate == null ? null : new LocalDate(nextRecDate);
+        LocalDate nextDate = nextRecDate == null ? null : new LocalDate(nextRecDate);
+        nextDate = adjustDate(nextDate, seedDate, recur);
+        return nextDate;
     }
 
     private static Date convertToiCal4JCompatibleDate(final LocalDate inputDate) {
@@ -173,19 +186,19 @@ public class CalendarUtils {
 
         final Value value = new Value(Value.DATE.getValue());
         final DateList recurringDates = recur.getDates(seed, periodStart, periodEnd, value, maxCount);
-        return convertToLocalDateList(recurringDates, seedDate, getMeetingPeriodFrequencyType(recur), isSkippMeetingOnFirstDay,
+        return convertToLocalDateList(recurringDates, seedDate, recur, isSkippMeetingOnFirstDay,
                 numberOfDays);
     }
 
     private static Collection<LocalDate> convertToLocalDateList(final DateList dates, final LocalDate seedDate,
-            final PeriodFrequencyType frequencyType, boolean isSkippMeetingOnFirstDay, final Integer numberOfDays) {
+            final Recur recur, boolean isSkippMeetingOnFirstDay, final Integer numberOfDays) {
 
         final Collection<LocalDate> recurringDates = new ArrayList<>();
 
         for (@SuppressWarnings("rawtypes")
         final Iterator iterator = dates.iterator(); iterator.hasNext();) {
             final Date date = (Date) iterator.next();
-            recurringDates.add(adjustDate(new LocalDate(date), seedDate, frequencyType));
+            recurringDates.add(adjustDate(new LocalDate(date), seedDate, recur));
         }
 
         if (isSkippMeetingOnFirstDay) { return skipMeetingOnFirstdayOfMonth(recurringDates, numberOfDays); }
@@ -375,6 +388,9 @@ public class CalendarUtils {
         LocalDate startDate = date;
         if (isSkipRepaymentonFirstDayOfMonth && date.getDayOfMonth() == (numberOfDays + 1)) {
             startDate = startDate.minusDays(numberOfDays);
+        }
+        if(CalendarFrequencyType.fromString(recur.getFrequency()).isMonthly() && seedDate.getDayOfMonth() > 28){
+            startDate = startDate.minusDays(3);
         }
         final Collection<LocalDate> recurDate = getRecurringDates(recur, seedDate, startDate, date.plusDays(1), 1,
                 isSkipRepaymentonFirstDayOfMonth, numberOfDays);

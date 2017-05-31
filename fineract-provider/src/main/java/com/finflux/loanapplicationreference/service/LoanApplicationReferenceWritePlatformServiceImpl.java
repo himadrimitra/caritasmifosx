@@ -35,7 +35,6 @@ import org.apache.fineract.portfolio.loanproduct.domain.LoanProductBusinessRuleV
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
-import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.products.exception.ResourceNotFoundException;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -54,9 +53,7 @@ import com.finflux.loanapplicationreference.domain.LoanCoApplicantRepository;
 import com.finflux.loanapplicationreference.exception.InvalidLoanApplicationReferenceStatusException;
 import com.finflux.task.data.TaskConfigEntityType;
 import com.finflux.task.data.WorkflowDTO;
-import com.finflux.task.domain.TaskConfigEntityTypeMappingRepository;
 import com.finflux.task.service.CreateWorkflowTaskFactory;
-import com.finflux.task.service.TaskPlatformWriteService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -80,9 +77,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
     private final LoanProductRepository loanProductRepository;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator;
-    private final TaskPlatformWriteService taskPlatformWriteService;
     private final ConfigurationDomainService configurationDomainService;
-    private final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final ClientRepositoryWrapper clientRepository;
     private final LoanCoApplicantRepository coApplicantRepository;
@@ -100,9 +95,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanScheduleCalculationPlatformService calculationPlatformService, final LoanProductRepository loanProductRepository,
             final LoanProductReadPlatformService loanProductReadPlatformService,
             final LoanProductBusinessRuleValidator loanProductBusinessRuleValidator,
-            final TaskPlatformWriteService taskPlatformWriteService, final ConfigurationDomainService configurationDomainService,
-            final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
-            final PaymentTypeRepositoryWrapper paymentTypeRepository,
+            final ConfigurationDomainService configurationDomainService,
             final ClientRepositoryWrapper clientRepository,
             final LoanCoApplicantRepository coApplicantRepository,
             final FineractEntityAccessUtil fineractEntityAccessUtil,
@@ -121,9 +114,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.loanProductRepository = loanProductRepository;
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.loanProductBusinessRuleValidator = loanProductBusinessRuleValidator;
-        this.taskPlatformWriteService = taskPlatformWriteService;
         this.configurationDomainService = configurationDomainService;
-        this.taskConfigEntityTypeMappingRepository = taskConfigEntityTypeMappingRepository;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.clientRepository = clientRepository;
         this.coApplicantRepository = coApplicantRepository;
@@ -280,72 +271,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
     @Override
     public CommandProcessingResult approve(final Long loanApplicationReferenceId, final JsonCommand command) {
-        try {
-            final LoanApplicationReference loanApplicationReference = this.repository
-                    .findOneWithNotFoundDetection(loanApplicationReferenceId);
-
-            final JsonElement element = this.fromApiJsonHelper.parse(command.json());
-            final JsonObject jsonObject = element.getAsJsonObject();
-            final JsonObject validationJsonObject = jsonObject.getAsJsonObject("formValidationData");
-            final JsonElement validateJsonElement = this.fromApiJsonHelper.parse(validationJsonObject.toString());
-            final JsonCommand validateCommand = JsonCommand.fromExistingCommand(command, validateJsonElement);
-            final JsonQuery query = JsonQuery.from(validationJsonObject.toString(),
-                    this.fromApiJsonHelper.parse(validationJsonObject.toString()), this.fromJsonHelper);
-            final boolean considerAllDisbursmentsInSchedule = true;
-            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true,
-                    considerAllDisbursmentsInSchedule);
-
-            final JsonObject approveJsonObject = jsonObject.getAsJsonObject("formRequestData");
-            final JsonElement approveJsonElement = this.fromApiJsonHelper.parse(approveJsonObject.toString());
-            final JsonCommand approveCommand = JsonCommand.fromExistingCommand(command, approveJsonElement);
-
-            final LocalDate submittedOnDate = validateCommand
-                    .localDateValueOfParameterNamed(LoanApplicationReferenceApiConstants.submittedOnDateParamName);
-
-            final Long loanProductId = validateCommand.longValueOfParameterNamed("productId");
-            final Boolean isPenalty = false;
-            final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(
-                    loanProductId, isPenalty);
-            this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, approveCommand.parsedJson());
-            this.validator.validateForApprove(approveCommand.json(), submittedOnDate);
-
-            if (approveCommand.parameterExists(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName)) {
-                final LoanProduct loanProduct = loanApplicationReference.getLoanProduct();
-                final Integer minimumNoOfRepayments = loanProduct.getMinNumberOfRepayments();
-                final Integer maximumNoOfRepayments = loanProduct.getMaxNumberOfRepayments();
-                final Collection<LoanScheduleModelPeriod> loanScheduleModelPeriods = loanScheduleModel.getPeriods();
-                Integer actualNumberOfRepayments = 0;
-                for (final LoanScheduleModelPeriod loanScheduleModelPeriod : loanScheduleModelPeriods) {
-                    if (loanScheduleModelPeriod != null && loanScheduleModelPeriod.periodNumber() != null) {
-                        actualNumberOfRepayments++;
-                    }
-                }
-
-                this.validator.validateLoanTermAndRepaidEveryValues(minimumNoOfRepayments, maximumNoOfRepayments, actualNumberOfRepayments);
-            }
-
-            Map<String, Object> changes = this.assembler.assembleApproveForm(loanApplicationReference, approveCommand);
-
-            final BigDecimal loanAmountApproved = approveCommand
-                    .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName);
-            if (loanAmountApproved.compareTo(loanApplicationReference.getLoanAmountRequested()) == 1) {
-                final String errorMessage = "Loan approved amount can't be greater than loan amount demanded.";
-                throw new InvalidLoanStateTransitionException("approval", "amount.can't.be.greater.than.loan.amount.demanded",
-                        errorMessage, loanApplicationReference.getLoanAmountRequested(), loanAmountApproved);
-            }
-
-            this.repository.save(loanApplicationReference);
-
-            return new CommandProcessingResultBuilder() //
-                    .withCommandId(command.commandId()) //
-                    .withEntityId(loanApplicationReferenceId) //
-                    .with(changes) //
-                    .build();
-
-        } catch (final DataIntegrityViolationException dve) {
-            handleDataIntegrityIssues(dve);
-            return CommandProcessingResult.empty();
-        }
+    	return processApproveCommand(loanApplicationReferenceId, command, false);
     }
 
     @Override
@@ -517,6 +443,84 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             }
         }
         return chargeIds;
+    }
+    
+    
+    @Override
+    public CommandProcessingResult submitForApproval(Long loanApplicationReferenceId, JsonCommand command) {
+    	return processApproveCommand(loanApplicationReferenceId, command,true);
+    }
+    
+    
+    
+    
+    public CommandProcessingResult processApproveCommand(Long loanApplicationReferenceId, JsonCommand command,boolean isDataSubmit) {
+        try {
+            final LoanApplicationReference loanApplicationReference = this.repository
+                    .findOneWithNotFoundDetection(loanApplicationReferenceId);
+
+            final JsonElement element = this.fromApiJsonHelper.parse(command.json());
+            final JsonObject jsonObject = element.getAsJsonObject();
+            final JsonObject validationJsonObject = jsonObject.getAsJsonObject("formValidationData");
+            final JsonElement validateJsonElement = this.fromApiJsonHelper.parse(validationJsonObject.toString());
+            final JsonCommand validateCommand = JsonCommand.fromExistingCommand(command, validateJsonElement);
+            final JsonQuery query = JsonQuery.from(validationJsonObject.toString(),
+                    this.fromApiJsonHelper.parse(validationJsonObject.toString()), this.fromJsonHelper);
+            final boolean considerAllDisbursmentsInSchedule = true;
+            final LoanScheduleModel loanScheduleModel = this.calculationPlatformService.calculateLoanSchedule(query, true,
+                    considerAllDisbursmentsInSchedule);
+
+            final JsonObject approveJsonObject = jsonObject.getAsJsonObject("formRequestData");
+            final JsonElement approveJsonElement = this.fromApiJsonHelper.parse(approveJsonObject.toString());
+            final JsonCommand approveCommand = JsonCommand.fromExistingCommand(command, approveJsonElement);
+
+            final LocalDate submittedOnDate = validateCommand
+                    .localDateValueOfParameterNamed(LoanApplicationReferenceApiConstants.submittedOnDateParamName);
+
+            final Long loanProductId = validateCommand.longValueOfParameterNamed("productId");
+            final Boolean isPenalty = false;
+            final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(
+                    loanProductId, isPenalty);
+            this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, approveCommand.parsedJson());
+            this.validator.validateForApprove(approveCommand.json(), submittedOnDate);
+
+            if (approveCommand.parameterExists(LoanApplicationReferenceApiConstants.fixedEmiAmountParamName)) {
+                final LoanProduct loanProduct = loanApplicationReference.getLoanProduct();
+                final Integer minimumNoOfRepayments = loanProduct.getMinNumberOfRepayments();
+                final Integer maximumNoOfRepayments = loanProduct.getMaxNumberOfRepayments();
+                final Collection<LoanScheduleModelPeriod> loanScheduleModelPeriods = loanScheduleModel.getPeriods();
+                Integer actualNumberOfRepayments = 0;
+                for (final LoanScheduleModelPeriod loanScheduleModelPeriod : loanScheduleModelPeriods) {
+                    if (loanScheduleModelPeriod != null && loanScheduleModelPeriod.periodNumber() != null) {
+                        actualNumberOfRepayments++;
+                    }
+                }
+
+                this.validator.validateLoanTermAndRepaidEveryValues(minimumNoOfRepayments, maximumNoOfRepayments, actualNumberOfRepayments);
+            }
+            Map<String, Object> changes=this.assembler.assembleApproveForm(loanApplicationReference, approveCommand,isDataSubmit);
+
+            final BigDecimal loanAmountApproved = approveCommand
+                    .bigDecimalValueOfParameterNamed(LoanApplicationReferenceApiConstants.loanAmountApprovedParamName);
+            if (loanAmountApproved.compareTo(loanApplicationReference.getLoanAmountRequested()) == 1) {
+                final String errorMessage = "Loan approved amount can't be greater than loan amount demanded.";
+                throw new InvalidLoanStateTransitionException("approval", "amount.can't.be.greater.than.loan.amount.demanded",
+                        errorMessage, loanApplicationReference.getLoanAmountRequested(), loanAmountApproved);
+            }
+
+            this.repository.save(loanApplicationReference);
+
+            return new CommandProcessingResultBuilder() //
+                    .withCommandId(command.commandId()) //
+                    .withEntityId(loanApplicationReferenceId) //
+                    .with(changes) //
+                    .build();
+
+        } catch (final DataIntegrityViolationException dve) {
+            handleDataIntegrityIssues(dve);
+            return CommandProcessingResult.empty();
+        }
+
     }
 
 }

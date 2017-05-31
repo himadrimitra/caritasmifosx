@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
+import org.apache.fineract.accounting.glaccount.domain.GLAccountUsage;
 import org.apache.fineract.accounting.glaccount.service.GLAccountReadPlatformService;
 import org.apache.fineract.accounting.journalentry.data.JournalEntryAssociationParametersData;
 import org.apache.fineract.accounting.journalentry.domain.JournalEntry;
@@ -156,13 +157,13 @@ public abstract class VoucherService {
     public List<GLAccountData> retrieveAllGLAccounts(final Integer glClassificationType) {
         final Integer accountClassification = null;
         final String searchParam = null;
-        final Integer usage = null;
+        final Integer usage = GLAccountUsage.DETAIL.getValue() ;
         final Boolean manualTransactionsAllowed = null;
         final Boolean disabled = null;
         final boolean transactionDetailsRequired = false;
         final boolean runningBalanceRequired = true;
         final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(
-                transactionDetailsRequired, runningBalanceRequired);
+                transactionDetailsRequired, runningBalanceRequired, false);
         return this.glAccountReadPlatformService.retrieveAllGLAccounts(accountClassification, searchParam, usage, manualTransactionsAllowed,
                 disabled, associationParametersData, glClassificationType);
     }

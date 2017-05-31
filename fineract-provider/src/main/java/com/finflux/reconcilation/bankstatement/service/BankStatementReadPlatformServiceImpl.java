@@ -121,7 +121,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
         final StringBuilder sb = new StringBuilder();
         sb.append("SELECT ");
         sb.append(rm.schema());
-        sb.append(" where bs.statementType = ?");
+        sb.append(" where bs.statement_type = ?");
         params.add(statementType);
         if (isProcessed != null) {
             sb.append(" and bs.is_reconciled = ?");
