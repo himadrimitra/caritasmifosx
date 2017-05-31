@@ -34,7 +34,7 @@ public interface GLAccountReadPlatformService {
             Boolean manualTransactionsAllowed, Boolean disabled, JournalEntryAssociationParametersData associationParametersData,
             final Integer glClassificationType);
 
-    GLAccountData retrieveGLAccountById(long glAccountId, JournalEntryAssociationParametersData associationParametersData);
+    GLAccountData retrieveGLAccountById(long glAccountId, final Long officeId, JournalEntryAssociationParametersData associationParametersData);
 
     List<GLAccountData> retrieveAllEnabledDetailGLAccounts();
 
@@ -50,4 +50,5 @@ public interface GLAccountReadPlatformService {
     
     Page<GLAccountData> retrieveAllGLAccounts(JournalEntryAssociationParametersData associationParametersData,
             SearchParameters searchParameters, final Integer usage, final Integer accountType, final Integer glAccounytClassificatioType);
+    
 }

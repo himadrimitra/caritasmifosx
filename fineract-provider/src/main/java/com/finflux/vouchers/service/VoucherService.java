@@ -163,7 +163,7 @@ public abstract class VoucherService {
         final boolean transactionDetailsRequired = false;
         final boolean runningBalanceRequired = true;
         final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(
-                transactionDetailsRequired, runningBalanceRequired);
+                transactionDetailsRequired, runningBalanceRequired, false);
         return this.glAccountReadPlatformService.retrieveAllGLAccounts(accountClassification, searchParam, usage, manualTransactionsAllowed,
                 disabled, associationParametersData, glClassificationType);
     }

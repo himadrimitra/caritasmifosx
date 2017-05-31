@@ -491,7 +491,8 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
                 "office-opening-balances-contra-account value can not be null", "office-opening-balances-contra-account"); }
 
         final JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData();
-        final GLAccountData contraAccount = this.glAccountReadPlatformService.retrieveGLAccountById(contraId, associationParametersData);
+        final Long oficeId = null;
+        final GLAccountData contraAccount = this.glAccountReadPlatformService.retrieveGLAccountById(contraId, oficeId, associationParametersData);
         if (!GLAccountType.fromInt(contraAccount.getTypeId()).isEquityType()) { throw new GeneralPlatformDomainRuleException(
                 "error.msg.configuration.opening.balance.contra.account.value.is.invalid.account.type",
                 "Global configuration 'office-opening-balances-contra-account' value is not an equity type account", contraId); }
@@ -607,7 +608,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
 
     @Override
     public Page<JournalEntryData> retrieveJournalEntriesByEntityId(String transactionId, Long entityId, Integer entityType) {
-        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(true, true);
+        JournalEntryAssociationParametersData associationParametersData = new JournalEntryAssociationParametersData(true, true, false);
         try {
             final GLJournalEntryMapper rm = new GLJournalEntryMapper(associationParametersData);
             final String sql = "select " + rm.schema()
