@@ -96,6 +96,7 @@ public class LoanUtilService {
     private final CalendarReadPlatformService calendarReadPlatformService;
     private final WorkingDayExemptionsReadPlatformService workingDayExcumptionsReadPlatformService;
     
+    
 
     @Autowired
     public LoanUtilService(final ApplicationCurrencyRepositoryWrapper applicationCurrencyRepository,
@@ -595,5 +596,22 @@ public class LoanUtilService {
         }
         return brokenPeriodInterest;
     }
-
+    
+    public boolean isMeetingAttached(Loan loan){
+    	if(loan.isGLIMLoan() || loan.isGroupLoan() || loan.isJLGLoan()){
+    		Long entityId = null;
+    		Integer entityTypeId = null;
+    		if(loan.getGroup().getParent() != null){
+    			entityId = loan.getGroup().getParent().getId();
+    			entityTypeId = CalendarEntityType.CENTERS.getValue();
+    		}else{
+    			entityId = loan.getGroupId();
+    			entityTypeId = CalendarEntityType.GROUPS.getValue();
+    		}
+    		Collection<CalendarInstance> calendarInstances = this.calendarInstanceRepository.findByEntityIdAndEntityTypeId(entityId, entityTypeId);
+    		return (calendarInstances.size()>0);
+    		
+    	}
+    	return false;
+    }
 }

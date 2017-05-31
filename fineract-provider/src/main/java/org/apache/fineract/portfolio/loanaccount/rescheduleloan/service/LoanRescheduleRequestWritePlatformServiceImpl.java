@@ -521,10 +521,11 @@ public class LoanRescheduleRequestWritePlatformServiceImpl implements LoanResche
                 calendarHistory.updateEndDate(endDate);
                 this.calendarHistoryRepository.save(calendarHistory);
                 loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
+                boolean isMeetingAttached = this.loanUtilService.isMeetingAttached(loan);
                 if (loan.isGLIMLoan()) {
-                    loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue());
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue(), isMeetingAttached);
                 } else {
-                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue(), isMeetingAttached);
                 }
             }
         }

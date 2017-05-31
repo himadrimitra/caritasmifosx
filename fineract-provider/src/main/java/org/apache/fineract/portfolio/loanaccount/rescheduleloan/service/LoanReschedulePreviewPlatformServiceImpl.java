@@ -106,10 +106,11 @@ public class LoanReschedulePreviewPlatformServiceImpl implements LoanRescheduleP
                 Date endDate = dueDateVariationInCurrentRequest.fetchDateValue().minusDays(1).toDate();
                 calendarHistory.updateEndDate(endDate);
                 loanApplicationTerms.getCalendarHistoryDataWrapper().getCalendarHistoryList().add(calendarHistory);
-                if(loan.isGLIMLoan()){
-                    loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue());
+                boolean isMeetingAttached = this.loanUtilService.isMeetingAttached(loan);
+                if(loan.isGLIMLoan()){                	
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeek(dueDateVariationInCurrentRequest.fetchDateValue(), isMeetingAttached);
                 }else{
-                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue());
+                    loanCalendar.updateStartDateAndNthDayAndDayOfWeekType(dueDateVariationInCurrentRequest.fetchDateValue(), isMeetingAttached);
                 }
                 
             }
