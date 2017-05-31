@@ -3103,35 +3103,33 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     
     @Override
     public LoanTransactionData retrieveLoanInstallmentDetails(Long id) {
+        LoanTransactionData loanTransactionData = null;
         try {
 
             final LoanTransactionDataMapper loanTransactionDataMapper = new LoanTransactionDataMapper();
             final String sql = loanTransactionDataMapper.installmentDetailsSchema();
 
             Date currentDate = DateUtils.getDateOfTenant();
-            final LoanTransactionData loanTransactionData = this.jdbcTemplate.queryForObject(sql, loanTransactionDataMapper,
-                    new Object[] {currentDate, id });
+            loanTransactionData = this.jdbcTemplate.queryForObject(sql, loanTransactionDataMapper,
+                    new Object[] { currentDate, currentDate, currentDate, id,LoanStatus.ACTIVE.getValue() });
 
-            return loanTransactionData;
         } catch (final EmptyResultDataAccessException e) {
-            e.printStackTrace();
+            return null;
         }
-        return null;
+        return loanTransactionData;
     }
 
     private static final class LoanTransactionDataMapper implements RowMapper<LoanTransactionData> {
 
         public String installmentDetailsSchema() {
-            return " SELECT loan.id,(IFNULL(repayment.principal_amount,0) + IFNULL(repayment.interest_amount,0) + IFNULL(repayment.fee_charges_amount,0)+ IFNULL(repayment.penalty_charges_amount,0)- IFNULL(repayment.total_paid_in_advance_derived,0)) AS EMI,  "
-                    + " repayment.dueDate AS next_EMI_Date, loan.total_outstanding_derived AS Total_Outstanding, IFNULL(loan_arre.total_overdue_derived,0) AS Total_Overdue, "
-                    + " (IFNULL(loan_arre.total_overdue_derived,0)+ IFNULL(repayment.principal_amount,0)+ IFNULL(repayment.interest_amount,0)+ IFNULL(repayment.fee_charges_amount,0)+ IFNULL(repayment.penalty_charges_amount,0)- IFNULL(repayment.total_paid_in_advance_derived,0)) AS Overdue_with_next_emi "
-                    + " FROM m_loan loan "
-                    + " INNER JOIN m_loan_repayment_schedule repayment ON loan.id = repayment.loan_id AND repayment.duedate >= ? "
-                    + " LEFT JOIN m_loan_arrears_aging loan_arre ON loan.id = loan_arre.loan_id " + " WHERE loan.id = ? LIMIT 1";
+            return "SELECT loan.id,(IFNULL(repayment.principal_amount,0) + IFNULL(repayment.interest_amount,0) + IFNULL(repayment.fee_charges_amount,0)+ IFNULL(repayment.penalty_charges_amount,0)- IFNULL(repayment.total_paid_in_advance_derived,0)) AS EMI," 
+                    + " repayment.dueDate AS next_EMI_Date, loan.total_outstanding_derived AS Total_Outstanding, IFNULL(loan_arre.total_overdue_derived,0) AS Total_Overdue, CASE WHEN (loan.maturedon_date < ?) THEN 0 ELSE (IFNULL(loan_arre.total_overdue_derived,0)+ IFNULL(repayment.principal_amount,0)+ IFNULL(repayment.interest_amount,0)+ IFNULL(repayment.fee_charges_amount,0)+ IFNULL(repayment.penalty_charges_amount,0)- IFNULL(repayment.total_paid_in_advance_derived,0)) END  AS Overdue_with_next_emi "
+                    + " FROM m_loan loan LEFT JOIN m_loan_repayment_schedule repayment ON loan.id = repayment.loan_id AND CASE WHEN (loan.maturedon_date >= ? ) THEN repayment.duedate >= ? END "
+                    + " LEFT JOIN m_loan_arrears_aging loan_arre ON loan.id = loan_arre.loan_id  WHERE loan.id = ? AND loan.loan_status_id = ? LIMIT 1" ;
         }
 
         @Override
-        public LoanTransactionData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+        public LoanTransactionData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException,DataAccessException {
 
             final Long id = rs.getLong("id");
             final BigDecimal emi = rs.getBigDecimal("EMI");
