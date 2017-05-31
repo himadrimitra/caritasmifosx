@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import org.apache.fineract.accounting.common.AccountingEnumerations;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
@@ -42,15 +43,24 @@ import org.apache.fineract.infrastructure.security.service.PlatformSecurityConte
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.domain.LegalForm;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductBorrowerCycleVariationData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductEntityProfileMappingData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductGuaranteeData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductInterestRecalculationData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductTemplateData;
 import org.apache.fineract.portfolio.loanproduct.data.ProductLoanChargeData;
+import org.apache.fineract.portfolio.loanproduct.domain.ClientProfileType;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductApplicableForLoanType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductParamType;
+import org.apache.fineract.portfolio.loanproduct.domain.ValueEntityType;
 import org.apache.fineract.portfolio.loanproduct.domain.WeeksInYearType;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductInactiveException;
 import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
@@ -58,8 +68,10 @@ import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
@@ -71,15 +83,17 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     private final ChargeReadPlatformService chargeReadPlatformService;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private final ClientReadPlatformService clientReadPlatformService;
 
     @Autowired
     public LoanProductReadPlatformServiceImpl(final PlatformSecurityContext context,
             final ChargeReadPlatformService chargeReadPlatformService, final RoutingDataSource dataSource,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final ClientReadPlatformService clientReadPlatformService) {
         this.context = context;
         this.chargeReadPlatformService = chargeReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.clientReadPlatformService = clientReadPlatformService;
     }
 
     @Override
@@ -89,9 +103,76 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationDatas = retrieveLoanProductBorrowerCycleVariations(loanProductId);
             final LoanProductMapper rm = new LoanProductMapper(charges, borrowerCycleVariationDatas);
             final String sql = "select " + rm.loanProductSchema() + " where lp.id = ?";
-            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanProductId });
+            final LoanProductData loanProductData = this.jdbcTemplate.queryForObject(sql, rm, new Object[] { loanProductId });
+            final Collection<LoanProductEntityProfileMappingData> loanProductEntityProfileMappingDatas = retrieveLoanProductEntityProfileMappingData(loanProductId);
+            loanProductData.setLoanProductEntityProfileMappingDatas(loanProductEntityProfileMappingDatas);
+            return loanProductData;
         } catch (final EmptyResultDataAccessException e) {
             throw new LoanProductNotFoundException(loanProductId);
+        }
+    }
+
+    private Collection<LoanProductEntityProfileMappingData> retrieveLoanProductEntityProfileMappingData(final Long loanProductId) {
+        final LoanProductEntityProfileMappingDataMapper rm = new LoanProductEntityProfileMappingDataMapper();
+        final String sql = "select " + rm.schema() + " where lpepm.loan_product_id = ? ";
+        return this.jdbcTemplate.query(sql, rm, new Object[] { loanProductId });
+    }
+
+    private static final class LoanProductEntityProfileMappingDataMapper implements
+            ResultSetExtractor<Collection<LoanProductEntityProfileMappingData>> {
+
+        private final String schemaSql;
+
+        public LoanProductEntityProfileMappingDataMapper() {
+            final StringBuilder sb = new StringBuilder(100);
+            sb.append("lpepm.id as id, lpepm.profile_type as profileType, lpepm.value as value, lpepm.value_entity_type as valueEntityType ");
+            sb.append(",cv.code_value as valueName ");
+            sb.append("from f_loan_product_entity_profile_mapping lpepm ");
+            sb.append("left join m_code_value cv ON cv.id = lpepm.value and lpepm.value_entity_type = 2 ");
+            this.schemaSql = sb.toString();
+        }
+
+        public String schema() {
+            return this.schemaSql;
+        }
+
+        @Override
+        public Collection<LoanProductEntityProfileMappingData> extractData(ResultSet rs) throws SQLException, DataAccessException {
+            final Collection<LoanProductEntityProfileMappingData> loanProductEntityProfileMappingDatas = new ArrayList<>();
+            LoanProductEntityProfileMappingData loanProductEntityProfileMappingData = null;
+            Integer profileTypeId = null;
+            ClientProfileType clientProfileType = null;
+            while (rs.next()) {
+                final Long id = null;
+                Integer tempProfileTypeId = JdbcSupport.getInteger(rs, "profileType");
+                final Long valueId = JdbcSupport.getLong(rs, "value");
+                final Integer valueEntityTypeId = JdbcSupport.getInteger(rs, "valueEntityType");
+                final ValueEntityType valueEntityType = ValueEntityType.fromInt(valueEntityTypeId);
+                if (loanProductEntityProfileMappingData == null || (profileTypeId != null && !profileTypeId.equals(tempProfileTypeId))) {
+                    profileTypeId = tempProfileTypeId;
+                    clientProfileType = ClientProfileType.fromInt(profileTypeId);
+                    final EnumOptionData profileType = ClientProfileType.type(clientProfileType);
+                    final Collection<EnumOptionData> values = new ArrayList<>();
+                    loanProductEntityProfileMappingData = LoanProductEntityProfileMappingData.instance(id, profileType, values);
+                    loanProductEntityProfileMappingDatas.add(loanProductEntityProfileMappingData);
+                }
+                if (clientProfileType != null) {
+                    EnumOptionData value = null;
+                    if (valueEntityType.isEnumValue()) {
+                        if (clientProfileType.isLegalForm()) {
+                            value = LegalForm.legalFormType(valueId.intValue());
+                        }
+                    } else if (valueEntityType.isCodeValue()) {
+                        final String valueName = rs.getString("valueName");
+                        final String code = null;
+                        value = new EnumOptionData(valueId, code, valueName);
+                    }
+                    if (value != null) {
+                        loanProductEntityProfileMappingData.addValue(value);
+                    }
+                }
+            }
+            return loanProductEntityProfileMappingDatas;
         }
     }
 
@@ -129,7 +210,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     }
 
     @Override
-    public Collection<LoanProductData> retrieveAllLoanProductsForLookup(String inClause) {
+    public Collection<LoanProductData> retrieveAllLoanProductsForLookup(final String inClause) {
 
         this.context.authenticatedUser();
 
@@ -145,22 +226,57 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     }
 
     @Override
-    public Collection<LoanProductData> retrieveAllLoanProductsForLookup() {
-        return retrieveAllLoanProductsForLookup(false);
+    public Collection<LoanProductData> retrieveAllLoanProductsForLookup(final Integer productApplicableForLoanType,
+            final Integer entityType, final Long entityId) {
+        final boolean activeOnly = false;
+        return retrieveAllLoanProductsForLookup(activeOnly, productApplicableForLoanType, entityType, entityId);
     }
 
     @Override
-    public Collection<LoanProductData> retrieveAllLoanProductsForLookup(final boolean activeOnly) {
+    public Collection<LoanProductData> retrieveAllLoanProductsForLookup(final boolean activeOnly,
+            final Integer productApplicableForLoanType, final Integer entityType, final Long entityId) {
         this.context.authenticatedUser();
+        
+        final StringJoiner profileType = new StringJoiner(",");
+        final StringJoiner profileTypeEnumValues = new StringJoiner(",");
+        final StringJoiner profileTypeCodeValues = new StringJoiner(",");
+        if (productApplicableForLoanType != null && entityType != null && entityId != null) {
+            final EntityType entityTypeEnum = EntityType.fromInt(entityType);
+            if (entityTypeEnum.isClients()) {
+                final ClientData clientData = this.clientReadPlatformService.retrieveOne(entityId);
+                if (clientData.getLegalForm() != null) {
+                    profileType.add(ClientProfileType.LEGAL_FORM.getValue().toString());
+                    if (LegalForm.ENTITY.getValue().equals(clientData.getLegalForm().getId().intValue())) {
+                        profileTypeEnumValues.add(LegalForm.ENTITY.getValue().toString());
+                    } else if (LegalForm.PERSON.getValue().equals(clientData.getLegalForm().getId().intValue())) {
+                        profileTypeEnumValues.add(LegalForm.PERSON.getValue().toString());
+                    }
+                }
+                if (clientData.getClientType() != null && clientData.getClientType().getId() != null) {
+                    profileType.add(ClientProfileType.CLIENT_TYPE.getValue().toString());
+                    profileTypeCodeValues.add(clientData.getClientType().getId().toString());
+                }
+                if (clientData.getClientClassification() != null && clientData.getClientClassification().getId() != null) {
+                    profileType.add(ClientProfileType.CLIENT_CLASSIFICATION.getValue().toString());
+                    profileTypeCodeValues.add(clientData.getClientClassification().getId().toString());
+                }
+            }
+        }
+        
         final LoanProductLookupMapper rm = new LoanProductLookupMapper();
         String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
         String sql = "select ";
-        List<Object> params = new ArrayList<>();
+        final List<Object> params = new ArrayList<>();
+        sql += rm.schema();
+        sql += constructSqlQueryBasedOnTheParametersForLoanProducts(productApplicableForLoanType, profileType, profileTypeEnumValues,
+                profileTypeCodeValues);
         if (activeOnly) {
-        	params.add(currentdate);
-            sql += rm.activeOnlySchema();
-        } else {
-            sql += rm.schema();
+            params.add(currentdate);
+            if (productApplicableForLoanType == null) {
+                sql += " where (close_date is null or close_date >= ? )";
+            } else {
+                sql += " and (close_date is null or close_date >= ? )";
+            }
         }
 
         // Check if branch specific products are enabled. If yes, fetch only
@@ -171,11 +287,59 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             if (activeOnly) {
                 sql += " and id in ( " + inClause + " )";
             } else {
-                sql += " where id in ( " + inClause + " ) ";
+                sql += " and id in ( " + inClause + " ) ";
             }
         }
 
         return this.jdbcTemplate.query(sql, rm, params.toArray());
+    }
+
+    private String constructSqlQueryBasedOnTheParametersForLoanProducts(final Integer productApplicableForLoanType,
+            final StringJoiner profileType, final StringJoiner profileTypeEnumValues, final StringJoiner profileTypeCodeValues) {
+        final StringBuilder sql = new StringBuilder(100);
+        sql.append("");
+        if (productApplicableForLoanType != null
+                && productApplicableForLoanType.equals(LoanProductApplicableForLoanType.INDIVIDUAL_CLIENT.getValue())) {
+            sql.append(" left join f_loan_product_entity_profile_mapping lpepm on lpepm.loan_product_id = lp.id ");
+        }
+        if (productApplicableForLoanType != null) {
+            sql.append(" where lp.applicable_for_loan_type in ( " + LoanProductApplicableForLoanType.ALL_TYPES.getValue() + ","
+                    + productApplicableForLoanType + " ) ");
+            if (productApplicableForLoanType.equals(LoanProductApplicableForLoanType.INDIVIDUAL_CLIENT.getValue())) {
+                if (profileType != null && profileType.toString().length() > 0) {
+                    sql.append("and (lpepm.loan_product_id is null or lpepm.profile_type in ( " + profileType.toString() + " )) ");
+                    if (profileTypeEnumValues != null && profileTypeEnumValues.toString().length() > 0 && profileTypeCodeValues != null
+                            && profileTypeCodeValues.toString().length() > 0) {
+                        sql.append("and ( ");
+                        sql.append("lpepm.loan_product_id is null or ");
+                        sql.append("( ");
+                        sql.append("(lpepm.value in ( " + profileTypeEnumValues.toString() + " ) and lpepm.value_entity_type = "
+                                + ValueEntityType.ENUM_VALUE.getValue() + ") ");
+                        sql.append("or ");
+                        sql.append("(lpepm.value in (" + profileTypeCodeValues.toString() + ") and lpepm.value_entity_type = "
+                                + ValueEntityType.CODE_VALUE.getValue() + ") ");
+                        sql.append(")");
+                        sql.append(")");
+
+                    } else if (profileTypeEnumValues != null && profileTypeEnumValues.toString().length() > 0) {
+                        sql.append("and ( ");
+                        sql.append("lpepm.loan_product_id is null or ");
+                        sql.append("(lpepm.value in ( " + profileTypeEnumValues.toString() + " ) and lpepm.value_entity_type = "
+                                + ValueEntityType.ENUM_VALUE.getValue() + ") ");
+                        sql.append(")");
+                    } else if (profileTypeCodeValues != null && profileTypeCodeValues.toString().length() > 0) {
+                        sql.append("and ( ");
+                        sql.append("lpepm.loan_product_id is null or ");
+                        sql.append("(lpepm.value in ( " + profileTypeCodeValues.toString() + " ) and lpepm.value_entity_type = "
+                                + ValueEntityType.CODE_VALUE.getValue() + ") ");
+                        sql.append(")");
+                    }
+                } else {
+                    sql.append(" and lpepm.loan_product_id is null ");
+                }
+            }
+        }
+        return sql.toString();
     }
 
     @Override
@@ -189,82 +353,89 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
         private final Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationDatas;
 
+        private final String schemaSql;
+
         public LoanProductMapper(final Collection<ProductLoanChargeData> charges,
                 final Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationDatas) {
             this.charges = charges;
             this.borrowerCycleVariationDatas = borrowerCycleVariationDatas;
+
+            final StringBuilder sb = new StringBuilder(2000);
+            sb.append("lp.id as id, lp.fund_id as fundId, f.name as fundName, lp.loan_transaction_strategy_id as transactionStrategyId, ltps.name as transactionStrategyName, ");
+            sb.append("lp.name as name, lp.short_name as shortName, lp.description as description, ");
+            sb.append("lp.principal_amount as principal, lp.min_principal_amount as minPrincipal, lp.max_principal_amount as maxPrincipal, lp.currency_code as currencyCode, lp.currency_digits as currencyDigits, lp.currency_multiplesof as inMultiplesOf, ");
+            sb.append("lp.nominal_interest_rate_per_period as interestRatePerPeriod, lp.min_nominal_interest_rate_per_period as minInterestRatePerPeriod, lp.max_nominal_interest_rate_per_period as maxInterestRatePerPeriod, lp.interest_period_frequency_enum as interestRatePerPeriodFreq,lp.interest_rates_list_per_period as interestRatesListPerPeriod, ");
+            sb.append("lp.annual_nominal_interest_rate as annualInterestRate, lp.interest_method_enum as interestMethod, lp.interest_calculated_in_period_enum as interestCalculationInPeriodMethod,lp.allow_partial_period_interest_calcualtion as allowPartialPeriodInterestCalcualtion, ");
+            sb.append("lp.repay_every as repaidEvery, lp.repayment_period_frequency_enum as repaymentPeriodFrequency, lp.number_of_repayments as numberOfRepayments, lp.min_number_of_repayments as minNumberOfRepayments, lp.max_number_of_repayments as maxNumberOfRepayments, ");
+            sb.append("lp.grace_on_principal_periods as graceOnPrincipalPayment, lp.recurring_moratorium_principal_periods as recurringMoratoriumOnPrincipalPeriods, lp.grace_on_interest_periods as graceOnInterestPayment, lp.grace_interest_free_periods as graceOnInterestCharged,lp.grace_on_arrears_ageing as graceOnArrearsAgeing,lp.overdue_days_for_npa as overdueDaysForNPA, ");
+            sb.append("lp.min_days_between_disbursal_and_first_repayment As minimumDaysBetweenDisbursalAndFirstRepayment, lp.min_duration_applicable_for_all_disbursements as isMinDurationApplicableForAllDisbursements,");
+            sb.append("lp.amortization_method_enum as amortizationMethod, lp.arrearstolerance_amount as tolerance, ");
+            sb.append("lp.pmt_calculated_in_period_enum as installmentCalculationPeriodType,");
+            sb.append("lp.accounting_type as accountingType, lp.include_in_borrower_cycle as includeInBorrowerCycle,lp.use_borrower_cycle as useBorrowerCycle, lp.start_date as startDate, lp.close_date as closeDate,  ");
+            sb.append("lp.allow_multiple_disbursals as multiDisburseLoan, lp.max_disbursals as maxTrancheCount, lp.max_outstanding_loan_balance as outstandingLoanBalance, ");
+            sb.append("lp.days_in_month_enum as daysInMonth,lp.weeks_in_year_enum as weeksInYearType , lp.days_in_year_enum as daysInYear, lp.interest_recalculation_enabled as isInterestRecalculationEnabled, ");
+            sb.append("lp.can_define_fixed_emi_amount as canDefineInstallmentAmount, lp.instalment_amount_in_multiples_of as installmentAmountInMultiplesOf, ");
+            sb.append("lp.is_flat_interest_rate as isFlatInterestRate,");
+            sb.append("lpr.pre_close_interest_calculation_strategy as preCloseInterestCalculationStrategy, ");
+            sb.append("lpr.id as lprId, lpr.product_id as productId, lpr.compound_type_enum as compoundType, lpr.reschedule_strategy_enum as rescheduleStrategy, ");
+            sb.append("lpr.rest_frequency_type_enum as restFrequencyEnum, lpr.rest_frequency_interval as restFrequencyInterval, ");
+            sb.append("lpr.rest_frequency_nth_day_enum as restFrequencyNthDayEnum, ");
+            sb.append("lpr.rest_frequency_weekday_enum as restFrequencyWeekDayEnum, ");
+            sb.append("lpr.rest_frequency_on_day as restFrequencyOnDay, ");
+            sb.append("lpr.arrears_based_on_original_schedule as isArrearsBasedOnOriginalSchedule, ");
+            sb.append("lpr.compounding_frequency_type_enum as compoundingFrequencyTypeEnum, lpr.compounding_frequency_interval as compoundingInterval, ");
+            sb.append("lpr.compounding_frequency_nth_day_enum as compoundingFrequencyNthDayEnum, ");
+            sb.append("lpr.compounding_frequency_weekday_enum as compoundingFrequencyWeekDayEnum, ");
+            sb.append("lpr.compounding_frequency_on_day as compoundingFrequencyOnDay, ");
+            sb.append("lpr.is_compounding_to_be_posted_as_transaction as isCompoundingToBePostedAsTransaction, ");
+            sb.append("lpr.allow_compounding_on_eod as allowCompoundingOnEod, ");
+            sb.append("lp.hold_guarantee_funds as holdGuaranteeFunds, ");
+            sb.append("lp.principal_threshold_for_last_installment as principalThresholdForLastInstallment, ");
+            sb.append("sync_expected_with_disbursement_date as syncExpectedWithDisbursementDate, ");
+            sb.append("lp.min_periods_between_disbursal_and_first_repayment as minimumPeriodsBetweenDisbursalAndFirstRepayment, ");
+            sb.append("lp.min_loan_term as minLoanTerm, lp.max_loan_term as maxLoanterm ,");
+            sb.append("lp.loan_tenure_frequency_type as loanTenureFrequencyType , ");
+            sb.append("lp.emi_based_on_disbursements as isEmiBasedOnDisbursements , ");
+            sb.append("lpg.id as lpgId, lpg.mandatory_guarantee as mandatoryGuarantee, ");
+            sb.append("lpg.minimum_guarantee_from_own_funds as minimumGuaranteeFromOwnFunds, lpg.minimum_guarantee_from_guarantor_funds as minimumGuaranteeFromGuarantor, ");
+            sb.append("lp.account_moves_out_of_npa_only_on_arrears_completion as accountMovesOutOfNPAOnlyOnArrearsCompletion, ");
+            sb.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, curr.display_symbol as currencyDisplaySymbol, lp.external_id as externalId, ");
+            sb.append("lca.id as lcaId, lca.amortization_method_enum as amortizationBoolean, lca.interest_method_enum as interestMethodConfigBoolean, ");
+            sb.append("lca.loan_transaction_strategy_id as transactionProcessingStrategyBoolean,lca.interest_calculated_in_period_enum as interestCalcPeriodBoolean, lca.arrearstolerance_amount as arrearsToleranceBoolean, ");
+            sb.append("lca.repay_every as repaymentFrequencyBoolean, lca.moratorium as graceOnPrincipalAndInterestBoolean, lca.grace_on_arrears_ageing as graceOnArrearsAgingBoolean, ");
+            sb.append("lp.is_linked_to_floating_interest_rates as isLinkedToFloatingInterestRates, ");
+            sb.append("lp.broken_period_method_enum as brokenPeriodMethodType, lp.allow_negative_loan_balances as allowNegativeLoanBalance, ");
+            sb.append("lp.consider_future_disbursements_in_schedule as considerFutureDisbursementsInSchedule, lp.consider_all_disbursements_in_schedule as considerAllDisbursementsInSchedule,");
+            sb.append("lfr.floating_rates_id as floatingRateId, ");
+            sb.append("fr.name as floatingRateName, ");
+            sb.append("lfr.interest_rate_differential as interestRateDifferential, ");
+            sb.append("lfr.min_differential_lending_rate as minDifferentialLendingRate, ");
+            sb.append("lfr.default_differential_lending_rate as defaultDifferentialLendingRate, ");
+            sb.append("lfr.max_differential_lending_rate as maxDifferentialLendingRate, ");
+            sb.append("lfr.is_floating_interest_rate_calculation_allowed as isFloatingInterestRateCalculationAllowed, ");
+            sb.append("lp.allow_variabe_installments as isVariableIntallmentsAllowed, ");
+            sb.append("lvi.minimum_gap as minimumGap, ");
+            sb.append("lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, ");
+            sb.append("lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, ");
+            sb.append("lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding ,");
+            sb.append("lp.allow_upfront_collection as allowUpfrontCollection, lp.percentage_of_disbursement_to_be_transferred as percentageOfDisbursementToBeTransferred");
+            sb.append(",lp.applicable_for_loan_type as applicableForLoanType ");
+            sb.append(" from m_product_loan lp ");
+            sb.append(" left join m_fund f on f.id = lp.fund_id ");
+            sb.append(" left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id ");
+            sb.append(" left join m_product_loan_guarantee_details lpg on lpg.loan_product_id=lp.id ");
+            sb.append(" left join ref_loan_transaction_processing_strategy ltps on ltps.id = lp.loan_transaction_strategy_id");
+            sb.append(" left join m_product_loan_configurable_attributes lca on lca.loan_product_id = lp.id ");
+            sb.append(" left join m_product_loan_floating_rates as lfr on lfr.loan_product_id = lp.id ");
+            sb.append(" left join m_floating_rates as fr on lfr.floating_rates_id = fr.id ");
+            sb.append(" left join m_product_loan_variable_installment_config as lvi on lvi.loan_product_id = lp.id ");
+            sb.append(" join m_currency curr on curr.code = lp.currency_code");
+            
+            this.schemaSql = sb.toString();
         }
 
         public String loanProductSchema() {
-            return "lp.id as id, lp.fund_id as fundId, f.name as fundName, lp.loan_transaction_strategy_id as transactionStrategyId, ltps.name as transactionStrategyName, "
-                    + "lp.name as name, lp.short_name as shortName, lp.description as description, "
-                    + "lp.principal_amount as principal, lp.min_principal_amount as minPrincipal, lp.max_principal_amount as maxPrincipal, lp.currency_code as currencyCode, lp.currency_digits as currencyDigits, lp.currency_multiplesof as inMultiplesOf, "
-                    + "lp.nominal_interest_rate_per_period as interestRatePerPeriod, lp.min_nominal_interest_rate_per_period as minInterestRatePerPeriod, lp.max_nominal_interest_rate_per_period as maxInterestRatePerPeriod, lp.interest_period_frequency_enum as interestRatePerPeriodFreq, lp.interest_rates_list_per_period as interestRatesListPerPeriod, "
-                    + "lp.annual_nominal_interest_rate as annualInterestRate, lp.interest_method_enum as interestMethod, lp.interest_calculated_in_period_enum as interestCalculationInPeriodMethod,lp.allow_partial_period_interest_calcualtion as allowPartialPeriodInterestCalcualtion, "
-                    + "lp.repay_every as repaidEvery, lp.repayment_period_frequency_enum as repaymentPeriodFrequency, lp.number_of_repayments as numberOfRepayments, lp.min_number_of_repayments as minNumberOfRepayments, lp.max_number_of_repayments as maxNumberOfRepayments, "
-                    + "lp.grace_on_principal_periods as graceOnPrincipalPayment, lp.recurring_moratorium_principal_periods as recurringMoratoriumOnPrincipalPeriods, lp.grace_on_interest_periods as graceOnInterestPayment, lp.grace_interest_free_periods as graceOnInterestCharged,lp.grace_on_arrears_ageing as graceOnArrearsAgeing,lp.overdue_days_for_npa as overdueDaysForNPA, "
-                    + "lp.min_days_between_disbursal_and_first_repayment As minimumDaysBetweenDisbursalAndFirstRepayment, lp.min_duration_applicable_for_all_disbursements as isMinDurationApplicableForAllDisbursements,"
-                    + "lp.amortization_method_enum as amortizationMethod, lp.arrearstolerance_amount as tolerance, "
-                    + "lp.pmt_calculated_in_period_enum as installmentCalculationPeriodType,"
-                    + "lp.accounting_type as accountingType, lp.include_in_borrower_cycle as includeInBorrowerCycle,lp.use_borrower_cycle as useBorrowerCycle, lp.start_date as startDate, lp.close_date as closeDate,  "
-                    + "lp.allow_multiple_disbursals as multiDisburseLoan, lp.max_disbursals as maxTrancheCount, lp.max_outstanding_loan_balance as outstandingLoanBalance, "
-                    + "lp.days_in_month_enum as daysInMonth,lp.weeks_in_year_enum as weeksInYearType , lp.days_in_year_enum as daysInYear, lp.interest_recalculation_enabled as isInterestRecalculationEnabled, "
-                    + "lp.can_define_fixed_emi_amount as canDefineInstallmentAmount, lp.instalment_amount_in_multiples_of as installmentAmountInMultiplesOf, "
-                    + "lp.is_flat_interest_rate as isFlatInterestRate,"
-                    + "lpr.pre_close_interest_calculation_strategy as preCloseInterestCalculationStrategy, "
-                    + "lpr.id as lprId, lpr.product_id as productId, lpr.compound_type_enum as compoundType, lpr.reschedule_strategy_enum as rescheduleStrategy, "
-                    + "lpr.rest_frequency_type_enum as restFrequencyEnum, lpr.rest_frequency_interval as restFrequencyInterval, "
-                    + "lpr.rest_frequency_nth_day_enum as restFrequencyNthDayEnum, "
-                    + "lpr.rest_frequency_weekday_enum as restFrequencyWeekDayEnum, "
-                    + "lpr.rest_frequency_on_day as restFrequencyOnDay, "
-                    + "lpr.arrears_based_on_original_schedule as isArrearsBasedOnOriginalSchedule, "
-                    + "lpr.compounding_frequency_type_enum as compoundingFrequencyTypeEnum, lpr.compounding_frequency_interval as compoundingInterval, "
-                    + "lpr.compounding_frequency_nth_day_enum as compoundingFrequencyNthDayEnum, "
-                    + "lpr.compounding_frequency_weekday_enum as compoundingFrequencyWeekDayEnum, "
-                    + "lpr.compounding_frequency_on_day as compoundingFrequencyOnDay, "
-                    + "lpr.is_compounding_to_be_posted_as_transaction as isCompoundingToBePostedAsTransaction, "
-                    + "lpr.allow_compounding_on_eod as allowCompoundingOnEod, "
-                    + "lp.hold_guarantee_funds as holdGuaranteeFunds, "
-                    + "lp.principal_threshold_for_last_installment as principalThresholdForLastInstallment, "
-                    + "sync_expected_with_disbursement_date as syncExpectedWithDisbursementDate, "
-                    + "lp.min_periods_between_disbursal_and_first_repayment as minimumPeriodsBetweenDisbursalAndFirstRepayment, "
-                    + "lp.min_loan_term as minLoanTerm, lp.max_loan_term as maxLoanterm ,"
-                    + "lp.loan_tenure_frequency_type as loanTenureFrequencyType , "
-                    + "lp.emi_based_on_disbursements as isEmiBasedOnDisbursements , "
-                    + "lpg.id as lpgId, lpg.mandatory_guarantee as mandatoryGuarantee, "
-                    + "lpg.minimum_guarantee_from_own_funds as minimumGuaranteeFromOwnFunds, lpg.minimum_guarantee_from_guarantor_funds as minimumGuaranteeFromGuarantor, "
-                    + "lp.account_moves_out_of_npa_only_on_arrears_completion as accountMovesOutOfNPAOnlyOnArrearsCompletion, "
-                    + "curr.name as currencyName, curr.internationalized_name_code as currencyNameCode, curr.display_symbol as currencyDisplaySymbol, lp.external_id as externalId, "
-                    + "lca.id as lcaId, lca.amortization_method_enum as amortizationBoolean, lca.interest_method_enum as interestMethodConfigBoolean, "
-                    + "lca.loan_transaction_strategy_id as transactionProcessingStrategyBoolean,lca.interest_calculated_in_period_enum as interestCalcPeriodBoolean, lca.arrearstolerance_amount as arrearsToleranceBoolean, "
-                    + "lca.repay_every as repaymentFrequencyBoolean, lca.moratorium as graceOnPrincipalAndInterestBoolean, lca.grace_on_arrears_ageing as graceOnArrearsAgingBoolean, "
-                    + "lp.is_linked_to_floating_interest_rates as isLinkedToFloatingInterestRates, "
-                    + "lp.broken_period_method_enum as brokenPeriodMethodType, lp.allow_negative_loan_balances as allowNegativeLoanBalance, "
-                    + "lp.consider_future_disbursements_in_schedule as considerFutureDisbursementsInSchedule, lp.consider_all_disbursements_in_schedule as considerAllDisbursementsInSchedule,"
-                    + "lfr.floating_rates_id as floatingRateId, "
-                    + "fr.name as floatingRateName, "
-                    + "lfr.interest_rate_differential as interestRateDifferential, "
-                    + "lfr.min_differential_lending_rate as minDifferentialLendingRate, "
-                    + "lfr.default_differential_lending_rate as defaultDifferentialLendingRate, "
-                    + "lfr.max_differential_lending_rate as maxDifferentialLendingRate, "
-                    + "lfr.is_floating_interest_rate_calculation_allowed as isFloatingInterestRateCalculationAllowed, "
-                    + "lp.allow_variabe_installments as isVariableIntallmentsAllowed, "
-                    + "lvi.minimum_gap as minimumGap, "
-                    + "lvi.maximum_gap as maximumGap, lpr.is_subsidy_applicable AS isSubsidyApplicable, lp.close_loan_on_overpayment as closeLoanOnOverpayment, "
-                    + "lp.adjusted_instalment_in_multiples_of as adjustedInstallmentInMultiplesOf, lp.adjust_first_emi_amount as adjustFirstEMIAmount, "
-                    + "lp.can_use_for_topup as canUseForTopup ,lp.adjust_interest_for_rounding AS adjustInterestForRounding ,"
-                    + "lp.allow_upfront_collection as allowUpfrontCollection, lp.percentage_of_disbursement_to_be_transferred as percentageOfDisbursementToBeTransferred"
-                    + " from m_product_loan lp "
-                    + " left join m_fund f on f.id = lp.fund_id "
-                    + " left join m_product_loan_recalculation_details lpr on lpr.product_id=lp.id "
-                    + " left join m_product_loan_guarantee_details lpg on lpg.loan_product_id=lp.id "
-                    + " left join ref_loan_transaction_processing_strategy ltps on ltps.id = lp.loan_transaction_strategy_id"
-                    + " left join m_product_loan_configurable_attributes lca on lca.loan_product_id = lp.id "
-                    + " left join m_product_loan_floating_rates as lfr on lfr.loan_product_id = lp.id "
-                    + " left join m_floating_rates as fr on lfr.floating_rates_id = fr.id "
-                    + " left join m_product_loan_variable_installment_config as lvi on lvi.loan_product_id = lp.id "
-                    + " join m_currency curr on curr.code = lp.currency_code";
-
+            return this.schemaSql;
         }
 
         @Override
@@ -516,14 +687,16 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final boolean isFlatInterestRate = rs.getBoolean("isFlatInterestRate");
             final boolean allowUpfrontCollection = rs.getBoolean("allowUpfrontCollection");
             final BigDecimal percentageOfDisbursementToBeTransferred = JdbcSupport.getBigDecimalDefaultToNullIfZero(rs, "percentageOfDisbursementToBeTransferred");
-            
+            final LoanProductTemplateData loanProductTemplateData = null;
+            final EnumOptionData applicableForLoanType = LoanProductApplicableForLoanType.type(JdbcSupport.getInteger(rs,
+                    LoanProductConstants.applicableForLoanTypeParamName));
             return new LoanProductData(id, name, shortName, description, currency, principal, minPrincipal, maxPrincipal, tolerance,
                     numberOfRepayments, minNumberOfRepayments, maxNumberOfRepayments, repaymentEvery, interestRatePerPeriod,
                     minInterestRatePerPeriod, maxInterestRatePerPeriod, annualInterestRate, repaymentFrequencyType,
                     interestRateFrequencyType, amortizationType, interestType, interestCalculationPeriodType,
                     allowPartialPeriodInterestCalcualtion, fundId, fundName, transactionStrategyId, transactionStrategyName,
-                    graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged, this.charges, accountingRuleType,
-                    includeInBorrowerCycle, useBorrowerCycle, startDate, closeDate, status, externalId,
+                    graceOnPrincipalPayment, recurringMoratoriumOnPrincipalPeriods, graceOnInterestPayment, graceOnInterestCharged,
+                    this.charges, accountingRuleType, includeInBorrowerCycle, useBorrowerCycle, startDate, closeDate, status, externalId,
                     principalVariationsForBorrowerCycle, interestRateVariationsForBorrowerCycle,
                     numberOfRepaymentVariationsForBorrowerCycle, multiDisburseLoan, maxTrancheCount, outstandingLoanBalance,
                     graceOnArrearsAgeing, overdueDaysForNPA, daysInMonthType, daysInYearType, isInterestRecalculationEnabled,
@@ -532,21 +705,21 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     installmentAmountInMultiplesOf, allowAttributeOverrides, isLinkedToFloatingInterestRates, floatingRateId,
                     floatingRateName, interestRateDifferential, minDifferentialLendingRate, defaultDifferentialLendingRate,
                     maxDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableIntallmentsAllowed, minimumGap,
-                    maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
-                    minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, 
-                    brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule,
-                    allowUpfrontCollection, percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod);
+                    maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment,
+                    syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm,
+                    loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements,
+                    installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, brokenPeriodMethodType,
+                    isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule,
+                    considerAllDisbursementsInSchedule, allowUpfrontCollection, percentageOfDisbursementToBeTransferred,
+                    interestRatesListPerPeriod, loanProductTemplateData, applicableForLoanType);
         }
     }
 
     private static final class LoanProductLookupMapper implements RowMapper<LoanProductData> {
 
         public String schema() {
-            return "lp.id as id, lp.name as name from m_product_loan lp";
-        }
-
-        public String activeOnlySchema() {
-            return schema() + " where (close_date is null or close_date >= ? )";
+            return "lp.id as id, lp.name as name from m_product_loan lp ";
+            
         }
 
         public String productMixSchema() {
@@ -706,7 +879,6 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         this.context.authenticatedUser();
 
         final LoanProductLookupMapper rm = new LoanProductLookupMapper();
-
         String sql = "Select " + rm.schema() + " where ";
 
         // Check if branch specific products are enabled. If yes, fetch only
@@ -839,15 +1011,15 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
     	
     	}
     
-    	@Override
-    	public LoanProductData retrieveLoanProductNameById(Long productId) {
-    		try {
-    			final LoanProductLookupMapper rm = new LoanProductLookupMapper();
-    			String sql = "select " + rm.schema() + " where lp.id = ?";
-    			return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { productId });
-    		} catch (final EmptyResultDataAccessException e) {
-    			throw new LoanProductNotFoundException(productId);
-    		}
-    	}
+    @Override
+    public LoanProductData retrieveLoanProductNameById(final Long productId) {
+        try {
+            final LoanProductLookupMapper rm = new LoanProductLookupMapper();
+            String sql = "select " + rm.schema() + " where lp.id = ?";
+            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { productId });
+        } catch (final EmptyResultDataAccessException e) {
+            throw new LoanProductNotFoundException(productId);
+        }
+    }
 
 }

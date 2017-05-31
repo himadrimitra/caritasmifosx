@@ -491,4 +491,8 @@ public class LoanApplicationReference extends AbstractAuditableCustom<AppUser, L
         this.loanEMIPack = loanEMIPack;
     }
 
+    public Integer getAccountTypeEnum() {
+        return this.accountTypeEnum;
+    }
+
 }

@@ -29,11 +29,13 @@ public interface LoanProductReadPlatformService {
 
     Collection<LoanProductData> retrieveAllLoanProducts();
 
-    Collection<LoanProductData> retrieveAllLoanProductsForLookup(String inClass);
-    
-    Collection<LoanProductData> retrieveAllLoanProductsForLookup();
+    Collection<LoanProductData> retrieveAllLoanProductsForLookup(final String inClass);
 
-    Collection<LoanProductData> retrieveAllLoanProductsForLookup(boolean activeOnly);
+    Collection<LoanProductData> retrieveAllLoanProductsForLookup(final Integer productApplicableForLoanType, final Integer entityType,
+            final Long entityId);
+
+    Collection<LoanProductData> retrieveAllLoanProductsForLookup(final boolean activeOnly, final Integer productApplicableForLoanType,
+            final Integer entityType, final Long entityId);
 
     LoanProductData retrieveLoanProduct(Long productId);
 

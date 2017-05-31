@@ -174,6 +174,10 @@ public class FromJsonHelper {
         return this.helperDelegator.extractArrayNamed(parameterName, element, new HashSet<String>());
     }
 
+    public Integer[] extractIntegerArrayNamed(final String parameterName, final JsonElement element) {
+        return this.helperDelegator.extractIntegerArrayNamed(parameterName, element);
+    }
+    
     public String[] extractArrayNamed(final String parameterName, final JsonElement element, final Set<String> parametersPassedInRequest) {
         return this.helperDelegator.extractArrayNamed(parameterName, element, parametersPassedInRequest);
     }

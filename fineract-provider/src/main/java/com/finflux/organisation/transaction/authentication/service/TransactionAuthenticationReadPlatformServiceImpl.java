@@ -13,13 +13,10 @@ import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformSer
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
-import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
-import org.apache.fineract.portfolio.client.data.ClientIdentifierData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.service.LoanProductReadPlatformService;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
 import org.apache.fineract.portfolio.paymenttype.service.PaymentTypeReadPlatformService;
-import org.apache.fineract.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -28,7 +25,6 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServiceData;
 import com.finflux.infrastructure.external.authentication.data.ExternalAuthenticationServicesDataConstants;
-import com.finflux.infrastructure.external.authentication.domain.SecondaryAuthenticationServiceRepository;
 import com.finflux.infrastructure.external.authentication.exception.ExternalAuthenticationServiceNotFoundException;
 import com.finflux.infrastructure.external.authentication.service.ExternalAuthenticationServicesReadPlatformService;
 import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
@@ -47,23 +43,21 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 	private final CodeValueReadPlatformService codeValueReadPlatformService;
 	private final TransactionAuthenticationServiceMapper transactionAuthenticationServiceMapper = new TransactionAuthenticationServiceMapper();
 	private final TransactionAuthenticationDataMapper dataMapper = new TransactionAuthenticationDataMapper();
-    private final PlatformSecurityContext context;
 
-	@Autowired
-	private TransactionAuthenticationReadPlatformServiceImpl(final RoutingDataSource dataSourc,
-			final TransactionAuthenticationDropdownReadPlatformService transactionAuthenticationDropdownReadPlatformService,
-			final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
-			final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
-			final SecondaryAuthenticationServiceRepository secondaryAuthenticationServiceRepository,
-			final LoanProductReadPlatformService loanProductReadPlatformService, final CodeValueReadPlatformService codeValueReadPlatformService,final PlatformSecurityContext context) {
-		this.jdbcTemplate = new JdbcTemplate(dataSourc);
-		this.transactionAuthenticationDropdownReadPlatformService = transactionAuthenticationDropdownReadPlatformService;
-		this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
-		this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
-		this.loanProductReadPlatformService = loanProductReadPlatformService;
-		this.codeValueReadPlatformService = codeValueReadPlatformService;
-		this.context = context;
-	}
+        @Autowired
+        private TransactionAuthenticationReadPlatformServiceImpl(final RoutingDataSource dataSourc,
+                final TransactionAuthenticationDropdownReadPlatformService transactionAuthenticationDropdownReadPlatformService,
+                final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
+                final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
+                final LoanProductReadPlatformService loanProductReadPlatformService,
+                final CodeValueReadPlatformService codeValueReadPlatformService) {
+            this.jdbcTemplate = new JdbcTemplate(dataSourc);
+            this.transactionAuthenticationDropdownReadPlatformService = transactionAuthenticationDropdownReadPlatformService;
+            this.externalAuthenticationServicesReadPlatformService = externalAuthenticationServicesReadPlatformService;
+            this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
+            this.loanProductReadPlatformService = loanProductReadPlatformService;
+            this.codeValueReadPlatformService = codeValueReadPlatformService;
+        }
 
 	@Override
 	public TransactionAuthenticationData retriveTemplate() {
@@ -73,7 +67,12 @@ public class TransactionAuthenticationReadPlatformServiceImpl implements Transac
 				.getOnlyActiveExternalAuthenticationServices();
 		final Collection<EnumOptionData> appliesToOptions = this.transactionAuthenticationDropdownReadPlatformService
 				.retrieveApplicableToTypes();
-		final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(true);
+		final boolean activeOnly = true;
+		final Integer productApplicableForLoanType = null;
+		final Integer entityType = null;
+		final Long entityId = null;
+                final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(activeOnly,
+                productApplicableForLoanType, entityType, entityId);
 		final Collection<EnumOptionData> loansTypeOptions = this.transactionAuthenticationDropdownReadPlatformService
 				.retrieveLoanTransactionTypes();
 		final Collection<EnumOptionData> savingsTypeOptions = this.transactionAuthenticationDropdownReadPlatformService

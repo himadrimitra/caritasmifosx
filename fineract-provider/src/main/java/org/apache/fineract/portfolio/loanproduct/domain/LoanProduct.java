@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -226,6 +227,13 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @Column(name = "interest_rates_list_per_period", nullable = true)
     private String inerestRatesListPerPeriod;
 
+    @Column(name = "applicable_for_loan_type", nullable = false)
+    private Integer applicableForLoanType;
+    
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "loanProduct", orphanRemoval = true)
+    private Set<LoanProductEntityProfileMapping> loanProductEntityProfileMapping = new LinkedHashSet<>();
+    
     public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
             final List<ProductLoanCharge> productLoanCharges, final JsonCommand command, final AprCalculator aprCalculator, FloatingRate floatingRate) {
 
@@ -422,14 +430,17 @@ public class LoanProduct extends AbstractPersistable<Long> {
         JsonArray interestRatesArrayPerPeriod = command.arrayOfParameterNamed(LoanProductConstants.interestRatesListPerPeriod);
         List<String> interestRatesList = new ArrayList<>();
         if (interestRatesArrayPerPeriod != null && interestRatesArrayPerPeriod.size() > 0) {
-        	for(JsonElement interestRate : interestRatesArrayPerPeriod){
-        		interestRatesList.add(interestRate.getAsString());
-        	}
+            for (JsonElement interestRate : interestRatesArrayPerPeriod) {
+                interestRatesList.add(interestRate.getAsString());
+            }
         }
         String inerestRatesListPerPeriod = null;
-        if(interestRatesList.size() > 0)
+        if (interestRatesList.size() > 0) {
             inerestRatesListPerPeriod = String.join(",", interestRatesList);
-        
+        }
+
+        final Integer applicableForLoanType = command.integerValueOfParameterNamed(LoanProductConstants.applicableForLoanTypeParamName);
+				
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
                 annualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion, repaymentEvery,
@@ -445,11 +456,10 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 defaultDifferentialLendingRate, isFloatingInterestRateCalculationAllowed, isVariableInstallmentsAllowed,
                 minimumGapBetweenInstallments, maximumGapBetweenInstallments, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount,
                 closeLoanOnOverpayment, syncExpectedWithDisbursementDate, minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm,
-                maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType , adjustInterestForRounding, isEmiBasedOnDisbursements,
-                pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod, isFlatInterestRate,
-                allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, percentageOfDisbursementToBeTransferred, 
-                collectInterestUpfront,inerestRatesListPerPeriod);
-
+                maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding,
+                isEmiBasedOnDisbursements, pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod,
+                isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule,
+                percentageOfDisbursementToBeTransferred, collectInterestUpfront, inerestRatesListPerPeriod, applicableForLoanType);
     }
 
     public void updateLoanProductInRelatedClasses() {
@@ -710,10 +720,12 @@ public class LoanProduct extends AbstractPersistable<Long> {
             Integer adjustedInstallmentInMultiplesOf, boolean adjustFirstEMIAmount, final Boolean closeLoanOnOverpayment,
             final Boolean syncExpectedWithDisbursementDate, final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment,
             final Integer minLoanTerm, final Integer maxLoanTerm, final PeriodFrequencyType loanTenureFrequencyType,
-            final boolean canUseForTopup, final WeeksInYearType weeksInYearType,boolean adjustInterestForRounding, final boolean isEmiBasedOnDisbursements,
-            Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements, final Integer brokenPeriodMethod,
-            final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances, final boolean considerFutureDisbursementScheduleInLoans,
-            final boolean considerAllDisbursementsInSchedule, final BigDecimal percentageOfDisbursementToBeTransferred, boolean allowUpfrontCollection,final String inerestRatesListPerPeriod) {
+            final boolean canUseForTopup, final WeeksInYearType weeksInYearType, boolean adjustInterestForRounding,
+            final boolean isEmiBasedOnDisbursements, Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements,
+            final Integer brokenPeriodMethod, final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances,
+            final boolean considerFutureDisbursementScheduleInLoans, final boolean considerAllDisbursementsInSchedule,
+            final BigDecimal percentageOfDisbursementToBeTransferred, boolean allowUpfrontCollection,
+            final String inerestRatesListPerPeriod, final Integer applicableForLoanType) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -809,6 +821,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.percentageOfDisbursementToBeTransferred = percentageOfDisbursementToBeTransferred;
         this.allowUpfrontCollection = allowUpfrontCollection;
         this.inerestRatesListPerPeriod = inerestRatesListPerPeriod;
+        this.applicableForLoanType = applicableForLoanType;
     }
 
     public MonetaryCurrency getCurrency() {
@@ -1684,10 +1697,24 @@ public class LoanProduct extends AbstractPersistable<Long> {
     public boolean allowUpfrontCollection(){
         return this.allowUpfrontCollection;
     }
-
     
     public BigDecimal getPercentageOfDisbursementToBeTransferred() {
         return this.percentageOfDisbursementToBeTransferred;
+    }
+    
+    public Integer getApplicableForLoanType() {
+        return this.applicableForLoanType;
+    }
+
+    public Set<LoanProductEntityProfileMapping> getLoanProductEntityProfileMapping() {
+        return this.loanProductEntityProfileMapping;
+    }
+
+    public void setLoanProductEntityProfileMapping(final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMapping) {
+        this.loanProductEntityProfileMapping.clear();
+        if (loanProductEntityProfileMapping != null && !loanProductEntityProfileMapping.isEmpty()) {
+            this.loanProductEntityProfileMapping.addAll(loanProductEntityProfileMapping);
+        }
     }
     
 }

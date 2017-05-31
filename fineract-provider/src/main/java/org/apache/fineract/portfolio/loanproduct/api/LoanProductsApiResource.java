@@ -61,6 +61,7 @@ import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.organisation.monetary.service.CurrencyReadPlatformService;
 import org.apache.fineract.portfolio.charge.data.ChargeData;
 import org.apache.fineract.portfolio.charge.service.ChargeReadPlatformService;
+import org.apache.fineract.portfolio.client.domain.LegalForm;
 import org.apache.fineract.portfolio.common.service.DropdownReadPlatformService;
 import org.apache.fineract.portfolio.floatingrates.data.FloatingRateData;
 import org.apache.fineract.portfolio.floatingrates.service.FloatingRatesReadPlatformService;
@@ -70,7 +71,10 @@ import org.apache.fineract.portfolio.fund.service.FundReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductTemplateData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
+import org.apache.fineract.portfolio.loanproduct.domain.ClientProfileType;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductApplicableForLoanType;
 import org.apache.fineract.portfolio.loanproduct.productmix.data.ProductMixData;
 import org.apache.fineract.portfolio.loanproduct.productmix.service.ProductMixReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.service.LoanDropdownReadPlatformService;
@@ -357,13 +361,25 @@ public class LoanProductsApiResource {
         
         final List<EnumOptionData> brokenPeriodMethodTypeOptions = this.dropdownReadPlatformService.retrieveBrokenPeriodMethodTypeOptions();
         
+        final Collection<EnumOptionData> loanProductApplicableForLoanTypeOptions = LoanProductApplicableForLoanType.typeOptions();
+        final Collection<EnumOptionData> clientProfileTypeOptions = ClientProfileType.typeOptions();
+        final Collection<EnumOptionData> legalFormOptions = LegalForm.legalFormTypeOptions();
+        final Collection<CodeValueData> clientTypeOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(LoanProductConstants.CLIENT_TYPE_CODE);
+        final Collection<CodeValueData> clientClassificationOptions = this.codeValueReadPlatformService
+                .retrieveCodeValuesByCode(LoanProductConstants.CLIENT_CLASSIFICATION_CODE);
+
+        final LoanProductTemplateData loanProductTemplateData = LoanProductTemplateData.template(loanProductApplicableForLoanTypeOptions,
+                clientProfileTypeOptions, legalFormOptions, clientTypeOptions, clientClassificationOptions);
+
         return new LoanProductData(productData, chargeOptions, penaltyOptions, paymentTypeOptions, currencyOptions,
                 amortizationTypeOptions, interestTypeOptions, interestCalculationPeriodTypeOptions, repaymentFrequencyTypeOptions,
                 interestRateFrequencyTypeOptions, fundOptions, transactionProcessingStrategyOptions, accountOptions,
                 accountingRuleTypeOptions, loanCycleValueConditionTypeOptions, daysInMonthTypeOptions, daysInYearTypeOptions,
                 interestRecalculationCompoundingTypeOptions, rescheduleStrategyTypeOptions, interestRecalculationFrequencyTypeOptions,
                 preCloseInterestCalculationStrategyOptions, floatingRateOptions, interestRecalculationNthDayTypeOptions,
-                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment, codeValueOptions, weeksInYearTypeOptions, brokenPeriodMethodTypeOptions);
+                interestRecalculationDayOfWeekTypeOptions, closeLoanOnOverpayment, codeValueOptions, weeksInYearTypeOptions,
+                brokenPeriodMethodTypeOptions, loanProductTemplateData);
     }
 
 }

@@ -18,7 +18,7 @@
  */
 package org.apache.fineract.portfolio.loanproduct.serialization;
 
-import java.lang.reflect.Type; 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +45,7 @@ import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanPreClosureInterestCalculationStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductApplicableForLoanType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductConfigurableAttributes;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
 import org.apache.fineract.portfolio.loanproduct.domain.RecalculationFrequencyType;
@@ -68,10 +69,11 @@ public final class LoanProductDataValidator {
             "numberOfRepayments", "minNumberOfRepayments", "maxNumberOfRepayments", "repaymentFrequencyType", "interestRatePerPeriod",
             "minInterestRatePerPeriod", "maxInterestRatePerPeriod", "interestRateFrequencyType", "amortizationType", "interestType",
             "interestCalculationPeriodType", LoanProductConstants.allowPartialPeriodInterestCalcualtionParamName, "inArrearsTolerance",
-            "transactionProcessingStrategyId", "graceOnPrincipalPayment", "recurringMoratoriumOnPrincipalPeriods", "graceOnInterestPayment", "graceOnInterestCharged", "charges",
-            "accountingRule", "includeInBorrowerCycle", "startDate", "closeDate", "externalId", "isLinkedToFloatingInterestRates",
-            "floatingRatesId", "interestRateDifferential", "minDifferentialLendingRate", "defaultDifferentialLendingRate",
-            "maxDifferentialLendingRate", "isFloatingInterestRateCalculationAllowed","recurringMoratoriumOnPrincipalPeriods",
+            "transactionProcessingStrategyId", "graceOnPrincipalPayment", "recurringMoratoriumOnPrincipalPeriods",
+            "graceOnInterestPayment", "graceOnInterestCharged", "charges", "accountingRule", "includeInBorrowerCycle", "startDate",
+            "closeDate", "externalId", "isLinkedToFloatingInterestRates", "floatingRatesId", "interestRateDifferential",
+            "minDifferentialLendingRate", "defaultDifferentialLendingRate", "maxDifferentialLendingRate",
+            "isFloatingInterestRateCalculationAllowed", "recurringMoratoriumOnPrincipalPeriods",
             LOAN_PRODUCT_ACCOUNTING_PARAMS.FEES_RECEIVABLE.getValue(), LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(),
             LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_PENALTIES.getValue(),
             LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_LOANS.getValue(), LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_RECEIVABLE.getValue(),
@@ -96,8 +98,8 @@ public final class LoanProductDataValidator {
             LoanProductConstants.recalculationCompoundingFrequencyIntervalParameterName,
             LoanProductConstants.recalculationCompoundingFrequencyTypeParameterName,
             LoanProductConstants.isArrearsBasedOnOriginalScheduleParamName,
-            LoanProductConstants.minimumDaysBetweenDisbursalAndFirstRepayment, LoanProductConstants.minimumPeriodsBetweenDisbursalAndFirstRepayment,
-            LoanProductConstants.mandatoryGuaranteeParamName,
+            LoanProductConstants.minimumDaysBetweenDisbursalAndFirstRepayment,
+            LoanProductConstants.minimumPeriodsBetweenDisbursalAndFirstRepayment, LoanProductConstants.mandatoryGuaranteeParamName,
             LoanProductConstants.holdGuaranteeFundsParamName, LoanProductConstants.minimumGuaranteeFromGuarantorParamName,
             LoanProductConstants.minimumGuaranteeFromOwnFundsParamName, LoanProductConstants.principalThresholdForLastInstallmentParamName,
             LoanProductConstants.accountMovesOutOfNPAOnlyOnArrearsCompletionParamName, LoanProductConstants.canDefineEmiAmountParamName,
@@ -113,16 +115,19 @@ public final class LoanProductDataValidator {
             LoanProductConstants.isSubsidyApplicableParamName, LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue(),
             LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_ACCOUNT.getValue(), LoanProductConstants.createSubsidyAccountMappingsParamName,
             LoanProductConstants.maximumGapBetweenInstallments, LoanProductConstants.adjustedInstallmentInMultiplesOfParamName,
-            LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment, 
-            LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType, 
-            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, 
-            LoanProductConstants.canUseForTopup,LoanProductConstants.allowUpfrontCollection,LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(), LoanProductConstants.weeksInYearType,
-            LoanProductConstants.adjustInterestForRoundingParamName, LoanProductConstants.isEmiBasedOnDisbursements,
-            LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName,
-            LoanProductConstants.brokenPeriodMethodTypeParamName,LoanProductConstants.isFlatInterestRateParamName,
-            LoanProductConstants.considerFutureDisbursementsInSchedule, LoanProductConstants.considerAllDisbursementsInSchedule,
-            LoanProductConstants.allowNegativeLoanBalance,LoanProductConstants.percentageOfDisbursementToBeTransferred,
-            LoanProductConstants.interestRatesListPerPeriod,LoanProductConstants.interestRatesListPerCycleParameterName));
+            LoanProductConstants.adjustFirstEMIAmountParamName, LoanProductConstants.closeLoanOnOverpayment,
+            LoanProductConstants.syncExpectedWithDisbursementDate, LoanProductConstants.loanTenureFrequencyType,
+            LoanProductConstants.minLoanTerm, LoanProductConstants.maxLoanTerm, LoanProductConstants.canUseForTopup,
+            LoanProductConstants.allowUpfrontCollection, LOAN_PRODUCT_ACCOUNTING_PARAMS.CODE_VALUE_ACCOUNTING_MAPPING.getValue(),
+            LoanProductConstants.weeksInYearType, LoanProductConstants.adjustInterestForRoundingParamName,
+            LoanProductConstants.isEmiBasedOnDisbursements, LoanProductConstants.installmentCalculationPeriodTypeParamName,
+            LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName, LoanProductConstants.brokenPeriodMethodTypeParamName,
+            LoanProductConstants.isFlatInterestRateParamName, LoanProductConstants.considerFutureDisbursementsInSchedule,
+            LoanProductConstants.considerAllDisbursementsInSchedule, LoanProductConstants.allowNegativeLoanBalance,
+            LoanProductConstants.percentageOfDisbursementToBeTransferred, LoanProductConstants.interestRatesListPerPeriod,
+            LoanProductConstants.interestRatesListPerCycleParameterName, LoanProductConstants.applicableForLoanTypeParamName,
+            LoanProductConstants.isEnableRestrictionForClientProfileParamName, LoanProductConstants.profileTypeParamName,
+            LoanProductConstants.selectedProfileTypeValuesParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -791,7 +796,44 @@ public final class LoanProductDataValidator {
         baseDataValidator.reset().parameter(LoanProductConstants.percentageOfDisbursementToBeTransferred)
                 .value(percentageOfDisbursementToBeTransfered).ignoreIfNull().positiveAmount().notGreaterThanMax(BigDecimal.valueOf(100));
 
+        validateLoanProductApplicableForLoanType(baseDataValidator, element);
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    /**
+     * Validate Link Products to Customer Segment
+     * @param baseDataValidator
+     * @param element
+     */
+    private void validateLoanProductApplicableForLoanType(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
+        final Integer applicableForLoanType = this.fromApiJsonHelper.extractIntegerNamed(
+                LoanProductConstants.applicableForLoanTypeParamName, element, Locale.getDefault());
+        baseDataValidator
+                .reset()
+                .parameter(LoanProductConstants.applicableForLoanTypeParamName)
+                .value(applicableForLoanType)
+                .notNull()
+                .isOneOfTheseValues(LoanProductApplicableForLoanType.ALL_TYPES.getValue(),
+                        LoanProductApplicableForLoanType.INDIVIDUAL_CLIENT.getValue(), LoanProductApplicableForLoanType.GROUP.getValue());
+
+        if (LoanProductApplicableForLoanType.fromInt(applicableForLoanType).isIndividualClient()) {
+            final boolean isEnableRestrictionForClientProfile = this.fromApiJsonHelper.extractBooleanNamed(
+                    LoanProductConstants.isEnableRestrictionForClientProfileParamName, element);
+            baseDataValidator.reset().parameter(LoanProductConstants.isEnableRestrictionForClientProfileParamName)
+                    .value(isEnableRestrictionForClientProfile).notNull().validateForBooleanValue();
+            if (isEnableRestrictionForClientProfile) {
+                final Integer profileType = this.fromApiJsonHelper.extractIntegerNamed(
+                        LoanProductConstants.profileTypeParamName, element, Locale.getDefault());
+                baseDataValidator.reset().parameter(LoanProductConstants.profileTypeParamName).value(profileType).notNull()
+                        .integerGreaterThanZero();
+
+                final Integer[] selectedProfileTypeValues = this.fromApiJsonHelper.extractIntegerArrayNamed(
+                        LoanProductConstants.selectedProfileTypeValuesParamName, element);
+                baseDataValidator.reset().parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
+                        .value(selectedProfileTypeValues).notNull().arrayNotEmpty();
+            }
+        }
     }
 
     private void validateAdjustFirstInstallment(final DataValidatorBuilder baseDataValidator, final JsonElement element, LoanProduct loanProduct) {
@@ -1832,6 +1874,8 @@ public final class LoanProductDataValidator {
                     .notGreaterThanMax(BigDecimal.valueOf(100));
         }
 
+        validateLoanProductApplicableForLoanType(baseDataValidator, element);
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 

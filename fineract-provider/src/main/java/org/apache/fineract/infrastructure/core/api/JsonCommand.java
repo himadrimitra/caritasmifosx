@@ -22,7 +22,6 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -564,6 +563,10 @@ public final class JsonCommand {
         return this.fromApiJsonHelper.extractArrayNamed(parameterName, this.parsedCommand);
     }
 
+    public Integer[] arrayIntegerValueOfParameterNamed(final String parameterName) {
+        return this.fromApiJsonHelper.extractIntegerArrayNamed(parameterName, this.parsedCommand);
+    }
+    
     public JsonArray arrayOfParameterNamed(final String parameterName) {
         return this.fromApiJsonHelper.extractJsonArrayNamed(parameterName, this.parsedCommand);
     }

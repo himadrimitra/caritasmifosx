@@ -20,6 +20,8 @@ package org.apache.fineract.portfolio.loanproduct;
 
 import java.math.BigDecimal;
 
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductApplicableForLoanType;
+
 public interface LoanProductConstants {
 
     public static final String useBorrowerCycleParameterName = "useBorrowerCycle";
@@ -163,4 +165,25 @@ public interface LoanProductConstants {
     public static final String considerAllDisbursementsInSchedule = "considerAllDisbursementsInSchedule";
     
     public static final String percentageOfDisbursementToBeTransferred = "percentageOfDisbursementToBeTransferred";
+
+    public static final String applicableForLoanTypeParamName = "applicableForLoanType";
+    public static final String isEnableRestrictionForClientProfileParamName = "isEnableRestrictionForClientProfile";
+    public static final String profileTypeParamName = "profileType";
+    public static final String selectedProfileTypeValuesParamName = "selectedProfileTypeValues";
+    
+    /**
+     * {@link LoanProductApplicableForLoanType}
+     */
+    public static final String ALL_TYPES = "All Customers";
+    public static final String INDIVIDUAL_CLIENT = "Individual Client";
+    public static final String GROUP = "Group";
+
+    /**
+     * {@link ClientProfileType}
+     */
+    public static final String LEGAL_FORM = "Legal Form";
+    public static final String CLIENT_TYPE = "Client Type";
+    public static final String CLIENT_CLASSIFICATION = "Client Classification";
+    public static final String CLIENT_TYPE_CODE = "ClientType";
+    public static final String CLIENT_CLASSIFICATION_CODE = "ClientClassification";
 }

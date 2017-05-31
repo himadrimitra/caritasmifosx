@@ -144,6 +144,9 @@ public class LoanProductTestBuilder {
     private boolean adjustInterestForRounding = false;
     private boolean isEmiBasedOnDisbursements = false;
     private Integer installmentCalculationPeriodType = null;
+    private Integer applicableForLoanType = 1;
+    private Boolean isEnableRestrictionForClientProfile = false;
+    private Integer selectedProfileTypeValues[]  = null;
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -159,6 +162,10 @@ public class LoanProductTestBuilder {
         map.put("name", this.nameOfLoanProduct);
         map.put("shortName", this.shortName);
         map.put("currencyCode", this.currencyCode);
+        map.put("applicableForLoanType", this.applicableForLoanType);
+        if(this.isEnableRestrictionForClientProfile){
+            map.put("selectedProfileTypeValues", this.selectedProfileTypeValues);
+        }
         map.put("locale", LOCALE);
         map.put("dateFormat", "dd MMMM yyyy");
         map.put("digitsAfterDecimal", digitsAfterDecimal);
@@ -657,6 +664,15 @@ public class LoanProductTestBuilder {
 
     public LoanProductTestBuilder withInstallmentCalculationPeriodType(Integer installmentCalculationPeriodType) {
         this.installmentCalculationPeriodType = installmentCalculationPeriodType;
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForClientProfileTypeLegalForm() {
+        this.applicableForLoanType = 2;
+        this.isEnableRestrictionForClientProfile = true;
+        this.selectedProfileTypeValues = new Integer[2];
+        this.selectedProfileTypeValues[0] = 1; // LegalForm.PERSON
+        this.selectedProfileTypeValues[1] = 2; // LegalForm.ENTITY
         return this;
     }
     

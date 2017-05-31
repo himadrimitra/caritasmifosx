@@ -67,29 +67,37 @@ public class ProvisioningCriteriaReadPlatformServiceImpl implements Provisioning
 
     @Override
     public ProvisioningCriteriaData retrievePrivisiongCriteriaTemplate() {
-        boolean onlyActive = true;
+        final boolean onlyActive = true;
         final Collection<ProvisioningCategoryData> categories = this.provisioningCategoryReadPlatformService
                 .retrieveAllProvisionCategories();
-        final Collection<LoanProductData> allLoanProducts = this.loanProductReadPlatformService
-                .retrieveAllLoanProductsForLookup(onlyActive);
+        final Integer productApplicableForLoanType = null;
+        final Integer entityType = null;
+        final Long entityId = null;
+        final Collection<LoanProductData> allLoanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(
+                onlyActive, productApplicableForLoanType, entityType, entityId);
         final Collection<GLAccountData> glAccounts = this.glAccountReadPlatformService.retrieveAllEnabledDetailGLAccounts();
-		final Collection<EnumOptionData> provisioningAmountTypeOptions = ProvisioningEnumerations
-				.provisioningAmount(ProvisioningAmountType.values());
-		return ProvisioningCriteriaData.toTemplate(constructCriteriaTemplate(categories), allLoanProducts, glAccounts,
-				provisioningAmountTypeOptions);
-	}
+        final Collection<EnumOptionData> provisioningAmountTypeOptions = ProvisioningEnumerations.provisioningAmount(ProvisioningAmountType
+                .values());
+        return ProvisioningCriteriaData.toTemplate(constructCriteriaTemplate(categories), allLoanProducts, glAccounts,
+                provisioningAmountTypeOptions);
+    }
 
     @Override
-    public ProvisioningCriteriaData retrievePrivisiongCriteriaTemplate(ProvisioningCriteriaData data) {
-        boolean onlyActive = true;
+    public ProvisioningCriteriaData retrievePrivisiongCriteriaTemplate(final ProvisioningCriteriaData data) {
+        
         final Collection<ProvisioningCategoryData> categories = this.provisioningCategoryReadPlatformService
                 .retrieveAllProvisionCategories();
-        final Collection<LoanProductData> allLoanProducts = this.loanProductReadPlatformService
-                .retrieveAllLoanProductsForLookup(onlyActive);
+        final boolean onlyActive = true;
+        final Integer productApplicableForLoanType = null;
+        final Integer entityType = null;
+        final Long entityId = null;
+        final Collection<LoanProductData> allLoanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(
+                onlyActive, productApplicableForLoanType, entityType, entityId);
         final Collection<GLAccountData> glAccounts = this.glAccountReadPlatformService.retrieveAllEnabledDetailGLAccounts();
-        final Collection<EnumOptionData> provisioningAmountTypeOptions = ProvisioningEnumerations
-				.provisioningAmount(ProvisioningAmountType.values());
-        return ProvisioningCriteriaData.toTemplate(data, constructCriteriaTemplate(categories), allLoanProducts, glAccounts, provisioningAmountTypeOptions);
+        final Collection<EnumOptionData> provisioningAmountTypeOptions = ProvisioningEnumerations.provisioningAmount(ProvisioningAmountType
+                .values());
+        return ProvisioningCriteriaData.toTemplate(data, constructCriteriaTemplate(categories), allLoanProducts, glAccounts,
+                provisioningAmountTypeOptions);
     }
     
     private Collection<ProvisioningCriteriaDefinitionData> constructCriteriaTemplate(Collection<ProvisioningCategoryData> categories) {
@@ -121,18 +129,17 @@ public class ProvisioningCriteriaReadPlatformServiceImpl implements Provisioning
     }
 
     @Override
-    public ProvisioningCriteriaData retrieveProvisioningCriteria(Long criteriaId) {
+    public ProvisioningCriteriaData retrieveProvisioningCriteria(final Long criteriaId) {
         try {
             ProvisioningCriteriaData data = retrieveCriteria(criteriaId);
-            Collection<LoanProductData> loanProducts = loanProductReaPlatformService
-                    .retrieveAllLoanProductsForLookup("select product_id from m_loanproduct_provisioning_mapping where m_loanproduct_provisioning_mapping.criteria_id="
-                            + criteriaId);
-			List<ProvisioningCriteriaDefinitionData> definitions = retrieveProvisioningDefinitions(criteriaId);
-			return ProvisioningCriteriaData.toLookup(criteriaId, data, loanProducts, definitions);
-        }catch(EmptyResultDataAccessException e) {
-            throw new ProvisioningCriteriaNotFoundException(criteriaId) ;
+            final String inClass = "select product_id from m_loanproduct_provisioning_mapping where m_loanproduct_provisioning_mapping.criteria_id="+ criteriaId;
+            Collection<LoanProductData> loanProducts = this.loanProductReaPlatformService.retrieveAllLoanProductsForLookup(inClass);
+            List<ProvisioningCriteriaDefinitionData> definitions = retrieveProvisioningDefinitions(criteriaId);
+            return ProvisioningCriteriaData.toLookup(criteriaId, data, loanProducts, definitions);
+        } catch (EmptyResultDataAccessException e) {
+            throw new ProvisioningCriteriaNotFoundException(criteriaId);
         }
-       
+
     }
 
     private List<ProvisioningCriteriaDefinitionData> retrieveProvisioningDefinitions(Long criteriaId) {

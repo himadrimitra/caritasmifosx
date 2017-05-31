@@ -64,12 +64,11 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
 
     @Autowired
     public SearchReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService, final ConfigurationDomainService configurationDomainService) {
+            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService) {
         this.context = context;
         this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.officeReadPlatformService = officeReadPlatformService;
-        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -308,8 +307,11 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
     public AdHocSearchQueryData retrieveAdHocQueryTemplate() {
 
         this.context.authenticatedUser();
-
-        final Collection<LoanProductData> loanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
+        final Integer productApplicableForLoanType = null;
+        final Integer entityType = null;
+        final Long entityId = null;
+        final Collection<LoanProductData> loanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(
+                productApplicableForLoanType, entityType, entityId);
         final Collection<OfficeData> offices = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
 
         return AdHocSearchQueryData.template(loanProducts, offices);

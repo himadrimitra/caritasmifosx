@@ -81,22 +81,18 @@ public class SelfLoansApiResource {
 		this.dataValidator = dataValidator;
 	}
 
-	@GET
-	@Path("{loanId}")
-	@Consumes({ MediaType.APPLICATION_JSON })
-	@Produces({ MediaType.APPLICATION_JSON })
-	public String retrieveLoan(@PathParam("loanId") final Long loanId,
-			@Context final UriInfo uriInfo) {
-
-		this.dataValidator.validateRetrieveLoan(uriInfo);
-
-		validateAppuserLoanMapping(loanId);
-
-		final boolean staffInSelectedOfficeOnly = false;
-		final boolean fetchRDAccountOnly = false;
-		return this.loansApiResource.retrieveLoan(loanId,
-				staffInSelectedOfficeOnly, false, uriInfo, fetchRDAccountOnly);
-	}
+    @GET
+    @Path("{loanId}")
+    @Consumes({ MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_JSON })
+    public String retrieveLoan(@PathParam("loanId") final Long loanId, @Context final UriInfo uriInfo) {
+        this.dataValidator.validateRetrieveLoan(uriInfo);
+        validateAppuserLoanMapping(loanId);
+        final boolean staffInSelectedOfficeOnly = false;
+        final boolean isFetchSpecificData = false;
+        final boolean fetchRDAccountOnly = false;
+        return this.loansApiResource.retrieveLoan(loanId, staffInSelectedOfficeOnly, isFetchSpecificData, fetchRDAccountOnly, uriInfo);
+    }
 
 	@GET
 	@Path("{loanId}/transactions/{transactionId}")
@@ -165,10 +161,12 @@ public class SelfLoansApiResource {
     	final Long groupId = null;
     	final boolean staffInSelectedOfficeOnly = false;
     	final boolean onlyActive = true;
-    	final boolean fetchRDAccountOnly = false;
-    	return this.loansApiResource.template(clientId, groupId, productId, 
-    			templateType, staffInSelectedOfficeOnly, onlyActive, uriInfo, fetchRDAccountOnly);
-
+        final boolean fetchRDAccountOnly = false;
+        final Integer productApplicableForLoanType = null;
+        final Integer entityType = null;
+        final Long entityId = null;
+        return this.loansApiResource.template(clientId, groupId, productId, templateType, staffInSelectedOfficeOnly, onlyActive,
+                fetchRDAccountOnly, productApplicableForLoanType, entityType, entityId, uriInfo);
     }
     
     @POST

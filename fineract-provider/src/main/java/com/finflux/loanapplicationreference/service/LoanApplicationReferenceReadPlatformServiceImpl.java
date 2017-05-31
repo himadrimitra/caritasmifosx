@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.finflux.loanapplicationreference.data.*;
 import com.finflux.portfolio.loanemipacks.data.LoanEMIPackData;
+
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -61,8 +62,7 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
             final PaymentTypeReadPlatformService paymentTypeReadPlatformService,
             final TransactionAuthenticationReadPlatformService transactionAuthenticationReadPlatformService,
             final FingerPrintReadPlatformServices fingerPrintReadPlatformServices,
-    		final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService,
-    		final RoutingDataSource dataSourc) {
+            final ExternalAuthenticationServicesReadPlatformService externalAuthenticationServicesReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.dataMapper = new LoanApplicationReferenceDataMapper();
@@ -76,42 +76,45 @@ public class LoanApplicationReferenceReadPlatformServiceImpl implements LoanAppl
     }
 
     @Override
-    public LoanApplicationReferenceTemplateData templateData(final boolean onlyActive) {
-        final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive);
+    public LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Integer productApplicableForLoanType,
+            final Integer entityType, final Long entityId) {
+        final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive,
+                productApplicableForLoanType, entityType, entityId);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
-		return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions);
+        return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions);
     }
 
     @Override
-    public LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Long loanApplicationReferenceId) {
-    	final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive);
+    public LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Long loanApplicationReferenceId,
+            final Integer productApplicableForLoanType, final Integer entityType, final Long entityId) {
+        final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive,
+                productApplicableForLoanType, entityType, entityId);
         final Collection<PaymentTypeData> paymentOptions = this.paymentTypeReadPlatformService.retrieveAllPaymentTypes();
         Map<String, Object> data = retrieveLoanProductIdApprovedAmountClientId(loanApplicationReferenceId);
         Long productId = (Long) data.get("productId");
         BigDecimal approvedPrincipal = (BigDecimal) data.get("approvedAmount");
         Long clientId = (Long) data.get("clientId");
         Collection<FingerPrintData> fingerPrintData = null;
-        Collection<TransactionAuthenticationData> transactionAuthenticationOptions  = null;
-		if (clientId != null) {
-			transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
-					.retiveTransactionAuthenticationDetailsForTemplate(
-							SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
-							SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal,
-							loanApplicationReferenceId, productId);
-			final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService
-					.getOnlyActiveExternalAuthenticationServices();
-			if (externalServices.size() > 0 && !externalServices.isEmpty()) {
-				for (ExternalAuthenticationServiceData services : externalServices) {
-					if (services.getName().contains("Fingerprint Auth")) {
-						if (services.isActive()) {
-							fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(clientId);
-						}
-					}
-				}
-			}
-		}
-		return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions,
-				transactionAuthenticationOptions, fingerPrintData);
+        Collection<TransactionAuthenticationData> transactionAuthenticationOptions = null;
+        if (clientId != null) {
+            transactionAuthenticationOptions = this.transactionAuthenticationReadPlatformService
+                    .retiveTransactionAuthenticationDetailsForTemplate(SupportedAuthenticationPortfolioTypes.LOANS.getValue(),
+                            SupportedAuthenticaionTransactionTypes.DISBURSEMENT.getValue(), approvedPrincipal, loanApplicationReferenceId,
+                            productId);
+            final Collection<ExternalAuthenticationServiceData> externalServices = this.externalAuthenticationServicesReadPlatformService
+                    .getOnlyActiveExternalAuthenticationServices();
+            if (externalServices.size() > 0 && !externalServices.isEmpty()) {
+                for (ExternalAuthenticationServiceData services : externalServices) {
+                    if (services.getName().contains("Fingerprint Auth")) {
+                        if (services.isActive()) {
+                            fingerPrintData = this.fingerPrintReadPlatformServices.retriveFingerPrintData(clientId);
+                        }
+                    }
+                }
+            }
+        }
+        return LoanApplicationReferenceTemplateData.template(productOptions, paymentOptions, transactionAuthenticationOptions,
+                fingerPrintData);
     }
     
     @Override

@@ -7,9 +7,11 @@ import com.finflux.loanapplicationreference.data.*;
 
 public interface LoanApplicationReferenceReadPlatformService {
 
-    LoanApplicationReferenceTemplateData templateData(final boolean onlyActive);
-    
-    LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Long loanApplicationReferenceId);
+    LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Integer productApplicableForLoanType,
+            final Integer entityType, final Long entityId);
+
+    LoanApplicationReferenceTemplateData templateData(final boolean onlyActive, final Long loanApplicationReferenceId,
+            final Integer productApplicableForLoanType, final Integer entityType, final Long entityId);
 
     Collection<LoanApplicationReferenceData> retrieveAll(final Long clientId);
 
