@@ -1326,7 +1326,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
     public void validateLoanForInterestRecalculation(final Loan loan) {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 
-        validateLoanCharges(loan.charges(), dataValidationErrors, loan.isInterestRecalculationEnabledForProduct());
+        validateLoanCharges(loan.charges(), dataValidationErrors, loan.isInterestRecalculationEnabled());
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
     }
 
