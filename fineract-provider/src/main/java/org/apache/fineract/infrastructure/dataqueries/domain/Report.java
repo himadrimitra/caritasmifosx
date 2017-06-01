@@ -255,7 +255,7 @@ public final class Report extends AbstractPersistable<Long> {
         baseDataValidator.reset().parameter("reportCategory").value(this.reportCategory).notExceedingLengthOf(45);
 
         if (StringUtils.isNotBlank(this.reportType)) {
-            if ((this.reportType.equals("Table")) || (this.reportType.equals("Chart")) || (this.reportType.equals("Pentaho"))) {
+            if ((this.reportType.equals("Table")) || (this.reportType.equals("Chart"))) {
                 baseDataValidator.reset().parameter("reportSql").value(this.reportSql)
                         .cantBeBlankWhenParameterProvidedIs("reportType", this.reportType);
             } else {
