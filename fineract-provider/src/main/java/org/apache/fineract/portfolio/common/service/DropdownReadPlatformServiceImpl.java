@@ -68,7 +68,7 @@ public class DropdownReadPlatformServiceImpl implements DropdownReadPlatformServ
     public List<EnumOptionData> retrieveDaysInYearTypeOptions() {
 
         final List<EnumOptionData> daysInYearTypeOptions = Arrays.asList(daysInYearType(DaysInYearType.ACTUAL),
-                daysInYearType(DaysInYearType.DAYS_360), daysInYearType(DaysInYearType.DAYS_364), daysInYearType(DaysInYearType.DAYS_365));
+                daysInYearType(DaysInYearType.DAYS_360), daysInYearType(DaysInYearType.DAYS_364), daysInYearType(DaysInYearType.DAYS_365), daysInYearType(DaysInYearType.DAYS_240));
         return daysInYearTypeOptions;
     }
 
