@@ -664,39 +664,42 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 		if (isLoanOfficerToCenterHierarchyEnabled && groupForUpdate.getParent() != null) {
 			throw new UpdateStaffHierarchyException(staffId);
 		}
-        final boolean inheritStaffForClientAccounts = command
-                .booleanPrimitiveValueOfParameterNamed(GroupingTypesApiConstants.inheritStaffForClientAccounts);
         staff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(staffId, groupForUpdate.getOffice().getHierarchy());
         groupForUpdate.updateStaff(staff);
 
-        if (inheritStaffForClientAccounts) {
-            LocalDate loanOfficerReassignmentDate = DateUtils.getLocalDateOfTenant();
-            /*
-             * update loan officer for client and update loan officer for
-             * clients loans and savings
-             */
-            Set<Client> clients = groupForUpdate.getClientMembers();
-            if (clients != null) {
-                for (Client client : clients) {
-                    client.updateStaff(staff);
-                    if (this.loanRepository.doNonClosedLoanAccountsExistForClient(client.getId())) {
-                        for (final Loan loan : this.loanRepositoryWrapper.findLoanByClientId(client.getId())) {
-                            if (loan.isDisbursed() && !loan.isClosed()) {
-                                loan.reassignLoanOfficer(staff, loanOfficerReassignmentDate);
-                            }
-                        }
-                    }
-                    if (this.savingsAccountRepository.doNonClosedSavingAccountsExistForClient(client.getId())) {
-                        for (final SavingsAccount savingsAccount : this.savingsAccountRepository
-                                .findSavingAccountByClientId(client.getId())) {
-                            if (!savingsAccount.isClosed()) {
-                                savingsAccount.reassignSavingsOfficer(staff, loanOfficerReassignmentDate);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled()) {
+			List<Group> groupMembers = groupForUpdate.getGroupMembers();
+			if (groupMembers != null && !groupMembers.isEmpty()) {
+				for (Group group : groupMembers) {
+					group.updateStaff(staff);
+					List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
+					if (groupLoans != null && !groupLoans.isEmpty()) {
+						for (Loan loan : groupLoans) {
+							loan.updateLoanOfficer(staff);
+						}
+					}
+					Set<Client> clientMembers = group.getActiveClientMembers();
+					if (clientMembers != null && !clientMembers.isEmpty()) {
+						for (Client client : clientMembers) {
+							client.updateStaff(staff);
+							List<Loan> clientLoans = this.loanRepositoryWrapper.findLoanByClientId(client.getId());
+							if (clientLoans != null && !clientLoans.isEmpty()) {
+								for (Loan loan : clientLoans) {
+									loan.updateLoanOfficer(staff);
+								}
+							}
+							List<LoanApplicationReference> clientLoanApplicationReference = 
+									loanApplicationReferenceRepository.findLoanByClientId(client.getId());
+							if(clientLoanApplicationReference != null && !clientLoanApplicationReference.isEmpty()){
+								for(LoanApplicationReference loanApplicationReference : clientLoanApplicationReference){
+									loanApplicationReference.updateLoanOfficer(staff);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
         this.groupRepository.saveAndFlush(groupForUpdate);
 
         if (isLoanOfficerToCenterHierarchyEnabled && staff != null) {
