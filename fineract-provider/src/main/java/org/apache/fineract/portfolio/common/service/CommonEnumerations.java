@@ -159,6 +159,10 @@ public class CommonEnumerations {
                 optionData = new EnumOptionData(DaysInYearType.DAYS_365.getValue().longValue(), DaysInYearType.DAYS_365.getCode(),
                         "365 Days");
             break;
+            case DAYS_240:
+                optionData = new EnumOptionData(DaysInYearType.DAYS_240.getValue().longValue(), DaysInYearType.DAYS_240.getCode(),
+                        "240 Days");
+            break;
             default:
                 optionData = new EnumOptionData(DaysInYearType.INVALID.getValue().longValue(), DaysInYearType.INVALID.getCode(), "Invalid");
             break;
