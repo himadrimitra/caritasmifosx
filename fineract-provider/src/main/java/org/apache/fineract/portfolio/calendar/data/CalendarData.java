@@ -249,6 +249,53 @@ public class CalendarData {
         this.meetingTime = meetingTime;
         this.frequencyNthDayTypeOptions = frequencyNthDayTypeOptions;
     }
+    
+    public static CalendarData instance(final Long id, final LocalDate startDate, final String recurrence, final LocalDate endDate) {
+
+        final Long calendarInstanceId = null;
+        final Long entityId = null;
+        final EnumOptionData entityType = null;
+        final String title = null;
+        final String description = null;
+        final String location = null;
+        final Integer duration = null;
+        final EnumOptionData type = null;
+        final boolean repeating = false;
+        final EnumOptionData frequency = null;
+        final Integer interval = new Integer(1);
+        final EnumOptionData repeatsOnDay = null;
+        final EnumOptionData repeatsOnNthDayOfMonth = null;
+        final EnumOptionData remindBy = null;
+        final Integer firstReminder = null;
+        final Integer secondReminder = null;
+        final String humanReadable = null;
+        final Collection<LocalDate> recurringDates = null;
+        final Collection<LocalDate> nextTenRecurringDates = null;
+        final LocalDate recentEligibleMeetingDate = null;
+
+        final List<EnumOptionData> entityTypeOptions = null;
+        final List<EnumOptionData> calendarTypeOptions = null;
+        final List<EnumOptionData> remindByOptions = null;
+        final List<EnumOptionData> frequencyOptions = null;
+        final List<EnumOptionData> repeatsOnDayOptions = null;
+        final List<EnumOptionData> frequencyNthDayTypeOptions = null;
+
+        final LocalDate createdDate = null;
+        final LocalDate lastUpdatedDate = null;
+        final Long createdByUserId = null;
+        final String createdByUsername = null;
+        final Long lastUpdatedByUserId = null;
+        final String lastUpdatedByUsername = null;
+        final LocalTime meetingTime = null;
+        final Collection<Integer> repeatsOnDayOfMonth = null;
+
+        return new CalendarData(id, calendarInstanceId, entityId, entityType, title, description, location, startDate, endDate, duration,
+                type, repeating, recurrence, frequency, interval, repeatsOnDay, repeatsOnNthDayOfMonth, remindBy, firstReminder,
+                secondReminder, recurringDates, nextTenRecurringDates, humanReadable, recentEligibleMeetingDate, createdDate,
+                lastUpdatedDate, createdByUserId, createdByUsername, lastUpdatedByUserId, lastUpdatedByUsername, repeatsOnDayOfMonth,
+                entityTypeOptions, calendarTypeOptions, remindByOptions, frequencyOptions, repeatsOnDayOptions, meetingTime,
+                frequencyNthDayTypeOptions);
+    }
 
     public Long getId() {
         return this.id;
