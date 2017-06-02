@@ -19,8 +19,6 @@
 package org.apache.fineract.portfolio.savings.service;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.List;
 
@@ -28,12 +26,10 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
-import org.apache.fineract.organisation.monetary.domain.MoneyHelper;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstance;
 import org.apache.fineract.portfolio.calendar.domain.CalendarInstanceRepository;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
-import org.apache.fineract.portfolio.savings.SavingsDpLimitCalculationType;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountDpDetailsData;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountAssembler;
@@ -136,9 +132,6 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
     @Override
     public void reduceDpLimitForAccounts() throws JobExecutionException {
         final LocalDate today = DateUtils.getLocalDateOfTenant();
-        final RoundingMode roundingMode = MoneyHelper.getRoundingMode();
-        final MathContext mc = new MathContext(8, roundingMode);
-        final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         final Collection<SavingsAccountDpDetailsData> savingsAccountDpDetailsDatas = this.savingAccountReadPlatformService
                 .retriveSavingsAccountDpDetailsDatas();
         for (final SavingsAccountDpDetailsData savingsAccountDpDetailsData : savingsAccountDpDetailsDatas) {
@@ -158,16 +151,7 @@ public class SavingsSchedularServiceImpl implements SavingsSchedularService {
                 final BigDecimal dpAmount = savingsAccountDpDetailsData.getDpAmount();
                 BigDecimal dpLimitAmount = BigDecimal.ZERO;
                 if (isPeriodNumberFallsInDuration(periodNumber, duration)) {
-                    BigDecimal amount = BigDecimal.ZERO;
-                    final Integer calculationTypeId = savingsAccountDpDetailsData.getCalculationType().getId().intValue();
-                    final SavingsDpLimitCalculationType savingsDpLimitCalculationType = SavingsDpLimitCalculationType
-                            .fromInt(calculationTypeId);
-                    if (savingsDpLimitCalculationType.isFlat()) {
-                        amount = savingsAccountDpDetailsData.getAmount();
-                    } else {
-                        final BigDecimal percentOfAmount = savingsAccountDpDetailsData.getAmount();
-                        amount = dpAmount.multiply(percentOfAmount).divide(divisor, mc);
-                    }
+                    BigDecimal amount = savingsAccountDpDetailsData.getAmount();
                     dpLimitAmount = dpAmount.subtract(BigDecimal.valueOf(periodNumber).multiply(amount));
                     if (dpLimitAmount.compareTo(BigDecimal.ZERO) == -1) {
                         dpLimitAmount = BigDecimal.ZERO;
