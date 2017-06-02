@@ -2721,7 +2721,8 @@ public class Loan extends AbstractPersistable<Long> {
         if (isRepaymentScheduleRegenerationRequiredForDisbursement(actualDisbursementDate) || recalculateSchedule || isEmiAmountChanged
                 || rescheduledRepaymentDate != null
                 || fetchRepaymentScheduleInstallment(1).getDueDate().isBefore(DateUtils.getLocalDateOfTenant()) || isDisbursementMissed()) {
-            boolean generateSchedule = isApproved() || (!isAllPaymentsDone() && getMaturityDate().isAfter(actualDisbursementDate));
+            boolean generateSchedule = isApproved()
+                    || (!isAllPaymentsDone() && (getFlatInterestRate() == null || getMaturityDate().isAfter(actualDisbursementDate)));
             if (generateSchedule) {
             	 final boolean isDisburseInitiated = true;
                  recalculateSchedule(scheduleGeneratorDTO, currentUser, isDisburseInitiated);
