@@ -121,7 +121,8 @@ public final class LoanProductDataValidator {
             LoanProductConstants.installmentCalculationPeriodTypeParamName, LoanProductConstants.isMinDurationApplicableForAllDisbursementsParamName,
             LoanProductConstants.brokenPeriodMethodTypeParamName,LoanProductConstants.isFlatInterestRateParamName,
             LoanProductConstants.considerFutureDisbursementsInSchedule, LoanProductConstants.considerAllDisbursementsInSchedule,
-            LoanProductConstants.allowNegativeLoanBalance,LoanProductConstants.percentageOfDisbursementToBeTransferred));
+            LoanProductConstants.allowNegativeLoanBalance,LoanProductConstants.percentageOfDisbursementToBeTransferred,
+            LoanProductConstants.interestRatesListPerPeriod,LoanProductConstants.interestRatesListPerCycleParameterName));
 
     private final FromJsonHelper fromApiJsonHelper;
 
@@ -387,6 +388,12 @@ public final class LoanProductDataValidator {
                         .failWithCode("not.supported.when.isLinkedToFloatingInterestRates.is.true",
                                 "interestRatePerPeriod param is not supported when isLinkedToFloatingInterestRates is true");
             }
+            
+            if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
+                baseDataValidator.reset().parameter("interestRatesListPerPeriod").failWithCode(
+                        "not.supported.when.isLinkedToFloatingInterestRates.is.true",
+                        "interestRatesListPerPeriod param is not supported when isLinkedToFloatingInterestRates is true");
+            }
 
             if (this.fromApiJsonHelper.parameterExists("minInterestRatePerPeriod", element)) {
                 baseDataValidator
@@ -558,7 +565,27 @@ public final class LoanProductDataValidator {
                 baseDataValidator.reset().parameter("interestRatePerPeriod").value(interestRatePerPeriod)
                         .notLessThanMin(minInterestRatePerPeriod);
             }
+            
+            if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
+                JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
+                        element);
+                baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRatesArray).notNull()
+                        .jsonArrayNotEmpty();
+                if (interestRatesArray != null) {
+                    for (JsonElement interest : interestRatesArray) {
+                        Float interestRate = interest.getAsFloat();
+                        baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate).notNull()
+                                .zeroOrPositiveAmount();
+                        if (maxInterestRatePerPeriod != null)
+                            baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate)
+                                    .notGreaterThanMax(maxInterestRatePerPeriod);
+                        if (minInterestRatePerPeriod != null)
+                            baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod)
+                                    .value(interestRatePerPeriod).notLessThanMin(minInterestRatePerPeriod);
 
+                    }
+                }
+            }
             final Integer interestRateFrequencyType = this.fromApiJsonHelper.extractIntegerNamed("interestRateFrequencyType", element,
                     Locale.getDefault());
             baseDataValidator.reset().parameter("interestRateFrequencyType").value(interestRateFrequencyType).notNull().inMinMaxRange(0, 3);
@@ -1393,6 +1420,12 @@ public final class LoanProductDataValidator {
                         .failWithCode("not.supported.when.isLinkedToFloatingInterestRates.is.true",
                                 "interestRatePerPeriod param is not supported when isLinkedToFloatingInterestRates is true");
             }
+            
+            if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
+                baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).failWithCode(
+                        "not.supported.when.isLinkedToFloatingInterestRates.is.true",
+                        "interestRatesListPerPeriod param is not supported when isLinkedToFloatingInterestRates is true");
+            }
 
             if (this.fromApiJsonHelper.parameterExists("minInterestRatePerPeriod", element)) {
                 baseDataValidator
@@ -1569,12 +1602,31 @@ public final class LoanProductDataValidator {
             }
             baseDataValidator.reset().parameter(maxInterestRatePerPeriodParameterName).value(maxInterestRatePerPeriod).ignoreIfNull()
                     .zeroOrPositiveAmount();
-
+                        
             BigDecimal interestRatePerPeriod = loanProduct.getLoanProductRelatedDetail().getNominalInterestRatePerPeriod();
             if (this.fromApiJsonHelper.parameterExists("interestRatePerPeriod", element)) {
                 interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("interestRatePerPeriod", element);
             }
             baseDataValidator.reset().parameter("interestRatePerPeriod").value(interestRatePerPeriod).notNull().zeroOrPositiveAmount();
+
+            if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
+                JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
+                        element);
+                baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRatesArray).notNull();
+                if (interestRatesArray != null) {
+                    for (JsonElement interest : interestRatesArray) {
+                        Float interestRate = interest.getAsFloat();
+                        baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate).notNull()
+                                .zeroOrPositiveAmount();
+                        if (maxInterestRatePerPeriod != null)
+                            baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate)
+                                    .notGreaterThanMax(maxInterestRatePerPeriod);
+                        if (minInterestRatePerPeriod != null)
+                            baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate)
+                                    .notLessThanMin(minInterestRatePerPeriod);
+                    }
+                }
+            }
 
             Integer interestRateFrequencyType = loanProduct.getLoanProductRelatedDetail().getInterestPeriodFrequencyType().getValue();
             if (this.fromApiJsonHelper.parameterExists("interestRateFrequencyType", element)) {
@@ -2148,7 +2200,7 @@ public final class LoanProductDataValidator {
         validateBorrowerCycleVariations(element, baseDataValidator, LoanProductConstants.principalVariationsForBorrowerCycleParameterName,
                 LoanProductConstants.principalPerCycleParameterName, LoanProductConstants.minPrincipalPerCycleParameterName,
                 LoanProductConstants.maxPrincipalPerCycleParameterName, LoanProductConstants.principalValueUsageConditionParamName,
-                LoanProductConstants.principalCycleNumbersParamName);
+                LoanProductConstants.principalCycleNumbersParamName, null);
     }
 
     private void validateBorrowerCycleRepaymentVariations(final JsonElement element, final DataValidatorBuilder baseDataValidator) {
@@ -2157,7 +2209,7 @@ public final class LoanProductDataValidator {
                 LoanProductConstants.numberOfRepaymentsPerCycleParameterName,
                 LoanProductConstants.minNumberOfRepaymentsPerCycleParameterName,
                 LoanProductConstants.maxNumberOfRepaymentsPerCycleParameterName,
-                LoanProductConstants.repaymentValueUsageConditionParamName, LoanProductConstants.repaymentCycleNumberParamName);
+                LoanProductConstants.repaymentValueUsageConditionParamName, LoanProductConstants.repaymentCycleNumberParamName, null);
     }
 
     private void validateBorrowerCycleInterestVariations(final JsonElement element, final DataValidatorBuilder baseDataValidator) {
@@ -2166,12 +2218,13 @@ public final class LoanProductDataValidator {
                 LoanProductConstants.interestRatePerPeriodPerCycleParameterName,
                 LoanProductConstants.minInterestRatePerPeriodPerCycleParameterName,
                 LoanProductConstants.maxInterestRatePerPeriodPerCycleParameterName,
-                LoanProductConstants.interestRateValueUsageConditionParamName, LoanProductConstants.interestRateCycleNumberParamName);
+                LoanProductConstants.interestRateValueUsageConditionParamName, LoanProductConstants.interestRateCycleNumberParamName,
+                LoanProductConstants.interestRatesListPerCycleParameterName);
     }
 
     private void validateBorrowerCycleVariations(final JsonElement element, final DataValidatorBuilder baseDataValidator,
             final String variationParameterName, final String defaultParameterName, final String minParameterName,
-            final String maxParameterName, final String valueUsageConditionParamName, final String cycleNumbersParamName) {
+            final String maxParameterName, final String valueUsageConditionParamName, final String cycleNumbersParamName, final String interestRatesPerCycleParamName) {
         final JsonObject topLevelJsonElement = element.getAsJsonObject();
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
         Integer lastCycleNumber = 0;
@@ -2194,6 +2247,27 @@ public final class LoanProductDataValidator {
                     Integer valueUsageCondition = this.fromApiJsonHelper.extractIntegerNamed(
                             LoanProductConstants.valueConditionTypeParamName, jsonObject, locale);
 
+                    if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerCycleParameterName, element)) {
+                        JsonArray interestRatesArray = this.fromApiJsonHelper
+                                .extractJsonArrayNamed(LoanProductConstants.interestRatesListPerCycleParameterName, element);
+                        baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
+                                .value(interestRatesArray).notNull().jsonArrayNotEmpty();
+                        if (interestRatesArray != null) {
+                            for (JsonElement interest : interestRatesArray) {
+                                Float interestRate = interest.getAsFloat();
+                                baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
+                                        .value(interestRate).notNull().zeroOrPositiveAmount();
+                                if (maxValue != null)
+                                    baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
+                                            .value(interestRate).notGreaterThanMax(maxValue);
+                                if (minValue != null)
+                                    baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
+                                            .value(interestRate).notLessThanMin(minValue);
+                            }
+                        }
+
+                    }
+  
                     baseDataValidator.reset().parameter(defaultParameterName).value(defaultValue).notBlank();
                     if (minValue != null) {
                         baseDataValidator.reset().parameter(minParameterName).value(minValue).notGreaterThanMax(maxValue);

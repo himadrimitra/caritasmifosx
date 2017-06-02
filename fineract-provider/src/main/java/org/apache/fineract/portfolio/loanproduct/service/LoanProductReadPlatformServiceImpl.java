@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
@@ -198,7 +199,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             return "lp.id as id, lp.fund_id as fundId, f.name as fundName, lp.loan_transaction_strategy_id as transactionStrategyId, ltps.name as transactionStrategyName, "
                     + "lp.name as name, lp.short_name as shortName, lp.description as description, "
                     + "lp.principal_amount as principal, lp.min_principal_amount as minPrincipal, lp.max_principal_amount as maxPrincipal, lp.currency_code as currencyCode, lp.currency_digits as currencyDigits, lp.currency_multiplesof as inMultiplesOf, "
-                    + "lp.nominal_interest_rate_per_period as interestRatePerPeriod, lp.min_nominal_interest_rate_per_period as minInterestRatePerPeriod, lp.max_nominal_interest_rate_per_period as maxInterestRatePerPeriod, lp.interest_period_frequency_enum as interestRatePerPeriodFreq, "
+                    + "lp.nominal_interest_rate_per_period as interestRatePerPeriod, lp.min_nominal_interest_rate_per_period as minInterestRatePerPeriod, lp.max_nominal_interest_rate_per_period as maxInterestRatePerPeriod, lp.interest_period_frequency_enum as interestRatePerPeriodFreq, lp.interest_rates_list_per_period as interestRatesListPerPeriod, "
                     + "lp.annual_nominal_interest_rate as annualInterestRate, lp.interest_method_enum as interestMethod, lp.interest_calculated_in_period_enum as interestCalculationInPeriodMethod,lp.allow_partial_period_interest_calcualtion as allowPartialPeriodInterestCalcualtion, "
                     + "lp.repay_every as repaidEvery, lp.repayment_period_frequency_enum as repaymentPeriodFrequency, lp.number_of_repayments as numberOfRepayments, lp.min_number_of_repayments as minNumberOfRepayments, lp.max_number_of_repayments as maxNumberOfRepayments, "
                     + "lp.grace_on_principal_periods as graceOnPrincipalPayment, lp.recurring_moratorium_principal_periods as recurringMoratoriumOnPrincipalPeriods, lp.grace_on_interest_periods as graceOnInterestPayment, lp.grace_interest_free_periods as graceOnInterestCharged,lp.grace_on_arrears_ageing as graceOnArrearsAgeing,lp.overdue_days_for_npa as overdueDaysForNPA, "
@@ -316,6 +317,14 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final BigDecimal minInterestRatePerPeriod = rs.getBigDecimal("minInterestRatePerPeriod");
             final BigDecimal maxInterestRatePerPeriod = rs.getBigDecimal("maxInterestRatePerPeriod");
             final BigDecimal annualInterestRate = rs.getBigDecimal("annualInterestRate");
+            
+            final String loanInterestRatesListPerPeriod = rs.getString("interestRatesListPerPeriod");
+            List<Float> interestRatesListPerPeriod = new ArrayList<>();
+            if (loanInterestRatesListPerPeriod != null && !loanInterestRatesListPerPeriod.isEmpty()) {
+                List<String> interestRates = Arrays.asList(loanInterestRatesListPerPeriod.split(","));
+                for (String rate : interestRates)
+                    interestRatesListPerPeriod.add(Float.parseFloat(rate));
+            }
 
             final boolean isLinkedToFloatingInterestRates = rs.getBoolean("isLinkedToFloatingInterestRates");
             final Integer floatingRateId = JdbcSupport.getIntegerDefaultToNullIfZero(rs, "floatingRateId");
@@ -526,7 +535,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                     maximumGap, adjustedInstallmentInMultiplesOf, adjustFirstEMIAmount, closeLoanOnOverpayment, syncExpectedWithDisbursementDate, 
                     minimumPeriodsBetweenDisbursalAndFirstRepayment, minLoanTerm, maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType, adjustInterestForRounding, isEmiBasedOnDisbursements, installmentCalculationPeriodType, isMinDurationApplicableForAllDisbursements, 
                     brokenPeriodMethodType, isFlatInterestRate, allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule,
-                    allowUpfrontCollection, percentageOfDisbursementToBeTransferred);
+                    allowUpfrontCollection, percentageOfDisbursementToBeTransferred, interestRatesListPerPeriod);
         }
     }
 
@@ -567,7 +576,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
 
         public String schema() {
             return "bc.id as id,bc.borrower_cycle_number as cycleNumber,bc.value_condition as conditionType,bc.param_type as paramType,"
-                    + "bc.default_value as defaultValue,bc.max_value as maxVal,bc.min_value as minVal "
+                    + "bc.default_value as defaultValue,bc.max_value as maxVal,bc.min_value as minVal, bc.interest_rates_list_per_cycle as interestRatesListPerCycle "
                     + "from m_product_loan_variations_borrower_cycle bc";
         }
 
@@ -583,9 +592,17 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             final BigDecimal defaultValue = rs.getBigDecimal("defaultValue");
             final BigDecimal maxValue = rs.getBigDecimal("maxVal");
             final BigDecimal minValue = rs.getBigDecimal("minVal");
+            final String loanInterestRatesListPerCycle = rs.getString("interestRatesListPerCycle");
+            
+            List<Float> interestRatesListPerCycle = new ArrayList<>();
+            if (loanInterestRatesListPerCycle != null && !loanInterestRatesListPerCycle.isEmpty()) {
+                List<String> interestRates = Arrays.asList(loanInterestRatesListPerCycle.split(","));
+                for (String rate : interestRates)
+                    interestRatesListPerCycle.add(Float.parseFloat(rate));
+            }
 
             final LoanProductBorrowerCycleVariationData borrowerCycleVariationData = new LoanProductBorrowerCycleVariationData(id,
-                    cycleNumber, paramTypeData, conditionTypeData, defaultValue, minValue, maxValue);
+                    cycleNumber, paramTypeData, conditionTypeData, defaultValue, minValue, maxValue,interestRatesListPerCycle);
             return borrowerCycleVariationData;
         }
 

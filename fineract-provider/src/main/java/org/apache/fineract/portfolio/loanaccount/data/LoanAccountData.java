@@ -113,6 +113,7 @@ public class LoanAccountData {
     private final EnumOptionData repaymentFrequencyNthDayType;
     private final EnumOptionData repaymentFrequencyDayOfWeekType;
     private final BigDecimal interestRatePerPeriod;
+    private final Collection<Float> interestRatesListPerPeriod;
     private final EnumOptionData interestRateFrequencyType;
     private final BigDecimal annualInterestRate;
     private final BigDecimal flatInterestRate;
@@ -386,6 +387,7 @@ public class LoanAccountData {
         final Boolean allowUpfrontCollection = null;
         final BigDecimal amountForUpfrontCollection = null;
         final BigDecimal calculatedEmiAmount = null ;
+        final Collection<Float> interestRatesListPerPeriod = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -409,7 +411,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
                 weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, 
                 brokenPeriodMethodType, brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
 
     }
 
@@ -541,6 +543,7 @@ public class LoanAccountData {
         final Boolean allowUpfrontCollection = null;
         final BigDecimal amountForUpfrontCollection = null;
         final BigDecimal calculatedEmiAmount = null ;
+        final Collection<Float> interestRatesListPerPeriod = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -564,7 +567,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
                 weeksInYearType , paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, 
                 brokenPeriodMethodType, brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
 
     }
 
@@ -693,6 +696,7 @@ public class LoanAccountData {
         final Boolean allowUpfrontCollection = null;
         final BigDecimal amountForUpfrontCollection = null;
         final BigDecimal calculatedEmiAmount = null ;
+        final Collection<Float> interestRatesListPerPeriod = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal,
@@ -716,7 +720,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
                 weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, 
                 brokenPeriodMethodType, brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
 
     }
     
@@ -839,6 +843,7 @@ public class LoanAccountData {
         final Boolean allowUpfrontCollection = null;
         final BigDecimal amountForUpfrontCollection = null;
         final BigDecimal calculatedEmiAmount = null ;
+        final Collection<Float> interestRatesListPerPeriod = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, approvedPrincipal,
@@ -861,7 +866,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, 
                 topupAmount, weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, 
                 brokenPeriodMethodType, brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
 
     }
     
@@ -998,7 +1003,8 @@ public class LoanAccountData {
         final BigDecimal discountOnDisbursalAmount = null;
         final Boolean allowUpfrontCollection = null;
         final BigDecimal amountForUpfrontCollection = null;
-        final BigDecimal calculatedEmiAmount = null ;
+        final BigDecimal calculatedEmiAmount = null;
+        final Collection<Float> interestRatesListPerPeriod = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -1022,7 +1028,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount
                 ,weeksInYearType , paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, 
                 brokenPeriodMethodType, brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
 
     }
 
@@ -1056,7 +1062,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,
                 acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, clientAcc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount,acc.interestRatesListPerPeriod);
     }
 
     /**
@@ -1197,6 +1203,7 @@ public class LoanAccountData {
         final Boolean allowUpfrontCollection = null;
         final BigDecimal amountForUpfrontCollection = null;
         final BigDecimal calculatedEmiAmount = null ;
+        final Collection<Float> interestRatesListPerPeriod = null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal, principal,
@@ -1220,7 +1227,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo,topupAmount
                 ,weeksInYearType , paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, 
                 brokenPeriodMethodType, brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
 
     }
 
@@ -1254,7 +1261,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,
                 acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks, 
                 acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest,acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
 
     }
 
@@ -1328,6 +1335,7 @@ public class LoanAccountData {
         BigDecimal proposedPrincipal = null;
 
         BigDecimal interestRatePerPeriod = null;
+        Collection<Float> interestRatesListPerPeriod =null;
         Integer numberOfRepayments = null;
         if (product.useBorrowerCycle() && loanCycleNumber > 0) {
             Collection<LoanProductBorrowerCycleVariationData> principalVariationsForBorrowerCycle = product
@@ -1339,6 +1347,7 @@ public class LoanAccountData {
             principal = fetchLoanCycleDefaultValue(principalVariationsForBorrowerCycle, loanCycleNumber);
             proposedPrincipal = principal;
             interestRatePerPeriod = fetchLoanCycleDefaultValue(interestForVariationsForBorrowerCycle, loanCycleNumber);
+            interestRatesListPerPeriod = fetchLoanCycleInteresetRates(interestForVariationsForBorrowerCycle, loanCycleNumber);
             BigDecimal numberofRepaymentval = fetchLoanCycleDefaultValue(repaymentVariationsForBorrowerCycle, loanCycleNumber);
             if (numberofRepaymentval != null) {
                 numberOfRepayments = numberofRepaymentval.intValue();
@@ -1351,6 +1360,10 @@ public class LoanAccountData {
         if (interestRatePerPeriod == null) {
             interestRatePerPeriod = product.getInterestRatePerPeriod();
         }
+        if(interestRatesListPerPeriod == null){
+            interestRatesListPerPeriod = product.getInterestRatesListPerPeriod();
+        }
+        
         if (numberOfRepayments == null) {
             numberOfRepayments = product.getNumberOfRepayments();
         }
@@ -1412,7 +1425,7 @@ public class LoanAccountData {
                 product.isVariableInstallmentsAllowed(), product.getMinimumGapBetweenInstallments(), product.getMaximumGapBetweenInstallments(), subStatus,
                 canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType,
                 clientData, loanEMIPacks, product.getBrokenPeriodMethodType(), brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, product.allowUpfrontCollection(), amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, product.allowUpfrontCollection(), amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
     }
 
     public static LoanAccountData populateLoanProductDefaults(final LoanAccountData acc, final LoanProductData product) {
@@ -1483,7 +1496,7 @@ public class LoanAccountData {
                 acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
                 acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks, 
                 product.getBrokenPeriodMethodType(), acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, product.allowUpfrontCollection(), acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, product.allowUpfrontCollection(), acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
 
     }
 
@@ -1562,6 +1575,7 @@ public class LoanAccountData {
         final Collection<PaymentTypeData> paymentOptions = null;
         final ClientData clientData = null;
         final Collection<EnumOptionData> brokenPeriodMethodTypeOptions = null;
+        Collection<Float> interestRatesListPerPeriod =null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo, clientOfficeId, group,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal,
@@ -1585,7 +1599,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
                 weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, brokenPeriodMethodType, brokenPeriodMethodTypeOptions, 
                 brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection,
-                calculatedEmiAmount);
+                calculatedEmiAmount,interestRatesListPerPeriod);
     }
 
     /*
@@ -1610,7 +1624,7 @@ public class LoanAccountData {
             final Collection<LoanTermVariationsData> emiAmountVariations, final Collection<ChargeData> overdueCharges,
             final PaidInAdvanceData paidInAdvance, final Collection<PledgeData> loanProductCollateralPledgesOptions, final Long pledgeId,
             Collection<InterestRatePeriodData> interestRatesPeriods, final Collection<LoanAccountSummaryData> clientActiveLoanOptions, 
-            Collection<EnumOptionData> brokenPeriodMethodTypeOptions) {
+            Collection<EnumOptionData> brokenPeriodMethodTypeOptions, Collection<Float> interestRatesListPerPeriod) {
 
         return new LoanAccountData(acc.id, acc.accountNo, acc.status, acc.externalId, acc.clientId, acc.clientAccountNo, acc.clientName,
                 acc.clientOfficeId, acc.group, acc.loanType, acc.loanProductId, acc.loanProductName, acc.loanProductDescription,
@@ -1639,7 +1653,7 @@ public class LoanAccountData {
                 acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
                 acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, acc.loanEMIPacks, 
                 acc.brokenPeriodMethodType, brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, interestRatesListPerPeriod);
     }
 
     public static LoanAccountData associationsAndTemplate(final LoanAccountData acc, final Collection<LoanProductData> productOptions,
@@ -1653,7 +1667,7 @@ public class LoanAccountData {
                 allowedLoanOfficers, acc.loanPurposeOptions, acc.loanCollateralOptions, calendarOptions, acc.notes, accountLinkingOptions,
                 acc.linkedAccount, acc.disbursementDetails, acc.emiAmountVariations, acc.overdueCharges, acc.paidInAdvance,
                 acc.loanProductCollateralPledgesOptions, acc.pledgeId, acc.interestRatesPeriods, acc.clientActiveLoanOptions, 
-                acc.brokenPeriodMethodTypeOptions);
+                acc.brokenPeriodMethodTypeOptions, acc.interestRatesListPerPeriod);
     }
 
     public static LoanAccountData associateGroup(final LoanAccountData acc, final GroupGeneralData group) {
@@ -1686,7 +1700,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,
                 acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
     }
 
     public static LoanAccountData associateMemberVariations(final LoanAccountData acc, final Map<Long, Integer> memberLoanCycle) {
@@ -1696,6 +1710,7 @@ public class LoanAccountData {
             BigDecimal principal = null;
             BigDecimal interestRatePerPeriod = null;
             Integer numberOfRepayments = null;
+            Collection<Float> interestRatesListPerPeriod =null;
             Long clientId = mapEntry.getKey();
             Integer loanCycleNumber = mapEntry.getValue();
             if (acc.product.useBorrowerCycle() && loanCycleNumber != null && loanCycleNumber > 0) {
@@ -1707,6 +1722,7 @@ public class LoanAccountData {
                         .getNumberOfRepaymentVariationsForBorrowerCycle();
                 principal = fetchLoanCycleDefaultValue(principalVariationsForBorrowerCycle, loanCycleNumber);
                 interestRatePerPeriod = fetchLoanCycleDefaultValue(interestForVariationsForBorrowerCycle, loanCycleNumber);
+                interestRatesListPerPeriod = fetchLoanCycleInteresetRates(interestForVariationsForBorrowerCycle, loanCycleNumber);
                 BigDecimal numberofRepaymentval = fetchLoanCycleDefaultValue(repaymentVariationsForBorrowerCycle, loanCycleNumber);
                 if (numberofRepaymentval != null) {
                     numberOfRepayments = numberofRepaymentval.intValue();
@@ -1718,6 +1734,10 @@ public class LoanAccountData {
             if (interestRatePerPeriod == null) {
                 interestRatePerPeriod = acc.product.getInterestRatePerPeriod();
             }
+            if(interestRatesListPerPeriod == null){
+                interestRatesListPerPeriod = acc.product.getInterestRatesListPerPeriod();
+            }
+            
             if (numberOfRepayments == null) {
                 numberOfRepayments = acc.product.getNumberOfRepayments();
             }
@@ -1755,7 +1775,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, 
                 acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
 
     }
 
@@ -1793,7 +1813,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
                 acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
     }
 
     public static LoanAccountData withLoanCalendarData(final LoanAccountData acc, final CalendarData calendarData) {
@@ -1825,7 +1845,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount, acc.weeksInYearType,
                 acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
     }
 
     public static LoanAccountData withOriginalSchedule(final LoanAccountData acc, final LoanScheduleData originalSchedule) {
@@ -1858,7 +1878,7 @@ public class LoanAccountData {
                 acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo,acc.topupAmount, acc.weeksInYearType,
                 acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
     }
 
     private LoanAccountData(final Long id, //
@@ -1910,7 +1930,7 @@ public class LoanAccountData {
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType, final ClientData clientData, Collection<LoanEMIPackData> loanEMIPacks, 
             EnumOptionData brokenPeriodMethodType, Collection<EnumOptionData> brokenPeriodMethodTypeOptions, BigDecimal brokenPeriodInterest, 
             Boolean considerFutureDisbursmentsInSchedule, Boolean considerAllDisbursementsInSchedule, final BigDecimal discountOnDisbursalAmount, final Boolean allowUpfrontCollection, 
-            final BigDecimal amountForUpfrontCollection, final BigDecimal calculatedEmiAmount) {
+            final BigDecimal amountForUpfrontCollection, final BigDecimal calculatedEmiAmount,final Collection<Float> interestRatesListPerPeriod) {
 
         this.id = id;
         this.accountNo = accountNo;
@@ -1953,6 +1973,7 @@ public class LoanAccountData {
         this.transactionProcessingStrategyName = transactionProcessingStrategyName;
         this.amortizationType = amortizationType;
         this.interestRatePerPeriod = interestRatePerPeriod;
+        this.interestRatesListPerPeriod = interestRatesListPerPeriod;
         this.interestRateFrequencyType = interestRateFrequencyType;
         this.annualInterestRate = annualInterestRate;
         this.interestType = interestType;
@@ -2187,7 +2208,7 @@ public class LoanAccountData {
             final PaymentTypeData expectedDisbursalPaymentType, final PaymentTypeData expectedRepaymentPaymentType, final ClientData clientData, 
             EnumOptionData brokenPeriodMethodType, Collection<EnumOptionData> brokenPeriodMethodTypeOptions, BigDecimal brokenPeriodInterest, 
             final Boolean considerFutureDisbursmentsInSchedule, final Boolean considerAllDisbursementsInSchedule, final BigDecimal discountOnDisbursalAmount, 
-            final Boolean allowUpfrontCollection, final BigDecimal amountForUpfrontCollection, final BigDecimal calculatedEmiAmount) {
+            final Boolean allowUpfrontCollection, final BigDecimal amountForUpfrontCollection, final BigDecimal calculatedEmiAmount, final Collection<Float> interestRatesListPerPeriod) {
 
         this.id = id;
         this.accountNo = accountNo;
@@ -2230,6 +2251,7 @@ public class LoanAccountData {
         this.transactionProcessingStrategyName = transactionProcessingStrategyName;
         this.amortizationType = amortizationType;
         this.interestRatePerPeriod = interestRatePerPeriod;
+        this.interestRatesListPerPeriod = interestRatesListPerPeriod;
         this.interestRateFrequencyType = interestRateFrequencyType;
         this.annualInterestRate = annualInterestRate;
         this.interestType = interestType;
@@ -2450,6 +2472,20 @@ public class LoanAccountData {
 
         return defaultValue;
     }
+    
+    public static Collection<Float> fetchLoanCycleInteresetRates(
+            Collection<LoanProductBorrowerCycleVariationData> borrowerCycleVariationData, Integer loanCycleNumber) {
+        Collection<Float> loanInterestRatesListPerCycle = null;
+        Integer cycleNumberSelected = 0;
+        for (LoanProductBorrowerCycleVariationData data : borrowerCycleVariationData) {
+            if (isLoanCycleValuesWhenConditionEqual(loanCycleNumber, data)
+                    || isLoanCycleValuesWhenConditionGreterthan(loanCycleNumber, cycleNumberSelected, data)) {
+                cycleNumberSelected = data.getBorrowerCycleNumber();
+                loanInterestRatesListPerCycle = data.getLoanInterestRatesListPerCycle();
+            }
+        }
+        return loanInterestRatesListPerCycle;
+    }
 
     private static boolean isLoanCycleValuesWhenConditionGreterthan(Integer loanCycleNumber, Integer cycleNumberSelected,
             LoanProductBorrowerCycleVariationData data) {
@@ -2608,6 +2644,7 @@ public class LoanAccountData {
         final String transactionProcessingStrategyCode = null;
         final EnumOptionData amortizationType = null;
         final BigDecimal interestRatePerPeriod = null;
+        final Collection<Float> interestRatesListPerPeriod =null;
         final EnumOptionData interestRateFrequencyType = null;
         final BigDecimal annualInterestRate = null;
         final BigDecimal flatInterestRate = null;
@@ -2725,7 +2762,7 @@ public class LoanAccountData {
                 canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount, weeksInYearType,
                 paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, loanEMIPacks, brokenPeriodMethodType, 
                 brokenPeriodMethodTypeOptions, brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, 
-                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount);
+                discountOnDisbursalAmount, allowUpfrontCollection, amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
     }
     
     public static LoanAccountData populateGroupDetails(final LoanAccountData acc, final GroupGeneralData groupData) {
@@ -2758,7 +2795,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,
                 acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, acc.clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
 
     }
     
@@ -2792,7 +2829,7 @@ public class LoanAccountData {
                 acc.canUseForTopup, acc.clientActiveLoanOptions, acc.isTopup, acc.closureLoanId, acc.closureLoanAccountNo, acc.topupAmount,
                 acc.weeksInYearType, acc.paymentOptions, acc.expectedDisbursalPaymentType, acc.expectedRepaymentPaymentType, clientData, 
                 acc.loanEMIPacks, acc.brokenPeriodMethodType, acc.brokenPeriodMethodTypeOptions, acc.brokenPeriodInterest, acc.considerFutureDisbursmentsInSchedule, 
-                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount);
+                acc.considerAllDisbursementsInSchedule, acc.discountOnDisbursalAmount, acc.allowUpfrontCollection, acc.amountForUpfrontCollection, acc.calculatedEmiAmount, acc.interestRatesListPerPeriod);
     }
 
     
@@ -2889,6 +2926,7 @@ public class LoanAccountData {
         final Boolean considerAllDisbursementsInSchedule = null;
         final Boolean allowUpfrontCollection = null;
         final BigDecimal calculatedEmiAmount = null ;
+        Collection<Float> interestRatesListPerPeriod =null;
         return new LoanAccountData(id, accountNo, status, externalId, clientId, clientAccountNo, clientName, mobileNo, clientOfficeId, groupData,
                 loanType, loanProductId, loanProductName, loanProductDescription, isLoanProductLinkedToFloatingRate, fundId, fundName,
                 loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, currencyData, proposedPrincipal, principal,
@@ -2912,7 +2950,7 @@ public class LoanAccountData {
                 maximumGap, subStatus, canUseForTopup, clientActiveLoanOptions, isTopup, closureLoanId, closureLoanAccountNo, topupAmount,
                 weeksInYearType, paymentOptions, expectedDisbursalPaymentType, expectedRepaymentPaymentType, clientData, brokenPeriodMethodType, brokenPeriodMethodTypeOptions, 
                 brokenPeriodInterest, considerFutureDisbursmentsInSchedule, considerAllDisbursementsInSchedule, discountOnDisbursalAmount, allowUpfrontCollection, 
-                amountForUpfrontCollection, calculatedEmiAmount);
+                amountForUpfrontCollection, calculatedEmiAmount, interestRatesListPerPeriod);
     }
 
     public BigDecimal getPrincipal(){
