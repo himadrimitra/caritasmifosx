@@ -1345,7 +1345,7 @@ public final class LoanProductDataValidator {
             final Integer daysInYearType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.daysInYearTypeParameterName,
                     element, Locale.getDefault());
             baseDataValidator.reset().parameter(LoanProductConstants.daysInYearTypeParameterName).value(daysInYearType).notNull()
-                    .isOneOfTheseValues(1, 360, 364, 365);
+                    .isOneOfTheseValues(1, 360, 364, 365,240);
         }
 
         /**
