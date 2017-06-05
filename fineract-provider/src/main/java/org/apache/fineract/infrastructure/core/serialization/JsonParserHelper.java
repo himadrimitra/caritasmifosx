@@ -258,6 +258,21 @@ public class JsonParserHelper {
         }
         return arrayValue;
     }
+    
+    public Integer[] extractIntegerArrayNamed(final String parameterName, final JsonElement element) {
+        Integer[] arrayValue = null;
+        if (element.isJsonObject()) {
+            final JsonObject object = element.getAsJsonObject();
+            if (object.has(parameterName)) {
+                final JsonArray array = object.get(parameterName).getAsJsonArray();
+                arrayValue = new Integer[array.size()];
+                for (int i = 0; i < array.size(); i++) {
+                    arrayValue[i] = array.get(i).getAsInt();
+                }
+            }
+        }
+        return arrayValue;
+    }
 
     public JsonArray extractJsonArrayNamed(final String parameterName, final JsonElement element) {
         JsonArray jsonArray = null;

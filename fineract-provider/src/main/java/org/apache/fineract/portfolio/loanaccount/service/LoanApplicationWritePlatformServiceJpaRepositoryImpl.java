@@ -298,6 +298,7 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             final List<Map<String, Object>> chargeIdList = this.loanProductReadPlatformService.getLoanProductMandatoryCharges(productId,
                     isPenalty);
             this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
+            
             final Loan newLoanApplication = validateAndAssembleSubmitLoanApplication(loanProduct, command);
             Long officeId = null;
             final Long clientId = this.fromJsonHelper.extractLongNamed("clientId", command.parsedJson());
@@ -375,6 +376,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             	}
                 newLoanApplication.setGlimPaymentAsGroup(this.configurationDomainService.isGlimPaymentAsGroup());
             }
+            
+            final AccountType accountType = AccountType.fromInt(newLoanApplication.getLoanType());
+            this.loanProductBusinessRuleValidator.validateLoanProductApplicableForLoanType(newLoanApplication.getLoanProduct(),
+                    accountType, newLoanApplication.getClient());
+
             this.loanRepository.save(newLoanApplication);
 
             if (loanProduct.isInterestRecalculationEnabled() || loanProduct.isMultiDisburseLoan()) {
@@ -865,6 +871,11 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
             
             final Map<String, Object> changes = existingLoanApplication.loanApplicationModification(command, possiblyModifedLoanCharges,
                     possiblyModifedLoanCollateralItems, this.aprCalculator, isChargeModified);
+            
+            
+            final AccountType accountType = AccountType.fromInt(existingLoanApplication.getLoanType());
+            this.loanProductBusinessRuleValidator.validateLoanProductApplicableForLoanType(existingLoanApplication.getLoanProduct(),
+                    accountType, existingLoanApplication.client());
 
             if (changes.containsKey("expectedDisbursementDate")) {
                 this.loanAssembler.validateExpectedDisbursementForHolidayAndNonWorkingDay(existingLoanApplication);

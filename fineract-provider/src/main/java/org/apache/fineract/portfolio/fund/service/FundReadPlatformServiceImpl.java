@@ -199,10 +199,14 @@ public class FundReadPlatformServiceImpl implements FundReadPlatformService {
     }
 
     @Override
-    public Map<String, Object> retrieveTemplate(String command) {
+    public Map<String, Object> retrieveTemplate(final String command) {
         Map<String, Object> responseMap = new HashMap<>();
         if (command != null && command.equalsIgnoreCase("search")) {
-            final Collection<LoanProductData> loanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
+            final Integer productApplicableForLoanType = null;
+            final Integer entityType = null;
+            final Long entityId = null;
+            final Collection<LoanProductData> loanProducts = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(
+                    productApplicableForLoanType, entityType, entityId);
             final Collection<OfficeData> offices = this.officeReadPlatformService.retrieveAllOfficesForDropdown();
 
             final List<CodeValueData> genderOptions = new ArrayList<>(

@@ -18,9 +18,12 @@
  */
 package org.apache.fineract.portfolio.loanproduct.service;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
@@ -40,11 +43,17 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanTransactionProcessingStrategyRepository;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionProcessingStrategyNotFoundException;
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductDataAssembler;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
+import org.apache.fineract.portfolio.loanproduct.domain.LoanProductEntityProfileMapping;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.ProductLoanCharge;
-import org.apache.fineract.portfolio.loanproduct.exception.*;
+import org.apache.fineract.portfolio.loanproduct.exception.InvalidCurrencyException;
+import org.apache.fineract.portfolio.loanproduct.exception.LinkedChargeGoalSeekException;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductCannotBeModifiedDueToNonClosedLoansException;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductDateException;
+import org.apache.fineract.portfolio.loanproduct.exception.LoanProductNotFoundException;
 import org.apache.fineract.portfolio.loanproduct.serialization.LoanProductDataValidator;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -54,10 +63,9 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanProductWritePlatformService {
@@ -74,6 +82,7 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
     private final FloatingRateRepositoryWrapper floatingRateRepository;
     private final LoanRepository loanRepository;
+    private final LoanProductDataAssembler loanProductDataAssembler;
 
     @Autowired
     public LoanProductWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -82,9 +91,8 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             final LoanTransactionProcessingStrategyRepository loanTransactionProcessingStrategyRepository,
             final ChargeRepositoryWrapper chargeRepository,
             final ProductToGLAccountMappingWritePlatformService accountMappingWritePlatformService,
-            final FineractEntityAccessUtil fineractEntityAccessUtil,
-            final FloatingRateRepositoryWrapper floatingRateRepository,
-            final LoanRepository loanRepository) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final FloatingRateRepositoryWrapper floatingRateRepository,
+            final LoanRepository loanRepository, final LoanProductDataAssembler loanProductDataAssembler) {
         this.context = context;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.loanProductRepository = loanProductRepository;
@@ -96,6 +104,7 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.floatingRateRepository = floatingRateRepository;
         this.loanRepository = loanRepository;
+        this.loanProductDataAssembler = loanProductDataAssembler;
     }
 
     @Transactional
@@ -128,6 +137,10 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             }
             final LoanProduct loanproduct = LoanProduct.assembleFromJson(fund, loanTransactionProcessingStrategy, null, command,
                     this.aprCalculator, floatingRate);
+            final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMappings = this.loanProductDataAssembler
+                    .assembleLoanProductEntityProfileMappings(loanproduct, command);
+            loanproduct.setLoanProductEntityProfileMapping(loanProductEntityProfileMappings);
+                
             loanproduct.updateLoanProductInRelatedClasses();
             
             this.loanProductRepository.save(loanproduct);
@@ -226,8 +239,14 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
 
             // accounting related changes
             final boolean accountingTypeChanged = changes.containsKey("accountingRule");
+            
             final Map<String, Object> accountingMappingChanges = this.accountMappingWritePlatformService
                     .updateLoanProductToGLAccountMapping(product.getId(), command, accountingTypeChanged, product.getAccountingType());
+            
+            final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMappings = this.loanProductDataAssembler
+                    .assembleLoanProductEntityProfileMappings(product, command);
+            product.setLoanProductEntityProfileMapping(loanProductEntityProfileMappings);
+            
             changes.putAll(accountingMappingChanges);            
             if (!changes.isEmpty()) {
                 this.loanProductRepository.saveAndFlush(product);

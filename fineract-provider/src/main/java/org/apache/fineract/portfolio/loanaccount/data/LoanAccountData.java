@@ -2572,6 +2572,11 @@ public class LoanAccountData {
 
         return LoanAccountData.collateralTemplate(loanCollateralOptions);
     }
+    
+    public LoanProductData getLoanProductData() {
+        return product;
+    }
+    
     public Long getLoanProductId() {
         return loanProductId;
     }
@@ -2962,5 +2967,9 @@ public class LoanAccountData {
     
     public BigDecimal getCalculatedEmiAmount() {
         return this.calculatedEmiAmount;
+    }
+
+    public EnumOptionData getLoanType() {
+        return this.loanType;
     }
 }

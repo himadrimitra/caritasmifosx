@@ -17,6 +17,7 @@ import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAccessType;
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
@@ -118,7 +119,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
         this.clientRepository = clientRepository;
         this.coApplicantRepository = coApplicantRepository;
-        this.createWorkflowTaskFactory=createWorkflowTaskFactory;
+        this.createWorkflowTaskFactory = createWorkflowTaskFactory;
     }
 
     @Override
@@ -130,7 +131,7 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
                     loanProductId, isPenalty);
             this.loanProductBusinessRuleValidator.validateLoanProductMandatoryCharges(chargeIdList, command.parsedJson());
             this.validator.validateForCreate(command.json());
-
+            
             this.fineractEntityAccessUtil
                     .checkConfigurationAndValidateProductOrChargeResrictionsForUserOffice(
                             FineractEntityAccessType.OFFICE_ACCESS_TO_LOAN_PRODUCTS, loanProductId);
@@ -145,7 +146,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
             final LoanProduct loanProduct = this.loanProductRepository.findOne(loanProductId);
             if (loanProduct == null) { throw new LoanProductNotFoundException(loanProductId); }
             this.validator.validateLoanAmountRequestedMinMaxConstraint(loanApplicationReference, loanProduct);
-
+            final AccountType accountType = AccountType.fromInt(loanApplicationReference.getAccountTypeEnum());
+            this.loanProductBusinessRuleValidator.validateLoanProductApplicableForLoanType(loanApplicationReference.getLoanProduct(),
+                    accountType, loanApplicationReference.getClient());
             this.repository.save(loanApplicationReference);
 
             /**
@@ -206,7 +209,9 @@ public class LoanApplicationReferenceWritePlatformServiceImpl implements LoanApp
 
             final Map<String, Object> changes = this.assembler.assembleUpdateForm(loanApplicationReference, command);
             this.validator.validateLoanAmountRequestedMinMaxConstraint(loanApplicationReference, loanProduct);
-
+            final AccountType accountType = AccountType.fromInt(loanApplicationReference.getAccountTypeEnum());
+            this.loanProductBusinessRuleValidator.validateLoanProductApplicableForLoanType(loanApplicationReference.getLoanProduct(),
+                    accountType, loanApplicationReference.getClient());
             if (!changes.isEmpty()) {
                 this.repository.saveAndFlush(loanApplicationReference);
             }

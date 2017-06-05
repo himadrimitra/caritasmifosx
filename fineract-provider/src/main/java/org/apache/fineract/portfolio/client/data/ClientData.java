@@ -736,4 +736,16 @@ final public class ClientData implements Comparable<ClientData> {
     public void setPossibleClientMatches(final Collection<ClientData> possibleClientMatches) {
         this.possibleClientMatches = possibleClientMatches;
     }
+
+    public EnumOptionData getLegalForm() {
+        return this.legalForm;
+    }
+
+    public CodeValueData getClientType() {
+        return this.clientType;
+    }
+
+    public CodeValueData getClientClassification() {
+        return this.clientClassification;
+    }
 }

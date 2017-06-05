@@ -2,6 +2,7 @@ package com.finflux.loanapplicationreference.api;
 
 import com.finflux.loanapplicationreference.data.*;
 import com.finflux.loanapplicationreference.service.LoanApplicationReferenceReadPlatformService;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.commands.service.CommandWrapperBuilder;
@@ -19,6 +20,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
+
 import java.util.Collection;
 
 @Path("/loanapplicationreferences")
@@ -51,21 +53,26 @@ public class LoanApplicationReferenceApiResource {
     @Path("template")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String template(@DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive, @Context final UriInfo uriInfo) {
-        final LoanApplicationReferenceTemplateData templateData = this.loanApplicationReferenceReadPlatformService.templateData(onlyActive);
+    public String template(@DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive,
+            @QueryParam("productApplicableForLoanType") final Integer productApplicableForLoanType,
+            @QueryParam("entityType") final Integer entityType, @QueryParam("entityId") final Long entityId, @Context final UriInfo uriInfo) {
+        final LoanApplicationReferenceTemplateData templateData = this.loanApplicationReferenceReadPlatformService.templateData(onlyActive,
+                productApplicableForLoanType, entityType, entityId);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, templateData);
-}
+    }
     
     @SuppressWarnings("unchecked")
     @GET
     @Path("{loanApplicationReferenceId}/template")
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String disbursementTemplate(@DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive, @Context final UriInfo uriInfo,
-    		@PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId) {
-		final LoanApplicationReferenceTemplateData templateData = this.loanApplicationReferenceReadPlatformService
-				.templateData(onlyActive, loanApplicationReferenceId);
+    public String disbursementTemplate(@DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive,
+            @PathParam("loanApplicationReferenceId") final Long loanApplicationReferenceId,
+            @QueryParam("productApplicableForLoanType") final Integer productApplicableForLoanType,
+            @QueryParam("entityType") final Integer entityType, @QueryParam("entityId") final Long entityId, @Context final UriInfo uriInfo) {
+        final LoanApplicationReferenceTemplateData templateData = this.loanApplicationReferenceReadPlatformService.templateData(onlyActive,
+                loanApplicationReferenceId, productApplicableForLoanType, entityType, entityId);
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return this.toApiJsonSerializer.serialize(settings, templateData);
     }
@@ -163,6 +170,7 @@ public class LoanApplicationReferenceApiResource {
         return this.toApiJsonSerializer.serialize(result);
     }
 
+    @SuppressWarnings("unchecked")
     @GET
     @Path("{loanApplicationReferenceId}/coapplicants")
     @Consumes({ MediaType.APPLICATION_JSON })
@@ -200,6 +208,7 @@ public class LoanApplicationReferenceApiResource {
         return this.toApiJsonSerializer.serialize(result);
     }
 
+    @SuppressWarnings("unchecked")
     @GET
     @Path("{loanApplicationReferenceId}/coapplicants/{coapplicantId}")
     @Consumes({ MediaType.APPLICATION_JSON })

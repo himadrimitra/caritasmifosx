@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
+import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.loanaccount.exception.LoanApplicationDateException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,5 +56,76 @@ public class LoanProductBusinessRuleValidator {
                         defaultUserMessage, chargeId.toString(), chargeId.toString());
             }
         }
+    }
+
+    public void validateLoanProductApplicableForLoanType(final LoanProduct loanProduct, final AccountType accountType, final Client client) {
+        if (!accountType.isInvalid()) {
+            final Integer applicableForLoanType = loanProduct.getApplicableForLoanType();
+            if (accountType.isIndividualAccount() || accountType.isJLGAccount()) {
+                if (!(applicableForLoanType.equals(LoanProductApplicableForLoanType.ALL_TYPES.getValue()) || applicableForLoanType
+                        .equals(LoanProductApplicableForLoanType.INDIVIDUAL_CLIENT.getValue()))) {
+                    throwValidationErrorForLoanProductApplicableForLoanType(loanProduct.getId(), accountType.getName());
+                }
+                validateLoanProductWithClientProfileType(loanProduct, client);
+            } else if (accountType.isGroupAccount() || accountType.isGLIMAccount()) {
+                if (!(applicableForLoanType.equals(LoanProductApplicableForLoanType.ALL_TYPES.getValue()) || applicableForLoanType
+                        .equals(LoanProductApplicableForLoanType.GROUP.getValue()))) {
+                    throwValidationErrorForLoanProductApplicableForLoanType(loanProduct.getId(), accountType.getName());
+                }
+            }
+        }
+    }
+
+    private void validateLoanProductWithClientProfileType(final LoanProduct loanProduct, final Client client) {
+        if (!loanProduct.getLoanProductEntityProfileMapping().isEmpty()
+                && loanProduct.getApplicableForLoanType().equals(LoanProductApplicableForLoanType.INDIVIDUAL_CLIENT.getValue())
+                && client != null) {
+            boolean isProductBelongsToClientProfileType = false;
+            if (client.getLegalForm() != null) {
+                for (final LoanProductEntityProfileMapping mapping : loanProduct.getLoanProductEntityProfileMapping()) {
+                    if (mapping.getProfileType().equals(ClientProfileType.LEGAL_FORM.getValue())) {
+                        if (client.getLegalForm().toString().equals(mapping.getValue().toString())) {
+                            isProductBelongsToClientProfileType = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!isProductBelongsToClientProfileType && client.getClientType() != null) {
+                for (final LoanProductEntityProfileMapping mapping : loanProduct.getLoanProductEntityProfileMapping()) {
+                    if (mapping.getProfileType().equals(ClientProfileType.CLIENT_TYPE.getValue())) {
+                        if (client.getClientType().getId().toString().equals(mapping.getValue().toString())) {
+                            isProductBelongsToClientProfileType = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!isProductBelongsToClientProfileType && client.getClientClassification() != null) {
+                for (final LoanProductEntityProfileMapping mapping : loanProduct.getLoanProductEntityProfileMapping()) {
+                    if (mapping.getProfileType().equals(ClientProfileType.CLIENT_CLASSIFICATION.getValue())) {
+                        if (client.getClientClassification().getId().toString().equals(mapping.getValue().toString())) {
+                            isProductBelongsToClientProfileType = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!isProductBelongsToClientProfileType) {
+                throwValidationErrorForLoanProductWithClientProfileType(loanProduct.getId(), client.getId());
+            }
+        }
+    }
+
+    private void throwValidationErrorForLoanProductWithClientProfileType(final Long loanProductId, final Long clientId) {
+        final String defaultUserMessage = "Client does not belongs to selected loan product.";
+        throw new GeneralPlatformDomainRuleException("error.msg.client.does.not.belongs.to.selected.loan.product", defaultUserMessage,
+                loanProductId, clientId);
+    }
+
+    private void throwValidationErrorForLoanProductApplicableForLoanType(final Long loanProductId, final String loanType) {
+        final String defaultUserMessage = "Loan product not belongs to " + loanType + " loan.";
+        throw new GeneralPlatformDomainRuleException("error.msg.loan.product.not.belongs.to.loanType.loan", defaultUserMessage,
+                loanProductId, loanType);
     }
 }

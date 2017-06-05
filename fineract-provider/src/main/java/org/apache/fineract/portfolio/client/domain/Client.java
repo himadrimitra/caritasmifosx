@@ -1115,5 +1115,14 @@ public final class Client extends AbstractPersistable<Long> {
     public void setEmailId(String emailId) {
         this.emailId = emailId;
     }
+
+    
+    public CodeValue getClientType() {
+        return this.clientType;
+    }
+
+    public CodeValue getClientClassification() {
+        return this.clientClassification;
+    }
     
 }

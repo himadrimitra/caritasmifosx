@@ -68,6 +68,7 @@ import org.apache.fineract.portfolio.account.data.PortfolioAccountData;
 import org.apache.fineract.portfolio.account.service.AccountAssociationsReadPlatformService;
 import org.apache.fineract.portfolio.account.service.PortfolioAccountReadPlatformService;
 import org.apache.fineract.portfolio.accountdetails.data.LoanAccountSummaryData;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPlatformService;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
@@ -81,6 +82,7 @@ import org.apache.fineract.portfolio.collateral.data.CollateralData;
 import org.apache.fineract.portfolio.collateral.service.CollateralReadPlatformService;
 import org.apache.fineract.portfolio.collaterals.data.PledgeData;
 import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
 import org.apache.fineract.portfolio.fund.api.FundApiConstants;
 import org.apache.fineract.portfolio.fund.data.FundData;
@@ -278,15 +280,13 @@ public class LoansApiResource {
     public String template(@QueryParam("clientId") final Long clientId, @QueryParam("groupId") final Long groupId,
             @QueryParam("productId") final Long productId, @QueryParam("templateType") final String templateType,
             @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
-            @DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive, @Context final UriInfo uriInfo,
-            @DefaultValue("false") @QueryParam("fetchRDAccountOnly") final boolean fetchRDAccountOnly) {
+            @DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive,
+            @DefaultValue("false") @QueryParam("fetchRDAccountOnly") final boolean fetchRDAccountOnly,
+            @QueryParam("productApplicableForLoanType") Integer productApplicableForLoanType,
+            @QueryParam("entityType") final Integer entityType, @QueryParam("entityId") final Long entityId, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
-        // template
-        final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive);
-
-        
         // options
         Collection<StaffData> allowedLoanOfficers = null;
         Collection<CodeValueData> loanCollateralOptions = null;
@@ -297,6 +297,10 @@ public class LoansApiResource {
         if (productId != null) {
             newLoanAccount = this.loanReadPlatformService.retrieveLoanProductDetailsTemplate(productId, clientId, groupId);
         }
+
+        // template
+        final Collection<LoanProductData> productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(onlyActive,
+                productApplicableForLoanType, entityType, entityId);
 
         if (templateType == null) {
             final String errorMsg = "Loan template type must be provided";
@@ -414,8 +418,8 @@ public class LoansApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveLoan(@PathParam("loanId") final Long loanId,
             @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
-            @DefaultValue("false") @QueryParam("isFetchSpecificData") final boolean isFetchSpecificData, @Context final UriInfo uriInfo,
-            @DefaultValue("false") @QueryParam("fetchRDAccountOnly") final boolean fetchRDAccountOnly) {
+            @DefaultValue("false") @QueryParam("isFetchSpecificData") final boolean isFetchSpecificData,
+            @DefaultValue("false") @QueryParam("fetchRDAccountOnly") final boolean fetchRDAccountOnly, @Context final UriInfo uriInfo) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
         final Set<String> mandatoryResponseParameters = new HashSet<>();
@@ -629,10 +633,8 @@ public class LoansApiResource {
 
             final boolean template = ApiParameterHelper.template(uriInfo.getQueryParameters());
             if (template) {
-                productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
                 product = this.loanProductReadPlatformService.retrieveLoanProduct(loanBasicDetails.loanProductId());
                 loanBasicDetails.setProduct(product);
-
                 Integer loancounter = this.loanReadPlatformService.retriveLoanCounter(loanBasicDetails.clientId(), product.getId());
                 if (product.useBorrowerCycle() && loancounter > 0) {
 
@@ -640,9 +642,18 @@ public class LoansApiResource {
                             .getInterestRateVariationsForBorrowerCycle();
                     interestRatesListPerPeriod = LoanAccountData.fetchLoanCycleInteresetRates(interestForVariationsForBorrowerCycle,
                             loancounter);
-                } else
+                } else {
                     interestRatesListPerPeriod = product.getInterestRatesListPerPeriod();
-                
+                }
+                Integer entityType = null;
+                Long entityId = null;
+                if (AccountType.INDIVIDUAL.getValue().equals(loanBasicDetails.getLoanType().getId().intValue())
+                        || AccountType.JLG.getValue().equals(loanBasicDetails.getLoanType().getId().intValue())) {
+                    entityType = EntityType.CLIENTS.getValue();
+                    entityId = loanBasicDetails.clientId();
+                }
+                productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(product.getApplicableForLoanType()
+                        .getId().intValue(), entityType, entityId);
                 loanTermFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveLoanTermFrequencyTypeOptions();
                 repaymentFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
                 interestRateFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveInterestRateFrequencyTypeOptions();
