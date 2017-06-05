@@ -93,8 +93,9 @@ public class SelfLoansApiResource {
 		validateAppuserLoanMapping(loanId);
 
 		final boolean staffInSelectedOfficeOnly = false;
+		final boolean fetchRDAccountOnly = false;
 		return this.loansApiResource.retrieveLoan(loanId,
-				staffInSelectedOfficeOnly, false, uriInfo);
+				staffInSelectedOfficeOnly, false, uriInfo, fetchRDAccountOnly);
 	}
 
 	@GET
@@ -164,8 +165,9 @@ public class SelfLoansApiResource {
     	final Long groupId = null;
     	final boolean staffInSelectedOfficeOnly = false;
     	final boolean onlyActive = true;
+    	final boolean fetchRDAccountOnly = false;
     	return this.loansApiResource.template(clientId, groupId, productId, 
-    			templateType, staffInSelectedOfficeOnly, onlyActive, uriInfo);
+    			templateType, staffInSelectedOfficeOnly, onlyActive, uriInfo, fetchRDAccountOnly);
 
     }
     
