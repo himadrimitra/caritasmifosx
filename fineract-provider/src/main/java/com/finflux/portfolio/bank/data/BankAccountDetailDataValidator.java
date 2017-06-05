@@ -68,7 +68,7 @@ public class BankAccountDetailDataValidator {
                 .notExceedingLengthOf(50);
         
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.lastTransactionDate, element)) {
-            final LocalDate lastTransactionDate = this.fromApiJsonHelper.extractLocalDateNamed(ClientApiConstants.dateOfBirthParamName, element);
+            final LocalDate lastTransactionDate = this.fromApiJsonHelper.extractLocalDateNamed(BankAccountDetailConstants.lastTransactionDate, element);
             baseDataValidator.reset().parameter(BankAccountDetailConstants.lastTransactionDate).value(lastTransactionDate).notNull()
                     .validateDateBefore(DateUtils.getLocalDateOfTenant());
         }
