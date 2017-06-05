@@ -63,6 +63,7 @@ import org.joda.time.LocalDate;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
@@ -222,6 +223,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
     @Column(name = "allow_upfront_collection", nullable = false)
     private boolean allowUpfrontCollection = false;
     
+    @Column(name = "interest_rates_list_per_period", nullable = true)
+    private String inerestRatesListPerPeriod;
 
     public static LoanProduct assembleFromJson(final Fund fund, final LoanTransactionProcessingStrategy loanTransactionProcessingStrategy,
             final List<ProductLoanCharge> productLoanCharges, final JsonCommand command, final AprCalculator aprCalculator, FloatingRate floatingRate) {
@@ -415,7 +418,18 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 .bigDecimalValueOfParameterNamed(LoanProductConstants.percentageOfDisbursementToBeTransferred);
         
         final boolean collectInterestUpfront = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.allowUpfrontCollection);
-				
+        
+        JsonArray interestRatesArrayPerPeriod = command.arrayOfParameterNamed(LoanProductConstants.interestRatesListPerPeriod);
+        List<String> interestRatesList = new ArrayList<>();
+        if (interestRatesArrayPerPeriod != null && interestRatesArrayPerPeriod.size() > 0) {
+        	for(JsonElement interestRate : interestRatesArrayPerPeriod){
+        		interestRatesList.add(interestRate.getAsString());
+        	}
+        }
+        String inerestRatesListPerPeriod = null;
+        if(interestRatesList.size() > 0)
+            inerestRatesListPerPeriod = String.join(",", interestRatesList);
+        
         return new LoanProduct(fund, loanTransactionProcessingStrategy, name, shortName, description, currency, principal, minPrincipal,
                 maxPrincipal, interestRatePerPeriod, minInterestRatePerPeriod, maxInterestRatePerPeriod, interestFrequencyType,
                 annualInterestRate, interestMethod, interestCalculationPeriodMethod, allowPartialPeriodInterestCalcualtion, repaymentEvery,
@@ -434,7 +448,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 maxLoanTerm, loanTenureFrequencyType, canUseForTopup, weeksInYearType , adjustInterestForRounding, isEmiBasedOnDisbursements,
                 pmtCalculationPeriodMethod, minDurationApplicableForAllDisbursements, brokenPeriodMethod, isFlatInterestRate,
                 allowNegativeLoanBalance, considerFutureDisbursementsInSchedule, considerAllDisbursementsInSchedule, percentageOfDisbursementToBeTransferred, 
-                collectInterestUpfront);
+                collectInterestUpfront,inerestRatesListPerPeriod);
 
     }
 
@@ -505,6 +519,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                     BigDecimal minValue = null;
                     BigDecimal maxValue = null;
                     Integer cycleNumber = null;
+                    String inerestRatesListPerCycle = null;
                     Integer valueUsageCondition = null;
                     if (jsonObject.has(LoanProductConstants.defaultValueParameterName)
                             && jsonObject.get(LoanProductConstants.defaultValueParameterName).isJsonPrimitive()) {
@@ -528,8 +543,20 @@ public class LoanProduct extends AbstractPersistable<Long> {
                             && jsonObject.get(LoanProductConstants.valueConditionTypeParamName).isJsonPrimitive()) {
                         valueUsageCondition = jsonObject.getAsJsonPrimitive(LoanProductConstants.valueConditionTypeParamName).getAsInt();
                     }
+                    List<String> interestRatesList = new ArrayList<>();
+                    if (jsonObject.has(LoanProductConstants.interestRatesListPerCycleParameterName)) {
+                        JsonArray interestRatesArrayPerCycle = jsonObject
+                                .getAsJsonArray(LoanProductConstants.interestRatesListPerCycleParameterName);
+
+                        if (interestRatesArrayPerCycle != null && interestRatesArrayPerCycle.size() > 0) {
+                            for (JsonElement interestRate : interestRatesArrayPerCycle) {
+                                interestRatesList.add(interestRate.getAsString());
+                            }
+                        }
+                    }
+                    if (interestRatesList.size() > 0) inerestRatesListPerCycle = String.join(",", interestRatesList);
                     LoanProductBorrowerCycleVariations borrowerCycleVariations = new LoanProductBorrowerCycleVariations(cycleNumber,
-                            paramType, valueUsageCondition, minValue, maxValue, defaultValue);
+                            paramType, valueUsageCondition, minValue, maxValue, defaultValue,inerestRatesListPerCycle);
                     loanProductBorrowerCycleVariations.add(borrowerCycleVariations);
                     i++;
                 } while (i < variationArray.size());
@@ -600,9 +627,23 @@ public class LoanProduct extends AbstractPersistable<Long> {
                             && jsonObject.get(LoanProductConstants.borrowerCycleIdParameterName).isJsonPrimitive()
                             && StringUtils.isNotBlank((jsonObject.get(LoanProductConstants.borrowerCycleIdParameterName).getAsString()))) {
                         id = jsonObject.getAsJsonPrimitive(LoanProductConstants.borrowerCycleIdParameterName).getAsLong();
+                    }                    
+                    List<String> interestRatesList = new ArrayList<>();
+                    String inerestRatesListPerCycle = null;
+                    if (jsonObject.has(LoanProductConstants.interestRatesListPerCycleParameterName)) {
+                        JsonArray interestRatesArrayPerCycle = jsonObject
+                                .getAsJsonArray(LoanProductConstants.interestRatesListPerCycleParameterName);
+
+                        if (interestRatesArrayPerCycle != null && interestRatesArrayPerCycle.size() > 0) {
+                            for (JsonElement interestRate : interestRatesArrayPerCycle) {
+                                interestRatesList.add(interestRate.getAsString());
+                            }
+                        }
+                        if (interestRatesList.size() > 0) inerestRatesListPerCycle = String.join(",", interestRatesList);
                     }
+
                     LoanProductBorrowerCycleVariations borrowerCycleVariations = new LoanProductBorrowerCycleVariations(cycleNumber,
-                            paramType, valueUsageCondition, minValue, maxValue, defaultValue);
+                            paramType, valueUsageCondition, minValue, maxValue, defaultValue,inerestRatesListPerCycle);
                     if (id == null) {
                         borrowerCycleVariations.updateLoanProduct(this);
                         this.borrowerCycleVariations.add(borrowerCycleVariations);
@@ -672,7 +713,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final boolean canUseForTopup, final WeeksInYearType weeksInYearType,boolean adjustInterestForRounding, final boolean isEmiBasedOnDisbursements,
             Integer pmtCalculationPeriodMethod, boolean minDurationApplicableForAllDisbursements, final Integer brokenPeriodMethod,
             final boolean isFlatInterestRate, final boolean allowNegativeLoanBalances, final boolean considerFutureDisbursementScheduleInLoans,
-            final boolean considerAllDisbursementsInSchedule, final BigDecimal percentageOfDisbursementToBeTransferred, boolean allowUpfrontCollection) {
+            final boolean considerAllDisbursementsInSchedule, final BigDecimal percentageOfDisbursementToBeTransferred, boolean allowUpfrontCollection,final String inerestRatesListPerPeriod) {
         this.fund = fund;
         this.transactionProcessingStrategy = transactionProcessingStrategy;
         this.name = name.trim();
@@ -767,6 +808,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         this.isFlatInterestRate = isFlatInterestRate;
         this.percentageOfDisbursementToBeTransferred = percentageOfDisbursementToBeTransferred;
         this.allowUpfrontCollection = allowUpfrontCollection;
+        this.inerestRatesListPerPeriod = inerestRatesListPerPeriod;
     }
 
     public MonetaryCurrency getCurrency() {
@@ -933,6 +975,24 @@ public class LoanProduct extends AbstractPersistable<Long> {
         } else {
             clearVariations(null, true);
         }
+        
+        if (command.hasParameter(LoanProductConstants.interestRatesListPerPeriod)) {
+            JsonArray interestRatesArrayPerPeriod = command.arrayOfParameterNamed(LoanProductConstants.interestRatesListPerPeriod);
+            List<String> interestRatesList = new ArrayList<>();
+            if (interestRatesArrayPerPeriod != null && interestRatesArrayPerPeriod.size() > 0) {
+                for (JsonElement interestRate : interestRatesArrayPerPeriod) {
+                    interestRatesList.add(interestRate.getAsString());
+                }
+            }
+            // interest rates list
+
+            String newValue = null;
+            if (interestRatesList.size() > 0) newValue = String.join(",", interestRatesList);
+
+            actualChanges.put(LoanProductConstants.interestRatesListPerPeriod, newValue);
+            this.inerestRatesListPerPeriod = newValue;
+        }
+        
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
 

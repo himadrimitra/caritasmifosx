@@ -34,6 +34,7 @@ public interface LoanProductConstants {
     public static final String valueConditionTypeParamName = "valueConditionType";
     public static final String borrowerCycleNumberParamName = "borrowerCycleNumber";
     public static final String borrowerCycleIdParameterName = "id";
+    public static final String interestRatesListPerCycleParameterName = "interestRatesListPerCycle";
 
     public static final String principalPerCycleParameterName = "principalPerCycle";
     public static final String minPrincipalPerCycleParameterName = "minPrincipalPerCycle";
@@ -60,6 +61,7 @@ public interface LoanProductConstants {
     public static final String interestRatePerPeriod = "interestRatePerPeriod";
     public static final String minInterestRatePerPeriod = "minInterestRatePerPeriod";
     public static final String maxInterestRatePerPeriod = "maxInterestRatePerPeriod";
+    public static final String interestRatesListPerPeriod = "interestRatesListPerPeriod";
 
     public static final String numberOfRepayments = "numberOfRepayments";
     public static final String minNumberOfRepayments = "minNumberOfRepayments";

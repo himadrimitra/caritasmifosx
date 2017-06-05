@@ -53,19 +53,23 @@ public class LoanProductBorrowerCycleVariations extends AbstractPersistable<Long
 
     @Column(name = "default_value", scale = 6, precision = 19, nullable = false)
     private BigDecimal defaultValue;
+    
+    @Column(name = "interest_rates_list_per_cycle")
+    private String interestRatesListPerCycle;
 
     protected LoanProductBorrowerCycleVariations() {
 
     }
 
     public LoanProductBorrowerCycleVariations(final Integer borrowerCycleNumber, final Integer paramType, final Integer valueConditionType,
-            final BigDecimal minValue, final BigDecimal maxValue, final BigDecimal defaultValue) {
+            final BigDecimal minValue, final BigDecimal maxValue, final BigDecimal defaultValue, final String interestRatesListPerCycle) {
         this.borrowerCycleNumber = borrowerCycleNumber;
         this.paramType = paramType;
         this.valueConditionType = valueConditionType;
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.defaultValue = defaultValue;
+        this.interestRatesListPerCycle = interestRatesListPerCycle;
     }
 
     public void updateLoanProduct(final LoanProduct loanProduct) {
@@ -109,6 +113,7 @@ public class LoanProductBorrowerCycleVariations extends AbstractPersistable<Long
         this.maxValue = borrowerCycleVariations.maxValue;
         this.valueConditionType = borrowerCycleVariations.valueConditionType;
         this.borrowerCycleNumber = borrowerCycleVariations.borrowerCycleNumber;
+        this.interestRatesListPerCycle = borrowerCycleVariations.interestRatesListPerCycle;
     }
 
     public Integer getBorrowerCycleNumber() {
@@ -127,4 +132,7 @@ public class LoanProductBorrowerCycleVariations extends AbstractPersistable<Long
         return this.defaultValue;
     }
 
+    public String getInterestRatesListPerCycle(){
+    	return this.interestRatesListPerCycle;
+    }
 }

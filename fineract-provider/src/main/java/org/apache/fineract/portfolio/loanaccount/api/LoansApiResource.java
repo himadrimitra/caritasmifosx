@@ -109,6 +109,7 @@ import org.apache.fineract.portfolio.loanaccount.loanschedule.service.LoanSchedu
 import org.apache.fineract.portfolio.loanaccount.service.LoanChargeReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.service.LoanReadPlatformService;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
+import org.apache.fineract.portfolio.loanproduct.data.LoanProductBorrowerCycleVariationData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.portfolio.loanproduct.data.TransactionProcessingStrategyData;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
@@ -152,7 +153,7 @@ public class LoansApiResource {
             "syncDisbursementWithMeeting", "loanCounter", "loanProductCounter", "notes", "accountLinkingOptions", "linkedAccount",
             "interestRateDifferential", "isFloatingInterestRate", "interestRatesPeriods",
             LoanApiConstants.canUseForTopup,
-            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.topupAmount, LoanApiConstants.clientActiveLoanOptions, LoanApiConstants.paymentOptionsParamName));
+            LoanApiConstants.isTopup, LoanApiConstants.loanIdToClose, LoanApiConstants.topupAmount, LoanApiConstants.clientActiveLoanOptions, LoanApiConstants.paymentOptionsParamName, "interestRatesListPerPeriod"));
 
     private final Set<String> LOAN_APPROVAL_DATA_PARAMETERS = new HashSet<>(Arrays.asList("approvalDate", "approvalAmount"));
     private final String resourceNameForPermissions = "LOAN";
@@ -618,7 +619,7 @@ public class LoansApiResource {
                 loanBasicDetails.setLoanApplicationReferenceId(loanApplicationReferenceId);
             }
         }
-        
+        Collection<Float>  interestRatesListPerPeriod = null;
         if(!isFetchSpecificData){
         	
             pledgeId = this.pledgeReadPlatformService.retrievePledgesByloanId(loanId);        
@@ -628,6 +629,17 @@ public class LoansApiResource {
                 productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup();
                 product = this.loanProductReadPlatformService.retrieveLoanProduct(loanBasicDetails.loanProductId());
                 loanBasicDetails.setProduct(product);
+
+                Integer loancounter = this.loanReadPlatformService.retriveLoanCounter(loanBasicDetails.clientId(), product.getId());
+                if (product.useBorrowerCycle() && loancounter > 0) {
+
+                    Collection<LoanProductBorrowerCycleVariationData> interestForVariationsForBorrowerCycle = product
+                            .getInterestRateVariationsForBorrowerCycle();
+                    interestRatesListPerPeriod = LoanAccountData.fetchLoanCycleInteresetRates(interestForVariationsForBorrowerCycle,
+                            loancounter);
+                } else
+                    interestRatesListPerPeriod = product.getInterestRatesListPerPeriod();
+                
                 loanTermFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveLoanTermFrequencyTypeOptions();
                 repaymentFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveRepaymentFrequencyTypeOptions();
                 interestRateFrequencyTypeOptions = this.dropdownReadPlatformService.retrieveInterestRateFrequencyTypeOptions();
@@ -701,7 +713,7 @@ public class LoansApiResource {
                 fundOptions, chargeOptions, chargeTemplate, allowedLoanOfficers, loanPurposeOptions, loanCollateralOptions, 
                 calendarOptions, notes, accountLinkingOptions, linkedAccount, disbursementData, emiAmountVariations,
                 overdueCharges, paidInAdvanceTemplate, loanProductCollateralPledgesOptions, pledgeId, interestRatesPeriods,
-                clientActiveLoanOptions, brokenPeriodMethodTypeOptions);
+                clientActiveLoanOptions, brokenPeriodMethodTypeOptions, interestRatesListPerPeriod);
         loanAccount.setLoanApplicationReferenceId(loanBasicDetails.getLoanApplicationReferenceId());
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters(),

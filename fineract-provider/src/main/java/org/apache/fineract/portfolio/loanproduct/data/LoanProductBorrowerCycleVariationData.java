@@ -19,7 +19,7 @@
 package org.apache.fineract.portfolio.loanproduct.data;
 
 import java.math.BigDecimal;
-
+import java.util.Collection;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductParamType;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductValueConditionType;
@@ -36,9 +36,10 @@ public class LoanProductBorrowerCycleVariationData {
     @SuppressWarnings("unused")
     private final BigDecimal maxValue;
     private final BigDecimal defaultValue;
-
+    private final Collection<Float> loanInterestRatesListPerCycle;
+   
     public LoanProductBorrowerCycleVariationData(final Long id, final Integer borrowerCycleNumber, final EnumOptionData paramType,
-            final EnumOptionData valueConditionType, final BigDecimal defaultValue, final BigDecimal minValue, final BigDecimal maxValue) {
+            final EnumOptionData valueConditionType, final BigDecimal defaultValue, final BigDecimal minValue, final BigDecimal maxValue, final Collection<Float> loanInterestRatesListPerCycle) {
         this.id = id;
         this.borrowerCycleNumber = borrowerCycleNumber;
         this.paramType = paramType;
@@ -46,6 +47,7 @@ public class LoanProductBorrowerCycleVariationData {
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.defaultValue = defaultValue;
+        this.loanInterestRatesListPerCycle = loanInterestRatesListPerCycle;
     }
 
     public LoanProductParamType getParamType() {
@@ -63,5 +65,8 @@ public class LoanProductBorrowerCycleVariationData {
     public BigDecimal getDefaultValue() {
         return this.defaultValue;
     }
-
+    
+    public Collection<Float> getLoanInterestRatesListPerCycle() {
+        return this.loanInterestRatesListPerCycle;
+    }
 }
