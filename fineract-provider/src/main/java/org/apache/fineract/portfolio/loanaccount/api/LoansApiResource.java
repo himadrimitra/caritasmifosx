@@ -278,7 +278,8 @@ public class LoansApiResource {
     public String template(@QueryParam("clientId") final Long clientId, @QueryParam("groupId") final Long groupId,
             @QueryParam("productId") final Long productId, @QueryParam("templateType") final String templateType,
             @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
-            @DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive, @Context final UriInfo uriInfo) {
+            @DefaultValue("false") @QueryParam("activeOnly") final boolean onlyActive, @Context final UriInfo uriInfo,
+            @DefaultValue("false") @QueryParam("fetchRDAccountOnly") final boolean fetchRDAccountOnly) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
@@ -365,7 +366,9 @@ public class LoansApiResource {
                 }
                 final long[] accountStatus = { SavingsAccountStatusType.ACTIVE.getValue() };
                 Set <Integer> depositAccountTypes = new HashSet<Integer>();
-                depositAccountTypes.add(DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                if (!fetchRDAccountOnly) {
+                    depositAccountTypes.add(DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                }
                 depositAccountTypes.add(DepositAccountType.RECURRING_DEPOSIT.getValue());
                 PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(PortfolioAccountType.SAVINGS.getValue(), clientId,
                         currencyCode, accountStatus, depositAccountTypes);
@@ -411,8 +414,8 @@ public class LoansApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveLoan(@PathParam("loanId") final Long loanId,
             @DefaultValue("false") @QueryParam("staffInSelectedOfficeOnly") final boolean staffInSelectedOfficeOnly,
-            @DefaultValue("false") @QueryParam("isFetchSpecificData") final boolean isFetchSpecificData,
-            @Context final UriInfo uriInfo) {
+            @DefaultValue("false") @QueryParam("isFetchSpecificData") final boolean isFetchSpecificData, @Context final UriInfo uriInfo,
+            @DefaultValue("false") @QueryParam("fetchRDAccountOnly") final boolean fetchRDAccountOnly) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
         final Set<String> mandatoryResponseParameters = new HashSet<>();
@@ -680,7 +683,9 @@ public class LoansApiResource {
                 }
                 final long[] accountStatus = { SavingsAccountStatusType.ACTIVE.getValue() };
                 Set <Integer> depositAccountTypes = new HashSet<Integer>();
-                depositAccountTypes.add(DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                if (!fetchRDAccountOnly) {
+                    depositAccountTypes.add(DepositAccountType.SAVINGS_DEPOSIT.getValue());
+                }
                 depositAccountTypes.add(DepositAccountType.RECURRING_DEPOSIT.getValue());
                 PortfolioAccountDTO portfolioAccountDTO = new PortfolioAccountDTO(PortfolioAccountType.SAVINGS.getValue(),
                         loanBasicDetails.clientId(), currencyCode, accountStatus, depositAccountTypes);
