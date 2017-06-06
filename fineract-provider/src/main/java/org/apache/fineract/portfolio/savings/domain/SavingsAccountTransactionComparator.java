@@ -30,14 +30,17 @@ public class SavingsAccountTransactionComparator implements Comparator<SavingsAc
     public int compare(final SavingsAccountTransaction o1, final SavingsAccountTransaction o2) {
         int compareResult = 0;
         final int comparsion = o1.transactionLocalDate().compareTo(o2.transactionLocalDate());
-        if (comparsion == 0) {
-            compareResult = o1.createdDate().compareTo(o2.createdDate());
-            if (compareResult == 0 && o1.getId() != null && o2.getId() != null) {
-                compareResult = o1.getId().compareTo(o2.getId());
-            } else {
-                compareResult = comparsion;
-            }
-        } else {
+		if (comparsion == 0) {
+			if(o1.isInterestPosting() && !o2.isInterestPosting()){
+				compareResult = -1;
+	        }
+			if(!o1.isInterestPosting() && o2.isInterestPosting()){
+				compareResult = 1;
+	        }
+			if (compareResult == 0) {
+				compareResult = o1.createdDate().compareTo(o2.createdDate());
+			}
+		} else {
             compareResult = comparsion;
         }
         return compareResult;

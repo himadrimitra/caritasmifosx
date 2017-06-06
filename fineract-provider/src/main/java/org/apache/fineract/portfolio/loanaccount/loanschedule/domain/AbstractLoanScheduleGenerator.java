@@ -417,11 +417,10 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
             // Updates principal paid map with efective date for reducing
             // the amount from outstanding balance(interest calculation)
-			if (!installment.isRecalculatedInterestComponent()) {
-				updateAmountsWithEffectiveDate(loanApplicationTerms,
-						holidayDetailDTO, scheduleParams, scheduledDueDate,
-						currentPeriodParams, installment, lastRestDate);
-			}
+            if (!installment.isRecalculatedInterestComponent() || !scheduleParams.getOutstandingBalance().isGreaterThanZero()) {
+                updateAmountsWithEffectiveDate(loanApplicationTerms, holidayDetailDTO, scheduleParams, scheduledDueDate,
+                        currentPeriodParams, installment, lastRestDate);
+            }
 
             // handle cumulative fields
 

@@ -84,6 +84,7 @@
 		        </beans:list>
 		    </beans:property>
 		    <beans:property name="authenticationEventPublisher" ref="defaultAuthenticationEventPublisher" />
+		    <beans:property name="eraseCredentialsAfterAuthentication" value="false"></beans:property>
 		</beans:bean>
 
 		<beans:bean id="defaultAuthenticationEventPublisher" class="org.springframework.security.authentication.DefaultAuthenticationEventPublisher" />
@@ -205,6 +206,7 @@
 		        </beans:list>
 		    </beans:property>
 		    <beans:property name="authenticationEventPublisher" ref="defaultAuthenticationEventPublisher" />
+		    <beans:property name="eraseCredentialsAfterAuthentication" value="false"></beans:property>
 		</beans:bean>
 
 		<beans:bean id="defaultAuthenticationEventPublisher" class="org.springframework.security.authentication.DefaultAuthenticationEventPublisher" />

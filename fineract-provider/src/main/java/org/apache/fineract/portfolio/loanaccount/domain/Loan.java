@@ -59,6 +59,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
+import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.serialization.JsonParserHelper;
@@ -2721,7 +2722,8 @@ public class Loan extends AbstractPersistable<Long> {
         if (isRepaymentScheduleRegenerationRequiredForDisbursement(actualDisbursementDate) || recalculateSchedule || isEmiAmountChanged
                 || rescheduledRepaymentDate != null
                 || fetchRepaymentScheduleInstallment(1).getDueDate().isBefore(DateUtils.getLocalDateOfTenant()) || isDisbursementMissed()) {
-            boolean generateSchedule = isApproved() || (!isAllPaymentsDone() && getMaturityDate().isAfter(actualDisbursementDate));
+            boolean generateSchedule = isApproved()
+                    || (!isAllPaymentsDone() && (getFlatInterestRate() == null || getMaturityDate().isAfter(actualDisbursementDate)));
             if (generateSchedule) {
             	 final boolean isDisburseInitiated = true;
                  recalculateSchedule(scheduleGeneratorDTO, currentUser, isDisburseInitiated);
@@ -3316,6 +3318,7 @@ public class Loan extends AbstractPersistable<Long> {
 				}
 			}
         }        
+        validateRepaymentForOverPaidOrClosedLoan();
         validateActivityNotBeforeClientOrGroupTransferDate(event, repaymentTransaction.getTransactionDate());
         validateActivityNotBeforeLastTransactionDate(event, repaymentTransaction.getTransactionDate());
         if(repaymentTransaction.getTransactionSubTye().isPrePayment()){
@@ -5668,6 +5671,12 @@ public class Loan extends AbstractPersistable<Long> {
             throw new InvalidLoanStateTransitionException(action, postfix, errorMessage);
         }
         
+    }
+    
+    private void validateRepaymentForOverPaidOrClosedLoan() {
+        if (!this.getLoanType().equals(AccountType.GLIM.getValue())
+                && (this.status().equals(LoanStatus.OVERPAID) || this.status().equals(LoanStatus.CLOSED_OBLIGATIONS_MET))) { throw new GeneralPlatformDomainRuleException(
+                "error.msg.loan.repayment.cannot.bedone.as.loan.status.overpaid.or.closed", "Repayment can not be done as loan is either closed or in overpaid state."); }
     }
     
     public List<LoanTransaction> getOrderedLoanTransactions() {

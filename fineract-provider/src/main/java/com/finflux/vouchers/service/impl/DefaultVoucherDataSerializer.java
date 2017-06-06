@@ -121,7 +121,7 @@ public abstract class DefaultVoucherDataSerializer {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, paramersSupported);
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("CashPaymentVoucher");
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("voucher");
         final JsonElement element = this.fromApiJsonHelper.parse(json);
         final Long officeId = retrieveLongNamed(VouchersApiConstants.officeId_ParamName, element, baseDataValidator, notNullCheckRequired);
         final String currencyCode = retrieveStringNamed(VouchersApiConstants.currencyCode_ParamName, element, baseDataValidator,
@@ -160,7 +160,7 @@ public abstract class DefaultVoucherDataSerializer {
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, paramersSupported);
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("CashPaymentVoucher");
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("voucher");
         final JsonElement element = this.fromApiJsonHelper.parse(json);
 
         // Currency code, transaction date and narration are common to from and
@@ -305,7 +305,7 @@ public abstract class DefaultVoucherDataSerializer {
         PaymentDetail paymentDetails = null;
         boolean notNullCheckRequired = true;
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
-        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("CashPaymentVoucher");
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("voucher");
         final JsonObject parentObject = this.fromApiJsonHelper.parse(json).getAsJsonObject();
         final JsonElement element = parentObject.get(VouchersApiConstants.paymentDetails_paramName);
         final Long paymentTypeId = retrieveLongNamed(VouchersApiConstants.paymentType_ParamName, element, baseDataValidator,

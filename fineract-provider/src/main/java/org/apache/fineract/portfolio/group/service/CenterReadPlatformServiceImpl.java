@@ -730,7 +730,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             numberOfDays = this.configurationDomainService.retreivePeroidInNumberOfDaysForSkipMeetingDate().intValue();
         }
         for (CenterData centerData : centerDataArray) {
-            if (centerData.getCollectionMeetingCalendar().isValidRecurringDate(new LocalDate(meetingDate), isSkipRepaymentOnFirstMonthEnabled, numberOfDays)) {
+            if (isValidRecurringDate(centerData, meetingDate, isSkipRepaymentOnFirstMonthEnabled, numberOfDays)) {
                 if (staffCenterDataArray.size() <= 0) {
                     Collection<CenterData> meetingFallCenter = new ArrayList<>();
                     meetingFallCenter.add(centerData);
@@ -758,7 +758,19 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
         }
         return staffCenterDataArray;
     }
-
+    
+    private boolean isValidRecurringDate(CenterData centerData, final Date meetingDate, boolean isSkipRepaymentOnFirstMonthEnabled,
+            Integer numberOfDays) {
+        Long caliendarInstanceId = centerData.getCollectionMeetingCalendar().getCalendarInstanceId();
+        CalendarData calendarHistoryData = this.calendarReadPlatformService.retrieveCalendarHistoryByCalendarInstanceAndDueDate(
+                meetingDate, caliendarInstanceId);
+        if (calendarHistoryData != null && meetingDate != null) { return CalendarUtils.isValidRedurringDate(
+                calendarHistoryData.getRecurrence(), calendarHistoryData.getStartDate(), new LocalDate(meetingDate),
+                isSkipRepaymentOnFirstMonthEnabled, numberOfDays); }
+        return centerData.getCollectionMeetingCalendar().isValidRecurringDate(new LocalDate(meetingDate),
+                isSkipRepaymentOnFirstMonthEnabled, numberOfDays);
+    }
+    
     public void validateForGenerateCollectionSheet(final Long staffId) {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
 

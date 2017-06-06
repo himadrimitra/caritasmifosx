@@ -21,6 +21,7 @@ package org.apache.fineract.portfolio.savings.domain;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -121,7 +122,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         }
         account.validateAccountBalanceDoesNotBecomeNegative(transactionAmount, transactionBooleanValues.isExceptionForBalanceCheck(),
                 depositAccountOnHoldTransactions);
-        saveTransactionToGenerateTransactionId(withdrawal);
+        saveTransactionToGenerateTransactionId(account.getTransactions());
         this.savingsAccountRepository.save(account);
 
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds, transactionBooleanValues.isAccountTransfer());
@@ -199,7 +200,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                     financialYearBeginningMonth, postInterestOnDate);
         }
 
-        saveTransactionToGenerateTransactionId(deposit);
+        saveTransactionToGenerateTransactionId(account.getTransactions());
 
         this.savingsAccountRepository.save(account);
 
@@ -220,10 +221,13 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                 savingsAccountTransactionType);
     }
 
-    private Long saveTransactionToGenerateTransactionId(final SavingsAccountTransaction transaction) {
-        this.savingsAccountTransactionRepository.save(transaction);
-        return transaction.getId();
-    }
+	private void saveTransactionToGenerateTransactionId(final List<SavingsAccountTransaction> transactions) {
+		for (SavingsAccountTransaction transaction : transactions) {
+			if (transaction.getId() == null) {
+				this.savingsAccountTransactionRepository.save(transaction);
+			}
+		}
+	}
 
     private void updateExistingTransactionsDetails(SavingsAccount account, Set<Long> existingTransactionIds,
             Set<Long> existingReversedTransactionIds) {
@@ -285,7 +289,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                     rd.updateMaturityDateAndAmount(mc, false, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth);
                     rd.updateOverduePayments(DateUtils.getLocalDateOfTenant());
                 }
-                saveTransactionToGenerateTransactionId(deposit);
+                saveTransactionToGenerateTransactionId(account.getTransactions());
                 savingsTreansactionIds.add(deposit.getId());
             } else {
             	if(isWithDrawForSavingsIncludedInCollectionSheet){
@@ -298,7 +302,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                         transactionBooleanValues.isApplyWithdrawFee());
                 account.validateAccountBalanceDoesNotBecomeNegative(transactionDTO.getTransactionAmount(),
                         transactionBooleanValues.isExceptionForBalanceCheck(),depositAccountOnHoldTransactions);
-                saveTransactionToGenerateTransactionId(withdrawal);
+                saveTransactionToGenerateTransactionId(account.getTransactions());
                 savingsTreansactionIds.add(withdrawal.getId());
 				} else {
 					throw new DepositAccountTransactionNotAllowedException(

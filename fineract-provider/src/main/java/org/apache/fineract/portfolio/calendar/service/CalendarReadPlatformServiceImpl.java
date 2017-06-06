@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
@@ -515,5 +516,33 @@ public class CalendarReadPlatformServiceImpl implements CalendarReadPlatformServ
         }
     }
     
+    private static final class CalendarHistoryDataMapper implements RowMapper<CalendarData> {
+
+        public String schema() {
+            return "select c.id as id,ch.start_date as startDate,ch.recurrence as recurrence , ch.end_date as endDate from m_calendar c "
+                    + "join m_calendar_instance ci on ci.calendar_id = c.id " + "join m_calendar_history ch on c.id = ch.calendar_id "
+                    + "where ci.id = ?  and (? BETWEEN ch.start_date and ch.end_date)";
+        }
+
+        @Override
+        public CalendarData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+
+            final Long id = rs.getLong("id");
+            final LocalDate startDate = JdbcSupport.getLocalDate(rs, "startDate");
+            final LocalDate endDate = JdbcSupport.getLocalDate(rs, "endDate");
+            final String recurrence = rs.getString("recurrence");
+            return CalendarData.instance(id, startDate, recurrence, endDate);
+        }
+    }
+
+    @Override
+    public CalendarData retrieveCalendarHistoryByCalendarInstanceAndDueDate(final Date dueDate, final Long calendarInstanceId) {
+        try {
+            final CalendarHistoryDataMapper rm = new CalendarHistoryDataMapper();
+            return this.jdbcTemplate.queryForObject(rm.schema(), rm, new Object[] { calendarInstanceId, dueDate });
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
     
 }
