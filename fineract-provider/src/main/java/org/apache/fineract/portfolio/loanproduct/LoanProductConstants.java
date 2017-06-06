@@ -186,4 +186,6 @@ public interface LoanProductConstants {
     public static final String CLIENT_CLASSIFICATION = "Client Classification";
     public static final String CLIENT_TYPE_CODE = "ClientType";
     public static final String CLIENT_CLASSIFICATION_CODE = "ClientClassification";
+
+    public static final String localeParamName = "locale";
 }
