@@ -1009,7 +1009,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         final String dateFormatAsInput = command.dateFormat();
         final String localeAsInput = command.locale();
 
-        final String localeParamName = "locale";
+        final String localeParamName = LoanProductConstants.localeParamName;
         final String dateFormatParamName = "dateFormat";
 
         final String startDateParamName = "startDate";
@@ -1053,7 +1053,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
         if (command.isChangeInIntegerParameterNamed(LoanProductConstants.overdueDaysForNPAParameterName, this.overdueDaysForNPA)) {
             final Integer newValue = command.integerValueOfParameterNamed(LoanProductConstants.overdueDaysForNPAParameterName);
             actualChanges.put(LoanProductConstants.overdueDaysForNPAParameterName, newValue);
-            actualChanges.put("locale", localeAsInput);
+            actualChanges.put(LoanProductConstants.localeParamName, localeAsInput);
             this.overdueDaysForNPA = newValue;
         }
 
@@ -1062,7 +1062,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final Integer newValue = command
                     .integerValueOfParameterNamed(LoanProductConstants.minimumDaysBetweenDisbursalAndFirstRepayment);
             actualChanges.put(LoanProductConstants.minimumDaysBetweenDisbursalAndFirstRepayment, newValue);
-            actualChanges.put("locale", localeAsInput);
+            actualChanges.put(LoanProductConstants.localeParamName, localeAsInput);
             this.minimumDaysBetweenDisbursalAndFirstRepayment = newValue;
         }
         
@@ -1077,7 +1077,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final Integer newValue = command
                     .integerValueOfParameterNamed(LoanProductConstants.minimumPeriodsBetweenDisbursalAndFirstRepayment);
             actualChanges.put(LoanProductConstants.minimumPeriodsBetweenDisbursalAndFirstRepayment, newValue);
-            actualChanges.put("locale", localeAsInput);
+            actualChanges.put(LoanProductConstants.localeParamName, localeAsInput);
             this.minimumPeriodsBetweenDisbursalAndFirstRepayment = newValue;
         }
         
@@ -1232,7 +1232,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                 this.installmentAmountInMultiplesOf)) {
             final Integer newValue = command.integerValueOfParameterNamed(LoanProductConstants.installmentAmountInMultiplesOfParamName);
             actualChanges.put(LoanProductConstants.installmentAmountInMultiplesOfParamName, newValue);
-            actualChanges.put("locale", localeAsInput);
+            actualChanges.put(LoanProductConstants.localeParamName, localeAsInput);
             this.installmentAmountInMultiplesOf = newValue;
         }
 
@@ -1303,6 +1303,13 @@ public class LoanProduct extends AbstractPersistable<Long> {
             final boolean newValue = command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.allowUpfrontCollection);
             actualChanges.put(LoanProductConstants.allowUpfrontCollection, newValue);
             this.allowUpfrontCollection = newValue;
+        }
+        
+        if (command.isChangeInIntegerParameterNamed(LoanProductConstants.applicableForLoanTypeParamName, this.applicableForLoanType)) {
+            final Integer newValue = command.integerValueOfParameterNamed(LoanProductConstants.applicableForLoanTypeParamName);
+            actualChanges.put(LoanProductConstants.applicableForLoanTypeParamName, newValue);
+            actualChanges.put(LoanProductConstants.localeParamName, localeAsInput);
+            this.applicableForLoanType = newValue;
         }
         
         return actualChanges;
