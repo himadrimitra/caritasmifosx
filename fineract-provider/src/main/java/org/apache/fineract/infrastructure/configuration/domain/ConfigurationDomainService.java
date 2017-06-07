@@ -139,6 +139,8 @@ public interface ConfigurationDomainService {
     
     public Integer retrieveNumberOfDays();
 
-	boolean allowClientsInMultipleGroups();
+    boolean allowClientsInMultipleGroups();
+
+    int getInstallmentAmountRoundingMode();
 
 }
