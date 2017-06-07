@@ -19,6 +19,7 @@
 package org.apache.fineract.integrationtests.common.loans;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +96,7 @@ public class LoanProductTestBuilder {
     private String minPrincipal = "1000.00";
     private String maxPrincipal = "10000000.00";
     private Account[] accountList = null;
+    List<HashMap<String, Object>> interestRateVariationsForBorrowerCycle = null;
 
     private Boolean multiDisburseLoan = false;
     private final String outstandingLoanBalance = "35000";
@@ -674,6 +676,109 @@ public class LoanProductTestBuilder {
         this.selectedProfileTypeValues[0] = 1; // LegalForm.PERSON
         this.selectedProfileTypeValues[1] = 2; // LegalForm.ENTITY
         return this;
+    }
+    
+    public LoanProductTestBuilder withinterestRateVariationsForBorrowerCycle() {
+        List<HashMap<String, Object>> interestRateVariationsForBorrowerCycle = new ArrayList<>();
+        HashMap<String, Object> interestRateVariationsForBorrowerCycleMap = new HashMap<>();
+        interestRateVariationsForBorrowerCycleMap.put("valueConditionType", 2);
+        interestRateVariationsForBorrowerCycleMap.put("borrowerCycleNumber", 1);
+        interestRateVariationsForBorrowerCycleMap.put("interestRatesListPerCycle", Arrays.asList(2.6, 2.7));
+        interestRateVariationsForBorrowerCycleMap.put("defaultValue", 2.5);
+
+        HashMap<String, Object> interestRateVariationsForBorrowerCycleMap1 = new HashMap<>();
+        interestRateVariationsForBorrowerCycleMap1.put("valueConditionType", 2);
+        interestRateVariationsForBorrowerCycleMap1.put("borrowerCycleNumber", 2);
+        interestRateVariationsForBorrowerCycleMap1.put("interestRatesListPerCycle", Arrays.asList(5.6));
+        interestRateVariationsForBorrowerCycleMap1.put("defaultValue", 5.6);
+
+        HashMap<String, Object> interestRateVariationsForBorrowerCycleMap2 = new HashMap<>();
+        interestRateVariationsForBorrowerCycleMap2.put("valueConditionType", 3);
+        interestRateVariationsForBorrowerCycleMap2.put("borrowerCycleNumber", 2);
+        interestRateVariationsForBorrowerCycleMap2.put("interestRatesListPerCycle", Arrays.asList(6.9, 3.5));
+        interestRateVariationsForBorrowerCycleMap2.put("defaultValue", 3.5);
+
+        interestRateVariationsForBorrowerCycle.add(interestRateVariationsForBorrowerCycleMap);
+        interestRateVariationsForBorrowerCycle.add(interestRateVariationsForBorrowerCycleMap1);
+        interestRateVariationsForBorrowerCycle.add(interestRateVariationsForBorrowerCycleMap2);
+        this.interestRateVariationsForBorrowerCycle = interestRateVariationsForBorrowerCycle;
+        return this;
+    }
+    
+    public String buildLoanProductWithBorrowerCycle() {
+        final HashMap<String, Object> map = new HashMap<>();
+        map.put("name", this.nameOfLoanProduct);
+        map.put("shortName", this.shortName);
+        map.put("currencyCode", this.currencyCode);
+        map.put("locale", LOCALE);
+        map.put("dateFormat", "dd MMMM yyyy");
+        map.put("digitsAfterDecimal", digitsAfterDecimal);
+        map.put("inMultiplesOf", inMultiplesOf);
+        map.put("principal", this.principal);
+        map.put("numberOfRepayments", this.numberOfRepayments);
+        map.put("repaymentEvery", this.repaymentPeriod);
+        map.put("repaymentFrequencyType", this.repaymentFrequency);
+        map.put("interestRatePerPeriod", this.interestRatePerPeriod);
+        map.put("interestRatesListPerPeriod",Arrays.asList(2.6, 2.5, 2.0));
+        map.put("interestRateFrequencyType", this.interestRateFrequencyType);
+        map.put("amortizationType", this.amortizationType);
+        map.put("interestType", this.interestType);
+        map.put("interestCalculationPeriodType", this.interestCalculationPeriodType);
+        map.put("inArrearsTolerance", this.inArrearsTolerance);
+        map.put("transactionProcessingStrategyId", this.transactionProcessingStrategy);
+        map.put("accountingRule", this.accountingRule);
+        map.put("minPrincipal", this.minPrincipal);
+        map.put("maxPrincipal", this.maxPrincipal);
+        map.put("overdueDaysForNPA", this.overdueDaysForNPA);
+        map.put("useBorrowerCycle",true);
+        map.put("weeksInYearType","1");
+        map.put("multiDisburseLoan", this.multiDisburseLoan);
+        map.put("isLinkedToFloatingInterestRates", false);
+        map.put("includeInBorrowerCycle", true);
+        if (this.interestRateVariationsForBorrowerCycle != null) {
+            map.put("interestRateVariationsForBorrowerCycle", this.interestRateVariationsForBorrowerCycle);
+        } else {
+            HashMap<String, Object> interestRateVariationsForBorrowerCycleMap = new HashMap<>();
+            interestRateVariationsForBorrowerCycleMap.put("valueConditionType", 2);
+            interestRateVariationsForBorrowerCycleMap.put("borrowerCycleNumber", 1);
+            interestRateVariationsForBorrowerCycleMap.put("interestRatesListPerCycle", Arrays.asList(2.6, 2.7,2.5));
+            interestRateVariationsForBorrowerCycleMap.put("defaultValue", 2.5);
+
+            HashMap<String, Object> interestRateVariationsForBorrowerCycleMap1 = new HashMap<>();
+            interestRateVariationsForBorrowerCycleMap1.put("valueConditionType", 2);
+            interestRateVariationsForBorrowerCycleMap1.put("borrowerCycleNumber", 2);
+            interestRateVariationsForBorrowerCycleMap1.put("interestRatesListPerCycle", Arrays.asList(5.6));
+            interestRateVariationsForBorrowerCycleMap1.put("defaultValue", 5.6);
+
+            HashMap<String, Object> interestRateVariationsForBorrowerCycleMap2 = new HashMap<>();
+            interestRateVariationsForBorrowerCycleMap2.put("valueConditionType", 3);
+            interestRateVariationsForBorrowerCycleMap2.put("borrowerCycleNumber", 2);
+            interestRateVariationsForBorrowerCycleMap2.put("interestRatesListPerCycle", Arrays.asList(6.9, 3.5));
+            interestRateVariationsForBorrowerCycleMap2.put("defaultValue", 3.5);
+
+            this.interestRateVariationsForBorrowerCycle= new ArrayList<>();
+            this.interestRateVariationsForBorrowerCycle.add(interestRateVariationsForBorrowerCycleMap);
+            this.interestRateVariationsForBorrowerCycle.add(interestRateVariationsForBorrowerCycleMap1);
+            this.interestRateVariationsForBorrowerCycle.add(interestRateVariationsForBorrowerCycleMap2);
+            map.put("interestRateVariationsForBorrowerCycle", this.interestRateVariationsForBorrowerCycle);
+        }
+        map.put("considerFutureDisbursementsInSchedule", false);
+        map.put("considerAllDisbursementsInSchedule", false);
+        map.put("accountingRule", NONE);
+        map.put("preClosureInterestCalculationStrategy", NONE);
+        map.put("allowVariableInstallments", allowVariableInstallments) ;
+        map.put("maxLoanTerm", this.maxLoanTerm);
+        map.put("minLoanTerm", this.minLoanTerm);
+        map.put("canDefineInstallmentAmount", this.canDefineInstallmentAmount);
+        map.put("minNumberOfRepayments", this.minNumberOfRepayments);
+        map.put("maxNumberOfRepayments", this.maxNumberOfRepayments);
+        map.put("loanTenureFrequencyType", this.loanTenureFrequencyType);
+        map.put("daysInYearType",1);
+        map.put("daysInMonthType", 1);
+        map.put("isInterestRecalculationEnabled", false);
+        map.put("applicableForLoanType", this.applicableForLoanType);
+        
+        return new Gson().toJson(map);
     }
     
 }

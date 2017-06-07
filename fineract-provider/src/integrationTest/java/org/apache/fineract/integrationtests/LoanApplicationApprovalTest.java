@@ -69,10 +69,11 @@ public class LoanApplicationApprovalTest {
         final String proposedAmount = "8000";
         final String approvalAmount = "5000";
         final String approveDate = "20 September 2012";
+        final String interestRate = "5";
 
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 January 2012");
         final Integer loanProductID = this.loanTransactionHelper.getLoanProductId(new LoanProductTestBuilder().build(null));
-        final Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount);
+        final Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount,interestRate);
 
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
@@ -95,10 +96,11 @@ public class LoanApplicationApprovalTest {
         final String proposedAmount = "5000";
         final String approvalAmount = "9000";
         final String approveDate = "20 September 2011";
+        final String interestRate = "5";
 
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 January 2012");
         final Integer loanProductID = this.loanTransactionHelper.getLoanProductId(new LoanProductTestBuilder().build(null));
-        final Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount);
+        final Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount,interestRate);
 
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
@@ -248,14 +250,14 @@ public class LoanApplicationApprovalTest {
          **/
     }
 
-    private Integer applyForLoanApplication(final Integer clientID, final Integer loanProductID, final String proposedAmount) {
+    private Integer applyForLoanApplication(final Integer clientID, final Integer loanProductID,final String proposedAmount, final String interestRate) {
         final String loanApplication = new LoanApplicationTestBuilder().withPrincipal(proposedAmount).withLoanTermFrequency("5")
-                .withLoanTermFrequencyAsMonths().withNumberOfRepayments("5").withRepaymentEveryAfter("1")
-                .withRepaymentFrequencyTypeAsMonths().withInterestRatePerPeriod("2").withExpectedDisbursementDate("04 April 2012")
+                .withLoanTermFrequencyAsMonths().withNumberOfRepayments("5").withRepaymentEveryAfter("1").withInterestRatePerPeriod(interestRate)
+                .withRepaymentFrequencyTypeAsMonths().withExpectedDisbursementDate("04 April 2012")
                 .withSubmittedOnDate("02 April 2012").build(clientID.toString(), loanProductID.toString(), null);
         return this.loanTransactionHelper.getLoanId(loanApplication);
     }
-
+    
     public Integer applyForLoanApplicationWithTranches(final Integer clientID, final Integer loanProductID, String principal,
             List<HashMap> tranches) {
         System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
@@ -276,6 +278,141 @@ public class LoanApplicationApprovalTest {
                 .build(clientID.toString(), loanProductID.toString(), null);
 
         return this.loanTransactionHelper.getLoanId(loanApplicationJSON);
+    }
+    
+    /*
+     * Positive test case: nominal interest rate is present in interest rate
+     * list provided
+     */
+    @Test
+    public void loanApplicationApprovedWithInerestRateChosenFromFixedInterestRatesList() {
+
+        final String proposedAmount = "8000";
+        final String approveDate = "20 September 2012";
+        String interestRate = "2";
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 January 2012");
+        final Integer loanProductID = this.loanTransactionHelper
+                .getLoanProductId(new LoanProductTestBuilder().buildLoanProductWithBorrowerCycle());
+        final Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount,interestRate);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        final String expectedDisbursementDate = "20 September 2012";
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(approveDate, loanID);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(expectedDisbursementDate, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+    }
+
+    /*
+     * Negative test case: nominal interest rate is not present in interest rate
+     * list provided
+     */
+    @Test
+    public void loanApplicationRejectedWithInerestRateNotFoundInFixedInterestRatesList() {
+
+        final String proposedAmount = "8000";
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 January 2012");
+        final Integer loanProductID = this.loanTransactionHelper
+                .getLoanProductId(new LoanProductTestBuilder().buildLoanProductWithBorrowerCycle());
+
+        final String loanApplication = new LoanApplicationTestBuilder().withPrincipal(proposedAmount).withLoanTermFrequency("5")
+                .withLoanTermFrequencyAsMonths().withNumberOfRepayments("5").withRepaymentEveryAfter("1").withInterestRatePerPeriod("6.0")
+                .withRepaymentFrequencyTypeAsMonths().withExpectedDisbursementDate("04 April 2012").withSubmittedOnDate("02 April 2012")
+                .build(clientID.toString(), loanProductID.toString(), null);
+
+        loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpecForStatusCode400);
+
+        @SuppressWarnings("unchecked")
+        ArrayList<HashMap> loanProductError = (ArrayList<HashMap>) this.loanTransactionHelper.getLoanSubmissionError(loanApplication,
+                CommonConstants.RESPONSE_ERROR);
+        assertEquals("validation.msg.loan.interestRatePerPeriod.not.found.in.the.fixed.set.of.interest.rates.available.for.loan.product",
+                loanProductError.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+
+    }
+
+    /*
+     * Positive test case: Loan application approved with borrower cycle/ loan
+     * product counter enabled
+     */
+    @Test
+    public void loanApplicationApprovedWithProductBorrowerCycleEnabled() {
+
+        final String proposedAmount = "8000";
+        final String approveDate = "20 September 2012";
+        String interestRate1 = "2";
+        String interestRate2 = "2.5";
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 January 2012");
+        final Integer loanProductID = this.loanTransactionHelper
+                .getLoanProductId(new LoanProductTestBuilder().buildLoanProductWithBorrowerCycle());
+        Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount,interestRate1);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        String expectedDisbursementDate = "20 September 2012";
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(approveDate, loanID);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(expectedDisbursementDate, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount, interestRate2);
+
+        loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        expectedDisbursementDate = "21 September 2012";
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(expectedDisbursementDate, loanID);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(expectedDisbursementDate, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+    }
+
+    /*
+     * Negative test case: Loan application rejected since interest rate
+     * provided wasn't present in the fixed interest rates list defined for that
+     * cycle
+     */
+
+    @Test
+    public void loanApplicationRejectedWithProductBorrowerCycleEnabled() {
+
+        final String proposedAmount = "8000";
+        final String approveDate = "20 September 2012";
+        String interestRate = "2";
+
+        final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 January 2012");
+        final Integer loanProductID = this.loanTransactionHelper
+                .getLoanProductId(new LoanProductTestBuilder().buildLoanProductWithBorrowerCycle());
+        Integer loanID = applyForLoanApplication(clientID, loanProductID, proposedAmount,interestRate);
+
+        HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
+        LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
+
+        String expectedDisbursementDate = "20 September 2012";
+        loanStatusHashMap = this.loanTransactionHelper.approveLoan(approveDate, loanID);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+        loanStatusHashMap = this.loanTransactionHelper.disburseLoan(expectedDisbursementDate, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
+
+        loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpecForStatusCode400);
+        
+        final String loanApplication = new LoanApplicationTestBuilder().withPrincipal(proposedAmount).withLoanTermFrequency("5")
+                .withLoanTermFrequencyAsMonths().withNumberOfRepayments("5").withRepaymentEveryAfter("1")
+                .withRepaymentFrequencyTypeAsMonths().withExpectedDisbursementDate("04 April 2012").withSubmittedOnDate("02 April 2012")
+                .build(clientID.toString(), loanProductID.toString(), null);
+
+        @SuppressWarnings("unchecked")
+        ArrayList<HashMap> loanProductError = (ArrayList<HashMap>) this.loanTransactionHelper.getLoanSubmissionError(loanApplication,
+                CommonConstants.RESPONSE_ERROR);
+
+        assertEquals("validation.msg.loan.interestRatePerPeriod.not.found.in.the.fixed.set.of.interest.rates.available.for.loan.product",
+                loanProductError.get(0).get(CommonConstants.RESPONSE_ERROR_MESSAGE_CODE));
+
     }
 
 }

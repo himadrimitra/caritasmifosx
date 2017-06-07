@@ -16111,6 +16111,16 @@ Request Body:
 							</td>
 						</tr>
 						<tr class=alt>
+							<td>interestRatesListPerPeriod</td>
+						</tr>
+						<tr>
+							<td class=fielddesc>Interest Rates List Per Period<br> Used like:
+								<b>interestRatesListPerPeriod</b><br>
+								e.g. <b>[3.6,4.8]</b><br>
+								When interest rates list is defined <b>interestRatePerPeriod</b> should be a value chosen from this list.	
+							</td>
+						</tr>
+						<tr class=alt>
 							<td>interestRateFrequencyType</td>
 						</tr>
 						<tr>
@@ -16417,6 +16427,7 @@ GET https://DomainName/api/v1/loanproducts
       "value": "Days"
     },
     "interestRatePerPeriod": 15.000000,
+	"interestRatesListPerPeriod":[],
     "interestRateFrequencyType": {
       "id": 3,
       "code": "interestRateFrequency.periodFrequencyType.years",
@@ -16493,6 +16504,124 @@ GET https://DomainName/api/v1/loanproducts
   }
 ]
 					</code>
+					<code class="method-response">
+[
+  {
+    "id": 2,
+    "name": "personal loans product",
+    "shortName": "pe2",
+    "includeInBorrowerCycle": false,
+    "useBorrowerCycle": false,
+    "startDate": [
+      2013,
+      9,
+      2
+    ],
+    "closeDate": [
+      2014,
+      2,
+      7
+    ],
+    "status": "loanProduct.active",
+    "currency": {
+      "code": "USD",
+      "name": "US Dollar",
+      "decimalPlaces": 2,
+      "inMultiplesOf": 0,
+      "displaySymbol": "$",
+      "nameCode": "currency.USD",
+      "displayLabel": "US Dollar ($)"
+    },
+    "principal": 10000.000000,
+    "minPrincipal": 5000.000000,
+    "maxPrincipal": 15000.000000,
+    "numberOfRepayments": 10,
+    "minNumberOfRepayments": 5,
+    "maxNumberOfRepayments": 15,
+    "repaymentEvery": 7,
+    "repaymentFrequencyType": {
+      "id": 0,
+      "code": "repaymentFrequency.periodFrequencyType.days",
+      "value": "Days"
+    },
+	"interestRatePerPeriod": 2.000000,
+	"interestRatesListPerPeriod":[2.0,2.3,4.5],
+    "interestRateFrequencyType": {
+      "id": 3,
+      "code": "interestRateFrequency.periodFrequencyType.years",
+      "value": "Per year"
+    },
+    "annualInterestRate": 2.000000,
+    "amortizationType": {
+      "id": 1,
+      "code": "amortizationType.equal.installments",
+      "value": "Equal installments"
+    },
+    "interestType": {
+      "id": 1,
+      "code": "interestType.flat",
+      "value": "Flat"
+    },
+    "interestCalculationPeriodType": {
+      "id": 1,
+      "code": "interestCalculationPeriodType.same.as.repayment.period",
+      "value": "Same as repayment period"
+    },
+    "transactionProcessingStrategyId": 1,
+    "transactionProcessingStrategyName": "Mifos style",
+    "principalVariationsForBorrowerCycle": [],
+    "interestRateVariationsForBorrowerCycle": [],
+    "numberOfRepaymentVariationsForBorrowerCycle": [],
+    "daysInMonthType": {
+        "id": 30,
+        "code": "DaysInMonthType.days360",
+        "value": "30 Days"
+    },
+    "daysInYearType": {
+        "id": 360,
+        "code": "DaysInYearType.days360",
+        "value": "360 Days"
+    },
+    "isInterestRecalculationEnabled": true,
+    "interestRecalculationData": {
+        "id": 3,
+        "productId": 1,
+        "interestRecalculationCompoundingType": {
+            "id": 2,
+            "code": "interestRecalculationCompoundingMethod.fee",
+            "value": "Fee"
+        },
+		"recalculationCompoundingFrequencyType": {
+		    "id":1,
+			"code":"interestRecalculationFrequencyType.same.as.repayment.period",
+			"value":"Same as repayment period"
+		},
+        "rescheduleStrategyType": {
+            "id": 2,
+            "code": "loanRescheduleStrategyMethod.reduce.number.of.installments",
+            "value": "Reduce number of installments"
+        },
+		"recalculationRestFrequencyType": {
+		    "id":1,
+			"code":"interestRecalculationFrequencyType.same.as.repayment.period",
+			"value":"Same as repayment period"
+		},
+		"preClosureInterestCalculationStrategy": {
+		    "id":1,
+			"code":"loanPreClosureInterestCalculationStrategy.tillPreClosureDate",
+			"value":"Till preclose Date"
+		},
+		"isArrearsBasedOnOriginalSchedule" : true
+    },
+    "accountingRule": {
+      "id": 2,
+      "code": "accountingRuleType.cash",
+      "value": "CASH BASED"
+    },
+	"principalThresholdForLastInstalment":0
+  }
+]
+					</code>					
 				</div>
 			</div>
 
@@ -17448,6 +17577,7 @@ GET https://DomainName/api/v1/loanproducts/{productId}
     "value": "Days"
   },
   "interestRatePerPeriod": 5.000000,
+  "interestRatesListPerPeriod":[5.0,3.6,4.8],
   "interestRateFrequencyType": {
     "id": 2,
     "code": "interestRateFrequency.periodFrequencyType.months",
@@ -17616,6 +17746,532 @@ GET https://DomainName/api/v1/loanproducts/{productId}
   ]
 }
 					</code>
+					
+<code class="method-response">
+{
+ {  
+   "id":42,
+   "name":"Product29",
+   "shortName":"Pr29",
+   "includeInBorrowerCycle":false,
+   "useBorrowerCycle":true,
+   "status":"loanProduct.active",
+   "currency":{  
+      "code":"USD",
+      "name":"US Dollar",
+      "decimalPlaces":2,
+      "inMultiplesOf":1,
+      "displaySymbol":"$",
+      "nameCode":"currency.USD",
+      "displayLabel":"US Dollar ($)"
+   },
+   "principal":10000.000000,
+   "numberOfRepayments":5,
+   "repaymentEvery":1,
+   "repaymentFrequencyType":{  
+      "id":2,
+      "code":"repaymentFrequency.periodFrequencyType.months",
+      "value":"Months"
+   },
+   "interestRatePerPeriod":4.500000,
+   "interestRateFrequencyType":{  
+      "id":2,
+      "code":"interestRateFrequency.periodFrequencyType.months",
+      "value":"Per month"
+   },
+   "annualInterestRate":54.000000,
+   "isFlatInterestRate":false,
+   "interestRatesListPerPeriod":[  
+      4.5
+   ],
+   "isLinkedToFloatingInterestRates":false,
+   "isFloatingInterestRateCalculationAllowed":false,
+   "allowVariableInstallments":false,
+   "minimumGap":0,
+   "maximumGap":0,
+   "amortizationType":{  
+      "id":1,
+      "code":"amortizationType.equal.installments",
+      "value":"Equal installments"
+   },
+   "interestType":{  
+      "id":0,
+      "code":"interestType.declining.balance",
+      "value":"Declining Balance"
+   },
+   "interestCalculationPeriodType":{  
+      "id":1,
+      "code":"interestCalculationPeriodType.same.as.repayment.period",
+      "value":"Same as repayment period"
+   },
+   "allowPartialPeriodInterestCalcualtion":false,
+   "transactionProcessingStrategyId":1,
+   "transactionProcessingStrategyName":"Penalties, Fees, Interest, Principal order",
+   "daysInMonthType":{  
+      "id":1,
+      "code":"DaysInMonthType.actual",
+      "value":"Actual"
+   },
+   "daysInYearType":{  
+      "id":1,
+      "code":"DaysInYearType.actual",
+      "value":"Actual"
+   },
+   "isInterestRecalculationEnabled":false,
+   "isMinDurationApplicableForAllDisbursements":false,
+   "canDefineInstallmentAmount":false,
+   "adjustFirstEMIAmount":false,
+   "adjustInterestForRounding":false,
+   "principalVariationsForBorrowerCycle":[  
+
+   ],
+   "interestRateVariationsForBorrowerCycle":[  
+      {  
+         "id":49,
+         "borrowerCycleNumber":1,
+         "paramType":{  
+            "id":2,
+            "code":"LoanProductParamType.interestrate",
+            "value":"Interest rate"
+         },
+         "valueConditionType":{  
+            "id":2,
+            "code":"LoanProductValueConditionType.equal",
+            "value":"equals"
+         },
+         "defaultValue":2.300000,
+         "loanInterestRatesListPerCycle":[  
+            2.3,
+            1.6
+         ]
+      },
+      {  
+         "id":50,
+         "borrowerCycleNumber":1,
+         "paramType":{  
+            "id":2,
+            "code":"LoanProductParamType.interestrate",
+            "value":"Interest rate"
+         },
+         "valueConditionType":{  
+            "id":3,
+            "code":"LoanProductValueConditionType.greaterThan",
+            "value":"greater than"
+         },
+         "defaultValue":4.500000,
+         "loanInterestRatesListPerCycle":[  
+            4.5
+         ]
+      }
+   ],
+   "numberOfRepaymentVariationsForBorrowerCycle":[  
+
+   ],
+   "accountingRule":{  
+      "id":1,
+      "code":"accountingRuleType.none",
+      "value":"NONE"
+   },
+   "canUseForTopup":false,
+   "paymentTypeOptions":[  
+      {  
+         "id":1,
+         "name":"NEFT",
+         "description":"test",
+         "isCashPayment":false,
+         "position":0
+      }
+   ],
+   "currencyOptions":[  
+      {  
+         "code":"USD",
+         "name":"US Dollar",
+         "decimalPlaces":2,
+         "displaySymbol":"$",
+         "nameCode":"currency.USD",
+         "displayLabel":"US Dollar ($)"
+      }
+   ],
+   "repaymentFrequencyTypeOptions":[  
+      {  
+         "id":0,
+         "code":"repaymentFrequency.periodFrequencyType.days",
+         "value":"Days"
+      },
+      {  
+         "id":1,
+         "code":"repaymentFrequency.periodFrequencyType.weeks",
+         "value":"Weeks"
+      },
+      {  
+         "id":2,
+         "code":"repaymentFrequency.periodFrequencyType.months",
+         "value":"Months"
+      }
+   ],
+   "interestRateFrequencyTypeOptions":[  
+      {  
+         "id":2,
+         "code":"interestRateFrequency.periodFrequencyType.months",
+         "value":"Per month"
+      },
+      {  
+         "id":3,
+         "code":"interestRateFrequency.periodFrequencyType.years",
+         "value":"Per year"
+      }
+   ],
+   "amortizationTypeOptions":[  
+      {  
+         "id":1,
+         "code":"amortizationType.equal.installments",
+         "value":"Equal installments"
+      },
+      {  
+         "id":0,
+         "code":"amortizationType.equal.principal",
+         "value":"Equal principal payments"
+      }
+   ],
+   "interestTypeOptions":[  
+      {  
+         "id":1,
+         "code":"interestType.flat",
+         "value":"Flat"
+      },
+      {  
+         "id":0,
+         "code":"interestType.declining.balance",
+         "value":"Declining Balance"
+      }
+   ],
+   "interestCalculationPeriodTypeOptions":[  
+      {  
+         "id":0,
+         "code":"interestCalculationPeriodType.daily",
+         "value":"Daily"
+      },
+      {  
+         "id":1,
+         "code":"interestCalculationPeriodType.same.as.repayment.period",
+         "value":"Same as repayment period"
+      }
+   ],
+   "transactionProcessingStrategyOptions":[  
+      {  
+         "id":1,
+         "code":"mifos-standard-strategy",
+         "name":"Penalties, Fees, Interest, Principal order"
+      },
+      {  
+         "id":4,
+         "code":"rbi-india-strategy",
+         "name":"Overdue/Due Fee/Int,Principal"
+      },
+      {  
+         "id":5,
+         "code":"principal-interest-penalties-fees-order-strategy",
+         "name":"Principal, Interest, Penalties, Fees Order"
+      },
+      {  
+         "id":6,
+         "code":"interest-principal-penalties-fees-order-strategy",
+         "name":"Interest, Principal, Penalties, Fees Order"
+      },
+      {  
+         "id":7,
+         "code":"early-repayment-strategy",
+         "name":"Early Repayment Strategy"
+      },
+      {  
+         "id":2,
+         "code":"heavensfamily-strategy",
+         "name":"HeavensFamily Unique"
+      },
+      {  
+         "id":3,
+         "code":"creocore-strategy",
+         "name":"Creocore Unique"
+      }
+   ],
+   "accountingRuleOptions":[  
+      {  
+         "id":1,
+         "code":"accountingRuleType.none",
+         "value":"NONE"
+      },
+      {  
+         "id":2,
+         "code":"accountingRuleType.cash",
+         "value":"CASH BASED"
+      },
+      {  
+         "id":3,
+         "code":"accountingRuleType.accrual.periodic",
+         "value":"ACCRUAL PERIODIC"
+      },
+      {  
+         "id":4,
+         "code":"accountingRuleType.accrual.upfront",
+         "value":"ACCRUAL UPFRONT"
+      }
+   ],
+   "accountingMappingOptions":{  
+
+   },
+   "valueConditionTypeOptions":[  
+      {  
+         "id":2,
+         "code":"LoanProductValueConditionType.equal",
+         "value":"equals"
+      },
+      {  
+         "id":3,
+         "code":"LoanProductValueConditionType.greaterThan",
+         "value":"greater than"
+      }
+   ],
+   "daysInMonthTypeOptions":[  
+      {  
+         "id":1,
+         "code":"DaysInMonthType.actual",
+         "value":"Actual"
+      },
+      {  
+         "id":30,
+         "code":"DaysInMonthType.days360",
+         "value":"30 Days"
+      }
+   ],
+   "daysInYearTypeOptions":[  
+      {  
+         "id":1,
+         "code":"DaysInYearType.actual",
+         "value":"Actual"
+      },
+      {  
+         "id":360,
+         "code":"DaysInYearType.days360",
+         "value":"360 Days"
+      },
+      {  
+         "id":364,
+         "code":"DaysInYearType.days364",
+         "value":"364 Days"
+      },
+      {  
+         "id":365,
+         "code":"DaysInYearType.days365",
+         "value":"365 Days"
+      }
+   ],
+   "interestRecalculationCompoundingTypeOptions":[  
+      {  
+         "id":0,
+         "code":"interestRecalculationCompoundingMethod.none",
+         "value":"None"
+      },
+      {  
+         "id":2,
+         "code":"interestRecalculationCompoundingMethod.fee",
+         "value":"Fee"
+      },
+      {  
+         "id":1,
+         "code":"interestRecalculationCompoundingMethod.interest",
+         "value":"Interest"
+      },
+      {  
+         "id":3,
+         "code":"interestRecalculationCompoundingMethod.interest.and.fee",
+         "value":"Fee and Interest"
+      }
+   ],
+   "interestRecalculationNthDayTypeOptions":[  
+      {  
+         "id":1,
+         "code":"interestRecalculationCompounding.nthDayType.one",
+         "value":"first"
+      },
+      {  
+         "id":2,
+         "code":"interestRecalculationCompounding.nthDayType.two",
+         "value":"second"
+      },
+      {  
+         "id":3,
+         "code":"interestRecalculationCompounding.nthDayType.three",
+         "value":"third"
+      },
+      {  
+         "id":4,
+         "code":"interestRecalculationCompounding.nthDayType.four",
+         "value":"fourth"
+      },
+      {  
+         "id":-1,
+         "code":"interestRecalculationCompounding.nthDayType.last",
+         "value":"last"
+      }
+   ],
+   "interestRecalculationDayOfWeekTypeOptions":[  
+      {  
+         "id":7,
+         "code":"interestRecalculationCompounding.weekDayType.sunday",
+         "value":"SUNDAY"
+      },
+      {  
+         "id":1,
+         "code":"interestRecalculationCompounding.weekDayType.monday",
+         "value":"MONDAY"
+      },
+      {  
+         "id":2,
+         "code":"interestRecalculationCompounding.weekDayType.tuesday",
+         "value":"TUESDAY"
+      },
+      {  
+         "id":3,
+         "code":"interestRecalculationCompounding.weekDayType.wednesday",
+         "value":"WEDNESDAY"
+      },
+      {  
+         "id":4,
+         "code":"interestRecalculationCompounding.weekDayType.thursday",
+         "value":"THURSDAY"
+      },
+      {  
+         "id":5,
+         "code":"interestRecalculationCompounding.weekDayType.friday",
+         "value":"FRIDAY"
+      },
+      {  
+         "id":6,
+         "code":"interestRecalculationCompounding.weekDayType.saturday",
+         "value":"SATURDAY"
+      }
+   ],
+   "rescheduleStrategyTypeOptions":[  
+      {  
+         "id":3,
+         "code":"loanRescheduleStrategyMethod.reduce.emi.amount",
+         "value":"Reduce EMI amount"
+      },
+      {  
+         "id":2,
+         "code":"loanRescheduleStrategyMethod.reduce.number.of.installments",
+         "value":"Reduce number of installments"
+      },
+      {  
+         "id":1,
+         "code":"loanRescheduleStrategyMethod.reschedule.next.repayments",
+         "value":"Reschedule next repayments"
+      }
+   ],
+   "preClosureInterestCalculationStrategyOptions":[  
+      {  
+         "id":1,
+         "code":"loanPreClosureInterestCalculationStrategy.tillPreClosureDate",
+         "value":"Till preclose Date"
+      },
+      {  
+         "id":2,
+         "code":"loanPreClosureInterestCalculationStrategy.tillRestFrequencyDate",
+         "value":"Till rest Frequency Date"
+      }
+   ],
+   "interestRecalculationFrequencyTypeOptions":[  
+      {  
+         "id":1,
+         "code":"interestRecalculationFrequencyType.same.as.repayment.period",
+         "value":"Same as repayment period"
+      },
+      {  
+         "id":2,
+         "code":"interestRecalculationFrequencyType.daily",
+         "value":"Daily"
+      },
+      {  
+         "id":3,
+         "code":"interestRecalculationFrequencyType.weekly",
+         "value":"Weekly"
+      },
+      {  
+         "id":4,
+         "code":"interestRecalculationFrequencyType.monthly",
+         "value":"Monthly"
+      }
+   ],
+   "floatingRateOptions":[  
+
+   ],
+   "multiDisburseLoan":false,
+   "maxTrancheCount":0,
+   "principalThresholdForLastInstallment":0.00,
+   "holdGuaranteeFunds":false,
+   "accountMovesOutOfNPAOnlyOnArrearsCompletion":false,
+   "allowAttributeOverrides":{  
+      "amortizationType":true,
+      "interestType":true,
+      "transactionProcessingStrategyId":true,
+      "interestCalculationPeriodType":true,
+      "inArrearsTolerance":true,
+      "repaymentEvery":true,
+      "graceOnPrincipalAndInterestPayment":true,
+      "graceOnArrearsAgeing":true
+   },
+   "closeLoanOnOverpayment":false,
+   "syncExpectedWithDisbursementDate":false,
+   "loanTenureFrequencyType":{  
+      "id":4,
+      "code":"periodFrequencyType.invalid",
+      "value":"Invalid"
+   },
+   "codeValueOptions":[  
+
+   ],
+   "weeksInYearTypeOptions":[  
+      {  
+         "id":1,
+         "code":"52",
+         "value":"52"
+      },
+      {  
+         "id":2,
+         "code":"48",
+         "value":"48"
+      }
+   ],
+   "weeksInYearType":{  
+      "id":1,
+      "code":"52",
+      "value":"52"
+   },
+   "isEmiBasedOnDisbursements":false,
+   "brokenPeriodMethodTypeOptions":[  
+      {  
+         "id":0,
+         "code":"brokenPeriodMethod.distribute.equally",
+         "value":"Distribute equally among all installments"
+      },
+      {  
+         "id":1,
+         "code":"brokenPeriodMethod.adjust.in.first.emi",
+         "value":"Add to first installment interest"
+      },
+      {  
+         "id":2,
+         "code":"brokenPeriodMethod.post.interest",
+         "value":"Post interest"
+      }
+   ],
+   "considerFutureDisbursementsInSchedule":false,
+   "considerAllDisbursementsInSchedule":false,
+   "allowNegativeLoanBalance":false,
+   "allowUpfrontCollection":false
+}
+}
+					</code>					
 				</div>
 			</div>
 
@@ -17656,7 +18312,7 @@ GET https://DomainName/api/v1/loanproducts/{productId}
 							numberOfRepaymentVariationsForBorrowerCycle,
 							interestRateVariationsForBorrowerCycle,
 							multiDisburseLoan,maxTrancheCount,
-							outstandingLoanBalance,overdueDaysForNPA,holdGuaranteeFunds, principalThresholdForLastInstalment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineInstallmentAmount, installmentAmountInMultiplesOf, allowAttributeOverrides, allowPartialPeriodInterestCalcualtion
+							outstandingLoanBalance,overdueDaysForNPA,holdGuaranteeFunds, principalThresholdForLastInstalment, accountMovesOutOfNPAOnlyOnArrearsCompletion, canDefineInstallmentAmount, installmentAmountInMultiplesOf, allowAttributeOverrides, allowPartialPeriodInterestCalcualtion, interestRatesListPerPeriod
 							</td>
 						</tr>
 					</table>
@@ -17930,6 +18586,82 @@ Request Body:
 					<code class="method-response">
 {
 	"resourceId": 3
+}
+					</code>
+					<code class="method-request">
+POST loanproducts
+Content-Type: application/json
+Request Body:
+{
+	"name" : "Product40",
+	"numberOfRepaymentVariationsForBorrowerCycle":[],
+	"numberOfRepayments":"10",
+	"paymentChannelToFundSourceMappings":[],
+	"penaltyToIncomeAccountMappings":[],
+	"preClosureInterestCalculationStrategy":1,
+	"principal":"10000",
+	"principalVariationsForBorrowerCycle":[],
+	"repaymentEvery":"1",
+	"repaymentFrequencyType":2,
+	"shortName":"Pr40",
+	"transactionProcessingStrategyId":1,
+	"useBorrowerCycle":"true",
+	"weeksInYearType":1,
+	"allowNegativeLoanBalance":false,
+	"allowVariableInstallments":false,
+	"amortizationType":1,
+	"charges":[],
+	"codeValueSpecificAccountMapping":[],
+	"considerAllDisbursementsInSchedule":false,
+	"considerFutureDisbursementsInSchedule":false,
+	"currencyCode":"USD",
+	"dateFormat":"dd MMMM yyyy",
+	"daysInMonthType":1,
+	"daysInYearType":1,
+	"digitsAfterDecimal":"2",
+	"feeToIncomeAccountMappings":[],
+	"inMultiplesOf":"1",
+	"includeInBorrowerCycle":"false",
+	"interestCalculationPeriodType":1,
+	"interestRateFrequencyType":2,
+	"interestRatePerPeriod":2.5,
+	"interestRateVariationsForBorrowerCycle":
+	[{
+	"borrowerCycleNumber":"1",
+	"defaultValue":3.6,
+	"interestRatesListPerCycle":[3.5, 3.6],
+	"valueConditionType":2
+	}
+	{
+	"borrowerCycleNumber":"1",
+	"defaultValue":3.8,
+	"interestRatesListPerCycle":[3.8, 3.9],
+	"valueConditionType":3
+	}
+	]
+	"interestRatesListPerPeriod":[2.5, 2, 3],
+	"interestType":0,
+	"isInterestRecalculationEnabled":false,
+	"isLinkedToFloatingInterestRates":false,
+	"loanTenureFrequencyType":null,
+	"locale":"en",
+	"multiDisburseLoan":"false",
+	"allowAttributeOverrides"
+	{
+	"amortizationType":true,
+	"graceOnArrearsAgeing":true,
+	"graceOnPrincipalAndInterestPayment":true,
+	"inArrearsTolerance":true,
+	"interestCalculationPeriodType":true,
+	"interestType":true,
+	"repaymentEvery":true,
+	"transactionProcessingStrategyId":true
+	}
+}
+					</code>
+					<code class="method-response">
+{
+	"resourceId": 52
 }
 					</code>
 
