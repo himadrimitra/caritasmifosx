@@ -35,6 +35,7 @@ public class MoneyHelper {
     
     private static Map<String,RoundingMode> roundingMode = new HashMap<>();
     private static Map<String,RoundingMode> adjustedAmountRoundingMode = new HashMap<>();
+    private static Map<String,RoundingMode> installmentAmountRoundingMode = new HashMap<>();
     private static ConfigurationDomainService staticConfigurationDomainService;
     private static final RoundingMode DEFAULT_INTERNAL_ROUNDING_MODE = RoundingMode.HALF_EVEN;
     private static final int DEFAULT_INTERNAL_SCALE = 2;
@@ -70,6 +71,14 @@ public class MoneyHelper {
             adjustedAmountRoundingMode.put(tenant.getTenantIdentifier(),RoundingMode.valueOf(staticConfigurationDomainService.getAdjustedAmountRoundingMode()));
         }
         return adjustedAmountRoundingMode.get(tenant.getTenantIdentifier());
+    }
+    
+    public static RoundingMode getInstallmentAmountRoundingMode() {
+        FineractPlatformTenant tenant = ThreadLocalContextUtil.getTenant();
+        if (installmentAmountRoundingMode.get(tenant.getTenantIdentifier()) == null) {
+            installmentAmountRoundingMode.put(tenant.getTenantIdentifier(),RoundingMode.valueOf(staticConfigurationDomainService.getInstallmentAmountRoundingMode()));
+        }
+        return installmentAmountRoundingMode.get(tenant.getTenantIdentifier());
     }
 
 }

@@ -1492,7 +1492,7 @@ public final class LoanApplicationTerms {
     public double roundInstallmentInMultiplesOf(double installmentAmount) {
         if (this.installmentAmountInMultiplesOf != null) {
             
-            installmentAmount = Money.roundToMultiplesOf(installmentAmount, this.installmentAmountInMultiplesOf,MoneyHelper.getRoundingMode());
+            installmentAmount = Money.roundToMultiplesOf(installmentAmount, this.installmentAmountInMultiplesOf,MoneyHelper.getInstallmentAmountRoundingMode());
         }
         return installmentAmount;
     }
