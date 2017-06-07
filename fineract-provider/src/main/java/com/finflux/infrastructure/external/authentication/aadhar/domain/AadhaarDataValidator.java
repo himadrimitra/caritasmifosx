@@ -1,6 +1,8 @@
 package com.finflux.infrastructure.external.authentication.aadhar.domain;
 
 import java.lang.reflect.Type;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,11 +12,14 @@ import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.bouncycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
+import com.finflux.infrastructure.external.authentication.aadhar.exception.AuthRequestDataBuldFailedException;
 import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
@@ -107,12 +112,69 @@ public class AadhaarDataValidator {
 
 		throwExceptionIfValidationWarningsExist(dataValidationErrors);
 	}
+	
+    public void validateJsonForGetEKyc(final String json) {
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
-	private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
-		if (!dataValidationErrors.isEmpty()) {
-			//
-			throw new PlatformApiDataValidationException(dataValidationErrors);
-		}
-	}
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
 
+        this.fromJsonHelper.checkForUnsupportedParameters(typeOfMap, json, AadhaarApiConstants.OTP_REQUEST_EKYC_DATA);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder dataValidatorBuilder = new DataValidatorBuilder(dataValidationErrors)
+                .resource(AadhaarApiConstants.AADHAAR_SERIVICE_RESOURCE_NAME);
+
+        JsonElement element = this.fromJsonHelper.parse(json);
+
+        final String requestId = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.REQUESTID, element);
+        dataValidatorBuilder.reset().parameter(AadhaarApiConstants.REQUESTID).value(requestId).notNull().notExceedingLengthOf(20);
+
+        final String uuId = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AADHAARUUID, element);
+        dataValidatorBuilder.reset().parameter(AadhaarApiConstants.AADHAARUUID).value(uuId).notNull();
+
+        final String hash = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.HASH, element);
+        dataValidatorBuilder.reset().parameter(AadhaarApiConstants.HASH).value(hash).notNull();
+
+        final String status = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.REQUESTSTATUS, element);
+        dataValidatorBuilder.reset().parameter(AadhaarApiConstants.REQUESTSTATUS).value(status).notNull();
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+    }
+
+    private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
+        if (!dataValidationErrors.isEmpty()) {
+            //
+            throw new PlatformApiDataValidationException(dataValidationErrors);
+        }
+    }
+
+    public void validateReceivedHash(final String receivedHash, final String saltKey, final String requestId, final String aadhaarNumber,
+            final String saCode) {
+        String calculatedHash = generateHashKey(saCode, aadhaarNumber, requestId, saltKey);
+        if (receivedHash != null && calculatedHash != null) {
+            if (!receivedHash.equals(calculatedHash)) { throw new PlatformDataIntegrityException(
+                    "error.msg.invalidHash.hash.key.mismatch.issue", "Invalid hash key."); }
+        }
+    }
+
+    public String generateHashKey(final String saCode, final String aadhaarNumber, final String requestId, final String saltKey) {
+        /**
+         * construct the hash key
+         **/
+        StringBuilder builder = new StringBuilder();
+        builder.append(saltKey);
+        builder.append("|");
+        builder.append(requestId);
+        builder.append("|");
+        builder.append(aadhaarNumber);
+        builder.append("|");
+        builder.append(saCode);
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new AuthRequestDataBuldFailedException("OTP");
+        }
+        return new String(Hex.encode(digest.digest(builder.toString().getBytes())));
+    }
 }

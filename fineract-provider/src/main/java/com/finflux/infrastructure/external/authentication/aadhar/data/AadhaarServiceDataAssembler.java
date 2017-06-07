@@ -1,9 +1,11 @@
 package com.finflux.infrastructure.external.authentication.aadhar.data;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.http.client.utils.URIBuilder;
 import org.springframework.stereotype.Service;
 
 import com.aadhaarconnect.bridge.capture.model.auth.AuthCaptureData;
@@ -32,6 +34,7 @@ import in.gov.uidai.authserver.protobuf.Auth.Position;
 @Service
 public class AadhaarServiceDataAssembler {
 
+	
 	public String otpRequestDataAssembler(final String aadhaarNumber, final CertificateType CertificateType) {
 		OtpCaptureRequest otpCaptureRequest = new OtpCaptureRequest();
 		otpCaptureRequest.setAadhaar(aadhaarNumber);
@@ -110,29 +113,61 @@ public class AadhaarServiceDataAssembler {
 		return json;
 	}
 
-	public AuthCaptureData assembleAndGetAuthCaptureDataForFingerPrint(String aadhaarNumber, String fingerprint,
-			CertificateType certificateType, final Location location) {
-		AuthCaptureRequest authCaptureRequest = new AuthCaptureRequest();
-		AuthCaptureData authCaptureData = null;
-		authCaptureRequest.setAadhaar(aadhaarNumber);
-		authCaptureRequest.setNumOffingersToCapture(Integer.parseInt("1"));
-		authCaptureRequest.setNumOffingersToCapture(1);
-		authCaptureRequest.setModality(Modality.biometric);
-		authCaptureRequest.setModalityType(ModalityType.fp);
-		Location locationData = setLocation(location.getType(), location.getPincode(), location.getLatitude(),
-				location.getLongitude());
-		authCaptureRequest.setLocation(locationData);
-		authCaptureRequest.setCertificateType(certificateType);
-		Bios fp = null;
-		byte[] fpdata = Base64.decodeBase64(fingerprint);
-		fp = Bios.newBuilder().addBio(
-				Bio.newBuilder().setType(BioType.FMR).setPosh(Position.UNKNOWN).setContent(ByteString.copyFrom(fpdata)))
-				.build();
-		try {
-			authCaptureData = AadhaarBridgeUtil.buildAuthRequest(authCaptureRequest, fp);
-			return authCaptureData;
-		} catch (ParseException | IOException e) {
-			throw new AuthRequestDataBuldFailedException("Fingerprint");
-		}
-	}
+    public AuthCaptureData assembleAndGetAuthCaptureDataForFingerPrint(String aadhaarNumber, String fingerprint,
+            CertificateType certificateType, final Location location) {
+        AuthCaptureRequest authCaptureRequest = new AuthCaptureRequest();
+        AuthCaptureData authCaptureData = null;
+        authCaptureRequest.setAadhaar(aadhaarNumber);
+        authCaptureRequest.setNumOffingersToCapture(Integer.parseInt("1"));
+        authCaptureRequest.setNumOffingersToCapture(1);
+        authCaptureRequest.setModality(Modality.biometric);
+        authCaptureRequest.setModalityType(ModalityType.fp);
+        Location locationData = setLocation(location.getType(), location.getPincode(), location.getLatitude(), location.getLongitude());
+        authCaptureRequest.setLocation(locationData);
+        authCaptureRequest.setCertificateType(certificateType);
+        Bios fp = null;
+        byte[] fpdata = Base64.decodeBase64(fingerprint);
+        fp = Bios.newBuilder()
+                .addBio(Bio.newBuilder().setType(BioType.FMR).setPosh(Position.UNKNOWN).setContent(ByteString.copyFrom(fpdata))).build();
+        try {
+            authCaptureData = AadhaarBridgeUtil.buildAuthRequest(authCaptureRequest, fp);
+            return authCaptureData;
+        } catch (ParseException | IOException e) {
+            throw new AuthRequestDataBuldFailedException("Fingerprint");
+        }
+    }
+
+    public String otpRequestDataAssembler(final String initUrl, final String redirectUrl, final String aadhaarNumber,
+            final String requestId, final String purposeType, final String saCode, final String hash) {
+        /**
+         * constructing the url query parameters
+         **/
+        try {
+            URIBuilder urlParam = new URIBuilder(initUrl);
+            urlParam.addParameter(AadhaarApiConstants.SACODE, saCode);
+            urlParam.addParameter(AadhaarApiConstants.AADHAARID, aadhaarNumber);
+            urlParam.addParameter(AadhaarApiConstants.SUCCESSURL, redirectUrl);
+            urlParam.addParameter(AadhaarApiConstants.FAILUREURL, redirectUrl);
+            urlParam.addParameter(AadhaarApiConstants.REQUESTID, requestId);
+            urlParam.addParameter(AadhaarApiConstants.PURPOSE, purposeType);
+            urlParam.addParameter(AadhaarApiConstants.MODALITY, AadhaarApiConstants.OTP);
+            urlParam.addParameter(AadhaarApiConstants.HASH, hash);
+            return urlParam.toString();
+        } catch (URISyntaxException e) {
+            throw new AuthRequestDataBuldFailedException("OTP");
+        }
+    }
+
+    public String getEkycCaptureData(final String aadhaarNumber, final String requestId, final String uuId, final String saCode,
+            final String hash) {
+
+        EkycRequestData kycRequestData = new EkycRequestData();
+        kycRequestData.setSaCode(saCode);
+        kycRequestData.setAadhaarId(aadhaarNumber);
+        kycRequestData.setRequestId(requestId);
+        kycRequestData.setHash(hash);
+        kycRequestData.setUuid(uuId);
+        String json = new Gson().toJson(kycRequestData);
+        return json;
+    }
 }

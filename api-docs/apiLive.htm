@@ -21510,6 +21510,47 @@ Content-Type: application/json
 				</code>
 				</div>
 			</div>
+			<a id="external_authentication_service_update" name="external_authentication_service_update"
+				class="old-syle-anchor">&nbsp;</a>
+<div class="method-section">
+	<div class="method-description">
+		<h4>Aadhaar generate otp</h4>
+		<p>Request for generate aadhaar otp</p>
+	</div>
+	<div class="method-example">
+		<code class="method-declaration">
+                        POST https://DomainName/api/v1/aadhaar/gatewayotp
+		</code>
+		<code class="method-request">
+                    {
+	                   "aadhaarNumber":"xxxxxxxx3280"
+                    }
+		</code>
+	</div>
+</div>
+
+<a id="external_authentication_service_update" name="external_authentication_service_update"
+				class="old-syle-anchor">&nbsp;</a>
+<div class="method-section">
+	<div class="method-description">
+		<h4>Aadhaar Otp based Ekyc</h4>
+		<p>Request for Ekyc based on otp success</p>
+	</div>
+	<div class="method-example">
+		<code class="method-declaration">
+                        POST https://DomainName/api/v1/aadhaar/gatewaykyc
+		</code>
+		<code class="method-request">
+                    {
+						"hash": "e72c55627244c5d0ecd50acf8748d30eb",
+						"requestId": "61847237602536807629",
+						"status": "success",
+						"uuid": "d1ca5b4a-df1e-421e-b07f-9c218f9a2565"
+					}
+		</code>
+	</div>
+</div>
+
 
 			<!-- Fund starts here -->
 			<a id="funds" name="funds" class="old-syle-anchor">&nbsp;</a>

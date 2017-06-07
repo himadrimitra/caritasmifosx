@@ -38,6 +38,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.finflux.common.security.service.PlatformCryptoService;
+import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
+
 @Service
 public class ExternalServiceWritePlatformServiceJpaRepositoryImpl implements ExternalServiceWritePlatformService {
 
@@ -49,18 +52,20 @@ public class ExternalServiceWritePlatformServiceJpaRepositoryImpl implements Ext
     private final ExternalServicesPropertiesRepository repository;
     private final ExternalServicesPropertiesCommandFromApiJsonDeserializer fromApiJsonDeserializer;
     private final ExternalServicesReadPlatformService readPlatformService;
+    private final PlatformCryptoService platformCryptoService;
 
     @Autowired
     public ExternalServiceWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final ExternalServicesPropertiesRepositoryWrapper repositoryWrapper, final ExternalServicesPropertiesRepository repository,
             final ExternalServicesPropertiesCommandFromApiJsonDeserializer fromApiJsonDeserializer,
-            final ExternalServicesReadPlatformService readPlatformService) {
+            final ExternalServicesReadPlatformService readPlatformService,final PlatformCryptoService platformCryptoService) {
 
         this.context = context;
         this.repositoryWrapper = repositoryWrapper;
         this.repository = repository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
         this.readPlatformService = readPlatformService;
+        this.platformCryptoService = platformCryptoService;
     }
 
     @Transactional
@@ -78,7 +83,14 @@ public class ExternalServiceWritePlatformServiceJpaRepositoryImpl implements Ext
             String name = it.next();
             final ExternalServicesProperties externalServicesProperties = this.repositoryWrapper.findOneByIdAndName(externalServiceId, name,
                     externalServiceName);
-            final Map<String, Object> changes = externalServicesProperties.update(command, name);
+            Map<String, Object> changes = null;
+            if (name.equals(AadhaarApiConstants.SACODE) || name.equals(AadhaarApiConstants.SALTKEY)) {
+                String newValue = command.stringValueOfParameterNamed(name);
+                newValue = platformCryptoService.encrypt(command.stringValueOfParameterNamed(name));
+                changes = externalServicesProperties.updateAadhaarServices(command, newValue);
+            } else {
+                changes = externalServicesProperties.update(command, name);
+            }
             changesList.putAll(changes);
             if (!changes.isEmpty()) {
                 this.repository.saveAndFlush(externalServicesProperties);

@@ -19,5 +19,9 @@ public interface AadhaarBridgeProvidedService {
 
 	public AuthResponse authenticateUserByFingerPrintUsingAadhaarService(final String aadharNumber,
 			final String fingerPrintData, final Location location);
+	
+	public String initiateOtpRequest(final String json);
+	
+	public String initiateKycRequest(final String json);
 
 }
