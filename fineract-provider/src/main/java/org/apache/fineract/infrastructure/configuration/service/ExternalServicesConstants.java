@@ -39,6 +39,8 @@ public class ExternalServicesConstants {
     public static final String AADHAAR_HOST = "host";
     public static final String PORT = "port";
     public static final String CERTIFICATE = "certificate_type";
+    public static final String SACODE = "saCode";
+    public static final String SALTKEY = "saltKey";
     /*
      * Highmark related constants -begin
      */
@@ -258,7 +260,8 @@ public class ExternalServicesConstants {
     }
 
     public static enum AADHAAR_JSON_INPUT_PARAMS {
-        HOST("host"), PORT("port"), CERTIFICATE("certificate_type");
+		HOST("host"), PORT("port"), CERTIFICATE("certificate_type"), SACODE("saCode"), SALTKEY("saltKey"), OTPURL(
+				"otpUrl"), KYCURL("kycUrl");
 
         private final String value;
 

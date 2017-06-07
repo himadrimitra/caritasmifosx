@@ -76,6 +76,14 @@ public class ExternalServicesProperties {
 
         return actualChanges;
     }
+    
+    public Map<String, Object> updateAadhaarServices(final JsonCommand command, String newValue) {
+        final Map<String, Object> actualChanges = new LinkedHashMap<>(2);
+        final String valueParamName = EXTERNALSERVICEPROPERTIES_JSON_INPUT_PARAMS.VALUE.getValue();
+        actualChanges.put(valueParamName, newValue);
+        this.value = StringUtils.defaultIfEmpty(newValue, null);
+        return actualChanges;
+    }
 
     public ExternalServicesPropertiesData toData() {
         return new ExternalServicesPropertiesData(this.externalServicePropertiesPK.getName(), this.value);

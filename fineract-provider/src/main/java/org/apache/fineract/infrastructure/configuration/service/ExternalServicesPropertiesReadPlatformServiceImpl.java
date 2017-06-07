@@ -32,14 +32,19 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
 
+import com.finflux.common.security.service.PlatformCryptoService;
+import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
+
 @Service
 public class ExternalServicesPropertiesReadPlatformServiceImpl implements ExternalServicesPropertiesReadPlatformService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final PlatformCryptoService platformCryptoService;
 
     @Autowired
-    public ExternalServicesPropertiesReadPlatformServiceImpl(final RoutingDataSource dataSource) {
+    public ExternalServicesPropertiesReadPlatformServiceImpl(final RoutingDataSource dataSource, final PlatformCryptoService platformCryptoService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.platformCryptoService = platformCryptoService;
     }
 
     private static final class S3CredentialsDataExtractor implements ResultSetExtractor<S3CredentialsData> {
@@ -368,7 +373,7 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
 
     }
 
-    private static final class ExternalServiceMapper implements RowMapper<ExternalServicesPropertiesData> {
+    private final class ExternalServiceMapper implements RowMapper<ExternalServicesPropertiesData> {
 
         @Override
         public ExternalServicesPropertiesData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
@@ -378,6 +383,9 @@ public class ExternalServicesPropertiesReadPlatformServiceImpl implements Extern
             // Masking the password as we should not send the password back
             if (name != null && "password".equalsIgnoreCase(name)) {
                 value = "XXXX";
+            }
+            if (name != null && value != null && (name.equals(AadhaarApiConstants.SACODE) || name.equals(AadhaarApiConstants.SALTKEY))) {
+                value = platformCryptoService.decrypt(value);
             }
             return new ExternalServicesPropertiesData(name, value);
         }

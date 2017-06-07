@@ -1,11 +1,16 @@
 
 package com.finflux.infrastructure.external.authentication.aadhar.service;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Random;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.bouncycastle.util.encoders.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,12 +22,17 @@ import com.aadhaarconnect.bridge.capture.model.common.LocationType;
 import com.aadhaarconnect.bridge.capture.model.common.request.CertificateType;
 import com.aadhaarconnect.bridge.gateway.model.AuthResponse;
 import com.aadhaarconnect.bridge.gateway.model.OtpResponse;
+import com.finflux.common.security.service.PlatformCryptoService;
 import com.finflux.infrastructure.common.httpaccess.ExternalHttpConnectivity;
 import com.finflux.infrastructure.external.authentication.aadhar.api.AadhaarApiConstants;
 import com.finflux.infrastructure.external.authentication.aadhar.data.AadhaarServerDetails;
 import com.finflux.infrastructure.external.authentication.aadhar.data.AadhaarServiceDataAssembler;
 import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarDataValidator;
+import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarOutBoundRequestDetails;
+import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarOutBoundRequestDetailsRepositoryWrapper;
+import com.finflux.infrastructure.external.authentication.aadhar.domain.AadhaarRequestStatusTypeEnum;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.AadhaarServiceResponseParserException;
+import com.finflux.infrastructure.external.authentication.aadhar.exception.AuthRequestDataBuldFailedException;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.ConnectionFailedException;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.UnableToGetKycDetails;
 import com.finflux.infrastructure.external.authentication.aadhar.exception.UnableToSendOtpException;
@@ -54,6 +64,8 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	private final ExternalHttpConnectivity httpConnectivity;
 	private final FromJsonHelper fromJsonHelper;
 	private final AadhaarDataValidator aadhaarDataValidator;
+	private final AadhaarOutBoundRequestDetailsRepositoryWrapper aadhaarServicesRepositoryWrapper;
+	private final PlatformCryptoService platformCryptoService;
 
 	private AadhaarServerDetails aadhaarServerDetails;
 	private CertificateType certificateType;
@@ -86,12 +98,14 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	@Autowired
 	public AadhaarBridgeProvidedServiceImpl(final AadhaarServiceDataAssembler aadhaarServiceDataAssembler,
 			final RoutingDataSource dataSource, final ExternalHttpConnectivity httpConnectivity,
-			final FromJsonHelper fromJsonHelper, final AadhaarDataValidator aadhaarDataValidator) {
+			final FromJsonHelper fromJsonHelper, final AadhaarDataValidator aadhaarDataValidator, final AadhaarOutBoundRequestDetailsRepositoryWrapper aadhaarServicesRepositoryWrapper, final PlatformCryptoService platformCryptoService) {
 		this.aadharServiceDataAssembler = aadhaarServiceDataAssembler;
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 		this.httpConnectivity = httpConnectivity;
 		this.fromJsonHelper = fromJsonHelper;
 		this.aadhaarDataValidator = aadhaarDataValidator;
+		this.aadhaarServicesRepositoryWrapper = aadhaarServicesRepositoryWrapper;
+		this.platformCryptoService = platformCryptoService;
 	}
 
 	private String urlBuilder(final String endpoint, final String path) {
@@ -212,34 +226,51 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 		}
 	}
 
-	private AadhaarServerDetails getAadhaarServerDetails() {
-		final ResultSetExtractor<AadhaarServerDetails> resultSetExtractor = new AadhaarServerDetailsMapper();
-		final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
-				+ AadhaarServiceConstants.AADHAAR_SERVICE_NAME + "'";
-		final AadhaarServerDetails aadhaarServerDetails = this.jdbcTemplate.query(sql, resultSetExtractor,
-				new Object[] {});
-		return aadhaarServerDetails;
-	}
+    private AadhaarServerDetails getAadhaarServerDetails() {
+        final ResultSetExtractor<AadhaarServerDetails> resultSetExtractor = new AadhaarServerDetailsMapper();
+        final String sql = "SELECT esp.name, esp.value FROM c_external_service_properties esp inner join c_external_service es on esp.external_service_id = es.id where es.name = '"
+                + AadhaarServiceConstants.AADHAAR_SERVICE_NAME + "'";
+        final AadhaarServerDetails aadhaarServerDetails = this.jdbcTemplate.query(sql, resultSetExtractor, new Object[] {});
+        return aadhaarServerDetails;
+    }
 
-	private static final class AadhaarServerDetailsMapper implements ResultSetExtractor<AadhaarServerDetails> {
+    private final class AadhaarServerDetailsMapper implements ResultSetExtractor<AadhaarServerDetails> {
 
-		@Override
-		public AadhaarServerDetails extractData(ResultSet rs) throws SQLException, DataAccessException {
-			String host = null;
-			String port = null;
-			String certificateType = null;
-			while (rs.next()) {
-				if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_HOST)) {
-					host = rs.getString("value");
-				} else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_PORT)) {
-					port = rs.getString("value");
-				} else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_SERVER_CERTIFICATE)) {
-					certificateType = rs.getString("value");
-				}
-			}
-			return AadhaarServerDetails.instance(host, port, certificateType);
-		}
-	}
+        @Override
+        public AadhaarServerDetails extractData(ResultSet rs) throws SQLException, DataAccessException {
+            String host = null;
+            String port = null;
+            String certificateType = null;
+            String saltKey = null;
+            String saCode = null;
+            String otpUrl = null;
+            String kycUrl = null;
+            while (rs.next()) {
+                if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_HOST)) {
+                    host = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_PORT)) {
+                    port = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.AADHAAR_SERVER_CERTIFICATE)) {
+                    certificateType = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.SALTKEY)) {
+                    saltKey = rs.getString("value");
+                    if (saltKey != null) {
+                        saltKey = platformCryptoService.decrypt(saltKey);
+                    }
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.SACODE)) {
+                    saCode = rs.getString("value");
+                    if (saCode != null) {
+                        saCode = platformCryptoService.decrypt(saCode);
+                    }
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.OTPURL)) {
+                    otpUrl = rs.getString("value");
+                } else if (rs.getString("name").equalsIgnoreCase(AadhaarServiceConstants.KYCURL)) {
+                    kycUrl = rs.getString("value");
+                }
+            }
+            return AadhaarServerDetails.instance(host, port, certificateType, saltKey, saCode, otpUrl, kycUrl);
+        }
+    }
 
 	@Override
 	public OtpResponse processOtpRequest(final String json) {
@@ -285,4 +316,125 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 		}
 	}
 
+    @Override
+    public String initiateOtpRequest(String json) {
+        initalize();
+        this.aadhaarDataValidator.validateJsonForGenerateOtp(json);
+        final JsonElement element = this.fromJsonHelper.parse(json);
+        final String aadhaarNumber = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AADHAAR_NUMBER, element);
+        /**
+         * fetch the sacode and saltkey from external services
+         **/
+        String initOtpUrl = this.aadhaarServerDetails.getOtpUrl();
+        final String saCode = this.aadhaarServerDetails.getSaCode();
+        final String saltKey = this.aadhaarServerDetails.getSaltKey();
+        final String redirectUrl = this.endpoint;
+        String requestId = generateRandomRequestId(aadhaarNumber, 16);
+        String uuId = null;
+        final String hash = generateHashKey(saCode, aadhaarNumber, requestId, saltKey, uuId);
+        final String status = AadhaarRequestStatusTypeEnum.enumTypeInitiate;
+        AadhaarOutBoundRequestDetails aadhaarServices = AadhaarOutBoundRequestDetails.create(aadhaarNumber, requestId, status);
+        this.aadhaarServicesRepositoryWrapper.save(aadhaarServices);
+        final AadhaarRequestStatusTypeEnum purposeTypeEnum = AadhaarRequestStatusTypeEnum.fromInt(aadhaarServices.getPurpose());
+        final EnumOptionData optionData = AadhaarRequestStatusTypeEnum.aadhaarRequestEntity(purposeTypeEnum);
+        String purpose = null;
+        if (optionData != null) {
+            purpose = optionData.getValue();
+        }
+        initOtpUrl = this.aadharServiceDataAssembler.otpRequestDataAssembler(initOtpUrl, redirectUrl, aadhaarNumber, requestId, purpose,
+                saCode, hash);
+        return this.httpConnectivity.initiateGenerateOtp(initOtpUrl);
+    }
+
+    /**
+     * Generate the 20 digits random unique requestId per each aadhaar request.
+     * 16 digits will be unique number and 4 digits will be last four digits of
+     * aadhharNumber
+     **/
+
+    private String generateRandomRequestId(final String aadhaarNumber, final int length) {
+        Random random = new Random();
+        char[] digits = new char[length];
+        digits[0] = (char) (random.nextInt(9) + '1');
+        for (int i = 1; i < length; i++) {
+            digits[i] = (char) (random.nextInt(10) + '0');
+        }
+        if (aadhaarNumber.length() > 4)
+            return (aadhaarNumber.substring(aadhaarNumber.length() - 4, aadhaarNumber.length()) + (new String(digits)));
+        else
+            return (new String(digits));
+
+    }
+
+    public String generateHashKey(final String saCode, final String aadhaarNumber, final String requestId, final String saltKey,
+            final String uuId) {
+        /**
+         * construct the hash key
+         **/
+        StringBuilder builder = new StringBuilder();
+        if (uuId != null && !uuId.isEmpty()) {
+            builder.append(uuId);
+            builder.append("|");
+        }
+        builder.append(saCode);
+        builder.append("|");
+        builder.append(aadhaarNumber);
+        builder.append("|");
+        builder.append(requestId);
+        builder.append("|");
+        builder.append(saltKey);
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new AuthRequestDataBuldFailedException("OTP");
+        }
+        return new String(Hex.encode(digest.digest(builder.toString().getBytes())));
+    }
+
+    @Override
+    public String initiateKycRequest(String json) {
+        this.aadhaarDataValidator.validateJsonForGetEKyc(json);
+        initalize();
+        final JsonElement element = this.fromJsonHelper.parse(json);
+        String aadhaarNumber = null;
+        final String requestId = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.REQUESTID, element);
+
+        final String uuId = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.AADHAARUUID, element);
+        if (requestId != null) {
+            AadhaarOutBoundRequestDetails aadhaar = this.aadhaarServicesRepositoryWrapper.findRequestIdWithNotFoundDetection(requestId);
+            if (aadhaar != null) {
+                aadhaarNumber = aadhaar.getAadhaarNumber();
+                final String status = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.REQUESTSTATUS, element);
+                if (status != null) {
+                    aadhaar = aadhaar.update(status);
+                    this.aadhaarServicesRepositoryWrapper.save(aadhaar);
+                }
+            }
+        }
+
+        final String receivedHash = this.fromJsonHelper.extractStringNamed(AadhaarApiConstants.HASH, element);
+        final String eKycUrl = this.aadhaarServerDetails.getKycUrl();
+        final String saCode = this.aadhaarServerDetails.getSaCode();
+        final String saltKey = this.aadhaarServerDetails.getSaltKey();
+        final String hash = generateHashKey(saCode, aadhaarNumber, requestId, saltKey, uuId);
+        this.aadhaarDataValidator.validateReceivedHash(receivedHash, saltKey, requestId, aadhaarNumber, saCode);
+        String eKycByOtpJson = this.aadharServiceDataAssembler.getEkycCaptureData(aadhaarNumber, requestId, uuId, saCode, hash);
+        String url = urlBuilder(endpoint, eKycUrl);
+
+        String response = this.httpConnectivity.performServerPost(eKycUrl, eKycByOtpJson, String.class);
+
+        if (response != null) {
+            JsonElement elements = this.fromJsonHelper.parse(response);
+            boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, elements);
+            if (isSuccess) {
+                return response;
+            } else {
+                throw new UnableToGetKycDetails(aadhaarNumber, "Otp");
+            }
+
+        } else {
+            throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+        }
+    }
 }
