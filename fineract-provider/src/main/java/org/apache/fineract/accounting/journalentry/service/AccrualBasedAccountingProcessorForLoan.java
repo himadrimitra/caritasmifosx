@@ -235,6 +235,7 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
         final BigDecimal overPaymentAmount = loanTransactionDTO.getOverPayment();
         final Long paymentTypeId = loanTransactionDTO.getPaymentTypeId();
         final boolean isReversal = loanTransactionDTO.isReversed();
+        boolean ignoreAccountingForTax = true;
 
         BigDecimal totalDebitAmount = new BigDecimal(0);
 
@@ -266,8 +267,10 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                             loanTransactionDTO.getFeePayments()));
                 }
             } else {
+                final GLAccount feesReceivableAccount = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
+                        ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
                 this.helper.constructCreditJournalEntryOrReversalForLoanChargesAccountMap(loanProductId, paymentTypeId,
-                        loanDTO.getWriteOffReasonId(), feesAmount, loanTransactionDTO, accountMap, writeOff);
+                        loanDTO.getWriteOffReasonId(), feesAmount, loanTransactionDTO, accountMap, writeOff, feesReceivableAccount, ignoreAccountingForTax);
             }
         }
 
@@ -281,10 +284,10 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                             loanTransactionDTO.getPenaltyPayments()));
                 }
             } else {
-                final BigDecimal totalTaxAmount = this.helper.addTaxDetailsToGLAccount(loanTransactionDTO.getTaxPaymentDTOs(), accountMap);
                 final GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.PENALTIES_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
-                this.helper.addOrUpdateAccountMapWithAmount(accountMap, account, penaltiesAmount.subtract(totalTaxAmount));
+                this.helper.constructCreditJournalEntryOrReversalForLoanChargesAccountMap(loanProductId, paymentTypeId,
+                        loanDTO.getWriteOffReasonId(), feesAmount, loanTransactionDTO, accountMap, writeOff, account, ignoreAccountingForTax);
             }
         }
 
