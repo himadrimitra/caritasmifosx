@@ -41,11 +41,14 @@ public class SearchData {
     private final String centerName;
     private final String officeName;
     private final CodeValueData reason;
+    private final Boolean isActive;
+    private final Boolean isLoanOfficer;
 
     public SearchData(final Long entityId, final String entityAccountNo, final String entityExternalId, final String entityName,
             final String entityType, final Long parentId, final String parentName, final String parentType, final String entityMobileNo,
             final EnumOptionData entityStatus, final BigDecimal systemValue, final BigDecimal userValue, final String groupName,
-            final String centerName, final String officeName, final CodeValueData reason) {
+            final String centerName, final String officeName, final CodeValueData reason, final Boolean isActive,
+            final Boolean isLoanOfficer) {
 
         this.entityId = entityId;
         this.entityAccountNo = entityAccountNo;
@@ -55,7 +58,7 @@ public class SearchData {
         this.parentId = parentId;
         this.parentName = parentName;
         this.parentType = parentType;
-        this.entityMobileNo=entityMobileNo;
+        this.entityMobileNo = entityMobileNo;
         this.entityStatus = entityStatus;
         this.systemValue = systemValue;
         this.userValue = userValue;
@@ -63,6 +66,8 @@ public class SearchData {
         this.centerName = centerName;
         this.officeName = officeName;
         this.reason = reason;
+        this.isActive = isActive;
+        this.isLoanOfficer = isLoanOfficer;
     }
 
     public Long getEntityId() {

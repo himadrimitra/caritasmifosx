@@ -60,15 +60,17 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
     private final PlatformSecurityContext context;
     private final LoanProductReadPlatformService loanProductReadPlatformService;
     private final OfficeReadPlatformService officeReadPlatformService;
-    private static ConfigurationDomainService configurationDomainService;
+    private final ConfigurationDomainService configurationDomainService;
 
     @Autowired
     public SearchReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService) {
+            final LoanProductReadPlatformService loanProductReadPlatformService, final OfficeReadPlatformService officeReadPlatformService,
+            final ConfigurationDomainService configurationDomainService) {
         this.context = context;
         this.namedParameterjdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.loanProductReadPlatformService = loanProductReadPlatformService;
         this.officeReadPlatformService = officeReadPlatformService;
+        this.configurationDomainService = configurationDomainService;
     }
 
     @Override
@@ -76,7 +78,7 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
 
-        final SearchMapper rm = new SearchMapper();
+        final SearchMapper rm = new SearchMapper(this.configurationDomainService);
 
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("hierarchy", hierarchy + "%");
@@ -84,12 +86,16 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
        	 params.addValue("search", searchConditions.getSearchQuery());
        	}else{
        	 params.addValue("search", "%" + searchConditions.getSearchQuery() + "%");
-       	}  
+       	}
         return this.namedParameterjdbcTemplate.query(rm.searchSchema(searchConditions), params, rm);
     }
 
     private static final class SearchMapper implements RowMapper<SearchData> {
+        private final ConfigurationDomainService configurationDomainService;
 
+        public SearchMapper (final ConfigurationDomainService configurationDomainService){
+            this.configurationDomainService = configurationDomainService;
+        }
         public String searchSchema(final SearchConditions searchConditions) {
             final StringBuilder sqlBuilder = new StringBuilder(200);
             
@@ -112,13 +118,13 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                         .append(" (select 'CLIENT' as entityType, c.id as entityId, c.display_name as entityName, c.external_id as entityExternalId, c.account_no as entityAccountNo "
                                 + " , c.office_id as parentId, o.name as parentName, c.mobile_no as entityMobileNo,c.status_enum as entityStatusEnum, null as parentType,"
                                 + " c.closure_reason_cv_id AS reasonId, cvclosurereason.code_description AS reasonValue");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(",g.display_name as groupName, ce.display_name as centerName, null as officeName ");
                 } else {
                     sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
                 }
                 sqlBuilder.append(" from m_client c join m_office o on o.id = c.office_id left join m_code_value cvclosurereason ON cvclosurereason.id = c.closure_reason_cv_id ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder
                             .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
                 }
@@ -135,14 +141,14 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                         .append(" (select 'LOAN' as entityType, l.id as entityId, pl.name as entityName, l.external_id as entityExternalId, l.account_no as entityAccountNo "
                                 + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, l.loan_status_id as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType,"
                                 + " null AS reasonId, null AS reasonValue ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(",gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
                 } else {
                     sqlBuilder.append(",null as groupName, null as centerName, null as officeName ");
                 }
                 sqlBuilder
                         .append(" from m_loan l left join m_client c on l.client_id = c.id left join m_group g ON l.group_id = g.id left join m_office o on o.id = c.office_id left join m_product_loan pl on pl.id=l.product_id ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder
                             .append(" left join m_group_client as gc on gc.client_id = l.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
                 }
@@ -158,14 +164,14 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                         .append(" (select 'SAVING' as entityType, s.id as entityId, sp.name as entityName, s.external_id as entityExternalId, s.account_no as entityAccountNo "
                                 + " , IFNULL(c.id,g.id) as parentId, IFNULL(c.display_name,g.display_name) as parentName, null as entityMobileNo, s.status_enum as entityStatusEnum, IF(g.id is null, 'client', 'group') as parentType,"
                                 + " null AS reasonId, null AS reasonValue ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(", gr.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
                 } else {
                     sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
                 }
                 sqlBuilder
                         .append(" from m_savings_account s left join m_client c on s.client_id = c.id left join m_group g ON s.group_id = g.id left join m_office o on o.id = c.office_id left join m_savings_product sp on sp.id=s.product_id ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder
                             .append(" left join m_group_client as gc on gc.client_id = s.client_id left join m_group as gr on gr.id = gc.group_id  left join m_group as ce on ce.id = gr.parent_id ");
                 }
@@ -179,14 +185,14 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                         .append(" (select 'CLIENTIDENTIFIER' as entityType, ci.id as entityId, ci.document_key as entityName, "
                                 + " null as entityExternalId, null as entityAccountNo, c.id as parentId, c.display_name as parentName,null as entityMobileNo, c.status_enum as entityStatusEnum, null as parentType,"
                                 + " c.closure_reason_cv_id AS reasonId, cvclosurereason.code_description AS reasonValue ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder.append(", g.display_name as groupName, ce.display_name as centerName, o.name as officeName ");
                 } else {
                     sqlBuilder.append(", null as groupName, null as centerName, null as officeName ");
                 }
                 sqlBuilder
                         .append(" from m_client_identifier ci join m_client c on ci.client_id=c.id join m_office o on o.id = c.office_id left join m_code_value cvclosurereason ON cvclosurereason.id = c.closure_reason_cv_id ");
-                if (configurationDomainService.isSearchIncludeGroupInfo()) {
+                if (this.configurationDomainService.isSearchIncludeGroupInfo()) {
                     sqlBuilder
                             .append(" left join m_group_client as gc on gc.client_id = c.id left join m_group as g on g.id = gc.group_id left join m_group as ce on ce.id = g.parent_id ");
                 }
@@ -233,6 +239,18 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
+            
+            if (searchConditions.isStaffSearch()) {
+                sqlBuilder
+                        .append(" (select 'STAFF' as entityType, ms.id as entityId,  ms.external_id as entityExternalId, NULL as entityAccountNo, "
+                                + "ms.display_name as entityName, NULL as entityType, NULL as parentId, NULL as parentName, NULL as entityMobileNo, "
+                                + "ms.is_active as isActive, ms.is_loan_officer as isLoanOfficer, NULL as entityStatusEnum, NULL as parentType, "
+                                + "NULL as groupName, NUll as centerName, o.name as officeName, NULL as  reasonId "
+                                + "from m_staff ms join  m_office o  on o.id = ms.office_id "
+                                + "where o.hierarchy like :hierarchy and (ms.display_name like :search or ms.external_id like :search or ms.firstname like :search or ms.lastname like :search ))");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
+            }
             sqlBuilder.replace(sqlBuilder.lastIndexOf("union"), sqlBuilder.length(), "");
             // remove last occurrence of "union all" string
             return sqlBuilder.toString();
@@ -265,6 +283,8 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             BigDecimal userValue = null;
             BigDecimal systemValue = null;
             CodeValueData reason = null;
+            Boolean isActive = null;
+            Boolean isLoanOfficer = null;
 			final Long closurereasonId = JdbcSupport.getLong(rs, "reasonId");
 			if (closurereasonId != null) {
 				final String closurereasonValue = rs.getString("reasonValue");
@@ -296,9 +316,15 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             	 userValue = rs.getBigDecimal("userValue");
             	 systemValue = rs.getBigDecimal("systemValue");
             }
+            
+            else if (entityType.equalsIgnoreCase("staff")) {
+                isActive = rs.getBoolean("isActive");
+                isLoanOfficer = rs.getBoolean("isLoanOfficer");
+            }
 
-            return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType, 
-                    entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName, reason);
+            return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType,
+                    entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName, reason, isActive,
+                    isLoanOfficer);
         }
 
     }

@@ -33,6 +33,7 @@ public class SearchConditions {
     private final Boolean pledgeSearch;
     private  Boolean exactMatch;
     private final Long officeId;
+    private final Boolean staffSearch;
 
     public SearchConditions(final String searchQueryParam, final String searchResource, Boolean exactMatch, final Long officeId) {
         this.searchQuery = searchQueryParam;
@@ -52,12 +53,14 @@ public class SearchConditions {
   		this.clientIdentifierSearch = (null == searchResource || searchResource.toLowerCase().contains(
                 SEARCH_SUPPORTED_RESOURCES.CLIENTIDENTIFIERS.name().toLowerCase())) ? true : false;
   		this.pledgeSearch = (null == searchResource || searchResource.toLowerCase().contains(
-  				 SEARCH_SUPPORTED_RESOURCES.PLEDGES.name().toLowerCase())) ? true : false;	
+  				 SEARCH_SUPPORTED_RESOURCES.PLEDGES.name().toLowerCase())) ? true : false;
+  	this.staffSearch = (null == searchResource || searchResource.toLowerCase().contains(
+  	                SEARCH_SUPPORTED_RESOURCES.STAFF.name().toLowerCase())) ? true : false;	
     }
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
             final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, final Boolean pledgeSearch, 
-            final Boolean villageSearch, Boolean exactMatch, final Long officeId) {
+            final Boolean villageSearch, Boolean exactMatch, final Long officeId, final Boolean staffSearch) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.clientSearch = clientSearch;
@@ -69,6 +72,7 @@ public class SearchConditions {
         this.pledgeSearch = pledgeSearch;
         this.exactMatch=exactMatch;
         this.officeId = officeId;
+        this.staffSearch = staffSearch;
     }
 
     public String getSearchQuery() {
@@ -111,6 +115,10 @@ public class SearchConditions {
 
     public Long getofficeId() {
         return this.officeId;
+    }
+    
+    public Boolean isStaffSearch(){
+        return this.staffSearch;
     }
 
 }
