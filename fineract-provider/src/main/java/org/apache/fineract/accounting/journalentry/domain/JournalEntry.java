@@ -94,7 +94,7 @@ public class JournalEntry extends AbstractAuditableCustom<AppUser, Long> {
     private String referenceNumber;
 
 
-    @LazyCollection(LazyCollectionOption.TRUE)
+    @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "journal_entry_id", referencedColumnName = "id", nullable = false)
     private List<JournalEntryDetail> journalEntryDetails = new ArrayList<>();
