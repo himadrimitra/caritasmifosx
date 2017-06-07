@@ -1183,12 +1183,11 @@ public class AccountingProcessorHelper {
 
     public Map<GLAccount, BigDecimal> constructCreditJournalEntryOrReversalForLoanChargesAccountMap(final Long loanProductId,
             final Long paymentTypeId, final Long writeOffReasonId, final BigDecimal totalAmount,
-            final LoanTransactionDTO loanTransactionDTO, final Map<GLAccount, BigDecimal> accountMap, final boolean writeOff) {
+            final LoanTransactionDTO loanTransactionDTO, final Map<GLAccount, BigDecimal> accountMap, final boolean writeOff, 
+            GLAccount feesReceivableAccount, final boolean ignoreAccountingForTax) {
         if (loanTransactionDTO.getFeePayments() == null || loanTransactionDTO.getFeePayments().isEmpty()) { return accountMap; }
         final GLAccount loanPortfolioAccount = getLinkedGLAccountForLoanProduct(loanProductId,
                 ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), paymentTypeId, writeOffReasonId);
-        final GLAccount feesReceivableAccount = getLinkedGLAccountForLoanProduct(loanProductId,
-                ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue(), paymentTypeId, writeOffReasonId);
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         BigDecimal totalCreditedCapitalizedChargeAmount = BigDecimal.ZERO;
         BigDecimal totalCreditedNonCapitalizedChargeAmount = BigDecimal.ZERO;
@@ -1199,7 +1198,7 @@ public class AccountingProcessorHelper {
              * Add tax splits for each GL accounts to accountMap. Do not
              * calculate the tax for waivers and write-offs
              **/
-            if (!writeOff && chargePaymentDTO.getTaxPaymentDTO() != null && !chargePaymentDTO.getTaxPaymentDTO().isEmpty()) {
+            if (!ignoreAccountingForTax && !writeOff && chargePaymentDTO.getTaxPaymentDTO() != null && !chargePaymentDTO.getTaxPaymentDTO().isEmpty()) {
                 totalTaxAmount = addTaxDetailsToGLAccount(chargePaymentDTO.getTaxPaymentDTO(), accountMap);
             }
 
