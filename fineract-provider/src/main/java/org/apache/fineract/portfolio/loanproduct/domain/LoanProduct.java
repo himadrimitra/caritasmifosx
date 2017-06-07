@@ -1467,8 +1467,8 @@ public class LoanProduct extends AbstractPersistable<Long> {
         return this.syncExpectedWithDisbursementDate;
     }
 
-    public Map<String, BigDecimal> fetchBorrowerCycleVariationsForCycleNumber(final Integer cycleNumber) {
-        Map<String, BigDecimal> borrowerCycleVariations = new HashMap<>();
+    public Map<String, Object> fetchBorrowerCycleVariationsForCycleNumber(final Integer cycleNumber) {
+        Map<String, Object> borrowerCycleVariations = new HashMap<>();
         borrowerCycleVariations.put(LoanProductConstants.principal, this.loanProductRelatedDetail.getPrincipal().getAmount());
         borrowerCycleVariations.put(LoanProductConstants.interestRatePerPeriod,
                 this.loanProductRelatedDetail.getNominalInterestRatePerPeriod());
@@ -1513,6 +1513,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                             borrowerCycleVariations.put(LoanProductConstants.interestRatePerPeriod, cycleVariation.getDefaultValue());
                             borrowerCycleVariations.put(LoanProductConstants.minInterestRatePerPeriod, cycleVariation.getMinValue());
                             borrowerCycleVariations.put(LoanProductConstants.maxInterestRatePerPeriod, cycleVariation.getMaxValue());
+                            borrowerCycleVariations.put(LoanProductConstants.interestRatesListPerCycleParameterName, cycleVariation.getInterestRatesListPerCycle());
                             interestCycleUsed = cycleVariation.getBorrowerCycleNumber();
                         break;
                         case REPAYMENT:
@@ -1540,6 +1541,7 @@ public class LoanProduct extends AbstractPersistable<Long> {
                                 borrowerCycleVariations.put(LoanProductConstants.interestRatePerPeriod, cycleVariation.getDefaultValue());
                                 borrowerCycleVariations.put(LoanProductConstants.minInterestRatePerPeriod, cycleVariation.getMinValue());
                                 borrowerCycleVariations.put(LoanProductConstants.maxInterestRatePerPeriod, cycleVariation.getMaxValue());
+                                borrowerCycleVariations.put(LoanProductConstants.interestRatesListPerCycleParameterName, cycleVariation.getInterestRatesListPerCycle());
                                 interestCycleUsed = cycleVariation.getBorrowerCycleNumber();
                             }
                         break;
@@ -1722,6 +1724,10 @@ public class LoanProduct extends AbstractPersistable<Long> {
         if (loanProductEntityProfileMapping != null && !loanProductEntityProfileMapping.isEmpty()) {
             this.loanProductEntityProfileMapping.addAll(loanProductEntityProfileMapping);
         }
+    }
+        
+    public String getInerestRatesListPerPeriod() {
+        return this.inerestRatesListPerPeriod;
     }
     
 }

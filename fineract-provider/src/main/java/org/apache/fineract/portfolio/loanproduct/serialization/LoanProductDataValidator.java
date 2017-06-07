@@ -22,6 +22,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -576,11 +577,15 @@ public final class LoanProductDataValidator {
                         element);
                 baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRatesArray).notNull()
                         .jsonArrayNotEmpty();
-                if (interestRatesArray != null) {
+                if (interestRatesArray != null && interestRatesArray.size() > 0) {
+                    boolean interestRateFoundInList = false;
+                    Float defaultInterestRatePerPeriod = Float
+                            .parseFloat(this.fromApiJsonHelper.extractStringNamed("interestRatePerPeriod", element));
                     for (JsonElement interest : interestRatesArray) {
                         Float interestRate = interest.getAsFloat();
                         baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate).notNull()
                                 .zeroOrPositiveAmount();
+                        if (defaultInterestRatePerPeriod.equals(interestRate)) interestRateFoundInList = true;
                         if (maxInterestRatePerPeriod != null)
                             baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate)
                                     .notGreaterThanMax(maxInterestRatePerPeriod);
@@ -589,6 +594,9 @@ public final class LoanProductDataValidator {
                                     .value(interestRatePerPeriod).notLessThanMin(minInterestRatePerPeriod);
 
                     }
+                    if (!interestRateFoundInList) baseDataValidator.reset().parameter("interestRatePerPeriod").value(interestRatePerPeriod)
+                            .failWithCode("not.found.in.the.list.provided",
+                                    "default interest rate should be a value from the interes rates list provided");
                 }
             }
             final Integer interestRateFrequencyType = this.fromApiJsonHelper.extractIntegerNamed("interestRateFrequencyType", element,
@@ -1655,9 +1663,13 @@ public final class LoanProductDataValidator {
                 JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
                         element);
                 baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRatesArray).notNull();
-                if (interestRatesArray != null) {
+                if (interestRatesArray != null && interestRatesArray.size() > 0) {
+                    boolean interestRateFoundInList = false;
+                    Float defaultInterestRatePerPeriod = Float
+                            .parseFloat(this.fromApiJsonHelper.extractStringNamed("interestRatePerPeriod", element));
                     for (JsonElement interest : interestRatesArray) {
                         Float interestRate = interest.getAsFloat();
+                        if (defaultInterestRatePerPeriod.equals(interestRate)) interestRateFoundInList = true;
                         baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate).notNull()
                                 .zeroOrPositiveAmount();
                         if (maxInterestRatePerPeriod != null)
@@ -1667,6 +1679,9 @@ public final class LoanProductDataValidator {
                             baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate)
                                     .notLessThanMin(minInterestRatePerPeriod);
                     }
+                    if (!interestRateFoundInList) baseDataValidator.reset().parameter("interestRatePerPeriod").value(interestRatePerPeriod)
+                            .failWithCode("not.found.in.the.list.provided",
+                                    "default interest rate should be a value from the interes rates list provided");
                 }
             }
 
@@ -1957,15 +1972,15 @@ public final class LoanProductDataValidator {
     public void validateMinMaxConstraints(final JsonElement element, final DataValidatorBuilder baseDataValidator,
             final LoanProduct loanProduct, Integer cycleNumber) {
 
-        final Map<String, BigDecimal> minmaxValues = loanProduct.fetchBorrowerCycleVariationsForCycleNumber(cycleNumber);
+        final Map<String, Object> minmaxValues = loanProduct.fetchBorrowerCycleVariationsForCycleNumber(cycleNumber);
         final String principalParameterName = "principal";
         BigDecimal principalAmount = null;
         BigDecimal minPrincipalAmount = null;
         BigDecimal maxPrincipalAmount = null;
         if (this.fromApiJsonHelper.parameterExists(principalParameterName, element)) {
             principalAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(principalParameterName, element);
-            minPrincipalAmount = minmaxValues.get(LoanProductConstants.minPrincipal);
-            maxPrincipalAmount = minmaxValues.get(LoanProductConstants.maxPrincipal);
+            minPrincipalAmount = (BigDecimal) minmaxValues.get(LoanProductConstants.minPrincipal);
+            maxPrincipalAmount = (BigDecimal) minmaxValues.get(LoanProductConstants.maxPrincipal);
         }
 
         if ((minPrincipalAmount != null && minPrincipalAmount.compareTo(BigDecimal.ZERO) == 1)
@@ -1987,10 +2002,10 @@ public final class LoanProductDataValidator {
         if (this.fromApiJsonHelper.parameterExists(numberOfRepaymentsParameterName, element)) {
             numberOfRepayments = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(numberOfRepaymentsParameterName, element);
             if (minmaxValues.get(LoanProductConstants.minNumberOfRepayments) != null) {
-                minNumberOfRepayments = minmaxValues.get(LoanProductConstants.minNumberOfRepayments).intValueExact();
+                minNumberOfRepayments = (Integer) minmaxValues.get(LoanProductConstants.minNumberOfRepayments);
             }
             if (minmaxValues.get(LoanProductConstants.maxNumberOfRepayments) != null) {
-                maxNumberOfRepayments = minmaxValues.get(LoanProductConstants.maxNumberOfRepayments).intValueExact();
+                maxNumberOfRepayments = (Integer) minmaxValues.get(LoanProductConstants.maxNumberOfRepayments);
             }
         }
 
@@ -2011,10 +2026,15 @@ public final class LoanProductDataValidator {
         BigDecimal interestRatePerPeriod = null;
         BigDecimal minInterestRatePerPeriod = null;
         BigDecimal maxInterestRatePerPeriod = null;
+        List<Float> interestRateListPerCycle = null;
+        String interestRatesList = null;
         if (this.fromApiJsonHelper.parameterExists(interestRatePerPeriodParameterName, element)) {
             interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(interestRatePerPeriodParameterName, element);
-            minInterestRatePerPeriod = minmaxValues.get(LoanProductConstants.minInterestRatePerPeriod);
-            maxInterestRatePerPeriod = minmaxValues.get(LoanProductConstants.maxInterestRatePerPeriod);
+            minInterestRatePerPeriod = (BigDecimal) minmaxValues.get(LoanProductConstants.minInterestRatePerPeriod);
+            maxInterestRatePerPeriod = (BigDecimal) minmaxValues.get(LoanProductConstants.maxInterestRatePerPeriod);
+            if(minmaxValues.get(LoanProductConstants.interestRatesListPerCycleParameterName) != null){
+                interestRatesList = minmaxValues.get(LoanProductConstants.interestRatesListPerCycleParameterName).toString();
+            }
         }
         if (maxInterestRatePerPeriod != null) {
             if (minInterestRatePerPeriod != null) {
@@ -2028,7 +2048,41 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter(interestRatePerPeriodParameterName).value(interestRatePerPeriod)
                     .notLessThanMin(minInterestRatePerPeriod);
         }
+        if (interestRatesList != null && interestRatePerPeriod != null && !interestRatesList.isEmpty()) {
+            interestRateListPerCycle = new ArrayList<>();
+            List<String> interestRates = Arrays.asList(interestRatesList.split(","));
+            for (String rate : interestRates)
+                interestRateListPerCycle.add(Float.parseFloat(rate));
+            boolean interestRateFound = false;
+            for (Float value : interestRateListPerCycle)
+                if (value.equals(interestRatePerPeriod.floatValue())) interestRateFound = true;
+            if (!interestRateFound) baseDataValidator.reset().parameter("interestRatePerPeriod").value(interestRatePerPeriod).failWithCode(
+                    "not.found.in.the.fixed.set.of.interest.rates.available.for.loan.product",
+                    "interest rate per period should be a value from fixed interest rates list defined");
 
+        }
+        
+        if (cycleNumber == 0) {
+            String interestRatesListPerPeriod = loanProduct.getInerestRatesListPerPeriod();
+            if (this.fromApiJsonHelper.parameterExists(interestRatePerPeriodParameterName, element)) {
+                interestRatePerPeriod = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(interestRatePerPeriodParameterName,
+                        element);
+                if (interestRatesListPerPeriod != null && !interestRatesListPerPeriod.isEmpty() && interestRatePerPeriod != null) {
+                    interestRateListPerCycle = new ArrayList<>();
+
+                    List<String> interestRates = Arrays.asList(interestRatesListPerPeriod.split(","));
+                    for (String rate : interestRates)
+                        interestRateListPerCycle.add(Float.parseFloat(rate));
+                    boolean interestRateFound = false;
+                    for (Float value : interestRateListPerCycle)
+                        if (value.equals(interestRatePerPeriod.floatValue())) interestRateFound = true;
+                    if (!interestRateFound) baseDataValidator.reset().parameter("interestRatePerPeriod").value(interestRatePerPeriod)
+                            .failWithCode("not.found.in.the.fixed.set.of.interest.rates.available.for.loan.product",
+                                    "interest rate per period should be a value from fixed interest rates list defined");
+
+                }
+            }
+        }
     }
 
     private void validatePrincipalMinMaxConstraint(final JsonElement element, final LoanProduct loanProduct,
@@ -2210,6 +2264,24 @@ public final class LoanProductDataValidator {
                         .notLessThanMin(minInterestRatePerPeriod);
             }
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
+            JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
+                    element);
+            if (interestRatesArray != null) {
+                boolean interestRateFound = false;
+                for (JsonElement interest : interestRatesArray) {
+                    Float interestRate = interest.getAsFloat();
+                    baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod)
+                    .value(interestRate).notNull().zeroOrPositiveAmount();
+                    if (interestRate.equals(interestRatePerPeriod.floatValue())) interestRateFound = true;
+                }
+                if (!interestRateFound) baseDataValidator.reset().parameter("interestRatePerPeriod").failWithCode(
+                        "not.found.in.the.fixed.set.of.interest.rates.available.for.loan.product",
+                        "interest rate per period should be a value from fixed interest rates list defined");
+
+            }
+        }
     }
 
     private boolean isCashBasedAccounting(final Integer accountingRuleType) {
@@ -2291,16 +2363,18 @@ public final class LoanProductDataValidator {
                     Integer valueUsageCondition = this.fromApiJsonHelper.extractIntegerNamed(
                             LoanProductConstants.valueConditionTypeParamName, jsonObject, locale);
 
-                    if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerCycleParameterName, element)) {
+                    if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRateVariationsForBorrowerCycleParameterName, element) && this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerCycleParameterName, jsonObject)) {
                         JsonArray interestRatesArray = this.fromApiJsonHelper
-                                .extractJsonArrayNamed(LoanProductConstants.interestRatesListPerCycleParameterName, element);
-                        baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
-                                .value(interestRatesArray).notNull().jsonArrayNotEmpty();
-                        if (interestRatesArray != null) {
+                                .extractJsonArrayNamed(LoanProductConstants.interestRatesListPerCycleParameterName, jsonObject);
+                        if (interestRatesArray != null && interestRatesArray.size() > 0) {
+                            boolean interestRateFoundInList = false;
+                            Float defaultInterestRatePerPeriod = Float.parseFloat(
+                                    this.fromApiJsonHelper.extractStringNamed(LoanProductConstants.defaultValueParameterName, jsonObject));
                             for (JsonElement interest : interestRatesArray) {
                                 Float interestRate = interest.getAsFloat();
                                 baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
                                         .value(interestRate).notNull().zeroOrPositiveAmount();
+                                if (defaultInterestRatePerPeriod.equals(interestRate)) interestRateFoundInList = true;
                                 if (maxValue != null)
                                     baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
                                             .value(interestRate).notGreaterThanMax(maxValue);
@@ -2308,8 +2382,10 @@ public final class LoanProductDataValidator {
                                     baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
                                             .value(interestRate).notLessThanMin(minValue);
                             }
+                            if (!interestRateFoundInList) baseDataValidator.reset().parameter("defaultValue").value(defaultValue)
+                                    .failWithCode("not.found.in.the.list.provided",
+                                            "default interest rate per cycle should be a value from the interes rates list provided");
                         }
-
                     }
   
                     baseDataValidator.reset().parameter(defaultParameterName).value(defaultValue).notBlank();

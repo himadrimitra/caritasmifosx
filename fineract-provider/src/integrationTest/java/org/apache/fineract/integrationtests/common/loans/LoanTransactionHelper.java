@@ -70,6 +70,10 @@ public class LoanTransactionHelper {
     public Integer getLoanProductId(final String loanProductJSON) {
         return Utils.performServerPost(this.requestSpec, this.responseSpec, CREATE_LOAN_PRODUCT_URL, loanProductJSON, "resourceId");
     }
+    
+    public Object getLoanSubmissionError(final String loanApplicationJSON, final String jsonAttributeToGetBack) {
+        return Utils.performServerPost(this.requestSpec, this.responseSpec, APPLY_LOAN_URL, loanApplicationJSON, jsonAttributeToGetBack);
+    }
 
     public Integer getLoanId(final String loanApplicationJSON) {
         return Utils.performServerPost(this.requestSpec, this.responseSpec, APPLY_LOAN_URL, loanApplicationJSON, "loanId");
