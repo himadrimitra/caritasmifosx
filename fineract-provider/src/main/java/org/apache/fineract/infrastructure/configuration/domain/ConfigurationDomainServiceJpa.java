@@ -354,34 +354,34 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.WORK_FLOW).isEnabled();
     }
 
-	@Override
-	public boolean isJlgLoansIncludedInIndividualCollectionSheet() {
-		return getGlobalConfigurationPropertyData("jlg_loans_included_in_individual_collection_sheet").isEnabled();
-	}
+    @Override
+    public boolean isJlgLoansIncludedInIndividualCollectionSheet() {
+        return getGlobalConfigurationPropertyData("jlg_loans_included_in_individual_collection_sheet").isEnabled();
+    }
 
-	@Override
-	public boolean isGlimLoanInClientProfileShown() {
-		return getGlobalConfigurationPropertyData("glim-loans-in-client-profile").isEnabled();
-	}
-	
-	@Override
-	public boolean isCgtEnabled() {
-		return getGlobalConfigurationPropertyData("enable-cgt").isEnabled();
-	}
-	
-	@Override
-	public boolean isMinCgtDaysEnabled() {
-		return getGlobalConfigurationPropertyData("min-cgt-days").isEnabled();
-	}
-	
-	@Override
-	public boolean isMaxCgtDaysEnabled() {
-		return getGlobalConfigurationPropertyData("max-cgt-days").isEnabled();
-	}
+    @Override
+    public boolean isGlimLoanInClientProfileShown() {
+        return getGlobalConfigurationPropertyData("glim-loans-in-client-profile").isEnabled();
+    }
 
-	@Override
-	public Long getMinCgtDays() {
-		final String propertyName = "min-cgt-days";
+    @Override
+    public boolean isCgtEnabled() {
+        return getGlobalConfigurationPropertyData("enable-cgt").isEnabled();
+    }
+
+    @Override
+    public boolean isMinCgtDaysEnabled() {
+        return getGlobalConfigurationPropertyData("min-cgt-days").isEnabled();
+    }
+
+    @Override
+    public boolean isMaxCgtDaysEnabled() {
+        return getGlobalConfigurationPropertyData("max-cgt-days").isEnabled();
+    }
+
+    @Override
+    public Long getMinCgtDays() {
+        final String propertyName = "min-cgt-days";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return longValue(property.getValue());
     }
@@ -461,6 +461,19 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
         final String propertyName = "allow-clients-in-multiple-groups";
         final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
         return property.isEnabled();
+    }
+
+    @Override
+    public int getInstallmentAmountRoundingMode() {
+        final String propertyName = "installment-amount-rounding-mode";
+        int defaultValue = 6; // 6 Stands for HALF-EVEN
+        final GlobalConfigurationPropertyData property = getGlobalConfigurationPropertyData(propertyName);
+        if (property.isEnabled()) {
+            int value = integerValue(property.getValue());
+            if (value < 0 || value > 6) { return defaultValue; }
+            return value;
+        }
+        return defaultValue;
     }
 
     @Override
