@@ -236,7 +236,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
             }
             
             return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withOfficeId(officeId)
-                    .withTransactionId(transactionId).build();
+                    .withTransactionId(transactionId).withEntityId(journalEntry.getId()).build();
         } catch (final DataIntegrityViolationException dve) {
             handleJournalEntryDataIntegrityIssues(dve);
             return null;
@@ -335,14 +335,16 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
         String reversalComment = command.stringValueOfParameterNamed("comments");
 
         if (journalEntry == null) { throw new JournalEntriesNotFoundException(command.getTransactionId()); }
-        final String reversalTransactionId = revertJournalEntry(journalEntry, reversalComment);
-        return new CommandProcessingResultBuilder().withTransactionId(reversalTransactionId).build();
+        final JournalEntry reversalTransaction = revertJournalEntry(journalEntry, reversalComment);
+		return new CommandProcessingResultBuilder().withTransactionId(reversalTransaction.getTransactionIdentifier())
+				.withEntityId(reversalTransaction.getId()).build();
     }
 
     @Override
-    public String revertJournalEntry(final List<JournalEntry> journalEntries, String reversalComment) {
+    public JournalEntry revertJournalEntry(final List<JournalEntry> journalEntries, String reversalComment) {
 
         String reversalTransactionId = null;
+        JournalEntry reversalJournalEntryDetail = null;
         for (JournalEntry journalEntry : journalEntries) {
             final Long officeId = journalEntry.getOfficeId();
             reversalTransactionId = generateTransactionId(officeId);
@@ -363,7 +365,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
                         GL_JOURNAL_ENTRY_INVALID_REASON.ACCOUNTING_CLOSED, latestGLClosure.getClosingDate(), null, null); }
             }
 
-            JournalEntry reversalJournalEntryDetail = JournalEntry.createNew(journalEntry.getOfficeId(), journalEntry.getPaymentDetailId(),
+            reversalJournalEntryDetail = JournalEntry.createNew(journalEntry.getOfficeId(), journalEntry.getPaymentDetailId(),
                     journalEntry.getCurrencyCode(), reversalTransactionId, manualEntry, journalEntry.getTransactionDate(),
                     journalEntry.getValueDate(), journalEntry.getEffectiveDate(), reversalComment, journalEntry.getEntityType(),
                     journalEntry.getEntityId(), journalEntry.getReferenceNumber(), journalEntry.getEntityTransactionId());
@@ -379,7 +381,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
             journalEntry.setReversalJournalEntry(reversalJournalEntryDetail);
             this.journalEntryRepositoryWrapper.save(journalEntry);
         }
-        return reversalTransactionId;
+        return reversalJournalEntryDetail;
     }
 
     @Override
