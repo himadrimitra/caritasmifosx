@@ -2002,10 +2002,10 @@ public final class LoanProductDataValidator {
         if (this.fromApiJsonHelper.parameterExists(numberOfRepaymentsParameterName, element)) {
             numberOfRepayments = this.fromApiJsonHelper.extractIntegerWithLocaleNamed(numberOfRepaymentsParameterName, element);
             if (minmaxValues.get(LoanProductConstants.minNumberOfRepayments) != null) {
-                minNumberOfRepayments = (Integer) minmaxValues.get(LoanProductConstants.minNumberOfRepayments);
+                minNumberOfRepayments = ((BigDecimal) minmaxValues.get(LoanProductConstants.minNumberOfRepayments)).intValue();
             }
             if (minmaxValues.get(LoanProductConstants.maxNumberOfRepayments) != null) {
-                maxNumberOfRepayments = (Integer) minmaxValues.get(LoanProductConstants.maxNumberOfRepayments);
+                maxNumberOfRepayments = ((BigDecimal) minmaxValues.get(LoanProductConstants.maxNumberOfRepayments)).intValue();
             }
         }
 
@@ -2268,7 +2268,7 @@ public final class LoanProductDataValidator {
         if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
             JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
                     element);
-            if (interestRatesArray != null) {
+            if (interestRatesArray != null && interestRatesArray.size() > 0) {
                 boolean interestRateFound = false;
                 for (JsonElement interest : interestRatesArray) {
                     Float interestRate = interest.getAsFloat();
@@ -2276,10 +2276,9 @@ public final class LoanProductDataValidator {
                     .value(interestRate).notNull().zeroOrPositiveAmount();
                     if (interestRate.equals(interestRatePerPeriod.floatValue())) interestRateFound = true;
                 }
-                if (!interestRateFound) baseDataValidator.reset().parameter("interestRatePerPeriod").failWithCode(
-                        "not.found.in.the.fixed.set.of.interest.rates.available.for.loan.product",
-                        "interest rate per period should be a value from fixed interest rates list defined");
-
+                if (!interestRateFound)
+                    baseDataValidator.reset().parameter("interestRatePerPeriod").failWithCode("not.found.in.the.list.provided",
+                            "default interest rate should be a value from the interes rates list provided");
             }
         }
     }
