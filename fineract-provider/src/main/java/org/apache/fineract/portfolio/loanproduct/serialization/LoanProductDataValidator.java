@@ -33,14 +33,18 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.accounting.common.AccountingConstants.LOAN_PRODUCT_ACCOUNTING_PARAMS;
 import org.apache.fineract.accounting.common.AccountingRuleType;
+import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
+import org.apache.fineract.portfolio.client.domain.LegalForm;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.loanproduct.LoanProductConstants;
+import org.apache.fineract.portfolio.loanproduct.domain.ClientProfileType;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestCalculationPeriodMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestMethod;
 import org.apache.fineract.portfolio.loanproduct.domain.InterestRecalculationCompoundingMethod;
@@ -131,10 +135,12 @@ public final class LoanProductDataValidator {
             LoanProductConstants.selectedProfileTypeValuesParamName));
 
     private final FromJsonHelper fromApiJsonHelper;
+    private final CodeValueReadPlatformService codeValueReadPlatformService;
 
     @Autowired
-    public LoanProductDataValidator(final FromJsonHelper fromApiJsonHelper) {
+    public LoanProductDataValidator(final FromJsonHelper fromApiJsonHelper, final CodeValueReadPlatformService codeValueReadPlatformService) {
         this.fromApiJsonHelper = fromApiJsonHelper;
+        this.codeValueReadPlatformService = codeValueReadPlatformService;
     }
 
     public void validateForCreate(final String json) {
@@ -831,8 +837,8 @@ public final class LoanProductDataValidator {
             baseDataValidator.reset().parameter(LoanProductConstants.isEnableRestrictionForClientProfileParamName)
                     .value(isEnableRestrictionForClientProfile).notNull().validateForBooleanValue();
             if (isEnableRestrictionForClientProfile) {
-                final Integer profileType = this.fromApiJsonHelper.extractIntegerNamed(
-                        LoanProductConstants.profileTypeParamName, element, Locale.getDefault());
+                final Integer profileType = this.fromApiJsonHelper.extractIntegerNamed(LoanProductConstants.profileTypeParamName, element,
+                        Locale.getDefault());
                 baseDataValidator.reset().parameter(LoanProductConstants.profileTypeParamName).value(profileType).notNull()
                         .integerGreaterThanZero();
 
@@ -840,6 +846,68 @@ public final class LoanProductDataValidator {
                         LoanProductConstants.selectedProfileTypeValuesParamName, element);
                 baseDataValidator.reset().parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
                         .value(selectedProfileTypeValues).notNull().arrayNotEmpty();
+                if (selectedProfileTypeValues != null && selectedProfileTypeValues.length > 0) {
+                    final List<Integer> selectedProfileTypeValueList = Arrays.asList(selectedProfileTypeValues);
+                    if (ClientProfileType.fromInt(profileType).isLegalForm()) {
+                        for (final Integer selectedProfileTypeValue : selectedProfileTypeValues) {
+                            baseDataValidator.reset().parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
+                                    .value(selectedProfileTypeValue)
+                                    .isOneOfTheseValues(LegalForm.PERSON.getValue(), LegalForm.ENTITY.getValue());
+                        }
+                    } else if (ClientProfileType.fromInt(profileType).isClientType()) {
+                        final Collection<CodeValueData> clientTypeValues = this.codeValueReadPlatformService
+                                .retrieveCodeValuesByCode(LoanProductConstants.CODE_CLIENT_TYPE);
+                        if (clientTypeValues == null || clientTypeValues.isEmpty()) {
+                            baseDataValidator.reset().parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
+                                    .value(clientTypeValues).failWithCode(LoanProductConstants.ERROR_CODE_EMPTY_LIST_CLIENT_TYPE);
+                        } else {
+                            final List<Integer> clientTypeValueIds = new ArrayList<>();
+                            for (final CodeValueData clientTypeValue : clientTypeValues) {
+                                clientTypeValueIds.add(clientTypeValue.getId().intValue());
+                            }
+                            final List<Integer> valuesNotBelongsToClientTypeList = new ArrayList<>();
+                            for (final Integer value : selectedProfileTypeValueList) {
+                                if (!clientTypeValueIds.contains(value)) {
+                                    valuesNotBelongsToClientTypeList.add(value);
+                                }
+                            }
+                            if (!valuesNotBelongsToClientTypeList.isEmpty()) {
+                                baseDataValidator.reset().parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
+                                        .value(valuesNotBelongsToClientTypeList)
+                                        .failWithCode(LoanProductConstants.ERROR_CODE_SELECTED_PROFILE_TYPE_NOT_BELONGS_TO_CLIENT_TYPE);
+                            }
+                        }
+
+                    } else if (ClientProfileType.fromInt(profileType).isClientClassification()) {
+                        final Collection<CodeValueData> clientClassificationValues = this.codeValueReadPlatformService
+                                .retrieveCodeValuesByCode(LoanProductConstants.CODE_CLIENT_CLASSIFICATION);
+                        if (clientClassificationValues == null || clientClassificationValues.isEmpty()) {
+                            baseDataValidator.reset().parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
+                                    .value(clientClassificationValues)
+                                    .failWithCode(LoanProductConstants.ERROR_CODE_EMPTY_LIST_CLIENT_CLASSIFICATION);
+                        } else {
+                            final List<Integer> clientClassificationValueIds = new ArrayList<>();
+                            for (final CodeValueData clientClassificationValue : clientClassificationValues) {
+                                clientClassificationValueIds.add(clientClassificationValue.getId().intValue());
+                            }
+                            final List<Integer> valuesNotBelongsToClientClassificationList = new ArrayList<>();
+                            for (final Integer value : selectedProfileTypeValueList) {
+                                if (!clientClassificationValueIds.contains(value)) {
+                                    valuesNotBelongsToClientClassificationList.add(value);
+                                }
+                            }
+                            if (!valuesNotBelongsToClientClassificationList.isEmpty()) {
+                                baseDataValidator
+                                        .reset()
+                                        .parameter(LoanProductConstants.selectedProfileTypeValuesParamName)
+                                        .value(valuesNotBelongsToClientClassificationList)
+                                        .failWithCode(
+                                                LoanProductConstants.ERROR_CODE_SELECTED_PROFILE_TYPE_NOT_BELONGS_TO_CLIENT_CLASSIFICATION);
+                            }
+                        }
+
+                    }
+                }
             }
         }
     }

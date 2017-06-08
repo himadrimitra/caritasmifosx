@@ -183,9 +183,16 @@ public interface LoanProductConstants {
      */
     public static final String LEGAL_FORM = "Legal Form";
     public static final String CLIENT_TYPE = "Client Type";
+    public static final String CODE_CLIENT_TYPE = "ClientType";
     public static final String CLIENT_CLASSIFICATION = "Client Classification";
+    public static final String CODE_CLIENT_CLASSIFICATION = "ClientClassification";
     public static final String CLIENT_TYPE_CODE = "ClientType";
     public static final String CLIENT_CLASSIFICATION_CODE = "ClientClassification";
 
     public static final String localeParamName = "locale";
+
+    public static final String ERROR_CODE_EMPTY_LIST_CLIENT_TYPE = "not.supported.for.client.type";
+    public static final String ERROR_CODE_EMPTY_LIST_CLIENT_CLASSIFICATION = "not.supported.for.client.classification";
+    public static final String ERROR_CODE_SELECTED_PROFILE_TYPE_NOT_BELONGS_TO_CLIENT_TYPE = "not.belongs.to.client.type";
+    public static final String ERROR_CODE_SELECTED_PROFILE_TYPE_NOT_BELONGS_TO_CLIENT_CLASSIFICATION = "not.belongs.to.client.classification";
 }

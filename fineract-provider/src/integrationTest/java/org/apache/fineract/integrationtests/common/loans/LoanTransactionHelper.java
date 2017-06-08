@@ -939,4 +939,7 @@ public class LoanTransactionHelper {
         return new Gson().toJson(map);
     }
 
+    public Object getLoanTemplate(final String URL) {
+        return Utils.performServerGet(this.requestSpec, this.responseSpec, URL, "");
+    }
 }

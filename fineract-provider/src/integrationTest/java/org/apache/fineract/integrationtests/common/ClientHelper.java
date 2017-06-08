@@ -504,11 +504,11 @@ public class ClientHelper {
 				getActivateClientAsJSON(activationDate), clientId);
 	}
 
-	private ArrayList<HashMap> performClientActionsWithValidationErrors(final String postURLForClient,
-			final String jsonToBeSent, final String jsonAttributeToGetBack) {
-		return Utils.performServerPost(this.requestSpec, this.responseSpec, postURLForClient, jsonToBeSent,
-				jsonAttributeToGetBack);
-	}
+    @SuppressWarnings("rawtypes")
+    private ArrayList<HashMap> performClientActionsWithValidationErrors(final String postURLForClient, final String jsonToBeSent,
+            final String jsonAttributeToGetBack) {
+        return Utils.performServerPost(this.requestSpec, this.responseSpec, postURLForClient, jsonToBeSent, jsonAttributeToGetBack);
+    }
     
     private HashMap<String, Object> performClientActions(final String postURLForClient, final String jsonToBeSent, final Integer clientId) {
         Utils.performServerPost(this.requestSpec, this.responseSpec, postURLForClient, jsonToBeSent, CommonConstants.RESPONSE_STATUS);
@@ -589,16 +589,19 @@ public class ClientHelper {
 				getJsonToAddClientIdentifier(documentTypeId, documentKey, status), "resourceId");
 	}
 
-	public static String getJsonToAddClientIdentifier(final Integer documentTypeId, final String documentKey,
-			final String status) {
-		HashMap hm = new HashMap();
-		hm.put("documentTypeId", documentTypeId);
-		hm.put("status", status);
-		hm.put("documentKey", documentKey);
-		System.out.println("the json is " + new Gson().toJson(hm));
-		System.out.println(
-				"------------------------Add client identifier TYPE-------------------------");
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static String getJsonToAddClientIdentifier(final Integer documentTypeId, final String documentKey, final String status) {
+        HashMap hm = new HashMap();
+        hm.put("documentTypeId", documentTypeId);
+        hm.put("status", status);
+        hm.put("documentKey", documentKey);
+        System.out.println("the json is " + new Gson().toJson(hm));
+        System.out.println("------------------------Add client identifier TYPE-------------------------");
 
-		return new Gson().toJson(hm);
-	}
+        return new Gson().toJson(hm);
+    }
+	
+    public Integer getClientId(final String requestBodyAsJson) {
+        return Utils.performServerPost(this.requestSpec, this.responseSpec, CREATE_CLIENT_URL, requestBodyAsJson, "resourceId");
+    }
 }
