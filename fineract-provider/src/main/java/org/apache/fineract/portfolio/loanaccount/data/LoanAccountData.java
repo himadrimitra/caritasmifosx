@@ -724,12 +724,11 @@ public class LoanAccountData {
 
     }
     
-    public static LoanAccountData loanDetailsForTaskLookup(final Long id,final String accountNo,final LoanStatusEnumData status,final Long clientId,final String clientAccountNo,final String clientName,final Long loanProductId,
+    public static LoanAccountData loanDetailsForTaskLookup(final Long id,final String accountNo,final LoanStatusEnumData status, final Long clientId,final String clientAccountNo,final String clientName,final Long loanProductId,
     final String loanProductName,final Long loanPurposeId,final String loanPurposeName,final Long loanOfficerId,final String loanOfficerName,final EnumOptionData loanType,
-    final BigDecimal principal, PaymentTypeData expectedDisbursalPaymentType) {
+    final BigDecimal principal, PaymentTypeData expectedDisbursalPaymentType,final GroupGeneralData group) {
         final String externalId = null;
         final Long clientOfficeId = null;
-        final GroupGeneralData group = null;
         final String loanProductDescription = null;
         final Long fundId = null;
         final String fundName = null;

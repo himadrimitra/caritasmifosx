@@ -1267,6 +1267,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          String sqlSearch = searchParameters.getSqlSearch();
          builder.append("select ");
          builder.append("ml.id as id, ml.account_no AS accountNo,ml.loan_status_id AS lifeCycleStatusId, ");
+         builder.append("g.id as groupId, ");
+         builder.append("g.account_no as groupAccountNo, ");
+         builder.append("g.display_name as groupName, ");
          builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
          builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
          builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
@@ -1343,6 +1346,9 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final String accountNo = rs.getString("accountNo");
             final Integer lifeCycleStatusId = JdbcSupport.getInteger(rs, "lifeCycleStatusId");
             final LoanStatusEnumData status = LoanEnumerations.status(lifeCycleStatusId);
+            final Long groupId = rs.getLong("groupId");
+            final String groupName = rs.getString("groupName");
+            final String groupAccountNo = rs.getString("groupAccountNo");
             final Long clientId = JdbcSupport.getLong(rs, "clientId");
             final String clientAccountNo = rs.getString("clientAccountNo");
             final String clientName = rs.getString("clientName");
@@ -1361,10 +1367,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             }
             final Long expectedDisbursalPaymentTypeId = JdbcSupport.getLong(rs, "expectedDisbursalPaymentTypeId");
             final String paymentTypeName = rs.getString("paymentTypeName");
+            final GroupGeneralData group = GroupGeneralData.lookup(groupId, groupAccountNo, groupName);
             PaymentTypeData expectedDisbursalPaymentTypeData = PaymentTypeData.lookUp(expectedDisbursalPaymentTypeId, paymentTypeName);
             return LoanAccountData.loanDetailsForTaskLookup(id,accountNo,status,clientId, clientAccountNo, clientName, loanProductId,
                     loanProductName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, loanType,
-                     principal, expectedDisbursalPaymentTypeData);
+                     principal, expectedDisbursalPaymentTypeData,group);
         }
     }
     private static final class MusoniOverdueLoanScheduleMapper implements RowMapper<OverdueLoanScheduleData> {
