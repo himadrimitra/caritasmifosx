@@ -50,5 +50,5 @@ public interface JournalEntryWritePlatformService {
     
     void revertShareAccountJournalEntries(final ArrayList<Long> transactionId, final Date transactionDate);
 
-    String revertJournalEntry(List<JournalEntry> journalEntry, String reversalComment);
+    JournalEntry revertJournalEntry(List<JournalEntry> journalEntry, String reversalComment);
 }
