@@ -37,6 +37,7 @@ import org.mifosplatform.infrastructure.core.service.Page;
 import org.mifosplatform.infrastructure.core.service.PaginationHelper;
 import org.mifosplatform.infrastructure.core.service.RoutingDataSource;
 import org.mifosplatform.infrastructure.core.service.SearchParameters;
+import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext;
 import org.mifosplatform.organisation.monetary.data.CurrencyData;
 import org.mifosplatform.organisation.office.data.OfficeData;
 import org.mifosplatform.organisation.office.service.OfficeReadPlatformService;
@@ -48,6 +49,7 @@ import org.mifosplatform.portfolio.paymentdetail.data.PaymentDetailData;
 import org.mifosplatform.portfolio.paymenttype.data.PaymentTypeData;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountTransactionEnumData;
 import org.mifosplatform.portfolio.savings.service.SavingsEnumerations;
+import org.mifosplatform.useradministration.domain.AppUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -62,17 +64,19 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
     private final GLAccountReadPlatformService glAccountReadPlatformService;
     private final OfficeReadPlatformService officeReadPlatformService;
     private final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper;
+    private final PlatformSecurityContext context;
 
     private final PaginationHelper<JournalEntryData> paginationHelper = new PaginationHelper<>();
 
     @Autowired
     public JournalEntryReadPlatformServiceImpl(final RoutingDataSource dataSource,
             final GLAccountReadPlatformService glAccountReadPlatformService, final OfficeReadPlatformService officeReadPlatformService,
-            final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper) {
+            final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepositoryWrapper, final PlatformSecurityContext context) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.glAccountReadPlatformService = glAccountReadPlatformService;
         this.officeReadPlatformService = officeReadPlatformService;
         this.financialActivityAccountRepositoryWrapper = financialActivityAccountRepositoryWrapper;
+        this.context = context;
     }
 
     private static final class GLJournalEntryMapper implements RowMapper<JournalEntryData> {
@@ -232,15 +236,22 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
     public Page<JournalEntryData> retrieveAll(final SearchParameters searchParameters, final Long glAccountId,
             final Boolean onlyManualEntries, final Date fromDate, final Date toDate, final String transactionId, final Integer entityType,
             final JournalEntryAssociationParametersData associationParametersData) {
-
+    	
+    	 final AppUser currentUser = this.context.authenticatedUser();
+         final String hierarchy = currentUser.getOffice().getHierarchy();
+         final String hierarchySearchString = hierarchy + "%";
+         
         GLJournalEntryMapper rm = new GLJournalEntryMapper(associationParametersData);
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
         sqlBuilder.append(rm.schema());
-
+       
         final Object[] objectArray = new Object[15];
         int arrayPos = 0;
         String whereClose = " where ";
+        sqlBuilder.append( whereClose + "  office.hierarchy like ? ");
+        objectArray[arrayPos] = hierarchySearchString;
+        arrayPos = arrayPos + 1;
 
         if (StringUtils.isNotBlank(transactionId)) {
             sqlBuilder.append(whereClose + " journalEntry.transaction_id = ?");
