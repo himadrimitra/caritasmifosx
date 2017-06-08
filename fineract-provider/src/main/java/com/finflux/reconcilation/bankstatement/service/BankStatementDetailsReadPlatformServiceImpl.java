@@ -52,7 +52,7 @@ public class BankStatementDetailsReadPlatformServiceImpl implements BankStatemen
         public String schema() {
             return " bsd.id as id, bsd.bank_statement_id as bankStatementId, "
                     + " bsd.transaction_id as transactionId, bsd.amount as amount, "
-                    + " bsd.transaction_date as transactionDate, bsd.accounting_type as accountingType,bsd.loan_account_number as loanAccountNumber,bsd.savings_account_number as savingsAccountNumber "
+                    + " bsd.transaction_date as transactionDate, bsd.accounting_type as accountingType,bsd.loan_account_number as loanAccountNumber,bsd.savings_account_number as savingsAccountNumber, "
                     + " bsd.gl_code as glCode, bsd.is_reconciled as isReconciled, office.name as branchName, office.id as branch, bsd.branch_external_id as branchExternalId, "
                     + " gl.name as glAccount, bsd.is_error as isError,bsd.error_msg as errMsg " + " from f_bank_statement_details bsd "
                     + " join f_bank_statement bs on (bs.id=bsd.bank_statement_id and bsd.bank_statement_id = ? and bsd.bank_statement_detail_type = "
