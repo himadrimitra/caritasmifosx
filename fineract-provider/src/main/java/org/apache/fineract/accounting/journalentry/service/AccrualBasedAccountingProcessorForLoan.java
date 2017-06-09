@@ -270,7 +270,8 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                 final GLAccount feesReceivableAccount = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
                 this.helper.constructCreditJournalEntryOrReversalForLoanChargesAccountMap(loanProductId, paymentTypeId,
-                        loanDTO.getWriteOffReasonId(), feesAmount, loanTransactionDTO, accountMap, writeOff, feesReceivableAccount, ignoreAccountingForTax);
+                        loanDTO.getWriteOffReasonId(), feesAmount, accountMap, writeOff, feesReceivableAccount, ignoreAccountingForTax,
+                        loanTransactionDTO.getFeePayments());
             }
         }
 
@@ -287,7 +288,8 @@ public class AccrualBasedAccountingProcessorForLoan implements AccountingProcess
                 final GLAccount account = this.helper.getLinkedGLAccountForLoanProduct(loanProductId,
                         ACCRUAL_ACCOUNTS_FOR_LOAN.PENALTIES_RECEIVABLE.getValue(), paymentTypeId, loanDTO.getWriteOffReasonId());
                 this.helper.constructCreditJournalEntryOrReversalForLoanChargesAccountMap(loanProductId, paymentTypeId,
-                        loanDTO.getWriteOffReasonId(), feesAmount, loanTransactionDTO, accountMap, writeOff, account, ignoreAccountingForTax);
+                        loanDTO.getWriteOffReasonId(), penaltiesAmount, accountMap, writeOff, account, ignoreAccountingForTax,
+                        loanTransactionDTO.getPenaltyPayments());
             }
         }
 
