@@ -1183,15 +1183,15 @@ public class AccountingProcessorHelper {
 
     public Map<GLAccount, BigDecimal> constructCreditJournalEntryOrReversalForLoanChargesAccountMap(final Long loanProductId,
             final Long paymentTypeId, final Long writeOffReasonId, final BigDecimal totalAmount,
-            final LoanTransactionDTO loanTransactionDTO, final Map<GLAccount, BigDecimal> accountMap, final boolean writeOff, 
-            GLAccount feesReceivableAccount, final boolean ignoreAccountingForTax) {
-        if (loanTransactionDTO.getFeePayments() == null || loanTransactionDTO.getFeePayments().isEmpty()) { return accountMap; }
+            final Map<GLAccount, BigDecimal> accountMap, final boolean writeOff, 
+            GLAccount feesReceivableAccount, final boolean ignoreAccountingForTax, final List<ChargePaymentDTO> chargedetails) {
+        if (chargedetails == null || chargedetails.isEmpty()) { return accountMap; }
         final GLAccount loanPortfolioAccount = getLinkedGLAccountForLoanProduct(loanProductId,
                 ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue(), paymentTypeId, writeOffReasonId);
         BigDecimal totalCreditedAmount = BigDecimal.ZERO;
         BigDecimal totalCreditedCapitalizedChargeAmount = BigDecimal.ZERO;
         BigDecimal totalCreditedNonCapitalizedChargeAmount = BigDecimal.ZERO;
-        for (final ChargePaymentDTO chargePaymentDTO : loanTransactionDTO.getFeePayments()) {
+        for (final ChargePaymentDTO chargePaymentDTO : chargedetails) {
             totalCreditedAmount = totalCreditedAmount.add(chargePaymentDTO.getAmount());
             BigDecimal totalTaxAmount = BigDecimal.ZERO;
             /**
