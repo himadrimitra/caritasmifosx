@@ -1777,7 +1777,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
         checkClientOrGroupActive(loan);
         final LoanCharge loanCharge = retrieveLoanChargeBy(loanId, loanChargeId);
-
         // Charges may be edited only when the loan associated with them are
         // yet to be approved (are in submitted and pending status)
         validateForUpdate(loan, loanCharge);
@@ -1785,6 +1784,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 constructEntityMap(BUSINESS_ENTITY.LOAN_CHARGE, loanCharge));
 
         final Map<String, Object> changes = loan.updateLoanCharge(loanCharge, command);
+        loan.validateChargeHasValidSpecifiedDateIfApplicable(loanCharge, loan.getDisbursementDate(),loan.getMaturityDate());
 
         saveLoanWithDataIntegrityViolationChecks(loan);
         this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_UPDATE_CHARGE,
@@ -2555,7 +2555,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         this.loanRepository.save(loansToUpdate);
     }
     
-    private void validateForUpdate(Loan loan, LoanCharge loanCharge){
+   private void validateForUpdate(Loan loan, LoanCharge loanCharge){
     	if (!loan.status().isSubmittedAndPendingApproval()) { throw new LoanChargeCannotBeUpdatedException(
                 LOAN_CHARGE_CANNOT_BE_UPDATED_REASON.LOAN_NOT_IN_SUBMITTED_AND_PENDING_APPROVAL_STAGE, loanCharge.getId()); }
         if(loan.isGLIMLoan() && !loanCharge.isUpfrontFee()){
