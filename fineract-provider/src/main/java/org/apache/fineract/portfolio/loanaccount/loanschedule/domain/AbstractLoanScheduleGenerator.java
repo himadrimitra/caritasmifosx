@@ -1937,7 +1937,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         params.getCompoundingMap().clear();
                         params.getCompoundingDateVariations().put(loanRepaymentScheduleInstallment.getFromDate(),
                                 new TreeMap<>(params.getCompoundingMap()));
-                        params.addUnCompoundedAmount(amountCharged);
+                        params.addUnCompoundedAmount(amountCharged.minus(params.getUnCompoundedAmount().minus(params.getCompoundedInLastInstallment())));
                         uncompoundedInThisPeriod = amountCharged;
                     }
                     params.setCompoundedInLastInstallment(amountCharged.zero());
