@@ -1471,12 +1471,6 @@ public final class LoanProductDataValidator {
                                 "interestRatePerPeriod param is not supported when isLinkedToFloatingInterestRates is true");
             }
             
-            if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
-                baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).failWithCode(
-                        "not.supported.when.isLinkedToFloatingInterestRates.is.true",
-                        "interestRatesListPerPeriod param is not supported when isLinkedToFloatingInterestRates is true");
-            }
-
             if (this.fromApiJsonHelper.parameterExists("minInterestRatePerPeriod", element)) {
                 baseDataValidator
                         .reset()
