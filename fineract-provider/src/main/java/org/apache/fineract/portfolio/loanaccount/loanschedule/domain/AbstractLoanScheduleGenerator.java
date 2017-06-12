@@ -1373,6 +1373,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             switch (loanTermVariationsData.getTermVariationType()) {
                 case INSERT_INSTALLMENT:
                     modifiedScheduledDueDate = loanTermVariationsData.getTermApplicableFrom();
+                    if (loanTermVariationsData.getDecimalValue() != null) {
+                        recalculateAmounts = true;
+                    }
                     variationsData.add(loanTermVariationsData) ;
                 break;
                 case DELETE_INSTALLMENT:
@@ -1383,14 +1386,18 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     
                 break;
                 case EMI_AMOUNT:
-                    if(!loanTermVariationsData.isSpecificToInstallment()){
+                    if(loanTermVariationsData.isSpecificToInstallment()){
+                        recalculateAmounts = true;
+                    } else {
                         loanApplicationTerms.setFixedEmiAmount(loanTermVariationsData.getDecimalValue());
                         loanApplicationTerms.setActualFixedEmiAmount(loanTermVariationsData.getDecimalValue());
                     }
                     variationsData.add(loanTermVariationsData);
                 break;
                 case PRINCIPAL_AMOUNT:
-                    if(!loanTermVariationsData.isSpecificToInstallment()){
+                    if(loanTermVariationsData.isSpecificToInstallment()){
+                        recalculateAmounts = true;
+                    } else {
                         loanApplicationTerms.setFixedPrincipalAmount(loanTermVariationsData.getDecimalValue());
                     }
                     variationsData.add(loanTermVariationsData);
@@ -2683,7 +2690,9 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 }
                 totalRepaymentExpected = totalCumulativePrincipal.plus(totalCumulativeInterest).plus(totalFeeChargesCharged)
                         .plus(totalPenaltyChargesCharged);
-
+                if(loanTermVariationParams!= null && loanTermVariationParams.recalculateAmounts){
+                    adjustInstallmentOrPrincipalAmount(loanApplicationTerms, totalCumulativePrincipal, periodNumber, mc, principalToBeScheduled);
+                }
            
             }
 
