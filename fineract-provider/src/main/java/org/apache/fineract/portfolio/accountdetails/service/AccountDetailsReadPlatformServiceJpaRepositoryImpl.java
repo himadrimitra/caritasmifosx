@@ -83,7 +83,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
     public AccountSummaryCollectionData retrieveClientAccountDetails(final Long clientId) {
         // Check if client exists
         this.clientReadPlatformService.retrieveOne(clientId);
-        final String loanwhereClause = " where l.client_id = ? or coapp.client_id = ?";
+        final String loanwhereClause = " where l.client_id = ? ";
         final String glimLoanwhereClause = " where glim.client_id = ?";
         final String savingswhereClause = " where sa.client_id = ? order by sa.status_enum ASC, sa.account_no ASC";
         final Boolean isGlimLoanInClientProfile = this.configurationDomainService.isGlimLoanInClientProfileShown();
@@ -107,12 +107,12 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         final String savingswhereClauseForGroup = " where sa.group_id = ? and sa.client_id is null order by sa.status_enum ASC, sa.account_no ASC";
         final String savingswhereClauseForMembers = " where sa.group_id = ? and sa.client_id is not null order by sa.status_enum ASC, sa.account_no ASC";
         boolean isGlimLoanInClientProfile = false;
-        final List<LoanAccountSummaryData> groupLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForGroup, new Object[] { null, groupId },
+        final List<LoanAccountSummaryData> groupLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForGroup, new Object[] { null, null, groupId },
         		isGlimLoanInClientProfile);
         final List<SavingsAccountSummaryData> groupSavingsAccounts = retrieveAccountDetails(savingswhereClauseForGroup,
                 new Object[] { groupId });
         final List<LoanAccountSummaryData> memberLoanAccounts = retrieveLoanAccountDetails(loanWhereClauseForMembers,
-                new Object[] { null, groupId }, isGlimLoanInClientProfile);
+                new Object[] {null, null, groupId }, isGlimLoanInClientProfile);
         final List<SavingsAccountSummaryData> memberSavingsAccounts = retrieveAccountDetails(savingswhereClauseForMembers,
                 new Object[] { groupId });
         return new AccountSummaryCollectionData(groupLoanAccounts, groupSavingsAccounts, memberLoanAccounts, memberSavingsAccounts, null);
@@ -134,7 +134,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         // Check if client exists
         this.clientReadPlatformService.retrieveOne(clientId);
         boolean isGlimLoanInClientProfile = false;
-        final String loanWhereClause = " where (l.client_id = ?  or coapp.client_id = ?) and l.loan_officer_id = ? and l.loan_type_enum = ?";
+        final String loanWhereClause = " where l.client_id = ? and l.loan_officer_id = ? and l.loan_type_enum = ?";
         return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, clientId, clientId, loanOfficerId, AccountType.INDIVIDUAL.getValue() },
         		isGlimLoanInClientProfile);
     }
@@ -145,13 +145,13 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         this.groupReadPlatformService.retrieveOne(groupId);
         final String loanWhereClause = " where l.group_id = ? and l.client_id is null and l.loan_officer_id = ?";
         boolean isGlimLoanInClientProfile = false;
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { null, groupId, loanOfficerId }, isGlimLoanInClientProfile);
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] {null, null, groupId, loanOfficerId }, isGlimLoanInClientProfile);
     }
 
     @Override public Collection<LoanAccountSummaryData> retrieveClientActiveLoanAccountSummary(final Long clientId) {
-        final String loanWhereClause = " where (l.client_id = ?  or coapp.client_id = ? ) and l.loan_status_id = 300 ";
+        final String loanWhereClause = " where l.client_id = ?   and l.loan_status_id = 300 ";
         boolean isGlimLoanInClientProfile = false;
-        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, clientId, clientId }, isGlimLoanInClientProfile);
+        return retrieveLoanAccountDetails(loanWhereClause, new Object[] { clientId, clientId, clientId}, isGlimLoanInClientProfile);
     }
 
     private List<LoanAccountSummaryData> retrieveLoanAccountDetails(final String loanwhereClause, final Object[] inputs, boolean isGlimLoanInClientProfile) {
@@ -441,16 +441,15 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
                     .append(" ,IF(ISNULL(coapp.client_id), false, true) as isCoApplicant")
 
                     .append(" from m_loan l ").append("LEFT JOIN m_product_loan AS lp ON lp.id = l.product_id")
-                    .append(" left join m_appuser sbu on sbu.id = l.submittedon_userid")
-                    .append(" left join m_appuser rbu on rbu.id = l.rejectedon_userid")
-                    .append(" left join m_appuser wbu on wbu.id = l.withdrawnon_userid")
+                    .append(" LEFT JOIN m_appuser sbu ON sbu.id = l.submittedon_userid")
+                    .append(" LEFT JOIN m_appuser rbu ON rbu.id = l.rejectedon_userid")
+                    .append(" LEFT JOIN m_appuser wbu ON wbu.id = l.withdrawnon_userid")
                     .append(" left join m_appuser abu on abu.id = l.approvedon_userid")
-                    .append(" left join m_appuser dbu on dbu.id = l.disbursedon_userid")
-                    .append(" left join m_appuser cbu on cbu.id = l.closedon_userid")
-                    .append(" left join m_loan_arrears_aging la on la.loan_id = l.id")
-                    .append(" left join f_loan_application_reference lar on lar.loan_id = l.id")
-                    .append(" left join f_loan_coapplicants_mapping coapp on coapp.loan_application_reference_id = lar.id and lar.client_id != ? ");
-
+                    .append(" LEFT JOIN m_appuser dbu ON dbu.id = l.disbursedon_userid")
+                    .append(" LEFT JOIN m_appuser cbu ON cbu.id = l.closedon_userid")
+                    .append(" LEFT JOIN m_loan_arrears_aging la ON la.loan_id = l.id")
+                    .append(" LEFT JOIN f_loan_application_reference lar ON lar.loan_id = l.id  and lar.client_id <> ?")
+                    .append(" LEFT JOIN f_loan_coapplicants_mapping coapp ON coapp.loan_application_reference_id = lar.id and  coapp.client_id = ? ");
             return accountsSummary.toString();
         }
         
