@@ -822,7 +822,7 @@ public class Loan extends AbstractPersistable<Long> {
         }
     }
 
-    private void validateChargeHasValidSpecifiedDateIfApplicable(final LoanCharge loanCharge, final LocalDate disbursementDate,
+    public void validateChargeHasValidSpecifiedDateIfApplicable(final LoanCharge loanCharge, final LocalDate disbursementDate,
             final LocalDate lastRepaymentPeriodDueDate) {
         if (loanCharge.isSpecifiedDueDate()
                 && !(loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate, DateUtils.getLocalDateOfTenant())
