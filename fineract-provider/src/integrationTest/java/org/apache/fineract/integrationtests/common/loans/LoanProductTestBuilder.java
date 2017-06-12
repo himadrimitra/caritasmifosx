@@ -49,9 +49,6 @@ public class LoanProductTestBuilder {
     public static final String RBI_INDIA_STRATEGY = "4";
     public static final String PRINCIPAL_INTEREST_CHARGE_STRATEGY = "5";
 
-    
-    
-
     public static final String RECALCULATION_FREQUENCY_TYPE_SAME_AS_REPAYMENT_PERIOD = "1";
     public static final String RECALCULATION_FREQUENCY_TYPE_DAILY = "2";
     public static final String RECALCULATION_FREQUENCY_TYPE_WEEKLY = "3";
@@ -122,7 +119,7 @@ public class LoanProductTestBuilder {
     private String graceOnInterestPayment = "1";
     private JsonObject allowAttributeOverrides = null;
     private Boolean allowPartialPeriodInterestCalcualtion = false;
-    
+
     private Boolean allowVariableInstallments = Boolean.FALSE;
     private Integer minimumGap;
     private Integer maximumGap;
@@ -148,7 +145,8 @@ public class LoanProductTestBuilder {
     private Integer installmentCalculationPeriodType = null;
     private Integer applicableForLoanType = 1;
     private Boolean isEnableRestrictionForClientProfile = false;
-    private Integer selectedProfileTypeValues[]  = null;
+    private Integer profileType = null;
+    private Integer selectedProfileTypeValues[] = null;
 
     public String build(final String chargeId) {
         final HashMap<String, Object> map = new HashMap<>();
@@ -165,7 +163,9 @@ public class LoanProductTestBuilder {
         map.put("shortName", this.shortName);
         map.put("currencyCode", this.currencyCode);
         map.put("applicableForLoanType", this.applicableForLoanType);
-        if(this.isEnableRestrictionForClientProfile){
+        map.put("isEnableRestrictionForClientProfile", this.isEnableRestrictionForClientProfile);
+        if (this.isEnableRestrictionForClientProfile) {
+            map.put("profileType", this.profileType);
             map.put("selectedProfileTypeValues", this.selectedProfileTypeValues);
         }
         map.put("locale", LOCALE);
@@ -239,11 +239,11 @@ public class LoanProductTestBuilder {
             map.put("allowAttributeOverrides", this.allowAttributeOverrides);
         }
         map.put("allowPartialPeriodInterestCalcualtion", this.allowPartialPeriodInterestCalcualtion);
-        map.put("allowVariableInstallments", allowVariableInstallments) ;
+        map.put("allowVariableInstallments", allowVariableInstallments);
         map.put("adjustInterestForRounding", this.adjustInterestForRounding);
-        if(allowVariableInstallments) {
-            map.put("minimumGap", minimumGap) ;
-            map.put("maximumGap", maximumGap) ;
+        if (allowVariableInstallments) {
+            map.put("minimumGap", minimumGap);
+            map.put("maximumGap", maximumGap);
         }
 
         if (isSubsidyApplicable != null) {
@@ -253,10 +253,10 @@ public class LoanProductTestBuilder {
         if (isAdjustFirstEMIAmount) {
             map.put("adjustFirstEMIAmount", this.isAdjustFirstEMIAmount);
         }
-        
-		if (adjustedInstallmentInMultiplesOf != null) {
-			map.put("adjustedInstallmentInMultiplesOf", this.adjustedInstallmentInMultiplesOf);
-		}
+
+        if (adjustedInstallmentInMultiplesOf != null) {
+            map.put("adjustedInstallmentInMultiplesOf", this.adjustedInstallmentInMultiplesOf);
+        }
         if (installmentAmountInMultiplesOf != null) {
             map.put("installmentAmountInMultiplesOf", this.installmentAmountInMultiplesOf);
 
@@ -266,27 +266,28 @@ public class LoanProductTestBuilder {
             map.put("principalThresholdForLastInstallment", 50);
         }
 
-        if(closeLoanOnOverpayment){
+        if (closeLoanOnOverpayment) {
             map.put("closeLoanOnOverpayment", closeLoanOnOverpayment);
         }
-        
-        if(isEmiBasedOnDisbursements){
+
+        if (isEmiBasedOnDisbursements) {
             map.put("isEmiBasedOnDisbursements", isEmiBasedOnDisbursements);
         }
-        
-        if(installmentCalculationPeriodType != null){
+
+        if (installmentCalculationPeriodType != null) {
             map.put("installmentCalculationPeriodType", installmentCalculationPeriodType);
         }
 
         if (syncExpectedWithDisbursementDate) {
             map.put("syncExpectedWithDisbursementDate", this.syncExpectedWithDisbursementDate);
         }
-		map.put("maxLoanTerm", this.maxLoanTerm);
-		map.put("minLoanTerm", this.minLoanTerm);
-		map.put("canDefineInstallmentAmount", this.canDefineInstallmentAmount);
-		map.put("minNumberOfRepayments", this.minNumberOfRepayments);
-		map.put("maxNumberOfRepayments", this.maxNumberOfRepayments);
-		map.put("loanTenureFrequencyType", this.loanTenureFrequencyType);
+        map.put("maxLoanTerm", this.maxLoanTerm);
+        map.put("minLoanTerm", this.minLoanTerm);
+        map.put("canDefineInstallmentAmount", this.canDefineInstallmentAmount);
+        map.put("minNumberOfRepayments", this.minNumberOfRepayments);
+        map.put("maxNumberOfRepayments", this.maxNumberOfRepayments);
+        map.put("loanTenureFrequencyType", this.loanTenureFrequencyType);
+
         return new Gson().toJson(map);
     }
 
@@ -386,11 +387,11 @@ public class LoanProductTestBuilder {
         return this;
     }
 
-    public LoanProductTestBuilder withAdjustInterestForRounding(final boolean adjustInterestForRounding){
-    	this.adjustInterestForRounding = adjustInterestForRounding;
-    	return this;
+    public LoanProductTestBuilder withAdjustInterestForRounding(final boolean adjustInterestForRounding) {
+        this.adjustInterestForRounding = adjustInterestForRounding;
+        return this;
     }
-    
+
     public LoanProductTestBuilder withInArrearsTolerance(final String amountCanBeWaved) {
         this.inArrearsTolerance = amountCanBeWaved;
         return this;
@@ -423,7 +424,7 @@ public class LoanProductTestBuilder {
         this.multiDisburseLoan = multiDisburseLoan;
         return this;
     }
-    
+
     public LoanProductTestBuilder withInterestRecalculation(boolean interestRecalculation) {
         this.isInterestRecalculationEnabled = interestRecalculation;
         return this;
@@ -563,8 +564,9 @@ public class LoanProductTestBuilder {
         this.minimumDaysBetweenDisbursalAndFirstRepayment = minimumDaysBetweenDisbursalAndFirstRepayment;
         return this;
     }
-    
-    public LoanProductTestBuilder withMinimumPeriodsBetweenDisbursalAndFirstRepayment(final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment) {
+
+    public LoanProductTestBuilder withMinimumPeriodsBetweenDisbursalAndFirstRepayment(
+            final Integer minimumPeriodsBetweenDisbursalAndFirstRepayment) {
         this.minimumPeriodsBetweenDisbursalAndFirstRepayment = minimumPeriodsBetweenDisbursalAndFirstRepayment;
         return this;
     }
@@ -630,35 +632,35 @@ public class LoanProductTestBuilder {
         this.closeLoanOnOverpayment = closeLoanOnOverpayment;
         return this;
     }
+
     public LoanProductTestBuilder withSyncExpectedWithDisbursementDate(Boolean syncExpectedWithDisbursementDate) {
         this.syncExpectedWithDisbursementDate = syncExpectedWithDisbursementDate;
-        return this ;
-    }
-    
-    public LoanProductTestBuilder withLoanTerms(final Integer minLoanTerm, final Integer maxLoanTerm ){
-    	this.minLoanTerm = minLoanTerm;
-    	this.maxLoanTerm = maxLoanTerm;
-    	return this;
-    }
-    
-    public LoanProductTestBuilder withCanDefineInstallmentAmount(Boolean canDefineInstallmentAmount){
-    	this.canDefineInstallmentAmount = canDefineInstallmentAmount;
-    	return this;
-    }
-    
-    public LoanProductTestBuilder withMininmumAndMaximumNumberOfRepayments(final Integer minNumberOfRepayments,
-    final Integer maxNumberOfRepayments){
-    	this.minNumberOfRepayments = minNumberOfRepayments;
-    	this.maxNumberOfRepayments = maxNumberOfRepayments;
-    	return this;
-    }
-    
-    public LoanProductTestBuilder withLoanTenureFrequencyType(final Integer loanTenureFrequencyType){
-    	this.loanTenureFrequencyType = loanTenureFrequencyType;
-    	return this;
+        return this;
     }
 
-    
+    public LoanProductTestBuilder withLoanTerms(final Integer minLoanTerm, final Integer maxLoanTerm) {
+        this.minLoanTerm = minLoanTerm;
+        this.maxLoanTerm = maxLoanTerm;
+        return this;
+    }
+
+    public LoanProductTestBuilder withCanDefineInstallmentAmount(Boolean canDefineInstallmentAmount) {
+        this.canDefineInstallmentAmount = canDefineInstallmentAmount;
+        return this;
+    }
+
+    public LoanProductTestBuilder withMininmumAndMaximumNumberOfRepayments(final Integer minNumberOfRepayments,
+            final Integer maxNumberOfRepayments) {
+        this.minNumberOfRepayments = minNumberOfRepayments;
+        this.maxNumberOfRepayments = maxNumberOfRepayments;
+        return this;
+    }
+
+    public LoanProductTestBuilder withLoanTenureFrequencyType(final Integer loanTenureFrequencyType) {
+        this.loanTenureFrequencyType = loanTenureFrequencyType;
+        return this;
+    }
+
     public LoanProductTestBuilder withEmiBasedOnDisbursements(boolean isEmiBasedOnDisbursements) {
         this.isEmiBasedOnDisbursements = isEmiBasedOnDisbursements;
         return this;
@@ -669,12 +671,50 @@ public class LoanProductTestBuilder {
         return this;
     }
 
-    public LoanProductTestBuilder withApplicableForClientProfileTypeLegalForm() {
+    public LoanProductTestBuilder withApplicableForAllClients() {
+        this.applicableForLoanType = 2;
+        this.isEnableRestrictionForClientProfile = false;
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForClientProfileTypeLegalFormPerson() {
         this.applicableForLoanType = 2;
         this.isEnableRestrictionForClientProfile = true;
+        this.profileType = 1;
+        this.selectedProfileTypeValues = new Integer[1];
+        this.selectedProfileTypeValues[0] = 1; // LegalForm.PERSON
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForClientProfileTypeLegalFormEntity() {
+        this.applicableForLoanType = 2;
+        this.isEnableRestrictionForClientProfile = true;
+        this.profileType = 1;
+        this.selectedProfileTypeValues = new Integer[1];
+        this.selectedProfileTypeValues[0] = 2; // LegalForm.ENTITY
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForClientProfileTypeLegalFormPersonOrEntity() {
+        this.applicableForLoanType = 2;
+        this.isEnableRestrictionForClientProfile = true;
+        this.profileType = 1;
         this.selectedProfileTypeValues = new Integer[2];
         this.selectedProfileTypeValues[0] = 1; // LegalForm.PERSON
         this.selectedProfileTypeValues[1] = 2; // LegalForm.ENTITY
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForClientProfileTypeAllClientTypes(final List<Integer> clientTypeValues) {
+        this.applicableForLoanType = 2;
+        this.isEnableRestrictionForClientProfile = true;
+        this.profileType = 2;
+        this.selectedProfileTypeValues = clientTypeValues.stream().toArray(v -> new Integer[v]);
+        return this;
+    }
+
+    public LoanProductTestBuilder withSelectedProfileTypeValues(final List<Integer> values) {
+        this.selectedProfileTypeValues = values.stream().toArray(v -> new Integer[v]);
         return this;
     }
     
@@ -781,4 +821,24 @@ public class LoanProductTestBuilder {
         return new Gson().toJson(map);
     }
     
+
+    public LoanProductTestBuilder withApplicableForClientProfileTypeAllClientClassification(final List<Integer> clientClassificationValues) {
+        this.applicableForLoanType = 2;
+        this.isEnableRestrictionForClientProfile = true;
+        this.profileType = 3;
+        this.selectedProfileTypeValues = clientClassificationValues.stream().toArray(v -> new Integer[v]);
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForGroups() {
+        this.applicableForLoanType = 3;
+        this.isEnableRestrictionForClientProfile = false;
+        return this;
+    }
+
+    public LoanProductTestBuilder withApplicableForLoanType(final Integer applicableForLoanType) {
+        this.applicableForLoanType = applicableForLoanType;
+        return this;
+    }
+
 }

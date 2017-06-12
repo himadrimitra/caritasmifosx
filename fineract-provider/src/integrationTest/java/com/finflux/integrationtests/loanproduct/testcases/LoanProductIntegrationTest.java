@@ -1,12 +1,10 @@
 package com.finflux.integrationtests.loanproduct.testcases;
 
 import org.apache.fineract.integrationtests.common.Utils;
-import org.apache.fineract.integrationtests.common.loans.LoanProductTestBuilder;
-import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.finflux.integrationtests.loanproduct.service.LoanProductTestCaseService;
 import com.jayway.restassured.builder.RequestSpecBuilder;
 import com.jayway.restassured.builder.ResponseSpecBuilder;
 import com.jayway.restassured.http.ContentType;
@@ -17,9 +15,7 @@ public class LoanProductIntegrationTest {
 
     private ResponseSpecification responseSpec;
     private RequestSpecification requestSpec;
-    private LoanTransactionHelper loanTransactionHelper;
-
-    private Integer loanProductId;
+    private LoanProductTestCaseService loanProductTestCaseService;
 
     @Before
     public void setup() {
@@ -27,19 +23,11 @@ public class LoanProductIntegrationTest {
         this.requestSpec = new RequestSpecBuilder().setContentType(ContentType.JSON).build();
         this.requestSpec.header("Authorization", "Basic " + Utils.loginIntoServerAndGetBase64EncodedAuthenticationKey());
         this.responseSpec = new ResponseSpecBuilder().expectStatusCode(200).build();
-        this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
+        this.loanProductTestCaseService = new LoanProductTestCaseService(this.requestSpec, this.responseSpec);
     }
 
     @Test
-    public void createLoanProductApplicableForClientProfileTypeLegalForm() {
-
-        System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
-
-        this.loanProductId = this.loanTransactionHelper.getLoanProductId(new LoanProductTestBuilder().withInterestTypeAsDecliningBalance()
-                .withTranches(true).withInterestCalculationPeriodTypeAsRepaymentPeriod(true).withApplicableForClientProfileTypeLegalForm()
-                .build(null));
-
-        Assert.assertNotNull(this.loanProductId);
+    public void runLoanProductTestCases() {
+        this.loanProductTestCaseService.runLoanProductTestCases();
     }
-
 }
