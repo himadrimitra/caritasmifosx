@@ -142,15 +142,18 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
 
 	public void addSelfAmmount(BigDecimal amount, BigDecimal loanAmount) {
 		BigDecimal remainingAmount = getAmountRemaining();
-    	if(remainingAmount.compareTo(loanAmount) < 1){
-    		BigDecimal tempRemainingAmount = getAmountRemaining().add(amount);
-    		if(tempRemainingAmount.compareTo(loanAmount) == 1){
-    			this.amountRemaining = loanAmount;
-    		} else {
-    			this.amountRemaining = getAmountRemaining().add(amount);
-    		}
-            
-            	}
+		BigDecimal amountDiff = BigDecimal.ZERO;
+		if(remainingAmount.compareTo(loanAmount) < 1){
+			BigDecimal tempRemainingAmount = getAmountRemaining().add(amount);
+			if(tempRemainingAmount.compareTo(loanAmount) == 1){
+				amountDiff = loanAmount.subtract(remainingAmount);
+				this.amountRemaining = loanAmount;
+			} else {
+				this.amountRemaining = getAmountRemaining().add(amount);
+				amountDiff = amount;
+			}
+			this.amount = this.amount.add(amountDiff);            
+	        	}
 	     }
 
 	public AccountAssociations getAccountAssociations() {
