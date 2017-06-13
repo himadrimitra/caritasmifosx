@@ -229,7 +229,7 @@ public class CollectionSheetReadPlatformServiceImpl implements CollectionSheetRe
 
 			jlgCollectionSheetData = JLGCollectionSheetData.instance(dueDate, loanProducts, jlgGroupsData,
 					this.attendanceDropdownReadPlatformService.retrieveAttendanceTypeOptions(), paymentOptions,
-					isWithDrawForSavingsIncludedInCollectionSheet, clientsCharges);
+					isWithDrawForSavingsIncludedInCollectionSheet, clientsCharges, includeClientChargesInCollectionSheet);
         }
 
         return jlgCollectionSheetData;
