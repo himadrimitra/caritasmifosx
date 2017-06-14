@@ -107,7 +107,9 @@ public class GenericDataServiceImpl implements GenericDataService {
             resultsetDataRows.add(resultsetDataRow);
         }
 
-        return new GenericResultsetData(columnHeaders, resultsetDataRows);
+        String registeredDataTableDisplayName = null;
+        
+        return new GenericResultsetData(columnHeaders, resultsetDataRows, registeredDataTableDisplayName);
     }
 
     @Override

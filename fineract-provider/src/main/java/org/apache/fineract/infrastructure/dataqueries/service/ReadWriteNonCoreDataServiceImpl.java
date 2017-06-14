@@ -1444,8 +1444,9 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
 
         final List<ResultsetRowData> result = fillDatatableResultSetDataRows(sql);
-
-        return new GenericResultsetData(columnHeaders, result);
+        String registeredDataTableDisplayName = queryForApplicationTableDisplayName(dataTableName);;
+        
+        return new GenericResultsetData(columnHeaders, result, registeredDataTableDisplayName);
     }
 
     private GenericResultsetData retrieveDataTableGenericResultSetForUpdate(final String appTable, final String dataTableName,
@@ -1464,8 +1465,10 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
 
         final List<ResultsetRowData> result = fillDatatableResultSetDataRows(sql);
+        
+        String registeredDataTableDisplayName = null;
 
-        return new GenericResultsetData(columnHeaders, result);
+        return new GenericResultsetData(columnHeaders, result, registeredDataTableDisplayName);
     }
 
     private CommandProcessingResult checkMainResourceExistsWithinScope(final String appTable, final String apptableIdentifier) {
@@ -1585,6 +1588,16 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
         }
 
         return applicationTableName;
+    }
+    
+    private String queryForApplicationTableDisplayName(final String datatable) {
+        final String sql = "SELECT registered_table_display_name FROM x_registered_table where registered_table_name = '" + datatable + "'";
+        String applicationTableDisplayName = null;
+        try {
+            applicationTableDisplayName = this.jdbcTemplate.queryForObject(sql, String.class);
+        } catch (final EmptyResultDataAccessException e) { }
+
+        return applicationTableDisplayName;
     }
 
     private String getFKField(final String applicationTableName) {
