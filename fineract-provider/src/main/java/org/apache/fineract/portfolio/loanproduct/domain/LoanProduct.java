@@ -1719,10 +1719,26 @@ public class LoanProduct extends AbstractPersistable<Long> {
         return this.loanProductEntityProfileMapping;
     }
 
-    public void setLoanProductEntityProfileMapping(final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMapping) {
+    public void clearLoanProductEntityProfileMapping() {
         this.loanProductEntityProfileMapping.clear();
+    }
+
+    public void setLoanProductEntityProfileMapping(final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMapping) {
+        clearLoanProductEntityProfileMapping();
         if (loanProductEntityProfileMapping != null && !loanProductEntityProfileMapping.isEmpty()) {
             this.loanProductEntityProfileMapping.addAll(loanProductEntityProfileMapping);
+        }
+    }
+    
+    public void addAllLoanProductEntityProfileMapping(final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMapping) {
+        if (loanProductEntityProfileMapping != null && !loanProductEntityProfileMapping.isEmpty()) {
+            this.loanProductEntityProfileMapping.addAll(loanProductEntityProfileMapping);
+        }
+    }
+    
+    public void addLoanProductEntityProfileMapping(final LoanProductEntityProfileMapping loanProductEntityProfileMapping) {
+        if (loanProductEntityProfileMapping != null) {
+            this.loanProductEntityProfileMapping.add(loanProductEntityProfileMapping);
         }
     }
         

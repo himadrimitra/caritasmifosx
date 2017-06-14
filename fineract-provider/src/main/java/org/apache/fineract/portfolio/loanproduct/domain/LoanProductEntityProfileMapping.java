@@ -11,7 +11,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "f_loan_product_entity_profile_mapping", uniqueConstraints = { @UniqueConstraint(columnNames = { "loan_product_id",
-        "profile_type", "value" }, name = "f_loan_product_entity_profile_mapping_UNIQUE") })
+        "profile_type", "value", "value_entity_type" }, name = "f_loan_product_entity_profile_mapping_UNIQUE") })
 public class LoanProductEntityProfileMapping extends AbstractPersistable<Long> {
 
     @ManyToOne
@@ -42,12 +42,16 @@ public class LoanProductEntityProfileMapping extends AbstractPersistable<Long> {
         return new LoanProductEntityProfileMapping(loanProduct, profileType, value, valueEntityType);
     }
 
+    public Integer getProfileType() {
+        return this.profileType;
+    }
+
     public Long getValue() {
         return this.value;
     }
 
-    public Integer getProfileType() {
-        return this.profileType;
+    public Integer getValueEntityType() {
+        return this.valueEntityType;
     }
 
 }
