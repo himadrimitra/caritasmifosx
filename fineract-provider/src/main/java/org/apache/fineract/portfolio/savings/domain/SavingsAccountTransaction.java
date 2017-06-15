@@ -260,10 +260,14 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     }
 
     public static SavingsAccountTransaction copyTransaction(SavingsAccountTransaction accountTransaction) {
-        return new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.office,
+    	SavingsAccountTransaction savingsAccountTransaction =  new SavingsAccountTransaction(accountTransaction.savingsAccount, accountTransaction.office,
                 accountTransaction.paymentDetail, accountTransaction.typeOf, accountTransaction.transactionLocalDate(),
-                accountTransaction.createdDate, accountTransaction.amount, accountTransaction.reversed, accountTransaction.appUser,
-                accountTransaction.isManualTransaction);
+                accountTransaction.createdDate, accountTransaction.amount, accountTransaction.reversed, accountTransaction.appUser,accountTransaction.isManualTransaction);
+		for (SavingsAccountChargePaidBy chargesPaidBy : accountTransaction.getSavingsAccountChargesPaid()) {
+			savingsAccountTransaction.getSavingsAccountChargesPaid().add(SavingsAccountChargePaidBy.instance(
+					savingsAccountTransaction, chargesPaidBy.getSavingsAccountCharge(), chargesPaidBy.getAmount()));
+		}
+    	return savingsAccountTransaction;
     }
 
     private SavingsAccountTransaction(final SavingsAccount savingsAccount, final Office office, final Integer typeOf,
