@@ -88,11 +88,13 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
             sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
             sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId,pc.is_mandatory as isMandatory ");
-            sb.append("from m_charge c ");
+            sb.append("from  m_loan ml ");
+            sb.append("join m_loan_charge lc on lc.loan_id = ml.id ");
+            sb.append("join m_charge c on c.id = lc.charge_id ");
             sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
-            sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
-            sb.append("left join m_product_loan_charge pc on pc.charge_id=lc.charge_id ");
-            sb.append("left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ");
+            sb.append("left join m_product_loan_charge pc on pc.product_loan_id = ml.product_id and pc.charge_id = c.id ");
+            sb.append("LEFT JOIN m_loan_tranche_disbursement_charge dc ON dc.loan_charge_id = lc.id ");
+            sb.append("LEFT JOIN m_loan_disbursement_detail dd ON dd.id = dc.disbursement_detail_id ");
             this.sqlSchema = sb.toString();
         }
         
@@ -116,12 +118,14 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
             sb.append("date(ifnull(dd.disbursedon_date,dd.expected_disburse_date)) as disbursementDate, ");
             sb.append("oc.decimal_places as currencyDecimalPlaces, oc.currency_multiplesof as inMultiplesOf, oc.display_symbol as currencyDisplaySymbol, ");
             sb.append("oc.internationalized_name_code as currencyNameCode,lc.is_capitalized as isCapitalized,lc.tax_group_id as taxGroupId,pc.is_mandatory as isMandatory ");
-            sb.append("from m_charge c ");
+            sb.append("from  m_loan ml ");
+            sb.append("join m_loan_charge lc on lc.loan_id = ml.id ");
+            sb.append("join m_charge c on c.id = lc.charge_id ");
             sb.append("join m_organisation_currency oc on c.currency_code = oc.code ");
-            sb.append("join m_loan_charge lc on lc.charge_id = c.id ");
-            sb.append(" LEFT JOIN f_charge_slab cs on cs.charge_id = lc.charge_id ");
-            sb.append("left join m_product_loan_charge pc on pc.charge_id=lc.charge_id ");
-            sb.append("left join m_loan_tranche_disbursement_charge dc on dc.loan_charge_id=lc.id left join m_loan_disbursement_detail dd on dd.id=dc.disbursement_detail_id ");
+            sb.append("left join m_product_loan_charge pc on pc.product_loan_id = ml.product_id and pc.charge_id = c.id ");
+            sb.append("left join f_charge_slab cs on cs.charge_id = c.id ");
+            sb.append("LEFT JOIN m_loan_tranche_disbursement_charge dc ON dc.loan_charge_id = lc.id ");
+            sb.append("LEFT JOIN m_loan_disbursement_detail dd ON dd.id = dc.disbursement_detail_id ");
             
             return sb.toString();
         }
@@ -272,7 +276,7 @@ public class LoanChargeReadPlatformServiceImpl implements LoanChargeReadPlatform
 
         final LoanChargeMapperDataExtractor rm = new LoanChargeMapperDataExtractor();
 
-        final String sql = "select " + rm.schema() + " where lc.loan_id=? AND lc.is_active = 1"
+        final String sql = "select " + rm.schema() + " where lc.loan_id=? AND lc.is_active = 1 GROUP by c.id, lc.id "
                 + " order by ifnull(lc.due_for_collection_as_of_date,date(ifnull(dd.disbursedon_date,dd.expected_disburse_date))),lc.charge_time_enum ASC, lc.due_for_collection_as_of_date ASC, lc.is_penalty ASC,lc.id ASC ";
 
         return this.jdbcTemplate.query(sql, rm, new Object[] { loanId });
