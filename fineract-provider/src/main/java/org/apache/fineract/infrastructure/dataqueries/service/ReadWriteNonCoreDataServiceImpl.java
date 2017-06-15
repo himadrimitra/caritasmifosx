@@ -244,7 +244,10 @@ public class ReadWriteNonCoreDataServiceImpl implements ReadWriteNonCoreDataServ
             final Integer id = rs.getInt("id");
             final String appTableName = rs.getString("application_table_name");
             final String registeredDatatableName = rs.getString("registered_table_name");
-            final Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
+            Long scopingCriteriaEnum = rs.getLong("scoping_criteria_enum");
+            if(rs.wasNull()){
+                scopingCriteriaEnum = null; 
+            }
             final List<ScopeCriteriaData> scopeCriteriaData = this.genericDataService.fetchDatatableScopesByIdAndScopingCriteria(id, scopingCriteriaEnum);
             final String registeredDataTableDisplayName = rs.getString("registered_table_display_name");
             final List<ResultsetColumnHeaderData> columnHeaderData = this.genericDataService
