@@ -548,7 +548,7 @@
 							<tr>
 								<td><a href="#workingdays">Working days</a></td>
 								<td>workingdays</td>
-								<td><a href="#workingdays_list">List workingdays</a></td>
+								<td><a href="#workingdays_list">Retrieve workingdays</a></td>
 							    <td><a href="#workingdays_template">Working days template</a></td>
 								<td></td>
 								<td></td>
@@ -3750,7 +3750,7 @@
                         <tr>
                             <td><a href="#workingdays">Working days</a></td>
                             <td>workingdays</td>
-                            <td><a href="#workingdays_list">List workingdays</a></td>
+                            <td><a href="#workingdays_list">Retrieve workingdays</a></td>
                             <td><a href="#workingdays_template">Working days template</a></td>
                             <td></td>
                             <td></td>
@@ -17861,7 +17861,36 @@
                     <tr>
                         <td class=fielddesc>locale must be provided.</td>
                     </tr>
-
+					 </table>
+                
+                <table class=matrixHeading>
+					<tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Optional Field Descriptions</div></td>
+                    </tr>
+					<tr class=alt>
+                        <td>advancedRescheduleDetail</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Field to provide different behaviour for each non working day </td>
+                    </tr>
+					<tr class=alt>
+                        <td>fromWeekDay</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Inner field of advancedRescheduleDetail, Field is to identify the non working week day for reschedule</td>
+                    </tr>
+					<tr class=alt>
+                        <td>toWeekDay</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Inner field of advancedRescheduleDetail, Field is to identify the working week day for reschedule the non working day</td>
+                    </tr>
+					<tr class=alt>
+                        <td>isDeleted</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>Inner field of advancedRescheduleDetail, Field is to remove  reschedule detail  for specific  non working day</td>
+                    </tr>
                 </table>
                 <table id="nw_repayment_schedule_rule" class=matrixHeading>
                     <tr class="matrixHeadingBG">
@@ -17914,37 +17943,65 @@
                     GET https://DomainName/api/v1/workingdays/template
                 </code>
                 <code class="method-response">
-                    {
-                    "repaymentRescheduleOptions": [
-                    {
-                    "id": 1,
-                    "code": "RepaymentRescheduleType.same.day",
-                    "value": "same day"
-                    },
-                    {
-                    "id": 4,
-                    "code": "RepaymentRescheduleType.move.to.previous.working.day",
-                    "value": "move to previous working day"
-                    },
-                    {
-                    "id": 3,
-                    "code": "RepaymentRescheduleType.move.to.next.repayment.meeting.day",
-                    "value": "move to next repayment meeting day"
-                    },
-                    {
-                    "id": 2,
-                    "code": "RepaymentRescheduleType.move.to.next.working.day",
-                    "value": "move to next working day"
-                    }
-                    ]
-                    }
+		{
+			"repaymentRescheduleOptions": [{
+				"id": 1,
+				"code": "RepaymentRescheduleType.same.day",
+				"value": "same day"
+			},
+			{
+				"id": 4,
+				"code": "RepaymentRescheduleType.move.to.previous.working.day",
+				"value": "move to previous working day"
+			},
+			{
+				"id": 3,
+				"code": "RepaymentRescheduleType.move.to.next.repayment.meeting.day",
+				"value": "move to next repayment meeting day"
+			},
+			{
+				"id": 2,
+				"code": "RepaymentRescheduleType.move.to.next.working.day",
+				"value": "move to next working day"
+			}],
+			"repaymentRescheduleOptionsForAdvancedReschedule": [{
+				"id": 1,
+				"code": "RepaymentRescheduleType.same.day",
+				"value": "same day"
+			},
+			{
+				"id": 2,
+				"code": "RepaymentRescheduleType.move.to.next.working.day",
+				"value": "move to next working day"
+			},
+			{
+				"id": 3,
+				"code": "RepaymentRescheduleType.move.to.next.repayment.day",
+				"value": "move to next repayment day"
+			},
+			{
+				"id": 4,
+				"code": "RepaymentRescheduleType.move.to.previous.working.day",
+				"value": "move to previous working day"
+			},
+			{
+				"id": 6,
+				"code": "RepaymentRescheduleType.move.to.next.working.week.day",
+				"value": "Move To Next Working week Day"
+			},
+			{
+				"id": 7,
+				"code": "RepaymentRescheduleType.move.to.previous.working.week.day",
+				"value": "Move To Previous Working week Day"
+			}]
+		}
                 </code>
             </div>
         </div>
         <a id="workingdays_list" name="workingdays_list" class="old-syle-anchor">&nbsp;</a>
         <div class="method-section">
             <div class="method-description">
-                <h4>List Working days</h4>
+                <h4>Retrieve Working days</h4>
                 <p>Example Requests:</p>
                 <div class=apiClick>workingdays</div>
                 <br>
@@ -17955,18 +18012,26 @@
                     GET https://DomainName/api/v1/workingdays
                 </code>
                 <code class="method-response">
-                    [
-                    {
-                    "id": 1,
-                    "recurrence": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR",
-                    "repaymentRescheduleType": {
-                    "id": 4,
-                    "code": "RepaymentRescheduleType.move.to.next.working.day",
-                    "value": "move to next working day"
-                    }
-                    "extendTermForDailyRepayments" : true
-                    }
-                    ]
+			{
+				"id": 1,
+				"recurrence": "FREQ\u003dWEEKLY;INTERVAL\u003d1;BYDAY\u003dMO,TU,WE,TH,FR,SA,SU",
+				"repaymentRescheduleType": {
+					"id": 2,
+					"code": "RepaymentRescheduleType.move.to.next.working.day",
+					"value": "move to next working day"
+				},
+				"extendTermForDailyRepayments": false,
+				"advancedRescheduleDetail": [{
+					"id": 7,
+					"fromWeekDay": "SU",
+					"repaymentReschedulingType": {
+						"id": 6,
+						"code": "RepaymentRescheduleType.move.to.next.working.week.day",
+						"value": "Move To Next Working week Day"
+					},
+					"toWeekDay": "TU"
+				}]
+			}
                 </code>
             </div>
         </div>
@@ -17982,6 +18047,30 @@
                         <td>recurrence,repaymentRescheduleType,extendTermForDailyRepayments,locale</td>
                     </tr>
                 </table>
+				<table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Optional Fields</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>advancedRescheduleDetail</td>
+                    </tr>
+                </table>
+				<table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Additional Mandatory Fields for advancedRescheduleDetail</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>fromWeekDay,repaymentRescheduleType</td>
+                    </tr>
+                </table>
+				<table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Additional Optional Fields for advancedRescheduleDetail</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>toWeekDay,delete</td>
+                    </tr>
+                </table>
             </div>
             <div class="method-example">
                 <code class="method-declaration">
@@ -17991,17 +18080,30 @@
                     PUT holidays
                     Content-Type: application/json
                     Request Body:
-                    {
-                    "recurrence": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,SU",
-                    "locale": "en",
-                    "repaymentsRescheduledType": 4,
-                    "extendTermForDailyRepayments": false
-                    }
+			 {
+				"recurrence": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR",
+				"locale": "en",
+				"repaymentRescheduleType": 2,
+				"extendTermForDailyRepayments": false,
+				"advancedRescheduleDetail": [{
+					"fromWeekDay": "SA",
+					"toWeekDay": "TH",
+					"repaymentRescheduleType": 7
+				}]
+			}
                 </code>
                 <code class="method-response">
-                    {
-                    "resourceId": 1
-                    }
+			{
+				"resourceId": 1,
+				"changes": {
+					"recurrence": "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR",
+					"advancedRescheduleDetail": [{
+						"repaymentRescheduleType": 7,
+						"toWeekDay": "TH",
+						"fromWeekDay": "SA"
+					}]
+				}
+			}
                 </code>
             </div>
         </div>

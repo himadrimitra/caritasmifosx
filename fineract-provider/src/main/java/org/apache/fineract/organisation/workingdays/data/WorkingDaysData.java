@@ -38,6 +38,12 @@ public class WorkingDaysData {
     // template date
     @SuppressWarnings("unused")
     private final Collection<EnumOptionData> repaymentRescheduleOptions;
+    
+    @SuppressWarnings("unused")
+    private final Collection<EnumOptionData> repaymentRescheduleOptionsForAdvancedReschedule;
+    
+    @SuppressWarnings("unused")
+    private Collection<NonWorkingDayRescheduleData> advancedRescheduleDetail;
 
     public WorkingDaysData(Long id, String recurrence, EnumOptionData repaymentRescheduleType, Boolean extendTermForDailyRepayments) {
         this.id = id;
@@ -45,14 +51,22 @@ public class WorkingDaysData {
         this.repaymentRescheduleType = repaymentRescheduleType;
         this.repaymentRescheduleOptions = null;
         this.extendTermForDailyRepayments = extendTermForDailyRepayments;
+        this.repaymentRescheduleOptionsForAdvancedReschedule = null;
     }
 
     public WorkingDaysData(Long id, String recurrence, EnumOptionData repaymentRescheduleType,
-            Collection<EnumOptionData> repaymentRescheduleOptions, Boolean extendTermForDailyRepayments) {
+            Collection<EnumOptionData> repaymentRescheduleOptions, Boolean extendTermForDailyRepayments,
+            final Collection<EnumOptionData> repaymentRescheduleOptionsForAdvancedReschedule) {
         this.id = id;
         this.recurrence = recurrence;
         this.repaymentRescheduleType = repaymentRescheduleType;
         this.repaymentRescheduleOptions = repaymentRescheduleOptions;
         this.extendTermForDailyRepayments = extendTermForDailyRepayments;
+        this.repaymentRescheduleOptionsForAdvancedReschedule = repaymentRescheduleOptionsForAdvancedReschedule;
+    }
+
+    
+    public void setAdvancedRescheduleDetail(Collection<NonWorkingDayRescheduleData> advancedRescheduleDetail) {
+        this.advancedRescheduleDetail = advancedRescheduleDetail;
     }
 }

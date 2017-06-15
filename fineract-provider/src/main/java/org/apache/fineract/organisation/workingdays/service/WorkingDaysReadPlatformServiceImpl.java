@@ -26,6 +26,7 @@ import java.util.Collection;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.organisation.workingdays.data.NonWorkingDayRescheduleData;
 import org.apache.fineract.organisation.workingdays.data.WorkingDaysData;
 import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDaysEnumerations;
@@ -74,13 +75,47 @@ public class WorkingDaysReadPlatformServiceImpl implements WorkingDaysReadPlatfo
             return new WorkingDaysData(id, recurrence, status,extendTermForDailyRepayments);
         }
     }
+    
+    private static final class AdvancedRescheduleDetailMapper implements RowMapper<NonWorkingDayRescheduleData> {
+
+        private final String schema;
+
+        public AdvancedRescheduleDetailMapper() {
+            final StringBuilder sqlBuilder = new StringBuilder(100);
+            sqlBuilder.append("rd.id as id,rd.from_week_day as fromWeekDay,rd.repayment_rescheduling_enum as status_enum,");
+            sqlBuilder.append("rd.to_week_day as toWeekDay ");
+            sqlBuilder.append("from m_non_working_day_reschedule_detail rd");
+
+            this.schema = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schema;
+        }
+
+        @Override
+        public NonWorkingDayRescheduleData mapRow(ResultSet rs, @SuppressWarnings("unused") int rowNum) throws SQLException {
+            final Long id = rs.getLong("id");
+            final String fromWeekDay = rs.getString("fromWeekDay");
+            final Integer statusEnum = JdbcSupport.getInteger(rs, "status_enum");
+            final EnumOptionData status = WorkingDaysEnumerations.workingDaysStatusType(statusEnum);
+            final String toWeekDay = rs.getString("toWeekDay");
+
+            return new NonWorkingDayRescheduleData(id, fromWeekDay, status,toWeekDay);
+        }
+    }
 
     @Override
     public WorkingDaysData retrieve() {
         try {
             final WorkingDaysMapper rm = new WorkingDaysMapper();
             final String sql = " select " + rm.schema();
-            return this.jdbcTemplate.queryForObject(sql, rm, new Object[] {});
+            WorkingDaysData workingDaysData =  this.jdbcTemplate.queryForObject(sql, rm, new Object[] {});
+            AdvancedRescheduleDetailMapper advancedRescheduleDetailMapper = new AdvancedRescheduleDetailMapper();
+            final String sqlForAdvancedMapping = " select " + advancedRescheduleDetailMapper.schema();
+            Collection<NonWorkingDayRescheduleData> nonWorkingDayRescheduleDatas = this.jdbcTemplate.query(sqlForAdvancedMapping, advancedRescheduleDetailMapper);
+            workingDaysData.setAdvancedRescheduleDetail(nonWorkingDayRescheduleDatas);
+            return workingDaysData;
         } catch (final EmptyResultDataAccessException e) {
             throw new WorkingDaysNotFoundException();
         }
@@ -93,6 +128,14 @@ public class WorkingDaysReadPlatformServiceImpl implements WorkingDaysReadPlatfo
                 WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_WORKING_DAY),
                 WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_REPAYMENT_DAY),
                 WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_PREVIOUS_WORKING_DAY));
-        return new WorkingDaysData(null, null, null, repaymentRescheduleOptions, null);
+        
+        Collection<EnumOptionData> repaymentRescheduleOptionsForAdvancedReschedule = Arrays.asList(
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.SAME_DAY),
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_WORKING_DAY),
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_REPAYMENT_DAY),
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_PREVIOUS_WORKING_DAY),
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_NEXT_WORKING_WEEK_DAY),
+                WorkingDaysEnumerations.repaymentRescheduleType(RepaymentRescheduleType.MOVE_TO_PREVIOUS_WORKING_WEEK_DAY));
+        return new WorkingDaysData(null, null, null, repaymentRescheduleOptions, null, repaymentRescheduleOptionsForAdvancedReschedule);
     }
 }

@@ -19,6 +19,7 @@
 package org.apache.fineract.organisation.workingdays.service;
 
 import org.apache.fineract.organisation.workingdays.data.AdjustedDateDetailsDTO;
+import org.apache.fineract.organisation.workingdays.domain.NonWorkingDayRescheduleDetail;
 import org.apache.fineract.organisation.workingdays.domain.RepaymentRescheduleType;
 import org.apache.fineract.organisation.workingdays.domain.WorkingDays;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
@@ -32,7 +33,13 @@ public class WorkingDaysUtil {
         // If date is a working day then return date.
         if (isWorkingDay(workingDays, date)) { return date; }
 
-        final RepaymentRescheduleType rescheduleType = RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType());
+        
+        RepaymentRescheduleType rescheduleType = RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType());
+        NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail = workingDays.getNonWorkingDayRescheduleDetails().get(date.getDayOfWeek());
+        if(nonWorkingDayRescheduleDetail != null){
+            rescheduleType =  RepaymentRescheduleType.fromInt(nonWorkingDayRescheduleDetail.getRepaymentReschedulingType());
+        }
+        
 
         switch (rescheduleType) {
             case INVALID:
@@ -45,6 +52,18 @@ public class WorkingDaysUtil {
                 return nextMeetingDate;
             case MOVE_TO_PREVIOUS_WORKING_DAY:
                 return getOffSetDateIfNonWorkingDay(date.minusDays(1), nextMeetingDate, workingDays);
+            case MOVE_TO_NEXT_WORKING_WEEK_DAY:
+                @SuppressWarnings("null")
+                int fromDayForNext = CalendarUtils.getWeekDayAsInt(nonWorkingDayRescheduleDetail.getFromWeekDay());
+                int toDayForNext = CalendarUtils.getWeekDayAsInt(nonWorkingDayRescheduleDetail.getToWeekDay());
+                int addDays = CalendarUtils.getWeekDayDifference(fromDayForNext, toDayForNext);
+                return date.plusDays(addDays);
+            case MOVE_TO_PREVIOUS_WORKING_WEEK_DAY:
+                @SuppressWarnings("null")
+                int fromDayPrevious = CalendarUtils.getWeekDayAsInt(nonWorkingDayRescheduleDetail.getToWeekDay());
+                int toDayPrevious = CalendarUtils.getWeekDayAsInt(nonWorkingDayRescheduleDetail.getFromWeekDay());
+                int minusDays = CalendarUtils.getWeekDayDifference(fromDayPrevious, toDayPrevious);
+                return date.minusDays(minusDays);
             default:
                 return date;
         }

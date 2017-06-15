@@ -840,4 +840,46 @@ public class CalendarUtils {
         }
         return repaymentInterval;
     }
+    
+    public static int getWeekDayAsInt(final String day) {
+        int weekDay = 0;
+        switch (day) {
+            case "MO":
+                weekDay = 1;
+            break;
+            case "TU":
+                weekDay = 2;
+            break;
+            case "WE":
+                weekDay = 3;
+            break;
+            case "TH":
+                weekDay = 4;
+            break;
+            case "FR":
+                weekDay = 5;
+            break;
+            case "SA":
+                weekDay = 6;
+            break;
+            case "SU":
+                weekDay = 7;
+            break;
+
+            default:
+            break;
+        }
+
+        return weekDay;
+    }
+    
+    public static int getWeekDayDifference(int fromDay, int toDay) {
+        int diff = 0;
+        if(fromDay > toDay){
+            diff = toDay + (7-fromDay);
+        }else{
+            diff = toDay - fromDay;
+        }
+        return diff;
+    }
 }
