@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.fineract.accounting.producttoaccountmapping.service.ProductToGLAccountMappingWritePlatformService;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
@@ -45,7 +44,6 @@ import org.apache.fineract.portfolio.loanaccount.exception.LoanTransactionProces
 import org.apache.fineract.portfolio.loanaccount.loanschedule.domain.AprCalculator;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductDataAssembler;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProduct;
-import org.apache.fineract.portfolio.loanproduct.domain.LoanProductEntityProfileMapping;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanProductRepository;
 import org.apache.fineract.portfolio.loanproduct.domain.LoanTransactionProcessingStrategy;
 import org.apache.fineract.portfolio.loanproduct.domain.ProductLoanCharge;
@@ -137,9 +135,8 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             }
             final LoanProduct loanproduct = LoanProduct.assembleFromJson(fund, loanTransactionProcessingStrategy, null, command,
                     this.aprCalculator, floatingRate);
-            final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMappings = this.loanProductDataAssembler
-                    .assembleLoanProductEntityProfileMappings(loanproduct, command);
-            loanproduct.setLoanProductEntityProfileMapping(loanProductEntityProfileMappings);
+            
+            this.loanProductDataAssembler.assembleLoanProductEntityProfileMappings(loanproduct, command);
                 
             loanproduct.updateLoanProductInRelatedClasses();
             
@@ -239,19 +236,17 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
 
             // accounting related changes
             final boolean accountingTypeChanged = changes.containsKey("accountingRule");
-            
+
             final Map<String, Object> accountingMappingChanges = this.accountMappingWritePlatformService
                     .updateLoanProductToGLAccountMapping(product.getId(), command, accountingTypeChanged, product.getAccountingType());
-            
-            final Set<LoanProductEntityProfileMapping> loanProductEntityProfileMappings = this.loanProductDataAssembler
-                    .assembleLoanProductEntityProfileMappings(product, command);
-            product.setLoanProductEntityProfileMapping(loanProductEntityProfileMappings);
-            
-            changes.putAll(accountingMappingChanges);            
+            changes.putAll(accountingMappingChanges);
+
+            this.loanProductDataAssembler.assembleLoanProductEntityProfileMappings(product, command);
+
             if (!changes.isEmpty()) {
                 this.loanProductRepository.saveAndFlush(product);
             }
-
+            
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(loanProductId) //
@@ -324,8 +319,10 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
     private void handleDataIntegrityIssues(final JsonCommand command, final DataIntegrityViolationException dve) {
 
         final Throwable realCause = dve.getMostSpecificCause();
-
-        if (realCause.getMessage().contains("external_id")) {
+        if (realCause.getMessage().contains("f_loan_product_entity_profile_mapping_UNIQUE")) { 
+            throw new PlatformDataIntegrityException(
+                "error.msg.loan.product.entity.profile.mapping.duplicated", "Loan product entity profile mapping duplicated"); 
+        } else if (realCause.getMessage().contains("external_id")) {
 
             final String externalId = command.stringValueOfParameterNamed("externalId");
             throw new PlatformDataIntegrityException("error.msg.product.loan.duplicate.externalId", "Loan Product with externalId `"
@@ -345,7 +342,6 @@ public class LoanProductWritePlatformServiceJpaRepositoryImpl implements LoanPro
             throw new PlatformDataIntegrityException("error.msg.product.loan.duplicate.charge",
                     "Loan product may only have one charge of each type.`", "charges", args);
         }
-
         logAsErrorUnexpectedDataIntegrityException(dve);
         throw new PlatformDataIntegrityException("error.msg.product.loan.unknown.data.integrity.issue",
                 "Unknown data integrity issue with resource.");
