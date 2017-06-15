@@ -143,6 +143,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     
     @Column(name = "failed_login_attempt")
     private Integer failedLoginAttempt;
+    
+	@Column(name = "system_user", nullable = false)
+	private boolean systemUser;
 
 	public static AppUser fromJson(final Office userOffice, final Staff linkedStaff, final Set<Role> allRoles, 
 			final Collection<Client> clients, final JsonCommand command) {
@@ -165,7 +168,6 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
         final boolean userAccountNonExpired = true;
         final boolean userCredentialsNonExpired = true;
         final boolean userAccountNonLocked = true;
-
         final Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("DUMMY_ROLE_NOT_USED_OR_PERSISTED_TO_AVOID_EXCEPTION"));
 
@@ -726,5 +728,9 @@ public class AppUser extends AbstractPersistable<Long> implements PlatformUser {
     public void setPasswordNew(String passwordNew) {
         this.passwordNew = passwordNew;
     }
+    
+    public boolean isSystemUser() {
+		return this.systemUser;
+	}
 	
 }

@@ -54,6 +54,7 @@ import org.apache.fineract.useradministration.domain.AppUserRepository;
 import org.apache.fineract.useradministration.domain.Role;
 import org.apache.fineract.useradministration.domain.RoleRepository;
 import org.apache.fineract.useradministration.domain.UserDomainService;
+import org.apache.fineract.useradministration.exception.AppUserActionException;
 import org.apache.fineract.useradministration.exception.PasswordPreviouslyUsedException;
 import org.apache.fineract.useradministration.exception.RoleNotFoundException;
 import org.apache.fineract.useradministration.exception.UserNotFoundException;
@@ -188,11 +189,20 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
 
             final AppUser userToUpdate = this.appUserRepository.findOne(userId);
 
-            if (userToUpdate == null) { throw new UserNotFoundException(userId); }
+			if (userToUpdate == null) {
+				throw new UserNotFoundException(userId);
+			}
 
-            final AppUserPreviousPassword currentPasswordToSaveAsPreview = getCurrentPasswordToSaveAsPreview(userToUpdate, command);
-            
-            Collection<Client> clients = null;
+			String userName = userToUpdate.getUsername();
+
+			if (userName.equalsIgnoreCase(AppUserConstants.USERNAME_PARAM)) {
+				throw new AppUserActionException(userName, AppUserConstants.ACTION_UPDATE);
+			}
+
+			final AppUserPreviousPassword currentPasswordToSaveAsPreview = getCurrentPasswordToSaveAsPreview(
+					userToUpdate, command);
+
+			Collection<Client> clients = null;
             boolean isSelfServiceUser = userToUpdate.isSelfServiceUser();
             if(command.hasParameter(AppUserConstants.IS_SELF_SERVICE_USER)){
             	isSelfServiceUser = command.booleanPrimitiveValueOfParameterNamed(AppUserConstants.IS_SELF_SERVICE_USER); 
@@ -312,16 +322,21 @@ public class AppUserWritePlatformServiceJpaRepositoryImpl implements AppUserWrit
     @Transactional
     @Override
     @Caching(evict = { @CacheEvict(value = "users", allEntries = true), @CacheEvict(value = "usersByUsername", allEntries = true) })
-    public CommandProcessingResult deleteUser(final Long userId) {
+	public CommandProcessingResult deleteUser(final Long userId) {
 
-        final AppUser user = this.appUserRepository.findOne(userId);
-        if (user == null || user.isDeleted()) { throw new UserNotFoundException(userId); }
+		final AppUser user = this.appUserRepository.findOne(userId);
+		if (user == null || user.isDeleted()) {
+			throw new UserNotFoundException(userId);
+		}
+		if (user.getUsername().equalsIgnoreCase(AppUserConstants.USERNAME_PARAM)) {
+			throw new AppUserActionException(user.getUsername(), AppUserConstants.ACTION_DELETE);
+		}
 
-        user.delete();
-        this.appUserRepository.save(user);
+		user.delete();
+		this.appUserRepository.save(user);
 
-        return new CommandProcessingResultBuilder().withEntityId(userId).withOfficeId(user.getOffice().getId()).build();
-    }
+		return new CommandProcessingResultBuilder().withEntityId(userId).withOfficeId(user.getOffice().getId()).build();
+	}
     
     @Override
     public void updateFailedLoginStatus(final String username) {

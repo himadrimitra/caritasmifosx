@@ -52,43 +52,47 @@ public class AppUserData {
     private Set<ClientData> clients;
 	
 	private final Date lastLoginDate;
-
+	private final Boolean systemUser;
+	
     public static AppUserData template(final AppUserData user, final Collection<OfficeData> officesForDropdown) {
         return new AppUserData(user.id, user.username, user.email, user.officeId, user.officeName, user.firstname, user.lastname,
                 user.availableRoles, user.selectedRoles, officesForDropdown, user.staff, user.passwordNeverExpires, user.isSelfServiceUser,
-                user.lastLoginDate, user.accountNonLocked);
+                user.lastLoginDate, user.accountNonLocked,user.systemUser);
     }
 
     public static AppUserData template(final Collection<OfficeData> offices, final Collection<RoleData> availableRoles) {
         Date lastLoginDate = null;
         Boolean accountNonLocked = null;
-    	return new AppUserData(null, null, null, null, null, null, null, availableRoles, null, offices, null, null, null, lastLoginDate, accountNonLocked);
+        Boolean systemUser = null;
+    	return new AppUserData(null, null, null, null, null, null, null, availableRoles, null, offices, null, null, null, lastLoginDate, accountNonLocked,systemUser);
     }
 
     public static AppUserData dropdown(final Long id, final String username) {
     	Date lastLoginDate = null;
     	Boolean accountNonLocked = null;
-    	return new AppUserData(id, username, null, null, null, null, null, null, null, null, null, null, null, lastLoginDate, accountNonLocked);
+    	Boolean systemUser = null;
+    	return new AppUserData(id, username, null, null, null, null, null, null, null, null, null, null, null, lastLoginDate, accountNonLocked,systemUser);
     }
     
     public static AppUserData auditdetails(final Long id, final String username, final String firstname, final String lastname) {
     	Date lastLoginDate = null;
     	Boolean accountNonLocked = null;
-    	return new AppUserData(id, username, null, null, null, firstname, lastname, null, null, null, null, null, null, lastLoginDate, accountNonLocked);
+    	Boolean systemUser = null;
+    	return new AppUserData(id, username, null, null, null, firstname, lastname, null, null, null, null, null, null, lastLoginDate, accountNonLocked,systemUser);
     }
 
     public static AppUserData instance(final Long id, final String username, final String email, final Long officeId,
             final String officeName, final String firstname, final String lastname, final Collection<RoleData> availableRoles,
             final Collection<RoleData> selectedRoles, final StaffData staff, final Boolean passwordNeverExpire, final Boolean isSelfServiceUser,
-            final Date lastLoginDate, final Boolean accountNonLocked) {
+            final Date lastLoginDate, final Boolean accountNonLocked,final Boolean systemUser) {
         return new AppUserData(id, username, email, officeId, officeName, firstname, lastname, availableRoles, selectedRoles, null, staff,
-                passwordNeverExpire, isSelfServiceUser, lastLoginDate, accountNonLocked);
+                passwordNeverExpire, isSelfServiceUser, lastLoginDate, accountNonLocked,systemUser);
     }
 
     private AppUserData(final Long id, final String username, final String email, final Long officeId, final String officeName,
             final String firstname, final String lastname, final Collection<RoleData> availableRoles,
             final Collection<RoleData> selectedRoles, final Collection<OfficeData> allowedOffices, final StaffData staff,
-            final Boolean passwordNeverExpire, final Boolean isSelfServiceUser, final Date lastLoginDate,final Boolean accountNonLocked) {
+            final Boolean passwordNeverExpire, final Boolean isSelfServiceUser, final Date lastLoginDate,final Boolean accountNonLocked,final Boolean systemUser) {
         this.id = id;
         this.username = username;
         this.officeId = officeId;
@@ -104,6 +108,7 @@ public class AppUserData {
         this.isSelfServiceUser = isSelfServiceUser;
         this.lastLoginDate = lastLoginDate;
         this.accountNonLocked = accountNonLocked;
+        this.systemUser = systemUser;
     }
 
     public boolean hasIdentifyOf(final Long createdById) {
