@@ -13,94 +13,99 @@ import org.apache.fineract.organisation.monetary.domain.Money;
 
 public class MathUtility {
 
-    public static Boolean isGreaterThanZero(BigDecimal amount) {
-        return amount == null ? false : amount.compareTo(BigDecimal.ZERO) > 0;
+    public static Boolean isGreaterThanZero(final BigDecimal amount) {
+        return amount == null ? false : compareTo(amount, BigDecimal.ZERO) > 0;
     }
 
-    public static Boolean isGreaterThanZero(Money amount) {
+    public static Boolean isGreaterThanZero(final Money amount) {
         return amount == null ? false : amount.getAmount().compareTo(BigDecimal.ZERO) > 0;
     }
 
-    public static BigDecimal zeroIfNull(BigDecimal amount) {
+    public static BigDecimal zeroIfNull(final BigDecimal amount) {
         return (amount == null) ? BigDecimal.ZERO : amount;
     }
 
-    public static BigDecimal zeroIfNull(Money amount) {
+    public static BigDecimal zeroIfNull(final Money amount) {
         return (amount == null) ? BigDecimal.ZERO : amount.getAmount();
     }
 
-    public static Boolean isNull(BigDecimal amount) {
+    public static Boolean isNull(final BigDecimal amount) {
         return (amount == null);
     }
 
-    public static Boolean isNullOrZero(BigDecimal amount) {
-        return (amount == null) || amount.compareTo(BigDecimal.ZERO) == 0;
+    public static Boolean isNullOrZero(final BigDecimal amount) {
+        return (amount == null) || compareTo(amount, BigDecimal.ZERO) == 0;
     }
 
-    public static Boolean isZero(BigDecimal amount) {
-        return (amount != null) && amount.compareTo(BigDecimal.ZERO) == 0;
+    public static Boolean isZero(final BigDecimal amount) {
+        return (amount != null) && compareTo(amount, BigDecimal.ZERO) == 0;
     }
 
-    public static Boolean isEqual(BigDecimal amount1, BigDecimal amount2) {
-        return (amount1 != null) && (amount2 != null) && amount1.compareTo(amount2) == 0;
+    public static Boolean isEqual(final BigDecimal amount1, final BigDecimal amount2) {
+        return (amount1 != null) && (amount2 != null) && compareTo(amount1, amount2) == 0;
     }
 
-    public static Boolean isEqualOrGreater(BigDecimal first, BigDecimal second) {
-        return zeroIfNull(first).compareTo(zeroIfNull(second)) >= 0;
+    public static Boolean isEqualOrGreater(final BigDecimal first, final BigDecimal second) {
+        return compareTo(first, second) >= 0;
     }
 
-    public static Boolean isGreater(BigDecimal first, BigDecimal second) {
-        return zeroIfNull(first).compareTo(zeroIfNull(second)) > 0;
+    public static Boolean isGreater(final BigDecimal first, final BigDecimal second) {
+        return compareTo(first, second) > 0;
     }
 
-    public static Boolean isNegative(BigDecimal amount) {
-        return amount.compareTo(BigDecimal.ZERO)<0;
-    }
-    
-    public static Boolean isLesserOrEqualTo(BigDecimal first, BigDecimal second) {
-        return zeroIfNull(first).compareTo(zeroIfNull(second)) == -1 || zeroIfNull(first).compareTo(zeroIfNull(second)) == 0;
+    public static Boolean isLesser(final BigDecimal first, final BigDecimal second) {
+        return compareTo(first, second) < 0;
     }
 
-    public static BigDecimal add(BigDecimal... first) {
+    public static Boolean isNegative(final BigDecimal amount) {
+        return compareTo(amount, BigDecimal.ZERO) < 0;
+    }
+
+    public static Boolean isLesserOrEqualTo(final BigDecimal first, final BigDecimal second) {
+        return compareTo(first, second) <= 0;
+    }
+
+    public static BigDecimal add(final BigDecimal... first) {
         BigDecimal sum = BigDecimal.ZERO;
-        for (BigDecimal bigDecimal : first) {
+        for (final BigDecimal bigDecimal : first) {
             sum = sum.add(zeroIfNull(bigDecimal));
         }
         return sum;
     }
 
-    public static BigDecimal subtract(BigDecimal value, BigDecimal... subtractValues) {
+    public static BigDecimal subtract(final BigDecimal value, final BigDecimal... subtractValues) {
         return zeroIfNull(value).subtract(add(subtractValues));
     }
 
-    public static BigDecimal getShare(BigDecimal givenValue, BigDecimal shareAmount, BigDecimal totalAmount, MonetaryCurrency currency) {
+    public static BigDecimal getShare(final BigDecimal givenValue, final BigDecimal shareAmount, final BigDecimal totalAmount,
+            final MonetaryCurrency currency) {
         Money amount = Money.of(currency, BigDecimal.valueOf((givenValue.multiply(shareAmount).doubleValue() / totalAmount.doubleValue())));
         return amount.getAmount();
     }
 
-    public static BigDecimal multiply(BigDecimal amount, int val) {
+    public static BigDecimal multiply(final BigDecimal amount, final int val) {
         return amount.multiply(BigDecimal.valueOf(Double.valueOf(val)));
     }
 
-    public static BigDecimal divide(BigDecimal amount, int val, MonetaryCurrency currency) {
+    public static BigDecimal divide(final BigDecimal amount, final int val, final MonetaryCurrency currency) {
         return Money.of(currency, BigDecimal.valueOf(amount.doubleValue() / Double.valueOf(val))).getAmount();
     }
 
-    public static BigDecimal getInstallmentAmount(BigDecimal amount, int numberOfRepayment, MonetaryCurrency currency,
-            int currentInstallment) {
+    public static BigDecimal getInstallmentAmount(final BigDecimal amount, final int numberOfRepayment, final MonetaryCurrency currency,
+            final int currentInstallment) {
         BigDecimal deafultInstallmentAmount = divide(amount, numberOfRepayment, currency);
         if (numberOfRepayment != currentInstallment) { return deafultInstallmentAmount; }
         return amount.subtract(multiply(deafultInstallmentAmount, numberOfRepayment - 1));
     }
 
-    public static BigDecimal multiply(BigDecimal amount, BigDecimal... values) {
-    	BigDecimal product = zeroIfNull(amount);
-        for (BigDecimal value : values) {
-        	product = product.multiply(zeroIfNull(value));
+    public static BigDecimal multiply(final BigDecimal amount, final BigDecimal... values) {
+        BigDecimal product = zeroIfNull(amount);
+        for (final BigDecimal value : values) {
+            product = product.multiply(zeroIfNull(value));
         }
         return product;
     }
-    
+
     public static String randomStringGenerator(final String prefix, final int len, final String sourceSetString) {
         final int lengthOfSource = sourceSetString.length();
         final Random rnd = new Random();
@@ -110,12 +115,16 @@ public class MathUtility {
         }
         return (prefix + (sb.toString()));
     }
-    
+
     public static String randomStringGenerator(final String prefix, final int len) {
         return randomStringGenerator(prefix, len, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ");
     }
 
     public static String randomNameGenerator(final String prefix, final int lenOfRandomSuffix) {
         return randomStringGenerator(prefix, lenOfRandomSuffix);
+    }
+
+    public static Integer compareTo(final BigDecimal first, final BigDecimal second) {
+        return zeroIfNull(first).compareTo(zeroIfNull(second));
     }
 }

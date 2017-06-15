@@ -478,11 +478,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 this.glimLoanWriteServiceImpl.generateGlimLoanRepaymentSchedule(newLoanApplication);
             }
             
-            Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
+            final Map<BUSINESS_ENTITY, Object> eventDetailMap = constructEntityMap(BUSINESS_ENTITY.JSON_COMMAND, command);
             eventDetailMap.put(BUSINESS_ENTITY.LOAN, newLoanApplication);
-            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_CREATE,
-                    eventDetailMap);
-            
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_CREATE, eventDetailMap);
+
             return new CommandProcessingResultBuilder() //
                     .withCommandId(command.commandId()) //
                     .withEntityId(newLoanApplication.getId()) //
@@ -1305,6 +1304,8 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
 
             this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.LOAN_MODIFY,
                     eventDetailMap);
+            
+            
             
             return new CommandProcessingResultBuilder() //
                     .withEntityId(loanId) //

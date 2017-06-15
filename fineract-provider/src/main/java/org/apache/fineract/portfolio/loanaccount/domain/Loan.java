@@ -4923,6 +4923,10 @@ public class Loan extends AbstractPersistable<Long> {
         return this.loanRepaymentScheduleDetail.getPrincipal();
     }
 
+    public BigDecimal getPrincipalAmount() {
+        return this.loanRepaymentScheduleDetail.getPrincipalAmount();
+    }
+    
     public boolean hasCurrencyCodeOf(final String matchingCurrencyCode) {
         return getCurrencyCode().equalsIgnoreCase(matchingCurrencyCode);
     }

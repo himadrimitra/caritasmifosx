@@ -35,8 +35,9 @@ public class BusinessEventNotificationConstants {
                 "loan_withdraw_transfer"), LOAN_REJECT_TRANSFER("loan_reject_transfer"), LOAN_REASSIGN_OFFICER("loan_reassign_officer"), LOAN_REMOVE_OFFICER(
                 "loan_remove_officer"), LOAN_APPLY_OVERDUE_CHARGE("loan_apply_overdue_charge"), LOAN_INTEREST_RECALCULATION(
                 "loan_interest_recalculation"), LOAN_REFUND("loan_refund"), LOAN_ADD_SUBSIDY("loan_add_subsidy_transaction"), LOAN_REVOKE_SUBSIDY(
-                "loan_revoke_subsidy_transaction"),LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_CLOSE("client_close"), 
-                CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify");
+                "loan_revoke_subsidy_transaction"), LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_CLOSE("client_close"), CLIENT_DISASSOCIATE(
+                "client_disassociate"), TRANSFER_CLIENT("transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify"), SAVING_WITHDRAWAL(
+                "saving_withdrawal"), SAVING_TRANSFER("saving_transfer");
 
         private final String value;
 
@@ -66,8 +67,9 @@ public class BusinessEventNotificationConstants {
 
     public static enum BUSINESS_ENTITY {
         LOAN("loan"), LOAN_TRANSACTION("loan_transaction"), LOAN_CHARGE("loan_charge"), LOAN_ADJUSTED_TRANSACTION(
-                "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT("transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"),
-        JSON_COMMAND("json_command"), BUSINESS_EVENT("business_event");
+                "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
+                "transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"), JSON_COMMAND("json_command"), BUSINESS_EVENT(
+                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction");
 
         private final String value;
 

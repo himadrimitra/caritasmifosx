@@ -68,10 +68,9 @@
 
             var baseUrl = "";
 
-<<<<<<< HEAD
             if (docURL.substring(0, 4).toLowerCase() == "http") {
                 var l = getLocation(docURL);
-=======
+
 			<div class="flybar-nav">
 				<h2 class="flybar-button">Accounting</h2>
 				<div id="toc-menu-accounting" class="flybar-menu">
@@ -2021,6 +2020,22 @@
                             <td></td>
                             <td></td>
                         </tr>
+						<tr>
+							<td><a href="#clientaccountlimits">Client Account Limits</a></td>
+							<td>clients/{clientId}/accountlimits</td>
+							<td><a href="#create_clientaccountlimits">Create Client Account Limits</a></td>
+							<td><a href="#retrieve_clientaccountlimits">Retrieve Client Account Limits</a></td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td>clients/{clientId}/accountlimits/{accountlimitsId}</td>
+							<td></td>
+							<td><a href="#update_clientaccountlimits">Update Client Account Limits</a></td>
+							<td></td>
+							<td></td>
+						</tr>
                     </table>
                 </div>
             </div>
@@ -31288,7 +31303,7 @@
                     No Request Body:
                     {
                     }
-<<<<<<< HEAD
+
                 </code>
                 <code class="method-response">
                     {
@@ -31320,7 +31335,6 @@
 
                     <tr class=alt><td>fromAccountType</td></tr>
                     <tr><td class=fielddesc>The type of account from which the transfer is made. 1=Loan Account, 2=Savings Account</td></tr>
-=======
 				</code>
 				</div>
 			</div>
@@ -44171,15 +44185,23 @@ No Request Body:
             </div>
         </div>
         <!-- End of Tax Group -->
+
 		<a id="bulkcollection" name="bulkcollection" class="old-syle-anchor">&nbsp;</a>
         <div class="method-section">
             <div class="method-description">
                 <h3>Bulk Collection</h3>
+
+	<a id="clientaccountlimits" name="clientaccountlimits" class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h3>Customer Account Limits</h3>               
+
                 <table class=matrixHeading>
                     <tr class="matrixHeadingBG">
                         <td><div class="fineractHeading2">Field Descriptions</div></td>
                     </tr>
                     <tr class=alt>
+
                         <td>upload</td>
                     </tr>
                     <tr>
@@ -44236,6 +44258,73 @@ No Request Body:
                     </tr>
 					<tr class=alt>
                         <td>note</td>
+                        <td>Limit On Total Disbursement Amount</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>The disbursing amount should not exceed the "Total Disbursement Limit"
+                        </td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Limit On Total Loan Outstanding Amount</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>
+                        The total current outstanding amount(of all active loan account)  should not exceed the provided "Current Outstanding Limit" .
+                        </td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Daily Withdrawal Limit</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>
+                        Total amount withdrawn (excluding transferred amount) for the day+new withdrawal amount yet withdrawn should not exceed the provided "daily withdrawal limit".
+                        </td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Daily Transfer Limit</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>
+                        Total amount transferred for the day+new transfer amount yet transferred should not exceed the provided "daily transfer limit".
+                        </td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Limit On Total Overdraft Amount</td>
+                    </tr>
+                    <tr>
+                        <td class=fielddesc>
+                            The overdraft amount should not cross the provided "overdraft limit".
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <a id="create_clientaccountlimits" name="create_clientaccountlimits"
+           class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Create Account Limits for Client</h4>
+                <p>Creates Account Limits for Client</p>                       
+                <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Optional Fields in Client Account Limits</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Limit On Total Disbursement Amount</td>
+                    </tr>
+					 <tr class=alt>
+                        <td>Limit On Total Loan Outstanding Amount</td>
+                    </tr>
+					 <tr class=alt>
+                        <td>Daily Withdrawal Limit</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Daily Transfer Limit</td>
+                    </tr>
+                    <tr class=alt>
+                        <td>Limit On Total Overdraft Amount</td>
+
                     </tr>
                 </table>
             </div>
@@ -44342,6 +44431,87 @@ No Request Body:
                 </code>
                 <code class="method-response">
                     {"resourceId":21}
+                    POST https://DomainName/api/v1/clients/4/accountlimits
+                </code>
+                <code class="method-request">
+                    POST clients/4/accountlimits
+                    Content-Type: application/json
+                    Request Body:
+                    {
+                    "limitOnTotalDisbursementAmount": "10000",
+					"limitOnTotalLoanOutstandingAmount": "12000",
+					"dailyWithdrawalLimit": "2000",
+					"dailyTransferLimit": "1500",
+					"limitOnTotalOverdraftAmount": "1000",
+					"locale": "en"
+                    }
+                </code>
+                <code class="method-response">
+                    {
+                    "resourceId": 1
+                    }
+                </code>
+            </div>
+        </div>
+		<a id="retrieve_clientaccountlimits" name="retrieve_clientaccountlimits"
+           class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Retrieve Client Account Limits</h4>
+                <p>Retrieve Client Account Limits</p>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">
+                    GET https://DomainName/api/v1/clients/4/accountlimits
+                </code>
+                <code class="method-request">
+                    GET clients/4/accountlimits
+                    Content-Type: application/json
+                </code>
+                <code class="method-response">
+                    {
+                    "id": 15,
+					"clientId": 4,
+					"limitOnTotalDisbursementAmount": 10000.000000,
+					"limitOnTotalLoanOutstandingAmount": 12000.000000,
+					"dailyWithdrawalLimit": 2000.000000,
+					"dailyTransferLimit": 1500.000000,
+					"limitOnTotalOverdraftAmount": 1000.000000
+                    }
+                </code>
+            </div>
+        </div>
+        <a id="update_clientaccountlimits" name="update_clientaccountlimitsp"
+           class="old-syle-anchor">&nbsp;</a>
+        <div class="method-section">
+            <div class="method-description">
+                <h4>Update Client Account Limits</h4>
+                <p>Updates Client Account Limits</p>
+            </div>
+            <div class="method-example">
+                <code class="method-declaration">
+                    PUT https://DomainName/api/v1/clients/4/accountlimits/15
+                </code>
+                <code class="method-request">
+                    PUT clients/4/accountlimits/15
+                    Content-Type: application/json
+                    Request Body:
+                    {
+                    "limitOnTotalDisbursementAmount": 10000,
+					"limitOnTotalLoanOutstandingAmount": 12000,
+					"dailyWithdrawalLimit": 2000,
+					"dailyTransferLimit": "1000",
+					"limitOnTotalOverdraftAmount": 1000,
+					"locale": "en"
+                    }
+                </code>
+                <code class="method-response">
+                    {
+                    "resourceId": 15,
+					"changes": {
+					"dailyTransferLimit": 1000
+ 					  }
+                    }
                 </code>
             </div>
         </div>
