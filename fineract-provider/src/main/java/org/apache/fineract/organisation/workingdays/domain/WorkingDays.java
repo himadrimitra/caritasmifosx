@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.organisation.workingdays.domain;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,6 +26,7 @@ import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.organisation.workingdays.api.WorkingDaysApiConstants;
@@ -46,6 +48,9 @@ public class WorkingDays extends AbstractPersistable<Long> {
 
     @Column(name = "extend_term_daily_repayments", nullable = false)
     private Boolean extendTermForDailyRepayments;
+    
+    @Transient
+    private Map<Integer,NonWorkingDayRescheduleDetail> nonWorkingDayRescheduleDetails = new HashMap<>();
     
     protected WorkingDays() {
 
@@ -107,6 +112,11 @@ public class WorkingDays extends AbstractPersistable<Long> {
             this.extendTermForDailyRepayments = newValue;
         }
         return actualChanges;
+    }
+
+    
+    public Map<Integer,NonWorkingDayRescheduleDetail> getNonWorkingDayRescheduleDetails() {
+        return this.nonWorkingDayRescheduleDetails;
     }
 
 }

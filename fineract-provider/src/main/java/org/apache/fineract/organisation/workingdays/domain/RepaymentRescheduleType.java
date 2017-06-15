@@ -30,7 +30,9 @@ public enum RepaymentRescheduleType {
     MOVE_TO_NEXT_WORKING_DAY(2, "RepaymentRescheduleType.move.to.next.working.day"), //
     MOVE_TO_NEXT_REPAYMENT_DAY(3, "RepaymentRescheduleType.move.to.next.repayment.day"), //
     MOVE_TO_PREVIOUS_WORKING_DAY(4, "RepaymentRescheduleType.move.to.previous.working.day"), //
-    MOVE_TO_NEXT_MEETING_DAY(5, "RepaymentRescheduleType.move.to.next.meeting.day");
+    MOVE_TO_NEXT_MEETING_DAY(5, "RepaymentRescheduleType.move.to.next.meeting.day"),
+    MOVE_TO_NEXT_WORKING_WEEK_DAY(6, "RepaymentRescheduleType.move.to.next.working.week.day"),
+    MOVE_TO_PREVIOUS_WORKING_WEEK_DAY(7, "RepaymentRescheduleType.move.to.previous.working.week.day");
 
     private final Integer value;
     private final String code;
@@ -108,6 +110,12 @@ public enum RepaymentRescheduleType {
                 case 5:
                     repaymentRescheduleType = RepaymentRescheduleType.MOVE_TO_NEXT_MEETING_DAY;
                 break;
+                case 6:
+                    repaymentRescheduleType = RepaymentRescheduleType.MOVE_TO_NEXT_WORKING_WEEK_DAY;
+                break;
+                case 7:
+                    repaymentRescheduleType = RepaymentRescheduleType.MOVE_TO_PREVIOUS_WORKING_WEEK_DAY;
+                break;
             }
         }
         return repaymentRescheduleType;
@@ -135,6 +143,12 @@ public enum RepaymentRescheduleType {
             case MOVE_TO_NEXT_MEETING_DAY:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Move To Next Meeting Day");
             break;
+            case MOVE_TO_NEXT_WORKING_WEEK_DAY:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Move To Next Working week Day");
+            break;
+            case MOVE_TO_PREVIOUS_WORKING_WEEK_DAY:
+                optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Move To Previous Working week Day");
+            break;
             default:
             break;
         }
@@ -143,5 +157,17 @@ public enum RepaymentRescheduleType {
 
     public boolean isSameDay() {
         return this.value.equals(RepaymentRescheduleType.SAME_DAY.getValue());
+    }
+    
+    public boolean isMoveToNextWorkingWeektDay() {
+        return this.value.equals(RepaymentRescheduleType.MOVE_TO_NEXT_WORKING_WEEK_DAY.getValue());
+    }
+    
+    public boolean isMoveToPreviousWorkingWeektDay() {
+        return this.value.equals(RepaymentRescheduleType.MOVE_TO_PREVIOUS_WORKING_WEEK_DAY.getValue());
+    }
+    
+    public boolean isInvalid() {
+        return this.value.equals(RepaymentRescheduleType.INVALID.getValue());
     }
 }
