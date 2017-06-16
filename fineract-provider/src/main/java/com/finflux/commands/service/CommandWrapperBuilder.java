@@ -326,4 +326,12 @@ public class CommandWrapperBuilder {
         this.formDataMultiPart = formDataMultiPart;
         return this;
     }
+
+    public CommandWrapperBuilder rejectBankTransaction(Long transactionId) {
+        this.actionName = "REJECT";
+        this.entityName = "BANK_TRANSACTION";
+        this.entityId = transactionId;
+        this.href = "/banktransaction/" + transactionId + "?command=reject";
+        return this;
+    }
 }

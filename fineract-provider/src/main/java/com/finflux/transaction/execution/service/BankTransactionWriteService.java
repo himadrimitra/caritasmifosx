@@ -8,6 +8,8 @@ import com.finflux.transaction.execution.domain.BankAccountTransaction;
 public interface BankTransactionWriteService {
 
     CommandProcessingResult initiateTransaction(Long transactionId);
+    
+    CommandProcessingResult rejectTransaction(Long transactionId);
 
     CommandProcessingResult submitTransaction(Long transactionId, JsonCommand command);
 

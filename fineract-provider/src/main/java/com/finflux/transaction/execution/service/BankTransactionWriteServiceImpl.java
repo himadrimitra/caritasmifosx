@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import com.finflux.transaction.execution.data.BankTransactionDataAssembler;
 import com.finflux.transaction.execution.data.BankTransactionDataValidator;
+import com.finflux.transaction.execution.data.BankTransactionPermissionConstants;
 import com.finflux.transaction.execution.data.TransactionStatus;
 import com.finflux.transaction.execution.domain.BankAccountTransaction;
 import com.finflux.transaction.execution.domain.BankAccountTransactionRepository;
@@ -88,5 +89,17 @@ public class BankTransactionWriteServiceImpl implements BankTransactionWriteServ
 
     private String generateUniqueReferenceId(Long id) {
         return dateFmt.print(new DateTime())+"f"+id;
+    }
+
+    @Override
+    public CommandProcessingResult rejectTransaction(Long transactionId) {
+        this.context.authenticatedUser().validateHasPermissionTo(BankTransactionPermissionConstants.rejectPermissionParam);
+        final BankAccountTransaction bankTransaction = this.repositoryWrapper.findOneWithNotFoundDetection(transactionId);
+        TransactionStatus status = TransactionStatus.fromInt(bankTransaction.getStatus());
+        if (TransactionStatus.SUBMITTED.equals(status)) {
+            bankTransaction.setStatus(TransactionStatus.CLOSED.getValue());
+            this.repository.save(bankTransaction);
+        }
+        return new CommandProcessingResultBuilder().withEntityId(transactionId).build();
     }
 }
