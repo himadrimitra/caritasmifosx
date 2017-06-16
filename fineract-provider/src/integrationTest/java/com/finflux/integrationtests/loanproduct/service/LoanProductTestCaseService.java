@@ -19,7 +19,6 @@ import com.jayway.restassured.specification.ResponseSpecification;
 public class LoanProductTestCaseService {
 
     private RequestSpecification requestSpec;
-    private ResponseSpecification responseSpec;
     private LoanProductHelper loanProductHelper;
     private CodeValueService codeValueService;
 
@@ -28,7 +27,6 @@ public class LoanProductTestCaseService {
 
     public LoanProductTestCaseService(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         this.requestSpec = requestSpec;
-        this.responseSpec = responseSpec;
         this.loanProductHelper = new LoanProductHelper(requestSpec, responseSpec);
         this.codeValueService = new CodeValueService(requestSpec, responseSpec);
         initializeRequiredEntities();

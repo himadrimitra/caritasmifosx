@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class BusinessEventRegisterService {
@@ -45,17 +46,17 @@ public class BusinessEventRegisterService {
             final Map<BUSINESS_EVENTS, List<BusinessEventListner>> preListners = new HashMap<>(5);
             final Map<BUSINESS_EVENTS, List<BusinessEventListner>> postListners = new HashMap<>(5);
             
-            List<Map<String, Object>> eventListners = this.jdbcTemplate.queryForList(sql);
+            final List<Map<String, Object>> eventListners = this.jdbcTemplate.queryForList(sql);
             for (Map<String, Object> listners : eventListners) {
-                String businessEventName = (String) listners.get("eventName");
-                BUSINESS_EVENTS businessEvent = BUSINESS_EVENTS.from(businessEventName);
-                String preListnersString = (String) listners.get("preListners");
-                String postListnersString = (String) listners.get("postListners");
-                if (preListnersString != null) {
+                final String businessEventName = (String) listners.get("eventName");
+                final BUSINESS_EVENTS businessEvent = BUSINESS_EVENTS.from(businessEventName);
+                final String preListnersString = (String) listners.get("preListners");
+                final String postListnersString = (String) listners.get("postListners");
+                if (!StringUtils.isEmpty(preListnersString)) {
                     String[] preListnersArray = preListnersString.split(VALUE_SEPARATOR);
                     registerForNotification(businessEvent, preListnersArray, preListners);
                 }
-                if (postListnersString != null) {
+                if (!StringUtils.isEmpty(postListnersString)) {
                     String[] postListnersArray = postListnersString.split(VALUE_SEPARATOR);
                     registerForNotification(businessEvent, postListnersArray, postListners);
                 }

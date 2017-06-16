@@ -222,6 +222,10 @@ public class LoanProductRelatedDetail implements LoanProductMinimumRepaymentSche
         return Money.of(this.currency, this.principal);
     }
 
+    public BigDecimal getPrincipalAmount() {
+        return this.principal;
+    }
+    
     public void setPrincipal(BigDecimal principal) {
         this.principal = principal;
     }

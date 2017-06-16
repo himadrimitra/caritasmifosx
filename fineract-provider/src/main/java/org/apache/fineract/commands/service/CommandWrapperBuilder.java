@@ -4000,4 +4000,32 @@ public class CommandWrapperBuilder {
         this.href = "/loanapplicationreferences/" + loanApplicationReferenceId;
         return this;
     }
+    
+    public CommandWrapperBuilder createAccountLimits(final Long clientId) {
+        this.actionName = "CREATE";
+        this.entityName = "CUSTOMERACCOUNTLIMITS";
+        this.entityId = null;
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "/accountlimits";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateAccountLimits(final Long accountLimitId, final Long clientId) {
+        this.actionName = "UPDATE";
+        this.entityName = "CUSTOMERACCOUNTLIMITS";
+        this.entityId = accountLimitId;
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "/accountlimits/" + accountLimitId;
+        return this;
+    }
+    
+    public CommandWrapperBuilder deleteAccountLimits(final Long accountLimitId, final Long clientId) {
+        this.actionName = "DELETE";
+        this.entityName = "CUSTOMERACCOUNTLIMITS";
+        this.entityId = accountLimitId;
+        this.clientId = clientId;
+        this.href = "/clients/" + clientId + "/accountlimits/" + accountLimitId;
+        return this;
+    }
+
 }
