@@ -42,26 +42,32 @@ public class OfficeData implements Serializable {
     @SuppressWarnings("unused")
     private final Collection<OfficeData> allowedParents;
     private Collection<WorkFlowSummaryData> workFlowSummaries;
+    private final String officeCodeId;
 
     public static OfficeData dropdown(final Long id, final String name, final String nameDecorated) {
-        return new OfficeData(id, name, nameDecorated, null, null, null, null, null, null);
+        final String officeCodeId = null;
+        return new OfficeData(id, name, nameDecorated, null, null, null, null, null, null, officeCodeId);
     }
-    
+
     public static OfficeData journalEntry(final Long id, final String name, final String externalId) {
-        return new OfficeData(id, name, null, externalId, null, null, null, null, null);
+        final String officeCodeId = null;
+        return new OfficeData(id, name, null, externalId, null, null, null, null, null, officeCodeId);
     }
 
     public static OfficeData template(final List<OfficeData> parentLookups, final LocalDate defaultOpeningDate) {
-        return new OfficeData(null, null, null, null, defaultOpeningDate, null, null, null, parentLookups);
+        final String officeCodeId = null;
+
+        return new OfficeData(null, null, null, null, defaultOpeningDate, null, null, null, parentLookups, officeCodeId);
     }
 
     public static OfficeData appendedTemplate(final OfficeData office, final Collection<OfficeData> allowedParents) {
         return new OfficeData(office.id, office.name, office.nameDecorated, office.externalId, office.openingDate, office.hierarchy,
-                office.parentId, office.parentName, allowedParents);
+                office.parentId, office.parentName, allowedParents, office.officeCodeId);
     }
 
     public OfficeData(final Long id, final String name, final String nameDecorated, final String externalId, final LocalDate openingDate,
-            final String hierarchy, final Long parentId, final String parentName, final Collection<OfficeData> allowedParents) {
+            final String hierarchy, final Long parentId, final String parentName, final Collection<OfficeData> allowedParents,
+            final String officeCodeId) {
         this.id = id;
         this.name = name;
         this.nameDecorated = nameDecorated;
@@ -71,12 +77,14 @@ public class OfficeData implements Serializable {
         this.parentName = parentName;
         this.parentId = parentId;
         this.allowedParents = allowedParents;
+        this.officeCodeId = officeCodeId;
     }
 
     public static OfficeData lookup(final Long id, final String name) {
-        return new OfficeData(id, name, null, null, null, null, null, null, null);
+        String officeCodeId = null;
+        return new OfficeData(id, name, null, null, null, null, null, null, null, officeCodeId);
     }
-    
+
     public boolean hasIdentifyOf(final Long officeId) {
         return this.id.equals(officeId);
     }
@@ -103,5 +111,9 @@ public class OfficeData implements Serializable {
     
     public String getExternalId(){
         return this.externalId;
+    }
+
+    public String getOfficeCodeId() {
+        return this.officeCodeId;
     }
 }

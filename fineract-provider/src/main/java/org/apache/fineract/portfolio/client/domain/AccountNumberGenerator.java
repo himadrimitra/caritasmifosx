@@ -45,7 +45,7 @@ public class AccountNumberGenerator {
 
     private final static String ID = "id";
     private final static String CLIENT_TYPE = "clientType";
-    private final static String OFFICE_NAME = "officeName";
+    private final static String OFFICE_CODE = "officeCode";
     private final static String LOAN_PRODUCT_SHORT_NAME = "loanProductShortName";
     private final static String SAVINGS_PRODUCT_SHORT_NAME = "savingsProductShortName";
     private final static String SHARE_PRODUCT_SHORT_NAME = "sharesProductShortName" ;
@@ -59,7 +59,7 @@ private CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
     public String generate(Client client, AccountNumberFormat accountNumberFormat) {
         Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, client.getId().toString());
-        propertyMap.put(OFFICE_NAME, client.getOffice().getName());
+        propertyMap.put(OFFICE_CODE, client.getOffice().getOfficeCodeId());
         CodeValue clientType = client.clientType();
         if (clientType != null) {
             propertyMap.put(CLIENT_TYPE, clientType.label());
@@ -75,7 +75,7 @@ private CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
         }
         Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, loan.getId().toString());
-        propertyMap.put(OFFICE_NAME, loan.getOffice().getName());
+        propertyMap.put(OFFICE_CODE, loan.getOffice().getOfficeCodeId());
         propertyMap.put(LOAN_PRODUCT_SHORT_NAME, loan.loanProduct().getShortName());
         return generateAccountNumber(propertyMap, accountNumberFormat);
 
@@ -90,7 +90,7 @@ private CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
         }
         Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, savingsAccount.getId().toString());
-        propertyMap.put(OFFICE_NAME, savingsAccount.office().getName());
+        propertyMap.put(OFFICE_CODE, savingsAccount.office().getOfficeCodeId());
         propertyMap.put(SAVINGS_PRODUCT_SHORT_NAME, savingsAccount.savingsProduct().getShortName());
         return generateAccountNumber(propertyMap, accountNumberFormat);
 
@@ -112,8 +112,8 @@ private CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
                     prefix = propertyMap.get(CLIENT_TYPE);
                 break;
 
-                case OFFICE_NAME:
-                    prefix = propertyMap.get(OFFICE_NAME);
+                case OFFICE_CODE:
+                    prefix = propertyMap.get(OFFICE_CODE);
                 break;
 
                 case LOAN_PRODUCT_SHORT_NAME:
@@ -136,14 +136,14 @@ private CustomAccountNumberGeneratorFactory customAccountNumberGeneratorFactory;
     public String generateGroupAccountNumber(Group group, AccountNumberFormat accountNumberFormat) {
     	Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, group.getId().toString());
-        propertyMap.put(OFFICE_NAME, group.getOffice().getName());        
+        propertyMap.put(OFFICE_CODE, group.getOffice().getOfficeCodeId());        
         return generateAccountNumber(propertyMap, accountNumberFormat);
     }
     
     public String generateCenterAccountNumber(Group group, AccountNumberFormat accountNumberFormat) {
     	Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(ID, group.getId().toString());
-        propertyMap.put(OFFICE_NAME, group.getOffice().getName());        
+        propertyMap.put(OFFICE_CODE, group.getOffice().getOfficeCodeId());        
         return generateAccountNumber(propertyMap, accountNumberFormat);
     }
 

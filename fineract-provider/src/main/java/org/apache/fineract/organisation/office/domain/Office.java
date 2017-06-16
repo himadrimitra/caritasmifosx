@@ -38,6 +38,7 @@ import javax.persistence.UniqueConstraint;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
+import org.apache.fineract.organisation.office.api.OfficeApiConstants;
 import org.apache.fineract.organisation.office.exception.CannotUpdateOfficeWithParentOfficeSameAsSelf;
 import org.apache.fineract.organisation.office.exception.RootOfficeParentCannotBeUpdated;
 import org.hibernate.annotations.Cache;
@@ -75,13 +76,17 @@ public class Office extends AbstractPersistable<Long> {
 
     @Column(name = "external_id", length = 100)
     private String externalId;
+    
+    @Column(name = "office_code", length = 5)
+    private String officeCodeId;
 
     public String getExternalId() {
 		return this.externalId;
 	}
 
-	public static Office headOffice(final String name, final LocalDate openingDate, final String externalId) {
-        return new Office(null, name, openingDate, externalId);
+    public static Office headOffice(final String name, final LocalDate openingDate, final String externalId) {
+        final String officeCodeId = null;
+        return new Office(null, name, openingDate, externalId, officeCodeId);
     }
 
     public static Office fromJson(final Office parentOffice, final JsonCommand command) {
@@ -89,7 +94,8 @@ public class Office extends AbstractPersistable<Long> {
         final String name = command.stringValueOfParameterNamed("name");
         final LocalDate openingDate = command.localDateValueOfParameterNamed("openingDate");
         final String externalId = command.stringValueOfParameterNamed("externalId");
-        return new Office(parentOffice, name, openingDate, externalId);
+		final String officeCodeId = command.stringValueOfParameterNamed(OfficeApiConstants.officeCodeIdParamName);
+        return new Office(parentOffice, name, openingDate, externalId,officeCodeId);
     }
 
     protected Office() {
@@ -97,9 +103,10 @@ public class Office extends AbstractPersistable<Long> {
         this.parent = null;
         this.name = null;
         this.externalId = null;
+        this.officeCodeId = null;
     }
 
-    private Office(final Office parent, final String name, final LocalDate openingDate, final String externalId) {
+    private Office(final Office parent, final String name, final LocalDate openingDate, final String externalId,final String officeCodeId) {
         this.parent = parent;
         this.openingDate = openingDate.toDateTimeAtStartOfDay().toDate();
         if (parent != null) {
@@ -115,6 +122,11 @@ public class Office extends AbstractPersistable<Long> {
             this.externalId = externalId.trim();
         } else {
             this.externalId = null;
+        }
+        if (StringUtils.isNotBlank(officeCodeId)) {
+            this.officeCodeId = officeCodeId.trim();
+        } else {
+            this.officeCodeId = null;
         }
     }
 
@@ -161,6 +173,12 @@ public class Office extends AbstractPersistable<Long> {
             final String newValue = command.stringValueOfParameterNamed(externalIdParamName);
             actualChanges.put(externalIdParamName, newValue);
             this.externalId = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        final String officeCodeIdParamName = OfficeApiConstants.officeCodeIdParamName;
+        if (command.isChangeInStringParameterNamed(officeCodeIdParamName, this.officeCodeId)) {
+            final String newValue = command.stringValueOfParameterNamed(officeCodeIdParamName);
+            actualChanges.put(officeCodeIdParamName, newValue);
+            this.officeCodeId = StringUtils.defaultIfEmpty(newValue, getOfficeCodeId());
         }
 
         return actualChanges;
@@ -252,5 +270,15 @@ public class Office extends AbstractPersistable<Long> {
     public Office getParent() {
         return this.parent;
     }
-    
+
+    public void generateOfficeCode() {
+        if (this.officeCodeId == null) {
+            this.officeCodeId = String.valueOf(getId());
+        }
+    }
+
+    public String getOfficeCodeId() {
+        return this.officeCodeId;
+    }
+
 }

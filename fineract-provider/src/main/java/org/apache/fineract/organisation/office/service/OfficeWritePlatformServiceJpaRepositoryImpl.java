@@ -97,6 +97,7 @@ public class OfficeWritePlatformServiceJpaRepositoryImpl implements OfficeWriteP
             this.officeRepository.save(office);
 
             office.generateHierarchy();
+            office.generateOfficeCode();
 
             this.officeRepository.save(office);
 
