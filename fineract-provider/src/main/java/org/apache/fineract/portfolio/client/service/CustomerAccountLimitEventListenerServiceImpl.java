@@ -18,6 +18,7 @@ import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -47,7 +48,15 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     private BigDecimal getTotalDisbursementAmountLimit(final Long clientId) {
         final String sql = "select cal.total_disbursement_amount_limit as totalDisbursementAmountLimit from m_client_account_limits cal join m_client c on c.id = cal.client_id where cal.client_id = ?";
-        return this.jdbcTemplate.queryForObject(sql, new Object[] { clientId }, BigDecimal.class);
+        return queryExecuteAndReturnBigDecimalValue(sql, clientId);
+    }
+
+    private BigDecimal queryExecuteAndReturnBigDecimalValue(final String sql, final Long clientId) {
+        try {
+            return this.jdbcTemplate.queryForObject(sql, new Object[] { clientId }, BigDecimal.class);
+        } catch (final EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 
     private void throwGeneralPlatformDomainRuleException(final String globalisationMessageCode, final String defaultUserMessage,
@@ -60,8 +69,7 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
         final BigDecimal totalLoanOutstandingAmountLimit = getTotalLoanOutstandingAmountLimit(clientId);
         if (totalLoanOutstandingAmountLimit != null) {
             final String sql = "select SUM(ifnull(l.principal_outstanding_derived, 0)) as totalCurrentLoansOutsatndingAmountLimit from m_loan l join m_client c on c.id = l.client_id where l.loan_status_id = 300 and l.client_id = ? ";
-            BigDecimal totalCurrentLoansOutsatndingAmountLimit = this.jdbcTemplate.queryForObject(sql, new Object[] { clientId },
-                    BigDecimal.class);
+            BigDecimal totalCurrentLoansOutsatndingAmountLimit = queryExecuteAndReturnBigDecimalValue(sql, clientId);
             totalCurrentLoansOutsatndingAmountLimit = MathUtility.add(totalCurrentLoansOutsatndingAmountLimit, principalAmount);
             if (MathUtility.isLesser(totalLoanOutstandingAmountLimit, totalCurrentLoansOutsatndingAmountLimit)) {
                 final String globalisationMessageCode = "error.msg.all.loans.outstanding.amount.should.not.be.greater.than.client.total.loan.outstanding.amount.limit";
@@ -76,7 +84,7 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     private BigDecimal getTotalLoanOutstandingAmountLimit(final Long clientId) {
         final String sql = "select cal.total_loan_outstanding_amount_limit as totalLoanOutstandingAmountLimit from m_client_account_limits cal join m_client c on c.id = cal.client_id where cal.client_id = ?";
-        return this.jdbcTemplate.queryForObject(sql, new Object[] { clientId }, BigDecimal.class);
+        return queryExecuteAndReturnBigDecimalValue(sql, clientId);
     }
 
     @Override
@@ -105,7 +113,7 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     private BigDecimal getClientTotalDailyWithdrawalAmountLimit(final Long clientId) {
         final String sql = "select cal.daily_withdrawal_amount_limit as totalDailyWithdrawalAmountLimit from m_client_account_limits cal join m_client c on c.id = cal.client_id where cal.client_id = ?";
-        return this.jdbcTemplate.queryForObject(sql, new Object[] { clientId }, BigDecimal.class);
+        return queryExecuteAndReturnBigDecimalValue(sql, clientId);
     }
 
     @Override
@@ -145,7 +153,7 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     private BigDecimal getClientTotalDailyTransferAmountLimit(final Long clientId) {
         final String sql = "select cal.daily_transfer_amount_limit as totalDailyTransferAmountLimit from m_client_account_limits cal join m_client c on c.id = cal.client_id where cal.client_id = ?";
-        return this.jdbcTemplate.queryForObject(sql, new Object[] { clientId }, BigDecimal.class);
+        return queryExecuteAndReturnBigDecimalValue(sql, clientId);
     }
 
     @Override
@@ -166,6 +174,6 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     private BigDecimal getClientTotalOverdraftAmountLimit(final Long clientId) {
         final String sql = "select cal.total_overdraft_amount_limit as totalOverdraftAmountLimit from m_client_account_limits cal join m_client c on c.id = cal.client_id where cal.client_id = ?";
-        return this.jdbcTemplate.queryForObject(sql, new Object[] { clientId }, BigDecimal.class);
+        return queryExecuteAndReturnBigDecimalValue(sql, clientId);
     }
 }
