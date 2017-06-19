@@ -55,7 +55,7 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
     }
 
     @Override
-    @CronTarget(jobName = JobName.ADD_ACCRUAL_ENTRIES)
+    @CronTarget(jobName = JobName.ADD_DUE_DATE_ACCRUAL_ENTRIES)
     public void addAccrualAccounting() throws JobExecutionException {
         Collection<LoanScheduleAccrualData> loanScheduleAccrualDatas = this.loanReadPlatformService.retriveScheduleAccrualData();
        
