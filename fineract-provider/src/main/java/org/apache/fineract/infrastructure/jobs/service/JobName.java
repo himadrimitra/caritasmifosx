@@ -31,7 +31,7 @@ public enum JobName {
     PAY_DUE_SAVINGS_CHARGES("Pay Due Savings Charges"), //
     APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT("Apply penalty to overdue loans"), //
     EXECUTE_STANDING_INSTRUCTIONS("Execute Standing Instruction"), //
-    ADD_ACCRUAL_ENTRIES("Add Accrual Transactions"), //
+    ADD_DUE_DATE_ACCRUAL_ENTRIES("Add Due Date Accrual Transactions"), //
     UPDATE_NPA("Update Non Performing Assets"), //
     UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS("Update Deposit Accounts Maturity details"), //
     TRANSFER_INTEREST_TO_SAVINGS("Transfer Interest To Savings"), //
