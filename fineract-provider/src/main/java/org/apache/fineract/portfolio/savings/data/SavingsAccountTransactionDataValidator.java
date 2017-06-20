@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.portfolio.savings.data;
 
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_HOLD_AMOUNT_REQUEST_DATA_PARAMETERS;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.activatedOnDateParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.bankNumberParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.checkNumberParamName;
@@ -34,6 +36,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +49,14 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.organisation.monetary.domain.Money;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
+import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -58,7 +68,7 @@ import com.google.gson.reflect.TypeToken;
 public class SavingsAccountTransactionDataValidator {
 
     private final FromJsonHelper fromApiJsonHelper;
-
+    
     @Autowired
     public SavingsAccountTransactionDataValidator(final FromJsonHelper fromApiJsonHelper) {
         this.fromApiJsonHelper = fromApiJsonHelper;
@@ -160,7 +170,69 @@ public class SavingsAccountTransactionDataValidator {
         }
 
     }
+    
+    public SavingsAccountTransaction validateHoldAndAssembleForm(final String json, final SavingsAccount account, final AppUser createdUser) {
+        if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
 
+        final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
+        this.fromApiJsonHelper.checkForUnsupportedParameters(typeOfMap, json, SAVINGS_ACCOUNT_HOLD_AMOUNT_REQUEST_DATA_PARAMETERS);
+
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
+
+        final JsonElement element = this.fromApiJsonHelper.parse(json);
+
+        final BigDecimal amount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(transactionAmountParamName, element);
+        baseDataValidator.reset().parameter(transactionAmountParamName).value(amount).notNull().positiveAmount();
+        final LocalDate transactionDate = this.fromApiJsonHelper.extractLocalDateNamed(transactionDateParamName, element);
+        baseDataValidator.reset().parameter(transactionDateParamName).value(transactionDate).notNull();
+        boolean isActive = account.isActive();
+        
+        if (!isActive) {
+            baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
+                    .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
+        }
+        account.holdFunds(amount);
+        if (MathUtility.isLesser(account.getWithdrawableBalance(), BigDecimal.ZERO)){
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("insufficient balance", account.getId());
+            baseDataValidator.failWithCode("validation.msg.savingsaccount.insufficient balance", "Insufficient balance");
+        }
+        LocalDate lastTransactionDate = account.retrieveLastTransactionDate();
+        // compare two dates now
+        if (lastTransactionDate != null && transactionDate.isBefore(lastTransactionDate)) {
+            baseDataValidator.parameter(SavingsApiConstants.dateParamName).value(lastTransactionDate).failWithCode(
+                    "validation.msg.date.can.not.be.before.last.transaction.date", "Amount can be put on hold only after last transaction");
+        }
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        final PaymentDetail paymentDetails = null;
+        Date createdDate = DateUtils.getDateOfTenant();
+        SavingsAccountTransaction transaction = SavingsAccountTransaction.holdAmount(account, account.office(), paymentDetails,
+                transactionDate, Money.of(account.getCurrency(), amount), createdDate, createdUser);
+        return transaction;
+    }
+
+    public SavingsAccountTransaction validateReleaseAmountAndAssembleForm(final SavingsAccountTransaction holdTransaction, final AppUser createdUser) {
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
+
+        if (holdTransaction == null) {
+            baseDataValidator.failWithCode("validation.msg.validation.errors.exist", "Transaction not found");
+        } else if (holdTransaction.getReleaseIdOfHoldAmountTransaction() != null) {
+            baseDataValidator.parameter(SavingsApiConstants.amountParamName).value(holdTransaction.getAmount()).failWithCode("validation.msg.amount.is.not.on.hold",
+                    "Transaction amount is not on hold");
+        }
+
+        throwExceptionIfValidationWarningsExist(dataValidationErrors);
+        Date createdDate = DateUtils.getDateOfTenant();
+        LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+        SavingsAccountTransaction transaction = SavingsAccountTransaction.releaseAmount(holdTransaction, transactionDate, createdDate,
+                createdUser);
+        return transaction;
+    }
+    
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {
         if (!dataValidationErrors.isEmpty()) {
             //
