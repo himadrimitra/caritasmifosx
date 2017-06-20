@@ -93,4 +93,21 @@ public interface SavingsAccountWritePlatformService {
     void postInterest(SavingsAccount account, boolean postInterestAs, LocalDate transactionDate);
     
     List<Long> depositAndWithdraw(Map<Long, List<SavingsAccountTransactionDTO>> savingstransactions);
+    
+    CommandProcessingResult blockAccount(Long savingsId);
+
+    CommandProcessingResult unblockAccount(Long savingsId);
+
+    CommandProcessingResult holdAmount(Long savingsId, JsonCommand command);
+
+    CommandProcessingResult blockCredits(Long savingsId);
+
+    CommandProcessingResult unblockCredits(Long savingsId);
+
+    CommandProcessingResult blockDebits(Long savingsId);
+
+    CommandProcessingResult unblockDebits(Long savingsId);
+
+    CommandProcessingResult releaseAmount(Long savingsId, Long transactionId);
+   
 }
