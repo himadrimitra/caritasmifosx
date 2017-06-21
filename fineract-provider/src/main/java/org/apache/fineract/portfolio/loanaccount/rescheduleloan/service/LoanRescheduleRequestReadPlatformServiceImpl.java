@@ -25,11 +25,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.service.CodeValueReadPlatformService;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTermVariationsData;
+import org.apache.fineract.portfolio.loanaccount.rescheduleloan.RescheduleLoansApiConstants;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestData;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestEnumerations;
 import org.apache.fineract.portfolio.loanaccount.rescheduleloan.data.LoanRescheduleRequestStatusEnumData;
@@ -249,5 +251,61 @@ public class LoanRescheduleRequestReadPlatformServiceImpl implements LoanResched
         final String sql = "select tv.id from m_loan_reschedule_request_term_variations_mapping tvm join m_loan_term_variations tv on tvm.loan_term_variations_id = tv.id and tv.loan_id = ? and tv.is_active = 1 ";
         return this.jdbcTemplate.queryForList(sql, Long.class, loanId);
     }
+    
+    private static final class LoanRescheduleRequestRowMapperForBulkApproval implements RowMapper<LoanRescheduleRequestData> {
+
+        public String schema() {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+
+            sqlBuilder.append("lrr.id as id, lrr.status_enum as statusEnum, lrr.reschedule_from_date as rescheduleFromDate, ");
+            sqlBuilder.append("cv.id as rescheduleReasonCvId, cv.code_value as rescheduleReasonCvValue, ");
+            sqlBuilder
+                    .append(" loan.id as loanId, loan.account_no as loanAccountNumber, client.id as clientId, client.display_name as clientName ");
+            sqlBuilder.append("from m_loan_reschedule_request lrr ");
+            sqlBuilder.append("left join m_loan loan on loan.id = lrr.loan_id ");
+            sqlBuilder.append("left join m_client client on client.id = loan.client_id ");
+            sqlBuilder.append("left join m_code_value cv on cv.id = lrr.reschedule_reason_cv_id ");
+            return sqlBuilder.toString();
+        }
+
+        @Override
+        public LoanRescheduleRequestData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Long id = rs.getLong("id");
+            final Long loanId = rs.getLong("loanId");
+            final Integer statusEnumId = JdbcSupport.getInteger(rs, "statusEnum");
+            final LoanRescheduleRequestStatusEnumData statusEnum = LoanRescheduleRequestEnumerations.status(statusEnumId);
+            final String clientName = rs.getString("clientName");
+            final String loanAccountNumber = rs.getString("loanAccountNumber");
+            final Long clientId = rs.getLong("clientId");
+            final LocalDate rescheduleFromDate = JdbcSupport.getLocalDate(rs, "rescheduleFromDate");
+            final Long rescheduleReasonCvId = JdbcSupport.getLong(rs, "rescheduleReasonCvId");
+            final String rescheduleReasonCvValue = rs.getString("rescheduleReasonCvValue");
+            final CodeValueData rescheduleReasonCodeValue = CodeValueData.instance(rescheduleReasonCvId, rescheduleReasonCvValue);
+            return LoanRescheduleRequestData.instance(id, loanId, statusEnum, clientName, loanAccountNumber, clientId, rescheduleFromDate,
+                    rescheduleReasonCodeValue);
+        }       
+        
+    }
+    
+    @Override
+    public List<LoanRescheduleRequestData> retrieveAllRescheduleRequests(String command) {
+        LoanRescheduleRequestRowMapperForBulkApproval loanRescheduleRequestRowMapperForBulkApproval = new LoanRescheduleRequestRowMapperForBulkApproval();
+        String sql = "select " + loanRescheduleRequestRowMapperForBulkApproval.schema();
+        if (StringUtils.isNotEmpty(command) && !command.equalsIgnoreCase(RescheduleLoansApiConstants.allCommandParamName)) {
+            sql = sql + " where lrr.status_enum = ? ";
+            /*
+             * status 100 is for pending state 
+             */
+            Integer statusParam = 100;
+            if (command.equalsIgnoreCase(RescheduleLoansApiConstants.approveCommandParamName)) {
+                statusParam = 200;
+            } else if (command.equalsIgnoreCase(RescheduleLoansApiConstants.rejectCommandParamName)) {
+                statusParam = 300;
+            }
+            return this.jdbcTemplate.query(sql, loanRescheduleRequestRowMapperForBulkApproval, new Object[] { statusParam });
+        }
+        return this.jdbcTemplate.query(sql, loanRescheduleRequestRowMapperForBulkApproval, new Object[] {});
+    }
+    
     
 }

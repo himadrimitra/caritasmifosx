@@ -19,6 +19,7 @@
 package org.apache.fineract.portfolio.loanaccount.rescheduleloan.api;
 
 import java.util.HashSet;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -175,19 +176,21 @@ public class RescheduleLoansApiResource {
         return StringUtils.isNotBlank(firstString) && firstString.trim().equalsIgnoreCase(secondString);
     }
     
-    /*@GET
-    @Path("{scheduleId}")
+    @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retrieveTemplate(@Context final UriInfo uriInfo) {
+    public String retrieveAllRescheduleRequest(@Context final UriInfo uriInfo, @QueryParam("command") final String command) {
 
         this.platformSecurityContext.authenticatedUser().validateHasReadPermission(RescheduleLoansApiConstants.ENTITY_NAME);
+
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
+        if (StringUtils.isNotBlank(command) && !RescheduleLoansApiConstants.commandParams.contains(command.toLowerCase())) { throw new UnrecognizedQueryParamException(
+                "command", command, new Object[] { RescheduleLoansApiConstants.allCommandParamName,
+                        RescheduleLoansApiConstants.pendingCommandParamName, RescheduleLoansApiConstants.approveCommandParamName,
+                        RescheduleLoansApiConstants.rejectCommandParamName }); }
+        final List<LoanRescheduleRequestData> loanRescheduleRequestsData = this.loanRescheduleRequestReadPlatformService
+                .retrieveAllRescheduleRequests(command);
 
-        LoanRescheduleRequestData loanRescheduleReasons = null;
-        loanRescheduleReasons = this.loanRescheduleRequestReadPlatformService
-                .retrieveAllRescheduleReasons(RescheduleLoansApiConstants.LOAN_RESCHEDULE_REASON);
-
-        return this.loanRescheduleRequestToApiJsonSerializer.serialize(settings, loanRescheduleReasons);
-    }*/
+        return this.loanRescheduleRequestToApiJsonSerializer.serialize(settings, loanRescheduleRequestsData);
+    }
 }
