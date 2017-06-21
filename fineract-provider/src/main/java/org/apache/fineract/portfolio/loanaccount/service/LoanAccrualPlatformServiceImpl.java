@@ -26,11 +26,13 @@ import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.exception.ExceptionHelper;
 import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.service.ThreadLocalContextUtil;
 import org.apache.fineract.infrastructure.jobs.annotation.CronTarget;
 import org.apache.fineract.infrastructure.jobs.exception.JobExecutionException;
 import org.apache.fineract.infrastructure.jobs.service.JobExecuter;
 import org.apache.fineract.infrastructure.jobs.service.JobName;
 import org.apache.fineract.infrastructure.jobs.service.JobRunner;
+import org.apache.fineract.infrastructure.jobs.service.SchedulerServiceConstants;
 import org.apache.fineract.portfolio.loanaccount.data.LoanScheduleAccrualData;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
@@ -93,11 +95,16 @@ public class LoanAccrualPlatformServiceImpl implements LoanAccrualPlatformServic
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     @CronTarget(jobName = JobName.ADD_PERIODIC_ACCRUAL_ENTRIES)
     public void addPeriodicAccruals() throws JobExecutionException {
-    	List<Long> loanList = null;
-        String errors = addPeriodicAccruals(DateUtils.getLocalDateOfTenant(), loanList);
+        List<Long> loanList =  (List<Long>) ThreadLocalContextUtil.getJobParams().get("loanList");
+        LocalDate tillDate = (LocalDate) ThreadLocalContextUtil.getJobParams().get(SchedulerServiceConstants.EXECUTE_AS_ON_DATE);
+        if(tillDate == null){
+            tillDate = DateUtils.getLocalDateOfTenant();
+        }
+        String errors = addPeriodicAccruals(tillDate, loanList);
         if (errors.length() > 0) { throw new JobExecutionException(errors); }
     }
 

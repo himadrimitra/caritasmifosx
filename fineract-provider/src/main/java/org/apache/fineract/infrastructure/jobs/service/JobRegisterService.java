@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.infrastructure.jobs.service;
 
+import java.util.Map;
+
 public interface JobRegisterService {
 
     public void executeJob(Long jobId);
@@ -33,5 +35,7 @@ public interface JobRegisterService {
     public void stopScheduler(String name);
 
     public void stopAllSchedulers();
+
+    void executeJob(String jobName, Map<String, Object> jobParams);
 
 }

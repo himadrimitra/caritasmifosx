@@ -165,10 +165,10 @@ public class JobExecuter {
     }
 
     private int getNumberOfThreads() {
-        Map<String, String> jobParams = ThreadLocalContextUtil.getJobParams();
+        Map<String, Object> jobParams = ThreadLocalContextUtil.getJobParams();
         int numberOfThreads = 1;
         if (jobParams != null && jobParams.containsKey("number-of-threads")) {
-            numberOfThreads = Integer.parseInt(jobParams.get("number-of-threads"));
+            numberOfThreads = Integer.parseInt(String.valueOf(jobParams.get("number-of-threads")));
             if (numberOfThreads == 0) {
                 numberOfThreads = 1;
             }

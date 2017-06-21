@@ -621,7 +621,7 @@ public class CalendarUtils {
         if(meetingInterval < 1){
         	meetingInterval = 1;
         }
-        int rep = repaymentInterval / meetingInterval;
+        int rep = repaymentInterval<meetingInterval ? 1: repaymentInterval / meetingInterval ;
 
         /*
          * Recurring dates should follow loanRepayment frequency. //e.g. daily

@@ -18,6 +18,8 @@
  */
 package org.apache.fineract.infrastructure.jobs.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.fineract.infrastructure.core.domain.FineractPlatformTenant;
@@ -36,7 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SchedulerTriggerListener implements TriggerListener {
 	
-	  private final static Logger logger = LoggerFactory.getLogger(SchedulerTriggerListener.class);
+    private final static Logger logger = LoggerFactory.getLogger(SchedulerTriggerListener.class);
 
     private final String name = "Global trigger Listner";
 
@@ -67,6 +69,7 @@ public class SchedulerTriggerListener implements TriggerListener {
 
         final String tenantIdentifier = trigger.getJobDataMap().getString(SchedulerServiceConstants.TENANT_IDENTIFIER);
         final FineractPlatformTenant tenant = this.tenantDetailsService.loadTenantById(tenantIdentifier);
+        Map<String,Object> jobParams = retriveJobParams(trigger);
         ThreadLocalContextUtil.setTenant(tenant);
         final JobKey key = trigger.getJobKey();
         final String jobKey = key.getName() + SchedulerServiceConstants.JOB_KEY_SEPERATOR + key.getGroup();
@@ -80,7 +83,7 @@ public class SchedulerTriggerListener implements TriggerListener {
         boolean stopJob = true;
         while (numberOfRetries <= maxNumberOfRetries) {
             try {
-                stopJob = this.schedularService.processJobDetailForExecution(jobKey, triggerType);
+                stopJob = this.schedularService.processJobDetailForExecution(jobKey, triggerType, jobParams);
                 numberOfRetries = maxNumberOfRetries + 1;
             } catch (Exception exception) { // Adding generic exception as it
                                             // depends on JPA provider
@@ -108,6 +111,15 @@ public class SchedulerTriggerListener implements TriggerListener {
             @SuppressWarnings("unused") final JobExecutionContext context,
             @SuppressWarnings("unused") final CompletedExecutionInstruction triggerInstructionCode) {
 
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Map<String,Object> retriveJobParams(final Trigger trigger){
+        Map<String,Object> jobParams = new HashMap<>(1);
+        if(trigger.getJobDataMap().containsKey(SchedulerServiceConstants.JOB_PARAMS)){
+           jobParams =  (Map<String, Object>) trigger.getJobDataMap().get(SchedulerServiceConstants.JOB_PARAMS);
+        }
+        return jobParams;
     }
 
 }
