@@ -38,7 +38,7 @@ public class ThreadLocalContextUtil {
     
     private static final ThreadLocal<Boolean> ignoreOverdue = new ThreadLocal<>();
     
-    private static final ThreadLocal<Map<String,String>> jobParams = new ThreadLocal<>();
+    private static final ThreadLocal<Map<String,Object>> jobParams = new ThreadLocal<>();
     
     public static void setTenant(final FineractPlatformTenant tenant) {
         Assert.notNull(tenant, "tenant cannot be null");
@@ -81,11 +81,11 @@ public class ThreadLocalContextUtil {
         return ignoreOverdue.get();
     }
     
-    public static void setJobParams(final Map<String,String> params) {
+    public static void setJobParams(final Map<String,Object> params) {
         jobParams.set(params);
     }
 
-    public static Map<String,String> getJobParams() {
+    public static Map<String,Object> getJobParams() {
         return jobParams.get();
     }
 
