@@ -287,7 +287,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             final PaymentDetail paymentDetail = this.paymentDetailWritePlatformService.createAndPersistPaymentDetail(command, changes);
 
             ClientTransaction clientTransaction = ClientTransaction.payCharge(client, client.getOffice(), paymentDetail, transactionDate,
-                    chargePaid, clientCharge.getCurrency().getCode(), getAppUserIfPresent());
+                    chargePaid, clientCharge.getCurrency().getCode());
             this.clientTransactionRepository.save(clientTransaction);
 
             // update charge paid by associations
@@ -329,7 +329,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
             // create Waiver Transaction
             ClientTransaction clientTransaction = ClientTransaction.waiver(client, client.getOffice(), transactionDate, waivedAmount,
-                    clientCharge.getCurrency().getCode(), getAppUserIfPresent());
+                    clientCharge.getCurrency().getCode());
             this.clientTransactionRepository.save(clientTransaction);
 
             // update charge paid by associations
@@ -588,8 +588,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
 			ClientTransaction clientTransaction = ClientTransaction.payCharge(
 					clientCharge.getClient(), clientCharge.getClient().getOffice(), paymentDetail, transactionDate,
-					chargePaid, clientCharge.getCurrency().getCode(),
-					getAppUserIfPresent());
+					chargePaid, clientCharge.getCurrency().getCode());
 			this.clientTransactionRepository.save(clientTransaction);
 
 			// update charge paid by associations

@@ -23,9 +23,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.fineract.accounting.common.AccountingDropdownReadPlatformService;
 import org.apache.fineract.accounting.common.AccountingConstants.FINANCIAL_ACTIVITY;
+import org.apache.fineract.accounting.common.AccountingDropdownReadPlatformService;
 import org.apache.fineract.accounting.financialactivityaccount.data.FinancialActivityAccountData;
+import org.apache.fineract.accounting.financialactivityaccount.data.FinancialActivityAccountPaymentTypeMappingData;
 import org.apache.fineract.accounting.financialactivityaccount.data.FinancialActivityData;
 import org.apache.fineract.accounting.financialactivityaccount.exception.FinancialActivityAccountNotFoundException;
 import org.apache.fineract.accounting.glaccount.data.GLAccountData;
@@ -43,13 +44,16 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
     private final JdbcTemplate jdbcTemplate;
     private final FinancialActivityAccountMapper financialActivityAccountMapper;
     private final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService;
+    private final FinancialActivityAccountPaymentTypeMappingReadPlatformService financialActivityAccountPaymentTypeMappingReadPlatformService;
 
     @Autowired
     public FinancialActivityAccountReadPlatformServiceImpl(final RoutingDataSource dataSource,
-            final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService) {
+            final AccountingDropdownReadPlatformService accountingDropdownReadPlatformService,
+            final FinancialActivityAccountPaymentTypeMappingReadPlatformService financialActivityAccountPaymentTypeMappingReadPlatformService) {
         financialActivityAccountMapper = new FinancialActivityAccountMapper();
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.accountingDropdownReadPlatformService = accountingDropdownReadPlatformService;
+        this.financialActivityAccountPaymentTypeMappingReadPlatformService = financialActivityAccountPaymentTypeMappingReadPlatformService;
     }
 
     @Override
@@ -65,8 +69,14 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
             sqlBuilder.append("select ");
             sqlBuilder.append(this.financialActivityAccountMapper.schema());
             sqlBuilder.append(" where faa.id=?");
-            return this.jdbcTemplate.queryForObject(sqlBuilder.toString(), this.financialActivityAccountMapper,
-                    new Object[] { financialActivityAccountId });
+            
+            final FinancialActivityAccountData financialActivityAccountData = this.jdbcTemplate.queryForObject(sqlBuilder.toString(),
+                    this.financialActivityAccountMapper, new Object[] { financialActivityAccountId });
+            List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData = this.financialActivityAccountPaymentTypeMappingReadPlatformService
+                    .retrieve(financialActivityAccountId);
+            if (financialActivityAccountPaymentTypeMappingData.size() > 0) { return new FinancialActivityAccountData(
+                    financialActivityAccountData, financialActivityAccountPaymentTypeMappingData); }
+            return financialActivityAccountData;
         } catch (final EmptyResultDataAccessException e) {
             throw new FinancialActivityAccountNotFoundException(financialActivityAccountId);
         }
@@ -87,7 +97,6 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
     }
 
     private static final class FinancialActivityAccountMapper implements RowMapper<FinancialActivityAccountData> {
-
         private final String sql;
 
         public FinancialActivityAccountMapper() {
@@ -112,9 +121,8 @@ public class FinancialActivityAccountReadPlatformServiceImpl implements Financia
 
             final GLAccountData glAccountData = new GLAccountData(glAccountId, glAccountName, glCode);
             final FinancialActivityData financialActivityData = FINANCIAL_ACTIVITY.toFinancialActivityData(financialActivityId);
-
-            final FinancialActivityAccountData financialActivityAccountData = new FinancialActivityAccountData(id, financialActivityData,
-                    glAccountData);
+            final FinancialActivityAccountData financialActivityAccountData =  new FinancialActivityAccountData(id, financialActivityData,
+                    glAccountData, null);
             return financialActivityAccountData;
         }
     }

@@ -37,6 +37,8 @@ import org.apache.fineract.portfolio.client.domain.ClientTransactionType;
 import org.apache.fineract.portfolio.client.exception.ClientTransactionNotFoundException;
 import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
+import org.apache.fineract.useradministration.data.AppUserData;
+import org.apache.fineract.useradministration.service.AppUserReadPlatformService;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -50,19 +52,22 @@ public class ClientTransactionReadPlatformServiceImpl implements ClientTransacti
     private final JdbcTemplate jdbcTemplate;
     private final ClientTransactionMapper clientTransactionMapper;
     private final PaginationHelper<ClientTransactionData> paginationHelper;
+    private final AppUserReadPlatformService appUserReadPlatformService;
 
     @Autowired
-    public ClientTransactionReadPlatformServiceImpl(final RoutingDataSource dataSource) {
+    public ClientTransactionReadPlatformServiceImpl(final RoutingDataSource dataSource,
+            final AppUserReadPlatformService appUserReadPlatformService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
-        this.clientTransactionMapper = new ClientTransactionMapper();
+        this.clientTransactionMapper = new ClientTransactionMapper(appUserReadPlatformService);
         this.paginationHelper = new PaginationHelper<>();
+        this.appUserReadPlatformService = appUserReadPlatformService;
     }
 
     private static final class ClientTransactionMapper implements RowMapper<ClientTransactionData> {
-
+        final AppUserReadPlatformService appUserReadPlatformService;
         private final String schemaSql;
 
-        public ClientTransactionMapper() {
+        public ClientTransactionMapper(final AppUserReadPlatformService appUserReadPlatformService) {
 
             final StringBuilder sqlBuilder = new StringBuilder(400);
             sqlBuilder.append("tr.id as transactionId, tr.transaction_type_enum as transactionType,  ");
@@ -72,19 +77,25 @@ public class ClientTransactionReadPlatformServiceImpl implements ClientTransacti
             sqlBuilder.append("c.id as clientId, c.account_no as accountNo, ccpb.client_charge_id as clientChargeId, ");
             sqlBuilder.append("pd.payment_type_id as paymentType,pd.account_number as accountNumber,pd.check_number as checkNumber, ");
             sqlBuilder.append("pd.receipt_number as receiptNumber, pd.bank_number as bankNumber,pd.routing_code as routingCode,  ");
-            sqlBuilder.append(
-                    "tr.currency_code as currencyCode, curr.decimal_places as currencyDigits, curr.currency_multiplesof as inMultiplesOf, ");
+            sqlBuilder.append("tr.currency_code as currencyCode, curr.decimal_places as currencyDigits, curr.currency_multiplesof as inMultiplesOf, ");
             sqlBuilder.append("curr.name as currencyName, curr.internationalized_name_code as currencyNameCode,  ");
             sqlBuilder.append("curr.display_symbol as currencyDisplaySymbol,  ");
-            sqlBuilder.append("pt.value as paymentTypeName  ");
+            sqlBuilder.append("pt.value as paymentTypeName,  ");
+            sqlBuilder.append("tr.createdby_id as createdById, tr.created_date as createdDate, tr.lastmodified_date as updateDate, ");
+            sqlBuilder.append("tr.lastmodifiedby_id as udatedById, ");
+            sqlBuilder.append("cby.firstname as createdByFirstName, uby.firstname as updatedByFirstName, ");
+            sqlBuilder.append("cby.lastname as createdByLastName, uby.lastname as updatedByLastName ");
             sqlBuilder.append("from m_client c  ");
             sqlBuilder.append("join m_client_transaction tr on tr.client_id = c.id ");
             sqlBuilder.append("join m_currency curr on curr.code = tr.currency_code ");
+            sqlBuilder.append("join m_appuser cby on tr.createdby_id = cby.id ");
+            sqlBuilder.append("join m_appuser uby on tr.lastmodifiedby_id = uby.id ");
             sqlBuilder.append("left join m_payment_detail pd on tr.payment_detail_id = pd.id  ");
             sqlBuilder.append("left join m_payment_type pt  on pd.payment_type_id = pt.id ");
             sqlBuilder.append("left join m_office o on o.id = tr.office_id ");
             sqlBuilder.append("left join m_client_charge_paid_by ccpb on ccpb.client_transaction_id = tr.id ");
             this.schemaSql = sqlBuilder.toString();
+            this.appUserReadPlatformService = appUserReadPlatformService;
         }
 
         public String schema() {
@@ -129,11 +140,23 @@ public class ClientTransactionReadPlatformServiceImpl implements ClientTransacti
             final String currencyDisplaySymbol = rs.getString("currencyDisplaySymbol");
             final Integer currencyDigits = JdbcSupport.getInteger(rs, "currencyDigits");
             final Integer inMultiplesOf = JdbcSupport.getInteger(rs, "inMultiplesOf");
+          
+            final Long createdById = JdbcSupport.getLong(rs, "createdById");
+            final String createdByFirstName = rs.getString("createdByFirstName");
+            final String createdByLastName = rs.getString("createdByLastName");
+            AppUserData createdBy = AppUserData.auditdetails(createdById, null, createdByFirstName, createdByLastName);;
+            final LocalDate createdDate = JdbcSupport.getLocalDate(rs, "createdDate");
+            final Long udatedById = JdbcSupport.getLong(rs, "createdById");
+            final String updatedByFirstName = rs.getString("updatedByFirstName");
+            final String updatedByLastName = rs.getString("updatedByLastName");
+            AppUserData udatedBy = AppUserData.auditdetails(udatedById, null, updatedByFirstName, updatedByLastName);
+            final LocalDate updateDate = JdbcSupport.getLocalDate(rs, "updateDate");
+            
             final CurrencyData currency = new CurrencyData(currencyCode, currencyName, currencyDigits, inMultiplesOf, currencyDisplaySymbol,
                     currencyNameCode);
 
             return ClientTransactionData.create(id, officeId, officeName, transactionType, date, currency, paymentDetailData, amount,
-                    externalId, submittedOnDate, reversed);
+                    externalId, submittedOnDate, reversed, createdBy, udatedBy,createdDate, updateDate);
         }
     }
 

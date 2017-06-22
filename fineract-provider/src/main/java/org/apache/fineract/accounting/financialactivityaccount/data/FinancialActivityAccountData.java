@@ -30,6 +30,7 @@ public class FinancialActivityAccountData {
     private final GLAccountData glAccountData;
     private Map<String, List<GLAccountData>> glAccountOptions;
     private List<FinancialActivityData> financialActivityOptions;
+    private final List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData;
 
     public FinancialActivityAccountData() {
         this.id = null;
@@ -37,12 +38,15 @@ public class FinancialActivityAccountData {
         this.financialActivityData = null;
         this.glAccountOptions = null;
         this.financialActivityOptions = null;
+        this.financialActivityAccountPaymentTypeMappingData = null;
     }
 
-    public FinancialActivityAccountData(final Long id, final FinancialActivityData financialActivityData, final GLAccountData glAccountData) {
+    public FinancialActivityAccountData(final Long id, final FinancialActivityData financialActivityData, final GLAccountData glAccountData,
+            final List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData) {
         this.id = id;
         this.glAccountData = glAccountData;
         this.financialActivityData = financialActivityData;
+        this.financialActivityAccountPaymentTypeMappingData = financialActivityAccountPaymentTypeMappingData;
     }
 
     public FinancialActivityAccountData(Map<String, List<GLAccountData>> glAccountOptions,
@@ -52,11 +56,21 @@ public class FinancialActivityAccountData {
         this.financialActivityData = null;
         this.glAccountOptions = glAccountOptions;
         this.financialActivityOptions = financialActivityOptions;
+        this.financialActivityAccountPaymentTypeMappingData = null;
 
     }
 
     public List<FinancialActivityData> getFinancialActivityOptions() {
         return financialActivityOptions;
+    }
+    
+
+    public FinancialActivityAccountData(FinancialActivityAccountData financialActivityAccountData,
+            List<FinancialActivityAccountPaymentTypeMappingData> financialActivityAccountPaymentTypeMappingData) {
+        this.id = financialActivityAccountData.getId();
+        this.glAccountData = financialActivityAccountData.glAccountData;
+        this.financialActivityData = financialActivityAccountData.getFinancialActivityData();
+        this.financialActivityAccountPaymentTypeMappingData = financialActivityAccountPaymentTypeMappingData;
     }
 
     public void setFinancialActivityOptions(List<FinancialActivityData> financialActivityOptions) {

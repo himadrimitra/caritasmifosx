@@ -25,6 +25,8 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.monetary.data.CurrencyData;
 import org.apache.fineract.portfolio.paymentdetail.data.PaymentDetailData;
 import org.apache.fineract.portfolio.paymenttype.data.PaymentTypeData;
+import org.apache.fineract.useradministration.data.AppUserData;
+import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 
 @SuppressWarnings("unused")
@@ -41,21 +43,26 @@ public class ClientTransactionData {
     private final String externalId;
     private final LocalDate submittedOnDate;
     private final boolean reversed;
+    private final AppUserData createdBy;
+    private final AppUserData updatedBy;
+    private final LocalDate createdDate;
+    private final LocalDate updatedDate;
 
     // templates
     final Collection<PaymentTypeData> paymentTypeOptions;
 
     public static ClientTransactionData create(Long id, Long officeId, String officeName, EnumOptionData type, LocalDate date,
             CurrencyData currency, PaymentDetailData paymentDetailData, BigDecimal amount, String externalId, LocalDate submittedOnDate,
-            boolean reversed) {
+            boolean reversed, final AppUserData createdBy, final AppUserData updatedBy, final LocalDate createdDate, final LocalDate updatedDate) {
         final Collection<PaymentTypeData> paymentTypeOptions = null;
         return new ClientTransactionData(id, officeId, officeName, type, date, currency, paymentDetailData, amount, externalId,
-                submittedOnDate, reversed, paymentTypeOptions);
+                submittedOnDate, reversed, paymentTypeOptions, createdBy, updatedBy, createdDate, updatedDate);
     }
 
     private ClientTransactionData(Long id, Long officeId, String officeName, EnumOptionData type, LocalDate date, CurrencyData currency,
             PaymentDetailData paymentDetailData, BigDecimal amount, String externalId, LocalDate submittedOnDate, boolean reversed,
-            Collection<PaymentTypeData> paymentTypeOptions) {
+            Collection<PaymentTypeData> paymentTypeOptions, final AppUserData createdBy, final AppUserData updatedBy, final LocalDate createdDate,
+            final LocalDate updatedDate) {
         super();
         this.id = id;
         this.officeId = officeId;
@@ -69,6 +76,11 @@ public class ClientTransactionData {
         this.submittedOnDate = submittedOnDate;
         this.reversed = reversed;
         this.paymentTypeOptions = paymentTypeOptions;
+        this.createdBy = createdBy;
+        this.updatedBy = updatedBy;
+        this.createdDate = createdDate;
+        this.updatedDate = updatedDate;
+
     }
 
 }
