@@ -107,14 +107,18 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
     public void validateGuarantorBusinessRules(Loan loan) {
         LoanProduct loanProduct = loan.loanProduct();
         BigDecimal principal = loan.getPrincpal().getAmount();
+		BigDecimal outstanding = loan.getSummary().getTotalPrincipalOutstanding();
         if (loanProduct.isHoldGuaranteeFundsEnabled()) {
             LoanProductGuaranteeDetails guaranteeData = loanProduct.getLoanProductGuaranteeDetails();
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
             BigDecimal mandatoryAmount = principal.multiply(guaranteeData.getMandatoryGuarantee()).divide(BigDecimal.valueOf(100));
             BigDecimal minSelfAmount = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromOwnFunds())).divide(BigDecimal.valueOf(100));
-            BigDecimal minExtGuarantee = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor())).divide(
-                    BigDecimal.valueOf(100));
-
+			BigDecimal minExtGuarantee = principal.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor()))
+					.divide(BigDecimal.valueOf(100));
+			BigDecimal mandatoryAmountAsofDate = outstanding.multiply(guaranteeData.getMandatoryGuarantee()).divide(BigDecimal.valueOf(100));
+			BigDecimal minSelfAmountAsofDate = outstanding.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromOwnFunds())).divide(BigDecimal.valueOf(100));
+			BigDecimal minExtGuaranteeAsofDate = outstanding.multiply(retrunZeroIfNull(guaranteeData.getMinimumGuaranteeFromGuarantor()))
+					.divide(BigDecimal.valueOf(100));
             BigDecimal actualAmount = BigDecimal.ZERO;
             BigDecimal actualSelfAmount = BigDecimal.ZERO;
             BigDecimal actualExtGuarantee = BigDecimal.ZERO;
@@ -138,17 +142,17 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors).resource("loan.guarantor");
             if (actualSelfAmount.compareTo(minSelfAmount) == -1) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_SELF_GUARANTEE_ERROR,
-                        minSelfAmount);
+                		minSelfAmountAsofDate);
             }
 
             if (actualExtGuarantee.compareTo(minExtGuarantee) == -1) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_EXTERNAL_GUARANTEE_ERROR,
-                        minExtGuarantee);
+                		minExtGuaranteeAsofDate);
             }
             actualAmount = actualAmount.add(actualExtGuarantee).add(actualSelfAmount);
             if (actualAmount.compareTo(mandatoryAmount) == -1) {
                 baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode(GuarantorConstants.GUARANTOR_MANDATORY_GUARANTEE_ERROR,
-                        mandatoryAmount);
+                		mandatoryAmountAsofDate);
             }
 
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException("validation.msg.validation.errors.exist",
