@@ -74,6 +74,7 @@ public class CashBasedAccountingProcessorForClientTransactions implements Accoun
         final BigDecimal amount = clientTransactionDTO.getAmount();
         final boolean isReversal = clientTransactionDTO.isReversed();
         Long officeId = clientTransactionDTO.getOfficeId();
+        final Long paymentTypeId = clientTransactionDTO.getPaymentTypeId();
 
         if (amount != null && !(amount.compareTo(BigDecimal.ZERO) == 0)) {
             JournalEntry journalEntry = this.helper.createClientJournalEntry(currencyCode, transactionDate, transactionDate,
@@ -86,7 +87,7 @@ public class CashBasedAccountingProcessorForClientTransactions implements Accoun
              * that was credited (accounting is turned on at the level of for
              * each charge that has been paid by this transaction)
              **/
-            this.helper.createDebitJournalEntryOrReversalForClientChargePayments(totalCreditedAmount, isReversal, journalEntry);
+            this.helper.createDebitJournalEntryOrReversalForClientChargePayments(totalCreditedAmount, isReversal, journalEntry, paymentTypeId);
             this.journalEntryRepository.save(journalEntry);
         }
 

@@ -34,6 +34,8 @@ import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_F
 import org.apache.fineract.accounting.common.AccountingConstants.CASH_ACCOUNTS_FOR_SHARES;
 import org.apache.fineract.accounting.common.AccountingConstants.FINANCIAL_ACTIVITY;
 import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccount;
+import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccountPaymentTypeMapping;
+import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccountPaymentTypeRepositoryWrapper;
 import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccountRepositoryWrapper;
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.accounting.glaccount.domain.GLAccountRepositoryWrapper;
@@ -64,6 +66,8 @@ import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.portfolio.account.PortfolioAccountType;
 import org.apache.fineract.portfolio.account.service.AccountTransfersReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.data.LoanTransactionEnumData;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentType;
+import org.apache.fineract.portfolio.paymenttype.domain.PaymentTypeRepositoryWrapper;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionEnumData;
 import org.apache.fineract.portfolio.shareaccounts.data.ShareAccountTransactionEnumData;
 import org.joda.time.LocalDate;
@@ -84,19 +88,25 @@ public class AccountingProcessorHelper {
     private final GLAccountRepositoryWrapper accountRepositoryWrapper;
     private final OfficeRepository officeRepository;
     private final AccountTransfersReadPlatformService accountTransfersReadPlatformService;
+    private final FinancialActivityAccountPaymentTypeRepositoryWrapper financialActivityAccountPaymentTypeRepository;
+    private final PaymentTypeRepositoryWrapper paymentTypeRepository;
 
     @Autowired
     public AccountingProcessorHelper(final ProductToGLAccountMappingRepository accountMappingRepository,
             final GLClosureRepository closureRepository, final OfficeRepository officeRepository,
             final FinancialActivityAccountRepositoryWrapper financialActivityAccountRepository,
             final AccountTransfersReadPlatformService accountTransfersReadPlatformService,
-            final GLAccountRepositoryWrapper accountRepositoryWrapper) {
+            final GLAccountRepositoryWrapper accountRepositoryWrapper,
+            final FinancialActivityAccountPaymentTypeRepositoryWrapper financialActivityAccountPaymentTypeRepository,
+            final PaymentTypeRepositoryWrapper paymentTypeRepository) {
         this.accountMappingRepository = accountMappingRepository;
         this.closureRepository = closureRepository;
         this.officeRepository = officeRepository;
         this.financialActivityAccountRepository = financialActivityAccountRepository;
         this.accountTransfersReadPlatformService = accountTransfersReadPlatformService;
         this.accountRepositoryWrapper = accountRepositoryWrapper;
+        this.financialActivityAccountPaymentTypeRepository = financialActivityAccountPaymentTypeRepository;
+        this.paymentTypeRepository = paymentTypeRepository;
     }
 
     public LoanDTO populateLoanDtoFromMap(final Map<String, Object> accountingBridgeData, final boolean cashBasedAccountingEnabled,
@@ -1125,9 +1135,23 @@ public class AccountingProcessorHelper {
     }
 
     public void createDebitJournalEntryOrReversalForClientChargePayments(final BigDecimal amount, final Boolean isReversal,
-            JournalEntry journalEntry) {
-        final GLAccount account = financialActivityAccountRepository.findByFinancialActivityTypeWithNotFoundDetection(
-                FINANCIAL_ACTIVITY.ASSET_FUND_SOURCE.getValue()).getGlAccount();
+            JournalEntry journalEntry, final Long paymentTypeId) {
+        
+        GLAccount account = financialActivityAccountRepository
+                .findByFinancialActivityTypeWithNotFoundDetection(FINANCIAL_ACTIVITY.ASSET_FUND_SOURCE.getValue()).getGlAccount();
+        if (paymentTypeId != null) {
+            PaymentType paymentType = this.paymentTypeRepository.findOneWithNotFoundDetection(paymentTypeId);
+            FinancialActivityAccountPaymentTypeMapping financialActivityAccountPaymentTypeMapping = this.financialActivityAccountPaymentTypeRepository
+                    .findByPaymentType(paymentType);
+            GLAccount glAccount = null;
+            if (financialActivityAccountPaymentTypeMapping != null) {
+                glAccount = this.financialActivityAccountPaymentTypeRepository.findByPaymentType(paymentType).getGlAccount();
+            }
+            if (glAccount != null) {
+                account = glAccount;
+            }
+        }
+        
         if (isReversal) {
             createCreditJournalEntry(account, amount, journalEntry);
         } else {

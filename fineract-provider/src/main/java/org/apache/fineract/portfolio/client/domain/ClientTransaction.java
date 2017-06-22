@@ -30,7 +30,6 @@ import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -42,7 +41,7 @@ import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.accounting.glaccount.domain.GLAccount;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
-import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.core.domain.AbstractAuditableCustom;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.organisation.office.domain.Office;
@@ -52,11 +51,10 @@ import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.joda.time.LocalDate;
-import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
 @Table(name = "m_client_transaction", uniqueConstraints = { @UniqueConstraint(columnNames = { "external_id" }, name = "external_id") })
-public class ClientTransaction extends AbstractPersistable<Long> {
+public class ClientTransaction extends AbstractAuditableCustom<AppUser, Long> {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "client_id", nullable = false)
@@ -89,14 +87,6 @@ public class ClientTransaction extends AbstractPersistable<Long> {
     @Column(name = "external_id", length = 100, nullable = true, unique = true)
     private String externalId;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_date", nullable = false)
-    private Date createdDate;
-
-    @ManyToOne(fetch=FetchType.LAZY)
-    @JoinColumn(name = "appuser_id", nullable = true)
-    private AppUser appUser;
-
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "clientTransaction", orphanRemoval = true)
     private Set<ClientChargePaidBy> clientChargePaidByCollection = new HashSet<>();
@@ -107,24 +97,24 @@ public class ClientTransaction extends AbstractPersistable<Long> {
     protected ClientTransaction() {}
 
     public static ClientTransaction payCharge(final Client client, final Office office, PaymentDetail paymentDetail, final LocalDate date,
-            final Money amount, final String currencyCode, final AppUser appUser) {
+            final Money amount, final String currencyCode) {
         final boolean isReversed = false;
         final String externalId = null;
         return new ClientTransaction(client, office, paymentDetail, ClientTransactionType.PAY_CHARGE.getValue(), date, amount, isReversed,
-                externalId, DateUtils.getDateOfTenant(), currencyCode, appUser);
+                externalId, currencyCode);
     }
 
     public static ClientTransaction waiver(final Client client, final Office office, final LocalDate date, final Money amount,
-            final String currencyCode, final AppUser appUser) {
+            final String currencyCode) {
         final boolean isReversed = false;
         final String externalId = null;
         final PaymentDetail paymentDetail = null;
         return new ClientTransaction(client, office, paymentDetail, ClientTransactionType.WAIVE_CHARGE.getValue(), date, amount, isReversed,
-                externalId, DateUtils.getDateOfTenant(), currencyCode, appUser);
+                externalId, currencyCode);
     }
 
     public ClientTransaction(Client client, Office office, PaymentDetail paymentDetail, Integer typeOf, LocalDate transactionLocalDate,
-            Money amount, boolean reversed, String externalId, Date createdDate, String currencyCode, AppUser appUser) {
+            Money amount, boolean reversed, String externalId, String currencyCode) {
         super();
         this.client = client;
         this.office = office;
@@ -134,9 +124,7 @@ public class ClientTransaction extends AbstractPersistable<Long> {
         this.amount = amount.getAmount();
         this.reversed = reversed;
         this.externalId = externalId;
-        this.createdDate = createdDate;
         this.currencyCode = currencyCode;
-        this.appUser = appUser;
     }
 
     public void reverse() {
