@@ -71,6 +71,8 @@ import org.mifosplatform.portfolio.savings.data.SavingsAccountChargeDataValidato
 import org.mifosplatform.portfolio.savings.data.SavingsAccountDataValidator;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.mifosplatform.portfolio.savings.data.SavingsAccountTransactionDataValidator;
+import org.mifosplatform.portfolio.savings.domain.DepositAccountOnHoldTransaction;
+import org.mifosplatform.portfolio.savings.domain.DepositAccountOnHoldTransactionRepository;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccount;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountAssembler;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccountCharge;
@@ -118,6 +120,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final WorkingDaysWritePlatformService workingDaysWritePlatformService;
     private final ConfigurationDomainService configurationDomainService;
     private final InvestmentReadPlatformService invesetmentReadPlatformService;
+    private final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository;
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
             final SavingsAccountRepository savingAccountRepository,
@@ -136,7 +139,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final WorkingDaysWritePlatformService workingDaysWritePlatformService,
             final SavingsAccountDataValidator fromApiJsonDeserializer, final SavingsAccountRepositoryWrapper savingsRepository,
             final StaffRepositoryWrapper staffRepository, final ConfigurationDomainService configurationDomainService,
-            final InvestmentReadPlatformService invesetmentReadPlatformService) {
+            final InvestmentReadPlatformService invesetmentReadPlatformService, final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
@@ -159,6 +162,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.staffRepository = staffRepository;
         this.configurationDomainService = configurationDomainService;
         this.invesetmentReadPlatformService = invesetmentReadPlatformService;
+        this.depositAccountOnHoldTransactionRepository = depositAccountOnHoldTransactionRepository;
     }
 
     @Transactional
@@ -972,9 +976,17 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
         }
 
-
         this.payCharge(savingsAccountCharge, transactionDate, amountPaid, fmt, user,paymentDetail);
-
+		final SavingsAccount account = savingsAccountCharge.savingsAccount();
+		final boolean isExceptionForBalanceCheck = false;
+		List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions = null;
+		if (account.getOnHoldFunds().compareTo(BigDecimal.ZERO) == 1) {
+			depositAccountOnHoldTransactions = this.depositAccountOnHoldTransactionRepository
+					.findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(
+							account);
+		}
+		account.validateAccountBalanceDoesNotBecomeNegative(amountPaid, isExceptionForBalanceCheck, account,
+				account.savingsProduct().getName(), transactionDate, depositAccountOnHoldTransactions);
         return new CommandProcessingResultBuilder() //
                 .withEntityId(savingsAccountCharge.getId()) //
                 .withOfficeId(savingsAccountCharge.savingsAccount().officeId()) //
