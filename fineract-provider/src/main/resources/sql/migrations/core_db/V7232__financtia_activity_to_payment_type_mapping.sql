@@ -11,10 +11,15 @@ CREATE TABLE  `f_financial_activity_account_payment_type_mapping` (
   CONSTRAINT `FK__m_payment_type` FOREIGN KEY (`payment_type_id`) REFERENCES `m_payment_type` (`id`)
 );
 
-
+ALTER TABLE `m_client_transaction`
+	DROP FOREIGN KEY `FK_m_client_transaction_m_appuser`;
+	
+	
 ALTER TABLE `m_client_transaction`
 	CHANGE COLUMN `created_date` `created_date` DATETIME NULL AFTER `amount`,
 	ADD COLUMN `lastmodified_date` DATETIME NULL AFTER `created_date`,
 	CHANGE COLUMN `appuser_id` `createdby_id` BIGINT(20) NULL AFTER `lastmodified_date`,
-	ADD COLUMN `lastmodifiedby_id` BIGINT(20) NULL AFTER `createdby_id`;	
+	ADD COLUMN `lastmodifiedby_id` BIGINT(20) NULL AFTER `createdby_id`,
+	ADD CONSTRAINT `FK_1_m_client_transaction_m_appuser` FOREIGN KEY (`createdby_id`) REFERENCES `m_appuser` (`id`),
+ 	ADD CONSTRAINT `FK_2_m_client_transaction_m_appuser` FOREIGN KEY (`lastmodifiedby_id`) REFERENCES `m_appuser` (`id`);
 	
