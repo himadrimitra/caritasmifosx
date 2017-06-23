@@ -252,6 +252,7 @@ public class JournalEntryReadPlatformServiceImpl implements JournalEntryReadPlat
         sqlBuilder.append( whereClose + "  office.hierarchy like ? ");
         objectArray[arrayPos] = hierarchySearchString;
         arrayPos = arrayPos + 1;
+        whereClose = " and ";
 
         if (StringUtils.isNotBlank(transactionId)) {
             sqlBuilder.append(whereClose + " journalEntry.transaction_id = ?");
