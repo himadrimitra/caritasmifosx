@@ -583,10 +583,9 @@ public final class LoanProductDataValidator {
                         element);
                 baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRatesArray).notNull()
                         .jsonArrayNotEmpty();
-                if (interestRatesArray != null && interestRatesArray.size() > 0) {
+                if (interestRatePerPeriod != null && interestRatesArray != null && interestRatesArray.size() > 0) {
                     boolean interestRateFoundInList = false;
-                    Float defaultInterestRatePerPeriod = Float
-                            .parseFloat(this.fromApiJsonHelper.extractStringNamed("interestRatePerPeriod", element));
+                    Float defaultInterestRatePerPeriod = interestRatePerPeriod.floatValue();
                     for (JsonElement interest : interestRatesArray) {
                         Float interestRate = interest.getAsFloat();
                         baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRate).notNull()
@@ -1725,10 +1724,9 @@ public final class LoanProductDataValidator {
                 JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
                         element);
                 baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerPeriod).value(interestRatesArray).notNull();
-                if (interestRatesArray != null && interestRatesArray.size() > 0) {
+                if (interestRatePerPeriod != null && interestRatesArray != null && interestRatesArray.size() > 0) {
                     boolean interestRateFoundInList = false;
-                    Float defaultInterestRatePerPeriod = Float
-                            .parseFloat(this.fromApiJsonHelper.extractStringNamed("interestRatePerPeriod", element));
+                    Float defaultInterestRatePerPeriod = interestRatePerPeriod.floatValue();
                     for (JsonElement interest : interestRatesArray) {
                         Float interestRate = interest.getAsFloat();
                         if (defaultInterestRatePerPeriod.equals(interestRate)) interestRateFoundInList = true;
@@ -2330,7 +2328,7 @@ public final class LoanProductDataValidator {
         if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerPeriod, element)) {
             JsonArray interestRatesArray = this.fromApiJsonHelper.extractJsonArrayNamed(LoanProductConstants.interestRatesListPerPeriod,
                     element);
-            if (interestRatesArray != null && interestRatesArray.size() > 0) {
+            if (interestRatePerPeriod != null && interestRatesArray != null && interestRatesArray.size() > 0) {
                 boolean interestRateFound = false;
                 for (JsonElement interest : interestRatesArray) {
                     Float interestRate = interest.getAsFloat();
@@ -2427,15 +2425,15 @@ public final class LoanProductDataValidator {
                     if (this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRateVariationsForBorrowerCycleParameterName, element) && this.fromApiJsonHelper.parameterExists(LoanProductConstants.interestRatesListPerCycleParameterName, jsonObject)) {
                         JsonArray interestRatesArray = this.fromApiJsonHelper
                                 .extractJsonArrayNamed(LoanProductConstants.interestRatesListPerCycleParameterName, jsonObject);
-                        if (interestRatesArray != null && interestRatesArray.size() > 0) {
+                        BigDecimal defaultInterestRatePerPeriod = this.fromApiJsonHelper
+                                .extractBigDecimalNamed(LoanProductConstants.defaultValueParameterName, jsonObject, locale);
+                        if (defaultInterestRatePerPeriod != null && interestRatesArray != null && interestRatesArray.size() > 0) {
                             boolean interestRateFoundInList = false;
-                            Float defaultInterestRatePerPeriod = Float.parseFloat(
-                                    this.fromApiJsonHelper.extractStringNamed(LoanProductConstants.defaultValueParameterName, jsonObject));
                             for (JsonElement interest : interestRatesArray) {
-                                Float interestRate = interest.getAsFloat();
+                                float interestRate = interest.getAsFloat();
                                 baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
                                         .value(interestRate).notNull().zeroOrPositiveAmount();
-                                if (defaultInterestRatePerPeriod.equals(interestRate)) interestRateFoundInList = true;
+                                if (defaultInterestRatePerPeriod.floatValue() == interestRate) interestRateFoundInList = true;
                                 if (maxValue != null)
                                     baseDataValidator.reset().parameter(LoanProductConstants.interestRatesListPerCycleParameterName)
                                             .value(interestRate).notGreaterThanMax(maxValue);

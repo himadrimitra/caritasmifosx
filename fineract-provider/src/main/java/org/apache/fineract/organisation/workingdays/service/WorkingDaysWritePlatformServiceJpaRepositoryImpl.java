@@ -168,14 +168,17 @@ public class WorkingDaysWritePlatformServiceJpaRepositoryImpl implements Working
             WeekDayList workingDayList = rrule.getRecur().getDayList();
             for (NonWorkingDayRescheduleDetail detail : nonWorkingDayRescheduleDetails) {
                 WeekDay fromDay = new WeekDay(detail.getFromWeekDay());
-                WeekDay toDay = new WeekDay(detail.getToWeekDay());
                 if (workingDayList.contains(fromDay)) {
-                    baseDataValidator.reset().parameter(WorkingDaysApiConstants.fromWeekDay)
-                            .failWithCode("can.not.be.working.day", fromDay.getDay());
+                    baseDataValidator.reset().parameter(WorkingDaysApiConstants.fromWeekDay).failWithCode("can.not.be.working.day",
+                            fromDay.getDay());
                 }
-                if (!workingDayList.contains(toDay)) {
-                    baseDataValidator.reset().parameter(WorkingDaysApiConstants.toWeekDay)
-                            .failWithCode("must.be.working.day", toDay.getDay());
+
+                if (detail.getToWeekDay() != null) {
+                    WeekDay toDay = new WeekDay(detail.getToWeekDay());
+                    if (!workingDayList.contains(toDay)) {
+                        baseDataValidator.reset().parameter(WorkingDaysApiConstants.toWeekDay).failWithCode("must.be.working.day",
+                                toDay.getDay());
+                    }
                 }
                 if (fromWeekDayList.contains(detail.getFromWeekDay())) {
                     baseDataValidator.reset().parameter(WorkingDaysApiConstants.fromWeekDay).value(detail.getFromWeekDay())

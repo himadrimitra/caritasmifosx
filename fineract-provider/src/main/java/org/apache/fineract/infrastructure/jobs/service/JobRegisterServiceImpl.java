@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.TimeZone;
 
@@ -152,7 +153,7 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
         return loadJobs;
     }
 
-    public void executeJob(final ScheduledJobDetail scheduledJobDetail, String triggerType) {
+    public void executeJob(final ScheduledJobDetail scheduledJobDetail, String triggerType, final Map<String,Object> jobParams) {
         try {
             final JobDataMap jobDataMap = new JobDataMap();
             if (triggerType == null) {
@@ -160,6 +161,7 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
             }
             jobDataMap.put(SchedulerServiceConstants.TRIGGER_TYPE_REFERENCE, triggerType);
             jobDataMap.put(SchedulerServiceConstants.TENANT_IDENTIFIER, ThreadLocalContextUtil.getTenant().getTenantIdentifier());
+            jobDataMap.put(SchedulerServiceConstants.JOB_PARAMS, jobParams);
             final String key = scheduledJobDetail.getJobKey();
             final JobKey jobKey = constructJobKey(key);
             final String schedulerName = getSchedulerName(scheduledJobDetail);
@@ -225,7 +227,8 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
                 for (final ScheduledJobDetail jobDetail : scheduledJobDetails) {
                     if (jobDetail.isTriggerMisfired()) {
                         if (jobDetail.isActiveSchedular()) {
-                            executeJob(jobDetail, SchedulerServiceConstants.TRIGGER_TYPE_CRON);
+                            Map<String,Object> jobParams = new HashMap<>(1);
+                            executeJob(jobDetail, SchedulerServiceConstants.TRIGGER_TYPE_CRON, jobParams);
                         }
                         final String schedulerName = getSchedulerName(jobDetail);
                         final Scheduler scheduler = this.schedulers.get(schedulerName);
@@ -261,7 +264,15 @@ public class JobRegisterServiceImpl implements JobRegisterService, ApplicationLi
     public void executeJob(final Long jobId) {
         final ScheduledJobDetail scheduledJobDetail = this.schedularWritePlatformService.findByJobId(jobId);
         if (scheduledJobDetail == null) { throw new JobNotFoundException(String.valueOf(jobId)); }
-        executeJob(scheduledJobDetail, null);
+        Map<String,Object> jobParams = new HashMap<>(1);
+        executeJob(scheduledJobDetail, null,jobParams);
+    }
+    
+    @Override
+    public void executeJob(final String jobName, final Map<String,Object> jobParams) {
+        final ScheduledJobDetail scheduledJobDetail = this.schedularWritePlatformService.findByJobName(jobName);
+        if (scheduledJobDetail == null) { throw new JobNotFoundException(jobName); }
+        executeJob(scheduledJobDetail, null,jobParams);
     }
 
     @Override

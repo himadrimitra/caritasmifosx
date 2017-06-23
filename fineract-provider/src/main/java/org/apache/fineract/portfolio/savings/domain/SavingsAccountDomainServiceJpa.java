@@ -42,6 +42,9 @@ import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsTransactionBooleanValues;
 import org.apache.fineract.portfolio.savings.data.SavingsAccountTransactionDTO;
 import org.apache.fineract.portfolio.savings.exception.DepositAccountTransactionNotAllowedException;
+import org.apache.fineract.portfolio.savings.exception.SavingsAccountBlockedException;
+import org.apache.fineract.portfolio.savings.exception.SavingsAccountCreditsBlockedException;
+import org.apache.fineract.portfolio.savings.exception.SavingsAccountDebitsBlockedException;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
@@ -90,6 +93,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final SavingsTransactionBooleanValues transactionBooleanValues) {
 
         AppUser user = getAppUserIfPresent();
+        account.validateForAccountBlock();
+        account.validateForDebitBlock();
         final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
                 .isSavingsInterestPostingAtCurrentPeriodEnd();
         final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
@@ -173,6 +178,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final boolean isAccountTransfer, final boolean isRegularTransaction,
             final SavingsAccountTransactionType savingsAccountTransactionType) {
         AppUser user = getAppUserIfPresent();
+        account.validateForAccountBlock();
+        account.validateForCreditBlock();
         final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
                 .isSavingsInterestPostingAtCurrentPeriodEnd();
         final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
@@ -330,4 +337,5 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
 
         return savingsTreansactionIds;
     }
+    
 }

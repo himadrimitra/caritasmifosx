@@ -291,14 +291,34 @@ public class SavingsAccountsApiResource {
         } else if (is(commandParam, "unassignSavingsOfficer")) {
             final CommandWrapper commandRequest = builder.unassignSavingsOfficer(accountId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-            return this.toApiJsonSerializer.serialize(result);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_BLOCK_DEBIT)) {
+            final CommandWrapper commandRequest = builder.blockDebitsFromSavingsAccount(accountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_UNBLOCK_DEBIT)) {
+            final CommandWrapper commandRequest = builder.unblockDebitsFromSavingsAccount(accountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_BLOCK_CREDIT)) {
+            final CommandWrapper commandRequest = builder.blockCreditsToSavingsAccount(accountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_UNBLOCK_CREDIT)) {
+            final CommandWrapper commandRequest = builder.unblockCreditsToSavingsAccount(accountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_BLOCK_ACCOUNT)) {
+            final CommandWrapper commandRequest = builder.withNoJsonBody().blockSavingsAccount(accountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, SavingsApiConstants.COMMAND_UNBLOCK_ACCOUNT)) {
+            final CommandWrapper commandRequest = builder.withNoJsonBody().unblockSavingsAccount(accountId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
 
         if (result == null) {
             //
-            throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "reject", "withdrawnByApplicant", "approve",
-                    "undoapproval", "activate", "calculateInterest", "postInterest", "close", "assignSavingsOfficer",
-                    "unassignSavingsOfficer" });
+            throw new UnrecognizedQueryParamException("command", commandParam,
+                    new Object[] { "reject", "withdrawnByApplicant", "approve", "undoapproval", "activate", "calculateInterest",
+                            "postInterest", "close", "assignSavingsOfficer", "unassignSavingsOfficer",
+                            SavingsApiConstants.COMMAND_BLOCK_DEBIT, SavingsApiConstants.COMMAND_UNBLOCK_DEBIT,
+                            SavingsApiConstants.COMMAND_BLOCK_CREDIT, SavingsApiConstants.COMMAND_UNBLOCK_CREDIT,
+                            SavingsApiConstants.COMMAND_BLOCK_ACCOUNT, SavingsApiConstants.COMMAND_UNBLOCK_ACCOUNT });
         }
 
         return this.toApiJsonSerializer.serialize(result);

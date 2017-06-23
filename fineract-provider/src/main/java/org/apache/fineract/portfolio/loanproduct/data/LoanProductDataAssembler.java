@@ -15,8 +15,9 @@ public class LoanProductDataAssembler {
 
     public Set<LoanProductEntityProfileMapping> assembleLoanProductEntityProfileMappings(final LoanProduct loanProduct,
             final JsonCommand command) {
-        @SuppressWarnings("unused")
-        final Set<LoanProductEntityProfileMapping> newLoanProductEntityProfileMappings = new LinkedHashSet<LoanProductEntityProfileMapping>();
+        final Set<LoanProductEntityProfileMapping> existingLoanProductEntityProfileMappings = new LinkedHashSet<>(loanProduct.getLoanProductEntityProfileMapping());
+        loanProduct.clearLoanProductEntityProfileMapping();
+        final Set<LoanProductEntityProfileMapping> newLoanProductEntityProfileMappings = new LinkedHashSet<>();
         if (command.booleanPrimitiveValueOfParameterNamed(LoanProductConstants.isEnableRestrictionForClientProfileParamName)) {
             final Integer profileType = command.integerValueOfParameterNamed(LoanProductConstants.profileTypeParamName);
             final Integer[] selectedProfileTypes = command
@@ -27,27 +28,23 @@ public class LoanProductDataAssembler {
                         profileType, value.longValue(), valueEntityType.getValue());
                 newLoanProductEntityProfileMappings.add(loanProductEntityProfileMapping);
             }
-        }
-        if (!newLoanProductEntityProfileMappings.isEmpty() && loanProduct.getLoanProductEntityProfileMapping() != null
-                && !loanProduct.getLoanProductEntityProfileMapping().isEmpty()) {
-            final Set<LoanProductEntityProfileMapping> existingLoanProductEntityProfileMappings = new LinkedHashSet<>();
-            final Set<LoanProductEntityProfileMapping> removeFromNewLoanProductEntityProfileMappings = new LinkedHashSet<>();
-            existingLoanProductEntityProfileMappings.addAll(loanProduct.getLoanProductEntityProfileMapping());
-            loanProduct.clearLoanProductEntityProfileMapping();
-            for (final LoanProductEntityProfileMapping existingLoanProductEntityProfileMapping : existingLoanProductEntityProfileMappings) {
-                for (final LoanProductEntityProfileMapping newLoanProductEntityProfileMapping : newLoanProductEntityProfileMappings) {
-                    if (existingLoanProductEntityProfileMapping.getProfileType()
-                            .equals(newLoanProductEntityProfileMapping.getProfileType())
-                            && existingLoanProductEntityProfileMapping.getValue().equals(newLoanProductEntityProfileMapping.getValue())
-                            && existingLoanProductEntityProfileMapping.getValueEntityType().equals(
-                                    newLoanProductEntityProfileMapping.getValueEntityType())) {
-                        removeFromNewLoanProductEntityProfileMappings.add(newLoanProductEntityProfileMapping);
-                        loanProduct.addLoanProductEntityProfileMapping(existingLoanProductEntityProfileMapping);
+            if (!newLoanProductEntityProfileMappings.isEmpty() && !existingLoanProductEntityProfileMappings.isEmpty()) {
+                final Set<LoanProductEntityProfileMapping> removeFromNewLoanProductEntityProfileMappings = new LinkedHashSet<>();
+                for (final LoanProductEntityProfileMapping existingLoanProductEntityProfileMapping : existingLoanProductEntityProfileMappings) {
+                    for (final LoanProductEntityProfileMapping newLoanProductEntityProfileMapping : newLoanProductEntityProfileMappings) {
+                        if (existingLoanProductEntityProfileMapping.getProfileType()
+                                .equals(newLoanProductEntityProfileMapping.getProfileType())
+                                && existingLoanProductEntityProfileMapping.getValue().equals(newLoanProductEntityProfileMapping.getValue())
+                                && existingLoanProductEntityProfileMapping.getValueEntityType().equals(
+                                        newLoanProductEntityProfileMapping.getValueEntityType())) {
+                            removeFromNewLoanProductEntityProfileMappings.add(newLoanProductEntityProfileMapping);
+                            loanProduct.addLoanProductEntityProfileMapping(existingLoanProductEntityProfileMapping);
+                        }
                     }
                 }
-            }
-            if(!removeFromNewLoanProductEntityProfileMappings.isEmpty()){
-                newLoanProductEntityProfileMappings.removeAll(removeFromNewLoanProductEntityProfileMappings);
+                if(!removeFromNewLoanProductEntityProfileMappings.isEmpty()){
+                    newLoanProductEntityProfileMappings.removeAll(removeFromNewLoanProductEntityProfileMappings);
+                }
             }
         }
         loanProduct.addAllLoanProductEntityProfileMapping(newLoanProductEntityProfileMappings);

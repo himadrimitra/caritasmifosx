@@ -114,14 +114,18 @@ public class BankTransactionApiResource {
         if (is(commandParam, "initiate")) {
             CommandWrapper commandRequest = builder.initiateBankTransaction(transactionId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        }else if (is(commandParam, "submit")) {
+        } else if (is(commandParam, "submit")) {
             CommandWrapper commandRequest = builder.submitBankTransaction(transactionId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
-        }else if (is(commandParam, "retry")) {
+        } else if (is(commandParam, "retry")) {
             CommandWrapper commandRequest = builder.retryBankTransaction(transactionId).build();
             result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
+        } else if (is(commandParam, BankTransactionApiConstants.rejectCommandParam)) {
+            CommandWrapper commandRequest = builder.rejectBankTransaction(transactionId).build();
+            result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
         }
-        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam, new Object[] { "activate", "deactivate" }); }
+        if (result == null) { throw new UnrecognizedQueryParamException("command", commandParam,
+                new Object[] { "activate", "deactivate" }); }
         return this.toApiJsonSerializer.serialize(result);
     }
 

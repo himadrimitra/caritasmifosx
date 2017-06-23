@@ -102,6 +102,11 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
     public ScheduledJobDetail findByJobId(final Long jobId) {
         return this.scheduledJobDetailsRepository.findByJobId(jobId);
     }
+    
+    @Override
+    public ScheduledJobDetail findByJobName(final String jobName) {
+        return this.scheduledJobDetailsRepository.findByJobName(jobName);
+    }
 
     @Override
     @Transactional
@@ -139,7 +144,7 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
 
     @Transactional
     @Override
-    public boolean processJobDetailForExecution(final String jobKey, final String triggerType) {
+    public boolean processJobDetailForExecution(final String jobKey, final String triggerType,final Map<String,Object> jobParams) {
         boolean isStopExecution = false;
         final ScheduledJobDetail scheduledJobDetail = this.scheduledJobDetailsRepository.findByJobKeyWithLock(jobKey);
         if (scheduledJobDetail.isCurrentlyRunning()
@@ -171,7 +176,7 @@ public class SchedularWritePlatformServiceJpaRepositoryImpl implements Schedular
         } else if (!isStopExecution) {
             scheduledJobDetail.updateCurrentlyRunningStatus(true);
         }
-        Map<String,String> jobParams = this.schedulerJobRunnerReadService.getJobParams(scheduledJobDetail.getId());
+        jobParams.putAll(this.schedulerJobRunnerReadService.getJobParams(scheduledJobDetail.getId()));
         ThreadLocalContextUtil.setJobParams(jobParams);
         this.scheduledJobDetailsRepository.save(scheduledJobDetail);
         return isStopExecution;

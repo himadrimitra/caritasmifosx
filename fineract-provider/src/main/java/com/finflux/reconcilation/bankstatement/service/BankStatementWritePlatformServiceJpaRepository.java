@@ -247,7 +247,6 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 String accountingType = null;
                 String glCode = "";
                 String bankStatementTransactionType = "";
-                String errmsg = null;
                 if (row.getRowNum() != 0) {
                     for (int i = 0; i < ReconciliationApiConstants.HEADER_DATA.length; i++) {
                         Cell cell = row.getCell(i);
@@ -827,7 +826,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
     public String createJournalEntries(Long bankStatementId, String apiRequestBodyAsJson) {
         BankStatement bankStatement = this.bankStatementRepository.findOneWithNotFoundDetection(bankStatementId);
         List<BankStatementDetails> bankStatementDetails = this.bankStatementDetailsRepository
-                .retrieveBankStatementNonPortfolioDetails(bankStatement, BankStatementDetailType.NONPORTFOLIO.getValue());
+                .retrieveBankStatementDetailsToCreateNonPortfolioTransactions(bankStatement, BankStatementDetailType.NONPORTFOLIO.getValue());
         List<BankStatementDetailsData> bankStatementDetailsData = this.bankStatementDetailsReadPlatformService.retrieveBankStatementNonPortfolioData(bankStatementId);
         Long defaultBankGLAccountId = null;
         if (bankStatementDetailsData.size() > 0) {
@@ -884,7 +883,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         }
         if (!faildeList.isEmpty()) {
             this.bankStatementDetailsRepositoryWrapper.save(faildeList);
-        } else {
+        } 
+        if(!updatedList.isEmpty()){
             this.bankStatementDetailsRepositoryWrapper.save(updatedList);
         }
         responseData.put(ReconciliationApiConstants.RESOURCE, resultList);
