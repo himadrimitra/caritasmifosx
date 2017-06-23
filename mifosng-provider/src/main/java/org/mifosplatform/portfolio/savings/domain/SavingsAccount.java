@@ -943,13 +943,15 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     public void validateAccountBalanceDoesNotBecomeNegative(final BigDecimal transactionAmount, final boolean isException,final SavingsAccount account,
-    		final String accountName, final LocalDate transactionDate) {
+    		final String accountName, final LocalDate transactionDate, List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions) {
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
         Money runningBalance = Money.zero(this.currency);
         Money runningBalanceAsOnDate = Money.zero(this.currency);
         Money txnAmountInMoney = Money.of(this.currency, transactionAmount);
         Boolean canProcessBalance=false;
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
+        
+        Money minRequiredBalanceAsOnDate = minRequiredBalance.minus(this.onHoldFunds);
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {        	
             if (transaction.isNotReversed() && transaction.isCredit()) {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
@@ -969,21 +971,32 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             
         }
         
+		if (depositAccountOnHoldTransactions != null) {
+			for (final DepositAccountOnHoldTransaction onHoldTransaction : depositAccountOnHoldTransactions) {
+				// Compare the balance of the on hold:
+				if (!onHoldTransaction.isReversed() && (onHoldTransaction.getTransactionDate().isBefore(transactionDate)
+						|| onHoldTransaction.getTransactionDate().isEqual(transactionDate))) {
+					if (onHoldTransaction.getTransactionType().isHold()) {
+						minRequiredBalanceAsOnDate = minRequiredBalanceAsOnDate
+								.plus(onHoldTransaction.getAmountMoney(this.currency));
+					} else {
+						minRequiredBalanceAsOnDate = minRequiredBalanceAsOnDate
+								.minus(onHoldTransaction.getAmountMoney(this.currency));
+					}
+				}
+			}
+		}
+        
         
             final BigDecimal withdrawalFee = null;
             // deal with potential minRequiredBalance and
             // enforceMinRequiredBalance
-            if (!isException && canProcessBalance) {
-                if (runningBalance.minus(minRequiredBalance).isLessThanZero()) { throw new InsufficientAccountBalanceException(
-                		account.accountNumber,accountName); }
-            }else if(!isException && ((runningBalance.minus(minRequiredBalance).isLessThanZero()) || 
-            		(runningBalanceAsOnDate.isLessThanZero()))){
-            	 throw new InsufficientAccountBalanceException(
-                 		account.accountNumber,accountName); 
-            }
-            
+		if (!isException && ((canProcessBalance && runningBalance.minus(minRequiredBalance).isLessThanZero())
+				|| (runningBalanceAsOnDate.minus(minRequiredBalanceAsOnDate).isLessThanZero()))) {
+			throw new InsufficientAccountBalanceException(account.accountNumber, accountName);
+		}
 
-        }
+    }
     
 
     public void validateAccountBalanceDoesNotBecomeNegative(final String transactionAction,final SavingsAccount account,final String accountName) {

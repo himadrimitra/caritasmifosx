@@ -19,6 +19,9 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
 import org.joda.time.LocalDate;
+import org.joda.time.base.AbstractPartial;
+import org.mifosplatform.organisation.monetary.domain.MonetaryCurrency;
+import org.mifosplatform.organisation.monetary.domain.Money;
 import org.mifosplatform.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransaction;
 import org.mifosplatform.portfolio.savings.DepositAccountOnHoldTransactionType;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -125,5 +128,17 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
 	public void setSavingsAccount(SavingsAccount savingsAccount) {
 		this.savingsAccount = savingsAccount;
 	}
+
+	 public LocalDate getTransactionDate() {
+        LocalDate transactionDate = null;
+        if(this.transactionDate !=null){
+            transactionDate = LocalDate.fromDateFields(this.transactionDate);
+        }
+        return transactionDate;
+    }
+
+	 public Money getAmountMoney(final MonetaryCurrency currency) {
+        return Money.of(currency, this.amount);
+    }
 
 }

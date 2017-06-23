@@ -145,8 +145,13 @@ public class SavingsAccountDomainServiceJpa implements
 					isSavingsInterestPostingAtCurrentPeriodEnd,
 					financialYearBeginningMonth);
 		}
+        List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransactions = null;
+        if (account.getOnHoldFunds().compareTo(BigDecimal.ZERO) == 1) {
+            depositAccountOnHoldTransactions = this.depositAccountOnHoldTransactionRepository
+                    .findBySavingsAccountAndReversedFalseOrderByCreatedDateAsc(account);
+        }
 		account.validateAccountBalanceDoesNotBecomeNegative(transactionAmount,
-				transactionBooleanValues.isExceptionForBalanceCheck(),account,account.product.getName(),transactionDate);
+				transactionBooleanValues.isExceptionForBalanceCheck(),account,account.product.getName(),transactionDate, depositAccountOnHoldTransactions);
 		saveTransactionToGenerateTransactionId(withdrawal);
 		this.savingsAccountRepository.save(account);
 
