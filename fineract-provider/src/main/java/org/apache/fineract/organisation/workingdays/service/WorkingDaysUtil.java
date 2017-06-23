@@ -35,23 +35,33 @@ public class WorkingDaysUtil {
 
         
         RepaymentRescheduleType rescheduleType = RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType());
-        NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail = workingDays.getNonWorkingDayRescheduleDetails().get(date.getDayOfWeek());
-        if(nonWorkingDayRescheduleDetail != null){
-            rescheduleType =  RepaymentRescheduleType.fromInt(nonWorkingDayRescheduleDetail.getRepaymentReschedulingType());
+        NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail = workingDays.getNonWorkingDayRescheduleDetails()
+                .get(date.getDayOfWeek());
+        if (nonWorkingDayRescheduleDetail != null) {
+            rescheduleType = RepaymentRescheduleType.fromInt(nonWorkingDayRescheduleDetail.getRepaymentReschedulingType());
         }
+          return getOffSetDateIfNonWorkingDay(date, nextMeetingDate, workingDays, rescheduleType, nonWorkingDayRescheduleDetail);
+    }
         
+    public static LocalDate getOffSetDateIfNonWorkingDay(final LocalDate date, final LocalDate nextMeetingDate,
+            final WorkingDays workingDays, final RepaymentRescheduleType rescheduleType,
+            final NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail) {
 
+        // If date is a working day then return date.
+        if (isWorkingDay(workingDays, date)) { return date; }
         switch (rescheduleType) {
             case INVALID:
                 return date;
             case SAME_DAY:
                 return date;
             case MOVE_TO_NEXT_WORKING_DAY:
-                return getOffSetDateIfNonWorkingDay(date.plusDays(1), nextMeetingDate, workingDays);
+                return getOffSetDateIfNonWorkingDay(date.plusDays(1), nextMeetingDate, workingDays, rescheduleType,
+                        nonWorkingDayRescheduleDetail);
             case MOVE_TO_NEXT_REPAYMENT_DAY:
                 return nextMeetingDate;
             case MOVE_TO_PREVIOUS_WORKING_DAY:
-                return getOffSetDateIfNonWorkingDay(date.minusDays(1), nextMeetingDate, workingDays);
+                return getOffSetDateIfNonWorkingDay(date.minusDays(1), nextMeetingDate, workingDays, rescheduleType,
+                        nonWorkingDayRescheduleDetail);
             case MOVE_TO_NEXT_WORKING_WEEK_DAY:
                 @SuppressWarnings("null")
                 int fromDayForNext = CalendarUtils.getWeekDayAsInt(nonWorkingDayRescheduleDetail.getFromWeekDay());
@@ -70,13 +80,17 @@ public class WorkingDaysUtil {
     }
 
     public static boolean isWorkingDay(final WorkingDays workingDays, final LocalDate date) {
-        return CalendarUtils.isValidRedurringDate(workingDays.getRecurrence(), date, date) || isRepaymentRescheduleTypeIsSameDay(workingDays);
+        return CalendarUtils.isValidRedurringDate(workingDays.getRecurrence(), date, date) || isRepaymentRescheduleTypeIsSameDay(workingDays,date);
+    }
+    public static boolean isRepaymentRescheduleTypeIsSameDay(final WorkingDays workingDays, final LocalDate date) {
+        RepaymentRescheduleType rescheduleType = RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType());
+        NonWorkingDayRescheduleDetail nonWorkingDayRescheduleDetail = workingDays.getNonWorkingDayRescheduleDetails().get(date.getDayOfWeek());
+        if(nonWorkingDayRescheduleDetail != null){
+            rescheduleType =  RepaymentRescheduleType.fromInt(nonWorkingDayRescheduleDetail.getRepaymentReschedulingType());
+        }
+        return rescheduleType.isSameDay();
     }
 
-    public static boolean isRepaymentRescheduleTypeIsSameDay(final WorkingDays workingDays) {
-        return RepaymentRescheduleType.fromInt(workingDays.getRepaymentReschedulingType()).isSameDay();
-    }
-    
     public static boolean isNonWorkingDay(final WorkingDays workingDays, final LocalDate date) {
         return !isWorkingDay(workingDays, date);
     }
