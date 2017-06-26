@@ -84,9 +84,9 @@ public class ClientApiConstants {
     public static final String externalIdParamName = "externalId";
     public static final String mobileNoParamName = "mobileNo";
     public static final String alternateMobileNoParamName = "alternateMobileNo";
-    public static final String firstnameParamName = "firstname";
-    public static final String middlenameParamName = "middlename";
-    public static final String lastnameParamName = "lastname";
+    public static final String firstNameParamName = "firstname";
+    public static final String middleNameParamName = "middlename";
+    public static final String lastNameParamName = "lastname";
     public static final String fullnameParamName = "fullname";
     public static final String displaynameParamName = "displayname";
     public static final String officeIdParamName = "officeId";
@@ -203,8 +203,8 @@ public class ClientApiConstants {
     public static final String staffOptionsParamName = "staffOptions";
 
     public static final Set<String> CLIENT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName, mobileNoParamName, alternateMobileNoParamName, firstnameParamName,
-            middlenameParamName, lastnameParamName, fullnameParamName, officeIdParamName, activeParamName, activationDateParamName,
+            dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName, mobileNoParamName, alternateMobileNoParamName, firstNameParamName,
+            middleNameParamName, lastNameParamName, fullnameParamName, officeIdParamName, activeParamName, activationDateParamName,
             staffIdParamName, submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName,
             clientTypeIdParamName, clientClassificationIdParamName, clientNonPersonDetailsParamName, displaynameParamName,
             legalFormIdParamName, AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
@@ -215,8 +215,8 @@ public class ClientApiConstants {
             		constitutionIdParamName, mainBusinessLineIdParamName));
 
     public static final Set<String> CLIENT_UPDATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
-            dateFormatParamName, accountNoParamName, externalIdParamName, mobileNoParamName, alternateMobileNoParamName, firstnameParamName, middlenameParamName,
-            lastnameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName, savingsProductIdParamName,
+            dateFormatParamName, accountNoParamName, externalIdParamName, mobileNoParamName, alternateMobileNoParamName, firstNameParamName, middleNameParamName,
+            lastNameParamName, fullnameParamName, activeParamName, activationDateParamName, staffIdParamName, savingsProductIdParamName,
             dateOfBirthParamName, genderIdParamName, clientTypeIdParamName, clientClassificationIdParamName, submittedOnDateParamName,
             clientNonPersonDetailsParamName, displaynameParamName, legalFormIdParamName, AddressApiConstants.addressesParamName,
             FamilyDetailsApiConstants.familyMembersParamName, ExistingLoanApiConstants.existingLoansParamName, emailAddress));
@@ -242,8 +242,8 @@ public class ClientApiConstants {
      * match those of request parameters.
      */
     public static final Set<String> CLIENT_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName, accountNoParamName,
-            externalIdParamName, statusParamName, activeParamName, activationDateParamName, firstnameParamName, middlenameParamName,
-            lastnameParamName, fullnameParamName, displayNameParamName, mobileNoParamName, alternateMobileNoParamName, officeIdParamName, officeNameParamName,
+            externalIdParamName, statusParamName, activeParamName, activationDateParamName, firstNameParamName, middleNameParamName,
+            lastNameParamName, fullnameParamName, displayNameParamName, mobileNoParamName, alternateMobileNoParamName, officeIdParamName, officeNameParamName,
             transferToOfficeIdParamName, transferToOfficeNameParamName, hierarchyParamName, imageIdParamName, imagePresentParamName,
             staffIdParamName, staffNameParamName, timelineParamName, groupsParamName, officeOptionsParamName, staffOptionsParamName,
             dateOfBirthParamName, genderParamName, clientTypeParamName, clientClassificationParamName, legalFormParamName, 

@@ -76,11 +76,11 @@ public class FamilyDetailDataAssembler {
             salutaion = this.codeValueRepository.findOneWithNotFoundDetection(salutationId);
         }
 
-        final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstnameParamName, element);
+        final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstNameParamName, element);
 
-        final String middlename = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middlenameParamName, element);
+        final String middlename = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middleNameParamName, element);
 
-        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.lastnameParamName, element);
+        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.lastNameParamName, element);
 
         final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipIdParamName, element);
         CodeValue relationship = null;

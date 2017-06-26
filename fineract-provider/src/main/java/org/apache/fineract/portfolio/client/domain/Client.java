@@ -253,9 +253,9 @@ public final class Client extends AbstractPersistable<Long> {
         final String alternateMobileNo = command.stringValueOfParameterNamed(ClientApiConstants.alternateMobileNoParamName);
         final String emailId = command.stringValueOfParameterNamed(ClientApiConstants.emailAddress);
 
-        final String firstname = command.stringValueOfParameterNamed(ClientApiConstants.firstnameParamName);
-        final String middlename = command.stringValueOfParameterNamed(ClientApiConstants.middlenameParamName);
-        final String lastname = command.stringValueOfParameterNamed(ClientApiConstants.lastnameParamName);
+        final String firstname = command.stringValueOfParameterNamed(ClientApiConstants.firstNameParamName);
+        final String middlename = command.stringValueOfParameterNamed(ClientApiConstants.middleNameParamName);
+        final String lastname = command.stringValueOfParameterNamed(ClientApiConstants.lastNameParamName);
         final String fullname = command.stringValueOfParameterNamed(ClientApiConstants.fullnameParamName);
 
         final LocalDate dataOfBirth = command.localDateValueOfParameterNamed(ClientApiConstants.dateOfBirthParamName);
@@ -590,21 +590,21 @@ public final class Client extends AbstractPersistable<Long> {
             this.emailId = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(ClientApiConstants.firstnameParamName, this.firstname)) {
-            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.firstnameParamName);
-            actualChanges.put(ClientApiConstants.firstnameParamName, newValue);
+        if (command.isChangeInStringParameterNamed(ClientApiConstants.firstNameParamName, this.firstname)) {
+            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.firstNameParamName);
+            actualChanges.put(ClientApiConstants.firstNameParamName, newValue);
             this.firstname = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(ClientApiConstants.middlenameParamName, this.middlename)) {
-            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.middlenameParamName);
-            actualChanges.put(ClientApiConstants.middlenameParamName, newValue);
+        if (command.isChangeInStringParameterNamed(ClientApiConstants.middleNameParamName, this.middlename)) {
+            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.middleNameParamName);
+            actualChanges.put(ClientApiConstants.middleNameParamName, newValue);
             this.middlename = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(ClientApiConstants.lastnameParamName, this.lastname)) {
-            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.lastnameParamName);
-            actualChanges.put(ClientApiConstants.lastnameParamName, newValue);
+        if (command.isChangeInStringParameterNamed(ClientApiConstants.lastNameParamName, this.lastname)) {
+            final String newValue = command.stringValueOfParameterNamed(ClientApiConstants.lastNameParamName);
+            actualChanges.put(ClientApiConstants.lastNameParamName, newValue);
             this.lastname = StringUtils.defaultIfEmpty(newValue, null);
         }
 
@@ -713,21 +713,21 @@ public final class Client extends AbstractPersistable<Long> {
 
         if (StringUtils.isNotBlank(this.fullname)) {
 
-            baseDataValidator.reset().parameter(ClientApiConstants.firstnameParamName).value(this.firstname)
+            baseDataValidator.reset().parameter(ClientApiConstants.firstNameParamName).value(this.firstname)
                     .mustBeBlankWhenParameterProvided(ClientApiConstants.fullnameParamName, this.fullname);
 
-            baseDataValidator.reset().parameter(ClientApiConstants.middlenameParamName).value(this.middlename)
+            baseDataValidator.reset().parameter(ClientApiConstants.middleNameParamName).value(this.middlename)
                     .mustBeBlankWhenParameterProvided(ClientApiConstants.fullnameParamName, this.fullname);
 
-            baseDataValidator.reset().parameter(ClientApiConstants.lastnameParamName).value(this.lastname)
+            baseDataValidator.reset().parameter(ClientApiConstants.lastNameParamName).value(this.lastname)
                     .mustBeBlankWhenParameterProvided(ClientApiConstants.fullnameParamName, this.fullname);
         } else {
 
-            baseDataValidator.reset().parameter(ClientApiConstants.firstnameParamName).value(this.firstname).notBlank()
+            baseDataValidator.reset().parameter(ClientApiConstants.firstNameParamName).value(this.firstname).notBlank()
                     .notExceedingLengthOf(50);
-            baseDataValidator.reset().parameter(ClientApiConstants.middlenameParamName).value(this.middlename).ignoreIfNull()
+            baseDataValidator.reset().parameter(ClientApiConstants.middleNameParamName).value(this.middlename).ignoreIfNull()
                     .notExceedingLengthOf(50);
-            baseDataValidator.reset().parameter(ClientApiConstants.lastnameParamName).value(this.lastname).notBlank()
+            baseDataValidator.reset().parameter(ClientApiConstants.lastNameParamName).value(this.lastname).notBlank()
                     .notExceedingLengthOf(50);
         }
     }

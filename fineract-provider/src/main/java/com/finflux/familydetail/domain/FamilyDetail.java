@@ -176,21 +176,21 @@ public class FamilyDetail extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(FamilyDetailsApiConstants.salutationIdParamName, newValue);
         }
 
-        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.firstnameParamName, this.firstname)) {
-            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.firstnameParamName);
-            actualChanges.put(FamilyDetailsApiConstants.firstnameParamName, newValue);
+        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.firstNameParamName, this.firstname)) {
+            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.firstNameParamName);
+            actualChanges.put(FamilyDetailsApiConstants.firstNameParamName, newValue);
             this.firstname = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.middlenameParamName, this.middlename)) {
-            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.middlenameParamName);
-            actualChanges.put(FamilyDetailsApiConstants.middlenameParamName, newValue);
+        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.middleNameParamName, this.middlename)) {
+            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.middleNameParamName);
+            actualChanges.put(FamilyDetailsApiConstants.middleNameParamName, newValue);
             this.middlename = StringUtils.defaultIfEmpty(newValue, null);
         }
 
-        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.lastnameParamName, this.lastname)) {
-            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.lastnameParamName);
-            actualChanges.put(FamilyDetailsApiConstants.lastnameParamName, newValue);
+        if (command.isChangeInStringParameterNamed(FamilyDetailsApiConstants.lastNameParamName, this.lastname)) {
+            final String newValue = command.stringValueOfParameterNamed(FamilyDetailsApiConstants.lastNameParamName);
+            actualChanges.put(FamilyDetailsApiConstants.lastNameParamName, newValue);
             this.lastname = StringUtils.defaultIfEmpty(newValue, null);
         }
 
