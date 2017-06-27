@@ -141,7 +141,7 @@ public class BankStatementReadPlatformServiceImpl implements BankStatementReadPl
         final BankStatementMapper rm = new BankStatementMapper();
         List<Object> params = new ArrayList<>();
         final StringBuilder sb = new StringBuilder();
-        sb.append("SELECT ");
+        sb.append("select SQL_CALC_FOUND_ROWS ");
         sb.append(rm.schema());
         sb.append(" where bs.statement_type = ?");
         params.add(statementType);
