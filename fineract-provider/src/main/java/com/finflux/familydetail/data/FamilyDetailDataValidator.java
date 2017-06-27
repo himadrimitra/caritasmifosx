@@ -76,19 +76,19 @@ public class FamilyDetailDataValidator {
         baseDataValidator.reset().parameter(FamilyDetailsApiConstants.salutationIdParamName).value(salutationId).ignoreIfNull()
                 .longGreaterThanZero();
 
-        final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstnameParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.firstnameParamName).value(firstname).notBlank()
+        final String firstName = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstNameParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.firstNameParamName).value(firstName).notBlank()
                 .notExceedingLengthOf(50);
 
-        final String middlename = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middlenameParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.middlenameParamName).value(middlename).ignoreIfNull()
+        final String middleName = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middleNameParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.middleNameParamName).value(middleName).ignoreIfNull()
                 .notExceedingLengthOf(50);
 
-        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.middlenameParamName, element);
-        baseDataValidator.reset().parameter(ClientApiConstants.middlenameParamName).value(lastname).ignoreIfNull().notExceedingLengthOf(50);
+        final String lastName = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.lastNameParamName, element);
+        baseDataValidator.reset().parameter(ClientApiConstants.lastNameParamName).value(lastName).notNull().notExceedingLengthOf(50);
 
         final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipIdParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipIdParamName).value(relationshipId).ignoreIfNull()
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipIdParamName).value(relationshipId).notNull()
                 .longGreaterThanZero();
 
         final Long genderId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.genderIdParamName, element);
@@ -100,7 +100,7 @@ public class FamilyDetailDataValidator {
                 .validateDateBefore(DateUtils.getLocalDateOfTenant());
 
         final Integer age = this.fromApiJsonHelper.extractIntegerNamed(FamilyDetailsApiConstants.ageParamName, element, locale);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.ageParamName).value(age).ignoreIfNull().integerGreaterThanZero();
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.ageParamName).value(age).notNull().integerGreaterThanZero();
 
         final Long occupationDetailsId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.occupationDetailsIdParamName,
                 element);
@@ -164,16 +164,16 @@ public class FamilyDetailDataValidator {
         baseDataValidator.reset().parameter(FamilyDetailsApiConstants.salutationIdParamName).value(salutationId).ignoreIfNull()
                 .longGreaterThanZero();
 
-        final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstnameParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.firstnameParamName).value(firstname).notBlank()
+        final String firstname = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.firstNameParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.firstNameParamName).value(firstname).notBlank()
                 .notExceedingLengthOf(50);
 
-        final String middlename = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middlenameParamName, element);
-        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.middlenameParamName).value(middlename).ignoreIfNull()
+        final String middlename = this.fromApiJsonHelper.extractStringNamed(FamilyDetailsApiConstants.middleNameParamName, element);
+        baseDataValidator.reset().parameter(FamilyDetailsApiConstants.middleNameParamName).value(middlename).ignoreIfNull()
                 .notExceedingLengthOf(50);
 
-        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.middlenameParamName, element);
-        baseDataValidator.reset().parameter(ClientApiConstants.middlenameParamName).value(lastname).ignoreIfNull().notExceedingLengthOf(50);
+        final String lastname = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.middleNameParamName, element);
+        baseDataValidator.reset().parameter(ClientApiConstants.middleNameParamName).value(lastname).ignoreIfNull().notExceedingLengthOf(50);
 
         final Long relationshipId = this.fromApiJsonHelper.extractLongNamed(FamilyDetailsApiConstants.relationshipIdParamName, element);
         baseDataValidator.reset().parameter(FamilyDetailsApiConstants.relationshipIdParamName).value(relationshipId).ignoreIfNull()
