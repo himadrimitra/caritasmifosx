@@ -99,7 +99,7 @@ public class LoanTransactionsApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTransactionTemplate(@PathParam("loanId") final Long loanId, @QueryParam("command") final String commandParam,
             @Context final UriInfo uriInfo, @QueryParam("dateFormat") final String dateFormat,
-            @QueryParam("transactionDate") final DateParam transactionDateParam, @QueryParam("locale") final String locale) {
+            @QueryParam("transactionDate") final DateParam transactionDateParam, @QueryParam("locale") final String locale,@QueryParam("isTotalOutstandingInterest") final Boolean isTotalOutstandingInterest) {
 
         this.context.authenticatedUser().validateHasReadPermission(this.resourceNameForPermissions);
 
@@ -115,7 +115,7 @@ public class LoanTransactionsApiResource {
 						loanBasicDetials);
 			}
         } else if (is(commandParam, "waiveinterest")) {
-            transactionData = this.loanReadPlatformService.retrieveWaiveInterestDetails(loanId);
+            transactionData = this.loanReadPlatformService.retrieveWaiveInterestDetails(loanId,isTotalOutstandingInterest);
         } else if (is(commandParam, "writeoff")) {
             transactionData = this.loanReadPlatformService.retrieveLoanWriteoffTemplate(loanId);
         } else if (is(commandParam, "close-rescheduled")) {

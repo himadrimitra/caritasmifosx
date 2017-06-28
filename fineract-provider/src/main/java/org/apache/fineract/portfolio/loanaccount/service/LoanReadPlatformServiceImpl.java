@@ -525,13 +525,19 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     }
 
     @Override
-    public LoanTransactionData retrieveWaiveInterestDetails(final Long loanId) {
+    public LoanTransactionData retrieveWaiveInterestDetails(final Long loanId,final Boolean isTotalOutstandingInterest) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("SELECT ls.duedate AS duedate, ");
-        sb.append("IF((IFNULL(ls.interest_amount,0) - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) - IFNULL(ls.interest_waived_derived,0)) > 0,");
-        sb.append("(IFNULL(ls.interest_amount,0) - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) - IFNULL(ls.interest_waived_derived,0)),");
-        sb.append("ml.interest_outstanding_derived) AS waiveramount,");
+        if (isTotalOutstandingInterest) {
+            sb.append("ml.interest_outstanding_derived AS waiveramount,");
+        } else {
+            sb.append(
+                    "IF((IFNULL(ls.interest_amount,0) - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) - IFNULL(ls.interest_waived_derived,0)) > 0,");
+            sb.append(
+                    "(IFNULL(ls.interest_amount,0) - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) - IFNULL(ls.interest_waived_derived,0)),");
+            sb.append("ml.interest_outstanding_derived) AS waiveramount,");
+        }
         sb.append(" ml.currency_code as currencyCode, ml.currency_digits as currencyDigits, ml.currency_multiplesof as inMultiplesOf, rc.`name` as currencyName, ");
         sb.append(" rc.display_symbol as currencyDisplaySymbol, rc.internationalized_name_code as currencyNameCode ");
         sb.append(" FROM m_loan ml");

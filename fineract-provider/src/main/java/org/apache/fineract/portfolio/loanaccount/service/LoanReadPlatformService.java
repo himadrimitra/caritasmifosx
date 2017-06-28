@@ -59,7 +59,7 @@ public interface LoanReadPlatformService {
 
     LoanTransactionData retrieveLoanTransactionTemplate(Long loanId);
 
-    LoanTransactionData retrieveWaiveInterestDetails(Long loanId);
+    LoanTransactionData retrieveWaiveInterestDetails(Long loanId,Boolean isTotalOutstandingInterest);
 
     LoanTransactionData retrieveLoanTransaction(Long loanId, Long transactionId);
 
