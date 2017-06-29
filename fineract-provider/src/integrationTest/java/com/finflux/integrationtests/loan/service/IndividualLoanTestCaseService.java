@@ -143,7 +143,7 @@ public class IndividualLoanTestCaseService {
         urlParam.addParameter("clientId", clientId.toString());
         urlParam.addParameter("templateType", this.loanType);
         urlParam.addParameter("productApplicableForLoanType", productApplicableForLoanType.toString());
-        urlParam.addParameter("entityType", EntityType.CLIENTS.getValue().toString());
+        urlParam.addParameter("entityType", EntityType.CLIENT.getValue().toString());
         urlParam.addParameter("entityId", clientId.toString());
         return urlParam.toString();
     }

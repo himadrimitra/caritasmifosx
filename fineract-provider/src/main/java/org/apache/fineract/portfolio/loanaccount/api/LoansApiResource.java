@@ -649,7 +649,7 @@ public class LoansApiResource {
                 Long entityId = null;
                 if (AccountType.INDIVIDUAL.getValue().equals(loanBasicDetails.getLoanType().getId().intValue())
                         || AccountType.JLG.getValue().equals(loanBasicDetails.getLoanType().getId().intValue())) {
-                    entityType = EntityType.CLIENTS.getValue();
+                    entityType = EntityType.CLIENT.getValue();
                     entityId = loanBasicDetails.clientId();
                 }
                 productOptions = this.loanProductReadPlatformService.retrieveAllLoanProductsForLookup(product.getApplicableForLoanType()

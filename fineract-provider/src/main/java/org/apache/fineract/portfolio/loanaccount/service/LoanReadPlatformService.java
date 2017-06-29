@@ -164,4 +164,7 @@ public interface LoanReadPlatformService {
     Collection<Long> retriveLoansForMarkingAsNonNPAWithPeriodicAccounding();
 
     Collection<Long> retriveLoansForMarkingAsNPAWithPeriodicAccounding();
+    
+    Collection<LoanSchedulePeriodData> lookUpLoanSchedulePeriodsByPeriodNumberAndDueDateAndDueAmounts(final Long loanId,
+            final boolean excludeLoanScheduleMappedToPDC);
 }

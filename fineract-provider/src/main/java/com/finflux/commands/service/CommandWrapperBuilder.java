@@ -5,13 +5,12 @@
  */
 package com.finflux.commands.service;
 
-import com.finflux.task.data.TaskActionType;
-
 import org.apache.fineract.commands.domain.CommandWrapper;
 import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 
 import com.finflux.organisation.transaction.authentication.api.TransactionAuthenticationApiConstants;
 import com.finflux.reconcilation.ReconciliationApiConstants;
+import com.finflux.task.data.TaskActionType;
 import com.sun.jersey.multipart.FormDataMultiPart;
 
 public class CommandWrapperBuilder {
@@ -332,6 +331,92 @@ public class CommandWrapperBuilder {
         this.entityName = "BANK_TRANSACTION";
         this.entityId = transactionId;
         this.href = "/banktransaction/" + transactionId + "?command=reject";
+        return this;
+    }
+    
+    /**
+     * Create PDC
+     * 
+     * @param entityTypeId
+     * @param entityType
+     * @param entityId
+     * @return
+     */
+    public CommandWrapperBuilder createPDC(final Integer entityTypeId, final String entityType, final Long entityId) {
+        this.actionName = "CREATE";
+        this.entityName = "PDC";
+        this.entityId = entityTypeId.longValue();
+        this.subentityId = entityId;
+        this.href = "/pdcm/" + entityType + "/" + entityId;
+        return this;
+    }
+
+    /**
+     * Update PDC
+     * 
+     * @param pdcId
+     * @return
+     */
+    public CommandWrapperBuilder updatePDC(final Long pdcId) {
+        this.actionName = "UPDATE";
+        this.entityName = "PDC";
+        this.entityId = pdcId;
+        this.href = "/pdcm/" + pdcId;
+        return this;
+    }
+
+    /**
+     * Delete PDC
+     * @param pdcId
+     * @return
+     */
+    public CommandWrapperBuilder deletePDC(final Long pdcId) {
+        this.actionName = "DELETE";
+        this.entityName = "PDC";
+        this.entityId = pdcId;
+        this.href = "/pdcm/" + pdcId;
+        return this;
+    }
+
+    public CommandWrapperBuilder presentPDC() {
+        this.actionName = "PRESENT";
+        this.entityName = "PDC";
+        this.href = "/pdcm";
+        return this;
+    }
+
+    public CommandWrapperBuilder bouncedPDC() {
+        this.actionName = "BOUNCED";
+        this.entityName = "PDC";
+        this.href = "/pdcm";
+        return this;
+    }
+
+    public CommandWrapperBuilder clearPDC() {
+        this.actionName = "CLEAR";
+        this.entityName = "PDC";
+        this.href = "/pdcm";
+        return this;
+    }
+
+    public CommandWrapperBuilder cancelPDC() {
+        this.actionName = "CANCEL";
+        this.entityName = "PDC";
+        this.href = "/pdcm";
+        return this;
+    }
+
+    public CommandWrapperBuilder returnPDC() {
+        this.actionName = "RETURN";
+        this.entityName = "PDC";
+        this.href = "/pdcm";
+        return this;
+    }
+
+    public CommandWrapperBuilder undoPDC() {
+        this.actionName = "UNDO";
+        this.entityName = "PDC";
+        this.href = "/pdcm";
         return this;
     }
 }
