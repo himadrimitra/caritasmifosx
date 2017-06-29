@@ -160,4 +160,8 @@ public interface LoanReadPlatformService {
     LoanTransactionData retrieveLoanPrePaymentTemplate(LocalDate onDate, boolean calcualteInterestTillDate, Loan loan);
     
     LoanTransactionData retrieveLoanInstallmentDetails(Long loanId);
+
+    Collection<Long> retriveLoansForMarkingAsNonNPAWithPeriodicAccounding();
+
+    Collection<Long> retriveLoansForMarkingAsNPAWithPeriodicAccounding();
 }

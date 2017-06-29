@@ -31,6 +31,39 @@ import com.jayway.restassured.specification.ResponseSpecification;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class SchedulerJobHelper {
 
+    public static final String UPDATE_LOAN_SUMMARY = "Update loan Summary";
+    public static final String UPDATE_LOAN_ARREARS_AGEING = "Update Loan Arrears Ageing";
+    public static final String UPDATE_LOAN_PAID_IN_ADVANCE = "Update Loan Paid In Advance";
+    public static final String APPLY_ANNUAL_FEE_FOR_SAVINGS = "Apply Annual Fee For Savings";
+    public static final String APPLY_HOLIDAYS_TO_LOANS = "Apply Holidays To Loans";
+    public static final String POST_INTEREST_FOR_SAVINGS = "Post Interest For Savings";
+    public static final String TRANSFER_FEE_CHARGE_FOR_LOANS = "Transfer Fee For Loans From Savings";
+    public static final String ACCOUNTING_RUNNING_BALANCE_UPDATE = "Update Accounting Running Balances";
+    public static final String PAY_DUE_SAVINGS_CHARGES = "Pay Due Savings Charges";
+    public static final String APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT = "Apply penalty to overdue loans";
+    public static final String EXECUTE_STANDING_INSTRUCTIONS = "Execute Standing Instruction";
+    public static final String ADD_DUE_DATE_ACCRUAL_ENTRIES = "Add Due Date Accrual Transactions";
+    public static final String UPDATE_NPA = "Update Non Performing Assets";
+    public static final String UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS = "Update Deposit Accounts Maturity details";
+    public static final String TRANSFER_INTEREST_TO_SAVINGS = "Transfer Interest To Savings";
+    public static final String ADD_PERIODIC_ACCRUAL_ENTRIES = "Add Periodic Accrual Transactions";
+    public static final String RECALCULATE_INTEREST_FOR_LOAN = "Recalculate Interest For Loans";
+    public static final String GENERATE_RD_SCEHDULE = "Generate Mandatory Savings Schedule";
+    public static final String GENERATE_LOANLOSS_PROVISIONING = "Generate Loan Loss Provisioning";
+    public static final String POST_DIVIDENTS_FOR_SHARES = "Post Dividends For Shares";
+    public static final String UPDATE_SAVINGS_DORMANT_ACCOUNTS = "Update Savings Dormant Accounts";
+    public static final String ADD_PERIODIC_ACCRUAL_ENTRIES_FOR_LOANS_WITH_INCOME_POSTED_AS_TRANSACTIONS = "Add Accrual Transactions For Loans With Income Posted As Transactions";
+    public static final String SEND_MESSAGES_TO_SMS_GATEWAY = "Send messages to SMS gateway";
+    public static final String GET_DELIVERY_REPORTS_FROM_SMS_GATEWAY = "Get delivery reports from SMS gateway";
+    public static final String UPDATE_SMS_OUTBOUND_WITH_CAMPAIGN_MESSAGE = "Update Sms Outbound with campaign message";
+    public static final String EXECUTE_REPORT_MAILING_JOBS = "Execute Report Mailing Jobs";
+    public static final String APPLY_RECURRING_CHARGE_ON_CLIENT = "Apply Recurring Charge On Client";
+    public static final String INITIATE_BANK_TRANSACTION = "Initiate Bank Transactions";
+    public static final String UPDATE_BANK_TRANSACTION_STATUS = "Update Bank Transaction Status";
+    public static final String HIGHMARK_ENQUIRY = "Highmark Enquiry";
+    public static final String REDUCE_DP_LIMIT_FOR_SAVINGS = "Reduce Dp Limit For Savings";
+    public static final String FUND_STATUS_UPDATE = "Fund Status update";
+    
     private final RequestSpecification requestSpec;
     private final ResponseSpecification responseSpec;
 
@@ -117,32 +150,49 @@ public class SchedulerJobHelper {
                 // Executing Scheduler Job
                 runSchedulerJob(this.requestSpec, jobId.toString());
 
-                // Retrieving Scheduler Job by ID
-                HashMap schedulerJob = getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
-                Assert.assertNotNull(schedulerJob);
-
-                // Waiting for Job to complete
-                while ((Boolean) schedulerJob.get("currentlyRunning") == true) {
-                    Thread.sleep(15000);
-                    schedulerJob = getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
-                    Assert.assertNotNull(schedulerJob);
-                    System.out.println("Job is Still Running");
-                }
-
-                ArrayList<HashMap> jobHistoryData = getSchedulerJobHistory(this.requestSpec, this.responseSpec, jobId.toString());
-
-                // print error associated with recent job failure (if any)
-                System.out.println("Job run error message (printed only if the job fails: "
-                        + jobHistoryData.get(jobHistoryData.size() - 1).get("jobRunErrorMessage"));
-                System.out.println("Job failure error log (printed only if the job fails: "
-                        + jobHistoryData.get(jobHistoryData.size() - 1).get("jobRunErrorLog"));
-
-                // Verifying the Status of the Recently executed Scheduler Job
-                Assert.assertEquals("Verifying Last Scheduler Job Status", "success",
-                        jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
+                verifyJobExecution(jobId);
 
                 break;
             }
         }
+    }
+
+    public void verifyJobExecution(Integer jobId) throws InterruptedException {
+        // Retrieving Scheduler Job by ID
+        HashMap schedulerJob = getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+        Assert.assertNotNull(schedulerJob);
+
+        // Waiting for Job to complete
+        while ((Boolean) schedulerJob.get("currentlyRunning") == true) {
+            Thread.sleep(15000);
+            schedulerJob = getSchedulerJobById(this.requestSpec, this.responseSpec, jobId.toString());
+            Assert.assertNotNull(schedulerJob);
+            System.out.println("Job is Still Running");
+        }
+
+        ArrayList<HashMap> jobHistoryData = getSchedulerJobHistory(this.requestSpec, this.responseSpec, jobId.toString());
+
+        // print error associated with recent job failure (if any)
+        System.out.println("Job run error message (printed only if the job fails: "
+                + jobHistoryData.get(jobHistoryData.size() - 1).get("jobRunErrorMessage"));
+        System.out.println("Job failure error log (printed only if the job fails: "
+                + jobHistoryData.get(jobHistoryData.size() - 1).get("jobRunErrorLog"));
+
+        // Verifying the Status of the Recently executed Scheduler Job
+        Assert.assertEquals("Verifying Last Scheduler Job Status", "success",
+                jobHistoryData.get(jobHistoryData.size() - 1).get("status"));
+    }
+    
+    public Integer findJobIdFromJobName(String JobName) {
+        ArrayList<HashMap> allSchedulerJobsData = getAllSchedulerJobs(this.requestSpec, this.responseSpec);
+        Assert.assertNotNull(allSchedulerJobsData);
+        Integer jobId = null;
+        for (Integer jobIndex = 0; jobIndex < allSchedulerJobsData.size(); jobIndex++) {
+            if (allSchedulerJobsData.get(jobIndex).get("displayName").equals(JobName)) {
+                jobId = (Integer) allSchedulerJobsData.get(jobIndex).get("jobId");
+            }
+        }
+        Assert.assertNotNull(jobId);
+        return jobId;
     }
 }

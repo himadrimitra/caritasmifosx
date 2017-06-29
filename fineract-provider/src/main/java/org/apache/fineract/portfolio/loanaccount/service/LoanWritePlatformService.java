@@ -121,6 +121,10 @@ public interface LoanWritePlatformService {
     void updateScheduleDates(Long loanId, HolidayDetailDTO holidayDetailDTO, LocalDate recalculateFrom);
     
     void updateScheduleDates(final Loan loan, ScheduleGeneratorDTO scheduleGeneratorDTO,
-            final LoanApplicationTerms loanApplicationTerms, LocalDate currentDate); 
+            final LoanApplicationTerms loanApplicationTerms, LocalDate currentDate);
+
+    void updateLoanAsNPA(Long loanId);
+
+    void updateLoanAsNonNPA(Long loanId); 
 
 }

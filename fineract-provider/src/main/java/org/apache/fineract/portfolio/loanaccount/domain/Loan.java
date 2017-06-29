@@ -1380,23 +1380,30 @@ public class Loan extends AbstractPersistable<Long> {
 
     private void applyPeriodicAccruals(final Collection<LoanTransaction> accruals) {
 
+        List<LoanTransaction> reversedTransactions = new ArrayList<>();
+        final MonetaryCurrency currency = getCurrency();
+        LocalDate latestReversedDate = getDisbursementDate();
         for (LoanRepaymentScheduleInstallment installment : this.repaymentScheduleInstallments) {
-            Money interest = Money.zero(getCurrency());
-            Money fee = Money.zero(getCurrency());
-            Money penality = Money.zero(getCurrency());
+            Money interest = Money.zero(currency);
+            Money fee = Money.zero(currency);
+            Money penality = Money.zero(currency);
             for (LoanTransaction loanTransaction : accruals) {
                 if (loanTransaction.getTransactionDate().isAfter(installment.getFromDate())
                         && !loanTransaction.getTransactionDate().isAfter(installment.getDueDate())) {
-                    interest = interest.plus(loanTransaction.getInterestPortion(getCurrency()));
-                    fee = fee.plus(loanTransaction.getFeeChargesPortion(getCurrency()));
-                    penality = penality.plus(loanTransaction.getPenaltyChargesPortion(getCurrency()));
-                    if (installment.getFeeChargesCharged(getCurrency()).isLessThan(fee)
-                            || installment.getInterestCharged(getCurrency()).isLessThan(interest)
-                            || installment.getPenaltyChargesCharged(getCurrency()).isLessThan(penality)) {
-                        interest = interest.minus(loanTransaction.getInterestPortion(getCurrency()));
-                        fee = fee.minus(loanTransaction.getFeeChargesPortion(getCurrency()));
-                        penality = penality.minus(loanTransaction.getPenaltyChargesPortion(getCurrency()));
+                    interest = interest.plus(loanTransaction.getInterestPortion(currency));
+                    fee = fee.plus(loanTransaction.getFeeChargesPortion(currency));
+                    penality = penality.plus(loanTransaction.getPenaltyChargesPortion(currency));
+                    if (installment.getFeeChargesCharged(currency).isLessThan(fee)
+                            || installment.getInterestCharged(currency).isLessThan(interest)
+                            || installment.getPenaltyChargesCharged(currency).isLessThan(penality)) {
+                        interest = interest.minus(loanTransaction.getInterestPortion(currency));
+                        fee = fee.minus(loanTransaction.getFeeChargesPortion(currency));
+                        penality = penality.minus(loanTransaction.getPenaltyChargesPortion(currency));
                         loanTransaction.reverse();
+                        reversedTransactions.add(loanTransaction);
+                        if (latestReversedDate.isBefore(loanTransaction.getTransactionDate())) {
+                            latestReversedDate = loanTransaction.getTransactionDate();
+                        }
                     }
                 }
             }
@@ -1407,7 +1414,28 @@ public class Loan extends AbstractPersistable<Long> {
         for (LoanTransaction loanTransaction : accruals) {
             if (loanTransaction.getTransactionDate().isAfter(lastInstallment.getDueDate()) && !loanTransaction.isReversed()) {
                 loanTransaction.reverse();
+                reversedTransactions.add(loanTransaction);
+                if (latestReversedDate.isBefore(loanTransaction.getTransactionDate())) {
+                    latestReversedDate = loanTransaction.getTransactionDate();
+                }
             }
+        }
+        if (!reversedTransactions.isEmpty()) {
+            
+            Money reversedInterest = Money.zero(currency);
+            Money reversedFee = Money.zero(currency);
+            Money reversedPenality = Money.zero(currency);
+            LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(this, this.getOffice(), Money.zero(currency),
+                    Money.zero(currency), Money.zero(currency), Money.zero(currency), latestReversedDate);
+            for (final LoanTransaction loanTransaction : reversedTransactions) {
+                reversedInterest = reversedInterest.plus(loanTransaction.getInterestPortion(currency));
+                reversedFee = reversedFee.plus(loanTransaction.getFeeChargesPortion(currency));
+                reversedPenality = reversedPenality.plus(loanTransaction.getPenaltyChargesPortion(currency));
+                accrualTransaction.copyChargesPaidByFrom(loanTransaction);
+            }
+            
+            accrualTransaction.updateComponentsAndTotal(reversedInterest.zero(), reversedInterest, reversedFee, reversedPenality);
+            this.getLoanTransactions().add(accrualTransaction);
         }
     }
 
@@ -3897,7 +3925,7 @@ public class Loan extends AbstractPersistable<Long> {
         final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed()
-                    && !(transaction.isDisbursement() || transaction.isAccrual() || transaction.isRepaymentAtDisbursement()
+                    && !(transaction.isDisbursement() || transaction.isAccrualTransaction() || transaction.isRepaymentAtDisbursement()
                             || transaction.isNonMonetaryTransaction() || transaction.isIncomePosting() || transaction
                                 .isBrokenPeriodInterestPosting())) {
                 repaymentsOrWaivers.add(transaction);
@@ -3912,7 +3940,7 @@ public class Loan extends AbstractPersistable<Long> {
         final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed()
-                    && !(transaction.isDisbursement() || transaction.isAccrual() || transaction.isRepaymentAtDisbursement()
+                    && !(transaction.isDisbursement() || transaction.isAccrualTransaction() || transaction.isRepaymentAtDisbursement()
                             || transaction.isNonMonetaryTransaction() || transaction.isIncomePosting() || transaction
                                 .isBrokenPeriodInterestPosting())) {
                 repaymentsOrWaivers.add(LoanTransaction.copyTransactionProperties(transaction));
@@ -3927,7 +3955,7 @@ public class Loan extends AbstractPersistable<Long> {
         final List<LoanTransaction> repaymentsOrWaivers = new ArrayList<>();
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (transaction.isNotReversed()
-                    && !(transaction.isAccrual() || transaction.isNonMonetaryTransaction() || transaction.isAddSubsidy() || transaction
+                    && !(transaction.isAccrualTransaction() || transaction.isNonMonetaryTransaction() || transaction.isAddSubsidy() || transaction
                             .isRevokeSubsidy())) {
                 repaymentsOrWaivers.add(transaction);
             }
@@ -4264,8 +4292,7 @@ public class Loan extends AbstractPersistable<Long> {
         
         if (isClosedWrittenOff() && !transactionForAdjustment.isRecoveryRepaymentTransaction()) {
             // find write off transaction and reverse it
-            final LoanTransaction writeOffTransaction = findWriteOffTransaction();
-            writeOffTransaction.reverse();
+           reverseWriteOffTransactions();
         }
         
         if (isClosedObligationsMet() || (isClosedWrittenOff() && !transactionForAdjustment.isRecoveryRepaymentTransaction())
@@ -4354,8 +4381,8 @@ public class Loan extends AbstractPersistable<Long> {
         validateAccountStatus(LoanEvent.WRITE_OFF_OUTSTANDING_UNDO);
         existingTransactionIds.addAll(findExistingTransactionIds());
         existingReversedTransactionIds.addAll(findExistingReversedTransactionIds());
-        final LoanTransaction writeOffTransaction = findWriteOffTransaction();
-        writeOffTransaction.reverse();
+        reverseWriteOffTransactions();
+
         this.loanStatus = LoanStatus.ACTIVE.getValue();
         final LoanRepaymentScheduleTransactionProcessor loanRepaymentScheduleTransactionProcessor = this.transactionProcessorFactory
                 .determineProcessor(this.transactionProcessingStrategy);
@@ -4370,15 +4397,21 @@ public class Loan extends AbstractPersistable<Long> {
         return changedTransactionDetail;
     }
 
+    public void reverseWriteOffTransactions() {
+        for (final LoanTransaction transaction : this.loanTransactions) {
+            if (transaction.isWriteOff() || transaction.isAccrualWrittenOff()) {
+                transaction.reverse();
+            }
+        }
+    }
+    
     public LoanTransaction findWriteOffTransaction() {
-
         LoanTransaction writeOff = null;
         for (final LoanTransaction transaction : this.loanTransactions) {
             if (!transaction.isReversed() && transaction.isWriteOff()) {
                 writeOff = transaction;
             }
         }
-
         return writeOff;
     }
     
@@ -4498,14 +4531,19 @@ public class Loan extends AbstractPersistable<Long> {
             }
 
             this.loanTransactions.add(loanTransaction);
+           
+            List<LoanTransaction> transactions = new ArrayList<>(1);
+            if (changedTransactionDetail == null) {
+                changedTransactionDetail = new ChangedTransactionDetail();
+            }
+            Money[] receivables = populateReceivableDetailsForWriteOff(changedTransactionDetail, transactions);
 
-            loanRepaymentScheduleTransactionProcessor.handleWriteOff(loanTransaction, loanCurrency(), this.repaymentScheduleInstallments);
+            loanRepaymentScheduleTransactionProcessor.handleWriteOff(loanTransaction, loanCurrency(), this.repaymentScheduleInstallments,
+                    receivables, charges(), transactions);
 
             updateLoanSummaryDerivedFields();
         }
-        if (changedTransactionDetail == null) {
-            changedTransactionDetail = new ChangedTransactionDetail();
-        }
+        
         changedTransactionDetail.getNewTransactionMappings().put(0L, loanTransaction);
         return changedTransactionDetail;
     }
@@ -4588,8 +4626,14 @@ public class Loan extends AbstractPersistable<Long> {
 
                 this.loanTransactions.add(loanTransaction);
 
+                List<LoanTransaction> transactions = new ArrayList<>(1);
+                if (changedTransactionDetail == null) {
+                    changedTransactionDetail = new ChangedTransactionDetail();
+                }
+                Money[] receivables = populateReceivableDetailsForWriteOff(changedTransactionDetail, transactions);
+                
                 loanRepaymentScheduleTransactionProcessor.handleWriteOff(loanTransaction, loanCurrency(),
-                        this.repaymentScheduleInstallments);
+                        this.repaymentScheduleInstallments, receivables, charges(), transactions);
 
                 updateLoanSummaryDerivedFields();
             } else if (totalOutstanding.isGreaterThanZero()) {
@@ -4618,11 +4662,33 @@ public class Loan extends AbstractPersistable<Long> {
             }
         }
 
-        if (changedTransactionDetail == null) {
-            changedTransactionDetail = new ChangedTransactionDetail();
-        }
+       
         changedTransactionDetail.getNewTransactionMappings().put(0L, loanTransaction);
         return changedTransactionDetail;
+    }
+
+    public Money[] populateReceivableDetailsForWriteOff(ChangedTransactionDetail changedTransactionDetail,
+            List<LoanTransaction> transactions) {
+        Money[] receivables = new Money[3];
+        if (this.isPeriodicAccrualAccountingEnabledOnLoanProduct()) {
+            if (isNpa()) {
+                LoanTransaction accrualWriteOffTransaction = accrualUpdateOnWriteOff();
+                if (accrualWriteOffTransaction != null) {
+                    changedTransactionDetail.getNewTransactionMappings().put(-1L, accrualWriteOffTransaction);
+                }
+                receivables[0] = Money.zero(getCurrency());
+                receivables[1] = Money.zero(getCurrency());
+                receivables[2] = Money.zero(getCurrency());
+            } else {
+                receivables = getReceivableIncome();
+                transactions.addAll(getLoanTransactions());
+            }
+        }else{
+            receivables[0] =  Money.of(getCurrency(),this.getSummary().getTotalInterestOutstanding());
+            receivables[1] = Money.of(getCurrency(),this.getSummary().getTotalFeeChargesOutstanding());
+            receivables[2] = Money.of(getCurrency(),this.getSummary().getTotalPenaltyChargesOutstanding());
+        }
+        return receivables;
     }
 
     /**
@@ -5692,6 +5758,8 @@ public class Loan extends AbstractPersistable<Long> {
     public LocalDate getLastUserTransactionDate() {
         Collection<Integer> transactionType = new ArrayList<>();
         transactionType.add(LoanTransactionType.ACCRUAL.getValue());
+        transactionType.add(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
+        transactionType.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
         transactionType.add(LoanTransactionType.INCOME_POSTING.getValue());
         boolean excludeTypes = true;
         return getLastTransactioDateOfType(transactionType, excludeTypes);
@@ -7456,6 +7524,10 @@ public class Loan extends AbstractPersistable<Long> {
         if (interest.doubleValue() == 0) { return 0; }
         return ((interest.doubleValue()) / daysInPeriod) * days;
     }
+    
+    public Money[] getReceivableIncome() {
+        return getReceivableIncome(DateUtils.getLocalDateOfTenant());
+    }
 
     public Money[] getReceivableIncome(final LocalDate tillDate) {
         MonetaryCurrency currency = getCurrency();
@@ -7470,7 +7542,8 @@ public class Loan extends AbstractPersistable<Long> {
                     receivableInterest = receivableInterest.plus(transaction.getInterestPortion(currency));
                     receivableFee = receivableFee.plus(transaction.getFeeChargesPortion(currency));
                     receivablePenalty = receivablePenalty.plus(transaction.getPenaltyChargesPortion(currency));
-                } else if (transaction.isRepayment() || transaction.isChargePayment()) {
+                } else if (transaction.isRepayment() || transaction.isAccrualWrittenOff() || transaction.isInterestWaiver()
+                        || transaction.isChargesWaiver() || transaction.isChargePayment()) {
                     receivableInterest = receivableInterest.minus(transaction.getInterestPortion(currency));
                     receivableFee = receivableFee.minus(transaction.getFeeChargesPortion(currency));
                     receivablePenalty = receivablePenalty.minus(transaction.getPenaltyChargesPortion(currency));
@@ -7494,7 +7567,7 @@ public class Loan extends AbstractPersistable<Long> {
     
     public void reverseAccrualsAfter(final LocalDate tillDate) {
         for (final LoanTransaction transaction : this.loanTransactions) {
-            if (transaction.isAccrual() && transaction.getTransactionDate().isAfter(tillDate)) {
+            if (transaction.isAccrualTransaction() && transaction.getTransactionDate().isAfter(tillDate)) {
                 transaction.reverse();
             }
         }
@@ -8032,7 +8105,7 @@ public class Loan extends AbstractPersistable<Long> {
         LoanTransaction lastUserTransaction = null;
         for (int i = this.loanTransactions.size() - 1; i >= 0; i--) {
             LoanTransaction transaction = this.getLoanTransactions().get(i);
-            if (!(transaction.isReversed() || transaction.isAccrual() || transaction.isIncomePosting())) {
+            if (!(transaction.isReversed() || transaction.isAccrualTransaction() || transaction.isIncomePosting())) {
                 if (excludedTransactionIds == null || !excludedTransactionIds.contains(transaction.getId())) {
                     lastUserTransaction = transaction;
                     break;
@@ -8158,5 +8231,107 @@ public class Loan extends AbstractPersistable<Long> {
             if (HolidayUtil.isHoliday(repaymentDate, holidays)) { throw new LoanApplicationDateException(errorCode, errorMessage,
                     repaymentDate); }
         }
+    }
+    
+    public boolean isInAccrualSuspense() {
+        return this.isNpa() && this.isPeriodicAccrualAccountingEnabledOnLoanProduct();
+    }
+
+    public void setNpa(boolean isNpa) {
+        this.isNpa = isNpa;
+    }
+
+    public void updateChargesPaidByFromAccruals(final LoanTransaction loanTransaction) {
+        List<LoanTransaction> loanTransactions = getLoanTransactions();
+        List<String> chargesPaidByKeys = new ArrayList<>();
+        final MonetaryCurrency currency = getCurrency();
+        for (LoanTransaction accrualTransaction : loanTransactions) {
+            if (accrualTransaction.isAccrual()) {
+                updateChargesPaidByFromTransaction(loanTransaction, currency, accrualTransaction,chargesPaidByKeys);
+            }
+        }
+    }
+
+    public void updateChargesPaidByFromAccrualsSuspense(final LoanTransaction loanTransaction) {
+        List<LoanTransaction> loanTransactions = getLoanTransactions();
+        final MonetaryCurrency currency = getCurrency();
+        List<String> chargesPaidByKeys = new ArrayList<>();
+        for (LoanTransaction accrualTransaction : loanTransactions) {
+            if (accrualTransaction.isAccrualSuspense()) {
+                updateChargesPaidByFromTransaction(loanTransaction, currency, accrualTransaction,chargesPaidByKeys);
+            }
+        }
+    }
+
+    public void updateChargesPaidByFromTransaction(final LoanTransaction copyTo, final MonetaryCurrency currency,
+            LoanTransaction copyFrom, final List<String> chargesPaidByKeys) {
+        Set<LoanChargePaidBy> chargePaidBies = copyFrom.getLoanChargesPaid();
+        for (LoanChargePaidBy chargePaidBy : chargePaidBies) {
+            String key = chargespaidByKey(chargePaidBy);
+            if (!chargesPaidByKeys.contains(key)) {
+                chargesPaidByKeys.add(key);
+                Money outstanding = chargePaidBy.getLoanCharge().getAmountOutstanding(currency, chargePaidBy.getInstallmentNumber());
+                if (outstanding.isGreaterThanZero()) {
+                    final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(copyTo, chargePaidBy.getLoanCharge(),
+                            outstanding.getAmount(), chargePaidBy.getInstallmentNumber());
+                    copyTo.getLoanChargesPaid().add(loanChargePaidBy);
+                }
+            }
+        }
+    }
+
+    public void updateTransactionDetails(Collection<Integer> typeForAddReceivale, Collection<Integer> typeForSubtractReceivale,
+            final LoanTransaction transactionForUpdate) {
+
+        List<LoanTransaction> transactions = getLoanTransactions();
+        final MonetaryCurrency currency = getCurrency();
+        Money receivableInterest = Money.zero(currency);
+        Money receivableFee = Money.zero(currency);
+        Money receivablePenalty = Money.zero(currency);
+        List<String> chargesPaidByKeys = new ArrayList<>();
+
+        for (final LoanTransaction transaction : transactions) {
+            if (transaction.isTypeOfAndNotReversed(typeForAddReceivale)) {
+                receivableInterest = receivableInterest.plus(transaction.getInterestPortion(currency));
+                receivableFee = receivableFee.plus(transaction.getFeeChargesPortion(currency));
+                receivablePenalty = receivablePenalty.plus(transaction.getPenaltyChargesPortion(currency));
+                updateChargesPaidByFromTransaction(transactionForUpdate, currency, transaction,chargesPaidByKeys);
+
+            } else if (transaction.isTypeOfAndNotReversed(typeForSubtractReceivale)) {
+                receivableInterest = receivableInterest.minus(transaction.getInterestPortion(currency));
+                receivableFee = receivableFee.minus(transaction.getFeeChargesPortion(currency));
+                receivablePenalty = receivablePenalty.minus(transaction.getPenaltyChargesPortion(currency));
+            }
+        }
+
+        if (receivableInterest.isGreaterThanZero() || receivableFee.isGreaterThanZero() || receivablePenalty.isGreaterThanZero()) {
+            transactionForUpdate.updateComponentsAndTotal(receivableInterest.zero(), receivableInterest, receivableFee, receivablePenalty);
+            transactions.add(transactionForUpdate);
+        }
+
+    }
+    
+    private String chargespaidByKey(final LoanChargePaidBy paidByDetail){
+        String key = String.valueOf(paidByDetail.getLoanCharge().getId());
+        if(paidByDetail.getInstallmentNumber() != null){
+            key += "-"+paidByDetail.getInstallmentNumber();
+        }
+        return key;
+    }
+    
+    private LoanTransaction accrualUpdateOnWriteOff() {
+        if (!isNpa()) { return null; }
+        Collection<Integer> typeForAddReceivale = new ArrayList<>();
+        typeForAddReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
+
+        Collection<Integer> typeForSubtractReceivale = new ArrayList<>();
+        typeForSubtractReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
+        final MonetaryCurrency currency = getCurrency();
+        LoanTransaction accrualTransaction = LoanTransaction.accrualWriteOff(this, this.getOffice(), Money.zero(currency),
+                Money.zero(currency), Money.zero(currency), Money.zero(currency));
+
+        updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction);
+
+        return accrualTransaction.getAmount(currency).isGreaterThanZero() ? accrualTransaction : null;
     }
 }

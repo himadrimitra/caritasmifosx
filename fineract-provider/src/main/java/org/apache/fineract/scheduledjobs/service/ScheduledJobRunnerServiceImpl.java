@@ -38,6 +38,7 @@ import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformServic
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils;
 import org.apache.fineract.portfolio.client.data.ClientRecurringChargeData;
 import org.apache.fineract.portfolio.client.service.ClientRecurringChargeReadPlatformService;
+import org.apache.fineract.portfolio.loanaccount.service.LoanSchedularService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.DepositAccountUtils;
 import org.apache.fineract.portfolio.savings.data.DepositAccountData;
@@ -99,6 +100,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	private final BankTransactionReadPlatformService accountTransferReadPlatformService;
 	private final BankAccountTransactionRepository bankAccountTransactionRepository;
 	private final TaskPlatformReadService taskPlatformReadService;
+	private final LoanSchedularService loanSchedularService;
 
 	@Autowired
 	public ScheduledJobRunnerServiceImpl(
@@ -114,7 +116,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 			final BankTransactionService bankTransactionService,
 			final BankTransactionReadPlatformService accountTransferReadPlatformService,
 			final BankAccountTransactionRepository bankAccountTransactionRepository,
-			final TaskPlatformReadService taskPlatformReadService) {
+			final TaskPlatformReadService taskPlatformReadService,
+			final LoanSchedularService loanSchedularService) {
 		this.dataSourceServiceFactory = dataSourceServiceFactory;
 		this.savingsAccountWritePlatformService = savingsAccountWritePlatformService;
 		this.savingsAccountChargeReadPlatformService = savingsAccountChargeReadPlatformService;
@@ -128,6 +131,7 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		this.accountTransferReadPlatformService = accountTransferReadPlatformService;
 		this.bankAccountTransactionRepository = bankAccountTransactionRepository;
 		this.taskPlatformReadService = taskPlatformReadService;
+		this.loanSchedularService = loanSchedularService;
 	}
 
 	@Transactional
@@ -357,49 +361,14 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		}
 	}
 
-	@Transactional
-	@Override
-	@CronTarget(jobName = JobName.UPDATE_NPA)
-	public void updateNPA() {
-        String currentdate = formatter.print(DateUtils.getLocalDateOfTenant());
-		final JdbcTemplate jdbcTemplate = new JdbcTemplate(
-				this.dataSourceServiceFactory.determineDataSourceService()
-						.retrieveDataSource());
-
-		final StringBuilder resetNPASqlBuilder = new StringBuilder(900);
-		resetNPASqlBuilder.append("update m_loan loan ");
-		resetNPASqlBuilder
-				.append("left join m_loan_arrears_aging laa on laa.loan_id = loan.id ");
-		resetNPASqlBuilder
-				.append("inner join m_product_loan mpl on mpl.id = loan.product_id and mpl.overdue_days_for_npa is not null ");
-		resetNPASqlBuilder.append("set loan.is_npa = 0 ");
-		resetNPASqlBuilder
-				.append("where  loan.loan_status_id = 300 and mpl.account_moves_out_of_npa_only_on_arrears_completion = 0 ");
-		resetNPASqlBuilder
-				.append("or (mpl.account_moves_out_of_npa_only_on_arrears_completion = 1 and laa.overdue_since_date_derived is null)");
-
-		jdbcTemplate.update(resetNPASqlBuilder.toString());
-
-		final StringBuilder updateSqlBuilder = new StringBuilder(900);
-
-		updateSqlBuilder.append("UPDATE m_loan as ml,");
-		updateSqlBuilder.append(" (select loan.id ");
-		updateSqlBuilder.append("from m_loan_arrears_aging laa");
-		updateSqlBuilder
-				.append(" INNER JOIN  m_loan loan on laa.loan_id = loan.id ");
-		updateSqlBuilder
-				.append(" INNER JOIN m_product_loan mpl on mpl.id = loan.product_id AND mpl.overdue_days_for_npa is not null ");
-		updateSqlBuilder.append("WHERE loan.loan_status_id = 300  and ");
-		updateSqlBuilder
-				.append("laa.overdue_since_date_derived < SUBDATE(?,INTERVAL  ifnull(mpl.overdue_days_for_npa,0) day) ");
-		updateSqlBuilder.append("group by loan.id) as sl ");
-		updateSqlBuilder.append("SET ml.is_npa=1 where ml.id=sl.id ");
-
-		final int result = jdbcTemplate.update(updateSqlBuilder.toString(),currentdate);
-
-		logger.info(ThreadLocalContextUtil.getTenant().getName()
-				+ ": Results affected by update: " + result);
-	}
+        @Override
+        @CronTarget(jobName = JobName.UPDATE_NPA)
+        public void updateNPA() throws JobExecutionException {
+            StringBuilder sb = new StringBuilder();
+            this.loanSchedularService.updateNPAForNonAccrualBasedProducts(sb);
+            this.loanSchedularService.updateNPAForAccrualBasedProducts(sb);
+            if (sb.length() > 0) { throw new JobExecutionException(sb.toString()); }
+        }
 
 	@Override
 	@CronTarget(jobName = JobName.UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS)

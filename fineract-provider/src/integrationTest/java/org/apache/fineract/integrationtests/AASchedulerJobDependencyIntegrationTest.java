@@ -69,9 +69,9 @@ public class AASchedulerJobDependencyIntegrationTest {
 
         executeDepentJobs(allSchedulerJobsData, jobWillNotExecute);
 
-        executeJobById(getJobIdFromName(allSchedulerJobsData, "Update Loan Arrears Ageing"));
+        executeJobById(getJobIdFromName(allSchedulerJobsData, SchedulerJobHelper.UPDATE_LOAN_ARREARS_AGEING));
 
-        executeJobById(getJobIdFromName(allSchedulerJobsData, "Update Non Performing Assets"));
+        executeJobById(getJobIdFromName(allSchedulerJobsData, SchedulerJobHelper.UPDATE_NPA));
 
         jobWillNotExecute = false;
 
@@ -129,10 +129,10 @@ public class AASchedulerJobDependencyIntegrationTest {
 
             String jobName = (String) scheduleDetail.get("displayName");
 
-            if (jobName.equals("Update Non Performing Assets") || jobName.equals("Recalculate Interest For Loans")
-                    || jobName.equals("Apply penalty to overdue loans")
-                    || jobName.equals("Add Accrual Transactions For Loans With Income Posted As Transactions")
-                    || jobName.equals("Add Periodic Accrual Transactions") || jobName.equals("Add Accrual Transactions")) {
+            if (jobName.equals(SchedulerJobHelper.UPDATE_NPA) || jobName.equals(SchedulerJobHelper.RECALCULATE_INTEREST_FOR_LOAN)
+                    || jobName.equals(SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT)
+                    || jobName.equals(SchedulerJobHelper.ADD_PERIODIC_ACCRUAL_ENTRIES_FOR_LOANS_WITH_INCOME_POSTED_AS_TRANSACTIONS)
+                    || jobName.equals(SchedulerJobHelper.ADD_PERIODIC_ACCRUAL_ENTRIES) || jobName.equals(SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES)) {
                 Integer jobId = (Integer) scheduleDetail.get("jobId");
                 System.out.println("Exicuting job --->"+jobId);
                 // Retrieving Scheduler Job by ID

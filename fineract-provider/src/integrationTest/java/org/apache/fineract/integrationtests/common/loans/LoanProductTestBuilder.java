@@ -493,6 +493,9 @@ public class LoanProductTestBuilder {
             if (this.accountList[i].getAccountType().equals(Account.AccountType.LIABILITY)) {
                 final String ID = this.accountList[i].getAccountID().toString();
                 map.put("overpaymentLiabilityAccountId", ID);
+                map.put("npaInterestSuspenseAccountId", ID);
+                map.put("npaFeeSuspenseAccountId", ID);
+                map.put("npaPenaltySuspenseAccountId", ID);
                 if (this.isSubsidyApplicable != null && this.isSubsidyApplicable) {
                     map.put("subsidyFundSourceId", ID);
                 }

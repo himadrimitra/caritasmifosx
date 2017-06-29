@@ -16909,6 +16909,14 @@
                             receivablePenaltyAccountId, transfersInSuspenseAccountId, overpaymentLiabilityAccountId</td>
                     </tr>
                 </table>
+				 <table class=matrixHeading>
+                    <tr class="matrixHeadingBG">
+                        <td><div class="fineractHeading2">Additional Mandatory Fields for periodic (3) accrual accounting</div></td>
+                    </tr>
+                    <tr class=alt>
+                        <td>npaInterestSuspenseAccountId, npaFeeSuspenseAccountId, npaPenaltySuspenseAccountId</td>
+                    </tr>
+                </table>
                 <table class=matrixHeading>
                     <tr class="matrixHeadingBG">
                         <td><div class="fineractHeading2">Additional Mandatory Fields if interest recalculation is enabled(true)</div></td>
@@ -17150,7 +17158,10 @@
                     "incomeFromFeeAccountId":"37",
                     "incomeFromPenaltyAccountId":"35",
                     "overpaymentLiabilityAccountId":"2",
-                    "writeOffAccountId":"41"
+                    "writeOffAccountId":"41",
+		"npaInterestSuspenseAccountId":"42",
+		"npaFeeSuspenseAccountId":"43",
+		"npaPenaltySuspenseAccountId":"44"
                     }
                 </code>
                 <code class="method-response">
