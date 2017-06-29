@@ -456,7 +456,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
 	public Collection<PaymentDetailCollectionData> retrivePaymentDetail(
 			Long clientId) {
 		this.clientReadPlatformService.retrieveOne(clientId);
-		return retrievePaymentDetails(new Object[] { clientId, clientId,clientId });
+		return retrievePaymentDetails(new Object[] {clientId,clientId});
         
    
 	}
