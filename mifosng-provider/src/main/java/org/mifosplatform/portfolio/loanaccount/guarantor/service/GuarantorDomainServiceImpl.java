@@ -107,7 +107,11 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
     public void validateGuarantorBusinessRules(Loan loan) {
         LoanProduct loanProduct = loan.loanProduct();
         BigDecimal principal = loan.getPrincpal().getAmount();
-		BigDecimal outstanding = loan.getSummary().getTotalPrincipalOutstanding();
+		BigDecimal outstanding = principal;
+		if(loan.isDisbursed()) {
+			outstanding = loan.getSummary().getTotalPrincipalOutstanding();		
+		}
+		    	
         if (loanProduct.isHoldGuaranteeFundsEnabled()) {
             LoanProductGuaranteeDetails guaranteeData = loanProduct.getLoanProductGuaranteeDetails();
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
