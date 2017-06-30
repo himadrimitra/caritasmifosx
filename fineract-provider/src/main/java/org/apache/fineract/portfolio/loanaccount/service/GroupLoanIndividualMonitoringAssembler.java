@@ -297,7 +297,7 @@ public class GroupLoanIndividualMonitoringAssembler {
             BigDecimal beforeRoundingEmiAmount = BigDecimal.valueOf((totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment
                     .doubleValue()));
 
-            if(upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1) {
+            if(upfrontFeeAmount.compareTo(BigDecimal.ZERO) == 1 || MathUtility.isZero(totalCharge)) {
                 emiAmount = BigDecimal.valueOf(Math.round(totalAmountBeforeAdjustment.doubleValue() / numberOfRepayment.doubleValue()));
                 glim.setInstallmentAmount(emiAmount);
                 glim.setTotalPaybleAmount(totalAmountBeforeAdjustment.add(upfrontFeeAmount));
@@ -426,8 +426,8 @@ public class GroupLoanIndividualMonitoringAssembler {
     private BigDecimal calculateTotalInterestForFlat(BigDecimal nominalInterestRatePerPeriod, Integer numberOfRepayment, BigDecimal amount) {
         final BigDecimal divisor = BigDecimal.valueOf(Double.valueOf("100.0"));
         BigDecimal value = MathUtility.multiply(amount, nominalInterestRatePerPeriod,BigDecimal.valueOf(numberOfRepayment));
-        BigDecimal totalInterest = (value).divide(MathUtility.multiply(divisor, 12));
-        return totalInterest;
+        BigDecimal totalInterest = (value).divide(MathUtility.multiply(divisor, 12));        
+        return  BigDecimal.valueOf(Math.round(totalInterest.doubleValue()));
     }
 
     private void calculateTotalCharges(Loan newLoanApplication, final JsonElement element, BigDecimal proposedAmount, Client client,
