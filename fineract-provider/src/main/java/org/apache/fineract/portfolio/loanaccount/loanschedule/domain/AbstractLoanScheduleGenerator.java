@@ -134,7 +134,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
         boolean isFirstRepayment = true;
         LocalDate firstRepaymentdate = this.scheduledDateGenerator.generateNextRepaymentDate(
-                loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+                loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment);
         final LocalDate idealDisbursementDate = this.scheduledDateGenerator.idealDisbursementDateBasedOnFirstRepaymentDate(
                 loanApplicationTerms.getLoanTermPeriodFrequencyType(), loanApplicationTerms.getRepaymentEvery(), firstRepaymentdate,
                 loanApplicationTerms.getLoanCalendar(), loanApplicationTerms.getHolidayDetailDTO(), loanApplicationTerms);
@@ -219,7 +219,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         while (scheduleParams.getOutstandingBalance().isGreaterThanZero() || !scheduleParams.getDisburseDetailMap().isEmpty()) {
             final LocalDate previousRepaymentDate = scheduleParams.getActualRepaymentDate();
             scheduleParams.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(
-                    scheduleParams.getActualRepaymentDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO));
+                    scheduleParams.getActualRepaymentDate(), loanApplicationTerms, isFirstRepayment));
             AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(
                     scheduleParams.getActualRepaymentDate(), loanApplicationTerms, holidayDetailDTO);
             scheduleParams.setActualRepaymentDate(adjustedDateDetailsDTO.getChangedActualRepaymentDate());
@@ -1567,7 +1567,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
         do {
 
             params.setActualRepaymentDate(this.scheduledDateGenerator.generateNextRepaymentDate(params.getActualRepaymentDate(),
-                    loanApplicationTerms, isFirstRepayment, holidayDetailDTO));
+                    loanApplicationTerms, isFirstRepayment));
             if (params.getActualRepaymentDate().isAfter(currentDate)) {
                 params.setActualRepaymentDate(currentDate);
             }
@@ -2522,7 +2522,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     LocalDate previousRepaymentDate = actualRepaymentDate;
                     ArrayList<LoanTermVariationsData> dueDateVariationsDataList = new ArrayList<>();
                     actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(actualRepaymentDate,
-                            loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+                            loanApplicationTerms, isFirstRepayment);
                     isFirstRepayment = false;
                     AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                             holidayDetailDTO);
@@ -2545,7 +2545,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
 
                     while (loanTermVariationParams != null && loanTermVariationParams.isSkipPeriod()) {
                         actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(actualRepaymentDate,
-                                loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+                                loanApplicationTerms, isFirstRepayment);
                         isFirstRepayment = false;
                         lastInstallmentDate = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                                 holidayDetailDTO).getChangedScheduleDate();
@@ -2727,7 +2727,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             if (loanApplicationTerms.isAdjustFirstEMIAmount()) {
                 boolean isFirstRepayment = true;
                 LocalDate actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(
-                        loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+                        loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment);
 
                 LocalDate scheduleDate = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                         holidayDetailDTO).getChangedScheduleDate();
@@ -3099,7 +3099,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
             BigDecimal extraInterest = BigDecimal.ZERO;
             boolean isFirstRepayment = true;
             LocalDate firstRepaymentdate = this.scheduledDateGenerator.generateNextRepaymentDate(
-                    loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+                    loanApplicationTerms.getExpectedDisbursementDate(), loanApplicationTerms, isFirstRepayment);
             final LocalDate idealDisbursementDate = this.scheduledDateGenerator.idealDisbursementDateBasedOnFirstRepaymentDate(
                     loanApplicationTerms.getLoanTermPeriodFrequencyType(), loanApplicationTerms.getRepaymentEvery(), firstRepaymentdate,
                     loanApplicationTerms.getLoanCalendar(), loanApplicationTerms.getHolidayDetailDTO(), loanApplicationTerms);

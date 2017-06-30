@@ -2625,7 +2625,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         	isFirstRepayment = installment.getInstallmentNumber() == 1 ? true : false;
         	LocalDate previousRepaymentDate = lastActualRepaymentDate;
             actualRepaymentDate = this.scheduledDateGenerator.generateNextRepaymentDate(previousRepaymentDate, loanApplicationTerms,
-                    isFirstRepayment, scheduleGeneratorDTO.getHolidayDetailDTO());                        
+                    isFirstRepayment);                        
             AdjustedDateDetailsDTO adjustedDateDetailsDTO = this.scheduledDateGenerator.adjustRepaymentDate(actualRepaymentDate, loanApplicationTerms,
                     scheduleGeneratorDTO.getHolidayDetailDTO());
             lastActualRepaymentDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();  
