@@ -73,9 +73,9 @@ public class FamilyDetailReadPlatformServiceImpl implements FamilyDetailsReadPla
 
         final FamilyDetailsMapper familyDetailsMapper = new FamilyDetailsMapper(this.incomeExpenseReadPlatformService);
 
-        final String sql = "SELECT " + familyDetailsMapper.schema() + "WHERE f.client_id = ? ";
+        final String sql = "SELECT " + familyDetailsMapper.schema() + "WHERE f.client_id = ? or f.client_reference = ?";
 
-        return this.jdbcTemplate.query(sql, familyDetailsMapper, new Object[] { clientId });
+        return this.jdbcTemplate.query(sql, familyDetailsMapper, new Object[] { clientId, clientId });
 
     }
 
@@ -105,11 +105,11 @@ public class FamilyDetailReadPlatformServiceImpl implements FamilyDetailsReadPla
             query.append("f.id as id, f.client_id as clientId ").append(",mcv1.id as salutationId, mcv1.code_value AS salutationName ")
                     .append(",f.firstname as firstname, f.middlename as middlename,f.lastname as lastname ")
                     .append(",mcv2.id as relationshipId, mcv2.code_value as relationshipName ")
-                    .append(",mcv3.id as genderId, mcv3.code_value as genderName ")
-                    .append(",f.date_of_birth as dateOfBirth, f.age as age ").append(",ie.id as occupationId ")
-                    .append(",mcv5.id as educationId, mcv5.code_value as educationName ")
+                    .append(",mcv3.id as genderId, mcv3.code_value as genderName ").append(",f.date_of_birth as dateOfBirth, f.age as age ")
+                    .append(",ie.id as occupationId ").append(",mcv5.id as educationId, mcv5.code_value as educationName ")
                     .append(",f.is_dependent as isDependent, f.is_serious_illness as isSeriousIllness, f.is_deceased as isDeceased ")
                     .append(", f.client_reference as clientReference ")
+                    .append(",mc.id as memberClientId,mc.display_name as displayName,mc.account_no as accountNo ")
                     .append("FROM f_family_details f ").append("JOIN m_client mc ON mc.id = f.client_id ")
                     .append("LEFT JOIN f_income_expense ie ON ie.id = f.occupation_details_id ")
                     .append("LEFT JOIN m_code_value mcv1 ON mcv1.id = f.salutation_cv_id ")
@@ -162,11 +162,14 @@ public class FamilyDetailReadPlatformServiceImpl implements FamilyDetailsReadPla
             final Boolean isSeriousIllness = rs.getBoolean("isSeriousIllness");
             final Boolean isDeceased = rs.getBoolean("isDeceased");
             Long clientReference = null;
-            if(rs.getLong("clientReference") >0){
-            	clientReference = rs.getLong("clientReference");
+            if (rs.getLong("clientReference") > 0) {
+                clientReference = rs.getLong("clientReference");
             }
+            final Long memberClientId = rs.getLong("memberClientId");
+            final String displayName = rs.getString("displayName");
+            final String accountNo = rs.getString("accountNo");
             return new FamilyDetailData(id, firstname, middlename, lastname, salutation, relationship, gender, dateOfBirth, age, education,
-                    occupation, isDependent, isSeriousIllness, isDeceased, clientReference);
+                    occupation, isDependent, isSeriousIllness, isDeceased, clientReference, memberClientId, displayName, accountNo);
         }
     }
 }

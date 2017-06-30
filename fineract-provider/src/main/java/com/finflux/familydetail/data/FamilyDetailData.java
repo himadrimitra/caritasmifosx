@@ -23,10 +23,14 @@ public class FamilyDetailData {
     private final Boolean isSeriousIllness;
     private final Boolean isDeceased;
     private final Long clientReference;
+    private final Long memberClientId;
+    private final String displayName;
+    private final String accountNo;
 
     public FamilyDetailData(Long id, String firstname, String middlename, String lastname, CodeValueData salutation,
             CodeValueData relationship, CodeValueData gender, Date dateOfBirth, Integer age, CodeValueData education,
-            IncomeExpenseData occupation, final Boolean isDependent, final Boolean isSeriousIllness, final Boolean isDeceased) {
+            IncomeExpenseData occupation, final Boolean isDependent, final Boolean isSeriousIllness, final Boolean isDeceased,
+            final Long memberClientId, final String displayName, final String accountNo) {
         this.id = id;
         this.firstname = firstname;
         this.middlename = middlename;
@@ -42,12 +46,15 @@ public class FamilyDetailData {
         this.isSeriousIllness = isSeriousIllness;
         this.isDeceased = isDeceased;
         this.clientReference = null;
+        this.memberClientId = memberClientId;
+        this.displayName = displayName;
+        this.accountNo = accountNo;
     }
-    
+
     public FamilyDetailData(Long id, String firstname, String middlename, String lastname, CodeValueData salutation,
             CodeValueData relationship, CodeValueData gender, Date dateOfBirth, Integer age, CodeValueData education,
             IncomeExpenseData occupation, final Boolean isDependent, final Boolean isSeriousIllness, final Boolean isDeceased,
-            final Long clientReference) {
+            final Long clientReference, final Long memberClientId, final String displayName, final String accountNo) {
         this.id = id;
         this.firstname = firstname;
         this.middlename = middlename;
@@ -63,6 +70,9 @@ public class FamilyDetailData {
         this.isSeriousIllness = isSeriousIllness;
         this.isDeceased = isDeceased;
         this.clientReference = clientReference;
+        this.memberClientId = memberClientId;
+        this.displayName = displayName;
+        this.accountNo = accountNo;
     }
 
     public Long getId() {
@@ -119,5 +129,21 @@ public class FamilyDetailData {
 
     public Boolean getIsDeceased() {
         return this.isDeceased;
+    }
+
+    public Long getClientReference() {
+        return this.clientReference;
+    }
+
+    public Long getMemberClientId() {
+        return this.memberClientId;
+    }
+
+    public String getDisplayName() {
+        return this.displayName;
+    }
+
+    public String getAccountNo() {
+        return this.accountNo;
     }
 }
