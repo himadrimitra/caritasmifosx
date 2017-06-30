@@ -762,7 +762,15 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 						}
 						transaction.setStatus(response.getTransactionStatus().getValue());
 						bankAccountTransactionRepository.save(transaction);
-					}catch (Exception e){
+					}catch (PlatformApiDataValidationException e){
+                                            logger.error("Initiation failed for transaction "
+                                                    + transaction.getId()
+                                                    + " with message " + getErrorParam(e));
+                                            errorMsg.append(
+                                                    "Initiation failed for transaction Id:")
+                                                    .append(transaction.getId())
+                                                    .append(getErrorParam(e));
+                                        }catch (Exception e){
 						logger.error("Initiation failed for transaction "
 							+ transaction.getId()
 							+ " with message " + e.getMessage(),e);
@@ -778,6 +786,16 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 		if (errorMsg.length() > 0) {
 			throw new JobExecutionException(errorMsg.toString());
 		}
+	}
+	
+	private String getErrorParam(PlatformApiDataValidationException e){
+	    List<ApiParameterError> errorList=e.getErrors();
+	    String errorMessage=e.getDefaultUserMessage();
+	    for(ApiParameterError error:errorList){
+	        errorMessage=errorMessage+error.getParameterName()+",";
+	    }
+	    return errorMessage.substring(0,errorMessage.length()-1);
+	    
 	}
 
 	@Override
