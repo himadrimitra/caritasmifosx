@@ -16,4 +16,6 @@ public class BankTransactionApiConstants {
 
 
     public static final String SUBMIT_BANK_TRANSACTION_RESOURCE = "submitBankTransaction";
+    
+    public static final String INITIATE_BANK_TRANSACTION_RESOURCE="initiateBankTransaction";
 }
