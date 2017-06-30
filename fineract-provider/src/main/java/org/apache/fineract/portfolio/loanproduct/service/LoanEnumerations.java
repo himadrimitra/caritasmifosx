@@ -381,6 +381,18 @@ public class LoanEnumerations {
                 optionData = new LoanTransactionEnumData(LoanTransactionType.ACCRUAL.getValue().longValue(),
                         LoanTransactionType.ACCRUAL.getCode(), "Accrual");
             break;
+            case ACCRUAL_SUSPENSE:
+                optionData = new LoanTransactionEnumData(LoanTransactionType.ACCRUAL_SUSPENSE.getValue().longValue(),
+                        LoanTransactionType.ACCRUAL_SUSPENSE.getCode(), "Accrual Suspense");
+            break;
+            case ACCRUAL_SUSPENSE_REVERSE:
+                optionData = new LoanTransactionEnumData(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue().longValue(),
+                        LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getCode(), "Accrual Suspense Reverse");
+            break;
+            case ACCRUAL_WRITEOFF:
+                optionData = new LoanTransactionEnumData(LoanTransactionType.ACCRUAL_WRITEOFF.getValue().longValue(),
+                        LoanTransactionType.ACCRUAL_WRITEOFF.getCode(), "Accrual WriteOff");
+            break;
             case APPROVE_TRANSFER:
                 optionData = new LoanTransactionEnumData(LoanTransactionType.APPROVE_TRANSFER.getValue().longValue(),
                         LoanTransactionType.APPROVE_TRANSFER.getCode(), "Transfer approved");
@@ -449,6 +461,10 @@ public class LoanEnumerations {
             case PRE_PAYMENT:
                 optionData = new LoanTransactionEnumData(LoanTransactionSubType.PRE_PAYMENT.getValue().longValue(),
                         LoanTransactionSubType.PRE_PAYMENT.getCode(), "prepayment");
+            break;
+            case REPAYMENT_FOR_NPA_LOAN:
+                optionData = new LoanTransactionEnumData(LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getValue().longValue(),
+                        LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getCode(), "Repayment For NPA Loan");
             break;
             default:
             break;

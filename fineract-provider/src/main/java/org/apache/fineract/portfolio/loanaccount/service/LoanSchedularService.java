@@ -29,4 +29,8 @@ public interface LoanSchedularService {
 
     void applyHolidaysToLoans() throws JobExecutionException;
 
+    void updateNPAForNonAccrualBasedProducts(StringBuilder sb);
+
+    void updateNPAForAccrualBasedProducts(StringBuilder sb);
+
 }

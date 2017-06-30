@@ -24,7 +24,8 @@ public enum LoanTransactionSubType {
     UNACCOUTABLE(1, "loanTransactionSubType.unaccountable"),
     REALIZATION_SUBSIDY(50, "loanTransactionSubType.realizationSubsidy"),
     PARTIAL_WRITEOFF(51, "loanTransactionSubType.partialWriteOff"),
-    PRE_PAYMENT(52,"loanTransactionSubType.prepayment");
+    PRE_PAYMENT(52,"loanTransactionSubType.prepayment"),
+    REPAYMENT_FOR_NPA_LOAN(53,"loanTransactionSubType.repaymentForNpaLoan");
 
     private final Integer value;
     private final String code;
@@ -60,6 +61,9 @@ public enum LoanTransactionSubType {
             case 52:
                 transactionSubType = LoanTransactionSubType.PRE_PAYMENT;
             break;
+            case 53:
+                transactionSubType = LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN;
+            break;
             default:
                 transactionSubType = LoanTransactionSubType.INVALID;
             break;
@@ -69,5 +73,9 @@ public enum LoanTransactionSubType {
     
     public boolean isPrePayment() {
         return this.value.equals(LoanTransactionSubType.PRE_PAYMENT.getValue());
+    }
+    
+    public boolean isRepaymentForNpaLoan() {
+        return this.value.equals(LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getValue());
     }
 }

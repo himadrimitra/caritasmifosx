@@ -51,6 +51,9 @@ public class LoanTransactionEnumData {
     private final boolean revokeSubsidy;
     private final boolean realizationSubsidy;
     private final boolean brokenPeriodInterestPosting;
+    private final boolean accrualSuspense;
+    private final boolean accrualWrittenOff;
+    private final boolean accrualSuspenseReverse;
 
     public LoanTransactionEnumData(final Long id, final String code, final String value) {
         this.id = id;
@@ -72,6 +75,9 @@ public class LoanTransactionEnumData {
         this.refund = Long.valueOf(16).equals(this.id);
         this.chargePayment = Long.valueOf(17).equals(this.id);
         this.refundForActiveLoans = Long.valueOf(18).equals(this.id);
+        this.accrualSuspense = Long.valueOf(53).equals(this.id);
+        this.accrualWrittenOff = Long.valueOf(54).equals(this.id);
+        this.accrualSuspenseReverse = Long.valueOf(55).equals(this.id);
         this.addSubsidy = Long.valueOf(LoanTransactionType.ADD_SUBSIDY.getValue()).equals(this.id);
         this.revokeSubsidy = Long.valueOf(LoanTransactionType.REVOKE_SUBSIDY.getValue()).equals(this.id);
         this.realizationSubsidy = Long.valueOf(LoanTransactionSubType.REALIZATION_SUBSIDY.getValue()).equals(this.id);
@@ -176,6 +182,22 @@ public class LoanTransactionEnumData {
     
     public boolean isBrokenPeriodInterestPosting() {
         return this.brokenPeriodInterestPosting;
+    }
+    
+    public boolean isAccrualTransaction() {
+        return this.accrual || this.accrualSuspense || this.accrualSuspenseReverse || this.accrualWrittenOff;
+    }
+
+    public boolean isAccrualSuspense() {
+        return this.accrualSuspense;
+    }
+
+    public boolean isAccrualWrittenOff() {
+        return this.accrualWrittenOff;
+    }
+
+    public boolean isAccrualSuspenseReverse() {
+        return this.accrualSuspenseReverse;
     }
 
 }

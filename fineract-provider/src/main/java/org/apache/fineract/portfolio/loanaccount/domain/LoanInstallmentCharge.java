@@ -30,7 +30,6 @@ import javax.persistence.Table;
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
-import org.apache.fineract.portfolio.tax.domain.TaxComponent;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -190,6 +189,10 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> implements 
 
     public BigDecimal getAmountOutstanding() {
         return this.amountOutstanding;
+    }
+    
+    public Money getAmountOutstanding(final MonetaryCurrency currency) {
+        return Money.of(currency, this.amountOutstanding);
     }
 
     private BigDecimal calculateAmountOutstanding(final MonetaryCurrency currency) {
@@ -387,14 +390,21 @@ public class LoanInstallmentCharge extends AbstractPersistable<Long> implements 
     
     public Money writeOffGlimLoanCharge(Money writeOffAmount) {
         BigDecimal amount = MathUtility.zeroIfNull(writeOffAmount);
-        this.amountWrittenOff = MathUtility.isNull(this.amountWrittenOff)? amount : MathUtility.add(this.amountWrittenOff ,amount);
+        this.amountWrittenOff = MathUtility.isNull(this.amountWrittenOff) ? amount : MathUtility.add(this.amountWrittenOff, amount);
         this.amountOutstanding = MathUtility.subtract(this.amountOutstanding, amount);
         return writeOffAmount;
     }
-    
-	@Override
-	public int compareTo(LoanInstallmentCharge o) {
-		return this.installment.getInstallmentNumber().compareTo(
-				o.installment.getInstallmentNumber());
-	}
+
+    @Override
+    public int compareTo(LoanInstallmentCharge o) {
+        return this.installment.getInstallmentNumber().compareTo(o.installment.getInstallmentNumber());
+    }
+
+    public Money writtenOff(final MonetaryCurrency currency) {
+        this.amountWrittenOff = this.amountOutstanding;
+        this.amountOutstanding = BigDecimal.ZERO;
+        this.paid = false;
+        this.waived = true;
+        return getAmountWrittenOff(currency);
+    }
 }

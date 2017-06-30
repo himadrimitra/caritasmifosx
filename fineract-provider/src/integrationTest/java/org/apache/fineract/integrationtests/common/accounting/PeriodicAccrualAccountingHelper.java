@@ -20,6 +20,7 @@ package org.apache.fineract.integrationtests.common.accounting;
 
 import java.util.HashMap;
 
+import org.apache.fineract.integrationtests.common.SchedulerJobHelper;
 import org.apache.fineract.integrationtests.common.Utils;
 
 import com.google.gson.Gson;
@@ -31,15 +32,19 @@ public class PeriodicAccrualAccountingHelper {
     private static final String PERIODIC_ACCRUAL_URL = "/fineract-provider/api/v1/runaccruals";
     private final RequestSpecification requestSpec;
     private final ResponseSpecification responseSpec;
+    private SchedulerJobHelper schedulerJobHelper;
 
     public PeriodicAccrualAccountingHelper(final RequestSpecification requestSpec, final ResponseSpecification responseSpec) {
         this.requestSpec = requestSpec;
         this.responseSpec = responseSpec;
+        this.schedulerJobHelper = new SchedulerJobHelper(this.requestSpec, this.responseSpec);
     }
 
-    public Object runPeriodicAccrualAccounting(String date) {
+    public void runPeriodicAccrualAccounting(String date) throws InterruptedException {
         String json = getRunPeriodicAccrual(date);
-        return Utils.performServerPost(this.requestSpec, this.responseSpec, PERIODIC_ACCRUAL_URL + "?" + Utils.TENANT_IDENTIFIER, json, "");
+        Utils.performServerPost(this.requestSpec, this.responseSpec, PERIODIC_ACCRUAL_URL + "?" + Utils.TENANT_IDENTIFIER, json, "");
+        Integer jobId = this.schedulerJobHelper.findJobIdFromJobName(SchedulerJobHelper.ADD_PERIODIC_ACCRUAL_ENTRIES);
+        this.schedulerJobHelper.verifyJobExecution(jobId);
     }
 
     private String getRunPeriodicAccrual(String date) {

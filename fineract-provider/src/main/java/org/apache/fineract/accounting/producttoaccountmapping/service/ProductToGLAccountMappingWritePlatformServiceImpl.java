@@ -121,51 +121,19 @@ public class ProductToGLAccountMappingWritePlatformServiceImpl implements Produc
                 this.createSubsidyProductToGLAccountMapping(loanProductId, element);
             break;
             case ACCRUAL_UPFRONT:
-                // Fall Through
+                saveAccrualAccountingGLMappings(loanProductId, element);
+                // advanced accounting mappings
+                this.loanProductToGLAccountMappingHelper.savePaymentChannelToFundSourceMappings(command, element, loanProductId, null);
+                this.loanProductToGLAccountMappingHelper.saveChargesToIncomeAccountMappings(command, element, loanProductId, null);
+                
+                // subsidy
+                this.createSubsidyProductToGLAccountMapping(loanProductId, element);
+                break;
+                
             case ACCRUAL_PERIODIC:
-                // assets (including receivables)
-                this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.FUND_SOURCE.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.LOAN_PORTFOLIO.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.TRANSFERS_SUSPENSE.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.TRANSFERS_SUSPENSE.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_RECEIVABLE.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INTEREST_RECEIVABLE.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.FEES_RECEIVABLE.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.PENALTIES_RECEIVABLE.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.PENALTIES_RECEIVABLE.getValue());
-
-                // income
-                this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_LOANS.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INTEREST_ON_LOANS.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_PENALTIES.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue());
-                this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_RECOVERY.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_RECOVERY.getValue());
-
-                // expenses
-                this.loanProductToGLAccountMappingHelper.saveLoanToExpenseAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.LOSSES_WRITTEN_OFF.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.LOSSES_WRITTEN_OFF.getValue());
-
-                // liabilities
-                this.loanProductToGLAccountMappingHelper.saveLoanToLiabilityAccountMapping(element,
-                        LOAN_PRODUCT_ACCOUNTING_PARAMS.OVERPAYMENT.getValue(), loanProductId,
-                        ACCRUAL_ACCOUNTS_FOR_LOAN.OVERPAYMENT.getValue());
+                
+                saveAccrualAccountingGLMappings(loanProductId, element);
+                savePeriodicAccrualAccountingGLMappings(loanProductId, element);
 
                 // advanced accounting mappings
                 this.loanProductToGLAccountMappingHelper.savePaymentChannelToFundSourceMappings(command, element, loanProductId, null);
@@ -175,6 +143,71 @@ public class ProductToGLAccountMappingWritePlatformServiceImpl implements Produc
                 this.createSubsidyProductToGLAccountMapping(loanProductId, element);
             break;
         }
+    }
+
+    public void savePeriodicAccrualAccountingGLMappings(final Long loanProductId, final JsonElement element) {
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeOrLiabilityAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_INTEREST_SUSPENSE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.NPA_INTEREST_SUSPENSE.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeOrLiabilityAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_FEES_SUSPENSE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.NPA_FEES_SUSPENSE.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeOrLiabilityAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_PENALTIES_SUSPENSE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.NPA_PENALTIES_SUSPENSE.getValue());
+    }
+
+    /**
+     * Method saves common accounting details for both periodic and upfront accounting 
+     * @param loanProductId
+     * @param element
+     */
+    public void saveAccrualAccountingGLMappings(final Long loanProductId, final JsonElement element) {
+     // assets (including receivables)
+        this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.FUND_SOURCE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.FUND_SOURCE.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.LOAN_PORTFOLIO.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.LOAN_PORTFOLIO.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.TRANSFERS_SUSPENSE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.TRANSFERS_SUSPENSE.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_RECEIVABLE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.INTEREST_RECEIVABLE.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.FEES_RECEIVABLE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.FEES_RECEIVABLE.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToAssetAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.PENALTIES_RECEIVABLE.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.PENALTIES_RECEIVABLE.getValue());
+
+        // income
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_LOANS.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.INTEREST_ON_LOANS.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_FEES.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_PENALTIES.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_PENALTIES.getValue());
+        this.loanProductToGLAccountMappingHelper.saveLoanToIncomeAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_RECOVERY.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.INCOME_FROM_RECOVERY.getValue());
+        
+        
+
+        // expenses
+        this.loanProductToGLAccountMappingHelper.saveLoanToExpenseAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.LOSSES_WRITTEN_OFF.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.LOSSES_WRITTEN_OFF.getValue());
+
+        // liabilities
+        this.loanProductToGLAccountMappingHelper.saveLoanToLiabilityAccountMapping(element,
+                LOAN_PRODUCT_ACCOUNTING_PARAMS.OVERPAYMENT.getValue(), loanProductId,
+                ACCRUAL_ACCOUNTS_FOR_LOAN.OVERPAYMENT.getValue());
     }
     
     public void createSubsidyProductToGLAccountMapping(Long loanProductId, JsonElement element) {

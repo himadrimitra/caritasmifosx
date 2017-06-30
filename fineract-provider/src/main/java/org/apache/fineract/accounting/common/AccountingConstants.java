@@ -64,7 +64,8 @@ public class AccountingConstants {
     /*** Accounting placeholders for accrual based accounting for loan products ***/
     public static enum ACCRUAL_ACCOUNTS_FOR_LOAN {
         FUND_SOURCE(1), LOAN_PORTFOLIO(2), INTEREST_ON_LOANS(3), INCOME_FROM_FEES(4), INCOME_FROM_PENALTIES(5), LOSSES_WRITTEN_OFF(6), INTEREST_RECEIVABLE(
-                7), FEES_RECEIVABLE(8), PENALTIES_RECEIVABLE(9), TRANSFERS_SUSPENSE(10), OVERPAYMENT(11), INCOME_FROM_RECOVERY(12), SUBSIDY_FUND_SOURCE(50), SUBSIDY_ACCOUNT(51);
+                7), FEES_RECEIVABLE(8), PENALTIES_RECEIVABLE(9), TRANSFERS_SUSPENSE(10), OVERPAYMENT(11), INCOME_FROM_RECOVERY(12), SUBSIDY_FUND_SOURCE(50), SUBSIDY_ACCOUNT(51),
+                NPA_INTEREST_SUSPENSE(52), NPA_FEES_SUSPENSE(53),NPA_PENALTIES_SUSPENSE(54);
 
         private final Integer value;
 
@@ -109,7 +110,9 @@ public class AccountingConstants {
                 "penaltyToIncomeAccountMappings"), CHARGE_ID("chargeId"), INCOME_ACCOUNT_ID("incomeAccountId"), INCOME_FROM_RECOVERY(
                 "incomeFromRecoveryAccountId"), SUBSIDY_FUND_SOURCE("subsidyFundSourceId"), 
                 EXPENSE_ACCOUNT_ID("expenseAccountId"), SUBSIDY_ACCOUNT("subsidyAccountId"),
-                CODE_VALUE_ID("codeValueId"), CODE_VALUE_ACCOUNTING_MAPPING("codeValueSpecificAccountMapping");
+                CODE_VALUE_ID("codeValueId"), CODE_VALUE_ACCOUNTING_MAPPING("codeValueSpecificAccountMapping"),
+                NPA_INTEREST_SUSPENSE("npaInterestSuspenseAccountId"), NPA_FEES_SUSPENSE("npaFeeSuspenseAccountId"),
+                NPA_PENALTIES_SUSPENSE("npaPenaltySuspenseAccountId");
 
         private final String value;
 
@@ -133,7 +136,8 @@ public class AccountingConstants {
                 "overpaymentLiabilityAccount"), INTEREST_RECEIVABLE("receivableInterestAccount"), FEES_RECEIVABLE("receivableFeeAccount"), PENALTIES_RECEIVABLE(
                 "receivablePenaltyAccount"), TRANSFERS_SUSPENSE("transfersInSuspenseAccount"), INCOME_ACCOUNT_ID("incomeAccount"), INCOME_FROM_RECOVERY(
                 "incomeFromRecoveryAccount"), LIABILITY_TRANSFER_SUSPENSE("liabilityTransferInSuspenseAccount"), SUBSIDY_FUND_SOURCE(
-                "subsidyFundSourceId"), SUBSIDY_ACCOUNT("subsidyAccountId");
+                "subsidyFundSourceId"), SUBSIDY_ACCOUNT("subsidyAccountId"), NPA_INTEREST_SUSPENSE("npaInterestSuspenseAccount"), 
+                NPA_FEES_SUSPENSE("npaFeeSuspenseAccount"),NPA_PENALTIES_SUSPENSE("npaPenaltySuspenseAccount");
 
         private final String value;
 

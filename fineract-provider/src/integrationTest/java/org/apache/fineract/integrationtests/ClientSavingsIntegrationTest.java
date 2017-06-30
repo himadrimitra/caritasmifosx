@@ -1972,7 +1972,7 @@ public class ClientSavingsIntegrationTest {
         
         SchedulerJobHelper jobHelper = new SchedulerJobHelper(this.requestSpec, this.responseSpec);
         try {
-			jobHelper.executeJob("Update Savings Dormant Accounts");
+			jobHelper.executeJob(SchedulerJobHelper.UPDATE_SAVINGS_DORMANT_ACCOUNTS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

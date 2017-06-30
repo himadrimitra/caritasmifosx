@@ -449,6 +449,43 @@ public class AccountingProcessorHelper {
                 "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
                 totalCreditedAmount, totalAmount); }
     }
+    
+    public void createAccrualBasedJournalEntriesAndReversalsForLoanChargesWithNPA(final Integer accountTypeToBeDebited,
+            final Integer accountTypeToBeCredited, final Long loanProductId, final BigDecimal totalAmount, final Boolean isReversal,
+            final List<ChargePaymentDTO> chargePaymentDTOs, final JournalEntry journalEntry) {
+
+        final GLAccount receivableAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountTypeToBeDebited, null);
+        final Map<GLAccount, BigDecimal> creditDetailsMap = new LinkedHashMap<>();
+        BigDecimal totalCreditedAmount = BigDecimal.ZERO;
+        for (final ChargePaymentDTO chargePaymentDTO : chargePaymentDTOs) {
+            final Long chargeId = chargePaymentDTO.getChargeId();
+            final GLAccount chargeSpecificAccount = getLinkedGLAccountForLoanCharges(loanProductId, accountTypeToBeCredited, chargeId);
+            BigDecimal chargeSpecificAmount = chargePaymentDTO.getAmount();
+            BigDecimal totalTaxAmount = BigDecimal.ZERO;
+            final List<TaxPaymentDTO> taxPaymentDTOs = chargePaymentDTO.getTaxPaymentDTO();
+            // adjust net credit amount if the account is already present in the
+            // map
+            if (taxPaymentDTOs != null) {
+                for (final TaxPaymentDTO taxPaymentDTO : taxPaymentDTOs) {
+                    if (taxPaymentDTO.getAmount() != null) {
+                        final BigDecimal taxAmount = taxPaymentDTO.getAmount();
+                        totalCreditedAmount = totalCreditedAmount.add(taxAmount);
+                        totalTaxAmount = totalTaxAmount.add(taxPaymentDTO.getAmount());
+                    }
+                }
+            }
+            chargeSpecificAmount = chargeSpecificAmount.subtract(totalTaxAmount);
+            totalCreditedAmount = totalCreditedAmount.add(chargeSpecificAmount);
+            addOrUpdateAccountMapWithAmount(creditDetailsMap, chargeSpecificAccount, chargeSpecificAmount);
+        }
+        if (!creditDetailsMap.isEmpty()) {
+            createAccrualBasedJournalEntriesAndReversalsForLoanCharges(isReversal, creditDetailsMap, receivableAccount, journalEntry);
+        }
+        if (totalAmount.compareTo(totalCreditedAmount) != 0) { throw new PlatformDataIntegrityException(
+                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
+                "Meltdown in advanced accounting...sum of all charges is not equal to the fee charge for a transaction",
+                totalCreditedAmount, totalAmount); }
+    }
 
     private void createAccrualBasedJournalEntriesAndReversalsForLoanCharges(final Boolean isReversal,
             final Map<GLAccount, BigDecimal> creditDetailsMap, final GLAccount receivableAccount, final JournalEntry journalEntry) {

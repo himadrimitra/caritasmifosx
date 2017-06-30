@@ -141,6 +141,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonit
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
+import org.apache.fineract.portfolio.loanaccount.domain.LoanChargePaidBy;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanChargeRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanEvent;
@@ -1371,7 +1372,6 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         
         ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom);
         scheduleGeneratorDTO.setBusinessEvent(BUSINESS_EVENTS.LOAN_WRITTEN_OFF);
-
         final ChangedTransactionDetail changedTransactionDetail = loan.closeAsWrittenOff(command, defaultLoanLifecycleStateMachine(),
                 changes, existingTransactionIds, existingReversedTransactionIds, currentUser, scheduleGeneratorDTO);
         LoanTransaction writeoff = changedTransactionDetail.getNewTransactionMappings().remove(0L);
@@ -3396,7 +3396,72 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 .with(changes) //
                 .build();
     }
+    
+    @Transactional
+    @Override
+    public void updateLoanAsNPA(final Long loanId) {
 
+        Collection<Integer> typeForAddReceivale = new ArrayList<>();
+        typeForAddReceivale.add(LoanTransactionType.ACCRUAL.getValue());
+        typeForAddReceivale.add(LoanTransactionType.REFUND_FOR_ACTIVE_LOAN.getValue());
+
+        Collection<Integer> typeForSubtractReceivale = new ArrayList<>();
+        typeForSubtractReceivale.add(LoanTransactionType.REPAYMENT.getValue());
+        typeForSubtractReceivale.add(LoanTransactionType.WAIVE_INTEREST.getValue());
+        typeForSubtractReceivale.add(LoanTransactionType.WAIVE_CHARGES.getValue());
+        typeForSubtractReceivale.add(LoanTransactionType.CHARGE_PAYMENT.getValue());
+
+        final boolean npaStatus = true;
+        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        loan.setNpa(npaStatus);
+        final MonetaryCurrency currency = loan.getCurrency();
+        final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
+        final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
+        LoanTransaction accrualTransaction = LoanTransaction.accrualSuspense(loan, loan.getOffice(), Money.zero(currency),
+                Money.zero(currency), Money.zero(currency), Money.zero(currency));
+
+        loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction);
+
+        if (accrualTransaction != null && accrualTransaction.getAmount(currency).isGreaterThanZero()) {
+            this.loanTransactionRepository.save(accrualTransaction);
+        }
+        this.loanRepository.save(loan);
+
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+
+    }
+    
+    @Transactional
+    @Override
+    public void updateLoanAsNonNPA(final Long loanId) {
+
+        Collection<Integer> typeForAddReceivale = new ArrayList<>();
+        typeForAddReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
+
+        Collection<Integer> typeForSubtractReceivale = new ArrayList<>();
+        typeForSubtractReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
+
+        final boolean npaStatus = false;
+        final Loan loan = this.loanAssembler.assembleFrom(loanId);
+        loan.setNpa(npaStatus);
+        final MonetaryCurrency currency = loan.getCurrency();
+        final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
+        final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
+        LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(loan, loan.getOffice(), Money.zero(currency),
+                Money.zero(currency), Money.zero(currency), Money.zero(currency), DateUtils.getLocalDateOfTenant());
+
+        loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction);
+
+        if (accrualTransaction != null && accrualTransaction.getAmount(currency).isGreaterThanZero()) {
+            this.loanTransactionRepository.save(accrualTransaction);
+        }
+        this.loanRepository.save(loan);
+
+        postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
+
+    }
+    
+   
     private void validateIsMultiDisbursalLoanAndDisbursedMoreThanOneTranche(Loan loan) {
         if (!loan.isMultiDisburmentLoan()) {
             final String errorMessage = "loan.product.does.not.support.multiple.disbursals.cannot.undo.last.disbursal";

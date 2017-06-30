@@ -584,7 +584,7 @@ public class AccountingScenarioIntegrationTest {
                 new JournalEntry(this.LP_PRINCIPAL, JournalEntry.TransactionType.DEBIT), };
         this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, this.EXPECTED_DISBURSAL_DATE, assetAccountInitialEntry);
 
-        final String jobName = "Add Accrual Transactions";
+        final String jobName = SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {
@@ -700,7 +700,7 @@ public class AccountingScenarioIntegrationTest {
                 new JournalEntry(this.LP_PRINCIPAL, JournalEntry.TransactionType.DEBIT), };
         this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, this.EXPECTED_DISBURSAL_DATE, assetAccountInitialEntry);
 
-        final String jobName = "Add Accrual Transactions";
+        final String jobName = SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {
@@ -788,7 +788,7 @@ public class AccountingScenarioIntegrationTest {
                 new JournalEntry(this.LP_PRINCIPAL, JournalEntry.TransactionType.DEBIT), };
         this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, LOAN_DISBURSEMENT_DATE, assetAccountInitialEntry);
 
-        final String jobName = "Add Periodic Accrual Transactions";
+        final String jobName = SchedulerJobHelper.ADD_PERIODIC_ACCRUAL_ENTRIES;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {
@@ -823,7 +823,7 @@ public class AccountingScenarioIntegrationTest {
     }
 
     @Test
-    public void checkPeriodicAccrualAccountingAPIFlow() {
+    public void checkPeriodicAccrualAccountingAPIFlow() throws InterruptedException {
         final Account assetAccount = this.accountHelper.createAssetAccount();
         final Account incomeAccount = this.accountHelper.createIncomeAccount();
         final Account expenseAccount = this.accountHelper.createExpenseAccount();
@@ -944,7 +944,7 @@ public class AccountingScenarioIntegrationTest {
     }
     
     @Test
-    public void checkPeriodicAccrualAccountingAPIFlow_WITH_ADVANCE_PAY_CLOSURE() {
+    public void checkPeriodicAccrualAccountingAPIFlow_WITH_ADVANCE_PAY_CLOSURE() throws InterruptedException {
         final Account assetAccount = this.accountHelper.createAssetAccount();
         final Account incomeAccount = this.accountHelper.createIncomeAccount();
         final Account expenseAccount = this.accountHelper.createExpenseAccount();

@@ -170,6 +170,23 @@ public final class ProductToGLAccountMappingFromApiJsonDeserializer {
                 baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.SUBSIDY_FUND_SOURCE.getValue())
                         .value(subsidyFundSourcetId).notNull().integerGreaterThanZero();
             }
+            
+            if (isPeriodicAccounting(accountingRuleType)) {
+                final Long npaSuspenceInterestAccountId = this.fromApiJsonHelper.extractLongNamed(
+                        LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_INTEREST_SUSPENSE.getValue(), element);
+                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_INTEREST_SUSPENSE.getValue())
+                        .value(npaSuspenceInterestAccountId).notNull().integerGreaterThanZero();
+
+                final Long npaSuspenceFeeAccountId = this.fromApiJsonHelper.extractLongNamed(
+                        LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_FEES_SUSPENSE.getValue(), element);
+                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_FEES_SUSPENSE.getValue())
+                        .value(npaSuspenceFeeAccountId).notNull().integerGreaterThanZero();
+
+                final Long npaSuspencePenaltyAccountId = this.fromApiJsonHelper.extractLongNamed(
+                        LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_PENALTIES_SUSPENSE.getValue(), element);
+                baseDataValidator.reset().parameter(LOAN_PRODUCT_ACCOUNTING_PARAMS.NPA_PENALTIES_SUSPENSE.getValue())
+                        .value(npaSuspencePenaltyAccountId).notNull().integerGreaterThanZero();
+            }
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -299,6 +316,10 @@ public final class ProductToGLAccountMappingFromApiJsonDeserializer {
     private boolean isAccrualBasedAccounting(final Integer accountingRuleType) {
         return AccountingRuleType.ACCRUAL_PERIODIC.getValue().equals(accountingRuleType)
                 || AccountingRuleType.ACCRUAL_UPFRONT.getValue().equals(accountingRuleType);
+    }
+    
+    private boolean isPeriodicAccounting(final Integer accountingRuleType) {
+        return AccountingRuleType.ACCRUAL_PERIODIC.getValue().equals(accountingRuleType);
     }
 
     private void throwExceptionIfValidationWarningsExist(final List<ApiParameterError> dataValidationErrors) {

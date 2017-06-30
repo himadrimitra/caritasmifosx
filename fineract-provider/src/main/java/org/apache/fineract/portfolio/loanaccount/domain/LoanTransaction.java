@@ -151,7 +151,8 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     @Transient
     private Set<LoanChargePaidBy> loanChargesPaidTemp = new HashSet<>();
-
+    
+    
     protected LoanTransaction() {
         this.loan = null;
         this.dateOf = null;
@@ -211,6 +212,12 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
             final LocalDate paymentDate, final String externalId) {
         return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.PRE_PAYMENT.getValue(), paymentDetail, amount.getAmount(), paymentDate, externalId);
     }
+    
+    public static LoanTransaction repaymentForNPALoan(final Office office, final Money amount, final PaymentDetail paymentDetail,
+            final LocalDate paymentDate, final String externalId) {
+        return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getValue(),
+                paymentDetail, amount.getAmount(), paymentDate, externalId);
+    }
 
     public static LoanTransaction recoveryRepayment(final Office office, final Money amount, final PaymentDetail paymentDetail,
             final LocalDate paymentDate, final String externalId) {
@@ -220,8 +227,11 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     }
 
     public static LoanTransaction loanPayment(final Loan loan, final Office office, final Money amount, final PaymentDetail paymentDetail,
-            final LocalDate paymentDate, final String externalId, final LoanTransactionType transactionType) {
-        final Integer loanTransactionSubType = null;
+            final LocalDate paymentDate, final String externalId, final LoanTransactionType transactionType, final LoanTransactionSubType subType) {
+        Integer loanTransactionSubType = null;
+        if(subType != null){
+            loanTransactionSubType = subType.getValue();
+        }
         return new LoanTransaction(loan, office, transactionType, loanTransactionSubType,paymentDetail, amount.getAmount(), paymentDate, externalId);
     }
 
@@ -273,6 +283,48 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         final Integer loanTransactionSubType = null;
         return new LoanTransaction(loan, office, LoanTransactionType.ACCRUAL.getValue(), loanTransactionSubType, dateOf.toDate(), amount,
                 principalPortion, interestPortion, feeChargesPortion, penaltyChargesPortion, overPaymentPortion, reversed, paymentDetail, externalId);
+    }
+    
+    public static LoanTransaction accrualSuspense(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges) {
+        final LoanTransactionType transactionType = LoanTransactionType.ACCRUAL_SUSPENSE;
+        final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+        return accrualTransaction(loan, office, amount, interest, feeCharges, penaltyCharges, transactionType, transactionDate);
+    }
+
+    public static LoanTransaction accrualSuspense(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges, final LocalDate transactionDate) {
+        final LoanTransactionType transactionType = LoanTransactionType.ACCRUAL_SUSPENSE;
+        return accrualTransaction(loan, office, amount, interest, feeCharges, penaltyCharges, transactionType, transactionDate);
+    }
+
+    public static LoanTransaction accrualSuspenseReverse(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges, final LocalDate transactionDate) {
+        final LoanTransactionType transactionType = LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE;
+        return accrualTransaction(loan, office, amount, interest, feeCharges, penaltyCharges, transactionType, transactionDate);
+    }
+
+    public static LoanTransaction accrualWriteOff(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges) {
+        final LoanTransactionType transactionType = LoanTransactionType.ACCRUAL_WRITEOFF;
+        final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+        return accrualTransaction(loan, office, amount, interest, feeCharges, penaltyCharges, transactionType, transactionDate);
+    }
+
+    private static LoanTransaction accrualTransaction(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges, final LoanTransactionType transactionType, final LocalDate transactionDate) {
+        BigDecimal principalPortion = null;
+        BigDecimal overPaymentPortion = null;
+        BigDecimal interestPortion = defaultToNullIfZero(interest.getAmount());
+        BigDecimal feeChargesPortion = defaultToNullIfZero(feeCharges.getAmount());
+        BigDecimal penaltyChargesPortion = defaultToNullIfZero(penaltyCharges.getAmount());
+        boolean reversed = false;
+        PaymentDetail paymentDetail = null;
+        String externalId = null;
+        final Integer loanTransactionSubType = null;
+        return new LoanTransaction(loan, office, transactionType.getValue(), loanTransactionSubType, transactionDate.toDate(),
+                amount.getAmount(), principalPortion, interestPortion, feeChargesPortion, penaltyChargesPortion, overPaymentPortion,
+                reversed, paymentDetail, externalId);
     }
 
     
@@ -486,6 +538,18 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.overPaymentPortion = null;
         this.outstandingLoanBalance = null;
     }
+    
+    public void resetDerivedComponents(boolean resetUnrecignizedPortion) {
+        this.principalPortion = null;
+        this.interestPortion = null;
+        this.feeChargesPortion = null;
+        this.penaltyChargesPortion = null;
+        this.overPaymentPortion = null;
+        this.outstandingLoanBalance = null;
+        if (resetUnrecignizedPortion) {
+            this.unrecognizedIncomePortion = null;
+        }
+    }
 
     public void updateLoan(final Loan loan) {
         this.loan = loan;
@@ -534,6 +598,20 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         final MonetaryCurrency currency = principal.getCurrency();
         this.amount = getPrincipalPortion(currency).plus(getInterestPortion(currency)).plus(getFeeChargesPortion(currency))
                 .plus(getPenaltyChargesPortion(currency)).getAmount();
+    }
+    
+    public void updateComponentsAndTotal(final Money principal, final Money interest, final Money feeCharges, final Money penaltyCharges,
+            final Money unrecognizedInterest) {
+        updateComponents(principal, interest, feeCharges, penaltyCharges);
+        updateUnrecognizedIncomePortion(unrecognizedInterest);
+        final MonetaryCurrency currency = principal.getCurrency();
+        this.amount = getPrincipalPortion(currency).plus(getInterestPortion(currency)).plus(getFeeChargesPortion(currency))
+                .plus(getPenaltyChargesPortion(currency)).plus(getUnrecognizedIncomePortion(currency)).getAmount();
+    }
+    
+    private void updateUnrecognizedIncomePortion(final Money unrecognizedInterest) {
+        this.unrecognizedIncomePortion = defaultToNullIfZero(getUnrecognizedIncomePortion(unrecognizedInterest.getCurrency()).plus(
+                unrecognizedInterest).getAmount());
     }
     
     public void updateComponentsAndTotalForGlim(final Money principal, final Money interest, final Money feeCharges, final Money penaltyCharges, 
@@ -722,7 +800,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return !getAmount(currency).isZero();
     }
 
-    private BigDecimal defaultToNullIfZero(final BigDecimal value) {
+    private static BigDecimal defaultToNullIfZero(final BigDecimal value) {
         BigDecimal result = value;
         if (BigDecimal.ZERO.compareTo(value) == 0) {
             result = null;
@@ -832,6 +910,18 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public boolean isAccrual() {
         return LoanTransactionType.ACCRUAL.equals(getTypeOf()) && isNotReversed();
     }
+    
+    public boolean isAccrualSuspense() {
+        return getTypeOf().isAccrualSuspense() && isNotReversed();
+    }
+
+    public boolean isAccrualWrittenOff() {
+        return getTypeOf().isAccrualWrittenOff() && isNotReversed();
+    }
+
+    public boolean isAccrualSuspenseReverse() {
+        return getTypeOf().isAccrualSuspenseReverse() && isNotReversed();
+    }
 
     public boolean isNonMonetaryTransaction() {
         return isNotReversed()
@@ -920,7 +1010,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     }
 
     public Boolean isAllowTypeTransactionAtTheTimeOfLastUndo() {
-        return isDisbursement() || isAccrual() || isRepaymentAtDisbursement() || isBrokenPeriodInterestPosting();
+        return isDisbursement() || isAccrualTransaction() || isRepaymentAtDisbursement() || isBrokenPeriodInterestPosting();
     }
 
     public void updateCreatedDate(Date createdDate) {
@@ -956,13 +1046,14 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     public Date getSubmittedOnDate() {
         return this.submittedOnDate;
     }
+    
     public boolean isAccrualTransaction() {
-        return isAccrual();
+        return isAccrual() || isAccrualSuspense() || isAccrualWrittenOff() || isAccrualSuspenseReverse();
     }
     
     public boolean isPaymentTransaction() {
         return this.isNotReversed()
-                && !(this.isDisbursement() || this.isAccrual() || this.isRepaymentAtDisbursement() || this.isNonMonetaryTransaction() || this
+                && !(this.isDisbursement() || this.isAccrualTransaction() || this.isRepaymentAtDisbursement() || this.isNonMonetaryTransaction() || this
                         .isIncomePosting() || this.isWaiverAtDisbursement());
     }
     
@@ -1038,4 +1129,20 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         }
         return paidBy;
     }
+
+    public boolean isTypeOfAndNotReversed(Collection<Integer> types){
+        return isNotReversed() && types.contains(this.typeOf);
+    }
+    
+    public void copyChargesPaidByFrom(final LoanTransaction loanTransaction) {
+        Set<LoanChargePaidBy> chargesfrom = loanTransaction.getLoanChargesPaid();
+        Set<LoanChargePaidBy> chargesTo = this.getLoanChargesPaid();
+        for (LoanChargePaidBy chargePaidByfrom : chargesfrom) {
+            final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(this, chargePaidByfrom.getLoanCharge(),
+                    chargePaidByfrom.getAmount(), chargePaidByfrom.getInstallmentNumber());
+            chargesTo.add(loanChargePaidBy);
+        }
+    }
+    
+    
 }
