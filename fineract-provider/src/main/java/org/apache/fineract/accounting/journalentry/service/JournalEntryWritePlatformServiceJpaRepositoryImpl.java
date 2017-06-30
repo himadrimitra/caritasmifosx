@@ -388,7 +388,7 @@ public class JournalEntryWritePlatformServiceJpaRepositoryImpl implements Journa
     public String revertProvisioningJournalEntries(final Date reversalTransactionDate, final Long entityId, final Integer entityType) {
         final List<JournalEntry> journalEntryDetails = this.journalEntryRepository.findProvisioningJournalEntriesByEntityId(
                 entityId, entityType);
-        final boolean manualEntry = true;
+        final boolean manualEntry = false;
         for (final JournalEntry journalEntry : journalEntryDetails) {
             final GLClosure latestGLClosure = this.glClosureRepository.getLatestGLClosureByBranch(journalEntry.getOfficeId());
             if (latestGLClosure != null) {

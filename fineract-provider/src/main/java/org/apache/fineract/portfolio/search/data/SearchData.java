@@ -19,9 +19,12 @@
 package org.apache.fineract.portfolio.search.data;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
+import com.finflux.reconcilation.bank.data.BankData;
 
 public class SearchData {
 
@@ -43,12 +46,23 @@ public class SearchData {
     private final CodeValueData reason;
     private final Boolean isActive;
     private final Boolean isLoanOfficer;
+    private final String description;
+    private final Long cpifKeyDocumentId;
+    private final Long orgStatementKeyDocumentId;
+    private final String cpifFileName;
+    private final String orgFileName;
+    private final String lastModifiedByName;
+    private final Date lastModifiedDate;
+    private final Boolean isReconciled;
+    private final BankData bankData;
 
     public SearchData(final Long entityId, final String entityAccountNo, final String entityExternalId, final String entityName,
             final String entityType, final Long parentId, final String parentName, final String parentType, final String entityMobileNo,
             final EnumOptionData entityStatus, final BigDecimal systemValue, final BigDecimal userValue, final String groupName,
             final String centerName, final String officeName, final CodeValueData reason, final Boolean isActive,
-            final Boolean isLoanOfficer) {
+            final Boolean isLoanOfficer, final String description, final Long cpifKeyDocumentId, final Long orgStatementKeyDocumentId,
+            final String lastModifiedByName, final Date lastModifiedDate, final Boolean isReconciled, final BankData bankData,
+            final String cpifFileName, final String orgFileName) {
 
         this.entityId = entityId;
         this.entityAccountNo = entityAccountNo;
@@ -68,6 +82,15 @@ public class SearchData {
         this.reason = reason;
         this.isActive = isActive;
         this.isLoanOfficer = isLoanOfficer;
+        this.description = description;
+        this.cpifKeyDocumentId = cpifKeyDocumentId;
+        this.orgStatementKeyDocumentId = orgStatementKeyDocumentId;
+        this.lastModifiedByName = lastModifiedByName;
+        this.cpifFileName = cpifFileName;
+        this.orgFileName = orgFileName;
+        this.bankData = bankData;
+        this.isReconciled = isReconciled;
+        this.lastModifiedDate = lastModifiedDate;
     }
 
     public Long getEntityId() {

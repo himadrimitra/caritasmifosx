@@ -901,6 +901,12 @@ public class LoanCharge extends AbstractPersistable<Long> {
     public Money getAmountOutstanding(final MonetaryCurrency currency) {
         return Money.of(currency, this.amountOutstanding);
     }
+    
+    public Money getAmountOutstanding(final MonetaryCurrency currency, final Integer installmentNumber) {
+        if (isInstalmentFee() && installmentNumber != null) { return getInstallmentLoanCharge(installmentNumber).getAmountOutstanding(
+                currency); }
+        return Money.of(currency, this.amountOutstanding);
+    }
 
     public boolean hasNotLoanIdentifiedBy(final Long loanId) {
         return !hasLoanIdentifiedBy(loanId);
@@ -1419,6 +1425,42 @@ public class LoanCharge extends AbstractPersistable<Long> {
     
     public void setCapitalized(boolean isCapitalized) {
         this.isCapitalized = isCapitalized;
+    }
+    
+    public Money writtenOff(final MonetaryCurrency currency, final Integer loanInstallmentNumber) {
+        if (isInstalmentFee()) {
+            final LoanInstallmentCharge chargePerInstallment = getInstallmentLoanCharge(loanInstallmentNumber);
+            final Money amountWrittenOff = chargePerInstallment.writtenOff(currency);
+            if (this.amountWrittenOff == null) {
+                this.amountWrittenOff = BigDecimal.ZERO;
+            }
+            this.amountWrittenOff = this.amountWrittenOff.add(amountWrittenOff.getAmount());
+            this.amountOutstanding = this.amountOutstanding.subtract(amountWrittenOff.getAmount());
+            if (determineIfFullyPaid()) {
+                this.paid = false;
+                this.waived = true;
+            }
+            return amountWrittenOff;
+        }
+        this.amountWrittenOff = this.amountOutstanding;
+        this.amountOutstanding = BigDecimal.ZERO;
+        this.paid = false;
+        this.waived = true;
+        return getAmountWrittenOff(currency);
+    }
+    
+    public void writtenOff(final MonetaryCurrency currency) {
+        if (isInstalmentFee()) {
+            for (final LoanInstallmentCharge loanChargePerInstallment : this.loanInstallmentCharge) {
+                if (loanChargePerInstallment.getAmountOutstanding(currency).isGreaterThanZero()) {
+                    loanChargePerInstallment.writtenOff(currency);
+                }
+            }
+        }
+        this.amountWrittenOff = this.amountWrittenOff == null ? this.amountOutstanding : this.amountWrittenOff.add(this.amountOutstanding);
+        this.amountOutstanding = BigDecimal.ZERO;
+        this.paid = false;
+        this.waived = true;
     }
     
 }

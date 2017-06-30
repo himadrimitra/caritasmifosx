@@ -2604,7 +2604,7 @@ public class ClientLoanIntegrationTest {
          * JournalEntry(Float.valueOf("50.0"),
          * JournalEntry.TransactionType.DEBIT));
          */
-        final String jobName = "Add Accrual Transactions";
+        final String jobName = SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {
@@ -2803,7 +2803,7 @@ public class ClientLoanIntegrationTest {
          * JournalEntry.TransactionType.DEBIT));
          */
 
-        final String jobName = "Add Accrual Transactions";
+        final String jobName = SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {
@@ -3006,7 +3006,7 @@ public class ClientLoanIntegrationTest {
          * JournalEntry.TransactionType.DEBIT));
          */
 
-        final String jobName = "Add Accrual Transactions";
+        final String jobName = SchedulerJobHelper.ADD_DUE_DATE_ACCRUAL_ENTRIES;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {
@@ -4522,7 +4522,7 @@ public class ClientLoanIntegrationTest {
 
         verifyLoanRepaymentSchedule(loanSchedule, expectedvalues);
 
-        String JobName = "Apply penalty to overdue loans";
+        String JobName = SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT;
         this.schedulerJobHelper.executeJob(JobName);
 
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -4568,7 +4568,7 @@ public class ClientLoanIntegrationTest {
     }
 
     @Test
-    public void testLoanScheduleWithInterestRecalculation_WITH_PERIODIC_ACCOUNTING() {
+    public void testLoanScheduleWithInterestRecalculation_WITH_PERIODIC_ACCOUNTING() throws InterruptedException {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         this.periodicAccrualAccountingHelper = new PeriodicAccrualAccountingHelper(this.requestSpec, this.responseSpec);
         this.journalEntryHelper = new JournalEntryHelper(this.requestSpec, this.responseSpec);
@@ -4674,7 +4674,7 @@ public class ClientLoanIntegrationTest {
     }
     
     @Test
-    public void testLoanScheduleWithInterestRecalculation_PREPAY_NON_REPAYMENT_DAY_WITH_PERIODIC_ACCOUNTING() {
+    public void testLoanScheduleWithInterestRecalculation_PREPAY_NON_REPAYMENT_DAY_WITH_PERIODIC_ACCOUNTING() throws InterruptedException {
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
         this.periodicAccrualAccountingHelper = new PeriodicAccrualAccountingHelper(this.requestSpec, this.responseSpec);
         this.journalEntryHelper = new JournalEntryHelper(this.requestSpec, this.responseSpec);
@@ -6096,7 +6096,7 @@ public class ClientLoanIntegrationTest {
         loanStatusHashMap = this.loanTransactionHelper.disburseLoan(LOAN_DISBURSEMENT_DATE, loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
 
-        final String jobName = "Apply penalty to overdue loans";
+        final String jobName = SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT;
         try {
             this.schedulerJobHelper.executeJob(jobName);
         } catch (InterruptedException e) {

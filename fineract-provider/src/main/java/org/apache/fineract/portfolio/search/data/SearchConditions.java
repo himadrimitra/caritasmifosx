@@ -28,12 +28,13 @@ public class SearchConditions {
     private final Boolean groupSearch;
     private final Boolean villageSearch;
     private final Boolean loanSeach;
-	private final Boolean savingSeach;
+    private final Boolean savingSeach;
     private final Boolean clientIdentifierSearch;
     private final Boolean pledgeSearch;
     private  Boolean exactMatch;
     private final Long officeId;
     private final Boolean staffSearch;
+    private final Boolean bankStatementSearch;
 
     public SearchConditions(final String searchQueryParam, final String searchResource, Boolean exactMatch, final Long officeId) {
         this.searchQuery = searchQueryParam;
@@ -56,23 +57,26 @@ public class SearchConditions {
   				 SEARCH_SUPPORTED_RESOURCES.PLEDGES.name().toLowerCase())) ? true : false;
   	this.staffSearch = (null == searchResource || searchResource.toLowerCase().contains(
   	                SEARCH_SUPPORTED_RESOURCES.STAFF.name().toLowerCase())) ? true : false;	
+        this.bankStatementSearch = (null == searchResource
+                || searchResource.toLowerCase().contains(SEARCH_SUPPORTED_RESOURCES.BANKSTATEMENT.name().toLowerCase())) ? true : false;
     }
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
             final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch, final Boolean pledgeSearch, 
-            final Boolean villageSearch, Boolean exactMatch, final Long officeId, final Boolean staffSearch) {
+            final Boolean villageSearch, Boolean exactMatch, final Long officeId, final Boolean staffSearch,final Boolean bankStatementSearch) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.clientSearch = clientSearch;
         this.groupSearch = groupSearch;
         this.villageSearch = villageSearch;
         this.loanSeach = loanSeach;
-		this.savingSeach = savingSeach;
+        this.savingSeach = savingSeach;
         this.clientIdentifierSearch = clientIdentifierSearch;
         this.pledgeSearch = pledgeSearch;
         this.exactMatch=exactMatch;
         this.officeId = officeId;
         this.staffSearch = staffSearch;
+        this.bankStatementSearch = bankStatementSearch;
     }
 
     public String getSearchQuery() {
@@ -119,6 +123,10 @@ public class SearchConditions {
     
     public Boolean isStaffSearch(){
         return this.staffSearch;
+    }
+
+    public Boolean getBankStatementSearch() {
+        return this.bankStatementSearch;
     }
 
 }

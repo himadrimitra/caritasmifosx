@@ -70,7 +70,9 @@ public class SavingsAccountHelper {
     public static final String CREATED_DATE_PLUS_ONE = "09 January 2013";
     public static final String CREATED_DATE_MINUS_ONE = "07 January 2013";
     public static final String TRANSACTION_DATE = "01 March 2013";
+    public static final String TRANSACTION_DATE_PLUS_ONE = "02 March 2013";
     public static final String LAST_TRANSACTION_DATE = "01 March 2013";
+    public static final String LAST_TRANSACTION_DATE_PLUS_ONE = "02 March 2013";
     public static final String ACCOUNT_TYPE_INDIVIDUAL = "INDIVIDUAL";
     private static final String ASSIGNSTAFF = "assignSavingsOfficer";
     private static final String UNASSIGNSTAFF = "unassignSavingsOfficer";
@@ -208,7 +210,7 @@ public class SavingsAccountHelper {
     public Integer updateSavingsAccountTransaction(final Integer savingsId, final Integer transactionId, final String amount) {
         System.out.println("\n--------------------------------- MODIFY SAVINGS TRANSACTION  --------------------------------");
         return (Integer) performSavingActions(createAdjustTransactionURL(MODIFY_TRASACTION_COMMAND, savingsId, transactionId),
-                getSavingsTransactionJSON(amount, LAST_TRANSACTION_DATE), CommonConstants.RESPONSE_RESOURCE_ID);
+                getSavingsTransactionJSON(amount, LAST_TRANSACTION_DATE_PLUS_ONE), CommonConstants.RESPONSE_RESOURCE_ID);
     }
     
     public Integer undoSavingsAccountTransaction(final Integer savingsId, final Integer transactionId) {

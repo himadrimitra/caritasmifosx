@@ -18,7 +18,9 @@
  */
 package org.apache.fineract.integrationtests.common;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import com.google.gson.Gson;
@@ -49,7 +51,11 @@ public class WorkingDaysHelper {
         return Utils.performServerPut(requestSpec, responseSpec, UPDATE_WORKINGDAYS_URL, updateWorkingDayWithWrongRecur(),
                 jsonAttributeToGetback);
     }
-
+    public static Object updateAdvancedWorkingDays(final RequestSpecification requestSpec, final ResponseSpecification responseSpec,final String json) {
+        final String UPDATE_ADVANCED_WORKINGDAYS_URL = WORKINGDAYS_URL + "?" + Utils.TENANT_IDENTIFIER;
+        System.out.println("---------------------------------UPDATE ADVANCED WORKINGDAY---------------------------------------------");
+        return Utils.performServerPut(requestSpec, responseSpec, UPDATE_ADVANCED_WORKINGDAYS_URL, json, "");
+    }
     public static String updateWorkingDaysAsJson() {
         final HashMap<String, Object> map = new HashMap<>();
         map.put("recurrence", "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR,SA,SU");
@@ -79,7 +85,7 @@ public class WorkingDaysHelper {
         System.out.println("map : " + map);
         return new Gson().toJson(map);
     }
-
+   
     public static int randomInt(int low, int high) {
         int i = new Random().nextInt(high) + low;
         return i;

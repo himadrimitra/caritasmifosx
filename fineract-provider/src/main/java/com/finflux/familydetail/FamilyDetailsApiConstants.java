@@ -12,9 +12,9 @@ public class FamilyDetailsApiConstants {
     // Input Params
     public static final String clientIdParamName = "clientId";
     public static final String salutationIdParamName = "salutationId";
-    public static final String firstnameParamName = "firstname";
-    public static final String middlenameParamName = "middlename";
-    public static final String lastnameParamName = "lastname";
+    public static final String firstNameParamName = "firstname";
+    public static final String middleNameParamName = "middlename";
+    public static final String lastNameParamName = "lastname";
     public static final String relationshipIdParamName = "relationshipId";
     public static final String genderIdParamName = "genderId";
     public static final String dateOfBirthParamName = "dateOfBirth";
@@ -42,13 +42,13 @@ public class FamilyDetailsApiConstants {
     public static final String removeFamilyMemberClientAssociation = "removeFamilyMemberClientAssociation";
 
     public static final Set<String> CREATE_FAMILYDETAILS_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(clientParamName,
-            salutationIdParamName, firstnameParamName, middlenameParamName, lastnameParamName, relationshipIdParamName, genderIdParamName,
+            salutationIdParamName, firstNameParamName, middleNameParamName, lastNameParamName, relationshipIdParamName, genderIdParamName,
             dateOfBirthParamName, ageParamName, occupationDetailsIdParamName, educationParamName, educationIdParamName,
             isDependentParamName, isSeriousIllnessParamName, isDeceasedParamName, localeParamName, dateFormatParamName,
             ClientReference));
 
     public static final Set<String> UPDATE_FAMILYDETAILS_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(clientParamName,
-            salutationIdParamName, firstnameParamName, middlenameParamName, lastnameParamName, relationshipIdParamName, genderIdParamName,
+            salutationIdParamName, firstNameParamName, middleNameParamName, lastNameParamName, relationshipIdParamName, genderIdParamName,
             dateOfBirthParamName, ageParamName, occupationDetailsIdParamName, educationParamName, educationIdParamName,
             isDependentParamName, isSeriousIllnessParamName, isDeceasedParamName, localeParamName, dateFormatParamName,
             ClientReference));

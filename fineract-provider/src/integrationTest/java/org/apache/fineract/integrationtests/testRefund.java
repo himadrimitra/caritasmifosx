@@ -55,7 +55,7 @@ public class testRefund {
 	}
 
 	@Test
-	public void testRefundWithInterestRecalculation_WITH_PERIODIC_ACCOUNTING() {
+	public void testRefundWithInterestRecalculation_WITH_PERIODIC_ACCOUNTING() throws InterruptedException {
 		this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
 		this.periodicAccrualAccountingHelper = new PeriodicAccrualAccountingHelper(this.requestSpec, this.responseSpec);
 		this.journalEntryHelper = new JournalEntryHelper(this.requestSpec, this.responseSpec);

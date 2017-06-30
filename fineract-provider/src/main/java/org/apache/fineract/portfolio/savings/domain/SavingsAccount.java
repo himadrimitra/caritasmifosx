@@ -1093,8 +1093,6 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
             } else if (transaction.isNotReversed() && transaction.isDebit()) {
                 runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
-            } else if(transaction.isAmountOnHold() && transaction.getReleaseIdOfHoldAmountTransaction() == null){
-                runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
             }else{
                 continue;
             }

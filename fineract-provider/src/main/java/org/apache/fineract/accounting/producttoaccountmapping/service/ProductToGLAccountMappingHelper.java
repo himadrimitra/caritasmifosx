@@ -107,6 +107,36 @@ public class ProductToGLAccountMappingHelper {
             }
         }
     }
+    
+    public void saveProductToAccountMapping(final JsonElement element, final String paramName, final Long productId,
+            final int placeHolderTypeId, final PortfolioProductType portfolioProductType, final GLAccountType... expectedAccountType) {
+        final Long accountId = this.fromApiJsonHelper.extractLongNamed(paramName, element);
+        final GLAccount glAccount = getAccountByIdAndType(paramName, accountId, expectedAccountType);
+
+        final ProductToGLAccountMapping accountMapping = new ProductToGLAccountMapping(glAccount, productId,
+                portfolioProductType.getValue(), placeHolderTypeId);
+        this.accountMappingRepository.save(accountMapping);
+    }
+
+    public void mergeProductToAccountMappingChanges(final JsonElement element, final String paramName, final Long productId,
+            final int accountTypeId, final Map<String, Object> changes, final PortfolioProductType portfolioProductType,
+            final GLAccountType... expectedAccountType) {
+        final Long accountId = this.fromApiJsonHelper.extractLongNamed(paramName, element);
+
+        // get the existing product
+        if (accountId != null) {
+            final ProductToGLAccountMapping accountMapping = this.accountMappingRepository.findCoreProductToFinAccountMapping(productId,
+                    portfolioProductType.getValue(), accountTypeId);
+            if (accountMapping == null) {
+                saveProductToAccountMapping(element, paramName, productId, accountTypeId, portfolioProductType, expectedAccountType);
+            } else if (accountMapping.getGlAccount().getId() != accountId) {
+                final GLAccount glAccount = getAccountByIdAndType(paramName, accountId, expectedAccountType);
+                changes.put(paramName, accountId);
+                accountMapping.setGlAccount(glAccount);
+                this.accountMappingRepository.save(accountMapping);
+            }
+        }
+    }
 
     public void createOrmergeProductToAccountMappingChanges(final JsonElement element, final String paramName, final Long productId,
             final int accountTypeId, final Map<String, Object> changes,
@@ -536,6 +566,18 @@ public class ProductToGLAccountMappingHelper {
     }
 
     public GLAccount getAccountByIdAndType(final String paramName, final List<GLAccountType> expectedAccountTypes, final Long accountId) {
+        final GLAccount glAccount = this.accountRepositoryWrapper.findOneWithNotFoundDetection(accountId);
+        // validate account is of the expected Type
+        List<Integer> glAccountTypeValues = new ArrayList<>();
+        for (GLAccountType glAccountType : expectedAccountTypes) {
+            glAccountTypeValues.add(glAccountType.getValue());
+        }
+        if (!glAccountTypeValues.contains(glAccount.getType())) { throw new ProductToGLAccountMappingInvalidException(paramName,
+                glAccount.getName(), accountId, GLAccountType.fromInt(glAccount.getType()).toString(), glAccountTypeValues.toString()); }
+        return glAccount;
+    }
+    
+    public GLAccount getAccountByIdAndType(final String paramName,  final Long accountId, final GLAccountType... expectedAccountTypes) {
         final GLAccount glAccount = this.accountRepositoryWrapper.findOneWithNotFoundDetection(accountId);
         // validate account is of the expected Type
         List<Integer> glAccountTypeValues = new ArrayList<>();

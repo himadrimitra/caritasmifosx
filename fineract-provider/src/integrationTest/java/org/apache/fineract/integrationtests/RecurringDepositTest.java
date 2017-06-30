@@ -828,7 +828,7 @@ public class RecurringDepositTest {
          */
         
         SchedulerJobHelper schedulerJobHelper =  new SchedulerJobHelper(requestSpec, responseSpec);
-        String JobName = "Update Deposit Accounts Maturity details";
+        String JobName = SchedulerJobHelper.UPDATE_DEPOSITS_ACCOUNT_MATURITY_DETAILS;
         schedulerJobHelper.executeJob(JobName);
         
         HashMap accountDetails = this.recurringDepositAccountHelper.getRecurringDepositAccountById(this.requestSpec, this.responseSpec,

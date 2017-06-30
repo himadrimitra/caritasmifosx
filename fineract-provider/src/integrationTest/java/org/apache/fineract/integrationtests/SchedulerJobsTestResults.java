@@ -137,7 +137,7 @@ public class SchedulerJobsTestResults {
         SavingsStatusChecker.verifySavingsIsActive(savingsStatusHashMap);
 
         HashMap summaryBefore = this.savingsAccountHelper.getSavingsSummary(savingsId);
-        String JobName = "Apply Annual Fee For Savings";
+        String JobName = SchedulerJobHelper.APPLY_ANNUAL_FEE_FOR_SAVINGS;
 
         this.schedulerJobHelper.executeJob(JobName);
         final HashMap chargeData = ChargesHelper.getChargeById(this.requestSpec, this.responseSpec, annualFeeChargeId);
@@ -177,7 +177,7 @@ public class SchedulerJobsTestResults {
 
         final HashMap summaryBefore = this.savingsAccountHelper.getSavingsSummary(savingsId);
 
-        String JobName = "Post Interest For Savings";
+        String JobName = SchedulerJobHelper.POST_INTEREST_FOR_SAVINGS;
 
         this.schedulerJobHelper.executeJob(JobName);
         final HashMap summaryAfter = this.savingsAccountHelper.getSavingsSummary(savingsId);
@@ -238,7 +238,7 @@ public class SchedulerJobsTestResults {
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
         final HashMap summaryBefore = this.savingsAccountHelper.getSavingsSummary(savingsId);
 
-        String JobName = "Transfer Fee For Loans From Savings";
+        String JobName = SchedulerJobHelper.TRANSFER_FEE_CHARGE_FOR_LOANS;
         this.schedulerJobHelper.executeJob(JobName);
         final HashMap summaryAfter = this.savingsAccountHelper.getSavingsSummary(savingsId);
 
@@ -365,7 +365,7 @@ public class SchedulerJobsTestResults {
         holidayId = this.holidayHelper.activateHolidays(this.requestSpec, this.responseSpec, holidayId.toString());
         Assert.assertNotNull(holidayId);
 
-        String JobName = "Apply Holidays To Loans";
+        String JobName = SchedulerJobHelper.APPLY_HOLIDAYS_TO_LOANS;
 
         this.schedulerJobHelper.executeJob(JobName);
         final ArrayList<HashMap> repaymentScheduleDataAfterJob = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
@@ -419,7 +419,7 @@ public class SchedulerJobsTestResults {
 
         HashMap summaryBefore = this.savingsAccountHelper.getSavingsSummary(savingsId);
 
-        String JobName = "Pay Due Savings Charges";
+        String JobName = SchedulerJobHelper.PAY_DUE_SAVINGS_CHARGES;
 
         this.schedulerJobHelper.executeJob(JobName);
         HashMap summaryAfter = this.savingsAccountHelper.getSavingsSummary(savingsId);
@@ -469,7 +469,7 @@ public class SchedulerJobsTestResults {
         this.journalEntryHelper
                 .checkJournalEntryForLiabilityAccount(liabilityAccount, this.TRANSACTION_DATE, liablilityAccountInitialEntry);
 
-        String JobName = "Update Accounting Running Balances";
+        String JobName = SchedulerJobHelper.ACCOUNTING_RUNNING_BALANCE_UPDATE;
 
         this.schedulerJobHelper.executeJob(JobName);
         final HashMap runningBalanceAfter = this.accountHelper.getAccountingWithRunningBalanceById(accountID.toString());
@@ -504,7 +504,7 @@ public class SchedulerJobsTestResults {
         loanStatusHashMap = this.loanTransactionHelper.disburseLoan(AccountTransferTest.LOAN_DISBURSAL_DATE, loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
 
-        String JobName = "Update Loan Arrears Ageing";
+        String JobName = SchedulerJobHelper.UPDATE_LOAN_ARREARS_AGEING;
 
         this.schedulerJobHelper.executeJob(JobName);
         HashMap loanSummaryData = this.loanTransactionHelper.getLoanSummary(this.requestSpec, this.responseSpec, loanID);
@@ -560,7 +560,7 @@ public class SchedulerJobsTestResults {
 
         HashMap loanSummary = this.loanTransactionHelper.getLoanSummary(this.requestSpec, this.responseSpec, loanID);
 
-        String JobName = "Update Loan Paid In Advance";
+        String JobName = SchedulerJobHelper.UPDATE_LOAN_PAID_IN_ADVANCE;
         this.schedulerJobHelper.executeJob(JobName);
         // Retrieving Loan Repayment Schedule after the successful
         // completion of
@@ -625,7 +625,7 @@ public class SchedulerJobsTestResults {
 
         HashMap loanSummaryBefore = this.loanTransactionHelper.getLoanSummary(this.requestSpec, this.responseSpec, loanID);
 
-        String JobName = "Update loan Summary";
+        String JobName = SchedulerJobHelper.UPDATE_LOAN_SUMMARY;
         this.schedulerJobHelper.executeJob(JobName);
         Float expectedSummaryAfterJob = (Float) loanSummaryBefore.get("totalExpectedRepayment")
                /* - (Float) loanSummaryBefore.get("feeChargesPaid")*/;
@@ -697,7 +697,7 @@ public class SchedulerJobsTestResults {
                 MONTH_DAY);
         Assert.assertNotNull(standingInstructionId);
 
-        String JobName = "Execute Standing Instruction";
+        String JobName = SchedulerJobHelper.EXECUTE_STANDING_INSTRUCTIONS;
         this.schedulerJobHelper.executeJob(JobName);
         HashMap fromSavingsSummaryAfter = this.savingsAccountHelper.getSavingsSummary(fromSavingsId);
         Float fromSavingsBalanceAfter = (Float) fromSavingsSummaryAfter.get("accountBalance");
@@ -758,7 +758,7 @@ public class SchedulerJobsTestResults {
         ArrayList<HashMap> repaymentScheduleDataBefore = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec,
                 this.responseSpec, loanID);
 
-        String JobName = "Apply penalty to overdue loans";
+        String JobName = SchedulerJobHelper.APPLY_CHARGE_TO_OVERDUE_LOAN_INSTALLMENT;
         this.schedulerJobHelper.executeJob(JobName);
 
         final HashMap chargeData = ChargesHelper.getChargeById(this.requestSpec, this.responseSpec, overdueFeeChargeId);
@@ -803,7 +803,7 @@ public class SchedulerJobsTestResults {
         final Boolean isNPABefore = (Boolean) this.loanTransactionHelper.getLoanDetail(requestSpec, responseSpec, loanID, "isNPA");
         Assert.assertFalse(isNPABefore);
         // Integer jobId = (Integer) allSchedulerJobsData.get(1).get("jobId");
-        String JobName = "Update Non Performing Assets";
+        String JobName = SchedulerJobHelper.UPDATE_NPA;
         this.schedulerJobHelper.executeJob(JobName);
         final Boolean isNPAAfter = (Boolean) this.loanTransactionHelper.getLoanDetail(requestSpec, responseSpec, loanID, "isNPA");
         Assert.assertTrue(isNPAAfter);
@@ -880,7 +880,7 @@ public class SchedulerJobsTestResults {
         HashMap fixedDepositSummary = savingsAccountHelper.getSavingsSummary(fixedDepositAccountId);
         Float interestPosted = (Float) fixedDepositSummary.get("accountBalance") - new Float(FixedDepositAccountHelper.depositAmount);
 
-        String JobName = "Transfer Interest To Savings";
+        String JobName = SchedulerJobHelper.TRANSFER_INTEREST_TO_SAVINGS;
         this.schedulerJobHelper.executeJob(JobName);
         fixedDepositSummary = savingsAccountHelper.getSavingsSummary(fixedDepositAccountId);
         assertEquals("Verifying opening Balance", new Float(FixedDepositAccountHelper.depositAmount),

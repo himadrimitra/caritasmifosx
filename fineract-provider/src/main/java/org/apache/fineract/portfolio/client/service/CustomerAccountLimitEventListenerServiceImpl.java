@@ -90,8 +90,8 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
     @Override
     public void validateSavingsAccountWithClientDailyWithdrawalAmountLimit(final SavingsAccount savingsAccount,
             final SavingsAccountTransaction withdrawal) {
-        final BigDecimal clientTotalDailyWithdrawalAmountLimit = getClientTotalDailyWithdrawalAmountLimit(savingsAccount.getClient()
-                .getId());
+        
+        final BigDecimal clientTotalDailyWithdrawalAmountLimit = getClientTotalDailyWithdrawalAmountLimit(savingsAccount.clientId());
         if (clientTotalDailyWithdrawalAmountLimit != null) {
             BigDecimal totalAmountWithdrawn = BigDecimal.ZERO;
             for (final SavingsAccountTransaction transaction : savingsAccount.getTransactions()) {
@@ -118,7 +118,7 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     @Override
     public void validateSavingsAccountWithClientDailyTransferAmountLimit(final SavingsAccount savingsAccount, final JsonCommand jsonCommand) {
-        final BigDecimal clientTotalDailyTransferAmountLimit = getClientTotalDailyTransferAmountLimit(savingsAccount.getClient().getId());
+        final BigDecimal clientTotalDailyTransferAmountLimit = getClientTotalDailyTransferAmountLimit(savingsAccount.clientId());
         if (clientTotalDailyTransferAmountLimit != null) {
             BigDecimal totalAmountTransfered = BigDecimal.ZERO;
             final LocalDate transactionDate = jsonCommand.localDateValueOfParameterNamed(transferDateParamName);
@@ -158,7 +158,7 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
 
     @Override
     public void validateSavingsAccountWithClientTotalOverdraftAmountLimit(final SavingsAccount savingsAccount) {
-        final BigDecimal clientTotalOverdraftAmountLimit = getClientTotalOverdraftAmountLimit(savingsAccount.getClient().getId());
+        final BigDecimal clientTotalOverdraftAmountLimit = getClientTotalOverdraftAmountLimit(savingsAccount.clientId());
         if (clientTotalOverdraftAmountLimit != null) {
             final BigDecimal accountBalance = savingsAccount.getSummary().getAccountBalance();
             if (MathUtility.isLesser(accountBalance, BigDecimal.ZERO)) {
