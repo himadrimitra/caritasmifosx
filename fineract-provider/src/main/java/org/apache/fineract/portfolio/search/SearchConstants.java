@@ -86,8 +86,10 @@ public class SearchConstants {
     }
 
     public static enum SEARCH_SUPPORTED_RESOURCES {
-        CLIENTS("clients"), GROUPS("groups"), VILLAGES("villages"), LOANS("loans"), SAVINGS("savings"), CLIENTIDENTIFIERS("clientIdentifiers"), PLEDGES("pledges"), STAFF("staff");
-		private final String value;
+        CLIENTS("clients"), GROUPS("groups"), VILLAGES("villages"), LOANS("loans"), SAVINGS("savings"), CLIENTIDENTIFIERS(
+                "clientIdentifiers"), PLEDGES("pledges"), STAFF("staff"), BANKSTATEMENT("bankstatement");
+
+        private final String value;
 
         private SEARCH_SUPPORTED_RESOURCES(final String value) {
             this.value = value;

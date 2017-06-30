@@ -23,6 +23,7 @@ import java.math.RoundingMode;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
@@ -52,6 +53,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import com.finflux.reconcilation.bank.data.BankData;
 
 @Service
 public class SearchReadPlatformServiceImpl implements SearchReadPlatformService {
@@ -251,6 +254,20 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
                 sqlBuilder.append(" union ");
             }
+
+            if (searchConditions.getBankStatementSearch()) {
+                sqlBuilder
+                        .append(" (SELECT 'BANKSTATEMENT' AS entityType,fbs.id AS entityId,fbs.name as entityName,NULL AS entityExternalId, NULL AS entityAccountNo,NULL AS entityType, "
+                                + "NULL AS parentId,NULL AS parentName, NULL AS entityMobileNo,NULL AS entityStatusEnum,NULL AS parentType,NULL AS groupName,NULL AS centerName,NULL AS officeName,NULL AS  reasonId, "
+                                + "NULL AS isActive, NULL AS isLoanOfficer,fbs.description AS description,fbs.created_date AS lastModifiedDate,fbs.bank As bank, b.name AS bankName,u.username lastModifiedByName,fbs.is_reconciled AS isReconciled, "
+                                + "fbs.cif_key_document_id AS cpifKeyDocumentId,fbs.org_statement_key_document_id AS orgStatementKeyDocumentId,d.file_name AS cpifFileName,d2.file_name AS orgFileName "
+                                + "FROM f_bank_statement fbs JOIN m_document d ON d.id = fbs.cif_key_document_id "
+                                + "LEFT JOIN m_document d2 ON d2.id = fbs.org_statement_key_document_id "
+                                + "JOIN f_bank b  ON b.id = fbs.bank " + "JOIN m_appuser u ON u.id = fbs.createdby_id "
+                                + "WHERE fbs.name LIKE :search OR b.name LIKE :search)");
+                scopeSearchUnderBranchHierarchy(sqlBuilder, searchUnderOfficeHierarchy, officeHierarchy);
+                sqlBuilder.append(" union ");
+            }
             sqlBuilder.replace(sqlBuilder.lastIndexOf("union"), sqlBuilder.length(), "");
             // remove last occurrence of "union all" string
             return sqlBuilder.toString();
@@ -285,7 +302,19 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
             CodeValueData reason = null;
             Boolean isActive = null;
             Boolean isLoanOfficer = null;
-			final Long closurereasonId = JdbcSupport.getLong(rs, "reasonId");
+            String description = null;
+            Long cpifKeyDocumentId = null;
+            Long orgStatementKeyDocumentId = null;
+            String lastModifiedByName = null;
+            Date lastModifiedDate = null;
+            Boolean isReconciled = null;
+            String bankName = null;
+            Long bank = null;
+            BankData bankData = null;
+            String cpifFileName = null;
+            String orgFileName = null;
+
+            final Long closurereasonId = JdbcSupport.getLong(rs, "reasonId");
 			if (closurereasonId != null) {
 				final String closurereasonValue = rs.getString("reasonValue");
 				reason = CodeValueData.instance(closurereasonId, closurereasonValue);
@@ -322,9 +351,24 @@ public class SearchReadPlatformServiceImpl implements SearchReadPlatformService 
                 isLoanOfficer = rs.getBoolean("isLoanOfficer");
             }
 
+            else if (entityType.equalsIgnoreCase("bankstatement")) {
+                description = rs.getString("description");
+                cpifKeyDocumentId = rs.getLong("cpifKeyDocumentId");
+                orgStatementKeyDocumentId = rs.getLong("orgStatementKeyDocumentId");
+                lastModifiedByName = rs.getString("lastModifiedByName");
+                lastModifiedDate = rs.getDate("lastModifiedDate");
+                isReconciled = rs.getBoolean("isReconciled");
+                cpifFileName = rs.getString("cpifFileName");
+                orgFileName = rs.getString("orgFileName");
+                bank = rs.getLong("bank");
+                bankName = rs.getString("bankName");
+                bankData = BankData.instance(bank, bankName, null, null, false);
+            }
+
             return new SearchData(entityId, entityAccountNo, entityExternalId, entityName, entityType, parentId, parentName, parentType,
                     entityMobileNo, entityStatus, systemValue, userValue, groupName, centerName, officeName, reason, isActive,
-                    isLoanOfficer);
+                    isLoanOfficer, description, cpifKeyDocumentId, orgStatementKeyDocumentId, lastModifiedByName, lastModifiedDate,
+                    isReconciled, bankData, cpifFileName, orgFileName);
         }
 
     }

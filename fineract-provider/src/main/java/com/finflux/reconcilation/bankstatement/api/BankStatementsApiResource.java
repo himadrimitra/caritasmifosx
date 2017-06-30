@@ -36,6 +36,8 @@ import org.apache.fineract.infrastructure.core.api.ApiRequestParameterHelper;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.serialization.ApiRequestJsonSerializationSettings;
 import org.apache.fineract.infrastructure.core.serialization.ToApiJsonSerializer;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.documentmanagement.data.DocumentData;
 import org.apache.fineract.infrastructure.documentmanagement.data.FileData;
 import org.apache.fineract.infrastructure.documentmanagement.service.DocumentReadPlatformService;
@@ -132,12 +134,14 @@ public class BankStatementsApiResource {
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
-    public String retreiveAllBankStatements(@Context final UriInfo uriInfo) {
+    public String retreiveAllBankStatements(@Context final UriInfo uriInfo, @QueryParam("offset") final Integer offset,
+            @QueryParam("limit") final Integer limit, @QueryParam("orderBy") final String orderBy,
+            @QueryParam("sortOrder") final String sortOrder) {
 
-    	this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME);
-
-        final Collection<BankStatementData> bankStatementData = this.bankStatementReadPlatformService
-                .retrieveAllBankStatements(BulkStatementEnumType.BANKTRANSACTIONS.getValue(), null);
+        this.context.authenticatedUser().validateHasReadPermission(ReconciliationApiConstants.BANK_STATEMENT_RESOURCE_NAME);
+        final SearchParameters searchParameters = SearchParameters.forPagination(offset, limit, orderBy, sortOrder);
+        final Page<BankStatementData> bankStatementData = this.bankStatementReadPlatformService
+                .retrieveAllBankStatements(BulkStatementEnumType.BANKTRANSACTIONS.getValue(), null, searchParameters);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 
