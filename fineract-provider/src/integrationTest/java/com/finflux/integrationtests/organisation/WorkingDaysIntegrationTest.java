@@ -433,7 +433,7 @@ public class WorkingDaysIntegrationTest {
                 .withInterestRatePerPeriod("2") //
                 .withAmortizationTypeAsEqualInstallments() //
                 .withInterestTypeAsDecliningBalance() //
-                .withInterestCalculationPeriodTypeSameAsRepaymentPeriod() //
+                .withInterestCalculationPeriodTypeAsDays() //
                 .withExpectedDisbursementDate("01 March 2017") //
                 .withSubmittedOnDate("01 March 2017") //
                 .withCharges(charges).build(clientID.toString(), loanProductID.toString(), savingsId);

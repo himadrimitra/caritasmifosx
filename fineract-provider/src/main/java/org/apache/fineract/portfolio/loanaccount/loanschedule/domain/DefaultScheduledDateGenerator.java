@@ -41,7 +41,7 @@ import org.joda.time.Weeks;
 import org.joda.time.Years;
 
 public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
-
+    
     @Override
     public LocalDate getLastRepaymentDate(final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO) {
 
@@ -50,7 +50,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
         LocalDate lastRepaymentDate = loanApplicationTerms.getExpectedDisbursementDate();
         boolean isFirstRepayment = true;
         for (int repaymentPeriod = 1; repaymentPeriod <= numberOfRepayments; repaymentPeriod++) {
-            lastRepaymentDate = generateNextRepaymentDate(lastRepaymentDate, loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+            lastRepaymentDate = generateNextRepaymentDate(lastRepaymentDate, loanApplicationTerms, isFirstRepayment);
             isFirstRepayment = false;
         }
         return adjustRepaymentDate(lastRepaymentDate, loanApplicationTerms, holidayDetailDTO).getChangedScheduleDate();
@@ -58,7 +58,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
 
     @Override
     public LocalDate generateNextRepaymentDate(final LocalDate lastRepaymentDate, final LoanApplicationTerms loanApplicationTerms,
-            boolean isFirstRepayment, final HolidayDetailDTO holidayDetailDTO) {
+            boolean isFirstRepayment) {
         final LocalDate firstRepaymentPeriodDate = loanApplicationTerms.getCalculatedRepaymentsStartingFromLocalDate();
         LocalDate dueRepaymentPeriodDate = null;
         if (isFirstRepayment && firstRepaymentPeriodDate != null) {
@@ -95,7 +95,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                 dueRepaymentPeriodDate = CalendarUtils.getNextRepaymentMeetingDate(reccuringString, seedDate, lastRepaymentDate,
                         loanApplicationTerms.getRepaymentEvery(),
                         CalendarUtils.getMeetingFrequencyFromPeriodFrequencyType(loanApplicationTerms.getLoanTermPeriodFrequencyType()),
-                        holidayDetailDTO.getWorkingDays(), loanApplicationTerms.isSkipRepaymentOnFirstDayofMonth(),
+                        loanApplicationTerms.isSkipRepaymentOnFirstDayofMonth(),
                         loanApplicationTerms.getNumberOfdays());
             }
         }
@@ -126,8 +126,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     private AdjustedDateDetailsDTO getAdjustedDateDetailsDTO(final LocalDate dueRepaymentPeriodDate,
             final LoanApplicationTerms loanApplicationTerms, final HolidayDetailDTO holidayDetailDTO, final LocalDate adjustedDate) {
         final boolean isFirstRepayment = false;
-        final LocalDate nextRepaymentPeriodDueDate = generateNextRepaymentDate(adjustedDate, loanApplicationTerms, isFirstRepayment,
-                holidayDetailDTO);
+        final LocalDate nextRepaymentPeriodDueDate = generateNextRepaymentDate(adjustedDate, loanApplicationTerms, isFirstRepayment);
         final AdjustedDateDetailsDTO newAdjustedDateDetailsDTO = new AdjustedDateDetailsDTO(adjustedDate, dueRepaymentPeriodDate,
                 nextRepaymentPeriodDueDate);
         return recursivelyCheckNonWorkingDaysAndHolidaysAndWorkingDaysExemptionToGenerateNextRepaymentPeriodDate(newAdjustedDateDetailsDTO,
@@ -193,7 +192,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                     LocalDate nextRepaymentPeriodDueDate = adjustedDateDetailsDTO.getChangedActualRepaymentDate();
                     while (!nextRepaymentPeriodDueDate.isAfter(adjustedDateDetailsDTO.getChangedScheduleDate())) {
                         nextRepaymentPeriodDueDate = generateNextRepaymentDate(nextRepaymentPeriodDueDate, loanApplicationTerms,
-                                isFirstRepayment, holidayDetailDTO);
+                                isFirstRepayment);
                     }
                     adjustedDateDetailsDTO.setChangedScheduleDate(nextRepaymentPeriodDueDate);
                     adjustedDateDetailsDTO.setNextRepaymentPeriodDueDate(nextRepaymentPeriodDueDate);
@@ -220,13 +219,13 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
     private void checkAndUpdateWorkingDayIfRepaymentDateIsNonWorkingDay(final AdjustedDateDetailsDTO adjustedDateDetailsDTO,
             final HolidayDetailDTO holidayDetailDTO, final LoanApplicationTerms loanApplicationTerms, final boolean isFirstRepayment) {
         while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(), adjustedDateDetailsDTO.getChangedScheduleDate())) {
-            if (holidayDetailDTO.getWorkingDays().getRepaymentRescheduleType().isMoveToNextRepaymentDay()) {
+            if (WorkingDaysUtil.getRepaymentRescheduleType(holidayDetailDTO.getWorkingDays(),
+                    adjustedDateDetailsDTO.getChangedScheduleDate()).isMoveToNextRepaymentDay()) {
                 while (WorkingDaysUtil.isNonWorkingDay(holidayDetailDTO.getWorkingDays(),
                         adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate())
                         || adjustedDateDetailsDTO.getChangedScheduleDate().isAfter(adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate())) {
                     final LocalDate nextRepaymentPeriodDueDate = generateNextRepaymentDate(
-                            adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate(), loanApplicationTerms, isFirstRepayment,
-                            holidayDetailDTO);
+                            adjustedDateDetailsDTO.getNextRepaymentPeriodDueDate(), loanApplicationTerms, isFirstRepayment);
                     adjustedDateDetailsDTO.setNextRepaymentPeriodDueDate(nextRepaymentPeriodDueDate);
                 }
             }
@@ -361,7 +360,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
         LocalDate generatedDate = loanApplicationTerms.getExpectedDisbursementDate();
         boolean isFirstRepayment = true;
         while (!generatedDate.isAfter(lastRepaymentDate)) {
-            generatedDate = generateNextRepaymentDate(generatedDate, loanApplicationTerms, isFirstRepayment, holidayDetailDTO);
+            generatedDate = generateNextRepaymentDate(generatedDate, loanApplicationTerms, isFirstRepayment);
             isFirstRepayment = false;
         }
         return adjustRepaymentDate(generatedDate, loanApplicationTerms, holidayDetailDTO).getChangedScheduleDate();
@@ -404,7 +403,7 @@ public class DefaultScheduledDateGenerator implements ScheduledDateGenerator {
                         if (workingDayExcemption.getApplicableProperty().isInstallmentDate()) {
                             switch (workingDayExcemption.getRepaymentRescheduleType()) {
                                 case MOVE_TO_NEXT_REPAYMENT_DAY:
-                                    scheduleDate = generateNextRepaymentDate(scheduleDate, loanApplicationTerms, false, holidayDetailDTO);
+                                    scheduleDate = generateNextRepaymentDate(scheduleDate, loanApplicationTerms, false);
                                 break;
                                 case MOVE_TO_NEXT_MEETING_DAY:
                                     scheduleDate = CalendarUtils.getNextRecurringDate(reccuringString, seedDate, scheduleDate);

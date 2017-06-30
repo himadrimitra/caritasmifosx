@@ -75,11 +75,6 @@ public class WorkingDays extends AbstractPersistable<Long> {
     public Integer getRepaymentReschedulingType() {
         return this.repaymentReschedulingType;
     }
-    
-    public RepaymentRescheduleType getRepaymentRescheduleType() {
-        if (this.repaymentReschedulingType != null) { return RepaymentRescheduleType.fromInt(this.repaymentReschedulingType); }
-        return null;
-    }
 
     public void setRepaymentReschedulingType(Integer repaymentReschedulingType) {
         this.repaymentReschedulingType = repaymentReschedulingType;
