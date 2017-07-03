@@ -6,10 +6,11 @@ CREATE TABLE  `f_financial_activity_account_payment_type_mapping` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `FK__m_payment_type` (`payment_type_id`),
   KEY `FK__acc_gl_financial_activity_account` (`financial_activity_account_id`),
-  CONSTRAINT `FK__acc_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `acc_gl_account` (`id`),
-  CONSTRAINT `FK__acc_gl_financial_activity_account` FOREIGN KEY (`financial_activity_account_id`) REFERENCES `acc_gl_financial_activity_account` (`id`),
-  CONSTRAINT `FK__m_payment_type` FOREIGN KEY (`payment_type_id`) REFERENCES `m_payment_type` (`id`)
+  CONSTRAINT `FK__f_financial_activity_mapping_acc_gl_account` FOREIGN KEY (`gl_account_id`) REFERENCES `acc_gl_account` (`id`),
+  CONSTRAINT `FK__f_financial_activity_mapping__financial_activity_account` FOREIGN KEY (`financial_activity_account_id`) REFERENCES `acc_gl_financial_activity_account` (`id`),
+  CONSTRAINT `FK__f_financial_activity__mapping_m_payment_type` FOREIGN KEY (`payment_type_id`) REFERENCES `m_payment_type` (`id`)
 );
+
 
 ALTER TABLE `m_client_transaction`
 	DROP FOREIGN KEY `FK_m_client_transaction_m_appuser`;
