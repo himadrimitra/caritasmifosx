@@ -270,7 +270,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 isHolidayValidationDone);
         LoanTransaction accrualSuspenseTransaction = null;
         final MonetaryCurrency currency = loan.getCurrency();
-        if (newRepaymentTransaction.getTransactionSubTye().isRepaymentForNpaLoan()
+        if (loan.isInAccrualSuspense() && newRepaymentTransaction.getTransactionSubTye().isRepaymentForNpaLoan()
                 && (newRepaymentTransaction.getInterestPortion(currency).isGreaterThanZero()
                         || newRepaymentTransaction.getFeeChargesPortion(currency).isGreaterThanZero() || newRepaymentTransaction
                         .getPenaltyChargesPortion(currency).isGreaterThanZero())) {
@@ -527,7 +527,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         
         LoanTransaction accrualSuspenseTransaction = null;
         final MonetaryCurrency currency = loan.getCurrency();
-        if (newPaymentTransaction.getTransactionSubTye().isRepaymentForNpaLoan()
+        if (loan.isInAccrualSuspense() && newPaymentTransaction.getTransactionSubTye().isRepaymentForNpaLoan()
                 && (newPaymentTransaction.getFeeChargesPortion(currency).isGreaterThanZero() || newPaymentTransaction
                         .getPenaltyChargesPortion(currency).isGreaterThanZero())) {
             accrualSuspenseTransaction = createAccrualSuspenseReverseTransaction(loan, newPaymentTransaction);
@@ -902,7 +902,9 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         
         if (loan.isInAccrualSuspense() && interestPayable.plus(feePayable).plus(penaltyPayable).isGreaterThanZero()) {
             suspenseReverse = createAccrualSuspenseReverseTransaction(loan, payment);
-            newTransactions.add(suspenseReverse);
+            if(suspenseReverse != null){
+                newTransactions.add(suspenseReverse);
+            }
         }
 
         /***
@@ -1032,7 +1034,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         }
         
         MonetaryCurrency currency = loan.getCurrency();
-        if (newTransactionDetail.getTransactionSubTye().isRepaymentForNpaLoan()) {
+        if (newTransactionDetail.getTransactionSubTye().isRepaymentForNpaLoan() && loan.isInAccrualSuspense()) {
             if (transactionToAdjust.getInterestPortion(currency).isNotEqualTo(newTransactionDetail.getInterestPortion(currency))
                     || transactionToAdjust.getFeeChargesPortion(currency).isNotEqualTo(newTransactionDetail.getFeeChargesPortion(currency))
                     || transactionToAdjust.getPenaltyChargesPortion(currency).isNotEqualTo(

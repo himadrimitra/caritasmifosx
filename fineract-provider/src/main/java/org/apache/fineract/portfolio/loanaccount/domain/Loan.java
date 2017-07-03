@@ -1420,7 +1420,7 @@ public class Loan extends AbstractPersistable<Long> {
                 }
             }
         }
-        if (!reversedTransactions.isEmpty()) {
+        if (this.isInAccrualSuspense() && !reversedTransactions.isEmpty()) {
             
             Money reversedInterest = Money.zero(currency);
             Money reversedFee = Money.zero(currency);
