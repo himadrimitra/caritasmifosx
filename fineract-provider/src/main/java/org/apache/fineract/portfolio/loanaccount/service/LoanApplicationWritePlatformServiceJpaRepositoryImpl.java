@@ -1064,21 +1064,10 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 final Set<LoanCollateral> loanCollateral = this.loanCollateralAssembler.fromParsedJson(command.parsedJson());
                 existingLoanApplication.updateLoanCollateral(loanCollateral);
             }
-
-            final String chargesParamName = "charges";
-            if (changes.containsKey(chargesParamName)) {
-                existingLoanApplication.updateLoanCharges(possiblyModifedLoanCharges);
-            }
             
             final BigDecimal interestRate = existingLoanApplication.getLoanProductRelatedDetail().getAnnualNominalInterestRate();
             final Integer numberOfRepayments = existingLoanApplication.fetchNumberOfInstallmensAfterExceptions();
-            List<GroupLoanIndividualMonitoring> glimList = new ArrayList<>();
-            List<Long> glimIds = new ArrayList<>();
-            // modify glim data            
-            if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
-                glimList = updateGlimMemberForModifiedLoan(loanId, command, existingLoanApplication, interestRate, numberOfRepayments,
-                        glimIds);
-            }   
+            
             	        
             if (changes.containsKey("recalculateLoanSchedule")) {
                 changes.remove("recalculateLoanSchedule");
@@ -1097,17 +1086,34 @@ public class LoanApplicationWritePlatformServiceJpaRepositoryImpl implements Loa
                 existingLoanApplication.recalculateAllCharges();
                 existingLoanApplication.setCalculatedInstallmentAmount(terms.getFixedEmiAmount());
             }
-	        
-            if (existingLoanApplication.isGLIMLoan()) {
-                updateGlimMemberOnModifyApplication(existingLoanApplication, glimList);
+
+
+            final String chargesParamName = "charges";
+            if (changes.containsKey(chargesParamName)) {
+                existingLoanApplication.updateLoanCharges(possiblyModifedLoanCharges);
             }
-	    	     
+            
             this.fromApiJsonDeserializer.validateLoanTermAndRepaidEveryValues(existingLoanApplication.getTermFrequency(),
                     existingLoanApplication.getTermPeriodFrequencyType(), productRelatedDetail.getNumberOfRepayments(),
                     productRelatedDetail.getRepayEvery(), productRelatedDetail.getRepaymentPeriodFrequencyType().getValue(),
                     existingLoanApplication);
-
+            
             saveAndFlushLoanWithDataIntegrityViolationChecks(existingLoanApplication);
+            
+            List<GroupLoanIndividualMonitoring> glimList = new ArrayList<>();
+            List<Long> glimIds = new ArrayList<>();
+            // modify glim data            
+            if (command.hasParameter(LoanApiConstants.clientMembersParamName)) {
+                glimList = updateGlimMemberForModifiedLoan(loanId, command, existingLoanApplication, interestRate, numberOfRepayments,
+                        glimIds);
+            }  
+            if (existingLoanApplication.isGLIMLoan()) {
+                updateGlimMemberOnModifyApplication(existingLoanApplication, glimList);
+            }
+	    	     
+            
+
+            /*saveAndFlushLoanWithDataIntegrityViolationChecks(existingLoanApplication);*/
 
             final String submittedOnNote = command.stringValueOfParameterNamed("submittedOnNote");
             if (StringUtils.isNotBlank(submittedOnNote)) {
