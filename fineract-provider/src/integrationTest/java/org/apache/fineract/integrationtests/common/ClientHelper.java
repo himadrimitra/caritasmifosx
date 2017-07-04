@@ -154,7 +154,7 @@ public class ClientHelper {
         final String CLIENT_ASSIGN_STAFF_URL = "/fineract-provider/api/v1/clients/" + clientId + "?" + Utils.TENANT_IDENTIFIER
                 + "&command=assignStaff";
 
-        System.out.println("---------------------------------CREATING A CLIENT---------------------------------------------");
+        System.out.println("---------------------------------ASSIGN STAFF TO CLIENT---------------------------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, CLIENT_ASSIGN_STAFF_URL, assignStaffToClientAsJson(staffId), "changes");
     }
 

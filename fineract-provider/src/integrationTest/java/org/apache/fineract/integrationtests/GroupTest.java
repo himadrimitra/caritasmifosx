@@ -93,6 +93,7 @@ public class GroupTest {
         // groupID);
     }
 
+    @SuppressWarnings("rawtypes")
     @Test
     public void assignStaffToGroup() {
         Integer groupID = GroupHelper.createGroup(this.requestSpec, this.responseSpec);
