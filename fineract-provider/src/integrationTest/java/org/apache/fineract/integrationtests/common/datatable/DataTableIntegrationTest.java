@@ -142,14 +142,14 @@ public class DataTableIntegrationTest {
                 .withNewColumn("description", TEXT_TYPE_COLUMN, false, null, null)
                 .withNewColumn("drop down", DROPDOWN_TYPE_COLUMN, false, null, dataTableHelper.getCodeValueName(0)).build();
         final String createDataTableResourceIdentifier = dataTableHelper.createDataTable(dataTableJson);
-        final String transactionId = transactionDetails.get("transactionId").toString();
+        final String resourceId = transactionDetails.get("resourceId").toString();
         final HashMap dataTableEntry = (HashMap) dataTableHelper.createDataTableEntry(
-                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, transactionId);
-        final HashMap dataTableContent = (HashMap) dataTableHelper.readDataTableEntry(createDataTableResourceIdentifier, transactionId);
+                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, resourceId);
+        final HashMap dataTableContent = (HashMap) dataTableHelper.readDataTableEntry(createDataTableResourceIdentifier, resourceId);
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(gson.toJson(dataTableContent));
         JsonArray dataArray = this.fromApiJsonHelper.extractJsonArrayNamed("data", parsedCommand);
         JsonArray rowArray = this.fromApiJsonHelper.extractJsonArrayNamed("row", dataArray.get(0));
-        dataTableJsonValidator.validateCreateDataTableEntrySingleRowJson(transactionId, rowArray);
+        dataTableJsonValidator.validateCreateDataTableEntrySingleRowJson(resourceId, rowArray);
     }
 
     @Test
@@ -166,17 +166,17 @@ public class DataTableIntegrationTest {
                 .withNewColumn("drop down", DROPDOWN_TYPE_COLUMN, false, null, dataTableHelper.getCodeValueName(0)).build();
         final String createDataTableResourceIdentifier = dataTableHelper.createDataTable(dataTableJson);
         System.out.println("createDataTableResourceIdentifier...>" + createDataTableResourceIdentifier);
-        final String transactionId = transactionDetails.get("transactionId").toString();
+        final String resourceId = transactionDetails.get("resourceId").toString();
         final HashMap dataTableEntryOne = (HashMap) dataTableHelper.createDataTableEntry(
-                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, transactionId);
+                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, resourceId);
         final HashMap dataTableEntryTwo = (HashMap) dataTableHelper.createDataTableEntry(
-                dataTableHelper.getCreateDatatableEntryMultiRowJson(), createDataTableResourceIdentifier, transactionId);
-        final HashMap dataTableContent = (HashMap) dataTableHelper.readDataTableEntry(createDataTableResourceIdentifier, transactionId);
+                dataTableHelper.getCreateDatatableEntryMultiRowJson(), createDataTableResourceIdentifier, resourceId);
+        final HashMap dataTableContent = (HashMap) dataTableHelper.readDataTableEntry(createDataTableResourceIdentifier, resourceId);
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(gson.toJson(dataTableContent));
         JsonArray dataArray = this.fromApiJsonHelper.extractJsonArrayNamed("data", parsedCommand);
         JsonArray rowOneArray = this.fromApiJsonHelper.extractJsonArrayNamed("row", dataArray.get(0));
         JsonArray rowTwoArray = this.fromApiJsonHelper.extractJsonArrayNamed("row", dataArray.get(1));
-        dataTableJsonValidator.validateCreateDataTableEntryMultiJson(transactionId, rowOneArray, rowTwoArray);
+        dataTableJsonValidator.validateCreateDataTableEntryMultiJson(resourceId, rowOneArray, rowTwoArray);
     }
 
     @Test
@@ -192,11 +192,11 @@ public class DataTableIntegrationTest {
                 .withNewColumn("description", TEXT_TYPE_COLUMN, false, null, null)
                 .withNewColumn("drop down", DROPDOWN_TYPE_COLUMN, false, null, dataTableHelper.getCodeValueName(0)).build();
         final String createDataTableResourceIdentifier = dataTableHelper.createDataTable(dataTableJson);
-        final String transactionId = transactionDetails.get("transactionId").toString();
+        final String resourceId = transactionDetails.get("resourceId").toString();
         final HashMap dataTableEntry = (HashMap) dataTableHelper.createDataTableEntry(
-                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, transactionId);
+                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, resourceId);
         final HashMap updatedDataTableEntry = (HashMap) dataTableHelper.updateDataTableEntry(dataTableHelper.getUpdateDatatableEntryJson(),
-                createDataTableResourceIdentifier, transactionId);
+                createDataTableResourceIdentifier, resourceId);
         dataTableJsonValidator.validateUpdatedDataTableEntryValues((HashMap) updatedDataTableEntry.get("changes"));
     }
 
@@ -213,13 +213,13 @@ public class DataTableIntegrationTest {
                 .withNewColumn("description", TEXT_TYPE_COLUMN, false, null, null)
                 .withNewColumn("drop down", DROPDOWN_TYPE_COLUMN, false, null, dataTableHelper.getCodeValueName(0)).build();
         final String createDataTableResourceIdentifier = dataTableHelper.createDataTable(dataTableJson);
-        final String transactionId = transactionDetails.get("transactionId").toString();
+        final String resourceId = transactionDetails.get("resourceId").toString();
         final HashMap dataTableEntry = (HashMap) dataTableHelper.createDataTableEntry(
-                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, transactionId);
+                dataTableHelper.getCreateDatatableEntrySingleRowJson(), createDataTableResourceIdentifier, resourceId);
         final HashMap deletedDataTableEntry = (HashMap) dataTableHelper.deleteDataTableEntry(createDataTableResourceIdentifier,
-                transactionId);
+                resourceId);
         final HashMap dataTableEntryContect = (HashMap) dataTableHelper
-                .readDataTableEntry(createDataTableResourceIdentifier, transactionId);
+                .readDataTableEntry(createDataTableResourceIdentifier, resourceId);
         final JsonElement parsedCommand = this.fromApiJsonHelper.parse(gson.toJson(dataTableEntryContect));
         JsonArray dataArray = this.fromApiJsonHelper.extractJsonArrayNamed("data", parsedCommand);
         assertEquals(0, dataArray.size());
