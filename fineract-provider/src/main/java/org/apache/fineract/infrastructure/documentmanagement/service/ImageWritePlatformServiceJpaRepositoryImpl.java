@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.documentmanagement.service;
 import java.io.InputStream;
 
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
 import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiResource.ENTITY_TYPE_FOR_IMAGES;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
@@ -57,12 +58,12 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     @Transactional
     @Override
     public CommandProcessingResult saveOrUpdateImage(String entityName, final Long clientId, final String imageName,
-            final InputStream inputStream, final Long fileSize) {
+            final InputStream inputStream, final Long fileSize, final GeoTag geoTag) {
         Object owner = deletePreviousImage(entityName, clientId);
 
         final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository();
         final String imageLocation = contentRepository.saveImage(inputStream, clientId, imageName, fileSize);
-        return updateImage(owner, imageLocation, contentRepository.getStorageType());
+        return updateImage(owner, imageLocation, contentRepository.getStorageType(), geoTag);
     }
 
     @Transactional
@@ -72,8 +73,8 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
 
         final ContentRepository contenRepository = this.contentRepositoryFactory.getRepository();
         final String imageLocation = contenRepository.saveImage(encodedImage, clientId, "image");
-
-        return updateImage(owner, imageLocation, contenRepository.getStorageType());
+        final GeoTag geoTag = null ;
+        return updateImage(owner, imageLocation, contenRepository.getStorageType(), geoTag);
     }
 
     @Transactional
@@ -132,21 +133,21 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         return owner;
     }
 
-    private CommandProcessingResult updateImage(final Object owner, final String imageLocation, final StorageType storageType) {
+    private CommandProcessingResult updateImage(final Object owner, final String imageLocation, final StorageType storageType, final GeoTag geoTag) {
         Image image = null;
         Long clientId = null;
         if (owner instanceof Client) {
             Client client = (Client) owner;
             image = client.getImage();
             clientId = client.getId();
-            image = createImage(image, imageLocation, storageType);
+            image = createImage(image, imageLocation, storageType, geoTag);
             client.setImage(image);
             this.clientRepositoryWrapper.save(client);
         } else if (owner instanceof Staff) {
             Staff staff = (Staff) owner;
             image = staff.getImage();
             clientId = staff.getId();
-            image = createImage(image, imageLocation, storageType);
+            image = createImage(image, imageLocation, storageType, geoTag);
             staff.setImage(image);
             this.staffRepositoryWrapper.save(staff);
         }
@@ -155,12 +156,13 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         return new CommandProcessingResult(clientId);
     }
 
-    private Image createImage(Image image, final String imageLocation, final StorageType storageType) {
+    private Image createImage(Image image, final String imageLocation, final StorageType storageType, final GeoTag geoTag) {
         if (image == null) {
-            image = new Image(imageLocation, storageType);
+            image = new Image(imageLocation, storageType, geoTag);
         } else {
             image.setLocation(imageLocation);
             image.setStorageType(storageType.getValue());
+            image.setGeoTag(geoTag); 
         }
         return image;
     }

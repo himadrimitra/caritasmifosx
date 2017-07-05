@@ -36,6 +36,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
 import org.apache.fineract.infrastructure.core.serialization.DefaultToApiJsonSerializer;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryUtils;
@@ -82,16 +83,18 @@ public class ImagesApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String addNewClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             @HeaderParam("Content-Length") final Long fileSize, @FormDataParam("file") final InputStream inputStream,
-            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart) {
+            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart,
+            @HeaderParam("Geo-Tag") String geoTagHeaderParam) {
+        
+        GeoTag geoTag = GeoTag.from(geoTagHeaderParam) ;//GeoTag Implementation for VAYA
         validateEntityTypeforImage(entityName);
         // TODO: vishwas might need more advances validation (like reading magic
         // number) for handling malicious clients
         // and clients not setting mime type
         ContentRepositoryUtils.validateClientImageNotEmpty(fileDetails.getFileName());
         ContentRepositoryUtils.validateImageMimeType(bodyPart.getMediaType().toString());
-
         final CommandProcessingResult result = this.imageWritePlatformService.saveOrUpdateImage(entityName, entityId,
-                fileDetails.getFileName(), inputStream, fileSize);
+                fileDetails.getFileName(), inputStream, fileSize, geoTag);
 
         return this.toApiJsonSerializer.serialize(result);
     }
@@ -142,7 +145,9 @@ public class ImagesApiResource {
         }
 
         final String clientImageAsBase64Text = imageDataURISuffix + Base64.encodeBytes(imageData.getContentOfSize(maxWidth, maxHeight));
-        return Response.ok(clientImageAsBase64Text).build();
+        ResponseBuilder responseBuilder = Response.ok(clientImageAsBase64Text);
+        if(imageData.getGeoTag()!= null) responseBuilder = responseBuilder.header("Geo-Tag", imageData.getGeoTag().toString()) ;
+        return responseBuilder.build() ;
     }
 
     @GET
@@ -160,7 +165,7 @@ public class ImagesApiResource {
 
         final ImageData imageData = this.imageReadPlatformService.retrieveImage(entityName, entityId);
 
-        final ResponseBuilder response = Response.ok(imageData.getContentOfSize(maxWidth, maxHeight));
+        ResponseBuilder response = Response.ok(imageData.getContentOfSize(maxWidth, maxHeight));
         String dispositionType = "inline_octet".equals(output) ? "inline" : "attachment";
         response.header("Content-Disposition", dispositionType + "; filename=\"" + imageData.getEntityDisplayName()
                 + IMAGE_FILE_EXTENSION.JPEG + "\"");
@@ -168,6 +173,7 @@ public class ImagesApiResource {
         // TODO: Need a better way of determining image type
 
         response.header("Content-Type", imageData.contentType());
+        if(imageData.getGeoTag()!= null) response = response.header("Geo-Tag", imageData.getGeoTag().toString()) ;
         return response.build();
     }
 
@@ -180,8 +186,8 @@ public class ImagesApiResource {
     @Produces({ MediaType.APPLICATION_JSON })
     public String updateClientImage(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId,
             @HeaderParam("Content-Length") final Long fileSize, @FormDataParam("file") final InputStream inputStream,
-            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart) {
-        return addNewClientImage(entityName, entityId, fileSize, inputStream, fileDetails, bodyPart);
+            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart, @HeaderParam("Geo-Tag") String geoTagHeaderParam) {
+        return addNewClientImage(entityName, entityId, fileSize, inputStream, fileDetails, bodyPart, geoTagHeaderParam);
     }
 
     /**

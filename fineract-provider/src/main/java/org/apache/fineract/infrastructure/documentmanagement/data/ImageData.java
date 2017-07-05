@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import javax.imageio.ImageIO;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryUtils;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
 import org.apache.poi.util.IOUtils;
@@ -47,12 +48,15 @@ public class ImageData {
     private File file;
     private ContentRepositoryUtils.IMAGE_FILE_EXTENSION fileExtension;
     private InputStream inputStream;
-
-    public ImageData(final Long imageId, final String location, final Integer storageType, final String entityDisplayName) {
+    
+    private final GeoTag geoTag ;
+    
+    public ImageData(final Long imageId, final String location, final Integer storageType, final String entityDisplayName, final GeoTag geoTag) {
         this.imageId = imageId;
         this.location = location;
         this.storageType = storageType;
         this.entityDisplayName = entityDisplayName;
+        this.geoTag = geoTag ;
     }
 
     public byte[] getContent() {
@@ -161,4 +165,7 @@ public class ImageData {
         return this.entityDisplayName;
     }
 
+    public GeoTag getGeoTag() {
+        return this.geoTag ;
+    }
 }
