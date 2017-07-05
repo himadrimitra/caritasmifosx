@@ -107,7 +107,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         final Set<Long> existingReversedTransactionIds = new HashSet<>();
         updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
         final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, transactionDate, transactionAmount,
-                paymentDetail, new Date(), user);
+                paymentDetail, DateUtils.getLocalDateTimeOfTenant().toDate(), user);
         final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO, transactionBooleanValues.isApplyWithdrawFee());
 
         final MathContext mc = MathContext.DECIMAL64;
@@ -193,7 +193,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         final Set<Long> existingReversedTransactionIds = new HashSet<>();
         updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
         final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, transactionDate, transactionAmount,
-                paymentDetail, new Date(), user);
+                paymentDetail, DateUtils.getLocalDateTimeOfTenant().toDate(), user);
         final SavingsAccountTransaction deposit = account.deposit(transactionDTO, savingsAccountTransactionType);
         final LocalDate postInterestOnDate = null;
         final MathContext mc = MathContext.DECIMAL64;

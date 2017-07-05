@@ -137,6 +137,7 @@ public class SavingsApiConstants {
     public static final String minBalanceForInterestCalculationParamName = "minBalanceForInterestCalculation";
     public static final String withdrawBalanceParamName = "withdrawBalance";
     public static final String onHoldFundsParamName = "onHoldFunds";
+    public static final String savingsAmountOnHold = "savingsAmountOnHold";
     public static final String withHoldTaxParamName = "withHoldTax";
     public static final String taxGroupIdParamName = "taxGroupId";
 
@@ -276,7 +277,7 @@ public class SavingsApiConstants {
             feeOnMonthDayParamName, "summary", "transactions", "productOptions", "interestCompoundingPeriodTypeOptions",
             "interestPostingPeriodTypeOptions", "interestCalculationTypeOptions", "interestCalculationDaysInYearTypeOptions",
             "lockinPeriodFrequencyTypeOptions", "withdrawalFeeTypeOptions", "withdrawalFee", "annualFee", onHoldFundsParamName,
-            nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName));
+            nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, savingsAmountOnHold));
 
     public static final Set<String> SAVINGS_ACCOUNT_TRANSACTION_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, transactionDateParamName, transactionAmountParamName, paymentTypeIdParamName,

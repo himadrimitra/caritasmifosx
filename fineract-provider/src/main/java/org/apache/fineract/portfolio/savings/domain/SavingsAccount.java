@@ -334,7 +334,10 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsAccount", optional = true, orphanRemoval = true)
     private SavingsAccountDpDetails savingsAccountDpDetails;
-
+    
+    @Column(name = "total_savings_amount_on_hold", scale = 6, precision = 19, nullable = true)
+    private BigDecimal savingsOnHoldAmount;
+    
     protected SavingsAccount() {
         //
     }
@@ -1093,7 +1096,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
             } else if (transaction.isNotReversed() && transaction.isDebit()) {
                 runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
-            }else{
+            } else if (transaction.isNotReversed() && transaction.isAmountOnHold()) {
+                runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
+            } else if (transaction.isNotReversed() && transaction.isAmountRelease()) {
+                runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
+            } else {
                 continue;
             }
 
@@ -2829,7 +2836,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     }
 
     public BigDecimal getWithdrawableBalance() {
-        return getAccountBalance().subtract(minRequiredBalanceDerived(getCurrency()).getAmount()).subtract(this.getOnHoldFunds());
+        return getAccountBalance().subtract(minRequiredBalanceDerived(getCurrency()).getAmount()).subtract(this.getOnHoldFunds()).subtract(this.getSavingsHoldAmount());
     }
 
     public TaxGroup getTaxGroup() {
@@ -3086,7 +3093,27 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
     public LocalDate retrieveLastTransactionDate() {
         final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
-        SavingsAccountTransaction lastTransaction = transactionsSortedByDate.get(transactionsSortedByDate.size() - 1);
-        return lastTransaction.transactionLocalDate();
+        SavingsAccountTransaction lastTransaction = null;
+        if (transactionsSortedByDate.size() > 0) {
+            lastTransaction = transactionsSortedByDate.get(transactionsSortedByDate.size() - 1);
+        }
+        LocalDate lastransactionDate = null;
+        if (lastTransaction != null) {
+            lastransactionDate = lastTransaction.transactionLocalDate();
+        }
+        return lastransactionDate;
     }
+
+    public BigDecimal getSavingsHoldAmount() {
+        return this.savingsOnHoldAmount == null ? BigDecimal.ZERO : this.savingsOnHoldAmount;
+    }
+
+    public void holdAmount(BigDecimal amount) {
+        this.savingsOnHoldAmount = getSavingsHoldAmount().add(amount);
+    }
+
+    public void releaseAmount(BigDecimal amount) {
+        this.savingsOnHoldAmount = getSavingsHoldAmount().subtract(amount);
+    }
+
 }
