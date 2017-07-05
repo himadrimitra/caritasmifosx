@@ -462,9 +462,9 @@ public class LoanEnumerations {
                 optionData = new LoanTransactionEnumData(LoanTransactionSubType.PRE_PAYMENT.getValue().longValue(),
                         LoanTransactionSubType.PRE_PAYMENT.getCode(), "prepayment");
             break;
-            case REPAYMENT_FOR_NPA_LOAN:
-                optionData = new LoanTransactionEnumData(LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getValue().longValue(),
-                        LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getCode(), "Repayment For NPA Loan");
+            case TRANSACTION_IN_NPA_STATE:
+                optionData = new LoanTransactionEnumData(LoanTransactionSubType.TRANSACTION_IN_NPA_STATE.getValue().longValue(),
+                        LoanTransactionSubType.TRANSACTION_IN_NPA_STATE.getCode(), "Transaction In NPA State");
             break;
             default:
             break;

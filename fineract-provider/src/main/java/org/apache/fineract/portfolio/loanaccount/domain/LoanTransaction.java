@@ -149,6 +149,9 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "loanTransaction", orphanRemoval = true)
     private Set<GroupLoanIndividualMonitoringTransaction> groupLoanIndividualMonitoringTransactions = new HashSet<>();
     
+    @Column(name = "transaction_association_id")
+    private Long associatedTransactionId;
+    
     @Transient
     private Set<LoanChargePaidBy> loanChargesPaidTemp = new HashSet<>();
     
@@ -215,7 +218,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     public static LoanTransaction repaymentForNPALoan(final Office office, final Money amount, final PaymentDetail paymentDetail,
             final LocalDate paymentDate, final String externalId) {
-        return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getValue(),
+        return new LoanTransaction(null, office, LoanTransactionType.REPAYMENT, LoanTransactionSubType.TRANSACTION_IN_NPA_STATE.getValue(),
                 paymentDetail, amount.getAmount(), paymentDate, externalId);
     }
 
@@ -244,7 +247,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
 
     public static LoanTransaction waiver(final Office office, final Loan loan, final Money amount, final LocalDate waiveDate,
             final Money waived, final Money unrecognizedPortion) {
-        final Integer loanTransactionSubType = null;
+        Integer loanTransactionSubType = null;
+        if(loan.isNpa()){
+            loanTransactionSubType = LoanTransactionSubType.TRANSACTION_IN_NPA_STATE.getValue();
+        }
         LoanTransaction loanTransaction = new LoanTransaction(loan, office, LoanTransactionType.WAIVE_INTEREST, loanTransactionSubType, amount.getAmount(),
                 waiveDate, null);
         loanTransaction.updateInterestComponent(waived, unrecognizedPortion);
@@ -306,8 +312,13 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
 
     public static LoanTransaction accrualWriteOff(final Loan loan, final Office office, final Money amount, final Money interest,
             final Money feeCharges, final Money penaltyCharges) {
-        final LoanTransactionType transactionType = LoanTransactionType.ACCRUAL_WRITEOFF;
         final LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
+        return accrualWriteOff(loan, office, amount, interest, feeCharges, penaltyCharges, transactionDate);
+    }
+
+    public static LoanTransaction accrualWriteOff(final Loan loan, final Office office, final Money amount, final Money interest,
+            final Money feeCharges, final Money penaltyCharges, final LocalDate transactionDate) {
+        final LoanTransactionType transactionType = LoanTransactionType.ACCRUAL_WRITEOFF;
         return accrualTransaction(loan, office, amount, interest, feeCharges, penaltyCharges, transactionType, transactionDate);
     }
 
@@ -370,7 +381,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
                 loanTransaction.dateOf, loanTransaction.amount, loanTransaction.principalPortion, loanTransaction.interestPortion,
                 loanTransaction.feeChargesPortion, loanTransaction.penaltyChargesPortion, loanTransaction.overPaymentPortion,
                 loanTransaction.reversed, loanTransaction.paymentDetail, loanTransaction.externalId, loanTransaction.getCreatedDate(),
-                loanTransaction.getCreatedBy(), loanTransaction.isReconciled, originalTransactionId);
+                loanTransaction.getCreatedBy(), loanTransaction.isReconciled, originalTransactionId, loanTransaction.unrecognizedIncomePortion);
         for (LoanChargePaidBy loanChargePaidBy : loanTransaction.getLoanChargesPaid()) {
             copyTransaction.getLoanChargesPaidTemp().add(
                     new LoanChargePaidBy(copyTransaction, loanChargePaidBy.getLoanCharge(), loanChargePaidBy.getAmount(), loanChargePaidBy
@@ -379,10 +390,11 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return copyTransaction;
     }
     
-    private LoanTransaction(final Loan loan, final Long officeId, final Integer typeOf, final Integer loanTransactionSubType,final Date dateOf, final BigDecimal amount,
-            final BigDecimal principalPortion, final BigDecimal interestPortion, final BigDecimal feeChargesPortion,
-            final BigDecimal penaltyChargesPortion, final BigDecimal overPaymentPortion, final boolean reversed,
-            final PaymentDetail paymentDetail, final String externalId, final DateTime createdDate, final AppUser appUser, boolean isReconciled, Long originalTransactionId) {
+    private LoanTransaction(final Loan loan, final Long officeId, final Integer typeOf, final Integer loanTransactionSubType,
+            final Date dateOf, final BigDecimal amount, final BigDecimal principalPortion, final BigDecimal interestPortion,
+            final BigDecimal feeChargesPortion, final BigDecimal penaltyChargesPortion, final BigDecimal overPaymentPortion,
+            final boolean reversed, final PaymentDetail paymentDetail, final String externalId, final DateTime createdDate,
+            final AppUser appUser, boolean isReconciled, Long originalTransactionId, BigDecimal unrecognizedAmount) {
         this.loan = loan;
         this.typeOf = typeOf;
         this.subTypeOf = loanTransactionSubType;
@@ -402,6 +414,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.setCreatedBy(appUser);
         this.isReconciled = isReconciled;
         this.originalTransactionId = originalTransactionId;
+        this.unrecognizedIncomePortion = unrecognizedAmount;
     }
 
     public static LoanTransaction accrueLoanCharge(final Loan loan, final Office office, final Money amount, final LocalDate applyDate,
@@ -458,7 +471,10 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
     
     public static LoanTransaction waiveLoanCharge(final Loan loan, final Office office, final Money waived, final LocalDate waiveDate,
             final Money feeChargesWaived, final Money penaltyChargesWaived, final Money unrecognizedCharge) {
-        final Integer loanTransactionSubType = null;
+        Integer loanTransactionSubType = null;
+        if(loan.isNpa()){
+            loanTransactionSubType = LoanTransactionSubType.TRANSACTION_IN_NPA_STATE.getValue();
+        }
         final LoanTransaction waiver = new LoanTransaction(loan, office, LoanTransactionType.WAIVE_CHARGES, loanTransactionSubType,waived.getAmount(), waiveDate,
                 null);
         waiver.updateChargesComponents(feeChargesWaived, penaltyChargesWaived, unrecognizedCharge);
@@ -582,7 +598,7 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         this.unrecognizedIncomePortion = defaultToNullIfZero(getUnrecognizedIncomePortion(currency).plus(unrecognizedCharges).getAmount());
     }
 
-    private void updateInterestComponent(final Money interest, final Money unrecognizedInterest) {
+    public void updateInterestComponent(final Money interest, final Money unrecognizedInterest) {
         final MonetaryCurrency currency = interest.getCurrency();
         this.interestPortion = defaultToNullIfZero(getInterestPortion(currency).plus(interest).getAmount());
         this.unrecognizedIncomePortion = defaultToNullIfZero(getUnrecognizedIncomePortion(currency).plus(unrecognizedInterest).getAmount());
@@ -1144,5 +1160,12 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         }
     }
     
+    public void setAssociatedTransactionId(Long associatedTransactionId) {
+        this.associatedTransactionId = associatedTransactionId;
+    }
+
+    public Long getAssociatedTransactionId() {
+        return this.associatedTransactionId;
+    }
     
 }

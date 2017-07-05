@@ -268,17 +268,19 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final ChangedTransactionDetail changedTransactionDetail = loan.makeRepayment(newRepaymentTransaction,
                 defaultLoanLifecycleStateMachine(), isRecoveryRepayment, scheduleGeneratorDTO, currentUser,
                 isHolidayValidationDone);
-        LoanTransaction accrualSuspenseTransaction = null;
+        Collection<LoanTransaction> accrualTransactions = null;
         final MonetaryCurrency currency = loan.getCurrency();
-        if (loan.isInAccrualSuspense() && newRepaymentTransaction.getTransactionSubTye().isRepaymentForNpaLoan()
+        if (loan.isInAccrualSuspense() && newRepaymentTransaction.getTransactionSubTye().isTransactionInNpaState()
                 && (newRepaymentTransaction.getInterestPortion(currency).isGreaterThanZero()
                         || newRepaymentTransaction.getFeeChargesPortion(currency).isGreaterThanZero() || newRepaymentTransaction
                         .getPenaltyChargesPortion(currency).isGreaterThanZero())) {
-            accrualSuspenseTransaction = createAccrualSuspenseReverseTransaction(loan, newRepaymentTransaction);
+            accrualTransactions = createAccrualSuspenseReverseTransaction(loan, newRepaymentTransaction);
         }
         saveLoanTransactionWithDataIntegrityViolationChecks(newRepaymentTransaction);
-        if (accrualSuspenseTransaction != null) {
-            saveLoanTransactionWithDataIntegrityViolationChecks(accrualSuspenseTransaction);
+        if (accrualTransactions != null && !accrualTransactions.isEmpty()) {
+            for(LoanTransaction transaction : accrualTransactions){
+                saveLoanTransactionWithDataIntegrityViolationChecks(transaction);
+            }
         }
         
         /***
@@ -503,7 +505,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final LoanTransactionType loanTransactionType = LoanTransactionType.fromInt(transactionType);
         LoanTransactionSubType subType = null;
         if (loan.isNpa()) {
-            subType = LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN;
+            subType = LoanTransactionSubType.TRANSACTION_IN_NPA_STATE;
         }
         final LoanTransaction newPaymentTransaction = LoanTransaction.loanPayment(null, loan.getOffice(), paymentAmout, paymentDetail,
                 transactionDate, txnExternalId, loanTransactionType, subType);
@@ -525,16 +527,18 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                     holidayDetailDTO, newPaymentTransaction, installmentNumber);
         }
         
-        LoanTransaction accrualSuspenseTransaction = null;
+        Collection<LoanTransaction> accrualTransactions = null;
         final MonetaryCurrency currency = loan.getCurrency();
-        if (loan.isInAccrualSuspense() && newPaymentTransaction.getTransactionSubTye().isRepaymentForNpaLoan()
+        if (loan.isInAccrualSuspense() && newPaymentTransaction.getTransactionSubTye().isTransactionInNpaState()
                 && (newPaymentTransaction.getFeeChargesPortion(currency).isGreaterThanZero() || newPaymentTransaction
                         .getPenaltyChargesPortion(currency).isGreaterThanZero())) {
-            accrualSuspenseTransaction = createAccrualSuspenseReverseTransaction(loan, newPaymentTransaction);
+            accrualTransactions = createAccrualSuspenseReverseTransaction(loan, newPaymentTransaction);
         }
         saveLoanTransactionWithDataIntegrityViolationChecks(newPaymentTransaction);
-        if (accrualSuspenseTransaction != null) {
-            saveLoanTransactionWithDataIntegrityViolationChecks(accrualSuspenseTransaction);
+        if (accrualTransactions != null && accrualTransactions.isEmpty()) {
+            for(LoanTransaction transaction : accrualTransactions){
+                saveLoanTransactionWithDataIntegrityViolationChecks(transaction);
+            }
         }
         saveAndFlushLoanWithDataIntegrityViolationChecks(loan);
 
@@ -881,7 +885,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         loan.updateInstallmentsPostDate(foreClosureDate);
 
         LoanTransaction payment = null;
-        LoanTransaction suspenseReverse = null;
+        Collection<LoanTransaction> suspenseReverse = null;
         
          
         if (payPrincipal.plus(interestPayable).plus(feePayable).plus(penaltyPayable).isGreaterThanZero()) {
@@ -903,7 +907,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         if (loan.isInAccrualSuspense() && interestPayable.plus(feePayable).plus(penaltyPayable).isGreaterThanZero()) {
             suspenseReverse = createAccrualSuspenseReverseTransaction(loan, payment);
             if(suspenseReverse != null){
-                newTransactions.add(suspenseReverse);
+                newTransactions.addAll(suspenseReverse);
             }
         }
 
@@ -979,8 +983,8 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         changes.put("dateFormat", dateFormat);
         if (paymentDetail != null) changes.put("paymentTypeId", paymentDetail.getId());
 
-        final List<Long> existingTransactionIds = new ArrayList<>();
-        final List<Long> existingReversedTransactionIds = new ArrayList<>();
+        final List<Long> existingTransactionIds = new ArrayList<>(loan.findExistingTransactionIds());
+        final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
 
         final Money transactionAmountAsMoney = Money.of(loan.getCurrency(), transactionAmount);
         LoanTransaction newTransactionDetail = null;
@@ -1006,6 +1010,20 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                     interestComponent = receivableInterest;
                     unrecognizedIncome = transactionAmountAsMoney.minus(receivableInterest);
                 }
+                
+                if (loan.isInAccrualSuspense() && !transactionToAdjust.getTransactionSubTye().isTransactionInNpaState()) {
+                    MonetaryCurrency currency = loan.getCurrency();
+                    Money interestComponentOnAdjustedTransaction = transactionToAdjust.getInterestPortion(currency);
+                    if (interestComponentOnAdjustedTransaction.isGreaterThanZero()) {
+                        LoanTransaction accrualSuspenseTransaction = LoanTransaction.accrualSuspense(loan, loan.getOffice(),
+                                interestComponentOnAdjustedTransaction, interestComponentOnAdjustedTransaction,
+                                interestComponentOnAdjustedTransaction.zero(), interestComponentOnAdjustedTransaction.zero(),
+                                transactionToAdjust.getTransactionDate());
+                        loan.getLoanTransactions().add(accrualSuspenseTransaction);
+                        this.loanTransactionRepository.save(accrualSuspenseTransaction);
+                    }
+                }
+
             }
             newTransactionDetail = LoanTransaction.waiver(loan.getOffice(), loan, transactionAmountAsMoney, transactionDate,
                     interestComponent, unrecognizedIncome);
@@ -1023,18 +1041,21 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 considerFutureDisbursmentsInSchedule, considerAllDisbursmentsInSchedule);
 
         final ChangedTransactionDetail changedTransactionDetail = loan.adjustExistingTransaction(newTransactionDetail,
-                defaultLoanLifecycleStateMachine(), transactionToAdjust, existingTransactionIds, existingReversedTransactionIds,
-                scheduleGeneratorDTO, currentUser);
+                defaultLoanLifecycleStateMachine(), transactionToAdjust, scheduleGeneratorDTO, currentUser);
 
         if (newTransactionDetail.isGreaterThanZero(loan.getPrincpal().getCurrency())) {
             if (paymentDetail != null) {
                 this.paymentDetailWritePlatformService.persistPaymentDetail(paymentDetail);
             }
             this.loanTransactionRepository.save(newTransactionDetail);
+            if(newTransactionDetail.isWaiver()){
+                handleWaiverForAccrualSuspense(loan, newTransactionDetail);
+            }
         }
         
         MonetaryCurrency currency = loan.getCurrency();
-        if (newTransactionDetail.getTransactionSubTye().isRepaymentForNpaLoan() && loan.isInAccrualSuspense()) {
+        if (newTransactionDetail.isPaymentTransaction() && !newTransactionDetail.isInterestWaiver() && newTransactionDetail.getTransactionSubTye().isTransactionInNpaState()
+                && loan.isInAccrualSuspense()) {
             if (transactionToAdjust.getInterestPortion(currency).isNotEqualTo(newTransactionDetail.getInterestPortion(currency))
                     || transactionToAdjust.getFeeChargesPortion(currency).isNotEqualTo(newTransactionDetail.getFeeChargesPortion(currency))
                     || transactionToAdjust.getPenaltyChargesPortion(currency).isNotEqualTo(
@@ -1045,10 +1066,12 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                     loan.getLoanTransactions().add(accrualSuspenseTransaction);
                 }
                 if (newTransactionDetail.isGreaterThanZero(loan.getPrincpal().getCurrency())) {
-                    LoanTransaction accrualSuspenseReverseTransaction = createAccrualSuspenseReverseTransaction(loan, newTransactionDetail);
-                    if (accrualSuspenseReverseTransaction != null) {
-                        this.loanTransactionRepository.save(accrualSuspenseReverseTransaction);
-                        loan.getLoanTransactions().add(accrualSuspenseReverseTransaction);
+                    Collection<LoanTransaction> accrualTransactions = createAccrualSuspenseReverseTransaction(loan, newTransactionDetail);
+                    
+                    if (accrualTransactions != null && accrualTransactions.isEmpty()) {
+                        for(LoanTransaction transaction : accrualTransactions){
+                            saveLoanTransactionWithDataIntegrityViolationChecks(transaction);
+                        }
                     }
 
                 }
@@ -1146,6 +1169,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 currentUser);
 
         this.loanTransactionRepository.save(waiveInterestTransaction);
+        handleWaiverForAccrualSuspense(loan, waiveInterestTransaction);
 
         /***
          * TODO Vishwas Batch save is giving me a
@@ -1182,6 +1206,21 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 .withGroupId(loan.getGroupId());
         
         return waiveInterestTransaction;
+    }
+
+    @Override
+    public void handleWaiverForAccrualSuspense(Loan loan, final LoanTransaction waiveInterestTransaction) {
+        if (loan.isInAccrualSuspense()) {
+            MonetaryCurrency currency = loan.getCurrency();
+            LoanTransaction accrualWriteOff = createAccrualWriteOffTransaction(loan, waiveInterestTransaction);
+            waiveInterestTransaction.resetDerivedComponents(true);
+            waiveInterestTransaction.updateComponentsAndTotal(Money.zero(currency),Money.zero(currency), Money.zero(currency), Money.zero(currency),
+                    waiveInterestTransaction.getAmount(currency));
+            if (accrualWriteOff != null) {
+                accrualWriteOff.setAssociatedTransactionId(waiveInterestTransaction.getId());
+                this.loanTransactionRepository.save(accrualWriteOff);
+            }
+        }
     }
 
     @Override
@@ -1238,16 +1277,156 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         return writeoffTransaction;
     }
     
-    private LoanTransaction createAccrualSuspenseReverseTransaction(final Loan loan, final LoanTransaction transaction) {
+    private Collection<LoanTransaction> createAccrualSuspenseReverseTransaction(final Loan loan, final LoanTransaction transaction) {
         MonetaryCurrency currency = loan.getCurrency();
-        LoanTransaction accrualSuspenseReverseTransaction = LoanTransaction.accrualSuspenseReverse(loan, loan.getOffice(), transaction
-                .getAmount(currency).minus(transaction.getPrincipalPortion(currency)), transaction.getInterestPortion(currency),
-                transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency), transaction
-                        .getTransactionDate());
-        accrualSuspenseReverseTransaction.copyChargesPaidByFrom(transaction);
-        loan.getLoanTransactions().add(accrualSuspenseReverseTransaction);
 
-        return accrualSuspenseReverseTransaction.getAmount(currency).isGreaterThanZero() ? accrualSuspenseReverseTransaction : null;
+        Collection<LoanTransaction> accrualTransactions = new ArrayList<>();
+        LoanTransaction accrualSuspenseReverseTransaction = null;
+        if (transaction.getInterestPortion(currency).isGreaterThanZero() || transaction.getFeeChargesPortion(currency).isGreaterThanZero()
+                || transaction.getPenaltyChargesPortion(currency).isGreaterThanZero()) {
+            LoanTransaction accrualSuspenceTransaction = LoanTransaction.accrual(loan, loan.getOffice(), Money.zero(currency),
+                    Money.zero(currency), Money.zero(currency), Money.zero(currency), transaction.getTransactionDate());
+
+            Collection<Integer> typeForAddReceivale = new ArrayList<>();
+            typeForAddReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE.getValue());
+
+            Collection<Integer> typeForSubtractReceivale = new ArrayList<>();
+            typeForSubtractReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
+            typeForSubtractReceivale.add(LoanTransactionType.ACCRUAL_WRITEOFF.getValue());
+            final boolean addToTransactions = false;
+            loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualSuspenceTransaction, addToTransactions);
+
+            if (accrualSuspenceTransaction.getInterestPortion(currency).isGreaterThanOrEqualTo(transaction.getInterestPortion(currency))
+                    && accrualSuspenceTransaction.getFeeChargesPortion(currency).isGreaterThanOrEqualTo(
+                            transaction.getFeeChargesPortion(currency))
+                    && accrualSuspenceTransaction.getPenaltyChargesPortion(currency).isGreaterThanOrEqualTo(
+                            transaction.getPenaltyChargesPortion(currency))) {
+                accrualSuspenseReverseTransaction = LoanTransaction.accrualSuspenseReverse(loan, loan.getOffice(),
+                        transaction.getAmount(currency).minus(transaction.getPrincipalPortion(currency)),
+                        transaction.getInterestPortion(currency), transaction.getFeeChargesPortion(currency),
+                        transaction.getPenaltyChargesPortion(currency), transaction.getTransactionDate());
+                accrualSuspenseReverseTransaction.copyChargesPaidByFrom(transaction);
+                if (accrualSuspenseReverseTransaction.getAmount(currency).isGreaterThanZero()) {
+                    loan.getLoanTransactions().add(accrualSuspenseReverseTransaction);
+                    accrualTransactions.add(accrualSuspenseReverseTransaction);
+                }
+            } else {
+                Money interestPortionForSuspense = transaction.getInterestPortion(currency);
+                Money interestPortionForAccrual = Money.zero(currency);
+                Money feePortionForSuspense = transaction.getFeeChargesPortion(currency);
+                Money feePortionForAccrual = Money.zero(currency);
+                Money penaltyPortionForSuspense = transaction.getPenaltyChargesPortion(currency);
+                Money penaltyPortionForAccrual = Money.zero(currency);
+
+                if (!accrualSuspenceTransaction.getInterestPortion(currency).isGreaterThanOrEqualTo(
+                        transaction.getInterestPortion(currency))) {
+                    interestPortionForSuspense = accrualSuspenceTransaction.getInterestPortion(currency);
+                    interestPortionForAccrual = transaction.getInterestPortion(currency).minus(
+                            accrualSuspenceTransaction.getInterestPortion(currency));
+                }
+
+                if (!accrualSuspenceTransaction.getFeeChargesPortion(currency).isGreaterThanOrEqualTo(
+                        transaction.getFeeChargesPortion(currency))) {
+                    feePortionForSuspense = accrualSuspenceTransaction.getFeeChargesPortion(currency);
+                    feePortionForAccrual = transaction.getFeeChargesPortion(currency).minus(
+                            accrualSuspenceTransaction.getFeeChargesPortion(currency));
+                }
+
+                if (!accrualSuspenceTransaction.getPenaltyChargesPortion(currency).isGreaterThanOrEqualTo(
+                        transaction.getPenaltyChargesPortion(currency))) {
+                    penaltyPortionForSuspense = accrualSuspenceTransaction.getPenaltyChargesPortion(currency);
+                    penaltyPortionForAccrual = transaction.getPenaltyChargesPortion(currency).minus(
+                            accrualSuspenceTransaction.getPenaltyChargesPortion(currency));
+                }
+
+                Map<String, LoanChargePaidBy> chargesPaidAccrualMap = new HashMap<>();
+                Map<String, LoanChargePaidBy> chargesPaidSuspenceMap = new HashMap<>();
+                if (transaction.getFeeChargesPortion(currency).isGreaterThanZero()
+                        || transaction.getPenaltyChargesPortion(currency).isGreaterThanZero()) {
+                    List<String> paidByList = new ArrayList<>();
+                    for (LoanChargePaidBy paidBy : transaction.getLoanChargesPaid()) {
+                        chargesPaidAccrualMap.put(loan.chargespaidByKey(paidBy), paidBy);
+                    }
+                    chargesPaidSuspenceMap.putAll(chargesPaidAccrualMap);
+
+                    for (LoanTransaction loanTransaction : loan.getLoanTransactions()) {
+                        if (loanTransaction.isAccrualSuspense()) {
+                            for (LoanChargePaidBy paidBy : loanTransaction.getLoanChargesPaid()) {
+                                paidByList.add(loan.chargespaidByKey(paidBy));
+                            }
+                        }
+                    }
+                    chargesPaidAccrualMap.keySet().removeAll(paidByList);
+                    chargesPaidSuspenceMap.keySet().retainAll(paidByList);
+                }
+
+                if (interestPortionForSuspense.isGreaterThanZero() || feePortionForSuspense.isGreaterThanZero()
+                        || penaltyPortionForSuspense.isGreaterThanZero()) {
+                    accrualSuspenseReverseTransaction = LoanTransaction.accrualSuspenseReverse(loan, loan.getOffice(),
+                            interestPortionForSuspense.plus(feePortionForSuspense).plus(penaltyPortionForSuspense),
+                            interestPortionForSuspense, feePortionForSuspense, penaltyPortionForSuspense, transaction.getTransactionDate());
+                    for (LoanChargePaidBy chargePaidByfrom : chargesPaidSuspenceMap.values()) {
+                        final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(accrualSuspenseReverseTransaction,
+                                chargePaidByfrom.getLoanCharge(), chargePaidByfrom.getAmount(), chargePaidByfrom.getInstallmentNumber());
+                        accrualSuspenseReverseTransaction.getLoanChargesPaid().add(loanChargePaidBy);
+                    }
+                    loan.getLoanTransactions().add(accrualSuspenseReverseTransaction);
+                    accrualTransactions.add(accrualSuspenseReverseTransaction);
+
+                }
+
+                if (interestPortionForAccrual.isGreaterThanZero() || feePortionForAccrual.isGreaterThanZero()
+                        || penaltyPortionForAccrual.isGreaterThanZero()) {
+                    Money feeDiff = Money.zero(currency);
+                    Money penalDiff = Money.zero(currency);
+                    LoanTransaction accrualTransaction = LoanTransaction.accrual(loan, loan.getOffice(),
+                            interestPortionForAccrual.plus(feePortionForAccrual).plus(penaltyPortionForAccrual), interestPortionForAccrual,
+                            feePortionForAccrual, penaltyPortionForAccrual, transaction.getTransactionDate());
+                    LoanTransaction accrualSuspenseTransaction = LoanTransaction.accrualSuspense(loan, loan.getOffice(), transaction
+                            .getAmount(currency).minus(transaction.getPrincipalPortion(currency)),
+                            transaction.getInterestPortion(currency), transaction.getFeeChargesPortion(currency), transaction
+                                    .getPenaltyChargesPortion(currency), transaction.getTransactionDate());
+                    for (LoanChargePaidBy chargePaidByfrom : chargesPaidAccrualMap.values()) {
+
+                        Money outstanding = chargePaidByfrom.getLoanCharge().getAmountOutstanding(currency,
+                                chargePaidByfrom.getInstallmentNumber());
+                        if (outstanding.isGreaterThanZero()) {
+                            if (chargePaidByfrom.getLoanCharge().isPenaltyCharge()) {
+                                penalDiff = penalDiff.plus(outstanding);
+                            } else {
+                                feeDiff = feeDiff.plus(outstanding);
+                            }
+                            final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(accrualTransaction,
+                                    chargePaidByfrom.getLoanCharge(), outstanding.plus(chargePaidByfrom.getAmount()).getAmount(),
+                                    chargePaidByfrom.getInstallmentNumber());
+                            accrualTransaction.getLoanChargesPaid().add(loanChargePaidBy);
+
+                            final LoanChargePaidBy loanChargePaidByForSuspense = new LoanChargePaidBy(accrualSuspenseTransaction,
+                                    chargePaidByfrom.getLoanCharge(), outstanding.getAmount(), chargePaidByfrom.getInstallmentNumber());
+                            accrualSuspenseTransaction.getLoanChargesPaid().add(loanChargePaidByForSuspense);
+
+                        } else {
+                            final LoanChargePaidBy loanChargePaidBy = new LoanChargePaidBy(accrualTransaction,
+                                    chargePaidByfrom.getLoanCharge(), chargePaidByfrom.getAmount(), chargePaidByfrom.getInstallmentNumber());
+                            accrualTransaction.getLoanChargesPaid().add(loanChargePaidBy);
+                        }
+                    }
+                    loan.getLoanTransactions().add(accrualTransaction);
+                    accrualTransactions.add(accrualTransaction);
+                    if (feeDiff.isGreaterThanZero() || penalDiff.isGreaterThanZero()) {
+                        accrualTransaction.updateChargesComponents(feeDiff, penalDiff);
+                        accrualSuspenseTransaction.updateChargesComponents(feeDiff, penalDiff);
+                        loan.getLoanTransactions().add(accrualSuspenseTransaction);
+                        accrualTransactions.add(accrualSuspenseTransaction);
+                    }
+                    loan.applyAccurals(getAppUserIfPresent());
+                }
+
+            }
+
+        }
+
+        return accrualTransactions;
     }
     
     private LoanTransaction createAccrualSuspenseTransaction(final Loan loan, final LoanTransaction transaction) {
@@ -1257,9 +1436,25 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                 transaction.getFeeChargesPortion(currency), transaction.getPenaltyChargesPortion(currency), transaction
                         .getTransactionDate());
         accrualSuspenseTransaction.copyChargesPaidByFrom(transaction);
-        loan.getLoanTransactions().add(accrualSuspenseTransaction);
+        if(accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero()){
+            loan.getLoanTransactions().add(accrualSuspenseTransaction);
+        }
 
         return accrualSuspenseTransaction.getAmount(currency).isGreaterThanZero() ? accrualSuspenseTransaction : null;
+    }
+    
+    private LoanTransaction createAccrualWriteOffTransaction(final Loan loan, final LoanTransaction transaction) {
+        MonetaryCurrency currency = loan.getCurrency();
+        LoanTransaction accrualWriteOff = LoanTransaction.accrualWriteOff(loan, loan.getOffice(), transaction.getInterestPortion(currency)
+                .plus(transaction.getFeeChargesPortion(currency)).plus(transaction.getPenaltyChargesPortion(currency)),
+                transaction.getInterestPortion(currency), transaction.getFeeChargesPortion(currency),
+                transaction.getPenaltyChargesPortion(currency), transaction.getTransactionDate());
+        accrualWriteOff.copyChargesPaidByFrom(transaction);
+        if (accrualWriteOff.getAmount(currency).isGreaterThanZero()) {
+            loan.getLoanTransactions().add(accrualWriteOff);
+        }
+
+        return accrualWriteOff.getAmount(currency).isGreaterThanZero() ? accrualWriteOff : null;
     }
 
    

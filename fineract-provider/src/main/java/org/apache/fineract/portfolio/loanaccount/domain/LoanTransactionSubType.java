@@ -25,7 +25,7 @@ public enum LoanTransactionSubType {
     REALIZATION_SUBSIDY(50, "loanTransactionSubType.realizationSubsidy"),
     PARTIAL_WRITEOFF(51, "loanTransactionSubType.partialWriteOff"),
     PRE_PAYMENT(52,"loanTransactionSubType.prepayment"),
-    REPAYMENT_FOR_NPA_LOAN(53,"loanTransactionSubType.repaymentForNpaLoan");
+    TRANSACTION_IN_NPA_STATE(53,"loanTransactionSubType.transactionInNpaLoan");
 
     private final Integer value;
     private final String code;
@@ -62,7 +62,7 @@ public enum LoanTransactionSubType {
                 transactionSubType = LoanTransactionSubType.PRE_PAYMENT;
             break;
             case 53:
-                transactionSubType = LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN;
+                transactionSubType = LoanTransactionSubType.TRANSACTION_IN_NPA_STATE;
             break;
             default:
                 transactionSubType = LoanTransactionSubType.INVALID;
@@ -75,7 +75,7 @@ public enum LoanTransactionSubType {
         return this.value.equals(LoanTransactionSubType.PRE_PAYMENT.getValue());
     }
     
-    public boolean isRepaymentForNpaLoan() {
-        return this.value.equals(LoanTransactionSubType.REPAYMENT_FOR_NPA_LOAN.getValue());
+    public boolean isTransactionInNpaState() {
+        return this.value.equals(LoanTransactionSubType.TRANSACTION_IN_NPA_STATE.getValue());
     }
 }

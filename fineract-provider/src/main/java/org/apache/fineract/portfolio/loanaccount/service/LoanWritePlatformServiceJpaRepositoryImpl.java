@@ -141,7 +141,6 @@ import org.apache.fineract.portfolio.loanaccount.domain.GroupLoanIndividualMonit
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanAccountDomainService;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
-import org.apache.fineract.portfolio.loanaccount.domain.LoanChargePaidBy;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanChargeRepository;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanDisbursementDetails;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanEvent;
@@ -1376,6 +1375,12 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 changes, existingTransactionIds, existingReversedTransactionIds, currentUser, scheduleGeneratorDTO);
         LoanTransaction writeoff = changedTransactionDetail.getNewTransactionMappings().remove(0L);
         this.loanTransactionRepository.save(writeoff);
+        LoanTransaction accrualwriteoff = changedTransactionDetail.getNewTransactionMappings().remove(-1L);
+        if(accrualwriteoff != null){
+            accrualwriteoff.setAssociatedTransactionId(writeoff.getId());
+            this.loanTransactionRepository.save(accrualwriteoff);
+        }
+        
         for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
             this.loanTransactionRepository.save(mapEntry.getValue());
             this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
@@ -1440,7 +1445,13 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final LoanTransaction possibleClosingTransaction = changedTransactionDetail.getNewTransactionMappings().remove(0L);
         if (possibleClosingTransaction != null) {
             this.loanTransactionRepository.save(possibleClosingTransaction);
+            LoanTransaction accrualwriteoff = changedTransactionDetail.getNewTransactionMappings().remove(-1L);
+            if (accrualwriteoff != null) {
+                accrualwriteoff.setAssociatedTransactionId(possibleClosingTransaction.getId());
+                this.loanTransactionRepository.save(accrualwriteoff);
+            }
         }
+       
         for (final Map.Entry<Long, LoanTransaction> mapEntry : changedTransactionDetail.getNewTransactionMappings().entrySet()) {
             this.loanTransactionRepository.save(mapEntry.getValue());
             this.accountTransfersWritePlatformService.updateLoanTransaction(mapEntry.getKey(), mapEntry.getValue());
@@ -1866,6 +1877,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
                 currentUser);
 
         this.loanTransactionRepository.save(waiveTransaction);
+        this.loanAccountDomainService.handleWaiverForAccrualSuspense(loan, waiveTransaction);
         saveLoanWithDataIntegrityViolationChecks(loan);
 
         postJournalEntries(loan, existingTransactionIds, existingReversedTransactionIds);
@@ -3419,8 +3431,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
         LoanTransaction accrualTransaction = LoanTransaction.accrualSuspense(loan, loan.getOffice(), Money.zero(currency),
                 Money.zero(currency), Money.zero(currency), Money.zero(currency));
-
-        loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction);
+        final boolean addToTransactions = true;
+        loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction, addToTransactions);
 
         if (accrualTransaction != null && accrualTransaction.getAmount(currency).isGreaterThanZero()) {
             this.loanTransactionRepository.save(accrualTransaction);
@@ -3440,6 +3452,7 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
 
         Collection<Integer> typeForSubtractReceivale = new ArrayList<>();
         typeForSubtractReceivale.add(LoanTransactionType.ACCRUAL_SUSPENSE_REVERSE.getValue());
+        typeForSubtractReceivale.add(LoanTransactionType.ACCRUAL_WRITEOFF.getValue());
 
         final boolean npaStatus = false;
         final Loan loan = this.loanAssembler.assembleFrom(loanId);
@@ -3449,8 +3462,8 @@ public class LoanWritePlatformServiceJpaRepositoryImpl implements LoanWritePlatf
         final List<Long> existingReversedTransactionIds = new ArrayList<>(loan.findExistingReversedTransactionIds());
         LoanTransaction accrualTransaction = LoanTransaction.accrualSuspenseReverse(loan, loan.getOffice(), Money.zero(currency),
                 Money.zero(currency), Money.zero(currency), Money.zero(currency), DateUtils.getLocalDateOfTenant());
-
-        loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction);
+        final boolean addToTransactions = true;
+        loan.updateTransactionDetails(typeForAddReceivale, typeForSubtractReceivale, accrualTransaction, addToTransactions);
 
         if (accrualTransaction != null && accrualTransaction.getAmount(currency).isGreaterThanZero()) {
             this.loanTransactionRepository.save(accrualTransaction);
