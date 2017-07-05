@@ -55,7 +55,7 @@ public class ClientChargesTest {
         Assert.assertNotNull(chargeId);
 
         // creates client with activation date
-        final Integer clientId = ClientHelper.createClient(this.requestSpec, this.responseSpec, "01 November 2012");
+        final Integer clientId = ClientHelper.createClient(this.requestSpec, this.responseSpec, "29 October 2011");
         Assert.assertNotNull(clientId);
 
         /**
@@ -126,7 +126,7 @@ public class ClientChargesTest {
          */
 
         final String responseId_activationDate_failure = ClientHelper.payChargesForClients(this.requestSpec, responseSpecFailure, clientId,
-                clientChargeId, ClientHelper.getPayChargeJSON("30 October 2011", "20"));
+                clientChargeId, ClientHelper.getPayChargeJSON("27 October 2011", "20"));
         Assert.assertNull(responseId_activationDate_failure);
         /**
          * pay client charge more than outstanding amount amount and ensured its
