@@ -1,5 +1,7 @@
 package org.apache.fineract.infrastructure.core.data;
 
+import java.math.BigDecimal;
+
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -12,10 +14,10 @@ import com.sun.jersey.multipart.FormDataBodyPart;
 public class GeoTag {
 
     @JsonProperty("longitude")
-    private Long longitude ;
+    private BigDecimal longitude ;
     
     @JsonProperty("latitude")
-    private Long latitude ;
+    private BigDecimal latitude ;
 
     public GeoTag() {
         
@@ -33,16 +35,16 @@ public class GeoTag {
         Gson gson = builder.create();
         return gson.fromJson(geoTag, GeoTag.class) ;
     }
-    public GeoTag(Long longitude, Long latitude) {
+    public GeoTag(BigDecimal longitude, BigDecimal latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
     }
 
-    public Long getLongitude() {
+    public BigDecimal getLongitude() {
         return this.longitude;
     }
 
-    public Long getLatitude() {
+    public BigDecimal getLatitude() {
         return this.latitude;
     }
     
