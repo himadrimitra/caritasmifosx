@@ -81,7 +81,7 @@ public class CreditBureauLoanProductMappingReadPlatformServiceImpl implements Cr
         try {
             this.context.authenticatedUser();
             final CreditbureauLoanproductDataMapper rm = new CreditbureauLoanproductDataMapper();
-            final String sql = "select " + rm.schema() + " WHERE pl.id = ? order by cblp.id";
+            final String sql = "select " + rm.schema() + " WHERE pl.id = ? and cblp.is_active = true order by cblp.id";
             return this.jdbcTemplate.queryForObject(sql, rm, new Object[] { productId });
         } catch (final EmptyResultDataAccessException e) {}
         return null;
