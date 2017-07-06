@@ -39,7 +39,8 @@ public interface LoanRepaymentScheduleTransactionProcessor {
             Set<LoanCharge> charges);
 
     ChangedTransactionDetail handleTransaction(LocalDate disbursementDate, List<LoanTransaction> repaymentsOrWaivers,
-            MonetaryCurrency currency, List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Set<LoanCharge> charges, List<LoanDisbursementDetails> disbursementDetails);
+            MonetaryCurrency currency, List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Set<LoanCharge> charges,
+            List<LoanDisbursementDetails> disbursementDetails, boolean isPeriodicAccrualEnabled);
 
     void handleWriteOff(LoanTransaction loanTransaction, MonetaryCurrency loanCurrency,
             List<LoanRepaymentScheduleInstallment> repaymentScheduleInstallments, Money[] receivableIncomes, final Set<LoanCharge> charges,

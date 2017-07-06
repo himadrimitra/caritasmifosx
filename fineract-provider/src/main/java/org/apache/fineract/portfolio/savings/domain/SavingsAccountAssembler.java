@@ -443,14 +443,14 @@ public class SavingsAccountAssembler {
                     PaymentDetail detail = paymentDetail;
                     if(!(transactionAmount == null)&&transactionAmount.intValue() != 0){
                     final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
-                            transactionDate, transactionAmount, detail, new Date(), savingsId, this.context.getAuthenticatedUserIfPresent(),true);
+                            transactionDate, transactionAmount, detail, DateUtils.getLocalDateTimeOfTenant().toDate(), savingsId, this.context.getAuthenticatedUserIfPresent(),true);
                     savingsAccountTransactions.add(savingsAccountTransactionDTO);
                     }
                     final BigDecimal withdrawAmount = this.fromApiJsonHelper.extractBigDecimalNamed(CollectionSheetConstants.withdrawAmountParamName,
                             savingsTransactionElement, locale);
                     if(!(withdrawAmount == null)&&withdrawAmount.intValue() != 0){
                         final SavingsAccountTransactionDTO savingsAccountTransactionDTO = new SavingsAccountTransactionDTO(formatter,
-                                transactionDate, withdrawAmount, detail, new Date(), savingsId, this.context.getAuthenticatedUserIfPresent(),false);
+                                transactionDate, withdrawAmount, detail, DateUtils.getLocalDateTimeOfTenant().toDate(), savingsId, this.context.getAuthenticatedUserIfPresent(),false);
                         savingsAccountTransactions.add(savingsAccountTransactionDTO);
                         }
                     if(!savingsAccountTransactions.isEmpty()){

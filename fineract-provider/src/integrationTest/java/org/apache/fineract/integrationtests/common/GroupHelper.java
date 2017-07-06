@@ -133,12 +133,12 @@ public class GroupHelper {
 
     public static Object assignStaff(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final String groupId,final Long staffId){
         final String GROUP_ASSIGN_STAFF_URL = "/fineract-provider/api/v1/groups/" + groupId + "?" + Utils.TENANT_IDENTIFIER + "&command=assignStaff";
-        System.out.println("---------------------------------DELETE GROUP---------------------------------------------");
+        System.out.println("---------------------------------ASSIGN STAFF TO GROUP---------------------------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, GROUP_ASSIGN_STAFF_URL,assignStaffAsJSON(staffId),"changes");
     }
     public static Object assignStaffInheritStaffForClientAccounts(final RequestSpecification requestSpec, final ResponseSpecification responseSpec, final String groupId,final String staffId){
         final String GROUP_ASSIGN_STAFF_URL = "/fineract-provider/api/v1/groups/" + groupId + "?" + Utils.TENANT_IDENTIFIER + "&command=assignStaff";
-        System.out.println("---------------------------------DELETE GROUP---------------------------------------------");
+        System.out.println("---------------------------------ASSIGN INHERIT STAFF---------------------------------------------");
         return Utils.performServerPost(requestSpec, responseSpec, GROUP_ASSIGN_STAFF_URL,assignStaffAndInheritStaffForClientAccountsAsJSON(staffId),"changes");
     }
 

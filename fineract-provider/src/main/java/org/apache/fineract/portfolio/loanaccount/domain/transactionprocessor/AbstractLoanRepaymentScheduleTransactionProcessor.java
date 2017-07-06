@@ -77,7 +77,8 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
     @Override
     public ChangedTransactionDetail handleTransaction(final LocalDate disbursementDate,
             final List<LoanTransaction> transactionsPostDisbursement, final MonetaryCurrency currency,
-            final List<LoanRepaymentScheduleInstallment> installments, final Set<LoanCharge> charges, List<LoanDisbursementDetails> disbursementDetails) {
+            final List<LoanRepaymentScheduleInstallment> installments, final Set<LoanCharge> charges,
+            List<LoanDisbursementDetails> disbursementDetails, boolean isPeriodicAccrualEnabled) {
 
         final List<LoanTransaction> changedTransactions = new ArrayList<>();
         final List<LoanTransaction> accrualTransactions = new ArrayList<>();
@@ -213,26 +214,10 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                                 newLoanTransaction.getLoanTransactionToRepaymentScheduleMappings());
                         changedTransactions.add(loanTransaction);
                     } else {
-                        if (newLoanTransaction.isInterestWaiver()) {
-                            Money[] receivableIncomes = getReceivableIncome(changedTransactions, newLoanTransaction.getTransactionDate(),
-                                    currency);
-                            Money waivedAmount = newLoanTransaction.getAmount(currency);
-                            if (receivableIncomes[0].isLessThan(waivedAmount)) {
-                                newLoanTransaction.updateComponentsAndTotal(waivedAmount.zero(), receivableIncomes[0].minus(waivedAmount),
-                                        waivedAmount.zero(), waivedAmount.zero(), waivedAmount.minus(receivableIncomes[0]));
-                            }
-                        }
-                        if (!LoanTransaction.transactionAmountsMatch(currency, loanTransaction, newLoanTransaction)) {
-                            loanTransaction.reverse();
-                            loanTransaction.updateExternalId(null);
-                            changedTransactionDetail.getNewTransactionMappings().put(loanTransaction.getId(), newLoanTransaction);
-                            changedTransactions.add(newLoanTransaction);
-                        } else {
-                            loanTransaction.updateLoanTransactionToRepaymentScheduleMappings(newLoanTransaction
-                                    .getLoanTransactionToRepaymentScheduleMappings());
-                            changedTransactions.add(loanTransaction);
-                        }
-
+                        loanTransaction.reverse();
+                        loanTransaction.updateExternalId(null);
+                        changedTransactionDetail.getNewTransactionMappings().put(loanTransaction.getId(), newLoanTransaction);
+                        changedTransactions.add(newLoanTransaction);
                     }
                 }
 

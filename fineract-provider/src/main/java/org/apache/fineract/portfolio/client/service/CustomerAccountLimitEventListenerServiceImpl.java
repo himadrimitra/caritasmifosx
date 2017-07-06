@@ -4,13 +4,12 @@ import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConst
 import static org.apache.fineract.portfolio.account.api.AccountTransfersApiConstants.transferDateParamName;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
@@ -65,19 +64,22 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
     }
 
     @Override
-    public void validateLoanDisbursalAmountWithClientCurrentOutstandingAmountLimit(final Long clientId, final BigDecimal principalAmount) {
+    public void validateLoanDisbursalAmountWithClientCurrentOutstandingAmountLimit(final Loan loan) {
+        final Long clientId = loan.getClientId();
         final BigDecimal totalLoanOutstandingAmountLimit = getTotalLoanOutstandingAmountLimit(clientId);
         if (totalLoanOutstandingAmountLimit != null) {
-            final String sql = "select SUM(ifnull(l.principal_outstanding_derived, 0)) as totalCurrentLoansOutsatndingAmountLimit from m_loan l join m_client c on c.id = l.client_id where l.loan_status_id = 300 and l.client_id = ? ";
-            BigDecimal totalCurrentLoansOutsatndingAmountLimit = queryExecuteAndReturnBigDecimalValue(sql, clientId);
-            totalCurrentLoansOutsatndingAmountLimit = MathUtility.add(totalCurrentLoansOutsatndingAmountLimit, principalAmount);
+            final StringBuilder sb = new StringBuilder(100);
+            sb.append("select SUM(ifnull(l.total_outstanding_derived, 0)) as totalCurrentLoansOutsatndingAmountLimit ");
+            sb.append("from m_loan l join m_client c on c.id = l.client_id where ").append("l.id != ").append(loan.getId());
+            sb.append(" and l.loan_status_id = 300 and l.client_id = ? ");
+            BigDecimal totalCurrentLoansOutsatndingAmountLimit = queryExecuteAndReturnBigDecimalValue(sb.toString(), clientId);
+            totalCurrentLoansOutsatndingAmountLimit = MathUtility.add(totalCurrentLoansOutsatndingAmountLimit, loan.getPrincipalAmount());
             if (MathUtility.isLesser(totalLoanOutstandingAmountLimit, totalCurrentLoansOutsatndingAmountLimit)) {
                 final String globalisationMessageCode = "error.msg.all.loans.outstanding.amount.should.not.be.greater.than.client.total.loan.outstanding.amount.limit";
-                final String defaultUserMessage = "All loans outstanding amount "
-                        + totalCurrentLoansOutsatndingAmountLimit.add(principalAmount)
+                final String defaultUserMessage = "All loans outstanding amount " + totalCurrentLoansOutsatndingAmountLimit
                         + " should not be greater than client total loan outstanding amount " + totalLoanOutstandingAmountLimit + " limit";
                 throwGeneralPlatformDomainRuleException(globalisationMessageCode, defaultUserMessage, totalLoanOutstandingAmountLimit,
-                        totalCurrentLoansOutsatndingAmountLimit.add(principalAmount));
+                        totalCurrentLoansOutsatndingAmountLimit);
             }
         }
     }
@@ -90,16 +92,21 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
     @Override
     public void validateSavingsAccountWithClientDailyWithdrawalAmountLimit(final SavingsAccount savingsAccount,
             final SavingsAccountTransaction withdrawal) {
-        
         final BigDecimal clientTotalDailyWithdrawalAmountLimit = getClientTotalDailyWithdrawalAmountLimit(savingsAccount.clientId());
         if (clientTotalDailyWithdrawalAmountLimit != null) {
-            BigDecimal totalAmountWithdrawn = BigDecimal.ZERO;
-            for (final SavingsAccountTransaction transaction : savingsAccount.getTransactions()) {
-                if (!transaction.isReversed() && transaction.isWithdrawal()
-                        && transaction.getTransactionLocalDate().isEqual(withdrawal.getTransactionLocalDate())) {
-                    totalAmountWithdrawn = totalAmountWithdrawn.add(transaction.getAmount());
-                }
-            }
+
+            final LocalDate transactionDate = withdrawal.getTransactionLocalDate();
+
+            final StringBuilder sb = new StringBuilder(500);
+            sb.append("SELECT SUM(IFNULL(sat.amount, 0)) as totalAmountWithdrawn ");
+            sb.append("FROM m_savings_account sa ");
+            sb.append("JOIN m_savings_account_transaction sat ON sat.savings_account_id = sa.id AND sat.transaction_type_enum = ").append(
+                    SavingsAccountTransactionType.WITHDRAWAL.getValue());
+            sb.append(" AND sat.is_reversed = 0 AND sat.transaction_date = '").append(transactionDate.toString()).append("' ");
+            sb.append("LEFT JOIN m_account_transfer_transaction att ON att.from_savings_transaction_id = sat.id ");
+            sb.append("WHERE sa.client_id = ? AND sa.status_enum = 300 AND att.id IS NULL ");
+
+            final BigDecimal totalAmountWithdrawn = queryExecuteAndReturnBigDecimalValue(sb.toString(), savingsAccount.clientId());
             if (MathUtility.isLesser(clientTotalDailyWithdrawalAmountLimit, totalAmountWithdrawn)) {
                 final String globalisationMessageCode = "error.msg.client.total.daily.withdrawal.amount.limit";
                 final String defaultUserMessage = "Client total daily withdrawal amount limit " + clientTotalDailyWithdrawalAmountLimit;
@@ -107,7 +114,6 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
                         clientTotalDailyWithdrawalAmountLimit, withdrawal.getAmount());
             }
         }
-
         validateSavingsAccountWithClientTotalOverdraftAmountLimit(savingsAccount);
     }
 
@@ -120,26 +126,21 @@ public class CustomerAccountLimitEventListenerServiceImpl implements CustomerAcc
     public void validateSavingsAccountWithClientDailyTransferAmountLimit(final SavingsAccount savingsAccount, final JsonCommand jsonCommand) {
         final BigDecimal clientTotalDailyTransferAmountLimit = getClientTotalDailyTransferAmountLimit(savingsAccount.clientId());
         if (clientTotalDailyTransferAmountLimit != null) {
-            BigDecimal totalAmountTransfered = BigDecimal.ZERO;
+
             final LocalDate transactionDate = jsonCommand.localDateValueOfParameterNamed(transferDateParamName);
             final BigDecimal transactionAmount = jsonCommand.bigDecimalValueOfParameterNamed(transferAmountParamName);
-            final StringBuilder sqlBuilder = new StringBuilder(100);
-            sqlBuilder.append("select st.amount as amount from m_savings_account_transaction st ");
-            sqlBuilder.append("join m_account_transfer_transaction att on att.from_savings_transaction_id = st.id ");
-            sqlBuilder.append("where st.savings_account_id = '").append(savingsAccount.getId()).append("'");
-            sqlBuilder.append("and st.transaction_date = '").append(transactionDate.toString()).append("'");
-            sqlBuilder.append("and st.transaction_type_enum = '").append(SavingsAccountTransactionType.WITHDRAWAL.getValue()).append("'");
-            sqlBuilder.append("and st.is_reversed = 0 ");
-            final List<Map<String, Object>> listOfMapForSavingAccountTransactionDatas = this.jdbcTemplate.queryForList(sqlBuilder
-                    .toString());
-            if (listOfMapForSavingAccountTransactionDatas != null && listOfMapForSavingAccountTransactionDatas.size() > 0) {
-                for (final Map<String, Object> mapData : listOfMapForSavingAccountTransactionDatas) {
-                    final BigDecimal amount = (BigDecimal) mapData.get("amount");
-                    totalAmountTransfered = totalAmountTransfered.add(amount);
-                }
-            } else {
-                totalAmountTransfered = totalAmountTransfered.add(transactionAmount);
-            }
+
+            final StringBuilder sb = new StringBuilder(500);
+            sb.append("SELECT SUM(IFNULL(sat.amount, 0)) as totalAmountTransfered ");
+            sb.append("FROM m_savings_account sa ");
+            sb.append("JOIN m_savings_account_transaction sat ON sat.savings_account_id = sa.id AND sat.transaction_type_enum = ").append(
+                    SavingsAccountTransactionType.WITHDRAWAL.getValue());
+            sb.append(" AND sat.is_reversed = 0 AND sat.transaction_date = '").append(transactionDate.toString()).append("' ");
+            sb.append("JOIN m_account_transfer_transaction att ON att.from_savings_transaction_id = sat.id ");
+            sb.append("WHERE sa.client_id = ? AND sa.status_enum = 300 ");
+
+            final BigDecimal totalAmountTransfered = queryExecuteAndReturnBigDecimalValue(sb.toString(), savingsAccount.clientId());
+
             if (clientTotalDailyTransferAmountLimit.compareTo(totalAmountTransfered) == -1) {
                 final String globalisationMessageCode = "error.msg.client.total.daily.transfer.amount.limit";
                 final String defaultUserMessage = "Client total daily transfer amount limit " + clientTotalDailyTransferAmountLimit;

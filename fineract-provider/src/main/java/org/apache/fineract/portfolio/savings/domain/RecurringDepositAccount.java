@@ -524,7 +524,7 @@ public class RecurringDepositAccount extends SavingsAccount {
         final Money minRequiredOpeningBalance = Money.of(this.currency, this.minRequiredOpeningBalance);
         if (minRequiredOpeningBalance.isGreaterThanZero()) {
             final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, getActivationLocalDate(),
-                    minRequiredOpeningBalance.getAmount(), null, new Date(), user);
+                    minRequiredOpeningBalance.getAmount(), null, DateUtils.getLocalDateTimeOfTenant().toDate(), user);
             deposit(transactionDTO);
 
             // update existing transactions so derived balance fields are

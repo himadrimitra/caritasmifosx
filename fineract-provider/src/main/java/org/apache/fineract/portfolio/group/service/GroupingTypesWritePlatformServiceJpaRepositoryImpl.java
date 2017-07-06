@@ -556,32 +556,7 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 				List<Group> groupMembers = groupForUpdate.getGroupMembers();
 				if (groupMembers != null && !groupMembers.isEmpty()) {
 					for (Group group : groupMembers) {
-						group.updateStaff(newStaff);
-						List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
-						if (groupLoans != null && !groupLoans.isEmpty()) {
-							for (Loan loan : groupLoans) {
-								loan.updateLoanOfficer(newStaff);
-							}
-						}
-						Set<Client> clientMembers = group.getActiveClientMembers();
-						if (clientMembers != null && !clientMembers.isEmpty()) {
-							for (Client client : clientMembers) {
-								client.updateStaff(newStaff);
-								List<Loan> clientLoans = this.loanRepositoryWrapper.findLoanByClientId(client.getId());
-								if (clientLoans != null && !clientLoans.isEmpty()) {
-									for (Loan loan : clientLoans) {
-										loan.updateLoanOfficer(newStaff);
-									}
-								}
-								List<LoanApplicationReference> clientLoanApplicationReference = 
-										loanApplicationReferenceRepository.findLoanByClientId(client.getId());
-								if(clientLoanApplicationReference != null && !clientLoanApplicationReference.isEmpty()){
-									for(LoanApplicationReference loanApplicationReference : clientLoanApplicationReference){
-										loanApplicationReference.updateLoanOfficer(newStaff);
-									}
-								}
-							}
-						}
+						updateGroupAndGroupMembersStaff(newStaff, group);
 					}
 				}
 			}
@@ -660,6 +635,8 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
 
         Staff staff = null;
         final Long staffId = command.longValueOfParameterNamed(GroupingTypesApiConstants.staffIdParamName);
+        final boolean inheritStaffForClientAccounts = command
+                .booleanPrimitiveValueOfParameterNamed(GroupingTypesApiConstants.inheritStaffForClientAccounts);
         final boolean isLoanOfficerToCenterHierarchyEnabled  =  configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() ;
 		if (isLoanOfficerToCenterHierarchyEnabled && groupForUpdate.getParent() != null) {
 			throw new UpdateStaffHierarchyException(staffId);
@@ -667,39 +644,15 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
         staff = this.staffRepository.findByOfficeHierarchyWithNotFoundDetection(staffId, groupForUpdate.getOffice().getHierarchy());
         groupForUpdate.updateStaff(staff);
 
-        if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled()) {
-			List<Group> groupMembers = groupForUpdate.getGroupMembers();
-			if (groupMembers != null && !groupMembers.isEmpty()) {
-				for (Group group : groupMembers) {
-					group.updateStaff(staff);
-					List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
-					if (groupLoans != null && !groupLoans.isEmpty()) {
-						for (Loan loan : groupLoans) {
-							loan.updateLoanOfficer(staff);
-						}
-					}
-					Set<Client> clientMembers = group.getActiveClientMembers();
-					if (clientMembers != null && !clientMembers.isEmpty()) {
-						for (Client client : clientMembers) {
-							client.updateStaff(staff);
-							List<Loan> clientLoans = this.loanRepositoryWrapper.findLoanByClientId(client.getId());
-							if (clientLoans != null && !clientLoans.isEmpty()) {
-								for (Loan loan : clientLoans) {
-									loan.updateLoanOfficer(staff);
-								}
-							}
-							List<LoanApplicationReference> clientLoanApplicationReference = 
-									loanApplicationReferenceRepository.findLoanByClientId(client.getId());
-							if(clientLoanApplicationReference != null && !clientLoanApplicationReference.isEmpty()){
-								for(LoanApplicationReference loanApplicationReference : clientLoanApplicationReference){
-									loanApplicationReference.updateLoanOfficer(staff);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+        if (configurationDomainService.isLoanOfficerToCenterHierarchyEnabled() || inheritStaffForClientAccounts) {
+            updateGroupAndGroupMembersStaff(staff, groupForUpdate);
+            List<Group> groupMembers = groupForUpdate.getGroupMembers();
+            if (groupMembers != null && !groupMembers.isEmpty()) {
+                for (Group group : groupMembers) {
+                    updateGroupAndGroupMembersStaff(staff, group);
+                }
+            }
+        }
         this.groupRepository.saveAndFlush(groupForUpdate);
 
         if (isLoanOfficerToCenterHierarchyEnabled && staff != null) {
@@ -714,6 +667,35 @@ public class GroupingTypesWritePlatformServiceJpaRepositoryImpl implements Group
                 .withGroupId(groupId) //
                 .with(actualChanges) //
                 .build();
+    }
+
+    private void updateGroupAndGroupMembersStaff(Staff staff, Group group) {
+        group.updateStaff(staff);
+        List<Loan> groupLoans = this.loanRepository.findByGroupId(group.getId());
+        if (groupLoans != null && !groupLoans.isEmpty()) {
+            for (Loan loan : groupLoans) {
+                loan.updateLoanOfficer(staff);
+            }
+        }
+        Set<Client> clientMembers = group.getActiveClientMembers();
+        if (clientMembers != null && !clientMembers.isEmpty()) {
+            for (Client client : clientMembers) {
+                client.updateStaff(staff);
+                List<Loan> clientLoans = this.loanRepositoryWrapper.findLoanByClientId(client.getId());
+                if (clientLoans != null && !clientLoans.isEmpty()) {
+                    for (Loan loan : clientLoans) {
+                        loan.updateLoanOfficer(staff);
+                    }
+                }
+                List<LoanApplicationReference> clientLoanApplicationReference = loanApplicationReferenceRepository
+                        .findLoanByClientId(client.getId());
+                if (clientLoanApplicationReference != null && !clientLoanApplicationReference.isEmpty()) {
+                    for (LoanApplicationReference loanApplicationReference : clientLoanApplicationReference) {
+                        loanApplicationReference.updateLoanOfficer(staff);
+                    }
+                }
+            }
+        }
     }
 
     @Transactional

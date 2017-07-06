@@ -36,6 +36,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.paymentdetail.domain.PaymentDetail;
+import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccount;
 import org.apache.fineract.portfolio.savings.domain.SavingsAccountTransaction;
@@ -122,7 +124,7 @@ public class SavingsAccountTransactionDataValidator {
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
 
-    public void validateClosing(final JsonCommand command) {
+    public void validateClosing(final JsonCommand command, final SavingsAccount account) {
         final String json = command.json();
 
         if (StringUtils.isBlank(json)) { throw new InvalidJsonException(); }
@@ -144,7 +146,12 @@ public class SavingsAccountTransactionDataValidator {
             final Boolean withdrawBalance = this.fromApiJsonHelper.extractBooleanNamed(withdrawBalanceParamName, element);
             baseDataValidator.reset().parameter(withdrawBalanceParamName).value(withdrawBalance).isOneOfTheseValues(true, false);
         }
-
+        
+        if (MathUtility.isGreaterThanZero(account.getSavingsHoldAmount())) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("amount.is.on.hold.release.the.amount.to.continue",
+                    account.getId());
+        }
+                      
         validatePaymentTypeDetails(baseDataValidator, element);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
@@ -193,10 +200,9 @@ public class SavingsAccountTransactionDataValidator {
             baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
                     .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
         }
-        account.holdFunds(amount);
+        account.holdAmount(amount);
         if (MathUtility.isLesser(account.getWithdrawableBalance(), BigDecimal.ZERO)){
             baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("insufficient balance", account.getId());
-            baseDataValidator.failWithCode("validation.msg.savingsaccount.insufficient balance", "Insufficient balance");
         }
         LocalDate lastTransactionDate = account.retrieveLastTransactionDate();
         // compare two dates now
@@ -207,26 +213,33 @@ public class SavingsAccountTransactionDataValidator {
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
         final PaymentDetail paymentDetails = null;
-        Date createdDate = DateUtils.getDateOfTenant();
+        Date createdDate = DateUtils.getLocalDateTimeOfTenant().toDate();
+        
         SavingsAccountTransaction transaction = SavingsAccountTransaction.holdAmount(account, account.office(), paymentDetails,
                 transactionDate, Money.of(account.getCurrency(), amount), createdDate, createdUser);
         return transaction;
     }
 
-    public SavingsAccountTransaction validateReleaseAmountAndAssembleForm(final SavingsAccountTransaction holdTransaction, final AppUser createdUser) {
+    public SavingsAccountTransaction validateReleaseAmountAndAssembleForm(final SavingsAccountTransaction holdTransaction,
+            final AppUser createdUser) {
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
 
+        boolean isActive = holdTransaction.getSavingsAccount().isActive();
+        if (!isActive) {
+            baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
+                    .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
+        }
         if (holdTransaction == null) {
             baseDataValidator.failWithCode("validation.msg.validation.errors.exist", "Transaction not found");
         } else if (holdTransaction.getReleaseIdOfHoldAmountTransaction() != null) {
-            baseDataValidator.parameter(SavingsApiConstants.amountParamName).value(holdTransaction.getAmount()).failWithCode("validation.msg.amount.is.not.on.hold",
-                    "Transaction amount is not on hold");
+            baseDataValidator.parameter(SavingsApiConstants.amountParamName).value(holdTransaction.getAmount())
+                    .failWithCode("validation.msg.amount.is.not.on.hold", "Transaction amount is not on hold");
         }
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
-        Date createdDate = DateUtils.getDateOfTenant();
+        Date createdDate = DateUtils.getLocalDateTimeOfTenant().toDate();
         LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
         SavingsAccountTransaction transaction = SavingsAccountTransaction.releaseAmount(holdTransaction, transactionDate, createdDate,
                 createdUser);

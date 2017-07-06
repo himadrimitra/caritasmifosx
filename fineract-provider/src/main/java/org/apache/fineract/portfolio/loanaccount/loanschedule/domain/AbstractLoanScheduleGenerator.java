@@ -3067,7 +3067,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                 loanRepaymentScheduleTransactionProcessor, onDate, calculateTill);
 
         loanRepaymentScheduleTransactionProcessor.handleTransaction(loanApplicationTerms.getExpectedDisbursementDate(), loanTransactions,
-                currency, loanScheduleDTO.getInstallments(), loan.chargesCopy(), loan.getDisbursementDetails());
+                currency, loanScheduleDTO.getInstallments(), loan.chargesCopy(), loan.getDisbursementDetails(),
+                loan.isPeriodicAccrualAccountingEnabledOnLoanProduct());
         Money feeCharges = Money.zero(currency);
         Money penaltyCharges = Money.zero(currency);
         Money totalPrincipal = Money.zero(currency);
