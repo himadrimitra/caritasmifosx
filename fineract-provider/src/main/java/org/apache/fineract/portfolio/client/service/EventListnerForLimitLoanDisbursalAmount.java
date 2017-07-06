@@ -34,9 +34,8 @@ public class EventListnerForLimitLoanDisbursalAmount implements BusinessEventLis
             if (loan != null) {
                 this.customerAccountLimitEventListenerService.validateLoanDisbursalAmountWithClientDisbursmentAmountLimit(
                         loan.getClientId(), loan.getPrincipalAmount());
-                
-                this.customerAccountLimitEventListenerService.validateLoanDisbursalAmountWithClientCurrentOutstandingAmountLimit(
-                        loan.getClientId(), loan.getPrincipalAmount());
+
+                this.customerAccountLimitEventListenerService.validateLoanDisbursalAmountWithClientCurrentOutstandingAmountLimit(loan);
             }
         }
 
