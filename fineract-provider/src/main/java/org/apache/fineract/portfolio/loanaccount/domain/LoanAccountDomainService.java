@@ -107,4 +107,6 @@ public interface LoanAccountDomainService {
             String paymentDetailAccountNumber, String paymentDetailChequeNumber, String routingCode, String paymentDetailBankNumber,
             String receiptNumber, String note);
 
+    void handleWaiverForAccrualSuspense(Loan loan, LoanTransaction waiveInterestTransaction);
+
 }
