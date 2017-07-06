@@ -2698,7 +2698,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
 
         final Loan loan = this.loanRepository.findOneWithNotFoundDetection(loanId);
         if (loan == null) { throw new LoanNotFoundException(loanId); }
-        loan.validateForForeclosure(transactionDate);
+        boolean validateForFutureDate = false;
+        loan.validateForForeclosure(transactionDate, validateForFutureDate);
         final MonetaryCurrency currency = loan.getCurrency();
         final ApplicationCurrency applicationCurrency = this.applicationCurrencyRepository.findOneWithNotFoundDetection(currency);
 
