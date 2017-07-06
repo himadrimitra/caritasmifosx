@@ -636,8 +636,11 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
 
     public boolean isDebit() {
         return isWithdrawal() || isWithdrawalFeeAndNotReversed() || isAnnualFeeAndNotReversed() || isPayCharge()
-                || isOverdraftInterestAndNotReversed() || isWithHoldTaxAndNotReversed()
-                || (isAmountOnHold() && getReleaseIdOfHoldAmountTransaction() == null);
+                || isOverdraftInterestAndNotReversed() || isWithHoldTaxAndNotReversed();
+    }
+    
+    public boolean isAmountOnHoldNotReleased() {
+        return (isAmountOnHold() && getReleaseIdOfHoldAmountTransaction() == null);
     }
 
     public boolean isWithHoldTaxAndNotReversed() {
