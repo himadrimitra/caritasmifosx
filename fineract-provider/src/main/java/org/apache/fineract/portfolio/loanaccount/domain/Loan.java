@@ -7602,7 +7602,8 @@ public class Loan extends AbstractPersistable<Long> {
 
         LoanEvent event = LoanEvent.LOAN_FORECLOSURE;
         validateAccountStatus(event);
-        validateForForeclosure(repaymentTransaction.getTransactionDate());
+        boolean validateForFutureDate = true;
+        validateForForeclosure(repaymentTransaction.getTransactionDate(), validateForFutureDate);
         this.loanSubStatus = LoanSubStatus.FORECLOSED.getValue();
         applyAccurals(appUser);
         return handleRepaymentOrRecoveryOrWaiverTransaction(repaymentTransaction, loanLifecycleStateMachine, null, scheduleGeneratorDTO,
@@ -7634,24 +7635,24 @@ public class Loan extends AbstractPersistable<Long> {
         return accredAmountAfterDate;
     }
 
-    public void validateForForeclosure(final LocalDate transactionDate) {
+    public void validateForForeclosure(final LocalDate transactionDate, final boolean validateForFutureDate) {
 
         if (isInterestRecalculationEnabled()) {
             final String defaultUserMessage = "The loan with interest recalculation enabled cannot be foreclosed.";
-            throw new LoanForeclosureException("loan.with.interest.recalculation.enabled.cannot.be.foreclosured", defaultUserMessage,
+            throw new LoanForeclosureException("error.msg.loan.with.interest.recalculation.enabled.cannot.be.foreclosured", defaultUserMessage,
                     getId());
         }
 
         LocalDate lastUserTransactionDate = getLastUserTransactionDate();
 
-        if (DateUtils.isDateInTheFuture(transactionDate)) {
+        if (validateForFutureDate && DateUtils.isDateInTheFuture(transactionDate)) {
             final String defaultUserMessage = "The transactionDate cannot be in the future.";
-            throw new LoanForeclosureException("loan.foreclosure.transaction.date.is.in.future", defaultUserMessage, transactionDate);
+            throw new LoanForeclosureException("error.msg.loan.foreclosure.transaction.date.is.in.future", defaultUserMessage, transactionDate);
         }
 
         if (lastUserTransactionDate.isAfter(transactionDate)) {
             final String defaultUserMessage = "The transactionDate cannot be in the future.";
-            throw new LoanForeclosureException("loan.foreclosure.transaction.date.cannot.before.the.last.transaction.date",
+            throw new LoanForeclosureException("error.msg.loan.foreclosure.transaction.date.cannot.before.the.last.transaction.date",
                     defaultUserMessage, transactionDate);
         }
     }
