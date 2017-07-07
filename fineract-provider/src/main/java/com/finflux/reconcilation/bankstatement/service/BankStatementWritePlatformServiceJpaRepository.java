@@ -986,7 +986,7 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
             if(loan != null){
             	loan = this.loanAssembler.assembleFrom(loan.getId());
             	PaymentDetail paymentDetail = null;
-                if(isSimplified && bankStatementDetail.getReceiptNumber() != null){
+                if(isSimplified){
                 	String accountNumber = null;
                 	String checkNumber = null;
                 	String routingCode = null;
