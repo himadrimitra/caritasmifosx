@@ -1029,9 +1029,9 @@ public class ClientLoanIntegrationTest {
         System.out.println("------------------------------CREATING NEW LOAN PRODUCT ---------------------------------------");
         final String loanProductJSON = new LoanProductTestBuilder() //
                 .withPrincipal("10000000.00") //
-                .withNumberOfRepayments("24") //
-                .withRepaymentAfterEvery("1") //
-                .withRepaymentTypeAsMonth() //
+                .withNumberOfRepayments("6") //
+                .withRepaymentAfterEvery("4") //
+                .withRepaymentTypeAsWeek() //
                 .withinterestRatePerPeriod("2") //
                 .withInterestRateFrequencyTypeAsMonths() //
                 .withRepaymentStrategy(repaymentStrategy) //
@@ -1165,21 +1165,17 @@ public class ClientLoanIntegrationTest {
     }
 
     private Integer applyForLoanApplicationWithPaymentStrategyAndPastMonth(final Integer clientID, final Integer loanProductID,
-            List<HashMap> charges, final String savingsId, String principal, final String repaymentStrategy, final int month) {
+            List<HashMap> charges, final String savingsId, String principal, final String repaymentStrategy, final String month) {
         System.out.println("--------------------------------APPLYING FOR LOAN APPLICATION--------------------------------");
 
-        Calendar fourMonthsfromNowCalendar = Calendar.getInstance(Utils.getTimeZoneOfTenant());
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, month);
-        DateFormat dateFormat = new SimpleDateFormat("dd MMMMMM yyyy");
-        dateFormat.setTimeZone(Utils.getTimeZoneOfTenant());
-        String fourMonthsfromNow = dateFormat.format(fourMonthsfromNowCalendar.getTime());
+        String fourMonthsfromNow = month;
         final String loanApplicationJSON = new LoanApplicationTestBuilder() //
                 .withPrincipal(principal) //
-                .withLoanTermFrequency("6") //
-                .withLoanTermFrequencyAsMonths() //
+                .withLoanTermFrequency("24") //
+                .withLoanTermFrequencyAsWeeks() //
                 .withNumberOfRepayments("6") //
-                .withRepaymentEveryAfter("1") //
-                .withRepaymentFrequencyTypeAsMonths() //
+                .withRepaymentEveryAfter("4") //
+                .withRepaymentFrequencyTypeAsWeeks() //
                 .withInterestRatePerPeriod("2") //
                 .withAmortizationTypeAsEqualInstallments() //
                 .withInterestTypeAsFlatBalance() //
@@ -5193,10 +5189,9 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper = new JournalEntryHelper(this.requestSpec, this.responseSpec);
 
         Calendar fourMonthsfromNowCalendar = Calendar.getInstance(Utils.getTimeZoneOfTenant());
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, -4);
-
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, -16);
         String fourMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
-
+        
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
 
         final Integer clientID = ClientHelper.createClient(this.requestSpec, this.responseSpec);
@@ -5229,7 +5224,7 @@ public class ClientLoanIntegrationTest {
         addCharges(charges, flatInstallmentFee, "50", null);
 
         final Integer loanID = applyForLoanApplicationWithPaymentStrategyAndPastMonth(clientID, loanProductID, charges, savingsId,
-                principal, LoanApplicationTestBuilder.DEFAULT_STRATEGY, -4);
+                principal, LoanApplicationTestBuilder.DEFAULT_STRATEGY,fourMonthsfromNow);
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
@@ -5249,30 +5244,31 @@ public class ClientLoanIntegrationTest {
 
         ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
         HashMap firstInstallment = loanSchedule.get(1);
-        validateNumberForEqual("2290", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
+        validateNumberForEqual("2272", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #1
 
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String threeMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(threeMonthsfromNow, Float.valueOf("2290"), loanID);
+        this.loanTransactionHelper.makeRepayment(threeMonthsfromNow, Float.valueOf("2272"), loanID);
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
         firstInstallment = loanSchedule.get(1);
         validateNumberForEqual("0.00", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #2
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String twoMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(twoMonthsfromNow, Float.valueOf("2290"), loanID);
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("2290"),
+        this.loanTransactionHelper.makeRepayment(twoMonthsfromNow, Float.valueOf("2272"), loanID);
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("2272"),
                 JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("2000"), JournalEntry.TransactionType.CREDIT));
         this.journalEntryHelper.checkJournalEntryForIncomeAccount(incomeAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("50"),
-                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("240"), JournalEntry.TransactionType.CREDIT));
+                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("222"), JournalEntry.TransactionType.CREDIT));
 
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -5281,15 +5277,16 @@ public class ClientLoanIntegrationTest {
 
         // Make payment for installment #3
         // Pay 2290 more than expected
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String oneMonthfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(oneMonthfromNow, Float.valueOf("4580"), loanID);
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("4580"),
+        this.loanTransactionHelper.makeRepayment(oneMonthfromNow, Float.valueOf("4544"), loanID);
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("4544"),
                 JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("4000"), JournalEntry.TransactionType.CREDIT));
         this.journalEntryHelper.checkJournalEntryForIncomeAccount(incomeAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("100"),
-                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("480"), JournalEntry.TransactionType.CREDIT));
+                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("444"), JournalEntry.TransactionType.CREDIT));
 
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -5302,10 +5299,9 @@ public class ClientLoanIntegrationTest {
         // paid: principal 2000, interest 240, fees 50, penalty 0
         // refund 20 means paid: principal 1980, interest 240, fees 50, penalty
         // 0
-
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
         final String now = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
-
+        
         this.loanTransactionHelper.makeRefundByCash(now, Float.valueOf("20"), loanID);
         this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, now, new JournalEntry(Float.valueOf("20"),
                 JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("20"), JournalEntry.TransactionType.DEBIT));
@@ -5348,8 +5344,7 @@ public class ClientLoanIntegrationTest {
         this.journalEntryHelper = new JournalEntryHelper(this.requestSpec, this.responseSpec);
 
         Calendar fourMonthsfromNowCalendar = Calendar.getInstance(Utils.getTimeZoneOfTenant());
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, -4);
-
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, -16);
         String fourMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
@@ -5386,7 +5381,7 @@ public class ClientLoanIntegrationTest {
         addCharges(charges, flatInstallmentFee, "50", null);
 
         final Integer loanID = applyForLoanApplicationWithPaymentStrategyAndPastMonth(clientID, loanProductID, charges, savingsId,
-                principal, LoanApplicationTestBuilder.DEFAULT_STRATEGY, -4);
+                principal, LoanApplicationTestBuilder.DEFAULT_STRATEGY, fourMonthsfromNow);
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
@@ -5400,7 +5395,7 @@ public class ClientLoanIntegrationTest {
         loanStatusHashMap = this.loanTransactionHelper.disburseLoan(fourMonthsfromNow, loanID);
         LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
 
-        final JournalEntry[] assetAccountInitialEntry = { new JournalEntry(Float.valueOf("1440"), JournalEntry.TransactionType.DEBIT),
+        final JournalEntry[] assetAccountInitialEntry = { new JournalEntry(Float.valueOf("1329"), JournalEntry.TransactionType.DEBIT),
                 new JournalEntry(Float.valueOf("300.00"), JournalEntry.TransactionType.DEBIT),
                 new JournalEntry(Float.valueOf("12000.00"), JournalEntry.TransactionType.CREDIT),
                 new JournalEntry(Float.valueOf("12000.00"), JournalEntry.TransactionType.DEBIT) };
@@ -5408,28 +5403,28 @@ public class ClientLoanIntegrationTest {
 
         ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
         HashMap firstInstallment = loanSchedule.get(1);
-        validateNumberForEqual("2290", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
+        validateNumberForEqual("2272", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #1
 
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String threeMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(threeMonthsfromNow, Float.valueOf("2290"), loanID);
+        this.loanTransactionHelper.makeRepayment(threeMonthsfromNow, Float.valueOf("2272"), loanID);
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
         firstInstallment = loanSchedule.get(1);
         validateNumberForEqual("0.00", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #2
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String twoMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(twoMonthsfromNow, Float.valueOf("2290"), loanID);
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("2290"),
-                JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("2290"), JournalEntry.TransactionType.CREDIT));
+        this.loanTransactionHelper.makeRepayment(twoMonthsfromNow, Float.valueOf("2272"), loanID);
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("2272"),
+                JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("2272"), JournalEntry.TransactionType.CREDIT));
 
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -5437,14 +5432,14 @@ public class ClientLoanIntegrationTest {
         validateNumberForEqual("0.00", String.valueOf(secondInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #3
-        // Pay 2290 more than expected
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        // Pay 2272 more than expected
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String oneMonthfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(oneMonthfromNow, Float.valueOf("4580"), loanID);
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("4580"),
-                JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("4580"), JournalEntry.TransactionType.CREDIT));
+        this.loanTransactionHelper.makeRepayment(oneMonthfromNow, Float.valueOf("4544"), loanID);
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("4544"),
+                JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("4544"), JournalEntry.TransactionType.CREDIT));
 
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -5452,13 +5447,13 @@ public class ClientLoanIntegrationTest {
         validateNumberForEqual("0.00", String.valueOf(thirdInstallment.get("totalOutstandingForPeriod")));
 
         // Make refund of 20
-        // max 2290 to refund. Pay 20 means only principal
+        // max 2272 to refund. Pay 20 means only principal
         // Default style refund order(principal, interest, fees and penalties
-        // paid: principal 2000, interest 240, fees 50, penalty 0
-        // refund 20 means paid: principal 1980, interest 240, fees 50, penalty
+        // paid: principal 2000, interest 222, fees 50, penalty 0
+        // refund 20 means paid: principal 1980, interest 222, fees 50, penalty
         // 0
 
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
         final String now = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         this.loanTransactionHelper.makeRefundByCash(now, Float.valueOf("20"), loanID);
@@ -5474,9 +5469,9 @@ public class ClientLoanIntegrationTest {
         validateNumberForEqual("0.00", String.valueOf(fourthInstallment.get("feeChargesOutstanding")));
 
         // Make refund of 2000
-        // max 2270 to refund. Pay 2000 means only principal
-        // paid: principal 1980, interest 240, fees 50, penalty 0
-        // refund 2000 means paid: principal 0, interest 220, fees 50, penalty 0
+        // max 2252 to refund. Pay 2000 means only principal
+        // paid: principal 1980, interest 222, fees 50, penalty 0
+        // refund 2000 means paid: principal 0, interest 202, fees 50, penalty 0
 
         this.loanTransactionHelper.makeRefundByCash(now, Float.valueOf("2000"), loanID);
         this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, now, new JournalEntry(Float.valueOf("2000"),
@@ -5502,8 +5497,7 @@ public class ClientLoanIntegrationTest {
         this.accountTransferHelper = new AccountTransferHelper(this.requestSpec, this.responseSpec);
 
         Calendar fourMonthsfromNowCalendar = Calendar.getInstance(Utils.getTimeZoneOfTenant());
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, -4);
-
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, -16);
         String fourMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         this.loanTransactionHelper = new LoanTransactionHelper(this.requestSpec, this.responseSpec);
@@ -5557,7 +5551,7 @@ public class ClientLoanIntegrationTest {
         addCharges(charges, flatInstallmentFee, "50", null);
 
         final Integer loanID = applyForLoanApplicationWithPaymentStrategyAndPastMonth(clientID, loanProductID, charges, null, principal,
-                LoanApplicationTestBuilder.DEFAULT_STRATEGY, -4);
+                LoanApplicationTestBuilder.DEFAULT_STRATEGY, fourMonthsfromNow);
         Assert.assertNotNull(loanID);
         HashMap loanStatusHashMap = LoanStatusChecker.getStatusOfLoan(this.requestSpec, this.responseSpec, loanID);
         LoanStatusChecker.verifyLoanIsPending(loanStatusHashMap);
@@ -5577,30 +5571,30 @@ public class ClientLoanIntegrationTest {
 
         ArrayList<HashMap> loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
         HashMap firstInstallment = loanSchedule.get(1);
-        validateNumberForEqual("2290", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
+        validateNumberForEqual("2272", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #1
 
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String threeMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(threeMonthsfromNow, Float.valueOf("2290"), loanID);
+        this.loanTransactionHelper.makeRepayment(threeMonthsfromNow, Float.valueOf("2272"), loanID);
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
         firstInstallment = loanSchedule.get(1);
         validateNumberForEqual("0.00", String.valueOf(firstInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #2
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String twoMonthsfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(twoMonthsfromNow, Float.valueOf("2290"), loanID);
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("2290"),
+        this.loanTransactionHelper.makeRepayment(twoMonthsfromNow, Float.valueOf("2272"), loanID);
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("2272"),
                 JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("2000"), JournalEntry.TransactionType.CREDIT));
         this.journalEntryHelper.checkJournalEntryForIncomeAccount(incomeAccount, twoMonthsfromNow, new JournalEntry(Float.valueOf("50"),
-                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("240"), JournalEntry.TransactionType.CREDIT));
+                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("222"), JournalEntry.TransactionType.CREDIT));
 
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -5608,16 +5602,16 @@ public class ClientLoanIntegrationTest {
         validateNumberForEqual("0.00", String.valueOf(secondInstallment.get("totalOutstandingForPeriod")));
 
         // Make payment for installment #3
-        // Pay 2290 more than expected
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        // Pay 2272 more than expected
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
 
         final String oneMonthfromNow = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
-        this.loanTransactionHelper.makeRepayment(oneMonthfromNow, Float.valueOf("4580"), loanID);
-        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("4580"),
+        this.loanTransactionHelper.makeRepayment(oneMonthfromNow, Float.valueOf("4544"), loanID);
+        this.journalEntryHelper.checkJournalEntryForAssetAccount(assetAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("4544"),
                 JournalEntry.TransactionType.DEBIT), new JournalEntry(Float.valueOf("4000"), JournalEntry.TransactionType.CREDIT));
         this.journalEntryHelper.checkJournalEntryForIncomeAccount(incomeAccount, oneMonthfromNow, new JournalEntry(Float.valueOf("100"),
-                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("480"), JournalEntry.TransactionType.CREDIT));
+                JournalEntry.TransactionType.CREDIT), new JournalEntry(Float.valueOf("444"), JournalEntry.TransactionType.CREDIT));
 
         loanSchedule.clear();
         loanSchedule = this.loanTransactionHelper.getLoanRepaymentSchedule(this.requestSpec, this.responseSpec, loanID);
@@ -5625,15 +5619,16 @@ public class ClientLoanIntegrationTest {
         validateNumberForEqual("0.00", String.valueOf(thirdInstallment.get("totalOutstandingForPeriod")));
 
         // Make refund of 20
-        // max 2290 to refund. Pay 20 means only principal
+        // max 2272 to refund. Pay 20 means only principal
         // Default style refund order(principal, interest, fees and penalties
-        // paid: principal 2000, interest 240, fees 50, penalty 0
-        // refund 20 means paid: principal 1980, interest 240, fees 50, penalty
+        // paid: principal 2000, interest 222, fees 50, penalty 0
+        // refund 20 means paid: principal 1980, interest 222, fees 50, penalty
         // 0
 
         Float TRANSFER_AMOUNT = 20f;
 
-        fourMonthsfromNowCalendar.add(Calendar.MONTH, 1);
+        fourMonthsfromNowCalendar.add(Calendar.WEEK_OF_YEAR, 4);
+        
         final String now = Utils.convertDateToURLFormat(fourMonthsfromNowCalendar);
 
         final String FROM_LOAN_ACCOUNT_TYPE = "1";
@@ -5664,9 +5659,9 @@ public class ClientLoanIntegrationTest {
         validateNumberForEqual("0.00", String.valueOf(fourthInstallment.get("feeChargesOutstanding")));
 
         // Make refund of 2000
-        // max 2270 to refund. Pay 2000 means only principal
-        // paid: principal 1980, interest 240, fees 50, penalty 0
-        // refund 2000 means paid: principal 0, interest 220, fees 50, penalty 0
+        // max 2252 to refund. Pay 2000 means only principal
+        // paid: principal 1980, interest 222, fees 50, penalty 0
+        // refund 2000 means paid: principal 0, interest 202, fees 50, penalty 0
         // final String now = Utils.convertDate(fourMonthsfromNowCalendar);
 
         TRANSFER_AMOUNT = 2000f;
