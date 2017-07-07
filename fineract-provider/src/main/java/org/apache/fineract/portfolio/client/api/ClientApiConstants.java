@@ -201,6 +201,9 @@ public class ClientApiConstants {
     // template related part of response
     public static final String officeOptionsParamName = "officeOptions";
     public static final String staffOptionsParamName = "staffOptions";
+    
+    public static final String kycJson = "kycJson";
+    public static final String aadhaarId = "aadhaar-id";
 
     public static final Set<String> CLIENT_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             dateFormatParamName, groupIdParamName, accountNoParamName, externalIdParamName, mobileNoParamName, alternateMobileNoParamName, firstNameParamName,
@@ -208,7 +211,7 @@ public class ClientApiConstants {
             staffIdParamName, submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName,
             clientTypeIdParamName, clientClassificationIdParamName, clientNonPersonDetailsParamName, displaynameParamName,
             legalFormIdParamName, AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
-            ExistingLoanApiConstants.existingLoansParamName,emailAddress));
+            ExistingLoanApiConstants.existingLoansParamName,emailAddress,kycJson));
 
     public static final Set<String> CLIENT_NON_PERSON_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
             Arrays.asList(localeParamName, dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 
