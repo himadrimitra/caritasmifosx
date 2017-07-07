@@ -6758,7 +6758,10 @@ public class Loan extends AbstractPersistable<Long> {
             if (loanTransaction.isDisbursement() || loanTransaction.isIncomePosting() || loanTransaction.isBrokenPeriodInterestPosting()) {
                 outstanding = outstanding.plus(loanTransaction.getAmount(getCurrency()));
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
-            } else if(!loanTransaction.isRecoveryRepayment()) {
+            } else if (loanTransaction.isRefundForActiveLoan()) {
+                outstanding = outstanding.plus(loanTransaction.getPrincipalPortion((getCurrency())));
+                loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
+            } else if (!loanTransaction.isRecoveryRepayment()) {
                 if (this.loanInterestRecalculationDetails != null
                         && this.loanInterestRecalculationDetails.isCompoundingToBePostedAsTransaction()
                         && !loanTransaction.isRepaymentAtDisbursement()) {
@@ -6774,7 +6777,7 @@ public class Loan extends AbstractPersistable<Long> {
                 outstanding = outstanding.minus(loanTransaction.getPrincipalPortion(getCurrency()));
 
                 loanTransaction.updateOutstandingLoanBalance(outstanding.getAmount());
-            }
+            } 
         }
     }
 
