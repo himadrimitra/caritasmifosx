@@ -19,6 +19,7 @@
 package org.apache.fineract.accounting.closure.service;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.fineract.accounting.closure.api.GLClosureJsonInputParams;
@@ -38,6 +39,9 @@ import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityEx
 import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.organisation.office.domain.OfficeRepository;
 import org.apache.fineract.organisation.office.exception.OfficeNotFoundException;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.apache.fineract.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.apache.fineract.portfolio.common.service.BusinessEventNotifierService;
 import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +58,16 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
     private final GLClosureRepository glClosureRepository;
     private final OfficeRepository officeRepository;
     private final GLClosureCommandFromApiJsonDeserializer fromApiJsonDeserializer;
+    private final BusinessEventNotifierService businessEventNotifierService;
 
     @Autowired
     public GLClosureWritePlatformServiceJpaRepositoryImpl(final GLClosureRepository glClosureRepository,
-            final OfficeRepository officeRepository, final GLClosureCommandFromApiJsonDeserializer fromApiJsonDeserializer) {
+            final OfficeRepository officeRepository, final GLClosureCommandFromApiJsonDeserializer fromApiJsonDeserializer,
+            final BusinessEventNotifierService businessEventNotifierService) {
         this.glClosureRepository = glClosureRepository;
         this.officeRepository = officeRepository;
         this.fromApiJsonDeserializer = fromApiJsonDeserializer;
+        this.businessEventNotifierService = businessEventNotifierService;
     }
 
     @Transactional
@@ -89,6 +96,9 @@ public class GLClosureWritePlatformServiceJpaRepositoryImpl implements GLClosure
             final GLClosure glClosure = GLClosure.fromJson(office, command);
 
             this.glClosureRepository.saveAndFlush(glClosure);
+            Map<BUSINESS_ENTITY, Object> businessEventEntity = new HashMap<>(1);
+            businessEventEntity.put(BUSINESS_ENTITY.GL_CLOSURE, glClosure);
+            this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.GL_ACCOUNT_CLOSURE, businessEventEntity);
 
             return new CommandProcessingResultBuilder().withCommandId(command.commandId()).withOfficeId(officeId)
                     .withEntityId(glClosure.getId()).build();

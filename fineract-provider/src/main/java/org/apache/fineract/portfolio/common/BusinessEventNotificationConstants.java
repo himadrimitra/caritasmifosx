@@ -37,7 +37,7 @@ public class BusinessEventNotificationConstants {
                 "loan_interest_recalculation"), LOAN_REFUND("loan_refund"), LOAN_ADD_SUBSIDY("loan_add_subsidy_transaction"), LOAN_REVOKE_SUBSIDY(
                 "loan_revoke_subsidy_transaction"), LOAN_FORECLOSURE("loan_foreclosure"), CLIENT_CLOSE("client_close"), CLIENT_DISASSOCIATE(
                 "client_disassociate"), TRANSFER_CLIENT("transfer_client"), LOAN_CREATE("loan_create"), LOAN_MODIFY("loan_modify"), SAVING_WITHDRAWAL(
-                "saving_withdrawal"), SAVING_TRANSFER("saving_transfer");
+                "saving_withdrawal"), SAVING_TRANSFER("saving_transfer"), GL_ACCOUNT_CLOSURE("gl_account_closure");
 
         private final String value;
 
@@ -69,7 +69,7 @@ public class BusinessEventNotificationConstants {
         LOAN("loan"), LOAN_TRANSACTION("loan_transaction"), LOAN_CHARGE("loan_charge"), LOAN_ADJUSTED_TRANSACTION(
                 "loan_adjusted_transaction"), CLIENT("client"), CLIENT_DISASSOCIATE("client_disassociate"), TRANSFER_CLIENT(
                 "transfer_client"), CHANGED_TRANSACTION_DETAIL("changed_transaction_detail"), JSON_COMMAND("json_command"), BUSINESS_EVENT(
-                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction");
+                "business_event"), SAVING("saving"), SAVING_TRANSACTION("saving_transaction"), GL_CLOSURE("gl_closure");
 
         private final String value;
 
