@@ -45,6 +45,7 @@ import com.finflux.transaction.execution.data.TransferType;
 import com.finflux.transaction.execution.provider.BankTransferService;
 import com.finflux.transaction.execution.provider.rbl.request.RBLFundTransferRequest;
 import com.finflux.transaction.execution.provider.rbl.request.RBLFundTransferStatusRequest;
+import com.finflux.transaction.execution.provider.rbl.request.RBLPaymentRequestValidator;
 import com.finflux.transaction.execution.provider.rbl.request.RBLSinglePaymentRequest;
 import com.finflux.transaction.execution.provider.rbl.request.RBLSinglePaymentStatusRequest;
 import com.google.gson.Gson;
@@ -192,6 +193,8 @@ public class RBLBankTransferService implements BankTransferService {
 
 		RBLSinglePaymentRequest singlePaymentRequest = new RBLSinglePaymentRequest(
 				header, body, signature);
+		RBLPaymentRequestValidator requestValidator=new RBLPaymentRequestValidator();
+		requestValidator.validateNEFTSinglePaymentRequest(singlePaymentRequest);
 		RBLFundTransferRequest rblFundTransferRequest = new RBLFundTransferRequest(
 				singlePaymentRequest);
 
