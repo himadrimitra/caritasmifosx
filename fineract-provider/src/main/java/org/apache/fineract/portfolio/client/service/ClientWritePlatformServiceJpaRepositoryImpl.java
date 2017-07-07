@@ -359,7 +359,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             if (newClient != null && newClient.getId() != null && command.parameterExists(ClientApiConstants.kycJson)) {
                 final String kycData = command.jsonFragment(ClientApiConstants.kycJson);
                 final JsonElement element = this.fromApiJsonHelper.parse(kycData);
-                final String identifier = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.aadhaarId, element);;
+                JsonElement kycObject = element.getAsJsonObject().get(ClientApiConstants.kyc) ;
+                final String identifier = kycObject.getAsJsonObject().get(ClientApiConstants.aadhaarId).getAsString();
                 ClientKycDetails clientKycDetails = ClientKycDetails.createKYCDetails(newClient.getId(), DateUtils.getLocalDateOfTenant(),
                         KycType.AUTO, KycSource.AADHAAR, KycMode.FINGER_PRINT, kycData, identifier);
                 this.clientKycDetailsRepository.save(clientKycDetails);
