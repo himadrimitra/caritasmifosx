@@ -77,12 +77,18 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "address", orphanRemoval = true)
     private Set<AddressEntity> addressEntities = new HashSet<>();
+   
+    @Column(name = "is_verified", nullable = true)
+    private Boolean isVerified;
+    
+    @Column(name = "document_id", nullable = true)
+    private Long documentId;
 
     protected Address() {}
 
     private Address(final String houseNo, final String streetNo, final String addressLineOne, final String addressLineTwo,
             final String landmark, final String villageTown, final Taluka taluka, final District district, final State state,
-            final Country country, final String postalCode, final BigDecimal latitude, final BigDecimal longitude) {
+            final Country country, final String postalCode, final BigDecimal latitude, final BigDecimal longitude, final Boolean isVerified, final Long documentId) {
         this.houseNo = houseNo;
         this.streetNo = streetNo;
         this.addressLineOne = addressLineOne;
@@ -96,13 +102,15 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
         this.postalCode = postalCode;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.isVerified = isVerified;
+        this.documentId = documentId;
     }
 
     public static Address create(final String houseNo, final String streetNo, final String addressLineOne, final String addressLineTwo,
             final String landmark, final String villageTown, final Taluka taluka, final District district, final State state,
-            final Country country, final String postalCode, final BigDecimal latitude, final BigDecimal longitude) {
+            final Country country, final String postalCode, final BigDecimal latitude, final BigDecimal longitude, Boolean isVerified, Long documentId) {
         return new Address(houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, taluka, district, state, country,
-                postalCode, latitude, longitude);
+                postalCode, latitude, longitude, isVerified, documentId);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -218,7 +226,13 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(AddressApiConstants.longitudeParamName, newValue);
             this.longitude = newValue;
         }
-
+        
+        if (command.isChangeInLongParameterNamed(AddressApiConstants.documentIdParamName, this.documentId)) {
+            final Long newValue = command.longValueOfParameterNamed(AddressApiConstants.documentIdParamName);
+            actualChanges.put(AddressApiConstants.documentIdParamName, newValue);
+            this.documentId = newValue;
+        }
+        
         return actualChanges;
     }
 
@@ -298,6 +312,11 @@ public class Address extends AbstractAuditableCustom<AppUser, Long> {
 
     public void updateCountry(final Country country) {
         this.country = country;
+    }
+
+    
+    public void setIsVerified(Boolean isVerified) {
+        this.isVerified = isVerified;
     }
 
 }
