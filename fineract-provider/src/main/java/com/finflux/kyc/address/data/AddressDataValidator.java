@@ -92,10 +92,10 @@ public class AddressDataValidator {
         baseDataValidator.reset().parameter(AddressApiConstants.addressTypesParamName).value(addressTypes).ignoreIfNull().arrayNotEmpty();
 
         final String houseNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.houseNoParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.houseNoParamName).value(houseNo).ignoreIfNull().notExceedingLengthOf(20);
+        baseDataValidator.reset().parameter(AddressApiConstants.houseNoParamName).value(houseNo).ignoreIfNull().notExceedingLengthOf(200);
 
         final String streetNo = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.streetNoParamName, element);
-        baseDataValidator.reset().parameter(AddressApiConstants.streetNoParamName).value(streetNo).ignoreIfNull().notExceedingLengthOf(20);
+        baseDataValidator.reset().parameter(AddressApiConstants.streetNoParamName).value(streetNo).ignoreIfNull().notExceedingLengthOf(200);
 
         final String addressLineOne = this.fromApiJsonHelper.extractStringNamed(AddressApiConstants.addressLineOneParamName, element);
         baseDataValidator.reset().parameter(AddressApiConstants.addressLineOneParamName).value(addressLineOne).ignoreIfNull()
