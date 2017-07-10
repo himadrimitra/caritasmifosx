@@ -9,14 +9,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.fineract.accounting.common.AccountingRuleType;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
-import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.documentmanagement.command.DocumentCommand;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
@@ -37,16 +34,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.finflux.reconcilation.ReconciliationApiConstants;
 import com.finflux.reconcilation.bank.domain.Bank;
 import com.finflux.reconcilation.bankstatement.domain.BankStatement;
+import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailType;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetails;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailsRepositoryWrapper;
 import com.finflux.reconcilation.bankstatement.domain.BankStatementRepositoryWrapper;
 import com.finflux.reconcilation.bankstatement.exception.InvalidCIFRowException;
 import com.finflux.reconcilation.bankstatement.helper.ExcelUtility;
 import com.finflux.reconcilation.bankstatement.service.BankStatementReadPlatformService;
-import com.google.gson.JsonElement;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
-import com.finflux.reconcilation.bankstatement.domain.BankStatementDetailType;
 
 @Service
 public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWritePlatformService {
@@ -63,6 +59,7 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
     private static final int RECEIPT_NUMBER = 8;
     private static final int PAYMENTDETAIL_BANK_NUMBER = 9;
     private static final int NOTE = 10;
+    private static final int TRANSACTION_ID_FOR_UPDATE =11;
     private final PlatformSecurityContext context;
     private final ContentRepositoryFactory contentRepositoryFactory;
     private final DocumentRepository documentRepository;
@@ -70,7 +67,6 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
     private final BankStatementRepositoryWrapper bankStatementRepository;
     private final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepositoryWrapper;
     private final PaymentTypeReadPlatformService paymentTypeReadPlatformService;
-    private final FromJsonHelper fromApiJsonHelper;
 
     @Autowired
     public BulkCollectionWritePlatformServiceImpl(final PlatformSecurityContext context,
@@ -78,7 +74,7 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
             final BankStatementReadPlatformService bankStatementReadPlatformService,
             final BankStatementRepositoryWrapper bankStatementRepository,
             final BankStatementDetailsRepositoryWrapper bankStatementDetailsRepositoryWrapper,
-            final PaymentTypeReadPlatformService paymentTypeReadPlatformService, FromJsonHelper fromApiJsonHelper) {
+            final PaymentTypeReadPlatformService paymentTypeReadPlatformService) {
         this.context = context;
         this.contentRepositoryFactory = contentRepositoryFactory;
         this.documentRepository = documentRepository;
@@ -86,7 +82,6 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
         this.bankStatementRepository = bankStatementRepository;
         this.bankStatementDetailsRepositoryWrapper = bankStatementDetailsRepositoryWrapper;
         this.paymentTypeReadPlatformService = paymentTypeReadPlatformService;
-        this.fromApiJsonHelper=fromApiJsonHelper;
     }
 
     @Transactional
@@ -177,8 +172,10 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                 String routingCode = null;
                 String paymentDetailBankNumber = null;
                 String note = null;
+                Long transactionIdForUpdate = null;
                 BankStatementDetailType bankStatementDetailType = BankStatementDetailType.INVALID;
                 List<String> rowError = new ArrayList<>();
+                Map<Integer,String> tempRowError = new HashMap<>();
                 Boolean isValid = true;
                 if (row.getRowNum() != 0) {
                     for (int i = 0; i < ReconciliationApiConstants.HEADER_DATA.length; i++) {
@@ -205,8 +202,19 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                     bankStatementDetailType = BankStatementDetailType.DEPOSITS;
                                 }
                             break;
+                            case TRANSACTION_ID_FOR_UPDATE:
+                                if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK && cell.getCellType() == Cell.CELL_TYPE_NUMERIC) {
+                                    tempRowError.clear();
+                                    try {
+                                        transactionIdForUpdate = Long.valueOf(ExcelUtility.getCellValueAsString(cell));
+                                    }catch (Exception e) {
+                                        errorRows.add(row.getRowNum() + 1);
+                                        rowError.add(ReconciliationApiConstants.TRANSACTION_ID_INVALID);
+                                    }
+                                }
+                            break;
                             case ACCOUNT_NUMBER:
-                                if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK) {
+                                if (cell != null && cell.getCellType() != Cell.CELL_TYPE_BLANK ) {
                                     accountNumber = ExcelUtility.getCellValueAsString(cell);
                                 } else {
                                     errorRows.add(row.getRowNum() + 1);
@@ -224,9 +232,7 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                         rowError.add(ReconciliationApiConstants.INVALID_TRANSACTION_DATE);
                                     }
                                 } else {
-                                    errorRows.add(row.getRowNum() + 1);
-                                    rowError.add(ReconciliationApiConstants.TRANSACTION_DATE_CAN_NOT_BE_BLANK);
-                                    isValid = false;
+                                    tempRowError.put(row.getRowNum() + 1, ReconciliationApiConstants.TRANSACTION_DATE_CAN_NOT_BE_BLANK);
                                 }
                             break;
                             case AMOUNT:
@@ -243,9 +249,7 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                         rowError.add(ReconciliationApiConstants.AMOUNT_INVALID);
                                     }
                                 } else {
-                                    errorRows.add(row.getRowNum() + 1);
-                                    rowError.add(ReconciliationApiConstants.AMOUNT_CAN_NOT_BE_BLANK);
-                                    isValid = false;
+                                    tempRowError.put(row.getRowNum() + 1, ReconciliationApiConstants.AMOUNT_CAN_NOT_BE_BLANK);
                                 }
                             break;
                             case PAYMENTTYPE_NAME:
@@ -290,12 +294,12 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                                     note = ExcelUtility.getCellValueAsString(cell);
                                 }
                             break;
-
                         }
-
                     }
-                    if (row.getRowNum() != 0 && isValid) {
-                        boolean isReconciled = false;
+
+                    errorRows.addAll(tempRowError.keySet());
+                    rowError.addAll(tempRowError.values());
+                    if (row.getRowNum() != 0 && (isValid && tempRowError.size() == 0)) {
                         if (bankStatementDetailType.isLoanType()) {
                             loanAccountNumber = accountNumber;
                         } else if (bankStatementDetailType.isDepositType()) {
@@ -304,7 +308,7 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
                         BankStatementDetails bankStatementDetails = BankStatementDetails.instance(null, accountType, loanAccountNumber,
                                 transactionDate, amount, paymentTypeName, paymentDetailAccountNumber, paymentDetailChequeNumber,
                                 routingCode, receiptNumber, paymentDetailBankNumber, note, bankStatementDetailType.getValue(),
-                                savingsAccountNumber, isReconciled);
+                                savingsAccountNumber, transactionIdForUpdate);
                         bankStatementDetails.setIsError(false);
                         bankStatementDetailsList.add(bankStatementDetails);
                     }
@@ -317,7 +321,6 @@ public class BulkCollectionWritePlatformServiceImpl implements BulkCollectionWri
             }
 
         } catch (Exception ex) {
-            ex.printStackTrace();
         }
         fileDataMap.put(ReconciliationApiConstants.BANK_STATEMENT_DETAIL_LIST, bankStatementDetailsList);
         fileDataMap.put(ReconciliationApiConstants.ERROR_ROWS, errorRowMap);

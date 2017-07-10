@@ -1168,4 +1168,8 @@ public final class LoanTransaction extends AbstractAuditableEagerFetchCreatedBy<
         return this.associatedTransactionId;
     }
     
+    public void setPaymentDetail(PaymentDetail paymentDetail) {
+        this.paymentDetail = paymentDetail;
+    }
+    
 }
