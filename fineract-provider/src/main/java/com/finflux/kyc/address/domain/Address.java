@@ -31,10 +31,10 @@ import com.finflux.kyc.address.api.AddressApiConstants;
 @Table(name = "f_address")
 public class Address extends AbstractAuditableCustom<AppUser, Long> {
 
-    @Column(name = "house_no", length = 20, nullable = true)
+    @Column(name = "house_no", length = 200, nullable = true)
     private String houseNo;
 
-    @Column(name = "street_no", length = 20, nullable = true)
+    @Column(name = "street_no", length = 200, nullable = true)
     private String streetNo;
 
     @Column(name = "address_line_one", length = 200, nullable = true)
