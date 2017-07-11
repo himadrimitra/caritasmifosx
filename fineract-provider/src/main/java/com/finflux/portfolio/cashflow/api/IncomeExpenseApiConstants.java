@@ -12,7 +12,7 @@ public class IncomeExpenseApiConstants {
     public static final String MEDIUM = "Medium";
     public static final String HIGH = "High";
 
-    public static final String cashFlowCategoryIdParamName = "cashFlowCategoryId";
+    public static final String cashFlowCategoryIdParamName = "cashflowCategoryId";
     public static final String nameParamName = "name";
     public static final String shortNameParamName = "shortName";
     public static final String descriptionParamName = "description";
@@ -23,6 +23,7 @@ public class IncomeExpenseApiConstants {
     public static final String defaultIncomeParamName = "defaultIncome";
     public static final String defaultExpenseParamName = "defaultExpense";
     public static final String isActiveParamName = "isActive";
+    public static final String cashflowCategoryDataParamName="cashFlowCategoryData";
 
     /**
      * Common Parameters
@@ -41,7 +42,7 @@ public class IncomeExpenseApiConstants {
     public static final Set<String> UPDATE_INCOME_EXPENSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(nameParamName,
             shortNameParamName, descriptionParamName, isQuantifierNeededParamName, quantifierLabelParamName,
             isCaptureMonthWiseIncomeParamName, stabilityEnumIdParamName, defaultIncomeParamName, defaultExpenseParamName,
-            isActiveParamName, localeParamName, dateFormatParamName));
+            isActiveParamName, localeParamName, dateFormatParamName,cashflowCategoryDataParamName,cashFlowCategoryIdParamName));
 
     public static final Set<String> DELETE_INCOME_EXPENSE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(isActiveParamName));
 
