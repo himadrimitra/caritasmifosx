@@ -58,10 +58,10 @@ public class MandateDataValidator {
                 baseDataValidator.reset().parameter(MandateApiConstants.bankAccountHolderName).value(bankAccountHolderName).notNull().notBlank().notExceedingLengthOf(100);
 
                 final String bankName = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.bankName, element);
-                baseDataValidator.reset().parameter(MandateApiConstants.bankName).value(bankName).notNull().notBlank().notExceedingLengthOf(20);
+                baseDataValidator.reset().parameter(MandateApiConstants.bankName).value(bankName).notNull().notBlank().notExceedingLengthOf(100);
 
                 final String branchName = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.branchName, element);
-                baseDataValidator.reset().parameter(MandateApiConstants.branchName).value(branchName).notNull().notBlank().notExceedingLengthOf(50);
+                baseDataValidator.reset().parameter(MandateApiConstants.branchName).value(branchName).ignoreIfNull().notExceedingLengthOf(50);
 
                 final String bankAccountNumber = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.bankAccountNumber, element);
                 baseDataValidator.reset().parameter(MandateApiConstants.bankAccountNumber).value(bankAccountNumber).notNull().notBlank().notExceedingLengthOf(20);
@@ -70,7 +70,7 @@ public class MandateDataValidator {
                 baseDataValidator.reset().parameter(MandateApiConstants.micr).value(micr).ignoreIfNull().notExceedingLengthOf(10);
 
                 final String ifsc = this.fromApiJsonHelper.extractStringNamed(MandateApiConstants.ifsc, element);
-                baseDataValidator.reset().parameter(MandateApiConstants.ifsc).value(ifsc).notBlank().notExceedingLengthOf(10);
+                baseDataValidator.reset().parameter(MandateApiConstants.ifsc).value(ifsc).notBlank().notExceedingLengthOf(11);
 
                 final Integer accountType = this.fromApiJsonHelper.extractIntegerSansLocaleNamed(MandateApiConstants.accountType, element);
                 baseDataValidator.reset().parameter(MandateApiConstants.accountType).value(accountType).notNull().inMinMaxRange(1,6);
