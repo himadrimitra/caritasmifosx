@@ -40,6 +40,7 @@ import org.apache.fineract.organisation.office.domain.Office;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.joda.time.LocalDate;
 
 @Entity
 @Cacheable
@@ -105,6 +106,10 @@ public class GLClosure extends AbstractAuditableCustom<AppUser, Long> {
 
     public Office getOffice() {
         return this.office;
+    }
+    
+    public LocalDate getClosingLocalDate() {
+        return new LocalDate(this.closingDate);
     }
 
 }
