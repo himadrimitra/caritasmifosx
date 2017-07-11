@@ -122,7 +122,7 @@ public class RBLPaymentRequestValidator {
 
         final String benificiaryName = singlePaymentRequest.getBody().getBeneficiaryName();
         baseDataValidator.reset().parameter(RBLRequestConstants.benificiaryAccountNameParam).value(benificiaryName).notNull();
-        if (benificiaryName != null && (!benificiaryName.matches("([A-Za-z ]){1,50}"))) {
+        if (benificiaryName != null && (!benificiaryName.matches("([A-Za-z /]){1,50}"))) {
             baseDataValidator.reset().parameter(RBLRequestConstants.benificiaryAccountNameParam).failWithCode(RBLRequestConstants.errorCode,
                     RBLRequestConstants.benificiaryAccountNameParam);
         }
