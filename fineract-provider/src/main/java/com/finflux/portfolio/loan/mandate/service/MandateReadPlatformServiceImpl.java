@@ -59,8 +59,8 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
 
         }
 
-        @Override
-        public MandateData retrieveTemplate(final Long loanId, final String commandParam) {
+    @Override
+    public MandateData retrieveTemplate(final Long loanId, final String commandParam, final Boolean showEMIBalance) {
                 MandateData ret = null;
                 if(commandParam == null){
                         throw new CommandQueryParamExpectedException();
@@ -68,7 +68,7 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
                 switch (commandParam.trim().toUpperCase()){
                         case "CREATE":
                                 LoanAccountData loan = this.loanReadPlatformService.retrieveOne(loanId);
-                                ret = retrieveCreateTemplate(loan);
+                                ret = retrieveCreateTemplate(loan,showEMIBalance);
                                 break;
                         case "UPDATE":
                                 ret = retrieveUpdateTemplate(loanId);
@@ -82,9 +82,9 @@ public class MandateReadPlatformServiceImpl implements MandateReadPlatformServic
                 return ret;
         }
 
-        private MandateData retrieveCreateTemplate(final LoanAccountData loan) {
+    private MandateData retrieveCreateTemplate(final LoanAccountData loan, final Boolean showEMIBalance) {
             BankAccountDetailData bankAccountDetailsData = this.bankAccountDetailsReadPlatformService.retrieveOneBy(BankAccountDetailEntityType.CLIENTS, loan.clientId()) ;
-                return MandateData.createTemplate(getDocumentEnumOptionData(loan.getId()), loan, bankAccountDetailsData);
+        return MandateData.createTemplate(getDocumentEnumOptionData(loan.getId()), loan, bankAccountDetailsData, showEMIBalance);
         }
 
     private MandateData retrieveUpdateTemplate(final Long loanId) {

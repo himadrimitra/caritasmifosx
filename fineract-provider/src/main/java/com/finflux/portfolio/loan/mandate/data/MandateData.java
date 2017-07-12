@@ -118,7 +118,7 @@ public class MandateData {
         }
 
         public static MandateData createTemplate(final Collection<EnumOptionData> scannedDocumentOptions, final LoanAccountData loan,
-                final BankAccountDetailData bankAccountDetails){
+                final BankAccountDetailData bankAccountDetails,final Boolean showEMIBalance){
                 final Long id = null;
                 final Long loanId = null;
                 final String loanAccountNo = null;
@@ -139,7 +139,13 @@ public class MandateData {
                 final Date periodToDate = null;
                 final Boolean periodUntilCancelled = true;
                 final EnumOptionData debitType = DebitTypeEnum.enumOptionDataFrom(DebitTypeEnum.MAXIMUM_AMOUNT.getValue());
-                final BigDecimal amount = loan.getCalculatedEmiAmount();
+                BigDecimal amount = null;
+                if (showEMIBalance) {
+                    amount = loan.getCalculatedEmiAmount();
+                } else {
+                       amount = loan.getTotalOutstandingAmount();
+                }
+
                 final EnumOptionData debitFrequency = DebitFrequencyEnum.enumOptionDataFrom(DebitFrequencyEnum.AS_AND_WHEN_PRESENTED.getValue());
                 final Long scannedDocumentId = null;
                 final String scannedDocumentName = null;

@@ -50,12 +50,12 @@ public class MandateApiResource {
         @Path("template")
         @Consumes({ MediaType.APPLICATION_JSON })
         @Produces({ MediaType.APPLICATION_JSON })
-        public String retrieveTemplate(@PathParam("loanId") final Long loanId, @QueryParam("command") final String commandParam,
-                @Context final UriInfo uriInfo) {
+    public String retrieveTemplate(@PathParam("loanId") final Long loanId, @QueryParam("command") final String commandParam,
+            @DefaultValue("false") @QueryParam("showEMIBalance") final Boolean showEMIBalance, @Context final UriInfo uriInfo) {
 
                 this.context.authenticatedUser().validateHasReadPermission(MandateApiConstants.RESOURCE_NAME);
 
-                MandateData template = this.readPlatformService.retrieveTemplate(loanId, commandParam);
+                MandateData template = this.readPlatformService.retrieveTemplate(loanId, commandParam,showEMIBalance);
 
                 final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
                 return this.toApiJsonSerializer.serialize(settings, template, MandateApiConstants.ALLOWED_RESPONSE_PARAMS);

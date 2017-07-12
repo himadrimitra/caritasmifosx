@@ -9,7 +9,7 @@ import java.util.Date;
 
 public interface MandateReadPlatformService {
 
-        MandateData retrieveTemplate(Long loanId, String commandParam);
+        MandateData retrieveTemplate(Long loanId, String commandParam,Boolean showEMIBalance);
 
         Collection<MandateData> retrieveMandates(Long loanId);
 
