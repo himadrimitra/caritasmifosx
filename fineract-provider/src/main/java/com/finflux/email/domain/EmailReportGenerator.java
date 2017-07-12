@@ -9,6 +9,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collection;
 
 import javax.ws.rs.core.MultivaluedMap;
@@ -25,6 +26,7 @@ import org.apache.fineract.portfolio.loanaccount.domain.LoanStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.finflux.email.service.BusinessEventEmailConfigurationReadPaltformService;
 import com.finflux.email.service.ReportMailingScheduleService;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
@@ -35,19 +37,20 @@ public class EmailReportGenerator {
     private final ReportMailingScheduleService reportMailingScheduleService;
     private final ReadReportingService readReportingService;
     private final EmailRepaymentScheduleRepository emailRepaymentScheduleRepository;
-    private final String attachmentType = new String("PDF");
-    private final String reportName = new String("Repayment Schedule");
+    private final BusinessEventEmailConfigurationReadPaltformService  businessEventEmailConfigurationReadPaltformService;
 
     public static final String MIFOS_BASE_DIR = System.getProperty("user.home") + File.separator + ".mifosx";
 
     @Autowired
     public EmailReportGenerator(final ReportingProcessServiceProvider reportingProcessServiceProvider,
             final ReportMailingScheduleService reportMailingScheduleService, final ReadReportingService readReportingService,
-            final EmailRepaymentScheduleRepository emailRepaymentScheduleRepository) {
+            final EmailRepaymentScheduleRepository emailRepaymentScheduleRepository,
+            final BusinessEventEmailConfigurationReadPaltformService businessEventEmailConfigurationReadPaltformService) {
         this.reportingProcessServiceProvider = reportingProcessServiceProvider;
         this.reportMailingScheduleService = reportMailingScheduleService;
         this.readReportingService = readReportingService;
         this.emailRepaymentScheduleRepository = emailRepaymentScheduleRepository;
+        this.businessEventEmailConfigurationReadPaltformService = businessEventEmailConfigurationReadPaltformService;
     }
 
     /**
@@ -61,7 +64,8 @@ public class EmailReportGenerator {
      *            - parameters required by the report
      */
     void generateReportOutputStream(final Loan loan, String emailId, final String reportName,
-            final MultivaluedMap<String, String> reportParams) {
+            final MultivaluedMap<String, String> reportParams, final Long clientId, BigDecimal loanAmount, final String attachmentType,
+            final String centerDisplayName) {
 
         try {
             final String reportType = this.readReportingService.getReportType(reportName);
@@ -88,7 +92,8 @@ public class EmailReportGenerator {
                     else if (byteArrayOutputStream.size() > 0) {
                         final String fileName = fileNameWithoutExtension + "." + attachmentType;
                         // send the file to customer
-                        this.sendReportFileToEmailRecipients(loan, emailId, fileName, byteArrayOutputStream);
+                        this.sendReportFileToEmailRecipients(loan, emailId, fileName, byteArrayOutputStream, clientId, loanAmount,
+                                centerDisplayName);
                     }
 
                 }
@@ -104,7 +109,8 @@ public class EmailReportGenerator {
      *            - list of mails that weren't sent to customers. These messages
      *            will be picked up by the boot up service and will be sent
      */
-    void generateReportOutputStream(final Collection<EmailOutboundMessage> messages) {
+    void generateReportOutputStream(final Collection<EmailOutboundMessage> messages, final String reportName, final String attachmentType,
+            final String displayName) {
         MultivaluedMap<String, String> reportParams;
 
         for (EmailOutboundMessage emailOutboundMessage : messages) {
@@ -112,14 +118,15 @@ public class EmailReportGenerator {
             reportParams.add("R_loanId", emailOutboundMessage.getLoan().getId().toString());
             reportParams.add("output-type", attachmentType);
             reportParams.add("R_status", LoanStatus.ACTIVE.getValue().toString());
-            generateReportOutputStream(emailOutboundMessage.getLoan(), emailOutboundMessage.getLoan().getClient().getEmailId(),
-                    reportName, reportParams);
+            generateReportOutputStream(emailOutboundMessage.getLoan(), emailOutboundMessage.getLoan().getClient().getEmailId(), reportName,
+                    reportParams, emailOutboundMessage.getLoan().getClientId(), emailOutboundMessage.getLoanAmount(), attachmentType,
+                    displayName);
 
         }
     }
 
     private void sendReportFileToEmailRecipients(Loan loan, String emailId, final String fileName,
-            final ByteArrayOutputStream byteArrayOutputStream) {
+            final ByteArrayOutputStream byteArrayOutputStream, final Long clientId, BigDecimal loanAmount, final String centerDisplayName) {
         File attachment = null ;
         if (emailId != null && !emailId.isEmpty()) {
             try {
@@ -128,12 +135,12 @@ public class EmailReportGenerator {
 
                 byteArrayOutputStream.writeTo(outputStream);
 
-                final EmailData reportEmailData = new EmailData(loan.getAccountNumber(), emailId, attachment);
+                final EmailData reportEmailData = new EmailData(loan.getAccountNumber(), emailId, attachment, clientId, loanAmount, centerDisplayName);
 
               
                 EmailOutboundMessage emailOutboundMessage = EmailOutboundMessage.instance(loan,
                         EmailSupportedEvents.LOAN_DISBURSAL.toString(), PortfolioProductType.LOAN.getValue(),
-                        EmailStatus.PENDING.toString(),DateUtils.getLocalDateOfTenant().toDate());
+                        EmailStatus.PENDING.toString(),DateUtils.getLocalDateOfTenant().toDate(), loanAmount);
                 
                 this.emailRepaymentScheduleRepository.save(emailOutboundMessage);
 

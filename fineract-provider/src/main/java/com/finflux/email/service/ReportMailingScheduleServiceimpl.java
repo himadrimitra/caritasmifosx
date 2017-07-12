@@ -5,9 +5,11 @@
  */
 package com.finflux.email.service;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Properties;
 
 import javax.mail.MessagingException;
+import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
 import org.apache.fineract.infrastructure.configuration.data.SMTPCredentialsData;
@@ -45,7 +47,7 @@ public class ReportMailingScheduleServiceimpl implements ReportMailingScheduleSe
 
             // use the true flag to indicate you need a multipart message
             MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true);
-
+            mimeMessageHelper.setFrom(new InternetAddress(smtpCredentialsData.getUsername(), emailData.getCenterDisplayName()));
             mimeMessageHelper.setTo(emailData.getTo());
             mimeMessageHelper.setText(emailData.getText());
             mimeMessageHelper.setSubject(emailData.getSubject());
@@ -57,6 +59,9 @@ public class ReportMailingScheduleServiceimpl implements ReportMailingScheduleSe
         }
 
         catch (MessagingException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

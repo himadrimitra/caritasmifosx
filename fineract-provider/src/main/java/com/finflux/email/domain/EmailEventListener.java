@@ -5,6 +5,7 @@
  */
 package com.finflux.email.domain;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import com.finflux.email.service.BusinessEventEmailConfigurationReadPaltformService;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 /**
@@ -49,16 +51,16 @@ public class EmailEventListener {
     private ScheduledExecutorService scheduledExecutorService;
     private final EmailReportGenerator emailReportGenerator;
     private final EmailRepaymentScheduleRepository emailRepaymentScheduleRepository;
-    private final String reportType = new String("PDF");
-    private final String reportName = new String("Repayment Schedule");
-
+    private final BusinessEventEmailConfigurationReadPaltformService  businessEventEmailConfigurationReadPaltformService;
+    
     @Autowired
     public EmailEventListener(final BusinessEventNotifierService businessEventNotifierService,
             final EmailReportGenerator emailReportGenerator,
-            final EmailRepaymentScheduleRepository emailRepaymentScheduleRepository) {
+            final EmailRepaymentScheduleRepository emailRepaymentScheduleRepository, final BusinessEventEmailConfigurationReadPaltformService  businessEventEmailConfigurationReadPaltformService) {
         this.businessEventNotifierService = businessEventNotifierService;
         this.emailReportGenerator = emailReportGenerator;
         this.emailRepaymentScheduleRepository = emailRepaymentScheduleRepository;
+        this.businessEventEmailConfigurationReadPaltformService = businessEventEmailConfigurationReadPaltformService;
     }
 
     @PostConstruct
@@ -86,19 +88,24 @@ public class EmailEventListener {
         @Override
         public void businessEventWasExecuted(Map<BUSINESS_ENTITY, Object> businessEventEntity) {
             Object loanTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.LOAN_TRANSACTION);
-
-            if (loanTransactionEntity != null) {
+            HashMap<String, Object> businessEventEmailMap = (HashMap<String, Object>) businessEventEmailConfigurationReadPaltformService
+                    .retrieveOneWithBuisnessEvent(BUSINESS_EVENTS.LOAN_DISBURSAL);
+            if (loanTransactionEntity != null && businessEventEmailMap != null) {
                 final LoanTransaction loanTransaction = (LoanTransaction) loanTransactionEntity;
 
                 if (loanTransaction != null && loanTransaction.getLoan() != null && loanTransaction.getLoan().getClient() != null
                         && loanTransaction.getLoan().getClient().getEmailId() != null) {
+                    final String attachmentType = businessEventEmailMap.get("attachmentType").toString();
+                    final String centerDisplayName = businessEventEmailMap.get("centerDisplayName").toString();
+                    final String reportName = businessEventEmailMap.get("reportName").toString();
                     MultivaluedMap<String, String> reportParams = new MultivaluedMapImpl();
                     reportParams.add("R_loanId", loanTransaction.getLoan().getId().toString());
-                    reportParams.add("output-type", reportType);
+                    reportParams.add("output-type", attachmentType);
                     reportParams.add("R_status", LoanStatus.ACTIVE.getValue().toString());
 
                     executorService.execute(new Reportgenerator(loanTransaction, reportName, reportParams, emailReportGenerator,
-                            ThreadLocalContextUtil.getTenant(), SecurityContextHolder.getContext().getAuthentication()));
+                            ThreadLocalContextUtil.getTenant(), SecurityContextHolder.getContext().getAuthentication(), attachmentType,
+                            centerDisplayName));
                 }
             }
         }
@@ -112,16 +119,21 @@ public class EmailEventListener {
         final EmailReportGenerator emailReportGenerator;
         final FineractPlatformTenant tenant;
         final Authentication auth;
+        final String attachmentType;
+        final String centerDisplayName;
+        
 
         public Reportgenerator(final LoanTransaction loanTransaction, final String reportName,
                 final MultivaluedMap<String, String> reportParams, EmailReportGenerator emailReportGenerator,
-                final FineractPlatformTenant tenant, final Authentication auth) {
+                final FineractPlatformTenant tenant, final Authentication auth, final String attachmentType, final String centerDisplayName) {
             this.loanTransaction = loanTransaction;
             this.reportName = reportName;
             this.reportParams = reportParams;
             this.emailReportGenerator = emailReportGenerator;
             this.tenant = tenant;
             this.auth = auth;
+            this.attachmentType = attachmentType;
+            this.centerDisplayName = centerDisplayName;
         }
 
         @Override
@@ -130,8 +142,10 @@ public class EmailEventListener {
             if (this.auth != null) {
                 SecurityContextHolder.getContext().setAuthentication(this.auth);
             }
+            
             this.emailReportGenerator.generateReportOutputStream(loanTransaction.getLoan(),
-                    loanTransaction.getLoan().getClient().getEmailId(), reportName, reportParams);
+                    loanTransaction.getLoan().getClient().getEmailId(), reportName, reportParams,
+                    loanTransaction.getLoan().getClient().getId(), loanTransaction.getAmount(), this.attachmentType, this.centerDisplayName);
 
         }
 
@@ -163,7 +177,15 @@ public class EmailEventListener {
                         pageRequest);
                 page++;
                 totalPageSize = messages.getTotalPages();
-                this.emailReportGenerator.generateReportOutputStream(messages.getContent());
+                HashMap<String, Object> businessEventEmailMap = (HashMap<String, Object>) businessEventEmailConfigurationReadPaltformService
+                        .retrieveOneWithBuisnessEvent(BUSINESS_EVENTS.LOAN_DISBURSAL);
+                if (businessEventEmailMap != null) {
+                    final String reportName = businessEventEmailMap.get("reportName").toString();
+                    final String attachmentType = businessEventEmailMap.get("attachmentType").toString();
+                    final String centerDisplayName = businessEventEmailMap.get("centerDisplayName").toString();
+                    this.emailReportGenerator.generateReportOutputStream(messages.getContent(), reportName, attachmentType,
+                            centerDisplayName);
+                }
             } while (page < totalPageSize);
             return totalPageSize;
         }
