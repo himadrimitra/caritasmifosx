@@ -89,6 +89,7 @@ import org.apache.fineract.portfolio.charge.exception.SavingsAccountChargeNotFou
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.group.domain.Group;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -1091,20 +1092,15 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         Money runningBalance = Money.zero(this.currency);
         Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
         LocalDate lastSavingsDate = null;
+        final BigDecimal withdrawalFee = null;
         for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
             if (transaction.isNotReversed() && transaction.isCredit()) {
                 runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
             } else if (transaction.isNotReversed() && transaction.isDebit()) {
                 runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
-            } else if (transaction.isNotReversed() && transaction.isAmountOnHold()) {
-                runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
-            } else if (transaction.isNotReversed() && transaction.isAmountRelease()) {
-                runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
             } else {
                 continue;
             }
-
-            final BigDecimal withdrawalFee = null;
 
             /*
              * Loop through the onHold funds and see if we need to deduct or add
@@ -1130,18 +1126,26 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             // enforceMinRequiredBalance
             if (!isException && transaction.canProcessBalanceCheck()) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
-                    String errorMessage = product.shortName;
-                    if (client == null) {
-                        errorMessage = errorMessage + " - " + getId() + " - For group (" + group.getId() + ") " + group.getName();
-                    } else {
-                        errorMessage = errorMessage + " - " + getId() + " - For client (" + client.getId() + ") " + client.getDisplayName();
-                    }
-                    throw new InsufficientAccountBalanceException("transactionAmount", errorMessage, withdrawalFee, transactionAmount);
+                    insufficientBalanceException(transactionAmount,withdrawalFee);
                 }
             }
             lastSavingsDate = transaction.transactionLocalDate();
-
         }
+        if(MathUtility.isGreaterThanZero(this.getSavingsHoldAmount())){
+            if(runningBalance.minus(this.getSavingsHoldAmount()).isLessThanZero()){
+                insufficientBalanceException(transactionAmount,withdrawalFee);
+            }
+        }
+    }
+    
+    private void insufficientBalanceException(final BigDecimal transactionAmount, final BigDecimal withdrawalFee) {
+        String errorMessage = product.shortName;
+        if (client == null) {
+            errorMessage = errorMessage + " - " + getId() + " - For group (" + group.getId() + ") " + group.getName();
+        } else {
+            errorMessage = errorMessage + " - " + getId() + " - For client (" + client.getId() + ") " + client.getDisplayName();
+        }
+        throw new InsufficientAccountBalanceException("transactionAmount", errorMessage, withdrawalFee, transactionAmount);
     }
 
     public void validateAccountBalanceDoesNotBecomeNegative(final String transactionAction,
