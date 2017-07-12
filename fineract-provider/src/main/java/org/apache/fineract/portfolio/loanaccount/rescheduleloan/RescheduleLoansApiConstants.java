@@ -50,6 +50,10 @@ public class RescheduleLoansApiConstants {
     public static final String newInstallmentAmountParamName = "newInstallmentAmount";
     public static final String isSpecificToInstallment = "specificToInstallment";
     public static final String loansParamName = "loans";
+    public static final String allCommandParamName = "all";
+    public static final String approveCommandParamName = "approve";
+    public static final String pendingCommandParamName = "pending";
+    public static final String rejectCommandParamName = "reject";
     
     public static final Set<String> CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName, dateFormatParamName,
             graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
@@ -76,5 +80,8 @@ public class RescheduleLoansApiConstants {
             graceOnPrincipalParamName, recurringMoratoriumOnPrincipalPeriodsParamName, graceOnInterestParamName, extraTermsParamName, rescheduleFromDateParamName,
             newInterestRateParamName, rescheduleReasonIdParamName, rescheduleReasonCommentParamName, submittedOnDateParamName,
             loansParamName, adjustedDueDateParamName, recalculateInterestParamName, newInstallmentAmountParamName, isSpecificToInstallment));
+    
+    public static final Set<String> commandParams = new HashSet<>(Arrays.asList(allCommandParamName, approveCommandParamName,
+            pendingCommandParamName, rejectCommandParamName));
     
 }
