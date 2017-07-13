@@ -7,5 +7,7 @@ public class GlobalConfigurationPropertyConstant {
     public static final String ENCRYPT_LOGIN_PASSWORD_FOR_AUTHENTICATION = "encrypt-login-password-for-authentication";
 
     public static final String EVERY_USER_LOGIN_GENERATE_NEW_CRYPTOGRAPHIC_KEY_PAIR = "every-user-login-generate-new-cryptographic-key-pair";
+    
+    public static final String ALLOW_PAYMANTS_ON_CLOSED_LOANS = "allow-payments-on-closed-loans";
 
 }

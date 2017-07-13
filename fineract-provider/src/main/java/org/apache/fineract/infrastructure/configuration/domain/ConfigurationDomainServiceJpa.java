@@ -495,4 +495,10 @@ public class ConfigurationDomainServiceJpa implements ConfigurationDomainService
                 .isEnabled();
     }
     
+    @Override
+    public boolean isAllowPaymentsOnClosedLoansEnabled(){
+        return getGlobalConfigurationPropertyData(GlobalConfigurationPropertyConstant.ALLOW_PAYMANTS_ON_CLOSED_LOANS)
+                .isEnabled();
+    }
+    
 }
