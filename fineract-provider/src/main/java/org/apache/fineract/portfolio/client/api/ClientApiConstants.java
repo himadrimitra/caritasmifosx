@@ -80,6 +80,7 @@ public class ClientApiConstants {
     // request parameters
     public static final String idParamName = "id";
     public static final String groupIdParamName = "groupId";
+    public static final String centerIdParamName = "centerId";
     public static final String accountNoParamName = "accountNo";
     public static final String externalIdParamName = "externalId";
     public static final String mobileNoParamName = "mobileNo";
@@ -212,7 +213,7 @@ public class ClientApiConstants {
             staffIdParamName, submittedOnDateParamName, savingsProductIdParamName, dateOfBirthParamName, genderIdParamName,
             clientTypeIdParamName, clientClassificationIdParamName, clientNonPersonDetailsParamName, displaynameParamName,
             legalFormIdParamName, AddressApiConstants.addressesParamName, FamilyDetailsApiConstants.familyMembersParamName,
-            ExistingLoanApiConstants.existingLoansParamName,emailAddress,kycJson));
+            ExistingLoanApiConstants.existingLoansParamName,emailAddress,kycJson,centerIdParamName));
 
     public static final Set<String> CLIENT_NON_PERSON_CREATE_REQUEST_DATA_PARAMETERS = new HashSet<>(
             Arrays.asList(localeParamName, dateFormatParamName, incorpNumberParamName, remarksParamName, incorpValidityTillParamName, 

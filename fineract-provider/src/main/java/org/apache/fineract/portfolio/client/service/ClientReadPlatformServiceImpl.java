@@ -697,7 +697,7 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
     private static final class ParentGroupsMapper implements RowMapper<GroupGeneralData> {
 
         public String parentGroupsSchema() {
-            return "gp.id As groupId , gp.account_no as accountNo, gp.display_name As groupName from m_client cl JOIN m_group_client gc ON cl.id = gc.client_id "
+            return "gp.id As groupId , gp.account_no as accountNo, gp.display_name As groupName, gp.level_id as groupLevel from m_client cl JOIN m_group_client gc ON cl.id = gc.client_id "
                     + "JOIN m_group gp ON gp.id = gc.group_id WHERE cl.id  = ?";
         }
 
@@ -707,8 +707,9 @@ public class ClientReadPlatformServiceImpl implements ClientReadPlatformService 
             final Long groupId = JdbcSupport.getLong(rs, "groupId");
             final String groupName = rs.getString("groupName");
             final String accountNo = rs.getString("accountNo");
+            final String groupLevel=rs.getString("groupLevel");
 
-            return GroupGeneralData.lookup(groupId, accountNo, groupName);
+            return GroupGeneralData.lookup(groupId, accountNo, groupName,groupLevel);
         }
     }
 

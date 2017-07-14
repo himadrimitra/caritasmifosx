@@ -797,7 +797,7 @@ public class CenterReadPlatformServiceImpl implements CenterReadPlatformService 
             if (!CollectionUtils.isEmpty(membersOfGroup)) {
                 membersOfGroup = null;
                 final CalendarData collectionMeetingCalendar = null;
-                centerAccount = CenterData.withAssociations(centerAccount, groups, collectionMeetingCalendar);
+                centerAccount = CenterData.withAssociations(centerAccount, groups, collectionMeetingCalendar,membersOfGroup);
 
             }
 

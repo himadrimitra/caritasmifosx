@@ -260,7 +260,10 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final Office clientOffice = this.officeRepository.findOne(officeId);
             if (clientOffice == null) { throw new OfficeNotFoundException(officeId); }
 
-            final Long groupId = command.longValueOfParameterNamed(ClientApiConstants.groupIdParamName);
+            Long groupId = command.longValueOfParameterNamed(ClientApiConstants.groupIdParamName);
+            if(groupId==null){
+                groupId=command.longValueOfParameterNamed(ClientApiConstants.centerIdParamName);
+            }
 
             Group clientParentGroup = null;
             if (groupId != null) {
