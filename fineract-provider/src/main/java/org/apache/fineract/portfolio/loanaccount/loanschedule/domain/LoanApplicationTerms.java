@@ -1613,7 +1613,10 @@ public final class LoanApplicationTerms {
         if(this.pmtCalculationPeriodMethod != null){
             pmtCalculationMethod = this.pmtCalculationPeriodMethod.getValue();
         }
-        Money principal = this.principal.plus(this.discountOnDisbursalAmount);
+        Money principal = this.principal;
+        if(!this.isMultiDisburseLoan()){                
+            principal = principal.plus(this.discountOnDisbursalAmount);
+        }
         if(this.brokenPeriodMethod.isPostInterest()){
             principal = principal.minus(getBrokenPeriodInterest());
         }

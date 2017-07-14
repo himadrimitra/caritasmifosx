@@ -54,19 +54,24 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
     
     @Column(name = "principal_net_disbursed", scale = 6, precision = 19, nullable = true)
     private BigDecimal netPrincipalDisbursed;
+    
+    @Column(name = "discount_on_disbursal_amount", scale = 6, precision = 19, nullable = true)
+    private BigDecimal discountOnDisbursalAmount;
 
-	@Column(name = "is_active")
-	private boolean active = true;
+    @Column(name = "is_active")
+    private boolean active = true;
 
     protected LoanDisbursementDetails() {
 
     }
 
-    public LoanDisbursementDetails(final Date expectedDisbursementDate, final Date actualDisbursementDate, final BigDecimal principal) {
+    public LoanDisbursementDetails(final Date expectedDisbursementDate, final Date actualDisbursementDate, final BigDecimal principal,
+            final BigDecimal discountOnDisbursalAmount) {
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.actualDisbursementDate = actualDisbursementDate;
         this.principal = principal;
         this.netPrincipalDisbursed = principal;
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
         this.active = true;
      }
 
@@ -79,15 +84,23 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
     public boolean equals(final Object obj) {
         final LoanDisbursementDetails loanDisbursementDetails = (LoanDisbursementDetails) obj;
         if (loanDisbursementDetails.principal.equals(this.principal)
-                && loanDisbursementDetails.expectedDisbursementDate.equals(this.expectedDisbursementDate)) 
+                && loanDisbursementDetails.expectedDisbursementDate.equals(this.expectedDisbursementDate)
+                && isDiscountOnDisbursalEqual(loanDisbursementDetails)) 
         { return true; }
         return false;
+    }
+
+    public boolean isDiscountOnDisbursalEqual(final LoanDisbursementDetails loanDisbursementDetails) {
+        return (loanDisbursementDetails.discountOnDisbursalAmount == null && this.discountOnDisbursalAmount == null)
+                || (loanDisbursementDetails.discountOnDisbursalAmount != null && this.discountOnDisbursalAmount != null && loanDisbursementDetails.discountOnDisbursalAmount
+                        .equals(this.discountOnDisbursalAmount));
     }
 
     public void copy(final LoanDisbursementDetails disbursementDetails) {
         this.principal = disbursementDetails.principal;
         this.expectedDisbursementDate = disbursementDetails.expectedDisbursementDate;
         this.actualDisbursementDate = disbursementDetails.actualDisbursementDate;
+        this.discountOnDisbursalAmount = disbursementDetails.discountOnDisbursalAmount;
     }
 
     public Date expectedDisbursementDate() {
@@ -144,7 +157,7 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
         if (this.actualDisbursementDate != null) {
             actualDisburseDate = new LocalDate(this.actualDisbursementDate);
         }
-        return new DisbursementData(getId(), expectedDisburseDate, actualDisburseDate, this.principal, null, null);
+        return new DisbursementData(getId(), expectedDisburseDate, actualDisburseDate, this.principal, null, null, discountOnDisbursalAmount);
     }
 
     public void updateActualDisbursementDate(Date actualDisbursementDate) {
@@ -174,12 +187,28 @@ public class LoanDisbursementDetails extends AbstractPersistable<Long> {
          this.netPrincipalDisbursed = this.principal;
     }
 
-	public void setActive(boolean active) {
-		this.active = active;
-	}
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
-	public boolean isActive() {
-		return this.active;
-	}
+    public boolean isActive() {
+        return this.active;
+    }
+
+    public BigDecimal getDiscountOnDisbursalAmount() {
+        return this.discountOnDisbursalAmount;
+    }
+
+    public void setDiscountOnDisbursalAmount(BigDecimal discountOnDisbursalAmount) {
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
+    }
+    
+    public BigDecimal fetchDiscountOnDisbursalAmount() {
+        return this.discountOnDisbursalAmount == null ? BigDecimal.ZERO : this.discountOnDisbursalAmount;
+    }
+    
+    public BigDecimal getAccountedPrincipal() {
+        return this.principal.add(fetchDiscountOnDisbursalAmount());
+    }
 
 }
