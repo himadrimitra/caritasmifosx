@@ -792,5 +792,8 @@ public final class SavingsAccountTransaction extends AbstractPersistable<Long> {
     public Long getReleaseIdOfHoldAmountTransaction() {
         return this.releaseIdOfHoldAmountTransaction;
     }
-
+    
+    public void setPaymentDetail(PaymentDetail paymentDetail) {
+        this.paymentDetail = paymentDetail;
+    }
 }

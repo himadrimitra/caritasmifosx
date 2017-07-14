@@ -124,12 +124,16 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     
     @Column(name = "error_msg", nullable = true)
     private String errmsg;
+    
+    @Column(name = "transaction_id_for_update")
+    private Long transactionIdForUpdate;
 
     public BankStatementDetails(final BankStatement bankStatement, final String transactionId, final Date transactionDate,
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber, Boolean isManualReconciled) {
+            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber, Boolean isManualReconciled, 
+            final Long transactionIdForUpdate) {
         this.bankStatement = bankStatement;
         this.transactionId = transactionId;
         this.transactionDate = transactionDate;
@@ -149,6 +153,7 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.updatedDate = null;
         this.receiptNumber = receiptNumber;
         this.isManualReconciled = isManualReconciled;
+        this.transactionIdForUpdate = transactionIdForUpdate;
     }
 
     public BankStatementDetails() {
@@ -159,11 +164,12 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
             final String description, final BigDecimal amount, final String mobileNumber, final String clientAccountNumber,
             final String loanAccountNumber, final String groupExternalId, final Boolean isReconciled,
             final LoanTransaction loanTransaction, final String branchExternalId, final String accountingType, final String glCode,
-            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber, final Boolean isManualReconciled) {
+            final String transactionType, final Integer bankStatementDetailType, final String receiptNumber, final Boolean isManualReconciled, 
+            final Long transactionIdForUpdate) {
 
         return new BankStatementDetails(bankStatement, transactionId, transactionDate, description, amount, mobileNumber,
                 clientAccountNumber, loanAccountNumber, groupExternalId, isReconciled, loanTransaction, branchExternalId, accountingType, glCode,
-                transactionType, bankStatementDetailType, receiptNumber, isManualReconciled);
+                transactionType, bankStatementDetailType, receiptNumber, isManualReconciled, transactionIdForUpdate);
     }    
     
     public BankStatementDetails(final BankStatement bankStatement, final Date transactionDate,
@@ -372,18 +378,18 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
             final String loanAccountNumber, final Date transactionDate, final BigDecimal amount, final String paymentTypeName,
             final String paymentDetailAccountNumber, final String paymentDetailChequeNumber, final String routingCode,
             final String receiptNumber, final String paymentDetailBankNumber, final String note, final Integer bankStatementDetailType,
-            final String savingsAccountNumber, boolean isReconciled) {
+            final String savingsAccountNumber, final Long transactionIdForUpdate) {
 
         return new BankStatementDetails(bankStatement, accountingType, loanAccountNumber, transactionDate, amount, paymentTypeName,
                 paymentDetailAccountNumber, paymentDetailChequeNumber, routingCode, receiptNumber, paymentDetailBankNumber, note,
-                bankStatementDetailType, savingsAccountNumber);
+                bankStatementDetailType, savingsAccountNumber, transactionIdForUpdate);
     }
 
     public BankStatementDetails(final BankStatement bankStatement, final String accountingType, final String loanAccountNumber,
             final Date transactionDate, final BigDecimal amount, final String paymentTypeName, final String paymentDetailAccountNumber,
             final String paymentDetailChequeNumber, final String routingCode, final String receiptNumber,
             final String paymentDetailBankNumber, final String note, final Integer bankStatementDetailType,
-            final String savingsAccountNumber) {
+            final String savingsAccountNumber, final Long transactionIdForUpdate) {
         this.bankStatement = bankStatement;
         this.accountingType = accountingType;
         this.loanAccountNumber = loanAccountNumber;
@@ -399,6 +405,7 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
         this.bankStatementDetailType = bankStatementDetailType;
         this.savingsAccountNumber = savingsAccountNumber;
         this.isReconciled = false;
+        this.transactionIdForUpdate = transactionIdForUpdate;
     }
 
     public String getSavingsAccountNumber() {
@@ -440,6 +447,10 @@ public class BankStatementDetails extends AbstractPersistable<Long> {
     public void setErrmsg(String errmsg) {
         this.isError = true;
         this.errmsg = errmsg;
+    }
+    
+    public Long getTransactionIdForUpdate() {
+        return this.transactionIdForUpdate;
     }
 
 }
