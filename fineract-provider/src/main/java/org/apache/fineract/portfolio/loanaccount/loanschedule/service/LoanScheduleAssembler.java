@@ -316,7 +316,7 @@ public class LoanScheduleAssembler {
 
         // disbursement details
         final BigDecimal principal = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed("principal", element);
-        final BigDecimal discountOnDisburseAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(LoanApiConstants.discountOnDisbursalAmountParameterName, element);
+        BigDecimal discountOnDisburseAmount = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(LoanApiConstants.discountOnDisbursalAmountParameterName, element);
         final Money principalMoney = Money.of(currency, principal).minus(discountOnDisburseAmount);
 
         final LocalDate expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed("expectedDisbursementDate", element);
@@ -415,7 +415,18 @@ public class LoanScheduleAssembler {
         final BigDecimal maxOutstandingBalance = this.fromApiJsonHelper.extractBigDecimalWithLocaleNamed(
                 LoanApiConstants.maxOutstandingBalanceParameterName, element);
 
-        final List<DisbursementData> disbursementDatas = fetchDisbursementData(element.getAsJsonObject(), discountOnDisburseAmount);
+        final List<DisbursementData> disbursementDatas = fetchDisbursementData(element.getAsJsonObject());
+        if (!disbursementDatas.isEmpty()) {
+            discountOnDisburseAmount = null;
+            BigDecimal totalDiscountOnTranches = BigDecimal.ZERO;
+            for (DisbursementData data : disbursementDatas) {
+                totalDiscountOnTranches = totalDiscountOnTranches.add(data.fetchDiscountOnDisbursalAmount());
+            }
+            if(totalDiscountOnTranches.compareTo(BigDecimal.ZERO) == 1){
+                discountOnDisburseAmount = totalDiscountOnTranches;
+            }
+        }
+    
 
         /**
          * Interest recalculation settings copy from product definition
@@ -620,7 +631,7 @@ public class LoanScheduleAssembler {
         return calendar;
     }
 
-    private List<DisbursementData> fetchDisbursementData(final JsonObject command, final BigDecimal discountOnDisburseAmount) {
+    private List<DisbursementData> fetchDisbursementData(final JsonObject command) {
         final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(command);
         final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(command);
         List<DisbursementData> disbursementDatas = new ArrayList<>();
@@ -632,6 +643,7 @@ public class LoanScheduleAssembler {
                     final JsonObject jsonObject = disbursementDataArray.get(i).getAsJsonObject();
                     LocalDate expectedDisbursementDate = null;
                     BigDecimal principal = null;
+                    BigDecimal discountOnDisbursalAmount = null;
 
                     if (jsonObject.has(LoanApiConstants.disbursementDateParameterName)) {
                         expectedDisbursementDate = this.fromApiJsonHelper.extractLocalDateNamed(
@@ -642,10 +654,14 @@ public class LoanScheduleAssembler {
                             && StringUtils.isNotBlank((jsonObject.get(LoanApiConstants.disbursementPrincipalParameterName).getAsString()))) {
                         principal = jsonObject.getAsJsonPrimitive(LoanApiConstants.disbursementPrincipalParameterName).getAsBigDecimal();
                     }
-                    if(i==0 && discountOnDisburseAmount != null && principal != null){
-                        principal = principal.subtract(discountOnDisburseAmount);
+                    
+                    if (jsonObject.has(LoanApiConstants.discountOnDisbursalAmountParameterName)
+                            && jsonObject.get(LoanApiConstants.discountOnDisbursalAmountParameterName).isJsonPrimitive()
+                            && StringUtils.isNotBlank((jsonObject.get(LoanApiConstants.discountOnDisbursalAmountParameterName).getAsString()))) {
+                        discountOnDisbursalAmount = jsonObject.getAsJsonPrimitive(LoanApiConstants.discountOnDisbursalAmountParameterName).getAsBigDecimal();
                     }
-                    disbursementDatas.add(new DisbursementData(null, expectedDisbursementDate, null, principal, null, null));
+                    
+                    disbursementDatas.add(new DisbursementData(null, expectedDisbursementDate, null, principal, null, null, discountOnDisbursalAmount));
                     i++;
                 } while (i < disbursementDataArray.size());
             }

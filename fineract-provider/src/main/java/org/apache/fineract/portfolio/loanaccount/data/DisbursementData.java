@@ -33,15 +33,18 @@ public class DisbursementData implements Comparable<DisbursementData> {
     private BigDecimal principal;
     private final String loanChargeId;
     private final BigDecimal chargeAmount;
+    private final BigDecimal discountOnDisbursalAmount;
 
     public DisbursementData(Long id, final LocalDate expectedDisbursementDate, final LocalDate actualDisbursementDate,
-            final BigDecimal principalDisbursed, final String loanChargeId, BigDecimal chargeAmount) {
+            final BigDecimal principalDisbursed, final String loanChargeId, BigDecimal chargeAmount,
+            final BigDecimal discountOnDisbursalAmount) {
         this.id = id;
         this.expectedDisbursementDate = expectedDisbursementDate;
         this.actualDisbursementDate = actualDisbursementDate;
         this.principal = principalDisbursed;
         this.loanChargeId = loanChargeId;
         this.chargeAmount = chargeAmount;
+        this.discountOnDisbursalAmount = discountOnDisbursalAmount;
     }
 
     public LocalDate disbursementDate() {
@@ -109,6 +112,15 @@ public class DisbursementData implements Comparable<DisbursementData> {
     
     public void reducePrincipal(BigDecimal amount) {
         this.principal = this.principal.subtract(amount);
+    }
+
+    
+    public BigDecimal getDiscountOnDisbursalAmount() {
+        return this.discountOnDisbursalAmount;
+    }
+    
+    public BigDecimal fetchDiscountOnDisbursalAmount(){
+        return this.discountOnDisbursalAmount == null ? BigDecimal.ZERO : this.discountOnDisbursalAmount;
     }
 
 }

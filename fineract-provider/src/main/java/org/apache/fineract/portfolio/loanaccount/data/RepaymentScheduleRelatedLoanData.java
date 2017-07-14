@@ -84,7 +84,8 @@ public class RepaymentScheduleRelatedLoanData {
     }
 
     public DisbursementData disbursementData() {
-        return new DisbursementData(null, this.expectedDisbursementDate, this.actualDisbursementDate, this.principal.add(this.interestPostedAmount), null, null);
+        return new DisbursementData(null, this.expectedDisbursementDate, this.actualDisbursementDate,
+                this.principal.add(this.interestPostedAmount), null, null, this.discountedFromPrincipal);
     }
 
     

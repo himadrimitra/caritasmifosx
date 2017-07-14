@@ -439,6 +439,7 @@ public class LoanUtilService {
                     Date expectedDisbursementDate = null;
                     Date actualDisbursementDate = null;
                     BigDecimal principal = null;
+                    BigDecimal discountOnDisbursalAmount = null;
 
                     if (jsonObject.has(LoanApiConstants.disbursementDateParameterName)) {
                         LocalDate date = this.fromApiJsonHelper.extractLocalDateNamed(LoanApiConstants.disbursementDateParameterName,
@@ -452,8 +453,14 @@ public class LoanUtilService {
                             && StringUtils.isNotBlank((jsonObject.get(LoanApiConstants.disbursementPrincipalParameterName).getAsString()))) {
                         principal = jsonObject.getAsJsonPrimitive(LoanApiConstants.disbursementPrincipalParameterName).getAsBigDecimal();
                     }
+                    
+                    if (jsonObject.has(LoanApiConstants.discountOnDisbursalAmountParameterName)
+                            && jsonObject.get(LoanApiConstants.discountOnDisbursalAmountParameterName).isJsonPrimitive()
+                            && StringUtils.isNotBlank((jsonObject.get(LoanApiConstants.discountOnDisbursalAmountParameterName).getAsString()))) {
+                        discountOnDisbursalAmount = jsonObject.getAsJsonPrimitive(LoanApiConstants.discountOnDisbursalAmountParameterName).getAsBigDecimal();
+                    }
 
-                    disbursementDatas.add(new LoanDisbursementDetails(expectedDisbursementDate, actualDisbursementDate, principal));
+                    disbursementDatas.add(new LoanDisbursementDetails(expectedDisbursementDate, actualDisbursementDate, principal, discountOnDisbursalAmount));
                     i++;
                 } while (i < disbursementDataArray.size());
             }

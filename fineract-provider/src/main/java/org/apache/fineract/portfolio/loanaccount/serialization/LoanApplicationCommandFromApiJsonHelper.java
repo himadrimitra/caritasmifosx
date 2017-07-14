@@ -119,7 +119,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         Set<String> loanSupportedParameters =  new HashSet<>(this.supportedParameters);;
-        if(loanProduct.isFlatInterestRate()){
+        if(loanProduct.isFlatInterestRate() && !loanProduct.isMultiDisburseLoan()){
             loanSupportedParameters.add(LoanApiConstants.discountOnDisbursalAmountParameterName);
         }
         
@@ -554,7 +554,7 @@ public final class LoanApplicationCommandFromApiJsonHelper {
 
         final Type typeOfMap = new TypeToken<Map<String, Object>>() {}.getType();
         Set<String> loanSupportedParameters =  new HashSet<>(this.supportedParameters);;
-        if(loanProduct.isFlatInterestRate()){
+        if(loanProduct.isFlatInterestRate() && !loanProduct.isMultiDisburseLoan()){
             loanSupportedParameters.add(LoanApiConstants.discountOnDisbursalAmountParameterName);
         }
         
@@ -1246,8 +1246,18 @@ public final class LoanApplicationCommandFromApiJsonHelper {
                                 LoanApiConstants.disbursementPrincipalParameterName, jsonObject, locale);
                         baseDataValidator.reset().parameter(LoanApiConstants.disbursementDataParameterName)
                                 .parameterAtIndexArray(LoanApiConstants.disbursementPrincipalParameterName, i).value(principal).notBlank();
+                        
+                        BigDecimal discountOnDisbursalAmount = this.fromApiJsonHelper.extractBigDecimalNamed(
+                                LoanApiConstants.discountOnDisbursalAmountParameterName, jsonObject, locale);
+                        baseDataValidator.reset().parameter(LoanApiConstants.discountOnDisbursalAmountParameterName)
+                                .parameterAtIndexArray(LoanApiConstants.discountOnDisbursalAmountParameterName, i)
+                                .value(discountOnDisbursalAmount).ignoreIfNull().positiveAmount();
+
                         if (principal != null) {
                             tatalDisbursement = tatalDisbursement.add(principal);
+                        }
+                        if(discountOnDisbursalAmount != null){
+                            tatalDisbursement = tatalDisbursement.add(discountOnDisbursalAmount);
                         }
 
                         baseDataValidator.reset().parameter(LoanApiConstants.disbursementDataParameterName)

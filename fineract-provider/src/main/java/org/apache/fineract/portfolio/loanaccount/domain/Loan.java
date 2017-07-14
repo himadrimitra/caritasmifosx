@@ -595,6 +595,7 @@ public class Loan extends AbstractPersistable<Long> {
         this.expectedDisbursalPaymentType = expectedDisbursalPaymentType;
         this.expectedRepaymentPaymentType = expectedRepaymentPaymentType;
         updateNetAmountForTranches(getLoanCharges());
+        updateDiscountOnDisbursement();
         this.amountForUpfrontCollection = amountForUpfrontCollection;
     }
 
@@ -1963,6 +1964,13 @@ public class Loan extends AbstractPersistable<Long> {
             BigDecimal principal = jsonObject.getAsJsonPrimitive(LoanApiConstants.disbursementPrincipalParameterName).getAsBigDecimal();
             returnObject.put(LoanApiConstants.disbursementPrincipalParameterName, principal);
         }
+        
+        if (jsonObject.has(LoanApiConstants.discountOnDisbursalAmountParameterName)
+                && jsonObject.get(LoanApiConstants.discountOnDisbursalAmountParameterName).isJsonPrimitive()
+                && StringUtils.isNotBlank((jsonObject.get(LoanApiConstants.discountOnDisbursalAmountParameterName).getAsString()))) {
+            BigDecimal principal = jsonObject.getAsJsonPrimitive(LoanApiConstants.discountOnDisbursalAmountParameterName).getAsBigDecimal();
+            returnObject.put(LoanApiConstants.discountOnDisbursalAmountParameterName, principal);
+        }
 
         if (jsonObject.has(LoanApiConstants.disbursementIdParameterName)
                 && jsonObject.get(LoanApiConstants.disbursementIdParameterName).isJsonPrimitive()
@@ -2023,6 +2031,7 @@ public class Loan extends AbstractPersistable<Long> {
                     Date expectedDisbursementDate = (Date) parsedDisbursementData.get(LoanApiConstants.disbursementDateParameterName);
                     BigDecimal principal = (BigDecimal) parsedDisbursementData.get(LoanApiConstants.disbursementPrincipalParameterName);
                     chargeIds = (String) parsedDisbursementData.get(LoanApiConstants.loanChargeIdParameterName);
+                    BigDecimal discountOnDisbursalAmount = (BigDecimal) parsedDisbursementData.get(LoanApiConstants.discountOnDisbursalAmountParameterName);
                     if (chargeIds != null) {
                         if (chargeIds.indexOf(",") != -1) {
                             String[] chargeId = chargeIds.split(",");
@@ -2034,7 +2043,7 @@ public class Loan extends AbstractPersistable<Long> {
                         }
                     }
                     recalculateFromDate = createOrUpdateDisbursementDetails(actualChanges, expectedDisbursementDate, principal,
-                            disbursementList, recalculateFromDate, charges);
+                            disbursementList, recalculateFromDate, charges, discountOnDisbursalAmount);
                 }
                
                 recalculateFromDate = removeDisbursementAndAssociatedCharges(actualChanges, disbursementList, loanChargeIds, chargeIdLength, removeAllChages, recalculateFromDate);
@@ -2074,7 +2083,7 @@ public class Loan extends AbstractPersistable<Long> {
 
     private LocalDate createOrUpdateDisbursementDetails(final Map<String, Object> actualChanges,
             Date expectedDisbursementDate, BigDecimal principal, List<Long> existingDisbursementList, LocalDate recalculateFromDate, 
-            Collection<LoanCharge> charges) {
+            Collection<LoanCharge> charges, final BigDecimal discountOnDisbursalAmount) {
 
         LoanDisbursementDetails loanDisbursementDetails = fetchLoanDisbursementByExpectedDisbursementDate(expectedDisbursementDate);
         if (loanDisbursementDetails != null) {
@@ -2083,7 +2092,7 @@ public class Loan extends AbstractPersistable<Long> {
             if (loanDisbursementDetail.actualDisbursementDate() == null) {
                 Date actualDisbursementDate = null;
                 LoanDisbursementDetails disbursementDetails = new LoanDisbursementDetails(expectedDisbursementDate, actualDisbursementDate,
-                        principal);
+                        principal, discountOnDisbursalAmount);
                 loanDisbursementDetail.updateLoan(this);
                 if (!loanDisbursementDetail.equals(disbursementDetails)) {
                     loanDisbursementDetail.copy(disbursementDetails);
@@ -2095,7 +2104,7 @@ public class Loan extends AbstractPersistable<Long> {
         } else {
             Date actualDisbursementDate = null;
             LoanDisbursementDetails disbursementDetails = new LoanDisbursementDetails(expectedDisbursementDate, actualDisbursementDate,
-                    principal);
+                    principal, discountOnDisbursalAmount);
             disbursementDetails.updateLoan(this);
             LocalDate expectedDisbursementDateAsLocalDate = new LocalDate(expectedDisbursementDate);
             recalculateFromDate = getRecalculateFromDate(recalculateFromDate, expectedDisbursementDateAsLocalDate);
@@ -2115,6 +2124,7 @@ public class Loan extends AbstractPersistable<Long> {
             actualChanges.put("recalculateLoanSchedule", true);
         }
         updateNetAmountForTranches(charges);
+        updateDiscountOnDisbursement();
         return recalculateFromDate;
     }
     
@@ -2128,6 +2138,19 @@ public class Loan extends AbstractPersistable<Long> {
                     charge.getTrancheDisbursementCharge().getloanDisbursementDetails()
                             .setNetPrincipalDisbursed(pricipal.subtract(chargeAmount));
                 }
+            }
+        }
+    }
+    
+    private void updateDiscountOnDisbursement() {
+        if (isMultiDisburmentLoan()) {
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            this.discountOnDisbursalAmount = null;
+            for (LoanDisbursementDetails disbursementDetails : disbursementDetails) {
+                discountAmount = discountAmount.add(disbursementDetails.fetchDiscountOnDisbursalAmount());
+            }
+            if (discountAmount.compareTo(BigDecimal.ZERO) == 1) {
+                this.discountOnDisbursalAmount = discountAmount;
             }
         }
     }
@@ -2801,7 +2824,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public Money adjustDisburseAmount(final JsonCommand command, final LocalDate actualDisbursementDate) {
-        setDiscountOnDisbursalAmount(command);
+        if (!this.isMultiDisburmentLoan()) {
+            setDiscountOnDisbursalAmount(command);
+        }
         BigDecimal discountOnDisbursalAmount = BigDecimal.ZERO;
         if(getDiscountOnDisburseAmount() != null){
             discountOnDisbursalAmount = getDiscountOnDisburseAmount();
@@ -6565,17 +6590,13 @@ public class Loan extends AbstractPersistable<Long> {
         final PeriodFrequencyType loanTermPeriodFrequencyType = PeriodFrequencyType.fromInt(this.termPeriodFrequencyType);
         NthDayType nthDayType = null;
         DayOfWeekType dayOfWeekType = null;
-        boolean reduceDiscountFromPricipal = this.discountOnDisbursalAmount != null
+        boolean reduceDiscountFromPricipal = this.discountOnDisbursalAmount != null && !this.isMultiDisburmentLoan() 
                 && !(this.isOpen() || (scheduleGeneratorDTO.getBusinessEvent() != null && scheduleGeneratorDTO.getBusinessEvent().equals(
                         BUSINESS_EVENTS.LOAN_DISBURSAL)));
         final List<DisbursementData> disbursementData = new ArrayList<>();
         for (LoanDisbursementDetails disbursementDetails : this.disbursementDetails) {
             if (disbursementDetails.isActive()) {
                 DisbursementData data = disbursementDetails.toData();
-                if (reduceDiscountFromPricipal
-                        && disbursementDetails.getDisbursementDateAsLocalDate().isEqual(getDisbursementDate())) {
-                    data.reducePrincipal(this.discountOnDisbursalAmount);
-                }
                 disbursementData.add(data);
             }
         }
@@ -6867,7 +6888,7 @@ public class Loan extends AbstractPersistable<Long> {
             }
 
             disbursementData.add(new DisbursementData(loanDisbursementDetails.getId(), expectedDisbursementDate, actualDisbursementDate,
-                    loanDisbursementDetails.principal(), null, null));
+                    loanDisbursementDetails.principal(), null, null, discountOnDisbursalAmount));
         }
 
         return disbursementData;
@@ -8209,6 +8230,9 @@ public class Loan extends AbstractPersistable<Long> {
     }
 
     public void setDiscountOnDisbursalAmount(final JsonCommand command) {
+        if(this.isMultiDisburmentLoan()){
+            return;
+        }
         if (command.hasParameter(LoanApiConstants.discountOnDisbursalAmountParameterName)) {
             if (this.isApproved() && this.loanProduct().isFlatInterestRate()) {
                 BigDecimal disbursalDiscountAmount = command

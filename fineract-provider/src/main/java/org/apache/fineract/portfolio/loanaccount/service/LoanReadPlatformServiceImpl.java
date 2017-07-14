@@ -628,9 +628,11 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             LocalDate nextDueDate = new LocalDate(data.get("nextDueDate"));
             BigDecimal principal = (BigDecimal) data.get("principal");
             BigDecimal discountOnDisbursalAmount = null;
-            if (!loanStatus.isActive() && data.get("discountOnDisbursalAmount") != null) {
+            if (data.get("discountOnDisbursalAmount") != null) {
                 discountOnDisbursalAmount = (BigDecimal) data.get("discountOnDisbursalAmount");
-                principal = principal.subtract(discountOnDisbursalAmount);
+                if (data.get("trancheDisbursalId") == null) {
+                    principal = principal.subtract(discountOnDisbursalAmount);
+                }
             }
             BigDecimal fixedEmiAmount = null;
             if (data.get("fixedEmiAmount") != null) {
@@ -704,7 +706,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
         final StringBuilder sql = new StringBuilder(200);
         sql.append("SELECT dd.id AS trancheDisbursalId, IFNULL( dd.principal,l.principal_amount)  AS principal, IFNULL(dd.expected_disburse_date,l.expected_disbursedon_date) AS expectedDisbursementDate, ifnull(tv.decimal_value,l.fixed_emi_amount) as fixedEmiAmount, min(rs.duedate) as nextDueDate, l.approved_principal as approvedPrincipal ");
         sql.append(" , l.product_id as productId, l.client_id as clientId, l.expected_firstrepaymenton_date as expectedFirstRepaymentOnDate,");
-        sql.append(" l.principal_net_disbursed_derived as netDisbursalDerived , dd.principal_net_disbursed as trancheNetDisburseAmount,l.loan_status_id as status, l.discount_on_disbursal_amount as discountOnDisbursalAmount ");
+        sql.append(" l.principal_net_disbursed_derived as netDisbursalDerived , dd.principal_net_disbursed as trancheNetDisburseAmount,l.loan_status_id as status, IFNULL(dd.discount_on_disbursal_amount, l.discount_on_disbursal_amount) as discountOnDisbursalAmount ");
         sql.append("FROM m_loan l");
         sql.append(" left join (select ltemp.id loanId, MIN(ddtemp.expected_disburse_date) as minDisburseDate from m_loan ltemp join m_loan_disbursement_detail  ddtemp on ltemp.id = ddtemp.loan_id and ddtemp.disbursedon_date is null where ltemp.id = :loanId  group by ltemp.id ) x on x.loanId = l.id");
         sql.append(" left join m_loan_disbursement_detail dd on dd.loan_id = l.id and dd.expected_disburse_date =  x.minDisburseDate");
@@ -1536,7 +1538,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                     for (DisbursementData data : disbursementData) {
                         if (fromDate.equals(this.disbursement.disbursementDate()) && data.disbursementDate().equals(fromDate)) {
                             if (periods.size() == 0) {
-                                principal = principal.add(data.amount()).add(interestPosted).subtract(discountOnDisbursalAmount);
+                                principal = principal.add(data.amount()).add(interestPosted);
                                 if (data.getChargeAmount() == null) {
                                     final LoanSchedulePeriodData periodData = LoanSchedulePeriodData.disbursementOnlyPeriod(
                                             data.disbursementDate(), principal, disbursementChargeAmount, data.isDisbursed());
@@ -1992,7 +1994,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
     private static final class LoanDisbursementDetailMapper implements RowMapper<DisbursementData> {
 
         public String schema() {
-            return "dd.id as id,dd.expected_disburse_date as expectedDisbursementdate, dd.disbursedon_date as actualDisbursementdate,dd.principal as principal,sum(lc.amount) chargeAmount, lc.amount_waived_derived waivedAmount,group_concat(lc.id) loanChargeId "
+            return "dd.id as id,dd.expected_disburse_date as expectedDisbursementdate, dd.disbursedon_date as actualDisbursementdate,dd.principal as principal,sum(lc.amount) chargeAmount, "
+                    + "lc.amount_waived_derived waivedAmount,group_concat(lc.id) loanChargeId, dd.discount_on_disbursal_amount as discountOnDisbursalAmount "
                     + "from m_loan l inner join m_loan_disbursement_detail dd on dd.loan_id = l.id left join m_loan_tranche_disbursement_charge tdc on tdc.disbursement_detail_id=dd.id "
                     + "left join m_loan_charge lc on  lc.id=tdc.loan_charge_id and lc.is_active=1";
         }
@@ -2003,12 +2006,13 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final LocalDate expectedDisbursementdate = JdbcSupport.getLocalDate(rs, "expectedDisbursementdate");
             final LocalDate actualDisbursementdate = JdbcSupport.getLocalDate(rs, "actualDisbursementdate");
             final BigDecimal principal = rs.getBigDecimal("principal");
+            final BigDecimal discountOnDisbursalAmount = rs.getBigDecimal("discountOnDisbursalAmount");
             final String loanChargeId = rs.getString("loanChargeId");
             BigDecimal chargeAmount = rs.getBigDecimal("chargeAmount");
             final BigDecimal waivedAmount = rs.getBigDecimal("waivedAmount");
             if (chargeAmount != null && waivedAmount != null) chargeAmount = chargeAmount.subtract(waivedAmount);
             final DisbursementData disbursementData = new DisbursementData(id, expectedDisbursementdate, actualDisbursementdate, principal,
-                    loanChargeId, chargeAmount);
+                    loanChargeId, chargeAmount, discountOnDisbursalAmount);
             return disbursementData;
         }
 
