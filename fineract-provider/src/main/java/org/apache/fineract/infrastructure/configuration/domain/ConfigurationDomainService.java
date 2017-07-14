@@ -148,5 +148,7 @@ public interface ConfigurationDomainService {
     boolean isEnabledEveryUserLoginGenerateNewCryptographicKeyPair();
 
     int getInstallmentAmountRoundingMode();
+    
+    boolean isAllowPaymentsOnClosedLoansEnabled();
 
 }

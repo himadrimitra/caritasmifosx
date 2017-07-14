@@ -57,6 +57,7 @@ import javax.persistence.Version;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.codes.domain.CodeValue;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainServiceJpa;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.exception.GeneralPlatformDomainRuleException;
@@ -3323,7 +3324,8 @@ public class Loan extends AbstractPersistable<Long> {
 
     public ChangedTransactionDetail makeRepayment(final LoanTransaction repaymentTransaction,
             final LoanLifecycleStateMachine loanLifecycleStateMachine, boolean isRecoveryRepayment,
-            final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser, Boolean isHolidayValidationDone) {
+            final ScheduleGeneratorDTO scheduleGeneratorDTO, final AppUser currentUser, Boolean isHolidayValidationDone,
+            final boolean allowPaymentsOnClosedLoans) {
         HolidayDetailDTO holidayDetailDTO = null;
         LoanEvent event = null;
         
@@ -3345,8 +3347,12 @@ public class Loan extends AbstractPersistable<Long> {
 					validateAccountStatus(LoanEvent.WAIVER);
 				}
 			}
-        }        
-        validateRepaymentForOverPaidOrClosedLoan();
+        } 
+        
+        if (!(allowPaymentsOnClosedLoans && repaymentTransaction.isRepayment())) {
+            validateRepaymentForOverPaidOrClosedLoan();
+        }
+        
         validateActivityNotBeforeClientOrGroupTransferDate(event, repaymentTransaction.getTransactionDate());
         validateActivityNotBeforeLastTransactionDate(event, repaymentTransaction.getTransactionDate());
         if(repaymentTransaction.getTransactionSubTye().isPrePayment()){

@@ -265,9 +265,10 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
         final ScheduleGeneratorDTO scheduleGeneratorDTO = this.loanUtilService.buildScheduleGeneratorDTO(loan, recalculateFrom,
                 holidayDetailDto);
 
+        final boolean allowPaymentsOnClosedLoans = configurationDomainService.isAllowPaymentsOnClosedLoansEnabled();
         final ChangedTransactionDetail changedTransactionDetail = loan.makeRepayment(newRepaymentTransaction,
                 defaultLoanLifecycleStateMachine(), isRecoveryRepayment, scheduleGeneratorDTO, currentUser,
-                isHolidayValidationDone);
+                isHolidayValidationDone, allowPaymentsOnClosedLoans);
         Collection<LoanTransaction> accrualTransactions = null;
         final MonetaryCurrency currency = loan.getCurrency();
         if (loan.isInAccrualSuspense() && newRepaymentTransaction.getTransactionSubTye().isTransactionInNpaState()
@@ -301,7 +302,7 @@ public class LoanAccountDomainServiceJpa implements LoanAccountDomainService {
                     loan.getTotalSubsidyAmount(), paymentDetail, transactionDate, txnExternalId);
 	        final ChangedTransactionDetail changedTransactionDetailAfterRealization = loan.makeRepayment(
                     newrealizationLoanSubsidyTransaction, defaultLoanLifecycleStateMachine(), isRecoveryRepayment,
-                    scheduleGeneratorDTO, currentUser, isHolidayValidationDone);
+                    scheduleGeneratorDTO, currentUser, isHolidayValidationDone, allowPaymentsOnClosedLoans);
              saveLoanTransactionWithDataIntegrityViolationChecks(newrealizationLoanSubsidyTransaction);
             if (changedTransactionDetail != null && changedTransactionDetailAfterRealization != null) {
                 changedTransactionDetail.getNewTransactionMappings().putAll(

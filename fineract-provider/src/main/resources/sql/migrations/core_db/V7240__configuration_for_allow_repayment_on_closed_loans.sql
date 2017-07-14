@@ -1,0 +1,1 @@
+INSERT INTO `c_configuration` (`name`, `description`) VALUES ('allow-payments-on-closed-loans', 'Allow to make repayment even loan is closed');
