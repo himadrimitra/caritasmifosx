@@ -78,13 +78,13 @@ public class GroupGeneralData {
     private final boolean isShowLoanDetailsInCenterPageEnabled;
     private Collection<LoanAccountSummaryData> loanAccountSummaryDatas;
 
-    public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName) {
+    public static GroupGeneralData lookup(final Long groupId, final String accountNo, final String groupName,final String groupLevel) {
         final Collection<ClientData> clientMembers = null;
         final Collection<GroupRoleData> groupRoles = null;
         final Collection<CodeValueData> closureReasons = null;
         final boolean isShowLoanDetailsInCenterPageEnabled = false;
         final VillageData villageData = null;
-        return new GroupGeneralData(groupId, accountNo, groupName, null, null, null, null, null, null, null, null, null, null, null, clientMembers, null, null,
+        return new GroupGeneralData(groupId, accountNo, groupName, null, null, null, null, null, null, null, null, null, null, groupLevel, clientMembers, null, null,
                 null, null, null, groupRoles, null, null, null, null, closureReasons, null, isShowLoanDetailsInCenterPageEnabled, villageData);
     }
 

@@ -62,6 +62,8 @@ import org.apache.fineract.portfolio.accountdetails.service.AccountDetailsReadPl
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
 import org.apache.fineract.portfolio.calendar.domain.CalendarEntityType;
 import org.apache.fineract.portfolio.calendar.service.CalendarReadPlatformService;
+import org.apache.fineract.portfolio.client.data.ClientData;
+import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collectionsheet.data.JLGCollectionSheetData;
 import org.apache.fineract.portfolio.collectionsheet.service.CollectionSheetReadPlatformService;
 import org.apache.fineract.portfolio.group.data.CenterData;
@@ -79,6 +81,7 @@ import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckData;
 import com.finflux.portfolio.loan.utilization.data.LoanUtilizationCheckTemplateData;
@@ -107,6 +110,7 @@ public class CentersApiResource {
     private final ToApiJsonSerializer<LoanAccountData> bulkUndoTransactionsToApiJsonSerializer;
     private final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService;
     private final VillageReadPlatformService villageReadPlatformService;
+    private final ClientReadPlatformService clientReadPlatformService;
 
     @SuppressWarnings("rawtypes")
     private final DefaultToApiJsonSerializer defaultToApiJsonSerializer;
@@ -123,7 +127,7 @@ public class CentersApiResource {
             final CalendarReadPlatformService calendarReadPlatformService, final MeetingReadPlatformService meetingReadPlatformService, 
             final CenterGroupMemberAccountReadPlatformService centerGroupMemberAccountReadPlatformService,
             final ToApiJsonSerializer<LoanAccountData> bulkUndoTransactionsToApiJsonSerializer,final ToApiJsonSerializer<Collection<GroupGeneralData>> centerGroupMemberToApiJsonSerializer,final LoanUtilizationCheckReadPlatformService loanUtilizationCheckReadPlatformService,
-            final DefaultToApiJsonSerializer defaultToApiJsonSerializer, final VillageReadPlatformService villageReadPlatformService) {
+            final DefaultToApiJsonSerializer defaultToApiJsonSerializer, final VillageReadPlatformService villageReadPlatformService,final ClientReadPlatformService clientReadPlatformService) {
         this.context = context;
         this.centerReadPlatformService = centerReadPlatformService;
         this.centerApiJsonSerializer = centerApiJsonSerializer;
@@ -142,6 +146,7 @@ public class CentersApiResource {
         this.loanUtilizationCheckReadPlatformService = loanUtilizationCheckReadPlatformService;
         this.defaultToApiJsonSerializer = defaultToApiJsonSerializer;
         this.villageReadPlatformService = villageReadPlatformService;
+        this.clientReadPlatformService=clientReadPlatformService;
     }
 
     @GET
@@ -216,6 +221,7 @@ public class CentersApiResource {
         final Set<String> associationParameters = ApiParameterHelper.extractAssociationsForResponseIfProvided(uriInfo.getQueryParameters());
         CalendarData collectionMeetingCalendar = null;
         Collection<GroupGeneralData> groups = null;
+        Collection<ClientData> membersOfGroup = null;
         VillageData vd =null;
         CenterData center = this.centerReadPlatformService.retrieveOne(centerId);
 
@@ -229,6 +235,13 @@ public class CentersApiResource {
         if (!associationParameters.isEmpty()) {
             if (associationParameters.contains("groupMembers")) {
                 groups = this.centerReadPlatformService.retrieveAssociatedGroups(centerId);
+            }
+            
+            if (associationParameters.contains("clientMembers")) {
+                membersOfGroup = this.clientReadPlatformService.retrieveClientMembersOfGroup(centerId);
+                if (CollectionUtils.isEmpty(membersOfGroup)) {
+                    membersOfGroup = null;
+                }
             }
             
             if (associationParameters.contains("hierarchyLookup")) {
@@ -255,7 +268,7 @@ public class CentersApiResource {
                 }
             }
 
-            center = CenterData.withAssociations(center, groups, collectionMeetingCalendar);
+            center = CenterData.withAssociations(center, groups, collectionMeetingCalendar,membersOfGroup);
         }
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());

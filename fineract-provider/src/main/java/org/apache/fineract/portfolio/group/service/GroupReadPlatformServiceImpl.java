@@ -297,7 +297,7 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
     private static final class GroupLookupDataMapper implements RowMapper<GroupGeneralData> {
 
         public final String schema() {
-            return "g.id as id, g.account_no as accountNo, g.display_name as displayName from m_group g where g.level_id = 2 ";
+            return "g.id as id, g.account_no as accountNo, g.display_name as displayName,g.level_id as groupLevel from m_group g where g.level_id = 2 ";
         }
 
         @Override
@@ -305,8 +305,8 @@ public class GroupReadPlatformServiceImpl implements GroupReadPlatformService {
             final Long id = JdbcSupport.getLong(rs, "id");
             final String accountNo = rs.getString("accountNo");
             final String displayName = rs.getString("displayName");
-            
-            return GroupGeneralData.lookup(id, accountNo, displayName);
+            final String groupLevel=rs.getString("groupLevel");
+            return GroupGeneralData.lookup(id, accountNo, displayName,groupLevel);
         }
     }
 
