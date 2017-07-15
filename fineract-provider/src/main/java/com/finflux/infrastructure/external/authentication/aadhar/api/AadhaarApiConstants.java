@@ -10,10 +10,12 @@ public class AadhaarApiConstants {
 
 	public static final String AADHAAR_SERIVICE_RESOURCE_NAME = "Aadhaar service";
 	public static final String AADHAAR_NUMBER = "aadhaarNumber";
-	public static final String OTP = "otp";
+	public static final String AUTHTYPE_OTP = "otp";
+	public static final String AUTHTYPE_FINGERPRINT = "fingerprint";
+	public static final String AUTHTYPE_IRIS = "iris" ;
 	public static final String SUCCESS = "success";
 
-	public static final String FINGERPRINT = "fingerprint";
+	
 
 	public static final String AUTH_TYPE = "authType";
 	public static final String AUTH_DATA = "authData";
