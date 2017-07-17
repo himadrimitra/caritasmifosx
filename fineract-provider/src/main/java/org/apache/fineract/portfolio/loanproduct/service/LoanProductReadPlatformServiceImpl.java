@@ -287,10 +287,13 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
             if (activeOnly) {
                 sql += " and lp.id in ( " + inClause + " )";
             } else {
-                sql += " and lp.id in ( " + inClause + " ) ";
+                if (productApplicableForLoanType == null) {
+                    sql += " where lp.id in ( " + inClause + " ) ";
+                } else {
+                    sql += " and lp.id in ( " + inClause + " ) ";
+                }
             }
         }
-
         return this.jdbcTemplate.query(sql, rm, params.toArray());
     }
 
