@@ -5,6 +5,7 @@
  */
 package com.finflux.email.domain;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -38,26 +39,31 @@ public class EmailOutboundMessage extends AbstractPersistable<Long> {
     @Column(name = "sent_date", nullable = true)
     @Temporal(TemporalType.DATE)
     private Date sent_date;
-
+    
+    @Column(name = "loan_amount", nullable = true)
+    private BigDecimal loanAmount;
+    
     public EmailOutboundMessage() {
 
     }
 
-    public EmailOutboundMessage(final Loan loan, final String email_id, final Integer productType, final String status, Date sent_date) {
+    public EmailOutboundMessage(final Loan loan, final String email_id, final Integer productType, final String status, Date sent_date,
+            final BigDecimal loanAmount) {
         this.loan = loan;
         this.event_type = email_id;
         this.product_type = productType;
         this.status = status;
         this.sent_date = sent_date;
+        this.loanAmount = loanAmount;
     }
 
     /**
      * @return a new instance of the EmailOutboundMessage class
      **/
     public static EmailOutboundMessage instance(final Loan loan, final String emaill_id, final Integer productType, String status,
-            Date sent_Date) {
+            Date sent_Date, BigDecimal loanAmount) {
 
-        return new EmailOutboundMessage(loan, emaill_id, productType, status, sent_Date);
+        return new EmailOutboundMessage(loan, emaill_id, productType, status, sent_Date, loanAmount);
     }
 
     public Loan getLoan() {
@@ -83,6 +89,10 @@ public class EmailOutboundMessage extends AbstractPersistable<Long> {
     
     public void setSent_date(Date sent_date) {
         this.sent_date = sent_date;
+    }
+    
+    public BigDecimal getLoanAmount(){
+        return this.loanAmount;
     }
 
 

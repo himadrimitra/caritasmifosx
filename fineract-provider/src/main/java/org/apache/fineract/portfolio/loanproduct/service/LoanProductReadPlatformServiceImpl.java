@@ -285,12 +285,15 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
                 .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.LOAN_PRODUCT);
         if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
             if (activeOnly) {
-                sql += " and id in ( " + inClause + " )";
+                sql += " and lp.id in ( " + inClause + " )";
             } else {
-                sql += " and id in ( " + inClause + " ) ";
+                if (productApplicableForLoanType == null) {
+                    sql += " where lp.id in ( " + inClause + " ) ";
+                } else {
+                    sql += " and lp.id in ( " + inClause + " ) ";
+                }
             }
         }
-
         return this.jdbcTemplate.query(sql, rm, params.toArray());
     }
 
@@ -818,7 +821,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         String inClause = fineractEntityAccessUtil
                 .getSQLWhereClauseForProductIDsForUserOffice_ifGlobalConfigEnabled(FineractEntityType.LOAN_PRODUCT);
         if ((inClause != null) && (!(inClause.trim().isEmpty()))) {
-            sql += " and id in ( " + inClause + " ) ";
+            sql += " and id lp.in ( " + inClause + " ) ";
         }
 
         return this.jdbcTemplate.query(sql, rm, new Object[] {});

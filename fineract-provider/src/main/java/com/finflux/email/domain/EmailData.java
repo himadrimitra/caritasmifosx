@@ -7,6 +7,7 @@ package com.finflux.email.domain;
 
 
 import java.io.File;
+import java.math.BigDecimal;
 
 /**
  * data object representing Email data.
@@ -18,13 +19,17 @@ public class EmailData {
     private final String subject;
     private final File attachment;
     private final String accountNumber;
+    private final String centerDisplayName;
 
-    public EmailData(final String accountNumber, final String to, final File attachment) {
+    public EmailData(final String accountNumber, final String to, final File attachment, final Long clientId, BigDecimal loanAmount,
+            final String centerDisplayName) {
         this.accountNumber = accountNumber;
         this.to = to;
         this.text = "Loan is dibursed. Please find the attached file containing information about Repayment schedule";
-        this.subject = "Account Number " + accountNumber + " - Loan Disbursement and Repayment Details";
+        this.subject = "Account Number " + accountNumber + " ClientId  " + clientId + " Amount " + loanAmount
+                + " - Loan Disbursement and Repayment Details";
         this.attachment = attachment;
+        this.centerDisplayName = centerDisplayName;
     }
 
     /**
@@ -60,6 +65,10 @@ public class EmailData {
      */
     public String getAccountNumber() {
         return this.accountNumber;
+    }
+    
+    public String getCenterDisplayName() {
+        return this.centerDisplayName;
     }
 
 }
