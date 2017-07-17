@@ -10,7 +10,7 @@ public class MClientDataScopedSqlServiceImpl implements DataScopedSqlService {
     public String getDataScopedSql(final AppUser currentUser, final String apptableIdentifier) {
 
         final String scopedSQL = "select o.id as officeId, null as groupId, c.id as clientId, null as savingsId,"
-                + " null as loanId, null as entityId, null as transactionId from m_client c "
+                + " null as loanId, null as loanApplicationReferenceId, null as entityId, null as transactionId from m_client c "
                 + " join m_office o on o.id = c.office_id and o.hierarchy like '" + currentUser.getOffice().getHierarchy() + "%'"
                 + " where c.id = " + apptableIdentifier;
 

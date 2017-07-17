@@ -53,6 +53,7 @@ public class UpdateOneToOneDatatableEntryCommandHandler implements NewCommandSou
                 .withLoanId(commandProcessingResult.getLoanId()) //
                 .withTransactionId(commandProcessingResult.getTransactionId()) //
                 .with(commandProcessingResult.getChanges()) //
+                .withLoanApplicationReferenceId(commandProcessingResult.getLoanApplicationReferenceId()) //
                 .build();
     }
 }
