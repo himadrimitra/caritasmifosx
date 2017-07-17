@@ -53,6 +53,7 @@ public class UpdateOneToManyDatatableEntryCommandHandler implements NewCommandSo
                 .withLoanId(commandProcessingResult.getLoanId()) //
                 .withTransactionId(commandProcessingResult.getTransactionId()) //
                 .with(commandProcessingResult.getChanges()) //
+                .withLoanApplicationReferenceId(commandProcessingResult.getLoanApplicationReferenceId()) //
                 .build();
     }
 }

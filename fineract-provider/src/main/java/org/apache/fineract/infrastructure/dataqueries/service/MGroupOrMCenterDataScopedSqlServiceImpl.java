@@ -10,7 +10,7 @@ public class MGroupOrMCenterDataScopedSqlServiceImpl implements DataScopedSqlSer
     public String getDataScopedSql(final AppUser currentUser, final String apptableIdentifier) {
 
         final String scopedSQL = "select o.id as officeId, g.id as groupId, null as clientId, null as savingsId, null as loanId,"
-                + " null as entityId, null as transactionId from m_group g "
+                + " null as entityId, null as transactionId from m_group g , null as loanApplicationReferenceId"
                 + " join m_office o on o.id = g.office_id and o.hierarchy like '" + currentUser.getOffice().getHierarchy() + "%'"
                 + " where g.id = " + apptableIdentifier;
 
