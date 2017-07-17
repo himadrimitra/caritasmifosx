@@ -180,51 +180,27 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 	
 	}
 
-	public String obtainEKycByOtpUsingAadhaarService(final String aadhaarNumber, final String otp,
-			final Location location) {
-		initalize();
-		String kycByFingerprintJson = this.aadharServiceDataAssembler.getKycCaptureData(aadhaarNumber, otp,
-				certificateType, location, AadhaarApiConstants.OTP);
-		String url = urlBuilder(endpoint, kyc);
+	
+	public String obtainEKycUsingAadhaarService(final String aadhaarNumber, final String authData,
+                final Location location, final String authType) {
+        initalize();
+        String kycByFingerprintJson = this.aadharServiceDataAssembler.getKycCaptureData(aadhaarNumber, authData,
+                        certificateType, location, authType);
+        String url = urlBuilder(endpoint, kyc);
 
-		String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
+        String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
 
-		if (response != null) {
-			JsonElement element = this.fromJsonHelper.parse(response);
-			boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
-			if (isSuccess) {
-				return response;
-			} else {
-				throw new UnableToGetKycDetails(aadhaarNumber, "Fingerprint");
-			}
+        if (response != null) {
+                JsonElement element = this.fromJsonHelper.parse(response);
+                boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
+                if (isSuccess) {
+                        return response;
+                } 
+                throw new UnableToGetKycDetails(aadhaarNumber, authType);
 
-		} else {
-			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
-		}
-	}
-
-	public String obtainEKycByFingerprintUsingAadhaarService(final String aadhaarNumber, final String fingerprintData,
-			final Location location) {
-		initalize();
-		String kycByFingerprintJson = this.aadharServiceDataAssembler.getKycCaptureData(aadhaarNumber, fingerprintData,
-				certificateType, location, AadhaarApiConstants.FINGERPRINT);
-		String url = urlBuilder(endpoint, kyc);
-
-		String response = this.httpConnectivity.performServerPost(url, kycByFingerprintJson, String.class);
-
-		if (response != null) {
-			JsonElement element = this.fromJsonHelper.parse(response);
-			boolean isSuccess = this.fromJsonHelper.extractBooleanNamed(AadhaarApiConstants.SUCCESS, element);
-			if (isSuccess) {
-				return response;
-			} else {
-				throw new UnableToGetKycDetails(aadhaarNumber, "Fingerprint");
-			}
-
-		} else {
-			throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
-		}
-	}
+        }
+        throw new ConnectionFailedException("Unable to communicate with Aadhaar server");
+}
 
     private AadhaarServerDetails getAadhaarServerDetails() {
         final ResultSetExtractor<AadhaarServerDetails> resultSetExtractor = new AadhaarServerDetailsMapper();
@@ -308,12 +284,8 @@ public class AadhaarBridgeProvidedServiceImpl implements AadhaarBridgeProvidedSe
 				location.setPincode(this.fromJsonHelper.extractStringNamed("pincode", locationElement));
 			}
 		}
-		if (authType.equals(AadhaarApiConstants.OTP)) {
-			return obtainEKycByOtpUsingAadhaarService(aadhaarNumber, authData, location);
-		} else {
-
-			return obtainEKycByFingerprintUsingAadhaarService(aadhaarNumber, authData, location);
-		}
+		String kycData = obtainEKycUsingAadhaarService(aadhaarNumber, authData, location, authType) ;
+		return kycData ;
 	}
 
     @Override
