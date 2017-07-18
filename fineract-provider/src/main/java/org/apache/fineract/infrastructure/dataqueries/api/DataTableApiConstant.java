@@ -50,5 +50,6 @@ public class DataTableApiConstant {
     public static final String scopingCriteriaEnumParamName = "scopingCriteriaEnum";
     public static final String dataTableDisplayNameParam = "dataTableDisplayName";
     public static final String JOURNAL_ENTRY_TABLE_NAME = "f_journal_entry";
+    public static final String LOAN_APPLICATION_REFERENCE = "f_loan_application_reference";
 
 }

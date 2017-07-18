@@ -756,7 +756,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             sb.append(" lp.can_define_fixed_emi_amount as canDefineInstallmentAmount, lp.allow_upfront_collection as allowUpfrontCollection,");
             sb.append(" lp.consider_future_disbursements_in_schedule as considerFutureDisbursmentsInSchedule, lp.consider_all_disbursements_in_schedule as considerAllDisbursementsInSchedule,");
             sb.append(" c.id as clientId, c.account_no as clientAccountNo, c.display_name as clientName, IFNULL(c.mobile_no,null) as mobileNo, c.office_id as clientOfficeId,");
-            sb.append(" g.id as groupId, g.account_no as groupAccountNo, g.display_name as groupName,");
+            sb.append(" g.id as groupId, g.account_no as groupAccountNo, g.display_name as groupName,g.level_id as groupLevel,");
             sb.append(" g.office_id as groupOfficeId, g.staff_id As groupStaffId , g.parent_id as groupParentId, (select mg.display_name from m_group mg where mg.id = g.parent_id) as centerName, ");
             sb.append(" g.hierarchy As groupHierarchy , g.level_id as groupLevel, g.external_id As groupExternalId, ");
             sb.append(" g.status_enum as statusEnum, g.activation_date as activationDate, ");
@@ -1278,6 +1278,7 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
          builder.append("g.id as groupId, ");
          builder.append("g.account_no as groupAccountNo, ");
          builder.append("g.display_name as groupName, ");
+         builder.append("g.group_level as groupLevel, ");
          builder.append("c.id as clientId, c.account_no AS clientAccountNo,c.display_name AS clientName, ");
          builder.append("mp.id as loanProductId,  mp.name as loanProductName, ml.loan_purpose_id as loanPurposeId, flp.name as loanPurposeName, ");
          builder.append(" ml.loan_officer_id AS loanOfficerId, s.display_name AS loanOfficerName,  ");
@@ -1375,7 +1376,8 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             }
             final Long expectedDisbursalPaymentTypeId = JdbcSupport.getLong(rs, "expectedDisbursalPaymentTypeId");
             final String paymentTypeName = rs.getString("paymentTypeName");
-            final GroupGeneralData group = GroupGeneralData.lookup(groupId, groupAccountNo, groupName);
+            final String groupLevel=rs.getString("groupLevel");
+            final GroupGeneralData group = GroupGeneralData.lookup(groupId, groupAccountNo, groupName,groupLevel);
             PaymentTypeData expectedDisbursalPaymentTypeData = PaymentTypeData.lookUp(expectedDisbursalPaymentTypeId, paymentTypeName);
             return LoanAccountData.loanDetailsForTaskLookup(id,accountNo,status,clientId, clientAccountNo, clientName, loanProductId,
                     loanProductName, loanPurposeId, loanPurposeName, loanOfficerId, loanOfficerName, loanType,

@@ -37,6 +37,8 @@ public class DataScopedSqlServiceFactory {
             case DataTableApiConstant.JOURNAL_ENTRY_TABLE_NAME:
                 scopedSqlService = new AccGlJournalEntryDataScopedSqlServiceImpl();
             break;
+            case DataTableApiConstant.LOAN_APPLICATION_REFERENCE:
+                scopedSqlService = new LoanApplicationreferenceDataScopedSqlServiceImpl ();
         }
         return scopedSqlService;
     }

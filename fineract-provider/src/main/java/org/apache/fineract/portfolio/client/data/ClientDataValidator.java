@@ -92,6 +92,9 @@ public final class ClientDataValidator {
             baseDataValidator.reset().parameter(ClientApiConstants.groupIdParamName).value(groupId).notNull().integerGreaterThanZero();
         }
 
+        final Long centerId = this.fromApiJsonHelper.extractLongNamed(ClientApiConstants.centerIdParamName, element);
+        baseDataValidator.reset().parameter(ClientApiConstants.centerIdParamName).value(centerId).ignoreIfNull().longGreaterThanZero();
+
         if (this.fromApiJsonHelper.parameterExists(ClientApiConstants.staffIdParamName, element)) {
             final Long staffId = this.fromApiJsonHelper.extractLongNamed(ClientApiConstants.staffIdParamName, element);
             baseDataValidator.reset().parameter(ClientApiConstants.staffIdParamName).value(staffId).ignoreIfNull().longGreaterThanZero();

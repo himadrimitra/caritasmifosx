@@ -39,6 +39,7 @@ import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.domain.Office;
@@ -97,6 +98,11 @@ import com.finflux.familydetail.service.FamilyDetailWritePlatromService;
 import com.finflux.kyc.address.api.AddressApiConstants;
 import com.finflux.kyc.address.data.AddressEntityTypeEnums;
 import com.finflux.kyc.address.service.AddressWritePlatformService;
+import com.finflux.kyc.domain.ClientKycDetails;
+import com.finflux.kyc.domain.ClientKycDetailsRepository;
+import com.finflux.kyc.domain.KycMode;
+import com.finflux.kyc.domain.KycSource;
+import com.finflux.kyc.domain.KycType;
 import com.finflux.risk.existingloans.api.ExistingLoanApiConstants;
 import com.finflux.risk.existingloans.service.ExistingLoanWritePlatformService;
 import com.finflux.task.data.TaskConfigEntityType;
@@ -137,6 +143,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
     private final TaskPlatformWriteService taskPlatformWriteService;
     private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
     private final JdbcTemplate jdbcTemplate;
+    private final ClientKycDetailsRepository clientKycDetailsRepository;
 
     @Autowired
     public ClientWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -156,7 +163,8 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final TaskConfigEntityTypeMappingRepository taskConfigEntityTypeMappingRepository,
             final TaskPlatformWriteService taskPlatformWriteService,
             final CreateWorkflowTaskFactory createWorkflowTaskFactory,
-            final RoutingDataSource dataSource) {
+            final RoutingDataSource dataSource,
+            final ClientKycDetailsRepository clientKycDetailsRepository) {
         this.context = context;
         this.clientRepository = clientRepository;
         this.clientNonPersonRepository = clientNonPersonRepository;
@@ -183,6 +191,7 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
         this.taskPlatformWriteService=taskPlatformWriteService;
         this.createWorkflowTaskFactory=createWorkflowTaskFactory;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.clientKycDetailsRepository = clientKycDetailsRepository;
     }
 
     @Transactional
@@ -251,7 +260,10 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
             final Office clientOffice = this.officeRepository.findOne(officeId);
             if (clientOffice == null) { throw new OfficeNotFoundException(officeId); }
 
-            final Long groupId = command.longValueOfParameterNamed(ClientApiConstants.groupIdParamName);
+            Long groupId = command.longValueOfParameterNamed(ClientApiConstants.groupIdParamName);
+            if(groupId==null){
+                groupId=command.longValueOfParameterNamed(ClientApiConstants.centerIdParamName);
+            }
 
             Group clientParentGroup = null;
             if (groupId != null) {
@@ -346,7 +358,17 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
                 final AddressEntityTypeEnums entityType = AddressEntityTypeEnums.CLIENTS;
                 this.addressWritePlatformService.createOrUpdateAddress(entityType, newClient.getId(), command);
             }
-
+            
+            if (newClient != null && newClient.getId() != null && command.parameterExists(ClientApiConstants.kycJson)) {
+                final String kycData = command.jsonFragment(ClientApiConstants.kycJson);
+                final JsonElement element = this.fromApiJsonHelper.parse(kycData);
+                JsonElement kycObject = element.getAsJsonObject().get(ClientApiConstants.kyc) ;
+                final String identifier = kycObject.getAsJsonObject().get(ClientApiConstants.aadhaarId).getAsString();
+                ClientKycDetails clientKycDetails = ClientKycDetails.createKYCDetails(newClient.getId(), DateUtils.getLocalDateOfTenant(),
+                        KycType.AUTO, KycSource.AADHAAR, KycMode.FINGER_PRINT, kycData, identifier);
+                this.clientKycDetailsRepository.save(clientKycDetails);
+            }
+            
             /**
              * Call Family Details Service
              */
@@ -1027,4 +1049,5 @@ public class ClientWritePlatformServiceJpaRepositoryImpl implements ClientWriteP
 				.withEntityId(entityId) //
 				.build();
 	}
+	
 }

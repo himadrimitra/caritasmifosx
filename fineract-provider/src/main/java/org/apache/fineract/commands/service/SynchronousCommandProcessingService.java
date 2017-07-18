@@ -98,7 +98,7 @@ public class SynchronousCommandProcessingService implements CommandProcessingSer
         }
         commandSourceResult.updateResourceId(result.resourceId());
         commandSourceResult.updateForAudit(result.getOfficeId(), result.getGroupId(), result.getClientId(), result.getLoanId(),
-                result.getSavingsId(), result.getProductId(), result.getTransactionId());
+                result.getSavingsId(), result.getProductId(), result.getTransactionId(), result.getLoanApplicationReferenceId());
 
         String changesOnlyJson = null;
         if (result.hasChanges()) {

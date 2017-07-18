@@ -47,7 +47,8 @@ public class AddressApiConstants {
     public final static String postalCodeParamName = "postalCode";
     public final static String latitudeParamName = "latitude";
     public final static String longitudeParamName = "longitude";
-
+    public final static String documentIdParamName = "documentId";
+    public final static String ekyc = "eKyc";
     /**
      * Common Parameters
      */

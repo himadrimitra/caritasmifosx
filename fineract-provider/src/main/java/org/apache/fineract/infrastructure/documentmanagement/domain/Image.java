@@ -22,6 +22,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -34,9 +35,13 @@ public final class Image extends AbstractPersistable<Long> {
     @Column(name = "storage_type_enum")
     private Integer storageType;
 
-    public Image(final String location, final StorageType storageType) {
+    @Column(name="geo_tag")
+    private String geoTag ;
+    
+    public Image(final String location, final StorageType storageType, final GeoTag geoTag) {
         this.location = location;
         this.storageType = storageType.getValue();
+        if(geoTag != null) this.geoTag = geoTag.toString() ;
     }
 
     protected Image() {
@@ -59,4 +64,7 @@ public final class Image extends AbstractPersistable<Long> {
         this.storageType = storageType;
     }
 
+    public void setGeoTag(final GeoTag geoTag) {
+        this.geoTag = geoTag != null ? geoTag.toString() : null ;
+    }
 }

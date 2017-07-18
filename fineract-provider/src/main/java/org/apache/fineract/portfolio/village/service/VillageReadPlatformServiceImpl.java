@@ -210,8 +210,9 @@ public class VillageReadPlatformServiceImpl implements VillageReadPlatformServic
             final Collection<GroupRoleData> groupRoles = null;
             final Collection<CalendarData> calendarsData = null;
             final CalendarData collectionMeetingCalendar = null;
+            final Collection<ClientData> clientMembers=null;
             Collection<GroupGeneralData> groups = new ArrayList<>();
-            centerData = CenterData.withAssociations(centerData, groups, collectionMeetingCalendar);
+            centerData = CenterData.withAssociations(centerData, groups, collectionMeetingCalendar,clientMembers);
             do {
                 if (!centerId.equals(rs.getLong("centerId"))) {
                     rs.previous();
