@@ -32,6 +32,7 @@ import org.mifosplatform.portfolio.common.BusinessEventNotificationConstants.BUS
 import org.mifosplatform.portfolio.common.service.BusinessEventListner;
 import org.mifosplatform.portfolio.common.service.BusinessEventNotifierService;
 import org.mifosplatform.portfolio.loanaccount.domain.Loan;
+import org.mifosplatform.portfolio.loanaccount.domain.LoanStatus;
 import org.mifosplatform.portfolio.loanaccount.domain.LoanTransaction;
 import org.mifosplatform.portfolio.loanaccount.guarantor.GuarantorConstants;
 import org.mifosplatform.portfolio.loanaccount.guarantor.domain.Guarantor;
@@ -423,6 +424,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
      */
     private void releaseGuarantorFunds(final LoanTransaction loanTransaction) {
         final Loan loan = loanTransaction.getLoan();
+        
         if (loan.getGuaranteeAmount().compareTo(BigDecimal.ZERO) == 1) {
             final List<Guarantor> existGuarantorList = this.guarantorRepository.findByLoan(loan);
             List<GuarantorFundingDetails> externalGuarantorList = new ArrayList<>();
@@ -447,9 +449,14 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             BigDecimal amountForRelease = loanTransaction.getPrincipalPortion();
             BigDecimal totalGuaranteeAmount = loan.getGuaranteeAmount();
             BigDecimal principal = loan.getPrincpal().getAmount();
-            if((amountForRelease!=null)&&(totalGuaranteeAmount!=null))
-            {
-                amountForRelease = amountForRelease.multiply(totalGuaranteeAmount).divide(principal,this.roundingMode);
+			if ((amountForRelease != null) && (totalGuaranteeAmount != null)) {
+				amountForRelease = amountForRelease.multiply(totalGuaranteeAmount).divide(principal, this.roundingMode);
+
+				// caritas specific code change
+
+				if (loan.status().isOverpaid() || loan.status().isClosedObligationsMet()) {
+					amountForRelease = selfGuarantee.add(guarantorGuarantee);
+				}
                 List<DepositAccountOnHoldTransaction> accountOnHoldTransactions = new ArrayList<>();
 
                 BigDecimal amountLeft = calculateAndRelaseGuarantorFunds(externalGuarantorList, guarantorGuarantee, amountForRelease,
