@@ -21,6 +21,7 @@ package org.apache.fineract.infrastructure.documentmanagement.service;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiResource.ENTITY_TYPE_FOR_IMAGES;
@@ -64,7 +65,7 @@ public class ImageReadPlatformServiceImpl implements ImageReadPlatformService {
         }
 
         public String schema(String entityType) {
-            StringBuilder builder = new StringBuilder("image.id as id, image.location as location, image.storage_type_enum as storageType ");
+            StringBuilder builder = new StringBuilder("image.id as id, image.location as location, image.storage_type_enum as storageType, image.geo_tag as geoTag ");
             if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equalsIgnoreCase(entityType)) {
                 builder.append(" from m_image image , m_client client " + " where client.image_id = image.id and client.id=?");
             } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equalsIgnoreCase(entityType)) {
@@ -79,7 +80,9 @@ public class ImageReadPlatformServiceImpl implements ImageReadPlatformService {
             final Long id = JdbcSupport.getLong(rs, "id");
             final String location = rs.getString("location");
             final Integer storageType = JdbcSupport.getInteger(rs, "storageType");
-            return new ImageData(id, location, storageType, this.entityDisplayName);
+            final String geoTagJson = rs.getString("geoTag") ;
+            final GeoTag geoTag = GeoTag.from(geoTagJson) ;
+            return new ImageData(id, location, storageType, this.entityDisplayName, geoTag);
         }
     }
 

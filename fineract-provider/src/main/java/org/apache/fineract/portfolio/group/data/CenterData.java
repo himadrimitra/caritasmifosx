@@ -27,6 +27,7 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.portfolio.calendar.data.CalendarData;
+import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.village.data.VillageData;
 import org.joda.time.LocalDate;
 
@@ -55,6 +56,7 @@ public class CenterData {
     private  Collection<GroupGeneralData> groupMembers;
     // template
     private final Collection<GroupGeneralData> groupMembersOptions;
+    private final Collection<ClientData> clientMembers;
     private final CalendarData collectionMeetingCalendar;
     private final Collection<CodeValueData> closureReasons;
     private final Collection<OfficeData> officeOptions;
@@ -73,9 +75,10 @@ public class CenterData {
         final CalendarData collectionMeetingCalendar = null;
         final Collection<CodeValueData> closureReasons = null;
         final GroupTimelineData timeline = null;
+        final Collection<ClientData> clientMembers=null;
         return new CenterData(null, accountNo, null, null, null, activationDate, officeId, null, null, null, null, null, officeOptions,
                 villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar, closureReasons, timeline,
-                totalCollected, totalOverdue, totaldue, installmentDue);
+                totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
     }
 
     public static CenterData withTemplate(final CenterData templateCenter, final CenterData center) {
@@ -83,7 +86,7 @@ public class CenterData {
                 center.officeId, center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers,
                 templateCenter.officeOptions, center.villageOptions, center.villageCounter, templateCenter.staffOptions, templateCenter.groupMembersOptions,
                 templateCenter.collectionMeetingCalendar, templateCenter.closureReasons, center.timeline, center.totalCollected,
-                center.totalOverdue, center.totaldue, center.installmentDue);
+                center.totalOverdue, center.totaldue, center.installmentDue,center.clientMembers);
     }
 
     public static CenterData withVillageData(final VillageData villageData, final CenterData center) {
@@ -91,7 +94,7 @@ public class CenterData {
                 center.officeId, center.officeName, center.staffId, center.staffName, center.hierarchy, center.groupMembers,
                 center.officeOptions, center.villageOptions, villageData, center.staffOptions, center.groupMembersOptions,
                 center.collectionMeetingCalendar, center.closureReasons, center.timeline, center.totalCollected,
-                center.totalOverdue, center.totaldue, center.installmentDue);
+                center.totalOverdue, center.totaldue, center.installmentDue,center.clientMembers);
     }
     
     public static CenterData instance(final Long id, final String accountNo, final String name, final String externalId,
@@ -105,19 +108,20 @@ public class CenterData {
         final VillageData villageCounter = null;
         final Collection<GroupGeneralData> groupMembersOptions = null;
         final Collection<CodeValueData> closureReasons = null;
+        final Collection<ClientData> clientMembers=null;
 
         return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
-                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue);
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
     }
 
     public static CenterData withAssociations(final CenterData centerData, final Collection<GroupGeneralData> groupMembers,
-            final CalendarData collectionMeetingCalendar) {
+            final CalendarData collectionMeetingCalendar,final Collection<ClientData> clientMembers) {
         return new CenterData(centerData.id, centerData.accountNo, centerData.name, centerData.externalId, centerData.status,
                 centerData.activationDate, centerData.officeId, centerData.officeName, centerData.staffId, centerData.staffName,
                 centerData.hierarchy, groupMembers, centerData.officeOptions, centerData.villageOptions, centerData.villageCounter, centerData.staffOptions,
                 centerData.groupMembersOptions, collectionMeetingCalendar, centerData.closureReasons, centerData.timeline,
-                centerData.totalCollected, centerData.totalOverdue, centerData.totaldue, centerData.installmentDue);
+                centerData.totalCollected, centerData.totalOverdue, centerData.totaldue, centerData.installmentDue,clientMembers);
     }
 
     public static CenterData withClosureReasons(final Collection<CodeValueData> closureReasons) {
@@ -144,9 +148,10 @@ public class CenterData {
         final BigDecimal totalOverdue = null;
         final BigDecimal totaldue = null;
         final BigDecimal installmentDue = null;
+        final Collection<ClientData> clientMembers=null;
         return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
-                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue);
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
     }
     
     public static CenterData formCenterData(final Long id, final String name){
@@ -172,9 +177,10 @@ public class CenterData {
          final BigDecimal installmentDue = null;
          final Collection<CodeValueData> closureReasons = null;
          final Collection<GroupGeneralData> groupMembers = new ArrayList<>();
+         final Collection<ClientData> clientMembers=null;
     	return new CenterData(id, accountNo, name, externalId, status, activationDate, officeId, officeName, staffId, staffName, hierarchy,
                 groupMembers, officeOptions, villageOptions, villageCounter, staffOptions, groupMembersOptions, collectionMeetingCalendar,
-                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue);
+                closureReasons, timeline, totalCollected, totalOverdue, totaldue, installmentDue,clientMembers);
     }
 
     private CenterData(final Long id, final String accountNo, final String name, final String externalId, final EnumOptionData status,
@@ -183,7 +189,7 @@ public class CenterData {
             final Collection<VillageData> villageOptions, final VillageData villageCounter, final Collection<StaffData> staffOptions,
             final Collection<GroupGeneralData> groupMembersOptions, final CalendarData collectionMeetingCalendar,
             final Collection<CodeValueData> closureReasons, final GroupTimelineData timeline, final BigDecimal totalCollected,
-            final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue) {
+            final BigDecimal totalOverdue, final BigDecimal totaldue, final BigDecimal installmentDue,final Collection<ClientData> clientMembers) {
         this.id = id;
         this.accountNo = accountNo;
         this.name = name;
@@ -216,6 +222,7 @@ public class CenterData {
         this.totaldue = totaldue;
         this.totalOverdue = totalOverdue;
         this.installmentDue = installmentDue;
+        this.clientMembers=clientMembers;
     }
 
     public Long officeId() {

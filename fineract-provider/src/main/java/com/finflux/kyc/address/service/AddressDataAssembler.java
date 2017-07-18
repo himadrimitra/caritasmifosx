@@ -237,9 +237,12 @@ public class AddressDataAssembler {
         final BigDecimal latitude = this.fromApiJsonHelper.extractBigDecimalNamed(AddressApiConstants.latitudeParamName, element, locale);
 
         final BigDecimal longitude = this.fromApiJsonHelper.extractBigDecimalNamed(AddressApiConstants.longitudeParamName, element, locale);
-
+        
+        final Long documentId = this.fromApiJsonHelper.extractLongNamed(AddressApiConstants.documentIdParamName, element);
+        
+        final Boolean isVerified = false;
         return Address.create(houseNo, streetNo, addressLineOne, addressLineTwo, landmark, villageTown, taluka, district, state, country,
-                postalCode, latitude, longitude);
+                postalCode, latitude, longitude, isVerified, documentId);
     }
 
     private Country validateStateWithCountryAndGetCountryObject(final State state, final Long countryId) {
@@ -287,7 +290,11 @@ public class AddressDataAssembler {
 
         if (address != null) {
             if(addressTypes != null){
+                CodeValue ekycCodeValue = this.codeValueRepository.findOneBySystemIdentifier(AddressApiConstants.ekyc);
                 final Set<String> addressTypesSet = Arrays.stream(addressTypes).collect(Collectors.toSet());
+                if(addressTypesSet.contains(ekycCodeValue.getId().toString())){
+                    address.setIsVerified(true);
+                }
                 int i = 0;
                 for (final String id : addressTypesSet) {
                     final Long addressTypeId = Long.parseLong(id);
