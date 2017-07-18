@@ -59,6 +59,7 @@ import org.apache.fineract.portfolio.client.domain.ClientChargePaidBy;
 import org.apache.fineract.portfolio.client.domain.ClientChargeRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientRecurringCharge;
 import org.apache.fineract.portfolio.client.domain.ClientRecurringChargeRepository;
+import org.apache.fineract.portfolio.client.domain.ClientRecurringChargeRepositryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.ClientTransaction;
 import org.apache.fineract.portfolio.client.domain.ClientTransactionRepository;
@@ -107,6 +108,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
     private final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl;
     private final ClientRecurringChargeRepository clientRecurringChargeRepository;
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
+    private final ClientRecurringChargeRepositryWrapper clientRecurringChargeWrapper;
 
     @Autowired
     public ClientChargeWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -120,7 +122,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
             final ClientReadPlatformServiceImpl clientReadPlatformServiceImpl,
             final GroupReadPlatformServiceImpl groupReadPlatformServiceImpl,
             final ClientRecurringChargeRepository clientRecurringChargeRepository,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil,final ClientRecurringChargeRepositryWrapper clientRecurringChargeWrapper) {
         this.context = context;
         this.chargeRepository = chargeRepository;
         this.clientChargeDataValidator = clientChargeDataValidator;
@@ -137,6 +139,7 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
         this.groupReadPlatformServiceImpl = groupReadPlatformServiceImpl;
         this.clientRecurringChargeRepository = clientRecurringChargeRepository;
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.clientRecurringChargeWrapper = clientRecurringChargeWrapper;
     }
 
     @Override
@@ -477,9 +480,24 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 
     @Override
     @SuppressWarnings("unused")
-    public CommandProcessingResult inactivateCharge(Long clientId, Long clientChargeId) {
-        // functionality not yet supported
-        return null;
+    public CommandProcessingResult inactivateCharge(Long clientId, Long clientRecurringChargeId) {
+        try {
+            final Client client = this.clientRepository.getActiveClientInUserScope(clientId);
+            final ClientRecurringCharge clientRecurringCharge = this.clientRecurringChargeWrapper
+                    .findOneWithNotFoundDetection(clientRecurringChargeId);
+            validateChargeInActivation(client, clientRecurringCharge);
+            final Boolean isActive = false;
+            clientRecurringCharge.setActive(isActive);
+            this.clientRecurringChargeWrapper.save(clientRecurringCharge);
+            return new CommandProcessingResultBuilder() //
+                    .withEntityId(clientRecurringCharge.getId()) //
+                    .withOfficeId(clientRecurringCharge.getClient().getOffice().getId()) //
+                    .withClientId(clientRecurringCharge.getClient().getId()) //
+                    .build();
+        } catch (DataIntegrityViolationException dve) {
+            handleDataIntegrityIssues(clientId, clientRecurringChargeId, dve);
+            return CommandProcessingResult.empty();
+        }
     }
 
     /**
@@ -607,4 +625,20 @@ public class ClientChargeWritePlatformServiceJpaRepositoryImpl implements Client
 		return changes;
 			
 	}
+
+    private void validateChargeInActivation(final Client client, final ClientRecurringCharge clientRecurringCharge) {
+        final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+        final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                .resource(ClientApiConstants.CLIENT_RECURRING_CHARGES_RESOURCE_NAME);
+        if (client.isNotActive()) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("client.is.not.active");
+            if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        }
+
+        if (!clientRecurringCharge.isActive()) {
+            baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("charge.is.not.active");
+            if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+        }
+
+    }
 }
