@@ -22,10 +22,12 @@ import java.util.Collection;
 
 import org.apache.fineract.infrastructure.codes.data.CodeData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 
 public interface CodeReadPlatformService {
 
-    Collection<CodeData> retrieveAllCodes();
+    Page<CodeData> retrieveAllCodes(SearchParameters searchParameters);
 
     CodeData retrieveCode(Long codeId);
 

@@ -20,14 +20,19 @@ package org.apache.fineract.infrastructure.codes.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.codes.data.CodeData;
 import org.apache.fineract.infrastructure.codes.data.CodeValueData;
 import org.apache.fineract.infrastructure.codes.domain.Code;
 import org.apache.fineract.infrastructure.codes.domain.CodeRepository;
 import org.apache.fineract.infrastructure.codes.exception.CodeNotFoundException;
+import org.apache.fineract.infrastructure.core.service.Page;
+import org.apache.fineract.infrastructure.core.service.PaginationHelper;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.infrastructure.core.service.SearchParameters;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -42,6 +47,7 @@ public class CodeReadPlatformServiceImpl implements CodeReadPlatformService {
     private final PlatformSecurityContext context;
     private final CodeValueReadPlatformService readPlatformService;
     private final CodeRepository codeRepository;
+    private final PaginationHelper<CodeData> paginationHelper = new PaginationHelper<>();
 
     @Autowired
     public CodeReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
@@ -50,6 +56,7 @@ public class CodeReadPlatformServiceImpl implements CodeReadPlatformService {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.readPlatformService = readPlatformService;
         this.codeRepository = codeRepository;
+        
     }
 
     private static final class CodeMapper implements RowMapper<CodeData> {
@@ -71,13 +78,23 @@ public class CodeReadPlatformServiceImpl implements CodeReadPlatformService {
     }
 
     @Override
-    public Collection<CodeData> retrieveAllCodes() {
+    public Page<CodeData> retrieveAllCodes(final SearchParameters searchParameters) {
         this.context.authenticatedUser();
-
+        List<Object> params = new ArrayList<>();
         final CodeMapper rm = new CodeMapper();
-        final String sql = "select " + rm.schema() + " order by c.code_name";
+        final StringBuilder sqlBuilder = new StringBuilder(200);
+        sqlBuilder.append("select SQL_CALC_FOUND_ROWS ");
+        sqlBuilder.append(rm.schema());
+        sqlBuilder.append(" order by c.code_name");
+        if (searchParameters.isLimited()) {
+            sqlBuilder.append(" limit ").append(searchParameters.getLimit());
+            if (searchParameters.isOffset()) {
+                sqlBuilder.append(" offset ").append(searchParameters.getOffset());
+            }
+        }
+        final String sqlCountRows = "SELECT FOUND_ROWS()";
 
-        return this.jdbcTemplate.query(sql, rm, new Object[] {});
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlCountRows, sqlBuilder.toString(), params.toArray(), rm);
     }
 
     @Override
