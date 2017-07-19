@@ -29,6 +29,7 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.descript
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.digitsAfterDecimalParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.feeAmountParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.feeOnMonthDayParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.floatingInterestRateChartParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.inMultiplesOfParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCalculationDaysInYearTypeParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestCalculationTypeParamName;
@@ -48,6 +49,10 @@ import static org.apache.fineract.portfolio.savings.SavingsApiConstants.shortNam
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.taxGroupIdParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withHoldTaxParamName;
 import static org.apache.fineract.portfolio.savings.SavingsApiConstants.withdrawalFeeForTransfersParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.effectiveFromDateParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.interestRateParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.idParamName;
+import static org.apache.fineract.portfolio.savings.SavingsApiConstants.isDeletedParamName;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -64,16 +69,19 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.calendar.domain.CalendarWeekDaysType;
 import org.apache.fineract.portfolio.calendar.service.CalendarUtils.NthDayNameEnum;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
+import org.apache.fineract.portfolio.interestratechart.domain.FloatingInterestRateChart;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationDaysInYearType;
 import org.apache.fineract.portfolio.savings.SavingsInterestCalculationType;
 import org.apache.fineract.portfolio.savings.SavingsPostingInterestPeriodType;
 import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
+import org.joda.time.LocalDate;
 import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -301,11 +309,36 @@ public class SavingsProductDataValidator {
             baseDataValidator.reset().parameter(minBalanceForInterestCalculationParamName).value(minBalanceForInterestCalculation)
                     .ignoreIfNull().zeroOrPositiveAmount();
         }
+        
+        if (this.fromApiJsonHelper.parameterExists(floatingInterestRateChartParamName, element)) {
+            final JsonObject topLevelJsonElement = element.getAsJsonObject();
+            final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+            final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(topLevelJsonElement);
+            if (element.isJsonObject()) {
+                final JsonArray array = topLevelJsonElement.get(floatingInterestRateChartParamName).getAsJsonArray();
+                for (int i = 0; i < array.size(); i++) {
+                    final JsonElement interestrateChartElement = array.get(i);
+                    validateFloatingInterestRateChart(baseDataValidator, interestrateChartElement, locale, dateFormat);
+                }
+            }
+        }
 
         validateTaxWithHoldingParams(baseDataValidator, element, true);
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }
+    
+    private void validateFloatingInterestRateChart(final DataValidatorBuilder baseDataValidator, final JsonElement element,
+            final Locale locale, final String dateFormat) {
+        final LocalDate effectiveFromDate = this.fromApiJsonHelper.extractLocalDateNamed(effectiveFromDateParamName, element, dateFormat,
+                locale);
+        baseDataValidator.reset().parameter(effectiveFromDateParamName).value(effectiveFromDate).notNull()
+                .validateDateAfter(DateUtils.getLocalDateOfTenant());
+
+        final BigDecimal interestRate = this.fromApiJsonHelper.extractBigDecimalNamed(interestRateParamName, element, locale);
+        baseDataValidator.reset().parameter(effectiveFromDateParamName).value(interestRate).notNull().zeroOrPositiveAmount();
+    }
+    
 
     private void validateCreateSavingsProductDrawingPowerDetails(final DataValidatorBuilder baseDataValidator, final JsonElement element) {
         if (this.fromApiJsonHelper.parameterExists(allowOverdraftParamName, element)) {
@@ -575,6 +608,24 @@ public class SavingsProductDataValidator {
                     minBalanceForInterestCalculationParamName, element);
             baseDataValidator.reset().parameter(minBalanceForInterestCalculationParamName).value(minBalanceForInterestCalculation)
                     .ignoreIfNull().zeroOrPositiveAmount();
+        }
+        
+        if (this.fromApiJsonHelper.parameterExists(floatingInterestRateChartParamName, element)) {
+            final JsonObject topLevelJsonElement = element.getAsJsonObject();
+            final Locale locale = this.fromApiJsonHelper.extractLocaleParameter(topLevelJsonElement);
+            final String dateFormat = this.fromApiJsonHelper.extractDateFormatParameter(topLevelJsonElement);
+            if (element.isJsonObject()) {
+                final JsonArray array = topLevelJsonElement.get(floatingInterestRateChartParamName).getAsJsonArray();
+                for (int i = 0; i < array.size(); i++) {
+                    final JsonElement interestrateChartElement = array.get(i);
+                    if (this.fromApiJsonHelper.parameterExists(idParamName, interestrateChartElement)){
+                        final Boolean isDeleted = this.fromApiJsonHelper.extractBooleanNamed(isDeletedParamName, interestrateChartElement);
+                        baseDataValidator.reset().parameter(idParamName).value(isDeleted).notNull();
+                    }else{
+                        validateFloatingInterestRateChart(baseDataValidator, interestrateChartElement, locale, dateFormat);
+                    }
+                }
+            }
         }
 
         validateTaxWithHoldingParams(baseDataValidator, element, false);

@@ -90,6 +90,7 @@ import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.group.domain.Group;
 import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
+import org.apache.fineract.portfolio.interestratechart.domain.FloatingInterestRateChart;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.SavingsAccountTransactionType;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
@@ -769,7 +770,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             periodStartingBalance = Money.zero(this.currency);
 
         final SavingsInterestCalculationType interestCalculationType = SavingsInterestCalculationType.fromInt(this.interestCalculationType);
-        final BigDecimal interestRateAsFraction = getEffectiveInterestRateAsFraction(mc, upToInterestCalculationDate);
+        BigDecimal interestRateAsFraction = getEffectiveInterestRateAsFraction(mc, upToInterestCalculationDate);
         final BigDecimal overdraftInterestRateAsFraction = getEffectiveOverdraftInterestRateAsFraction(mc);
         final Collection<Long> interestPostTransactions = this.savingsHelper.fetchPostInterestTransactionIds(getId());
         final Money minBalanceForInterestCalculation = Money.of(getCurrency(), minBalanceForInterestCalculation());
@@ -780,6 +781,11 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             boolean isUserPosting = false;
             if(postedAsOnDates.contains(periodInterval.endDate().plusDays(1))){
                 isUserPosting = true;
+            }
+            List<FloatingInterestRateChart> floatingInterestRateChart = this.product.getFloatingInterestRateChart();
+            if (floatingInterestRateChart.size() > 0) {
+                interestRateAsFraction = getEffectiveInterestRateAsFractionBetweenDates(mc, periodInterval.startDate(),
+                        floatingInterestRateChart);
             }
 
             final PostingPeriod postingPeriod = PostingPeriod.createFrom(periodInterval, periodStartingBalance,
@@ -801,6 +807,24 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         return allPostingPeriods;
     }
+    
+    private BigDecimal getEffectiveInterestRateAsFractionBetweenDates(MathContext mc, final LocalDate periodStartDate,
+            List<FloatingInterestRateChart> floatingInterestRateChart) {
+        BigDecimal interestRateAsFraction = this.nominalAnnualInterestRate.divide(BigDecimal.valueOf(100l), mc);
+        LocalDate earliestEffectiveFromDate = null;
+        for (FloatingInterestRateChart chart : floatingInterestRateChart) {
+            if (earliestEffectiveFromDate == null || (chart.getEffectiveFromAsLocalDate().isAfter(earliestEffectiveFromDate))) {
+
+                if (!chart.getEffectiveFromAsLocalDate().isAfter(periodStartDate)) {
+                    interestRateAsFraction = chart.getInterestRate();
+                    earliestEffectiveFromDate = chart.getEffectiveFromAsLocalDate();
+                }
+            }
+        }
+
+        return interestRateAsFraction.divide(BigDecimal.valueOf(100l), mc);
+    }
+        
     
     private BigDecimal getEffectiveOverdraftInterestRateAsFraction(MathContext mc) {
         return this.nominalAnnualInterestRateOverdraft.divide(BigDecimal.valueOf(100l), mc);

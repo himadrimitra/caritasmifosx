@@ -140,6 +140,10 @@ public class SavingsApiConstants {
     public static final String savingsAmountOnHold = "savingsAmountOnHold";
     public static final String withHoldTaxParamName = "withHoldTax";
     public static final String taxGroupIdParamName = "taxGroupId";
+    public static final String floatingInterestRateChartParamName = "floatingInterestRateChart";
+    public static final String effectiveFromDateParamName = "effectiveFromDate";
+    public static final String interestRateParamName = "interestRate";
+    public static final String isDeletedParamName = "delete";
 
     // transaction parameters
     public static final String transactionDateParamName = "transactionDate";
@@ -201,13 +205,16 @@ public class SavingsApiConstants {
     public static final String dpFrequencyOnDayParamName = "dpFrequencyOnDay";
     public static final String dpStartDateParamName = "dpStartDate";
     
+    //error message
+    public static final String chartPeriodOverlapped = "chart.period.overlapping";
+    
     public static final Set<String> SAVINGS_PRODUCT_REQUEST_DATA_PARAMETERS = new HashSet<>(Arrays.asList(localeParamName,
             monthDayFormatParamName, nameParamName, shortNameParamName, descriptionParamName, currencyCodeParamName,
-            digitsAfterDecimalParamName, inMultiplesOfParamName, nominalAnnualInterestRateParamName,
-            interestCompoundingPeriodTypeParamName, interestPostingPeriodTypeParamName, interestCalculationTypeParamName,
-            interestCalculationDaysInYearTypeParamName, minRequiredOpeningBalanceParamName, lockinPeriodFrequencyParamName,
-            lockinPeriodFrequencyTypeParamName, withdrawalFeeAmountParamName, withdrawalFeeTypeParamName,
-            withdrawalFeeForTransfersParamName, feeAmountParamName, feeOnMonthDayParamName, accountingRuleParamName, chargesParamName,
+            digitsAfterDecimalParamName, inMultiplesOfParamName, nominalAnnualInterestRateParamName, interestCompoundingPeriodTypeParamName,
+            interestPostingPeriodTypeParamName, interestCalculationTypeParamName, interestCalculationDaysInYearTypeParamName,
+            minRequiredOpeningBalanceParamName, lockinPeriodFrequencyParamName, lockinPeriodFrequencyTypeParamName,
+            withdrawalFeeAmountParamName, withdrawalFeeTypeParamName, withdrawalFeeForTransfersParamName, feeAmountParamName,
+            feeOnMonthDayParamName, accountingRuleParamName, chargesParamName,
             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_FEES.getValue(),
             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INCOME_FROM_PENALTIES.getValue(),
             SAVINGS_PRODUCT_ACCOUNTING_PARAMS.INTEREST_ON_SAVINGS.getValue(),
@@ -224,7 +231,8 @@ public class SavingsApiConstants {
             nominalAnnualInterestRateOverdraftParamName, minOverdraftForInterestCalculationParamName, minRequiredBalanceParamName,
             enforceMinRequiredBalanceParamName, minBalanceForInterestCalculationParamName, withHoldTaxParamName, taxGroupIdParamName,
             externalIdParamName, allowDpLimitParamName, dpFrequencyTypeParamName, dpFrequencyNthDayParamName, dpFrequencyIntervalParamName,
-            dpFrequencyDayOfWeekTypeParamName, dpFrequencyOnDayParamName));
+            dpFrequencyDayOfWeekTypeParamName, dpFrequencyOnDayParamName, floatingInterestRateChartParamName, effectiveFromDateParamName,
+            interestRateParamName, dateFormatParamName));
 
     /**
      * These parameters will match the class level parameters of

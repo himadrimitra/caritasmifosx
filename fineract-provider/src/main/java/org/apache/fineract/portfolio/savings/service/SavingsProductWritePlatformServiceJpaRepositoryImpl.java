@@ -41,6 +41,7 @@ import org.apache.fineract.infrastructure.entityaccess.domain.FineractEntityAcce
 import org.apache.fineract.infrastructure.entityaccess.service.FineractEntityAccessUtil;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.interestratechart.domain.FloatingInterestRateChart;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsProductDataValidator;
 import org.apache.fineract.portfolio.savings.domain.SavingsProduct;
@@ -168,7 +169,8 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
                             FineractEntityAccessType.OFFICE_ACCESS_TO_CHARGES, requestedChargeIds);
 
             final Map<String, Object> changes = product.update(command);
-
+            this.savingsProductAssembler.updateFloatingInterestRateChart(product, changes, command.json());
+            
             if (changes.containsKey(chargesParamName)) {
                 final Set<Charge> savingsProductCharges = this.savingsProductAssembler.assembleListOfSavingsProductCharges(command, product
                         .currency().getCode());
@@ -236,4 +238,6 @@ public class SavingsProductWritePlatformServiceJpaRepositoryImpl implements Savi
         }
         return chargeIds;
     }
+    
+    
 }
