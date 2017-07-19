@@ -34,7 +34,7 @@ public interface TaskPlatformReadService {
     List<LoanProductData> retrieveLoanProductTaskSummary(final Long loanProductId, final Long officeId);
 
     Page<TaskInfoData> retrieveTaskInformations(final String filterBy, SearchParameters searchParameters, final Long parentConfigId,
-            final Long childConfigId);
+            final Long childConfigId, final Integer loanType, final Long centerId);
 
     List<TaskNoteData> getTaskNotes(Long taskId);
 
