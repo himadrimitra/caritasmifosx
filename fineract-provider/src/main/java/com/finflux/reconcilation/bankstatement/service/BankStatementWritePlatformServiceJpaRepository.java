@@ -840,6 +840,8 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         BankStatement bankStatement = this.bankStatementRepository.findOneWithNotFoundDetection(bankStatementId);
         List<BankStatementDetails> bankStatementDetails = this.bankStatementDetailsRepository
                 .retrieveBankStatementDetailsToCreateNonPortfolioTransactions(bankStatement, BankStatementDetailType.NONPORTFOLIO.getValue());
+        final List<OfficeData> ofiices = this.readPlatformService.retrieveOfficeForJournalEntry();
+        boolean isCreateJournalEntry = validateForCreateJournalEntries(bankStatementDetails , ofiices);
         List<BankStatementDetailsData> bankStatementDetailsData = this.bankStatementDetailsReadPlatformService.retrieveBankStatementNonPortfolioData(bankStatementId);
         Long defaultBankGLAccountId = null;
         if (bankStatementDetailsData.size() > 0) {
@@ -860,13 +862,12 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         String dateFormat = requestBodyMap.get("dateFormat");
         String currencyCode = currencyReadPlatformService.getDefaultCurrencyCode();
         List<BankStatementDetails> updatedList = new ArrayList<>();
-        final List<BankStatementDetails> faildeList = new ArrayList<>();
         DateFormat formatFromExcel = new SimpleDateFormat("yyyy-MM-dd", new Locale(locale));;
         DateFormat targetFormat = new SimpleDateFormat(dateFormat);
-        final List<OfficeData> ofiices = this.readPlatformService.retrieveOfficeForJournalEntry();
+        
         for (BankStatementDetails bankStatementDetail : bankStatementDetails) {
-            GLAccountDataForLookup GLAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(bankStatementDetail.getGlCode());
-              if(isValidData(bankStatementDetail, ofiices) && GLAccount != null && !ofiices.isEmpty()){
+            GLAccountDataForLookup glAccount = this.bankGLAccountReadPlatformService.retrieveGLAccountByGLCode(bankStatementDetail.getGlCode());
+              if(!ofiices.isEmpty() && isValidData(bankStatementDetail, ofiices) && glAccount != null){
         	HashMap<String, Object> responseMap = new HashMap<>();
                 HashMap<String, Object> requestMap = new HashMap<>();
                 requestMap.put(ReconciliationApiConstants.localeParamName, locale);
@@ -874,10 +875,10 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                 requestMap.put(ReconciliationApiConstants.officeIdParamName, bankStatementDetail.getBrtanchid());
                 requestMap.put(ReconciliationApiConstants.transactionDateParamName, getFormattedDate(bankStatementDetail.getTransactionDate(),formatFromExcel, targetFormat));
                 requestMap.put(ReconciliationApiConstants.currencyCodeParamName, currencyCode);
-                requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId, GLAccount));
+                requestMap.putAll(getCreditAndDebitMap(bankStatementDetail, defaultBankGLAccountId, glAccount));
                 String requestBody = null;
-                if(requestMap.containsKey(ReconciliationApiConstants.officeIdParamName)){
-                    requestBody = gson.toJson(requestMap);   
+                if (isCreateJournalEntry && requestMap.containsKey(ReconciliationApiConstants.officeIdParamName)) {
+                    requestBody = gson.toJson(requestMap);
                     CommandProcessingResult result = null;
                     final CommandWrapper commandRequest = new CommandWrapperBuilder().createJournalEntry().withJson(requestBody).build();
                     result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
@@ -886,17 +887,15 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
                     updatedList.add(bankStatementDetail);
                     responseMap.put(ReconciliationApiConstants.BANK_STATEMENT_DETAIL_ID, bankStatementDetail.getId());
                     responseMap.put(ReconciliationApiConstants.JOURNAL_ENTRY_RESPONSE, result);
-                    resultList.add(responseMap);         	
+                    resultList.add(responseMap);
+
                 }
             } else {
 
                 bankStatementDetail.setIsError(true);
-                faildeList.add(bankStatementDetail);
+                updatedList.add(bankStatementDetail);
             }
         }
-        if (!faildeList.isEmpty()) {
-            this.bankStatementDetailsRepositoryWrapper.save(faildeList);
-        } 
         if(!updatedList.isEmpty()){
             this.bankStatementDetailsRepositoryWrapper.save(updatedList);
         }
@@ -922,7 +921,15 @@ public class BankStatementWritePlatformServiceJpaRepository implements BankState
         return false;
     }
     
-
+    private boolean validateForCreateJournalEntries(List<BankStatementDetails> bankStatementDetails, final List<OfficeData> ofiices) {
+        for (BankStatementDetails bankStatementDetail : bankStatementDetails) {
+            GLAccountDataForLookup glAccount = this.bankGLAccountReadPlatformService
+                    .retrieveGLAccountByGLCode(bankStatementDetail.getGlCode());
+            if (ofiices.isEmpty() || !isValidData(bankStatementDetail, ofiices) || glAccount == null) { return false; }
+        }
+        return true;
+    }
+    
     private HashMap<String, Object> getCreditAndDebitMap(BankStatementDetails bankStatementDetail, Long defaultBankGLAccountId, GLAccountDataForLookup GLAccount) {
 
         HashMap<String, Object> creaditMap = new HashMap<>();
