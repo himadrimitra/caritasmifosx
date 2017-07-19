@@ -35,6 +35,7 @@ import org.apache.fineract.portfolio.common.domain.DayOfWeekType;
 import org.apache.fineract.portfolio.common.domain.NthDayType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
+import org.apache.fineract.portfolio.interestratechart.service.FloatingInterestRateChartReadPlatformService;
 import org.apache.fineract.portfolio.savings.DepositAccountType;
 import org.apache.fineract.portfolio.savings.data.SavingsProductData;
 import org.apache.fineract.portfolio.savings.data.SavingsProductDrawingPowerDetailsData;
@@ -54,13 +55,14 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
     private final SavingProductMapper savingsProductRowMapper = new SavingProductMapper();
     private final SavingProductLookupMapper savingsProductLookupsRowMapper = new SavingProductLookupMapper();
     private final FineractEntityAccessUtil fineractEntityAccessUtil;
-
+    private final FloatingInterestRateChartReadPlatformService floatingInterestRateChartReadPlatformService;
     @Autowired
     public SavingsProductReadPlatformServiceImpl(final PlatformSecurityContext context, final RoutingDataSource dataSource,
-            final FineractEntityAccessUtil fineractEntityAccessUtil) {
+            final FineractEntityAccessUtil fineractEntityAccessUtil, final FloatingInterestRateChartReadPlatformService floatingInterestRateChartReadPlatformService) {
         this.context = context;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.fineractEntityAccessUtil = fineractEntityAccessUtil;
+        this.floatingInterestRateChartReadPlatformService = floatingInterestRateChartReadPlatformService;
     }
 
     @Override
@@ -103,8 +105,11 @@ public class SavingsProductReadPlatformServiceImpl implements SavingsProductRead
         try {
             this.context.authenticatedUser();
             final String sql = "select " + this.savingsProductRowMapper.schema() + " where sp.id = ? and sp.deposit_type_enum = ?";
-            return this.jdbcTemplate.queryForObject(sql, this.savingsProductRowMapper, new Object[] { savingProductId,
-                    DepositAccountType.SAVINGS_DEPOSIT.getValue() });
+            SavingsProductData savingsProductData = this.jdbcTemplate.queryForObject(sql, this.savingsProductRowMapper,
+                    new Object[] { savingProductId, DepositAccountType.SAVINGS_DEPOSIT.getValue() });
+            savingsProductData
+                    .updateFloatingInterestRateChartData(floatingInterestRateChartReadPlatformService.retrieveByProductId(savingProductId));
+            return savingsProductData;
         } catch (final EmptyResultDataAccessException e) {
             throw new SavingsProductNotFoundException(savingProductId);
         }

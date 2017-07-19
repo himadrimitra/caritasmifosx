@@ -20,7 +20,9 @@ package org.apache.fineract.integrationtests.common.savings;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.fineract.integrationtests.common.CommonConstants;
@@ -92,13 +94,16 @@ public class SavingsProductHelper {
     private String daysToInactive = null;
     private String daysToDormancy = null;
     private String daysToEscheat = null;
+    private List<HashMap<String, String>> floatingInterestRateChart = null;
+    private String locale = "en";
+    private String dateFormat = "dd MMMM yyyy";
     
     //Overdraft parameters
     private String nominalAnnualInterestRateOverdraft = null ;
     
     private String digitsAfterDecimal = DIGITS_AFTER_DECIMAL ;
     public String build() {
-        final HashMap<String, String> map = new HashMap<>();
+        final HashMap<String, Object> map = new HashMap<>();
 
         map.put("name", this.nameOfSavingsProduct);
         map.put("shortName", this.shortName);
@@ -148,7 +153,11 @@ public class SavingsProductHelper {
         if(allowOverdraft != null &&  this.allowOverdraft.equals("true") && nominalAnnualInterestRateOverdraft != null) {
             map.put("nominalAnnualInterestRateOverdraft", nominalAnnualInterestRateOverdraft) ;
         }
-        
+        if(this.floatingInterestRateChart != null){
+            map.put("floatingInterestRateChart", this.floatingInterestRateChart);
+        }
+        map.put("locale", this.locale);
+        map.put("dateFormat", this.dateFormat);
         String savingsProductCreateJson = new Gson().toJson(map);
         System.out.println(savingsProductCreateJson);
         return savingsProductCreateJson;
@@ -253,6 +262,11 @@ public class SavingsProductHelper {
         this.digitsAfterDecimal = digitsAfterDecimal ;
         return this ;
     }
+    
+    public SavingsProductHelper withFloatingInterestRateChart(final List<HashMap<String, String>> floatingInterestRateChart){
+        this.floatingInterestRateChart = floatingInterestRateChart;
+        return this;
+    }
     private Map<String, String> getAccountMappingForCashBased() {
         final Map<String, String> map = new HashMap<>();
         if (accountList != null) {
@@ -287,6 +301,14 @@ public class SavingsProductHelper {
             final ResponseSpecification responseSpec) {
         return Utils.performServerPost(requestSpec, responseSpec, CREATE_SAVINGS_PRODUCT_URL, savingsProductJSON, "resourceId");
     }
+    
+    public static  HashMap updateSavingsProduct(final String savingsProductJSON, final RequestSpecification requestSpec,
+            final ResponseSpecification responseSpec, final Integer savingProductId){
+        final String UPDATE_SAVINGS_PRODUCT_URL = SAVINGS_PRODUCT_URL + "/" + savingProductId + "?" + Utils.TENANT_IDENTIFIER;
+        final HashMap response = Utils.performServerPut(requestSpec, responseSpec, UPDATE_SAVINGS_PRODUCT_URL, savingsProductJSON, "changes");
+        return response;
+       
+    }
 
     public static void verifySavingsProductCreatedOnServer(final RequestSpecification requestSpec,
             final ResponseSpecification responseSpec, final Integer generatedProductID) {
@@ -295,6 +317,13 @@ public class SavingsProductHelper {
         final Integer responseSavingsProductID = Utils.performServerGet(requestSpec, responseSpec, GET_SAVINGS_PRODUCT_URL, "id");
         assertEquals("ERROR IN CREATING THE Savings Product", generatedProductID, responseSavingsProductID);
     }
+    
+    public static List<HashMap<String, Object>> getSavingsProduct (final RequestSpecification requestSpec,
+    final ResponseSpecification responseSpec, final Integer generatedProductID) {
+        final String GET_SAVINGS_PRODUCT_URL = SAVINGS_PRODUCT_URL + "/" + generatedProductID + "?" + Utils.TENANT_IDENTIFIER;
+        final List<HashMap<String, Object>> response = Utils.performServerGet(requestSpec, responseSpec, GET_SAVINGS_PRODUCT_URL, "floatingInterestRateChartData");
+        return response;
+    } 
 
 	public SavingsProductHelper withDormancy() {
 	    this.isDormancyTrackingActive = true;
