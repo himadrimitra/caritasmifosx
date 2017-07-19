@@ -493,4 +493,64 @@ public class LoanSchedulePeriodData {
     public Boolean getRecalculatedInterestComponent(){
         return this.recalculatedInterestComponent;
     }
+    
+    public static LoanSchedulePeriodData lookUpByPeriodNumberAndDueDateAndDueAmounts(final Integer periodNumber, final LocalDate dueDate,
+            final BigDecimal totalDueForPeriod) {
+        return new LoanSchedulePeriodData(periodNumber, dueDate, totalDueForPeriod);
+    }
+
+    /**
+     * Construct based on the periodNumber and fromDate
+     * 
+     * @param periodNumber
+     * @param fromDate
+     */
+    private LoanSchedulePeriodData(final Integer periodNumber, final LocalDate dueDate, final BigDecimal totalDueForPeriod) {
+        this.period = periodNumber;
+        this.fromDate = null;
+        this.dueDate = dueDate;
+        this.obligationsMetOnDate = null;
+        this.complete = null;
+        this.daysInPeriod = null;
+        this.principalDisbursed = null;
+        this.principalOriginalDue = null;
+        this.principalDue = null;
+        this.principalPaid = null;
+        this.principalWrittenOff = null;
+        this.principalOutstanding = null;
+        this.principalLoanBalanceOutstanding = null;
+
+        this.interestOriginalDue = null;
+        this.interestDue = null;
+        this.interestPaid = null;
+        this.interestWaived = null;
+        this.interestWrittenOff = null;
+        this.interestOutstanding = null;
+
+        this.feeChargesDue = null;
+        this.feeChargesPaid = null;
+        this.feeChargesWaived = null;
+        this.feeChargesWrittenOff = null;
+        this.feeChargesOutstanding = null;
+
+        this.penaltyChargesDue = null;
+        this.penaltyChargesPaid = null;
+        this.penaltyChargesWaived = null;
+        this.penaltyChargesWrittenOff = null;
+        this.penaltyChargesOutstanding = null;
+
+        this.totalOriginalDueForPeriod = null;
+        this.totalDueForPeriod = totalDueForPeriod;
+        this.totalPaidForPeriod = null;
+        this.totalPaidInAdvanceForPeriod = null;
+        this.totalPaidLateForPeriod = null;
+        this.totalWaivedForPeriod = null;
+        this.totalWrittenOffForPeriod = null;
+        this.totalOutstandingForPeriod = null;
+        this.totalActualCostOfLoanForPeriod = null;
+        this.totalInstallmentAmountForPeriod = null;
+        this.totalOverdue = null;
+        this.recalculatedInterestComponent = null;
+        this.advancePaymentAmount = null;
+    }
 }

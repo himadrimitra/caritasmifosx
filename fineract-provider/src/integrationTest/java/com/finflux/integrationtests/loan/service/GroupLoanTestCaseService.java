@@ -74,7 +74,7 @@ public class GroupLoanTestCaseService {
         urlParam.addParameter("groupId", groupId.toString());
         urlParam.addParameter("templateType", this.loanType);
         urlParam.addParameter("productApplicableForLoanType", productApplicableForLoanType.toString());
-        urlParam.addParameter("entityType", EntityType.GROUPS.getValue().toString());
+        urlParam.addParameter("entityType", EntityType.GROUP.getValue().toString());
         urlParam.addParameter("entityId", groupId.toString());
         return urlParam.toString();
     }

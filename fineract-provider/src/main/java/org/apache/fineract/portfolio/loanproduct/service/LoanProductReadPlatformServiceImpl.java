@@ -242,7 +242,7 @@ public class LoanProductReadPlatformServiceImpl implements LoanProductReadPlatfo
         final StringJoiner profileTypeCodeValues = new StringJoiner(",");
         if (productApplicableForLoanType != null && entityType != null && entityId != null) {
             final EntityType entityTypeEnum = EntityType.fromInt(entityType);
-            if (entityTypeEnum.isClients()) {
+            if (entityTypeEnum.isClient()) {
                 final ClientData clientData = this.clientReadPlatformService.retrieveOne(entityId);
                 if (clientData.getLegalForm() != null) {
                     profileType.add(ClientProfileType.LEGAL_FORM.getValue().toString());

@@ -69,6 +69,7 @@ import org.apache.fineract.portfolio.client.domain.ClientEnumerations;
 import org.apache.fineract.portfolio.client.service.ClientReadPlatformService;
 import org.apache.fineract.portfolio.collaterals.data.PledgeData;
 import org.apache.fineract.portfolio.collaterals.service.PledgeReadPlatformService;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.fineract.portfolio.common.domain.PeriodFrequencyType;
 import org.apache.fineract.portfolio.common.service.CommonEnumerations;
 import org.apache.fineract.portfolio.floatingrates.data.InterestRatePeriodData;
@@ -80,6 +81,7 @@ import org.apache.fineract.portfolio.group.data.GroupGeneralData;
 import org.apache.fineract.portfolio.group.data.GroupRoleData;
 import org.apache.fineract.portfolio.group.service.GroupReadPlatformService;
 import org.apache.fineract.portfolio.loanaccount.api.LoanApiConstants;
+import org.apache.fineract.portfolio.loanaccount.api.MathUtility;
 import org.apache.fineract.portfolio.loanaccount.data.DisbursementData;
 import org.apache.fineract.portfolio.loanaccount.data.GroupLoanIndividualMonitoringTransactionData;
 import org.apache.fineract.portfolio.loanaccount.data.LoanAccountData;
@@ -3192,6 +3194,59 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
             final BigDecimal OverdueWithNextEMI = rs.getBigDecimal("Overdue_with_next_emi");
 
             return new LoanTransactionData(id, emi, nextEMIDate, totalOutstanding, totalOverdue, OverdueWithNextEMI);
+        }
+    }
+    
+    @Override
+    public Collection<LoanSchedulePeriodData> lookUpLoanSchedulePeriodsByPeriodNumberAndDueDateAndDueAmounts(final Long loanId,
+            final boolean excludeLoanScheduleMappedToPDC) {
+        final LoanSchedulePeriodDataMapper loanSchedulePeriodDataMapper = new LoanSchedulePeriodDataMapper(excludeLoanScheduleMappedToPDC);
+        String sql = "select " + loanSchedulePeriodDataMapper.schema() + " where l.id = ? ";
+        if (excludeLoanScheduleMappedToPDC) {
+            sql += " and pdcm.due_date is null ";
+        }
+        return this.jdbcTemplate.query(sql, loanSchedulePeriodDataMapper, new Object[] { loanId });
+    }
+
+    private static final class LoanSchedulePeriodDataMapper implements RowMapper<LoanSchedulePeriodData> {
+
+        private final String schema;
+
+        public LoanSchedulePeriodDataMapper(final boolean excludeLoanScheduleMappedToPDC) {
+            final StringBuilder sqlBuilder = new StringBuilder(200);
+            sqlBuilder.append("ls.installment as periodNumber ");
+            sqlBuilder.append(",ls.duedate as dueDate ");
+            sqlBuilder
+                    .append(",ls.principal_amount - IFNULL(ls.principal_writtenoff_derived,0) - IFNULL(ls.principal_completed_derived,0) as principalDue ");
+            sqlBuilder
+                    .append(",ls.interest_amount - IFNULL(ls.interest_completed_derived,0) - IFNULL(ls.interest_waived_derived,0) - IFNULL(ls.interest_writtenoff_derived,0) as interestDue ");
+            sqlBuilder
+                    .append(",ls.fee_charges_amount - IFNULL(ls.fee_charges_completed_derived,0) - IFNULL(ls.fee_charges_writtenoff_derived,0) - IFNULL(ls.fee_charges_waived_derived,0) as feeDue ");
+            sqlBuilder
+                    .append(",ls.penalty_charges_amount - IFNULL(ls.penalty_charges_completed_derived,0) - IFNULL(ls.penalty_charges_writtenoff_derived,0) - IFNULL(ls.penalty_charges_waived_derived,0) as penaltyDue ");
+            sqlBuilder.append("from m_loan l ");
+            sqlBuilder.append("join m_loan_repayment_schedule ls on ls.loan_id = l.id and ls.completed_derived = 0 ");
+            if (excludeLoanScheduleMappedToPDC) {
+                sqlBuilder.append("left join f_pdc_cheque_detail_mapping pdcm on pdcm.entity_type = ").append(EntityType.LOAN.getValue());
+                sqlBuilder.append(" and pdcm.is_deleted = 0 and pdcm.entity_id = ls.loan_id and pdcm.due_date = ls.duedate ");
+            }
+            this.schema = sqlBuilder.toString();
+        }
+
+        public String schema() {
+            return this.schema;
+        }
+
+        @Override
+        public LoanSchedulePeriodData mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum) throws SQLException {
+            final Integer periodNumber = rs.getInt("periodNumber");
+            final LocalDate dueDate = JdbcSupport.getLocalDate(rs, "dueDate");
+            final BigDecimal principalDue = rs.getBigDecimal("principalDue");
+            final BigDecimal interestDue = rs.getBigDecimal("interestDue");
+            final BigDecimal feeDue = rs.getBigDecimal("feeDue");
+            final BigDecimal penaltyDue = rs.getBigDecimal("penaltyDue");
+            final BigDecimal totalDueForPeriod = MathUtility.add(principalDue, interestDue, feeDue, penaltyDue);
+            return LoanSchedulePeriodData.lookUpByPeriodNumberAndDueDateAndDueAmounts(periodNumber, dueDate, totalDueForPeriod);
         }
     }
 
