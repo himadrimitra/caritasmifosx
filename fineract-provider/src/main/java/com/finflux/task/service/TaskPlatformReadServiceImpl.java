@@ -2,7 +2,13 @@ package com.finflux.task.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -15,6 +21,7 @@ import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
 import org.apache.fineract.organisation.staff.data.StaffData;
 import org.apache.fineract.organisation.staff.service.StaffReadPlatformService;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.apache.fineract.portfolio.client.data.ClientData;
 import org.apache.fineract.portfolio.loanproduct.data.LoanProductData;
 import org.apache.fineract.useradministration.data.RoleData;
@@ -32,7 +39,22 @@ import org.springframework.util.CollectionUtils;
 
 import com.finflux.ruleengine.execution.data.EligibilityResult;
 import com.finflux.task.api.TaskApiConstants;
-import com.finflux.task.data.*;
+import com.finflux.task.data.LoanProductTaskSummaryData;
+import com.finflux.task.data.TaskActionLogData;
+import com.finflux.task.data.TaskActionType;
+import com.finflux.task.data.TaskActivityData;
+import com.finflux.task.data.TaskActivityType;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.TaskInfoData;
+import com.finflux.task.data.TaskMakerCheckerData;
+import com.finflux.task.data.TaskNoteData;
+import com.finflux.task.data.TaskPriority;
+import com.finflux.task.data.TaskStatusType;
+import com.finflux.task.data.TaskSummaryData;
+import com.finflux.task.data.TaskTemplateData;
+import com.finflux.task.data.TaskType;
+import com.finflux.task.data.WorkFlowSummaryData;
 import com.finflux.task.exception.TaskNotFoundException;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -82,6 +104,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         if (CollectionUtils.isEmpty(staffOptions)) {
             staffOptions = null;
         }
+       
+        
         return TaskTemplateData.template(defaultOfficeId, offices, staffOptions);
     }
 
@@ -410,7 +434,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
 
     @Override
     public Page<TaskInfoData> retrieveTaskInformations(final String filterBy, SearchParameters searchParameters, final Long parentConfigId,
-            final Long childConfigId) {
+            final Long childConfigId, final Integer loanType, final Long centerId) {
         final WorkFlowStepActionDataMapper dataMapper = new WorkFlowStepActionDataMapper();
         final Set<Role> loggedInUserRoles = this.context.authenticatedUser().getRoles();
         final List<Long> loggedInUserRoleIds = new ArrayList<>();
@@ -421,11 +445,26 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         for (final Role r : loggedInUserRoles) {
             loggedInUserRoleIds.add(r.getId());
         }
+       
+        AccountType loanAccountType = null;
+        if(loanType != null ){
+        loanAccountType = AccountType.fromInt(loanType);
+        }
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("roles", loggedInUserRoleIds);
         params.addValue("hierarchy", hierarchySearchString);
         sqlBuilder.append("SELECT SQL_CALC_FOUND_ROWS ");
         sqlBuilder.append(dataMapper.schema());
+        if (loanAccountType != null && (loanAccountType.isIndividualAccount() || loanAccountType.isJLGAccount())) {
+            sqlBuilder.append(" LEFT JOIN f_loan_application_reference loan ON loan.account_type_enum = :loanTypeEnum");
+            params.addValue("loanTypeEnum", loanAccountType.getValue());
+            if (centerId != null && loanAccountType.isJLGAccount()) {
+                sqlBuilder.append(" LEFT JOIN m_group groups ON groups.id = loan.group_id ");
+                sqlBuilder.append(" LEFT JOIN m_group center ON center.id = groups.parent_id ");
+            }
+        }
+        sqlBuilder.append(" WHERE o.hierarchy like :hierarchy AND t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
+        sqlBuilder.append(" AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
         if (filterBy != null) {
             if (TaskApiConstants.ASSIGNED.equalsIgnoreCase(filterBy)) {
                 params.addValue("assignedTo", this.context.authenticatedUser().getId());
@@ -459,6 +498,15 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         if (null != childConfigId) {
             sqlBuilder.append(" AND t.task_config_id = :childConfigId ");
             params.addValue("childConfigId", childConfigId);
+        }
+        
+        if (!loanAccountType.isInvalid()) {
+            sqlBuilder.append(" AND t.entity_type = :entityType AND t.entity_id = loan.id ");
+            params.addValue("entityType", TaskEntityType.LOAN_APPLICATION.getValue());
+            if (centerId != null && loanAccountType.isJLGAccount()) {
+                sqlBuilder.append(" AND center.id = :centerId ");
+                params.addValue("centerId", centerId);
+            }
         }
 
         sqlBuilder.append("GROUP BY taskId ");
@@ -634,9 +682,7 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
             sqlBuilder.append(" LEFT JOIN m_office o ON o.id = t.office_id ");
             sqlBuilder.append(" LEFT JOIN f_task_action ta ON ta.action_group_id = t.action_group_id AND t.current_action = ta.action ");
             sqlBuilder.append(" LEFT JOIN f_task_action_role tar ON tar.task_action_id = ta.id ");
-            sqlBuilder.append(" LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");
-            sqlBuilder.append(" WHERE o.hierarchy like :hierarchy AND t.`status` BETWEEN 2 AND  6 AND t.current_action IS NOT NULL ");
-            sqlBuilder.append(" AND (tar.role_id IN (:roles) OR tar.role_id IS NULL) ");
+            sqlBuilder.append(" LEFT JOIN m_appuser appuser ON appuser.id = t.assigned_to ");           
             return sqlBuilder.toString();
         }
 
