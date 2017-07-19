@@ -2982,14 +2982,18 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
                     .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
         }
-        if (SavingsAccountSubStatusEnum.BLOCK.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))
-                || SavingsAccountSubStatusEnum.BLOCK_DEBIT.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))) {
+        if (SavingsAccountSubStatusEnum.BLOCK.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))) {
 
-            baseDataValidator.reset().parameter(SavingsApiConstants.subStatusParamName).value(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))
-                    .failWithCodeNoParameterAddedToErrorCode("currently.set");
+            baseDataValidator.reset().parameter(SavingsApiConstants.subStatusParamName)
+                    .value(SavingsAccountSubStatusEnum.fromInt(currentSubstatus)).failWithCodeNoParameterAddedToErrorCode("currently.set");
         }
+
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-        this.subStatus = SavingsAccountSubStatusEnum.BLOCK_CREDIT.getValue();
+        if (SavingsAccountSubStatusEnum.BLOCK_DEBIT.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))) {
+            this.subStatus = SavingsAccountSubStatusEnum.BLOCK.getValue();
+        } else {
+            this.subStatus = SavingsAccountSubStatusEnum.BLOCK_CREDIT.getValue();
+        }
         actualChanges.put(SavingsApiConstants.subStatusParamName, SavingsEnumerations.subStatus(this.subStatus));
 
         return actualChanges;
@@ -3009,12 +3013,18 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         }
 
         final SavingsAccountSubStatusEnum currentSubStatus = SavingsAccountSubStatusEnum.fromInt(this.subStatus);
-        if (!SavingsAccountSubStatusEnum.BLOCK_CREDIT.hasStateOf(currentSubStatus)) {
+        if (!(SavingsAccountSubStatusEnum.BLOCK_CREDIT.hasStateOf(currentSubStatus)
+                || SavingsAccountSubStatusEnum.BLOCK.hasStateOf(currentSubStatus))) {
             baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
                     .failWithCodeNoParameterAddedToErrorCode("credits.are.not.blocked");
         }
+
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-        this.subStatus = SavingsAccountSubStatusEnum.NONE.getValue();
+        if (SavingsAccountSubStatusEnum.BLOCK.hasStateOf(currentSubStatus)) {
+            this.subStatus = SavingsAccountSubStatusEnum.BLOCK_DEBIT.getValue();
+        } else {
+            this.subStatus = SavingsAccountSubStatusEnum.NONE.getValue();
+        }
         actualChanges.put(SavingsApiConstants.subStatusParamName, SavingsEnumerations.subStatus(this.subStatus));
         return actualChanges;
     }
@@ -3031,17 +3041,19 @@ public class SavingsAccount extends AbstractPersistable<Long> {
         if (!SavingsAccountStatusType.ACTIVE.hasStateOf(currentStatus)) {
             baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
                     .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
-
         }
-        if (SavingsAccountSubStatusEnum.BLOCK.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))
-                || SavingsAccountSubStatusEnum.BLOCK_CREDIT.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))) {
-
-            baseDataValidator.reset().parameter(SavingsApiConstants.subStatusParamName).value(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))
-                    .failWithCodeNoParameterAddedToErrorCode("currently.set");
+        
+        if (SavingsAccountSubStatusEnum.BLOCK.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))) {
+            baseDataValidator.reset().parameter(SavingsApiConstants.subStatusParamName)
+                    .value(SavingsAccountSubStatusEnum.fromInt(currentSubstatus)).failWithCodeNoParameterAddedToErrorCode("currently.set");
         }
+        
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-
-        this.subStatus = SavingsAccountSubStatusEnum.BLOCK_DEBIT.getValue();
+        if (SavingsAccountSubStatusEnum.BLOCK_CREDIT.hasStateOf(SavingsAccountSubStatusEnum.fromInt(currentSubstatus))) {
+            this.subStatus = SavingsAccountSubStatusEnum.BLOCK.getValue();
+        } else {
+            this.subStatus = SavingsAccountSubStatusEnum.BLOCK_DEBIT.getValue();
+        }
         actualChanges.put(SavingsApiConstants.subStatusParamName, SavingsEnumerations.subStatus(this.subStatus));
 
         return actualChanges;
@@ -3057,19 +3069,22 @@ public class SavingsAccount extends AbstractPersistable<Long> {
 
         final SavingsAccountStatusType currentStatus = SavingsAccountStatusType.fromInt(this.status);
         if (!SavingsAccountStatusType.ACTIVE.hasStateOf(currentStatus)) {
-
             baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
                     .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
-
         }
 
         final SavingsAccountSubStatusEnum currentSubStatus = SavingsAccountSubStatusEnum.fromInt(this.subStatus);
-        if (!SavingsAccountSubStatusEnum.BLOCK_DEBIT.hasStateOf(currentSubStatus)) {
+        if (!(SavingsAccountSubStatusEnum.BLOCK_DEBIT.hasStateOf(currentSubStatus)
+                || SavingsAccountSubStatusEnum.BLOCK.hasStateOf(currentSubStatus))) {
             baseDataValidator.reset().parameter(SavingsApiConstants.subStatusParamName)
                     .failWithCodeNoParameterAddedToErrorCode("debits.are.not.blocked");
         }
         if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
-        this.subStatus = SavingsAccountSubStatusEnum.NONE.getValue();
+        if (SavingsAccountSubStatusEnum.BLOCK.hasStateOf(currentSubStatus)) {
+            this.subStatus = SavingsAccountSubStatusEnum.BLOCK_CREDIT.getValue();
+        } else {
+            this.subStatus = SavingsAccountSubStatusEnum.NONE.getValue();
+        }
         actualChanges.put(SavingsApiConstants.subStatusParamName, SavingsEnumerations.subStatus(this.subStatus));
         return actualChanges;
     }
