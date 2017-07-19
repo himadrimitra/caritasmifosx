@@ -226,18 +226,20 @@ public class SavingsAccountTransactionDataValidator {
         final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
                 .resource(SAVINGS_ACCOUNT_RESOURCE_NAME);
 
-        boolean isActive = holdTransaction.getSavingsAccount().isActive();
-        if (!isActive) {
-            baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
-                    .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
-        }
         if (holdTransaction == null) {
             baseDataValidator.failWithCode("validation.msg.validation.errors.exist", "Transaction not found");
-        } else if (holdTransaction.getReleaseIdOfHoldAmountTransaction() != null) {
-            baseDataValidator.parameter(SavingsApiConstants.amountParamName).value(holdTransaction.getAmount())
-                    .failWithCode("validation.msg.amount.is.not.on.hold", "Transaction amount is not on hold");
+        }else{
+            boolean isActive = holdTransaction.getSavingsAccount().isActive();
+            if (!isActive) {
+                baseDataValidator.reset().parameter(SavingsApiConstants.statusParamName)
+                        .failWithCodeNoParameterAddedToErrorCode(SavingsApiConstants.ERROR_MSG_SAVINGS_ACCOUNT_NOT_ACTIVE);
+            }
+            if (holdTransaction.getReleaseIdOfHoldAmountTransaction() != null) {
+                baseDataValidator.parameter(SavingsApiConstants.amountParamName).value(holdTransaction.getAmount())
+                        .failWithCode("validation.msg.amount.is.not.on.hold", "Transaction amount is not on hold");
+            }
         }
-
+        
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
         Date createdDate = DateUtils.getLocalDateTimeOfTenant().toDate();
         LocalDate transactionDate = DateUtils.getLocalDateOfTenant();
