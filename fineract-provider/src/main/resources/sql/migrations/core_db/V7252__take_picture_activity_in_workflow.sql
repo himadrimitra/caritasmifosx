@@ -8,5 +8,5 @@ INSERT INTO `f_task_activity` (`name`, `identifier`, `config_values`, `supported
 ('Associate To Group', 'associatetogroup', NULL, NULL, 3);
 
 INSERT INTO `m_permission` (`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('portfolio', 'DELETE_IMAGE', 'IMAGE', 'DELETE', 1),
-(`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('portfolio', 'READ_IMAGE', 'IMAGE', 'READ', 1),
-(`grouping`, `code`, `entity_name`, `action_name`, `can_maker_checker`) VALUES ('portfolio', 'SAVE_IMAGE', 'IMAGE', 'SAVE', 1);
+('portfolio', 'READ_IMAGE', 'IMAGE', 'READ', 1),
+('portfolio', 'SAVE_IMAGE', 'IMAGE', 'SAVE', 1);
