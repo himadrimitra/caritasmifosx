@@ -2,10 +2,14 @@ package com.finflux.task.service.impl;
 
 import java.util.*;
 
+import com.finflux.task.api.TaskApiConstants;
+import com.google.gson.JsonElement;
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResultBuilder;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
+import org.apache.fineract.portfolio.client.api.ClientApiConstants;
 import org.apache.fineract.useradministration.data.RoleData;
 import org.apache.fineract.useradministration.domain.AppUser;
 import org.apache.fineract.useradministration.service.RoleReadPlatformService;
@@ -89,6 +93,12 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     @Override
     @Transactional
     public CommandProcessingResult doActionOnTask(AppUser performingUser, Long taskId, TaskActionType actionType) {
+        return doActionOnTask(performingUser, taskId, actionType, null);
+
+    }
+
+    private CommandProcessingResult doActionOnTask(AppUser performingUser, Long taskId, TaskActionType actionType,
+            AppUser assignedTo) {
         Task task = taskRepository.findOneWithNotFoundDetection(taskId);
         TaskStatusType status = TaskStatusType.fromInt(task.getStatus());
         if (actionType != null && status != null) {
@@ -99,15 +109,19 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                 checkUserhasActionPrivilege(performingUser, task, actionType);
             }
             if (actionType.getToStatus() != null) {
-                if(status.isCompleted())
-                {
-                    return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
+                if(status.isCompleted()) {
+                    if (!TaskActionType.STARTOVER.equals(actionType)) {
+                        return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
+                    }
                 }
                 TaskActionLog actionLog = TaskActionLog.create(task, actionType.getValue(), performingUser);
+                if (assignedTo == null) {
+                    assignedTo = performingUser;
+                }
                 if (TaskActionType.CRITERIACHECK.equals(actionType)) {
                     runCriteriaCheckAndPopulate(task);
                     task.setStatus(TaskActionType.CRITERIACHECK.getToStatus().getValue());
-                    updateAssignedTo(performingUser, task,TaskActionType.fromInt(task.getCurrentAction()));
+                    updateAssignedTo(assignedTo, task, TaskActionType.fromInt(task.getCurrentAction()));
                 }else{
                     TaskStatusType newStatus = getNextEquivalentStatus(task, actionType.getToStatus());
 
@@ -117,7 +131,7 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
                         return new CommandProcessingResultBuilder().withEntityId(task.getId()).build();
                     }
                     task.setStatus(newStatus.getValue());
-                    updateActionAndAssignedTo(performingUser,task, newStatus);
+                    updateActionAndAssignedTo(assignedTo, task, newStatus);
                 }
                 // update assigned-to if current user has next action
                 task = taskRepository.save(task);
@@ -210,22 +224,31 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
 
         if (TaskType.WORKFLOW.equals(TaskType.fromInt(parentTask.getTaskType()))) {
             if (TaskStatusType.COMPLETED.equals(newStatus) || TaskStatusType.SKIPPED.equals(newStatus)) {
-                List<Long> nextExecutionTaskIds = getNextExecutionTasks(parentTask, task);
-                if (nextExecutionTaskIds != null && !nextExecutionTaskIds.isEmpty()) {
-                    for (Long nextExecutionTaskId : nextExecutionTaskIds) {
+                Task currentTask = task;
+                Boolean foundNextInactiveTask = false;
+                while (!foundNextInactiveTask) {
+                    List<Long> nextExecutionTaskIds = getNextExecutionTasks(parentTask, currentTask);
+                    if (nextExecutionTaskIds != null && !nextExecutionTaskIds.isEmpty()) {
+                        Long nextExecutionTaskId = nextExecutionTaskIds.get(0);
                         Task nextExecutionTask = taskRepository.findOneWithNotFoundDetection(nextExecutionTaskId);
                         if (TaskStatusType.INACTIVE.getValue().equals(nextExecutionTask.getStatus())) {
                             nextExecutionTask.setStatus(TaskStatusType.INITIATED.getValue());
                             updateActionAndAssignedTo(appUser,nextExecutionTask, TaskStatusType.INITIATED);
                             nextExecutionTask.setCreatedDate(new DateTime());
                             taskRepository.save(nextExecutionTask);
+                            foundNextInactiveTask = true;
                         }
+                        currentTask = nextExecutionTask;
+                    } else {
+                        break;
                     }
-                }else{
+                }
+                if (!foundNextInactiveTask) {
+                    // set workflow status as all step done
                     parentTask.setStatus(TaskStatusType.COMPLETED.getValue());
                     taskRepository.save(parentTask);
                 }
-                // set workflow status as all step done
+
 
             } else if (TaskStatusType.CANCELLED.equals(newStatus)) {
                 parentTask.setStatus(TaskStatusType.CANCELLED.getValue());
@@ -373,6 +396,28 @@ public class TaskExecutionServiceImpl implements TaskExecutionService {
     @Override
     public CommandProcessingResult doActionOnTask(Long taskId, TaskActionType activitycomplete) {
         return doActionOnTask(context.authenticatedUser(),taskId,activitycomplete);
+    }
+
+    @Override
+    public CommandProcessingResult doStartOver(Long taskId, JsonCommand command) {
+        Long startOverTaskId = command.longValueOfParameterNamed(TaskApiConstants.STARTOVER_TASK_ID_PARAM_NAME);
+        Task currentTask = taskRepository.findOneWithNotFoundDetection(taskId);
+        if (startOverTaskId != null && startOverTaskId > 0) {
+            Task startOverTask = taskRepository.findOneWithNotFoundDetection(startOverTaskId);
+            if (currentTask.getParent() != null
+                    && currentTask.getParent().getId().equals(startOverTask.getParent().getId())) {
+                if (currentTask.getTaskOrder() >= startOverTask.getTaskOrder()) {
+                    List<TaskActionLog> actionLogs = actionLogRepository.findByTaskIdAndActionOrderByIdDesc(
+                            startOverTaskId, TaskActionType.ACTIVITYCOMPLETE.getValue());
+                    if (actionLogs != null && !actionLogs.isEmpty()) {
+                        doActionOnTask(context.authenticatedUser(), startOverTaskId, TaskActionType.STARTOVER,
+                                actionLogs.get(0).getActionBy());
+                        doActionOnTask(context.authenticatedUser(), taskId, TaskActionType.DISABLE);
+                    }
+                }
+            }
+        }
+        return new CommandProcessingResultBuilder().withEntityId(taskId).build();
     }
 
     @SuppressWarnings({})

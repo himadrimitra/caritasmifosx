@@ -3,7 +3,9 @@ package com.finflux.task.service.impl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
@@ -11,6 +13,7 @@ import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
 import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.office.data.OfficeData;
 import org.apache.fineract.organisation.office.service.OfficeReadPlatformService;
+import org.apache.fineract.portfolio.accountdetails.domain.AccountType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -52,8 +55,10 @@ public class TaskConfigReadServiceImpl implements TaskConfigReadService {
             sql += " WHERE ftc.`parent_id` IS NOT NULL AND ftc.`task_type` = 2 AND ftc.`parent_id` = ? ";
             taskConfigs = this.jdbcTemplate.query(sql, taskConfigMapper, parentConfigId);
         }
-
-        return TaskConfigTemplateData.template(offices, taskConfigs);
+        final List<EnumOptionData> loanAccountTypeOptions = Arrays.asList(
+                AccountType.loanAccountType(AccountType.INDIVIDUAL.getValue(), AccountType.INDIVIDUAL.getCode()),
+                AccountType.loanAccountType(AccountType.JLG.getValue(), AccountType.JLG.getCode()));
+        return TaskConfigTemplateData.template(offices, taskConfigs, loanAccountTypeOptions);
     }
 
     @Override
@@ -64,7 +69,10 @@ public class TaskConfigReadServiceImpl implements TaskConfigReadService {
         Collection<TaskConfigData> taskConfigs = new ArrayList<>();
         String sql = "SELECT " + taskConfigWithChidrenMapper.schema();
         taskConfigs = this.jdbcTemplate.query(sql, taskConfigWithChidrenMapper);
-        return TaskConfigTemplateData.template(offices, taskConfigs);
+        final List<EnumOptionData> loanAccountTypeOptions = Arrays.asList(
+                AccountType.loanAccountType(AccountType.INDIVIDUAL.getValue(), AccountType.INDIVIDUAL.getCode()),
+                AccountType.loanAccountType(AccountType.JLG.getValue(), AccountType.JLG.getCode()));
+        return TaskConfigTemplateData.template(offices, taskConfigs, loanAccountTypeOptions);
     }
 
     @Override

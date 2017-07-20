@@ -1,14 +1,10 @@
 package com.finflux.task.service;
 
+import com.finflux.task.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.finflux.task.data.TaskConfigEntityType;
-import com.finflux.task.domain.ClientOnboardingWorkflow;
-import com.finflux.task.domain.LoanApplicantWorkflow;
-import com.finflux.task.domain.LoanApplicationWorkflow;
-import com.finflux.task.domain.LoanCoApplicantWorkflow;
-import com.finflux.task.domain.WorkflowCreator;
 
 @Component
 public class CreateWorkflowTaskFactory 
@@ -17,17 +13,19 @@ public class CreateWorkflowTaskFactory
 	private final LoanApplicationWorkflow loanApplicationWorkflow;
 	private final LoanApplicantWorkflow loanApplicantWorkflow;
 	private final LoanCoApplicantWorkflow loanCoApplicantWorkflow;
-	@Autowired
+    private final ClientBankAccountWorkflow clientBankAccountWorkflow;
+
+    @Autowired
 	public CreateWorkflowTaskFactory(final ClientOnboardingWorkflow clientOnboardingWorkflow,
-			final LoanApplicationWorkflow loanApplicationWorkflow,
-			final LoanApplicantWorkflow loanApplicantWorkflow,
-			final LoanCoApplicantWorkflow loanCoApplicantWorkflow)
-	{
+            final LoanApplicationWorkflow loanApplicationWorkflow, final LoanApplicantWorkflow loanApplicantWorkflow,
+            final LoanCoApplicantWorkflow loanCoApplicantWorkflow,
+            ClientBankAccountWorkflow clientBankAccountWorkflow) {
 		this.clientOnboardingWorkflow=clientOnboardingWorkflow;
 		this.loanApplicationWorkflow=loanApplicationWorkflow;
 		this.loanApplicantWorkflow=loanApplicantWorkflow;
 		this.loanCoApplicantWorkflow=loanCoApplicantWorkflow;
-	}
+        this.clientBankAccountWorkflow = clientBankAccountWorkflow;
+    }
 	public WorkflowCreator create(TaskConfigEntityType taskConfigEntityType)
 	{
 		WorkflowCreator workflowCreator=null;
@@ -47,6 +45,9 @@ public class CreateWorkflowTaskFactory
 		{
 			workflowCreator=this.loanCoApplicantWorkflow;
 		}
-		return workflowCreator;
+        if (taskConfigEntityType.getValue().equals(TaskConfigEntityType.CLIENTBANKACCOUNT.getValue())) {
+            workflowCreator = this.clientBankAccountWorkflow;
+        }
+        return workflowCreator;
 	}
 }

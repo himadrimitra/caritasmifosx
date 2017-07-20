@@ -21,6 +21,8 @@ package org.apache.fineract.portfolio.accountdetails.domain;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.fineract.infrastructure.core.data.EnumOptionData;
+
 /**
  * Enum representation of account types .
  */
@@ -109,5 +111,28 @@ public enum AccountType {
 
     public boolean isGLIMAccount() {
         return this.value.equals(AccountType.GLIM.getValue());
+    }
+    
+    public static EnumOptionData loanAccountType(final Integer id, final String codePrefix) {
+        EnumOptionData optionData = null;
+        switch (id) {
+            case 0:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.inavlid);
+            break;
+            case 1:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.individual);
+            break;
+            case 2:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.group);
+            break;
+            case 3:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.jlg);
+            break;
+            case 4:
+                optionData = new EnumOptionData(id.longValue(), codePrefix, AccountTypeConstants.glim);
+            break;
+
+        }
+        return optionData;
     }
 }

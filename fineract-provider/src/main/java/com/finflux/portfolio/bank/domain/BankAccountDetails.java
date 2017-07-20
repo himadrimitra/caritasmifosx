@@ -57,12 +57,18 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
     
     @Column(name = "branch_name")
     private String branchName ;
+
+    @Column(name = "document_id")
+    private Long documentId;
+
+    @Column(name = "checker_info")
+    private String checkerInfo;
     
     protected BankAccountDetails() {}
 
     private BankAccountDetails(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
             final String email, final String bankName, final String bankCity, final Integer accountType,
-            final Date lastTransactionDate, final String micrCode, final String branchName) {
+            final Date lastTransactionDate, final String micrCode, final String branchName, final Long documentId) {
         this.name = name;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;
@@ -75,19 +81,22 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
         this.lastTransationDate = lastTransactionDate;
         this.micrCode = micrCode ;
         this.branchName = branchName ;
+        this.documentId = documentId;
     }
 
     
     public static BankAccountDetails create(final String name, final String accountNumber, final String ifscCode, final String mobileNumber,
             final String email, final String bankName, final String bankCity, final Integer accountType, final Date lastTransactionDate,
-            final String micrCode, final String branchName) {
-        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity, accountType, lastTransactionDate, micrCode, branchName);
+            final String micrCode, final String branchName, final Long documentId) {
+        return new BankAccountDetails(name, accountNumber, ifscCode, mobileNumber, email, bankName, bankCity,
+                accountType, lastTransactionDate, micrCode, branchName, documentId);
     }
 
     public static BankAccountDetails copy(BankAccountDetails bankAccountDetails) {
         return new BankAccountDetails(bankAccountDetails.name, bankAccountDetails.accountNumber, bankAccountDetails.ifscCode,
                 bankAccountDetails.mobileNumber, bankAccountDetails.email, bankAccountDetails.bankName, bankAccountDetails.bankCity, bankAccountDetails.accountType,
-                bankAccountDetails.lastTransationDate, bankAccountDetails.micrCode, bankAccountDetails.branchName);
+                bankAccountDetails.lastTransationDate, bankAccountDetails.micrCode, bankAccountDetails.branchName,
+                bankAccountDetails.documentId);
     }
 
     public Map<String, Object> update(final JsonCommand command) {
@@ -157,6 +166,14 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
             actualChanges.put(BankAccountDetailConstants.branchNameParameterName, newValue);
             this.branchName = StringUtils.defaultIfEmpty(newValue, null);
         }
+
+        if (command.isChangeInLongParameterNamed(BankAccountDetailConstants.documentIdParameterName, this.documentId)) {
+            final Long newValue = command.longValueOfParameterNamed(BankAccountDetailConstants.documentIdParameterName);
+            if (newValue != null) {
+                actualChanges.put(BankAccountDetailConstants.documentIdParameterName, newValue);
+                this.documentId = newValue;
+            }
+        }
         return actualChanges;
     }
 
@@ -204,5 +221,13 @@ public class BankAccountDetails extends AbstractAuditableCustom<AppUser, Long> {
             return new LocalDate(this.lastTransationDate);
         }
         return null;
+    }
+
+    public Long getDocumentId() {
+        return documentId;
+    }
+
+    public void updateCheckerInfo(String checkerInfo) {
+        this.checkerInfo = checkerInfo;
     }
 }
