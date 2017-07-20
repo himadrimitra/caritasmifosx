@@ -67,13 +67,13 @@ public class TaskApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveTaskList(@QueryParam("filterby") final String filterBy, @QueryParam("offset") final Integer offset,
-                                              @QueryParam("limit") final Integer limit, @QueryParam("officeId") final Long officeId,
-                                              @QueryParam("parentConfigId") final Long parentConfigId, @QueryParam("childConfigId") final Long childConfigId,
-                                              @Context final UriInfo uriInfo) {
+            @QueryParam("limit") final Integer limit, @QueryParam("officeId") final Long officeId,
+            @QueryParam("parentConfigId") final Long parentConfigId, @QueryParam("childConfigId") final Long childConfigId,
+            @Context final UriInfo uriInfo, @QueryParam("loanType") final Integer loanType, @QueryParam("centerId") final Long centerId) {
         this.context.authenticatedUser().validateHasReadPermission(TaskApiConstants.TASK_RESOURCE_NAME);
         SearchParameters searchParameters = SearchParameters.forTask(null, officeId, null, null, null, offset, limit, null, null, null);
         final Page<TaskInfoData> workFlowStepActions = this.taskPlatformReadService.retrieveTaskInformations(filterBy, searchParameters,
-                parentConfigId, childConfigId);
+                parentConfigId, childConfigId, loanType, centerId);
 
         final ApiRequestJsonSerializationSettings settings = this.apiRequestParameterHelper.process(uriInfo.getQueryParameters());
 

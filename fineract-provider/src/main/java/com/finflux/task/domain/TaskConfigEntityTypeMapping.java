@@ -13,7 +13,7 @@ import org.springframework.data.jpa.domain.AbstractPersistable;
 @Table(name = "f_task_config_entity_type_mapping")
 public class TaskConfigEntityTypeMapping extends AbstractPersistable<Long> {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "task_config_id")
     private TaskConfig taskConfig;
 
