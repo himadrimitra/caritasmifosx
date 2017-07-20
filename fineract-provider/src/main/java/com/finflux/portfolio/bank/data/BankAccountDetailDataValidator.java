@@ -66,6 +66,11 @@ public class BankAccountDetailDataValidator {
         final String email = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.emailParameterName, element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.emailParameterName).value(email).ignoreIfNull()
                 .notExceedingLengthOf(50);
+
+        final Long documentId = this.fromApiJsonHelper
+                .extractLongNamed(BankAccountDetailConstants.documentIdParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.documentIdParameterName).value(documentId)
+                .ignoreIfNull().longGreaterThanZero();
         
         if (this.fromApiJsonHelper.parameterExists(BankAccountDetailConstants.lastTransactionDate, element)) {
             final LocalDate lastTransactionDate = this.fromApiJsonHelper.extractLocalDateNamed(BankAccountDetailConstants.lastTransactionDate, element);
@@ -127,6 +132,11 @@ public class BankAccountDetailDataValidator {
         final String email = this.fromApiJsonHelper.extractStringNamed(BankAccountDetailConstants.emailParameterName, element);
         baseDataValidator.reset().parameter(BankAccountDetailConstants.emailParameterName).value(email).ignoreIfNull()
                 .notExceedingLengthOf(50);
+
+        final Long documentId = this.fromApiJsonHelper
+                .extractLongNamed(BankAccountDetailConstants.documentIdParameterName, element);
+        baseDataValidator.reset().parameter(BankAccountDetailConstants.documentIdParameterName).value(documentId)
+                .ignoreIfNull().longGreaterThanZero();
 
         throwExceptionIfValidationWarningsExist(dataValidationErrors);
     }

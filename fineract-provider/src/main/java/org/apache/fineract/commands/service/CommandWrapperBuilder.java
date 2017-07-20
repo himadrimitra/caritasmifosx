@@ -3756,6 +3756,26 @@ public class CommandWrapperBuilder {
         return this;
     }
 
+    public CommandWrapperBuilder activateBankAccountDetail(final String supportedEntityType,
+            final Long supportedEntityId, final Integer entityTypeId) {
+        this.actionName = "ACTIVATE";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail/action";
+        return this;
+    }
+
+    public CommandWrapperBuilder updateCheckerInfoBankAccountDetail(final String supportedEntityType,
+            final Long supportedEntityId, final Integer entityTypeId) {
+        this.actionName = "CHECKERINFO";
+        this.entityName = "BANKACCOUNTDETAIL";
+        this.entityId = supportedEntityId;
+        this.entityTypeId = entityTypeId;
+        this.href = "/" + supportedEntityType + "/" + supportedEntityId + "/bankaccountdetail/action";
+        return this;
+    }
+
     public CommandWrapperBuilder createProfileRatingConfig() {
         this.actionName = "CREATE";
         this.entityName = "PROFILE_RATING_CONFIG";

@@ -135,7 +135,8 @@ public class TaskPlatformReadServiceImpl implements TaskPlatformReadService {
         try {
             TaskDataMapper rm = new TaskDataMapper();
             if (entityId != null) {
-                final String sql = "SELECT " + rm.schema() + " WHERE t.entity_type = ? AND t.entity_id = ?  AND t.parent_id is null";
+                final String sql = "SELECT " + rm.schema()
+                        + " WHERE t.entity_type = ? AND t.entity_id = ?  AND t.parent_id is null order by t.id desc limit 1";
                 return this.jdbcTemplate.queryForObject(sql, rm, taskEntityType.getValue(), entityId);
             }
         } catch (final EmptyResultDataAccessException e) {}

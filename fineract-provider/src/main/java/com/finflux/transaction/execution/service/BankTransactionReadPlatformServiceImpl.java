@@ -23,63 +23,53 @@ import com.finflux.transaction.execution.data.TransactionStatus;
 import com.finflux.transaction.execution.data.TransferType;
 
 @Service
-public class BankTransactionReadPlatformServiceImpl
-		implements
-		BankTransactionReadPlatformService {
+public class BankTransactionReadPlatformServiceImpl implements BankTransactionReadPlatformService {
 
 	private final JdbcTemplate jdbcTemplate;
 	private final AccountTransactionDetailMapper transactionDetailMapper = new AccountTransactionDetailMapper();
 
 	@Autowired
-	public BankTransactionReadPlatformServiceImpl(
-			final RoutingDataSource dataSource) {
+	public BankTransactionReadPlatformServiceImpl(final RoutingDataSource dataSource) {
 		this.jdbcTemplate = new JdbcTemplate(dataSource);
 	}
 
 	@Override
-	public BankTransactionDetail getAccountTransactionDetails(
-			Long transactionId) {
+	public BankTransactionDetail getAccountTransactionDetails(Long transactionId) {
 		try {
 			StringBuilder sb = new StringBuilder();
 			sb.append("select ");
 			sb.append(transactionDetailMapper.schema());
 			sb.append(" where bat.id=?");
 
-			return this.jdbcTemplate.queryForObject(sb.toString(),
-					transactionDetailMapper, transactionId);
+			return this.jdbcTemplate.queryForObject(sb.toString(), transactionDetailMapper, transactionId);
 		} catch (final EmptyResultDataAccessException e) {
 			return null;
 		}
 	}
 
 	@Override
-	public List<BankTransactionDetail> getAccountTransactionsByEntity(
-			BankTransactionEntityType entityType, Long entityId) {
+	public List<BankTransactionDetail> getAccountTransactionsByEntity(BankTransactionEntityType entityType,
+			Long entityId) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("select ");
 		sb.append(transactionDetailMapper.schema());
 		sb.append(" where bat.entity_type=? and bat.entity_id=?");
 
-		return this.jdbcTemplate.query(sb.toString(), transactionDetailMapper,
-				entityType.getValue(), entityId);
+		return this.jdbcTemplate.query(sb.toString(), transactionDetailMapper, entityType.getValue(), entityId);
 	}
 
 	@Override
-	public List<BankTransactionDetail> getAccountTransactionsByStatus(
-			TransactionStatus status) {
+	public List<BankTransactionDetail> getAccountTransactionsByStatus(TransactionStatus status) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("select ");
 		sb.append(transactionDetailMapper.schema());
 		sb.append(" where bat.status=? order by bat.external_service_id asc");
 
-		return this.jdbcTemplate.query(sb.toString(), transactionDetailMapper,
-				status.getValue());
+		return this.jdbcTemplate.query(sb.toString(), transactionDetailMapper, status.getValue());
 
 	}
 
-	private static final class AccountTransactionDetailMapper
-			implements
-				RowMapper<BankTransactionDetail> {
+	private static final class AccountTransactionDetailMapper implements RowMapper<BankTransactionDetail> {
 
 		public String schema() {
 			StringBuilder sb = new StringBuilder();
@@ -92,7 +82,8 @@ public class BankTransactionReadPlatformServiceImpl
 			sb.append(" debbad.account_type_enum as  debAccountType,");
 			sb.append(" debbad.id as debitAccountid, debbad.name as debitAccountName, ");
 			sb.append(" debbad.account_number as debitAccountNumber,  debbad.ifsc_code as debitIfscCode, ");
-			sb.append(" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
+			sb.append(
+					" debbad.mobile_number as debitMobile, debbad.email as debitEmail, debbad.status_id as debitStatus, ");
 			sb.append(" debbad.bank_name as debBankName, debbad.bank_city as debBankCity, ");
 			sb.append(" debbad.micr_code as debitMicrCode, debbad.branch_name as debBranchName, ");
 			sb.append(" benbad.id as benAccountid, benbad.name as benAccountName, ");
@@ -110,8 +101,7 @@ public class BankTransactionReadPlatformServiceImpl
 		}
 
 		@Override
-		public BankTransactionDetail mapRow(final ResultSet rs,
-											@SuppressWarnings("unused") final int rowNum)
+		public BankTransactionDetail mapRow(final ResultSet rs, @SuppressWarnings("unused") final int rowNum)
 				throws SQLException {
 			final Long transactionId = rs.getLong("transactionId");
 			final Integer entityType = rs.getInt("entityType");
@@ -129,25 +119,25 @@ public class BankTransactionReadPlatformServiceImpl
 
 			final Long debitAccountid = rs.getLong("debitAccountid");
 			final String debitAccountName = rs.getString("debitAccountName");
-			final String debitAccountNumber = rs
-					.getString("debitAccountNumber");
+			final String debitAccountNumber = rs.getString("debitAccountNumber");
 			final String debitIfscCode = rs.getString("debitIfscCode");
 			final String debitMobile = rs.getString("debitMobile");
 			final String debitEmail = rs.getString("debitEmail");
 			final Integer debitStatus = rs.getInt("debitStatus");
 			final String debBankCity = rs.getString("debBankCity");
 			final String debBankName = rs.getString("debBankName");
-		        final Integer debAccountType = JdbcSupport.getInteger(rs, "debAccountType");
-		        final Date lastTransactionDate = rs.getDate("lastTransactionDate");
-		        final String debitMicrCode = rs.getString("debitMicrCode") ;
-		        final String debBranchName = rs.getString("debBranchName") ;
-		         
-		        
+			final Integer debAccountType = JdbcSupport.getInteger(rs, "debAccountType");
+			final Date lastTransactionDate = rs.getDate("lastTransactionDate");
+			final String debitMicrCode = rs.getString("debitMicrCode");
+			final String debBranchName = rs.getString("debBranchName");
+			final Long debDocumentId = null;
+			final String debCheckerInfo = null;
 
-            final BankAccountDetailData debitAccount = new BankAccountDetailData(debitAccountid, debitAccountName, debitAccountNumber,
-                    debitIfscCode, debitMobile, debitEmail, debBankName, debBankCity,
-                    BankAccountDetailStatus.bankAccountDetailStatusEnumDate(debitStatus), BankAccountType.bankAccountType(debAccountType),
-                    lastTransactionDate, debitMicrCode, debBranchName);
+			final BankAccountDetailData debitAccount = new BankAccountDetailData(debitAccountid, debitAccountName,
+					debitAccountNumber, debitIfscCode, debitMobile, debitEmail, debBankName, debBankCity,
+					BankAccountDetailStatus.bankAccountDetailStatusEnumDate(debitStatus),
+					BankAccountType.bankAccountType(debAccountType), lastTransactionDate, debitMicrCode, debBranchName,
+					debDocumentId, debCheckerInfo);
 
 			final Long benAccountid = rs.getLong("benAccountid");
 			final String benAccountName = rs.getString("benAccountName");
@@ -159,21 +149,22 @@ public class BankTransactionReadPlatformServiceImpl
 			final String benBankCity = rs.getString("benBankCity");
 			final String benBankName = rs.getString("benBankName");
 			final Integer benAccountType = JdbcSupport.getInteger(rs, "benAccountType");
-			final String benMicrCode = rs.getString("benMicrCode") ;
-	                final String benBranchName = rs.getString("benBranchName") ;
-			
-			
-            final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(benAccountid, benAccountName, benAccountNumber,
-                    benIfscCode, benMobile, benEmail, benBankName, benBankCity,
-                    BankAccountDetailStatus.bankAccountDetailStatusEnumDate(benStatus), BankAccountType.bankAccountType(benAccountType),
-                    lastTransactionDate, benMicrCode, benBranchName);
+			final String benMicrCode = rs.getString("benMicrCode");
+			final String benBranchName = rs.getString("benBranchName");
+			final Long benDocumentId = null;
+			final String benCheckerInfo = null;
 
-			BankTransactionDetail accountTransactionDetail = new BankTransactionDetail(
-					transactionId, debitAccount, beneficiaryAccount,
-					entityType, entityId, entityTxnId, amount, TransferType
-							.fromInt(transferType).getEnumOptionData(),
-					TransactionStatus.fromInt(status).getEnumOptionData(),
-					referenceNumber, utrNumber, poNumber, errorCode, errorMessage,transactionDate);
+			final BankAccountDetailData beneficiaryAccount = new BankAccountDetailData(benAccountid, benAccountName,
+					benAccountNumber, benIfscCode, benMobile, benEmail, benBankName, benBankCity,
+					BankAccountDetailStatus.bankAccountDetailStatusEnumDate(benStatus),
+					BankAccountType.bankAccountType(benAccountType), lastTransactionDate, benMicrCode, benBranchName,
+					benDocumentId, benCheckerInfo);
+
+			BankTransactionDetail accountTransactionDetail = new BankTransactionDetail(transactionId, debitAccount,
+					beneficiaryAccount, entityType, entityId, entityTxnId, amount,
+					TransferType.fromInt(transferType).getEnumOptionData(),
+					TransactionStatus.fromInt(status).getEnumOptionData(), referenceNumber, utrNumber, poNumber,
+					errorCode, errorMessage, transactionDate);
 
 			return accountTransactionDetail;
 		}

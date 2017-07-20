@@ -12,8 +12,8 @@ public class WorkflowDTO
 	private final LoanApplicationReference loanApplicationReference;
 	private final LoanProduct loanProduct;
 	private final LoanCoApplicant loanCoApplicant;
-	
-	public WorkflowDTO(final Client client)
+
+    public WorkflowDTO(final Client client)
 	{
 		this.loanApplicationReference=null;
 		this.loanProduct=null;
@@ -34,7 +34,6 @@ public class WorkflowDTO
 		this.client=null;
 		this.loanCoApplicant=null;
 	}
-	
 
 	public Client getClient() {
 		return this.client;
