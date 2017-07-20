@@ -88,12 +88,11 @@ public class CommandWrapper {
         this.entityTypeId = entityTypeId;
         this.formDataMultiPart = formDataMultiPart;
     }
-
+    
     public CommandWrapper(final Long officeId, final Long groupId, final Long clientId, final Long loanId, final Long savingsId,
             final String actionName, final String entityName, final Long entityId, final Long subentityId, final String href,
             final String json, final String transactionId, final Long productId, final Long templateId, final String option,
             final Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
-
         this.commandId = null;
         this.officeId = officeId;
         this.groupId = groupId;
@@ -138,7 +137,7 @@ public class CommandWrapper {
         this.entityTypeId = entityTypeId;
         this.formDataMultiPart = null;
     }
-
+    
     public String getHref() {
         return this.href;
     }

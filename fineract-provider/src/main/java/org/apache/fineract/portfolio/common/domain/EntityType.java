@@ -2,18 +2,22 @@ package org.apache.fineract.portfolio.common.domain;
 
 public enum EntityType {
 
-    INVALID(0, "entityType.invalid"), //
-    CLIENTS(1, "entityType.clients"), //
-    GROUPS(2, "entityType.groups"), //
-    CENTERS(3, "entityType.centers"), //
-    OFFICES(4, "entityType.offices");// ;
+    INVALID(0, "entityType.invalid","invalid"), //
+    CLIENTS(1, "entityType.clients","clients"), //
+    GROUPS(2, "entityType.groups","groups"), //
+    CENTERS(3, "entityType.centers","centers"), //
+    OFFICES(4, "entityType.offices","offices"),
+    TASKS(5, "entityType.tasks","tasks"),
+    STAFF(6,"entityType.STAFF","staff");// ;
 
     private final Integer value;
     private final String code;
+    private final String displayName;
 
-    private EntityType(final Integer value, final String code) {
+    private EntityType(final Integer value, final String code,final String displayName) {
         this.value = value;
         this.code = code;
+        this.displayName=displayName;
     }
 
     public Integer getValue() {
@@ -40,6 +44,13 @@ public enum EntityType {
                 case 4:
                     entityType = EntityType.OFFICES;
                 break;
+                case 5:
+                    entityType= EntityType.TASKS;
+                break;
+                case 6:
+                    entityType= EntityType.STAFF;
+                break;
+                
             }
         }
         return entityType;
@@ -59,5 +70,20 @@ public enum EntityType {
 
     public boolean isOffices() {
         return this.value.equals(EntityType.OFFICES.getValue());
+    }
+
+    
+    public String getDisplayName() {
+        return this.displayName;
+    }
+
+    public static EntityType getEntityTypeByString(String entityType) {
+        for(EntityType entity:EntityType.values())
+        {
+            if(entity.getDisplayName().equalsIgnoreCase(entityType)){
+                return entity;
+            }
+        }
+        return null;
     }
 }
