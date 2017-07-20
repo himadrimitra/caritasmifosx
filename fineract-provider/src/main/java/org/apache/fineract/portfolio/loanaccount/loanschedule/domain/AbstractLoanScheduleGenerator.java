@@ -1606,7 +1606,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     totalCumulativeInterest = totalCumulativeInterest.plus(totalInterest);
                     totalInterest = totalInterest.zero();
                     addLoanRepaymentScheduleInstallment(params.getInstallments(), installment);
-                    updateCompoundingMap(loanApplicationTerms, holidayDetailDTO, params, lastRestDate, transactionDate);
+                    updateCompoundingMap(loanApplicationTerms, holidayDetailDTO, params, lastRestDate, params.getActualRepaymentDate());
                     populateCompoundingDatesInPeriod(installment.periodDueDate(), params.getActualRepaymentDate(), loanApplicationTerms,
                             holidayDetailDTO, params, loanCharges, currency);
                     params.setCompoundedInLastInstallment(params.getUnCompoundedAmount());
@@ -1892,7 +1892,7 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                     }
                     LocalDate compoundingEffectiveDate = getNextCompoundScheduleDate(effectiveStartDate, loanApplicationTerms,
                             holidayDetailDTO);
-                    final LocalDate restDate = getNextRestScheduleDate(scheduledDueDate.minusDays(1), loanApplicationTerms,
+                    final LocalDate restDate = getNextRestScheduleDate(loanRepaymentScheduleInstallment.getDueDate().minusDays(1), loanApplicationTerms,
                             holidayDetailDTO);
                     if (!compoundingEffectiveDate.isAfter(loanRepaymentScheduleInstallment.getDueDate())) {
                         Money amountCompoundedFromLastPeriod = params.getCompoundedInLastInstallment();
@@ -1903,7 +1903,8 @@ public abstract class AbstractLoanScheduleGenerator implements LoanScheduleGener
                         periodHasCompoundingDate = true;
                     }
                     while (!compoundingEffectiveDate.isAfter(loanRepaymentScheduleInstallment.getDueDate())) {
-                        if (compoundingEffectiveDate.isEqual(loanRepaymentScheduleInstallment.getDueDate())) {
+						if (compoundingEffectiveDate.isEqual(loanRepaymentScheduleInstallment.getDueDate())
+								&& compoundingEffectiveDate.isEqual(scheduledDueDate)) {
                             Money amountToBeCompounding = amountCharged.minus(totalCompoundedAmount);
                             updateMapWithAmount(compoundingMap, amountToBeCompounding, compoundingEffectiveDate);
                             totalCompoundedAmount = totalCompoundedAmount.plus(amountToBeCompounding);
