@@ -16,6 +16,7 @@ public class BankAccountDetailData {
     private final String email;
     private final String bankName;
     private final String bankCity;
+    private final Long documentId;
     private final EnumOptionData status;
     private Collection<EnumOptionData> bankAccountTypeOptions;
 
@@ -23,7 +24,8 @@ public class BankAccountDetailData {
 
     private final String micrCode ;
     private final String branchName ;
-    
+    private final String checkerInfo;
+
     public BankAccountDetailData(Collection<EnumOptionData> bankAccountTypeOptions) {
         this.id = null;
         this.name = null;
@@ -39,12 +41,14 @@ public class BankAccountDetailData {
         this.lastTransactionDate = null;
         this.micrCode = null ;
         this.branchName = null ;
-
+        this.documentId = null;
+        this.checkerInfo = null;
     }
 
     public BankAccountDetailData(final Long id, final String name, final String accountNumber, final String ifscCode,
-            final String mobileNumber, final String email, final String bankName, final String bankCity, final EnumOptionData status,
-            final EnumOptionData accountType, final Date lastTransactionDate, final String micrCode, final String branchName) {
+            final String mobileNumber, final String email, final String bankName, final String bankCity,
+            final EnumOptionData status, final EnumOptionData accountType, final Date lastTransactionDate,
+            final String micrCode, final String branchName, final Long documentId, String checkerInfo) {
         this.id = id;
         this.name = name;
         this.accountNumber = accountNumber;
@@ -59,6 +63,8 @@ public class BankAccountDetailData {
         this.lastTransactionDate = lastTransactionDate;
         this.micrCode = micrCode ;
         this.branchName = branchName ;
+        this.documentId = documentId;
+        this.checkerInfo = checkerInfo;
     }
 
     public Collection<EnumOptionData> getBankAccountTypeOptions() {
@@ -119,5 +125,9 @@ public class BankAccountDetailData {
     
     public void setBankAccountTypeOptions(Collection<EnumOptionData> bankAccountTypeOptions) {
         this.bankAccountTypeOptions = bankAccountTypeOptions;
+    }
+
+    public Long getDocumentId() {
+        return documentId;
     }
 }

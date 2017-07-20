@@ -23,6 +23,6 @@ public class TaskExecutionStartOverActionCommandHandler implements NewCommandSou
 
     @Override
     public CommandProcessingResult processCommand(final JsonCommand command) {
-        return this.taskExecutionService.doActionOnTask(command.entityId(), TaskActionType.STARTOVER);
+        return this.taskExecutionService.doStartOver(command.entityId(), command);
     }
 }

@@ -2,6 +2,7 @@ package com.finflux.portfolio.bank.service;
 
 import java.util.Collection;
 
+import com.finflux.task.data.TaskExecutionData;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 import com.finflux.portfolio.bank.data.BankAccountDetailData;
@@ -16,4 +17,5 @@ public interface BankAccountDetailsReadService {
 
     Collection<EnumOptionData> bankAccountTypeOptions();
 
+    TaskExecutionData createOrFetchBankAccountWorkflow(BankAccountDetailEntityType bankEntityType, Long entityId);
 }
