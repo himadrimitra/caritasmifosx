@@ -68,6 +68,7 @@ public final class JsonCommand {
     private final Integer entityTypeId;
     private final FormDataMultiPart formDataMultiPart;
 
+
     public static JsonCommand from(final String jsonCommand, final JsonElement parsedCommand, final FromJsonHelper fromApiJsonHelper,
             final String entityName, final Long resourceId, final Long subresourceId, final Long groupId, final Long clientId,
             final Long loanId, final Long savingsId, final String transactionId, final String url, final Long productId, Integer entityTypeId,
@@ -88,7 +89,7 @@ public final class JsonCommand {
             final FromJsonHelper fromApiJsonHelper, final String entityName, final Long resourceId, final Long subresourceId,
             final Long groupId, final Long clientId, final Long loanId, final Long savingsId, final String transactionId, final String url,
             final Long productId, Integer entityTypeId, final FormDataMultiPart formDataMultiPart) {
-        return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
+                return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
                 clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
 
     }
@@ -113,7 +114,7 @@ public final class JsonCommand {
         final String url = null;
         final Long productId = null;
         final Integer entityTypeId = null;
-        final FormDataMultiPart formDataMultiPart = null;
+        final FormDataMultiPart formDataMultiPart=null;
         return new JsonCommand(commandId, jsonCommand, parsedCommand, fromApiJsonHelper, entityName, resourceId, subresourceId, groupId,
                 clientId, loanId, savingsId, transactionId, url, productId, entityTypeId, formDataMultiPart);
     }

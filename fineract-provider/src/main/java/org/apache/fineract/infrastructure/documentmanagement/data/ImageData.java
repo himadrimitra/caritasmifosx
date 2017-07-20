@@ -28,6 +28,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
 
 import javax.imageio.ImageIO;
 
@@ -35,6 +36,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryUtils;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
+import org.apache.fineract.portfolio.common.domain.EntityType;
 import org.apache.poi.util.IOUtils;
 
 public class ImageData {
@@ -44,6 +46,13 @@ public class ImageData {
     private final String location;
     private final Integer storageType;
     private final String entityDisplayName;
+    private final EntityType entityType;
+    private final Long entityId;
+    private final String createdBy;
+    private final Date createdOn;
+    private final String name;
+    
+    
 
     private File file;
     private ContentRepositoryUtils.IMAGE_FILE_EXTENSION fileExtension;
@@ -57,6 +66,26 @@ public class ImageData {
         this.storageType = storageType;
         this.entityDisplayName = entityDisplayName;
         this.geoTag = geoTag ;
+        this.entityType=null;
+        this.entityId=null;
+        this.createdBy=null;
+        this.createdOn=null;
+        this.name=this.location.substring(this.location.lastIndexOf("\\")+1,this.location.length());
+    }
+
+    public ImageData(final Long imageId, final String location, final Integer storageType, final String entityDisplayName,
+            final GeoTag geoTag, final EntityType entityType, final Long entityId, final String createdBy, final Date createdOn) {
+        
+        this.imageId=imageId;
+        this.location = location;
+        this.name=this.location.substring(this.location.lastIndexOf("\\")+1,this.location.length());
+        this.storageType = storageType;
+        this.entityDisplayName = entityDisplayName;
+        this.geoTag = geoTag ;
+        this.entityType=entityType;
+        this.entityId=entityId;
+        this.createdBy=createdBy;
+        this.createdOn=createdOn;
     }
 
     public byte[] getContent() {
@@ -167,5 +196,30 @@ public class ImageData {
 
     public GeoTag getGeoTag() {
         return this.geoTag ;
+    }
+
+    
+    public EntityType getEntityType() {
+        return this.entityType;
+    }
+
+    
+    public Long getEntityId() {
+        return this.entityId;
+    }
+
+    
+    public String getCreatedBy() {
+        return this.createdBy;
+    }
+
+    
+    public Date getCreatedOn() {
+        return this.createdOn;
+    }
+
+    
+    public String getName() {
+        return this.name;
     }
 }
