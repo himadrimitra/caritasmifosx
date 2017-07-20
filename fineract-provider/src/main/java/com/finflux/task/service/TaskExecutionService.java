@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.finflux.task.data.*;
 import com.finflux.task.domain.Task;
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.useradministration.domain.AppUser;
 
@@ -31,7 +32,9 @@ public interface TaskExecutionService {
 
     List<TaskActionLogData> getActionLogs(Long taskId);
 
-    CommandProcessingResult addNoteToTask(Long aLong, String json);
+    CommandProcessingResult addNoteToTask(Long taskId, String json);
 
-    CommandProcessingResult doActionOnTask(Long aLong, TaskActionType activitycomplete);
+    CommandProcessingResult doActionOnTask(Long taskId, TaskActionType activitycomplete);
+
+    CommandProcessingResult doStartOver(Long taskId, JsonCommand command);
 }

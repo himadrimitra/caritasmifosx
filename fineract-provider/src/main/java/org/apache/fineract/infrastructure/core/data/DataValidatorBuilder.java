@@ -19,12 +19,15 @@
 package org.apache.fineract.infrastructure.core.data;
 
 import com.google.gson.JsonArray;
+
 import net.fortuna.ical4j.model.ValidationException;
 import net.fortuna.ical4j.model.property.RRule;
+
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.LocalDate;
 import org.quartz.CronExpression;
 import org.springframework.util.ObjectUtils;
+
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -72,6 +75,11 @@ public class DataValidatorBuilder {
         return this;
     }
 
+    public DataValidatorBuilder addDataValidationErrors(final ApiParameterError error) {
+        this.dataValidationErrors.add(error);
+        return this;
+    }
+    
     public DataValidatorBuilder ignoreIfNull() {
         this.ignoreNullValue = true;
         return this;
@@ -87,7 +95,7 @@ public class DataValidatorBuilder {
                     .append(" cannot be empty when ").append(this.parameter).append(" is populated.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), linkedParameterName, linkedValue, this.value);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -98,7 +106,7 @@ public class DataValidatorBuilder {
         final StringBuilder defaultEnglishMessage = new StringBuilder("Failed data validation due to: ").append(errorCode).append(".");
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter, this.value, defaultUserMessageArgs);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
     }
 
     public void failWithCodeNoParameterAddedToErrorCode(final String errorCode, final Object... defaultUserMessageArgs) {
@@ -106,7 +114,7 @@ public class DataValidatorBuilder {
         final StringBuilder defaultEnglishMessage = new StringBuilder("Failed data validation due to: ").append(errorCode).append(".");
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter, this.value, defaultUserMessageArgs);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
     }
 
     public DataValidatorBuilder equalToParameter(final String linkedParameterName, final Object linkedValue) {
@@ -119,7 +127,7 @@ public class DataValidatorBuilder {
                     .append(" is not equal to ").append(this.parameter).append(".");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), linkedParameterName, linkedValue, this.value);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -134,7 +142,7 @@ public class DataValidatorBuilder {
                     .append(" is same as ").append(this.parameter).append(".");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), linkedParameterName, linkedValue, this.value);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -153,7 +161,7 @@ public class DataValidatorBuilder {
                     " must be set as true or false.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -166,7 +174,7 @@ public class DataValidatorBuilder {
                     " must be set as true.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -188,7 +196,7 @@ public class DataValidatorBuilder {
                     " is mandatory.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), realParameterName, this.arrayIndex);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -211,7 +219,7 @@ public class DataValidatorBuilder {
                     " is mandatory.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), realParameterName, this.arrayIndex);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -226,7 +234,7 @@ public class DataValidatorBuilder {
                     .append(" exceeds max length of ").append(maxLength).append(".");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, maxLength, this.value.toString());
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -243,7 +251,7 @@ public class DataValidatorBuilder {
                         .append(" must be between ").append(min).append(" and ").append(max).append(".");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, min, max);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -264,7 +272,7 @@ public class DataValidatorBuilder {
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value, values);
 
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
 
         return this;
@@ -285,7 +293,7 @@ public class DataValidatorBuilder {
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value, values);
 
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
 
         return this;
@@ -307,7 +315,7 @@ public class DataValidatorBuilder {
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, this.value, values);
 
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -325,7 +333,7 @@ public class DataValidatorBuilder {
                         " must be greater than 0.");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, 0);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -346,7 +354,7 @@ public class DataValidatorBuilder {
                         " must be greater than or equal to 0.");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, 0);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -367,7 +375,7 @@ public class DataValidatorBuilder {
                         " must be zero or greater.");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, 0);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -388,7 +396,7 @@ public class DataValidatorBuilder {
                         " must be greater than 0.");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, 0);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -406,7 +414,7 @@ public class DataValidatorBuilder {
                         .append(" must be greater than ").append(number);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, intValue, number);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -424,7 +432,7 @@ public class DataValidatorBuilder {
                         .append(" must be equal to or greater than").append(number);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, intValue, number);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -435,7 +443,7 @@ public class DataValidatorBuilder {
          final StringBuilder defaultEnglishMessage = new StringBuilder("Failed data validation due to: ").append(errorCode).append(".");
          final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                  this.parameter, this.value, defaultUserMessageArgs);
-         this.dataValidationErrors.add(error);
+         addDataValidationErrors(error);
     }
 
     public DataValidatorBuilder integerSameAsNumber(Integer number) {
@@ -450,7 +458,7 @@ public class DataValidatorBuilder {
                         .append(" must be same as").append(number);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, intValue, number);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -468,7 +476,7 @@ public class DataValidatorBuilder {
                         .append(" must be multiples of ").append(number);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, intValue, number);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -489,7 +497,7 @@ public class DataValidatorBuilder {
                         " must be greater than 0.");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, 0);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -510,7 +518,7 @@ public class DataValidatorBuilder {
                         " must be equal or greater than 0.");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, 0);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -528,7 +536,7 @@ public class DataValidatorBuilder {
                         .append(" must be greater than ").append(number);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, longValue, number);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -546,7 +554,7 @@ public class DataValidatorBuilder {
                         .append(" must be greater than ").append(number);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, longValue, number);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -563,7 +571,7 @@ public class DataValidatorBuilder {
                     " cannot be empty. You must select at least one.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -579,7 +587,7 @@ public class DataValidatorBuilder {
                     " cannot be empty. You must select at least one.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -590,7 +598,7 @@ public class DataValidatorBuilder {
         final StringBuilder defaultEnglishMessage = new StringBuilder("The parameter ").append(this.parameter).append(" is not an array.");
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
     }
 
     public DataValidatorBuilder anyOfNotNull(final Object... object) {
@@ -608,7 +616,7 @@ public class DataValidatorBuilder {
             final StringBuilder defaultEnglishMessage = new StringBuilder("No parameters passed for update.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), "id");
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -620,7 +628,7 @@ public class DataValidatorBuilder {
                 " has an invalid value.");
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter, invalidValue);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
         return this;
     }
 
@@ -638,7 +646,7 @@ public class DataValidatorBuilder {
                 .append(" cannot also be provided when ").append(parameterName).append(" is populated.");
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter, this.value, parameterName, parameterValue);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
         return this;
     }
 
@@ -657,7 +665,7 @@ public class DataValidatorBuilder {
                 .append(" cannot also be provided when ").append(parameterName).append(" is ").append(parameterValue);
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter, this.value, parameterName, parameterValue);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
         return this;
     }
 
@@ -670,7 +678,7 @@ public class DataValidatorBuilder {
                 .append(" must be provided when ").append(parameterName).append(" is ").append(parameterValue);
         final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(), defaultEnglishMessage.toString(),
                 this.parameter, this.value, parameterName, parameterValue);
-        this.dataValidationErrors.add(error);
+        addDataValidationErrors(error);
         return this;
     }
 
@@ -683,7 +691,7 @@ public class DataValidatorBuilder {
                         .append(minimumBalance).append(" should less than maximum amount ").append(maximumBalance).append(".");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, minimumBalance, maximumBalance);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             }
         }
@@ -701,7 +709,7 @@ public class DataValidatorBuilder {
                         .append(" .");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, amount, minimumAmount, maximumAmount);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             }
         }
@@ -718,7 +726,7 @@ public class DataValidatorBuilder {
                         .append(amount).append(" must not be less than minimum value ").append(min);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, amount, min);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             }
         }
@@ -735,7 +743,7 @@ public class DataValidatorBuilder {
                         .append(amount).append(" must not be more than maximum value ").append(max);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, amount, max);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             }
         }
@@ -751,7 +759,7 @@ public class DataValidatorBuilder {
                         .append(" should less than max number ").append(max).append(".");
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, min, max);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             }
         }
@@ -766,12 +774,12 @@ public class DataValidatorBuilder {
             } catch (final ValidationException e) {
                 final ApiParameterError error = ApiParameterError.parameterError("validation.msg.invalid.recurring.rule",
                         "The Recurring Rule value: " + recurringRule + " is not valid.", this.parameter, recurringRule);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             } catch (final ParseException e) {
                 final ApiParameterError error = ApiParameterError.parameterError("validation.msg.recurring.rule.parsing.error",
                         "Error in pasring the Recurring Rule value: " + recurringRule + ".", this.parameter, recurringRule);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
                 return this;
             }
         }
@@ -790,7 +798,7 @@ public class DataValidatorBuilder {
                         .append(" must be greater than minimum value ").append(min);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, min);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -808,7 +816,7 @@ public class DataValidatorBuilder {
                         .append(" must be less than maximum value ").append(max);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, number, max);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -826,7 +834,7 @@ public class DataValidatorBuilder {
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value, expression);
 
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
 
         return this;
@@ -843,7 +851,7 @@ public class DataValidatorBuilder {
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value, expression, defaultEnglishMessage.toString());
                                    
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
 
         return this;
@@ -866,7 +874,7 @@ public class DataValidatorBuilder {
                     " value should true or false ");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -896,7 +904,7 @@ public class DataValidatorBuilder {
                     .append(" is in invalid format, should contain '-','+','()' and numbers only.");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -909,7 +917,7 @@ public class DataValidatorBuilder {
                     " value is not a valid cron expression");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter, this.value);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
         }
         return this;
     }
@@ -926,7 +934,7 @@ public class DataValidatorBuilder {
                         .append(" must be greter than provided date").append(date);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, dateVal, date);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -944,7 +952,7 @@ public class DataValidatorBuilder {
                         .append(" must be less than provided date").append(date);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, dateVal, date);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -962,7 +970,7 @@ public class DataValidatorBuilder {
                         .append(" must be less than or equal to provided date").append(date);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, dateVal, date);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -980,7 +988,7 @@ public class DataValidatorBuilder {
                         .append(" must be equal to provided date").append(date);
                 final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                         defaultEnglishMessage.toString(), this.parameter, dateVal, date);
-                this.dataValidationErrors.add(error);
+                addDataValidationErrors(error);
             }
         }
         return this;
@@ -997,7 +1005,7 @@ public class DataValidatorBuilder {
 						.append(" minumum days between start date and end datw should be ").append(days);
 				final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
 						defaultEnglishMessage.toString(), this.parameter, endDate, startDate, days);
-				this.dataValidationErrors.add(error);
+				addDataValidationErrors(error);
 			}
 
 		}
@@ -1015,7 +1023,7 @@ public class DataValidatorBuilder {
 						.append(" maxium days between start date and end datw should be ").append(days);
 				final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
 						defaultEnglishMessage.toString(), this.parameter, endDate, startDate, days);
-				this.dataValidationErrors.add(error);
+				addDataValidationErrors(error);
 			}
 
 		}
@@ -1034,7 +1042,7 @@ public class DataValidatorBuilder {
             final StringBuilder defaultEnglishMessage = new StringBuilder("The ").append(this.parameter).append(" is invalid ");
             final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
                     defaultEnglishMessage.toString(), this.parameter);
-            this.dataValidationErrors.add(error);
+            addDataValidationErrors(error);
 
         }
         return this;
@@ -1045,6 +1053,21 @@ public class DataValidatorBuilder {
         final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
         Matcher emailMatcher = EMAIL_PATTERN.matcher(this.value.toString());
         return (!emailMatcher.matches() || this.value.toString().endsWith("."));
+    }
+
+    public DataValidatorBuilder matches(final String pattern) {
+        if (this.value == null && this.ignoreNullValue) { return this; }
+
+        if (this.value != null && pattern != null && !this.value.toString().matches(pattern)) {
+            final StringBuilder validationErrorCode = new StringBuilder("validation.msg.").append(this.resource).append(".")
+                    .append(this.parameter).append(".is.invalid.formate");
+            final StringBuilder defaultEnglishMessage = new StringBuilder("The parameter ").append(this.parameter)
+                    .append(" is invalid formate").append(".");
+            final ApiParameterError error = ApiParameterError.parameterError(validationErrorCode.toString(),
+                    defaultEnglishMessage.toString(), this.parameter, this.value.toString(), pattern);
+            addDataValidationErrors(error);
+        }
+        return this;
     }
 
 }

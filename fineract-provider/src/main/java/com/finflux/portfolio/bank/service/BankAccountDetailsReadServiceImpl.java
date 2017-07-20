@@ -7,9 +7,17 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import com.finflux.task.data.TaskConfigEntityType;
+import com.finflux.task.data.TaskEntityType;
+import com.finflux.task.data.TaskExecutionData;
+import com.finflux.task.data.WorkflowDTO;
+import com.finflux.task.service.CreateWorkflowTaskFactory;
+import com.finflux.task.service.TaskExecutionService;
+import org.apache.fineract.infrastructure.configuration.domain.ConfigurationDomainService;
 import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 import org.apache.fineract.infrastructure.core.domain.JdbcSupport;
 import org.apache.fineract.infrastructure.core.service.RoutingDataSource;
+import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,10 +33,20 @@ import com.finflux.portfolio.bank.domain.BankAccountType;
 public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsReadService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final ConfigurationDomainService configurationDomainService;
+    private final CreateWorkflowTaskFactory createWorkflowTaskFactory;
+    private final ClientRepositoryWrapper clientRepository;
+    private final TaskExecutionService taskExecutionService;
 
     @Autowired
-    public BankAccountDetailsReadServiceImpl(final RoutingDataSource dataSource) {
+    public BankAccountDetailsReadServiceImpl(final RoutingDataSource dataSource,
+            ConfigurationDomainService configurationDomainService, CreateWorkflowTaskFactory createWorkflowTaskFactory,
+            ClientRepositoryWrapper clientRepository, TaskExecutionService taskExecutionService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.configurationDomainService = configurationDomainService;
+        this.createWorkflowTaskFactory = createWorkflowTaskFactory;
+        this.clientRepository = clientRepository;
+        this.taskExecutionService = taskExecutionService;
     }
 
     @Override
@@ -69,7 +87,9 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             sb.append(" bad.id as id, bad.name as name, bad.account_number as accountNumber, bad.ifsc_code as ifscCode, ");
             sb.append(" bad.mobile_number as mobileNumber, bad.email as email, bad.status_id as status, ");
             sb.append(" bad.bank_name as bankName, bad.bank_city as bankCity, bad.account_type_enum as accountType, ");
-            sb.append(" bad.last_transaction_date as lastTransactionDate, bad.micr_code as micrCode, bad.branch_name as branchName ");
+            sb.append(
+                    " bad.last_transaction_date as lastTransactionDate, bad.micr_code as micrCode, bad.branch_name as branchName, ");
+            sb.append(" bad.document_id as documentId, bad.checker_info as checkerInfo ");
             sb.append(" from f_bank_account_details bad ");
             return sb.toString();
         }
@@ -91,8 +111,10 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
             final Date lastTransactionDate = rs.getDate("lastTransactionDate");
             final String micrCode = rs.getString("micrCode") ;
             final String branchName = rs.getString("branchName") ;
+            final Long documentId = rs.getLong("documentId");
+            final String checkerInfo = rs.getString("checkerInfo");
             return new BankAccountDetailData(id, name, accountNumber, ifscCode, mobileNumber, email,bankName,bankCity,
-                    status, accountType, lastTransactionDate, micrCode, branchName);
+                    status, accountType, lastTransactionDate, micrCode, branchName, documentId, checkerInfo);
         }
 
     }
@@ -102,6 +124,30 @@ public class BankAccountDetailsReadServiceImpl implements BankAccountDetailsRead
         final List<EnumOptionData> bankAccountTypeOptions = Arrays.asList(
                 BankAccountType.bankAccountType(BankAccountType.SAVINGSACCOUNT),BankAccountType.bankAccountType(BankAccountType.CURRENTACCOUNT));
         return bankAccountTypeOptions;
+    }
+
+    @Override
+    public TaskExecutionData createOrFetchBankAccountWorkflow(BankAccountDetailEntityType bankEntityType,
+            Long entityId) {
+        Boolean isClientBankAccountLinkedToWorkflow = false;
+        if (this.configurationDomainService.isWorkFlowEnabled()
+                && BankAccountDetailEntityType.CLIENTS.getValue().equals(bankEntityType.getValue())) {
+            Long clientId = entityId;
+            final TaskExecutionData taskExecutionData = this.taskExecutionService
+                    .getTaskIdByEntity(TaskEntityType.CLIENT_BANKACCOUNT, clientId);
+            if (taskExecutionData != null) {
+                BankAccountDetailData data = retrieveOneBy(bankEntityType, entityId);
+                if (data != null || taskExecutionData.getStatus().getId() < 7) {
+                    return taskExecutionData;
+                }
+            }
+            WorkflowDTO workflowDTO = new WorkflowDTO(clientRepository.findOneWithNotFoundDetection(clientId));
+            if (this.createWorkflowTaskFactory.create(TaskConfigEntityType.CLIENTBANKACCOUNT)
+                    .createWorkFlow(workflowDTO)) {
+                return this.taskExecutionService.getTaskIdByEntity(TaskEntityType.CLIENT_BANKACCOUNT, clientId);
+            }
+        }
+        return null;
     }
 
 }

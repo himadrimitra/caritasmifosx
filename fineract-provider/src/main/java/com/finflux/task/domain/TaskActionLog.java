@@ -40,4 +40,20 @@ public class TaskActionLog extends AbstractPersistable<Long> {
     public static TaskActionLog create(final Task task, final Integer action, final AppUser actionBy) {
         return new TaskActionLog(task,action,actionBy, new Date());
     }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public Integer getAction() {
+        return action;
+    }
+
+    public AppUser getActionBy() {
+        return actionBy;
+    }
+
+    public Date getActionOn() {
+        return actionOn;
+    }
 }

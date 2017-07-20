@@ -22,10 +22,12 @@ import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainR
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformDomainRuleExceptionMapper;
 import org.apache.fineract.infrastructure.core.exception.AbstractPlatformResourceNotFoundException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
+import org.apache.fineract.infrastructure.core.exception.PlatformMultipleDomainValidationException;
 import org.apache.fineract.infrastructure.core.exception.PlatformDataIntegrityException;
 import org.apache.fineract.infrastructure.core.exception.PlatformInternalServerException;
 import org.apache.fineract.infrastructure.core.exception.UnsupportedParameterException;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformApiDataValidationExceptionMapper;
+import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformMultipleDomainValidationExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformDataIntegrityExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformDomainRuleExceptionMapper;
 import org.apache.fineract.infrastructure.core.exceptionmapper.PlatformInternalServerExceptionMapper;
@@ -91,6 +93,13 @@ public class ErrorHandler extends RuntimeException {
             final String errorBody = jsonHelper.toJson(mapper.toResponse((PlatformApiDataValidationException) exception).getEntity());
 
             return new ErrorInfo(400, 2002, errorBody);
+
+        } else if (exception instanceof PlatformMultipleDomainValidationException) {
+
+            final PlatformMultipleDomainValidationExceptionMapper mapper = new PlatformMultipleDomainValidationExceptionMapper();
+            final String errorBody = jsonHelper.toJson(mapper.toResponse((PlatformMultipleDomainValidationException) exception).getEntity());
+
+            return new ErrorInfo(400, 6001, errorBody);
 
         } else if (exception instanceof PlatformDataIntegrityException) {
 

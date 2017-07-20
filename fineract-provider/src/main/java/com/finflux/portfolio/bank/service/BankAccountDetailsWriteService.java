@@ -2,6 +2,7 @@ package com.finflux.portfolio.bank.service;
 
 import java.util.Map;
 
+import com.finflux.task.data.TaskExecutionData;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 
@@ -24,4 +25,7 @@ public interface BankAccountDetailsWriteService {
 
     Long deleteBankDetailAssociation(BankAccountDetailEntityType entityType, Long entityId);
 
+    CommandProcessingResult activate(JsonCommand jsonCommand);
+
+    CommandProcessingResult updateCheckerInfo(JsonCommand jsonCommand);
 }

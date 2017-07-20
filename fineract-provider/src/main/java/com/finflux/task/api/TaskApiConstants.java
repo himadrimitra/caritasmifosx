@@ -12,4 +12,6 @@ public class TaskApiConstants {
     public static final String TASKEXECUTION_RESOURCE_NAME = "TASK_EXECUTION";
     public static final String TASK_NOTE_RESOURCE_NAME_CREATE_PERMISSION = "CREATE_TASK_NOTE";
     public static final String TASK_CONFIG_RESOURCE_NAME = "TASK_CONFIG";
+    public static final String TASK_ID_PARAM_NAME = "taskId";
+    public static final String STARTOVER_TASK_ID_PARAM_NAME = "startOverTaskId";
 }

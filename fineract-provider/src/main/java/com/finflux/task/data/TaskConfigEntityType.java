@@ -16,7 +16,8 @@ public enum TaskConfigEntityType {
     GROUPONBARDING(4, "taskConfigEntityType.grouponboarding"),
     LOANPRODUCT_APPLICANT(5, "taskConfigEntityType.loanproductapplicant"),
     LOANPRODUCT_COAPPLICANT(6, "taskConfigEntityType.loanproductcoapplicant"),//
-    CLIENTONBOARDING(7, "taskConfigEntityType.clientonboarding");//
+    CLIENTONBOARDING(7, "taskConfigEntityType.clientonboarding"), CLIENTBANKACCOUNT(8,
+            "taskConfigEntityType.clientbankaccount");//
 
     private final Integer value;
     private final String code;

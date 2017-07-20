@@ -72,11 +72,13 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.apache.fineract.accounting.common.AccountingRuleType;
+import org.apache.fineract.accounting.financialactivityaccount.domain.FinancialActivityAccountPaymentTypeMapping;
 import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.ApiParameterError;
 import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
@@ -84,6 +86,7 @@ import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidati
 import org.apache.fineract.organisation.monetary.domain.MonetaryCurrency;
 import org.apache.fineract.organisation.monetary.domain.Money;
 import org.apache.fineract.portfolio.charge.domain.Charge;
+import org.apache.fineract.portfolio.interestratechart.domain.FloatingInterestRateChart;
 import org.apache.fineract.portfolio.interestratechart.domain.InterestRateChart;
 import org.apache.fineract.portfolio.savings.SavingsApiConstants;
 import org.apache.fineract.portfolio.savings.SavingsCompoundingInterestPeriodType;
@@ -219,6 +222,11 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     @LazyCollection(LazyCollectionOption.FALSE)
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "savingsProduct", optional = true, orphanRemoval = true)
     private SavingsProductDrawingPowerDetails savingsProductDrawingPowerDetails;
+    
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "savings_product_id", referencedColumnName = "id", nullable = false)
+    private List<FloatingInterestRateChart> floatingInterestRateChart = new ArrayList<>();
 
     public static SavingsProduct createNew(final String name, final String shortName, final String description,
             final MonetaryCurrency currency, final BigDecimal interestRate,
@@ -793,5 +801,15 @@ public class SavingsProduct extends AbstractPersistable<Long> {
     public SavingsProductDrawingPowerDetails getSavingsProductDrawingPowerDetails() {
         return this.savingsProductDrawingPowerDetails;
     }
+    
+    public void updateFloatingInterestRateChart(List<FloatingInterestRateChart> floatingInterestRateChart){
+         this.floatingInterestRateChart = floatingInterestRateChart;
+    }
+    
+    public List<FloatingInterestRateChart> getFloatingInterestRateChart(){
+        return this.floatingInterestRateChart;
+    }
+    
+    
 
 }

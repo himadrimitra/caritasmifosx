@@ -52,7 +52,6 @@ public class CommandValidationProvider implements ApplicationContextAware {
      * @param entity
      *            the entity to lookup the handler, must be given.
      */
-    @Nonnull
     public CommandSourceValidator getHandler(@Nonnull final String entity) {
         Preconditions.checkArgument(StringUtils.isNoneEmpty(entity), "An entity must be given!");
         CommandSourceValidator commandSourceValidator = null;
