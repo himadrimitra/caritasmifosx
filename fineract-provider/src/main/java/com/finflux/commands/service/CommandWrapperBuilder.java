@@ -43,7 +43,7 @@ public class CommandWrapperBuilder {
         this.loanId = withLoanId;
         return this;
     }
-
+    
     public CommandWrapperBuilder withSavingsId(final Long withSavingsId) {
         this.savingsId = withSavingsId;
         return this;
@@ -419,4 +419,13 @@ public class CommandWrapperBuilder {
         this.href = "/pdcm";
         return this;
     }
+
+    public CommandWrapperBuilder saveImage(final Long entityId,final String entityName) {
+        this.actionName = "SAVE";
+        this.entityName = "IMAGE";
+        this.entityId = entityId;
+        this.href = entityName+"/"+entityId+"/"+"images";
+        return this;
+    }
+
 }

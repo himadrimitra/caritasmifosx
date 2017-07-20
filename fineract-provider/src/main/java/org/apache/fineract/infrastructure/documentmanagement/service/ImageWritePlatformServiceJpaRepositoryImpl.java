@@ -20,22 +20,31 @@ package org.apache.fineract.infrastructure.documentmanagement.service;
 
 import java.io.InputStream;
 
+import org.apache.fineract.infrastructure.core.api.JsonCommand;
 import org.apache.fineract.infrastructure.core.data.CommandProcessingResult;
 import org.apache.fineract.infrastructure.core.data.GeoTag;
 import org.apache.fineract.infrastructure.core.domain.Base64EncodedImage;
-import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiResource.ENTITY_TYPE_FOR_IMAGES;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
+import org.apache.fineract.infrastructure.documentmanagement.api.ImagesApiConstants;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepository;
 import org.apache.fineract.infrastructure.documentmanagement.contentrepository.ContentRepositoryFactory;
 import org.apache.fineract.infrastructure.documentmanagement.domain.Image;
 import org.apache.fineract.infrastructure.documentmanagement.domain.ImageRepository;
 import org.apache.fineract.infrastructure.documentmanagement.domain.StorageType;
+import org.apache.fineract.infrastructure.security.service.PlatformSecurityContext;
 import org.apache.fineract.organisation.staff.domain.Staff;
 import org.apache.fineract.organisation.staff.domain.StaffRepositoryWrapper;
 import org.apache.fineract.portfolio.client.domain.Client;
 import org.apache.fineract.portfolio.client.domain.ClientRepositoryWrapper;
+import org.apache.fineract.portfolio.common.domain.EntityType;
+import org.apache.fineract.useradministration.domain.AppUser;
+import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 @Service
 public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePlatformService {
@@ -44,52 +53,67 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     private final ClientRepositoryWrapper clientRepositoryWrapper;
     private final ImageRepository imageRepository;
     private final StaffRepositoryWrapper staffRepositoryWrapper;
+    private final PlatformSecurityContext context;
 
     @Autowired
     public ImageWritePlatformServiceJpaRepositoryImpl(final ContentRepositoryFactory documentStoreFactory,
             final ClientRepositoryWrapper clientRepositoryWrapper, final ImageRepository imageRepository,
-            StaffRepositoryWrapper staffRepositoryWrapper) {
+            StaffRepositoryWrapper staffRepositoryWrapper,final PlatformSecurityContext context) {
         this.contentRepositoryFactory = documentStoreFactory;
         this.clientRepositoryWrapper = clientRepositoryWrapper;
         this.imageRepository = imageRepository;
         this.staffRepositoryWrapper = staffRepositoryWrapper;
+        this.context=context;
     }
 
     @Transactional
     @Override
-    public CommandProcessingResult saveOrUpdateImage(String entityName, final Long clientId, final String imageName,
-            final InputStream inputStream, final Long fileSize, final GeoTag geoTag) {
-        Object owner = deletePreviousImage(entityName, clientId);
-
+    public CommandProcessingResult saveOrUpdateImage(JsonCommand command) {
+        Object owner = null;
+        JsonElement json = command.parsedJson();
+        String entityName = null;
+        Long entityId = null;
+        entityName = json.getAsJsonObject().get(ImagesApiConstants.entityNameParam).getAsString();
+        entityId = json.getAsJsonObject().get(ImagesApiConstants.entityIdParam).getAsLong();
+        if (entityName.equalsIgnoreCase(EntityType.CLIENT.getDisplayName())
+                || entityName.equalsIgnoreCase(EntityType.STAFF.getDisplayName())) {
+            owner = deletePreviousImage(entityName, entityId);
+        }
+        
+        return updateImage(owner, json.getAsJsonObject().get(ImagesApiConstants.imageLocationParam).getAsString(),StorageType.fromInt(json.getAsJsonObject().get(ImagesApiConstants.storageTypeParam).getAsInt()), command);
+    }
+    
+    @Override
+    @Transactional
+    public String saveImageInRepository(String imageName,InputStream inputStream, Long fileSize,Base64EncodedImage encodedImage,Long entityId,String entityName){
         final ContentRepository contentRepository = this.contentRepositoryFactory.getRepository();
-        final String imageLocation = contentRepository.saveImage(inputStream, clientId, imageName, fileSize);
-        return updateImage(owner, imageLocation, contentRepository.getStorageType(), geoTag);
+        String imageLocation=null;
+        if(encodedImage!=null){
+            imageLocation = contentRepository.saveImage(encodedImage, entityId,imageName,entityName);
+        }else{
+            imageLocation=contentRepository.saveImage(inputStream, entityId, imageName, fileSize,entityName);
+        }
+        JsonObject json=new JsonObject();
+        json.addProperty(ImagesApiConstants.imageLocationParam, imageLocation);
+        json.addProperty(ImagesApiConstants.storageTypeParam,contentRepository.getStorageType().getValue());
+        json.addProperty(ImagesApiConstants.entityNameParam,entityName);
+        json.addProperty(ImagesApiConstants.entityIdParam,entityId);
+        return json.toString();
     }
-
-    @Transactional
-    @Override
-    public CommandProcessingResult saveOrUpdateImage(String entityName, final Long clientId, final Base64EncodedImage encodedImage) {
-        Object owner = deletePreviousImage(entityName, clientId);
-
-        final ContentRepository contenRepository = this.contentRepositoryFactory.getRepository();
-        final String imageLocation = contenRepository.saveImage(encodedImage, clientId, "image");
-        final GeoTag geoTag = null ;
-        return updateImage(owner, imageLocation, contenRepository.getStorageType(), geoTag);
-    }
-
+    
     @Transactional
     @Override
     public CommandProcessingResult deleteImage(String entityName, final Long clientId) {
         Object owner = null;
         Image image = null;
-        if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equals(entityName)) {
+        if (EntityType.CLIENT.getDisplayName().equalsIgnoreCase(entityName)) {
             owner = this.clientRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             Client client = (Client) owner;
             image = client.getImage();
             client.setImage(null);
             this.clientRepositoryWrapper.save(client);
 
-        } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equals(entityName)) {
+        } else if (EntityType.STAFF.getDisplayName().equalsIgnoreCase(entityName)) {
             owner = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(clientId);
             Staff staff = (Staff) owner;
             image = staff.getImage();
@@ -116,11 +140,11 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
     private Object deletePreviousImage(String entityName, final Long entityId) {
         Object owner = null;
         Image image = null;
-        if (ENTITY_TYPE_FOR_IMAGES.CLIENTS.toString().equals(entityName)) {
+        if (EntityType.CLIENT.getDisplayName().equalsIgnoreCase(entityName)) {
             Client client = this.clientRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = client.getImage();
             owner = client;
-        } else if (ENTITY_TYPE_FOR_IMAGES.STAFF.toString().equals(entityName)) {
+        } else if (EntityType.STAFF.getDisplayName().equalsIgnoreCase(entityName)) {
             Staff staff = this.staffRepositoryWrapper.findOneWithNotFoundDetectionAndLazyInitialize(entityId);
             image = staff.getImage();
             owner = staff;
@@ -133,36 +157,39 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
         return owner;
     }
 
-    private CommandProcessingResult updateImage(final Object owner, final String imageLocation, final StorageType storageType, final GeoTag geoTag) {
+    private CommandProcessingResult updateImage(final Object owner, final String imageLocation, final StorageType storageType,
+            final JsonCommand command) {
         Image image = null;
-        Long clientId = null;
         if (owner instanceof Client) {
             Client client = (Client) owner;
             image = client.getImage();
-            clientId = client.getId();
-            image = createImage(image, imageLocation, storageType, geoTag);
+
+            image = createImage(image, imageLocation, storageType, command);
             client.setImage(image);
             this.clientRepositoryWrapper.save(client);
         } else if (owner instanceof Staff) {
             Staff staff = (Staff) owner;
             image = staff.getImage();
-            clientId = staff.getId();
-            image = createImage(image, imageLocation, storageType, geoTag);
+            image = createImage(image, imageLocation, storageType, command);
             staff.setImage(image);
             this.staffRepositoryWrapper.save(staff);
+        } else {
+            image = createImage(image, imageLocation, storageType, command);
         }
 
-        this.imageRepository.save(image);
-        return new CommandProcessingResult(clientId);
+        return new CommandProcessingResult(this.imageRepository.save(image).getId());
     }
 
-    private Image createImage(Image image, final String imageLocation, final StorageType storageType, final GeoTag geoTag) {
+    private Image createImage(Image image, final String imageLocation, final StorageType storageType,final JsonCommand command) {
         if (image == null) {
-            image = new Image(imageLocation, storageType, geoTag);
+            final AppUser createdBy = this.context.authenticatedUser();
+            final LocalDate createdOn=DateUtils.getLocalDateOfTenant();
+            image = new Image(imageLocation, storageType,command,createdBy,createdOn);
         } else {
+            JsonElement json=command.parsedJson();
             image.setLocation(imageLocation);
             image.setStorageType(storageType.getValue());
-            image.setGeoTag(geoTag); 
+            image.setGeoTag(GeoTag.from(json.getAsJsonObject().get(ImagesApiConstants.geoTagParam).getAsString())); 
         }
         return image;
     }
