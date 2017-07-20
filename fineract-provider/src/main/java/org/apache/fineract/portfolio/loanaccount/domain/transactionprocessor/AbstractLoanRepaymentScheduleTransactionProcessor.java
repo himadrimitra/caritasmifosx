@@ -225,7 +225,7 @@ public abstract class AbstractLoanRepaymentScheduleTransactionProcessor implemen
                 final LoanTransaction newLoanTransaction = LoanTransaction.copyTransactionProperties(loanTransaction);
                 newLoanTransaction.resetDerivedComponents(true);
                 Money[] receivableIncomes = getReceivableIncome(changedTransactions, loanTransaction.getTransactionDate(), currency);
-                handleWriteOff(loanTransaction, currency, installments,receivableIncomes,charges,accrualTransactions);
+                handleWriteOff(newLoanTransaction, currency, installments,receivableIncomes,charges,accrualTransactions);
                 if (!LoanTransaction.transactionAmountsMatch(currency, loanTransaction, newLoanTransaction)) {
                     loanTransaction.reverse();
                     loanTransaction.updateExternalId(null);
