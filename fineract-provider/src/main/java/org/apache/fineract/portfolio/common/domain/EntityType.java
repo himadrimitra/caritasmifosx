@@ -8,11 +8,11 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 public enum EntityType {
 
     INVALID(0, "entityType.invalid","invalid"), //
-    CLIENT(1, "entityType.client","clients"), //
-    GROUP(2, "entityType.group","groups"), //
-    CENTER(3, "entityType.center","centers"), //
-    OFFICE(4, "entityType.office","offices"), //
-    TASKS(5, "entityType.tasks","tasks"),
+    CLIENT(1, "entityType.client","client"), //
+    GROUP(2, "entityType.group","group"), //
+    CENTER(3, "entityType.center","center"), //
+    OFFICE(4, "entityType.office","office"), //
+    TASK(5, "entityType.tasks","task"),
     STAFF(6,"entityType.STAFF","staff"),// ;
     LOAN(7, "entityType.loan","loan");
 
@@ -56,7 +56,7 @@ public enum EntityType {
             case LOAN:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Loan");
             break;
-            case TASKS:
+            case TASK:
                 optionData = new EnumOptionData(type.getValue().longValue(), type.getCode(), "Task");
             break;
             case STAFF:
@@ -88,7 +88,7 @@ public enum EntityType {
                     entityType = EntityType.LOAN;
                 break;
                 case 5:
-                    entityType= EntityType.TASKS;
+                    entityType= EntityType.TASK;
                 break;
                 case 6:
                     entityType= EntityType.STAFF;
