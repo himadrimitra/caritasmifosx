@@ -102,14 +102,16 @@ public class ImagesApiResource {
         final Base64EncodedImage base64EncodedImage=null;
         String json=this.imageWritePlatformService.saveImageInRepository(fileDetails.getFileName(),inputStream, fileSize, base64EncodedImage, entityId, entityName);
         JsonObject jsonObject=(JsonObject) this.fromApiJsonHelper.parse(json);
-        jsonObject.addProperty(ImagesApiConstants.geoTagParam,geoTag.toString());
+        if(geoTag!=null){
+            jsonObject.addProperty(ImagesApiConstants.geoTagParam,geoTag.toString());
+        }
         // TODO: vishwas might need more advances validation (like reading magic
         // number) for handling malicious clients
         // and clients not setting mime type
         ContentRepositoryUtils.validateClientImageNotEmpty(fileDetails.getFileName());
         ContentRepositoryUtils.validateImageMimeType(bodyPart.getMediaType().toString());
         //rap(entityId, entityName, formDataMultiPart, inputStream, fileSize, geoTag);
-        final CommandWrapper commandRequest = new CommandWrapperBuilder().saveImage(entityId, entityName).withJson(json).build();
+        final CommandWrapper commandRequest = new CommandWrapperBuilder().saveImage(entityId, entityName).withJson(jsonObject.toString()).build();
         final CommandProcessingResult result = this.commandsSourceWritePlatformService.logCommandSource(commandRequest);
 
         return this.toApiJsonSerializer.serialize(result);
