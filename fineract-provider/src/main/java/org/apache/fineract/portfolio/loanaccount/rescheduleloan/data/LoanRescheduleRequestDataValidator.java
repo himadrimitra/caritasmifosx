@@ -33,6 +33,7 @@ import org.apache.fineract.infrastructure.core.data.DataValidatorBuilder;
 import org.apache.fineract.infrastructure.core.exception.InvalidJsonException;
 import org.apache.fineract.infrastructure.core.exception.PlatformApiDataValidationException;
 import org.apache.fineract.infrastructure.core.serialization.FromJsonHelper;
+import org.apache.fineract.infrastructure.core.service.DateUtils;
 import org.apache.fineract.portfolio.loanaccount.domain.Loan;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanCharge;
 import org.apache.fineract.portfolio.loanaccount.domain.LoanRepaymentScheduleInstallment;
@@ -155,12 +156,29 @@ public class LoanRescheduleRequestDataValidator {
         final LocalDate adjustedDueDate = this.fromJsonHelper.extractLocalDateNamed(RescheduleLoansApiConstants.adjustedDueDateParamName,
                 jsonElement);
 
+        LoanRepaymentScheduleInstallment installment = null;
+        if (rescheduleFromDate != null) {
+            installment = loan.getRepaymentScheduleInstallment(rescheduleFromDate);
+            if (installment == null) {
+                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)
+                        .failWithCode("repayment.schedule.installment.does.not.exist", "Repayment schedule installment does not exist");
+            }
+
+            if (!isBulkCreateAndApprove && installment != null && installment.isObligationsMet()) {
+                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)
+                        .failWithCode("repayment.schedule.installment.obligation.met", "Repayment schedule installment obligation met");
+            }
+        }
+        LocalDate currentDate = DateUtils.getLocalDateOfTenant();
         if (adjustedDueDate != null && rescheduleFromDate != null && adjustedDueDate.isBefore(rescheduleFromDate)) {
-            dataValidatorBuilder
-                    .reset()
-                    .parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)
-                    .failWithCode("adjustedDueDate.before.rescheduleFromDate",
-                            "Adjusted due date cannot be before the reschedule from date");
+            if (adjustedDueDate.isBefore(currentDate)) {
+                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName).failWithCode(
+                        "reschedule.to.previous.date.not.allowed.before.current.date", "Reschedule to previous date not allowed before current date");
+            } else if (installment != null && !adjustedDueDate.isAfter(installment.getFromDate())) {
+                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName).failWithCode(
+                        "adjustedDueDate.cannot.be.before.last.installment.due.date",
+                        "Adjusted due date cannot cannot be before last installment due date");
+            }
         }
 
         // at least one of the following must be provided => graceOnPrincipal,
@@ -172,21 +190,6 @@ public class LoanRescheduleRequestDataValidator {
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.adjustedDueDateParamName, jsonElement)
                 && !this.fromJsonHelper.parameterExists(RescheduleLoansApiConstants.newInstallmentAmountParamName, jsonElement)) {
             dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.graceOnPrincipalParamName).notNull();
-        }
-        LoanRepaymentScheduleInstallment installment = null;
-        if (!isBulkCreateAndApprove && rescheduleFromDate != null) {
-            installment = loan.getRepaymentScheduleInstallment(rescheduleFromDate);
-
-            if (installment == null) {
-                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)
-                        .failWithCode("repayment.schedule.installment.does.not.exist", "Repayment schedule installment does not exist");
-            }
-
-            if (installment != null && installment.isObligationsMet()) {
-                dataValidatorBuilder.reset().parameter(RescheduleLoansApiConstants.rescheduleFromDateParamName)
-                        .failWithCode("repayment.schedule.installment.obligation.met", "Repayment schedule installment obligation met");
-            }
-
         }
         if(!isBulkCreateAndApprove){
             validateForOverdueCharges(dataValidatorBuilder, loan, installment);
