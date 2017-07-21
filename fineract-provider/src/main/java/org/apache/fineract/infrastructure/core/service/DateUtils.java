@@ -19,6 +19,7 @@
 package org.apache.fineract.infrastructure.core.service;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -106,6 +107,12 @@ public class DateUtils {
         df.setTimeZone(getTimeZoneOfTenant());
         final String formattedSqlDate = df.format(date);
         return formattedSqlDate;
+    }
+    
+    public static String convertLocalDateToStringUsingDatePattern(final LocalDate dueDate, final String pattern) throws ParseException {
+        final DateTimeFormatter dateStringFormat = DateTimeFormat.forPattern(pattern);
+        dateStringFormat.withZone(getDateTimeZoneOfTenant());
+        return dueDate.toString(dateStringFormat);
     }
 
     public static boolean isDateInTheFuture(final LocalDate localDate) {

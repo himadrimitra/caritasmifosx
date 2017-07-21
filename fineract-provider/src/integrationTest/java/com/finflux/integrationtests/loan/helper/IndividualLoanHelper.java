@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.fineract.integrationtests.common.CommonConstants;
 import org.apache.fineract.integrationtests.common.loans.LoanApplicationTestBuilder;
+import org.apache.fineract.integrationtests.common.loans.LoanStatusChecker;
 import org.apache.fineract.integrationtests.common.loans.LoanTransactionHelper;
 
 import com.jayway.restassured.specification.RequestSpecification;
@@ -32,6 +33,20 @@ public class IndividualLoanHelper {
                 .withNumberOfRepayments("5").withRepaymentEveryAfter("1").withRepaymentFrequencyTypeAsMonths()
                 .withInterestRatePerPeriod("2").withExpectedDisbursementDate("04 April 2012").withSubmittedOnDate("02 April 2012")
                 .build(clientID.toString(), loanProductID.toString(), null);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void approveLoan(final Integer loanID) {
+        final String approveDate = "02 April 2012";
+        HashMap loanStatusHashMap = this.loanTransactionHelper.approveLoan(approveDate, loanID);
+        LoanStatusChecker.verifyLoanIsWaitingForDisbursal(loanStatusHashMap);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public void disburseLoan(final Integer loanID) {
+        final String expectedDisbursementDate = "04 April 2012";
+        HashMap loanStatusHashMap = this.loanTransactionHelper.disburseLoan(expectedDisbursementDate, loanID);
+        LoanStatusChecker.verifyLoanIsActive(loanStatusHashMap);
     }
 
     @SuppressWarnings("unchecked")

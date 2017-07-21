@@ -7,23 +7,23 @@ import org.apache.fineract.infrastructure.core.data.EnumOptionData;
 
 public enum EntityType {
 
-    INVALID(0, "entityType.invalid","invalid"), //
-    CLIENT(1, "entityType.client","client"), //
-    GROUP(2, "entityType.group","group"), //
-    CENTER(3, "entityType.center","center"), //
-    OFFICE(4, "entityType.office","office"), //
-    TASK(5, "entityType.tasks","task"),
-    STAFF(6,"entityType.STAFF","staff"),// ;
-    LOAN(7, "entityType.loan","loan");
+    INVALID(0, "entityType.invalid", "invalid"), //
+    CLIENT(1, "entityType.client", "client"), //
+    GROUP(2, "entityType.group", "group"), //
+    CENTER(3, "entityType.center", "center"), //
+    OFFICE(4, "entityType.office", "office"), //
+    TASK(5, "entityType.tasks", "task"), //
+    STAFF(6, "entityType.STAFF", "staff"), // ;
+    LOAN(7, "entityType.loan", "loan");
 
     private final Integer value;
     private final String code;
     private final String displayName;
 
-    private EntityType(final Integer value, final String code,final String displayName) {
+    private EntityType(final Integer value, final String code, final String displayName) {
         this.value = value;
         this.code = code;
-        this.displayName=displayName;
+        this.displayName = displayName;
     }
 
     public Integer getValue() {
@@ -88,12 +88,12 @@ public enum EntityType {
                     entityType = EntityType.LOAN;
                 break;
                 case 5:
-                    entityType= EntityType.TASK;
+                    entityType = EntityType.TASK;
                 break;
                 case 6:
-                    entityType= EntityType.STAFF;
+                    entityType = EntityType.STAFF;
                 break;
-                
+
             }
         }
         return entityType;
@@ -135,17 +135,13 @@ public enum EntityType {
         return entityTypes.get(entityType.toLowerCase());
     }
 
-    
     public String getDisplayName() {
         return this.displayName;
     }
 
     public static EntityType getEntityTypeByString(String entityType) {
-        for(EntityType entity:EntityType.values())
-        {
-            if(entity.getDisplayName().equalsIgnoreCase(entityType)){
-                return entity;
-            }
+        for (EntityType entity : EntityType.values()) {
+            if (entity.getDisplayName().equalsIgnoreCase(entityType)) { return entity; }
         }
         return null;
     }
