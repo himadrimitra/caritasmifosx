@@ -1336,8 +1336,6 @@ public final class LoanApplicationTerms {
         BigDecimal loanTermFrequencyBigDecimal = BigDecimal.valueOf(this.repaymentEvery);
         if (this.interestCalculationPeriodMethod.isDaily() || this.allowPartialPeriodInterestCalcualtion) {
             loanTermFrequencyBigDecimal = calculatePeriodsBetweenDates(periodStartDate, periodEndDate);
-        }else{
-            loanTermFrequencyBigDecimal = loanTermFrequencyBigDecimal.multiply(BigDecimal.valueOf(this.paymentsInProvidedPeriod));
         }
         return loanTermFrequencyBigDecimal;
     }
