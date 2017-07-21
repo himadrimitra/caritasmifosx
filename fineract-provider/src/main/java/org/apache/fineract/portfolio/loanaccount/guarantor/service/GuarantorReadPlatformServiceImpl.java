@@ -112,6 +112,8 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
                 .append(this.guarantorFundingMapper.schema())//
                 .append(",")//
                 .append(this.guarantorTransactionMapper.schema())//
+                .append(",")//
+                .append(" g.national_id as nationalId ")//
                 .append(" FROM m_guarantor g") //
                 .append(" left JOIN m_code_value cv on g.client_reln_cv_id = cv.id")//
                 .append(" left JOIN m_guarantor_funding_details gfd on g.id = gfd.guarantor_id")//
@@ -170,12 +172,13 @@ public class GuarantorReadPlatformServiceImpl implements GuarantorReadPlatformSe
 
                 }
             }
-
+            
+            final String nationalId = rs.getString("nationalId");
            
 
             return new GuarantorData(id, loanId, clientRelationshipType, entityId, guarantorType, firstname, lastname, dob, addressLine1,
                     addressLine2, city, state, zip, country, mobileNumber, housePhoneNumber, comment, null, null, null, status,
-                    guarantorFundingDetails, null, null, accountLinkingOptions);
+                    guarantorFundingDetails, null, null, accountLinkingOptions,nationalId);
         }
     }
 
