@@ -181,7 +181,9 @@ public class ImageWritePlatformServiceJpaRepositoryImpl implements ImageWritePla
             JsonElement json=command.parsedJson();
             image.setLocation(imageLocation);
             image.setStorageType(storageType.getValue());
-            image.setGeoTag(GeoTag.from(json.getAsJsonObject().get(ImagesApiConstants.geoTagParam).getAsString())); 
+            if(json.getAsJsonObject().has(ImagesApiConstants.geoTagParam)){
+                image.setGeoTag(GeoTag.from(json.getAsJsonObject().get(ImagesApiConstants.geoTagParam).getAsString()));
+            }
         }
         return image;
     }
