@@ -150,7 +150,7 @@ public class ImagesApiResource {
             this.context.authenticatedUser().validateHasReadPermission("STAFFIMAGE");
         }
         else{
-            this.context.authenticatedUser().validateHasReadPermission("READ_IMAGE");
+            this.context.authenticatedUser().validateHasReadPermission("IMAGE");
         }
 
         if (output != null && (output.equals("octet") || output.equals("inline_octet"))) { return downloadClientImage(entityName, entityId,
@@ -178,7 +178,7 @@ public class ImagesApiResource {
     @Produces({ MediaType.TEXT_PLAIN })
     public Response retrieveImageById(@PathParam ("imageId") Long imageId,
             @QueryParam("maxWidth") final Integer maxWidth, @QueryParam("maxHeight") final Integer maxHeight) {
-        this.context.authenticatedUser().validateHasReadPermission("READ_IMAGE");
+        this.context.authenticatedUser().validateHasReadPermission("IMAGE");
         final ImageData imageData = this.imageReadPlatformService.retrieveImage(imageId);
 
         // TODO: Need a better way of determining image type
@@ -199,7 +199,7 @@ public class ImagesApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String retrieveAllImages(@PathParam("entity") final String entityName, @PathParam("entityId") final Long entityId) {
-        this.context.authenticatedUser().validateHasReadPermission("READ_IMAGE");
+        this.context.authenticatedUser().validateHasReadPermission("IMAGE");
         final Collection<ImageData> images = this.imageReadPlatformService.retrieveAllImages(entityName, entityId);
         return this.toApiJsonSerializer.serialize(images);
     }
